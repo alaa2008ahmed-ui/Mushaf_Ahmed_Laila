@@ -1,0 +1,127 @@
+@import "tailwindcss";
+
+@import "@fortawesome/fontawesome-free/css/all.min.css";
+@import "@fontsource/amiri/400.css";
+@import "@fontsource/amiri/700.css";
+@import "@fontsource/amiri-quran/400.css";
+@import "@fontsource/noto-naskh-arabic/400.css";
+@import "@fontsource/noto-naskh-arabic/700.css";
+@import "@fontsource/reem-kufi/400.css";
+@import "@fontsource/reem-kufi/700.css";
+@import "@fontsource/lateef/400.css";
+@import "@fontsource/lateef/700.css";
+@import "@fontsource/aref-ruqaa/400.css";
+@import "@fontsource/aref-ruqaa/700.css";
+@import "@fontsource/scheherazade-new/400.css";
+@import "@fontsource/scheherazade-new/700.css";
+@import "@fontsource/cairo/400.css";
+@import "@fontsource/cairo/600.css";
+@import "@fontsource/cairo/700.css";
+@import "@fontsource/el-messiri/400.css";
+@import "@fontsource/el-messiri/700.css";
+@import "@fontsource/lalezar/400.css";
+@import "@fontsource/rakkas/400.css";
+@import "@fontsource/harmattan/400.css";
+@import "@fontsource/harmattan/700.css";
+@import "@fontsource/changa/400.css";
+@import "@fontsource/changa/700.css";
+@import "@fontsource/katibeh/400.css";
+@import "@fontsource/tajawal/400.css";
+@import "@fontsource/tajawal/700.css";
+@import "@fontsource/mirza/400.css";
+@import "@fontsource/mirza/700.css";
+@import "@fontsource/gulzar/400.css";
+@import "@fontsource/kufam/400.css";
+@import "@fontsource/kufam/700.css";
+
+/* Tajweed Colors */
+.tajweed-n { color: #16a34a; } /* Ghunna (Green) */
+.tajweed-q { color: #2563eb; } /* Qalqalah (Blue) */
+.tajweed-m { color: #16a34a; } /* Idgham (Green) */
+.tajweed-i { color: #16a34a; } /* Ikhfa (Green) */
+.tajweed-w { color: #9ca3af; } /* Idgham without Ghunna (Gray) */
+.tajweed-f { color: #16a34a; } /* Ikhfa Shafawi (Green) */
+.tajweed-a { color: #2563eb; } /* Iqlab (Blue) */
+.tajweed-p { color: #dc2626; } /* Madd (Red) */
+.tajweed-o { color: #dc2626; } /* Madd (Red) */
+.tajweed-c { color: #16a34a; } /* Ikhfa (Green) */
+.tajweed-s { color: #9ca3af; } /* Silent (Gray) */
+.tajweed-h { color: #9ca3af; } /* Hamzat Wasl (Gray) */
+.tajweed-l { color: #9ca3af; } /* Lam Shamsiyyah (Gray) */
+
+@font-face {
+  font-family: 'KFGQPC Uthman Taha Naskh';
+  src: url('https://cdn.jsdelivr.net/gh/Guepard/quran-fonts@master/fonts/KFGQPC-HAFS.woff2') format('woff2');
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Me Quran';
+  src: url('https://cdn.jsdelivr.net/gh/Guepard/quran-fonts@master/fonts/me_quran.woff2') format('woff2');
+  font-display: swap;
+}
+
+@theme {
+  --color-primary: var(--color-primary, #10b981);
+  --color-secondary: var(--color-secondary, #8b5cf6);
+  --color-card-bg: var(--card-bg, #ffffff);
+  --color-card-border: var(--card-border, #e2e8f0);
+  --color-modal-bg: var(--modal-bg, #ffffff);
+  --color-modal-text: var(--modal-text, #000000);
+  --color-modal-border: var(--modal-border, #10b981);
+  --color-bg-light: var(--color-bg-light, #f3f4f6);
+  --color-quran-text: var(--color-quran-text, #065f46);
+  --color-brand-purple: var(--color-brand-purple, #7c3aed);
+  --color-brand-teal: var(--color-brand-teal, #14b8a6);
+  --color-accent-orange: var(--color-accent-orange, #f59e0b);
+  --color-royal-gold: var(--color-royal-gold, #d97706);
+
+  --font-cairo: "Cairo", sans-serif;
+  --font-amiri: "Amiri", serif;
+  --font-amiri-quran: "Amiri Quran", serif;
+  --font-noto: "Noto Naskh Arabic", serif;
+  --font-hafs: 'KFGQPC Uthman Taha Naskh', serif;
+  --font-tajawal: "Tajawal", sans-serif;
+  --font-marhey: "Marhey", sans-serif;
+  --font-kufi: "Reem Kufi", sans-serif;
+  --font-scheherazade: "Scheherazade New", serif;
+  --font-aref: "Aref Ruqaa", serif;
+  --font-gulzar: "Gulzar", serif;
+  --font-mirza: "Mirza", serif;
+  --font-lateef: "Lateef", serif;
+  --font-messiri: "El Messiri", sans-serif;
+  --font-lalezar: "Lalezar", system-ui;
+  --font-rakkas: "Rakkas", system-ui;
+  --font-katibeh: "Katibeh", system-ui;
+
+  @keyframes spin-slow {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  --animate-spin-slow: spin-slow 3s linear infinite;
+}
+
+/* Hide number input arrows (spinners) */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type=number] {
+  -moz-appearance: textfield;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.font-quran {
+  font-family: "Amiri Quran", serif;
+  direction: rtl;
+  unicode-bidi: isolate;
+}

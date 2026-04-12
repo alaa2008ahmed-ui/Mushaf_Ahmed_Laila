@@ -1,0 +1,9 @@
+{
+  "name": "Quran 3.0271",
+  "description": "تطبيق إسلامي شامل يعمل بدون انترنت، يحتوي على القرآن الكريم، أذكار، تسبيح، مواقيت الصلاة، والمزيد. مصمم ليكون رفيقك اليومي.",
+  "requestFramePermissions": [
+    "geolocation",
+    "microphone",
+    "camera"
+  ]
+}
