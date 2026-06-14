@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
 
 const RateUs: React.FC = () => {
-    const { theme, isBlackAndWhite } = useTheme();
+    const { theme } = useTheme();
     const [showRateIcon, setShowRateIcon] = useState(false);
 
     useEffect(() => {
@@ -29,7 +29,7 @@ const RateUs: React.FC = () => {
 
     if (!showRateIcon) return null;
 
-    const primaryColor = isBlackAndWhite ? '#000000' : (theme.palette[0] || '#10b981');
+    const primaryColor = theme.palette[0] || '#10b981';
 
     return (
         <div 

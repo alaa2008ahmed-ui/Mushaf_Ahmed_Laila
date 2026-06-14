@@ -15,6 +15,11 @@
             }
         }
         document.addEventListener('deviceready', function() { console.log('Device ready - Cordova initialized'); }, false);
+        
+        // Prevent React DevTools instrumentation error in restricted environments
+        if (typeof window !== 'undefined') {
+            window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = { isDisabled: true };
+        }
     </script>
     
 <style>
@@ -47,13 +52,13 @@
           --font-default: var(--font-noto);
           --font-ui: var(--font-cairo);
       }
-      @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-      .fade-in { animation: fadeIn 0.2s ease-out forwards; }
+      @keyframes fadeIn { from { opacity: 1; transform: translateY(0); } to { opacity: 1; transform: translateY(0); } }
+      @keyframes fadeInPure { from { opacity: 1; } to { opacity: 1; } }
+      .fade-in { animation: fadeIn 0s ease-out forwards; }
       html, body, #root { margin: 0; padding: 0; height: 100vh; height: 100dvh; }
       html { scroll-behavior: smooth; }
       body {
         -webkit-tap-highlight-color: transparent;
-        transition: background 0.15s ease-out, color 0.15s ease-out;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
         overflow: hidden; /* Prevent scrolling on the body for SPA */
@@ -72,12 +77,37 @@
       
       .app-top-bar {
           background: rgb(var(--top-bar-rgb, 26, 34, 51));
-          color: var(--top-bar-text, var(--text-color, #ffffff)); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); 
-          border: 1px solid var(--bottom-bar-border, #334155);
+          color: var(--top-bar-text, var(--text-color, #ffffff)); 
+          border-bottom: 2px solid var(--bottom-bar-border, #334155);
           position: sticky; top: 0; z-index: 40;
           padding-top: env(safe-area-inset-top);
+          min-height: 90px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
       }
-      .app-top-bar__inner { max-width: 900px; margin: 0 auto; padding: 1rem 1.25rem 1.1rem; display: flex; flex-direction: column; gap: 0.35rem; text-align: center; }
+      body.hide-top-bars .app-top-bar { display: none !important; }
+      
+      /* Apply the same padding as MoreMenuPage.tsx (pt-12 = 3rem) when top bars are hidden */
+      body.hide-top-bars:not(.quran-context) main:not(.absolute),
+      body.hide-top-bars:not(.quran-context) .main-layout,
+      body.hide-top-bars:not(.quran-context) .app-top-bar + * {
+          padding-top: calc(env(safe-area-inset-top) + 0.5rem) !important;
+      }
+
+      .app-top-bar__inner { 
+          width: 100%;
+          max-width: 900px; 
+          margin: 0 auto; 
+          padding: 0.5rem 1.25rem; 
+          display: flex; 
+          flex-direction: column; 
+          gap: 0.1rem; 
+          text-align: center; 
+          justify-content: center;
+          height: 100%;
+          min-height: 70px;
+      }
       .app-top-bar__title { font-weight: 800; letter-spacing: 0.03em; }
       .app-top-bar__subtitle { font-size: 0.85rem; opacity: 0.9; }
       .hide-scrollbar::-webkit-scrollbar { display: none; }
@@ -85,12 +115,12 @@
       .app-bottom-bar {
           position: fixed; bottom: 0; left: 0; right: 0;
           background-color: var(--bottom-bar-bg, #1e293b);
-          border: 1px solid var(--bottom-bar-border, #334155);
-          box-shadow: 0 -8px 20px rgba(0, 0, 0, 0.3); z-index: 50; padding: 0.5rem 1rem calc(0.5rem + env(safe-area-inset-bottom));
+          border-top: 1px solid var(--bottom-bar-border, #334155);
+          box-shadow: none; z-index: 50; padding: 0.5rem 1rem calc(0.5rem + env(safe-area-inset-bottom));
           transition: background-color 0.15s ease, border-top 0.15s ease;
       }
       main {
-        padding-bottom: calc(6rem + env(safe-area-inset-bottom));
+        padding-bottom: 0;
       }
       .app-bottom-bar__inner { max-width: 900px; margin: 0 auto; display: flex; justify-content: center; align-items: center; gap: 1rem; }
       .bar-button { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; font-weight: 700; font-size: 0.95rem; border-radius: 999px; padding: 0.75rem 1rem; transition: all 0.15s ease; box-shadow: 0 5px 15px -3px rgba(0,0,0,0.15); }
@@ -129,7 +159,6 @@
 
       .tasbeeh-counter { background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0) 65%); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.4), inset 0 -10px 15px -5px rgba(0,0,0,0.25); }
       .tasbeeh-counter:active { transform: scale(0.95); box-shadow: 0 10px 20px -10px rgba(0,0,0,0.3), inset 0 -6px 10px -4px rgba(0,0,0,0.25); }
-      #whatsapp-button-container { position: fixed; bottom: calc(72px + env(safe-area-inset-bottom, 0px)); right: 16px; z-index: 50; }
       #app-container, #root { width: 100%; height: 100%; position: relative; z-index: 1; }
       
       .btn-3d-effect {
@@ -142,17 +171,17 @@
       /* Animation for Theme Selector */
       @keyframes slideUpFadeIn {
         from {
-          transform: translate(-50%, 80px);
+          transform: translateY(80px);
           opacity: 0;
         }
         to {
-          transform: translate(-50%, 0);
+          transform: translateY(0);
           opacity: 1;
         }
       }
 
       .theme-selector-container {
-        animation: slideUpFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        animation: none;
       }
 
       @keyframes marquee-ltr {
@@ -180,8 +209,8 @@
       }
 
       .theme-selector-button {
-        opacity: 0; /* Start hidden to let animation take over */
-        animation: bubbleUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        opacity: 1;
+        animation: none;
       }
 
       @keyframes modal-enter {

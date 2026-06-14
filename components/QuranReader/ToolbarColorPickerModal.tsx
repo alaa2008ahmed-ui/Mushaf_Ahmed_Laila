@@ -57,8 +57,8 @@ const ToolbarColorPickerModal: React.FC<ToolbarColorPickerModalProps> = ({ onClo
         
         let defaults = { bg: '#fff', text: '#000', border: '#ccc', font: 'inherit' };
         
-        const headerButtons = ['surah', 'juz', 'page', 'audio'];
-        const footerButtons = ['btn-menu', 'btn-settings', 'btn-home', 'btn-bookmark', 'btn-autoscroll', 'btn-themes', 'btn-bookmarks-list', 'btn-search', 'btn-share'];
+        const headerButtons = ['surah', 'juz', 'page', 'audio', 'btn-menu'];
+        const footerButtons = ['btn-settings', 'btn-home', 'btn-bookmark', 'btn-autoscroll', 'btn-themes', 'btn-bookmarks-list', 'btn-share'];
 
         if (type === 'top-toolbar' || type === 'bottom-toolbar') {
             defaults = { bg: currentTheme.barBg, text: currentTheme.barText, border: currentTheme.barBorder, font: currentTheme.font };
@@ -95,8 +95,8 @@ const ToolbarColorPickerModal: React.FC<ToolbarColorPickerModalProps> = ({ onClo
         
         colors[editingType] = newConfig;
         
-        const headerButtons = ['surah', 'juz', 'page', 'audio'];
-        const footerButtons = ['btn-settings', 'btn-home', 'btn-bookmark', 'btn-bookmarks-list', 'btn-themes', 'btn-autoscroll', 'btn-menu', 'btn-search', 'btn-share'];
+        const headerButtons = ['surah', 'juz', 'page', 'audio', 'btn-menu'];
+        const footerButtons = ['btn-settings', 'btn-home', 'btn-bookmark', 'btn-bookmarks-list', 'btn-themes', 'btn-autoscroll', 'btn-share'];
         
         if (headerButtons.includes(editingType) && headerSync) {
             headerButtons.forEach(b => colors[b] = { ...newConfig });
@@ -120,7 +120,7 @@ const ToolbarColorPickerModal: React.FC<ToolbarColorPickerModalProps> = ({ onClo
     };
 
     const getName = (type: string) => {
-        const map: Record<string, string> = { 'top-toolbar': 'الشريط العلوى', 'bottom-toolbar': 'الشريط السفلى', 'surah': 'زر السورة', 'juz': 'زر الجزء', 'page': 'زر الصفحة', 'audio': 'زر الصوت', 'btn-settings': 'زر الإعدادات', 'btn-home': 'زر الرئيسية', 'btn-bookmark': 'زر الحفظ', 'btn-bookmarks-list': 'زر القائمة', 'btn-themes': 'زر الثيمات', 'btn-autoscroll': 'زر التمرير', 'btn-menu': 'زر القائمة الجانبية', 'btn-search': 'زر البحث', 'btn-share': 'زر المشاركة', 'all': 'الكل' };
+        const map: Record<string, string> = { 'top-toolbar': 'الشريط العلوى', 'bottom-toolbar': 'الشريط السفلى', 'surah': 'زر السورة', 'juz': 'زر الجزء', 'page': 'زر الصفحة', 'audio': 'زر الصوت', 'btn-settings': 'زر الإعدادات', 'btn-home': 'زر الرئيسية', 'btn-bookmark': 'زر الحفظ', 'btn-bookmarks-list': 'زر القائمة', 'btn-themes': 'زر الثيمات', 'btn-autoscroll': 'زر التمرير', 'btn-menu': 'زر القائمة الجانبية', 'btn-share': 'زر المشاركة', 'all': 'الكل' };
         return map[type] || type;
     };
 
@@ -138,7 +138,7 @@ const ToolbarColorPickerModal: React.FC<ToolbarColorPickerModalProps> = ({ onClo
     if (editingType) {
         return (
             <div className={`fixed inset-0 z-[1200] bg-black/40 backdrop-blur-sm flex items-center justify-center ${isLandscape ? 'p-0' : 'p-4'} animate-fadeIn`} onClick={() => setEditingType(null)}>
-                <div className={`modal-skinned w-full ${isLandscape ? 'max-w-4xl h-full rounded-none max-h-screen' : 'max-w-md rounded-3xl max-h-[85vh]'} shadow-2xl overflow-hidden animate-modal-enter flex flex-col`} onClick={e => e.stopPropagation()}>
+                <div className={`modal-skinned w-full ${isLandscape ? 'max-w-4xl h-full rounded-none max-h-screen' : 'max-w-md rounded-3xl max-h-[85vh]'} shadow-2xl overflow-hidden animate-modal-enter flex flex-col`} onClick={e => e.stopPropagation()} style={{ backgroundColor: currentTheme.bg, color: currentTheme.text, borderColor: currentTheme.text === '#ffffff' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}>
                     <div className="theme-header-bg p-4 flex justify-between items-center">
                         <div className="flex items-center gap-2">
                             <Palette className="w-5 h-5" />
@@ -191,11 +191,11 @@ const ToolbarColorPickerModal: React.FC<ToolbarColorPickerModalProps> = ({ onClo
                             <div className="space-y-2">
                                 <label className="text-xs font-bold opacity-60 px-1">لون الخلفية</label>
                                 <button 
-                                    className={`h-12 w-full rounded-xl border-2 transition-all flex items-center justify-center ${activeColorField === 'bg' ? 'border-emerald-500 scale-[1.02] shadow-lg' : 'border-gray-200 dark:border-gray-700'}`}
-                                    style={renderCheckerboard(editConfig.bg)}
+                                    className={`h-12 w-full rounded-xl border-2 transition-all flex items-center justify-center ${activeColorField === 'bg' ? 'scale-[1.02] shadow-lg' : 'border-gray-200 dark:border-gray-700'}`}
+                                    style={{ borderColor: activeColorField === 'bg' ? 'var(--qr-accent)' : 'var(--qr-card-border)', ...renderCheckerboard(editConfig.bg) }}
                                     onClick={() => setActiveColorField(activeColorField === 'bg' ? null : 'bg')}
                                 >
-                                    {activeColorField === 'bg' && <Check className="w-6 h-6 text-emerald-500 drop-shadow-md" />}
+                                    {activeColorField === 'bg' && <Check className="w-6 h-6 drop-shadow-md" style={{ color: 'var(--qr-accent)' }} />}
                                 </button>
                             </div>
 
@@ -203,11 +203,11 @@ const ToolbarColorPickerModal: React.FC<ToolbarColorPickerModalProps> = ({ onClo
                                 <div className="space-y-2">
                                     <label className="text-xs font-bold opacity-60 px-1">لون النص/الأيقونة</label>
                                     <button 
-                                        className={`h-12 w-full rounded-xl border-2 transition-all flex items-center justify-center ${activeColorField === 'text' ? 'border-emerald-500 scale-[1.02] shadow-lg' : 'border-gray-200 dark:border-gray-700'}`}
-                                        style={renderCheckerboard(editConfig.text)}
+                                        className={`h-12 w-full rounded-xl border-2 transition-all flex items-center justify-center ${activeColorField === 'text' ? 'scale-[1.02] shadow-lg' : 'border-gray-200 dark:border-gray-700'}`}
+                                        style={{ borderColor: activeColorField === 'text' ? 'var(--qr-accent)' : 'var(--qr-card-border)', ...renderCheckerboard(editConfig.text) }}
                                         onClick={() => setActiveColorField(activeColorField === 'text' ? null : 'text')}
                                     >
-                                        {activeColorField === 'text' && <Check className="w-6 h-6 text-emerald-500 drop-shadow-md" />}
+                                        {activeColorField === 'text' && <Check className="w-6 h-6 drop-shadow-md" style={{ color: 'var(--qr-accent)' }} />}
                                     </button>
                                 </div>
                             )}
@@ -215,11 +215,11 @@ const ToolbarColorPickerModal: React.FC<ToolbarColorPickerModalProps> = ({ onClo
                             <div className="space-y-2">
                                 <label className="text-xs font-bold opacity-60 px-1">لون الحدود</label>
                                 <button 
-                                    className={`h-12 w-full rounded-xl border-2 transition-all flex items-center justify-center ${activeColorField === 'border' ? 'border-emerald-500 scale-[1.02] shadow-lg' : 'border-gray-200 dark:border-gray-700'}`}
-                                    style={renderCheckerboard(editConfig.border)}
+                                    className={`h-12 w-full rounded-xl border-2 transition-all flex items-center justify-center ${activeColorField === 'border' ? 'scale-[1.02] shadow-lg' : 'border-gray-200 dark:border-gray-700'}`}
+                                    style={{ borderColor: activeColorField === 'border' ? 'var(--qr-accent)' : 'var(--qr-card-border)', ...renderCheckerboard(editConfig.border) }}
                                     onClick={() => setActiveColorField(activeColorField === 'border' ? null : 'border')}
                                 >
-                                    {activeColorField === 'border' && <Check className="w-6 h-6 text-emerald-500 drop-shadow-md" />}
+                                    {activeColorField === 'border' && <Check className="w-6 h-6 drop-shadow-md" style={{ color: 'var(--qr-accent)' }} />}
                                 </button>
                             </div>
                             
@@ -230,10 +230,10 @@ const ToolbarColorPickerModal: React.FC<ToolbarColorPickerModalProps> = ({ onClo
                                             <button
                                                 key={c}
                                                 onClick={() => setEditConfig({...editConfig, [activeColorField]: c})}
-                                                className={`h-12 rounded-lg border-2 transition-all hover:scale-110 active:scale-90 flex items-center justify-center ${editConfig[activeColorField] === c ? 'border-emerald-500 shadow-md z-10' : 'border-transparent'}`}
-                                                style={renderCheckerboard(c)}
+                                                className={`h-12 rounded-lg border-2 transition-all hover:scale-110 active:scale-90 flex items-center justify-center ${editConfig[activeColorField] === c ? 'shadow-md z-10' : 'border-transparent'}`}
+                                                style={{ borderColor: editConfig[activeColorField] === c ? 'var(--qr-accent)' : 'transparent', ...renderCheckerboard(c) }}
                                             >
-                                                {editConfig[activeColorField] === c && <Check className="w-5 h-5 text-emerald-500" />}
+                                                {editConfig[activeColorField] === c && <Check className="w-5 h-5" style={{ color: 'var(--qr-accent)' }} />}
                                             </button>
                                         ))}
                                     </div>
@@ -258,7 +258,7 @@ const ToolbarColorPickerModal: React.FC<ToolbarColorPickerModalProps> = ({ onClo
     
     return (
         <div className={`fixed inset-0 bg-black/40 backdrop-blur-sm z-[1200] flex items-center justify-center ${isLandscape ? 'p-0' : 'p-4'} animate-fadeIn`} onClick={handleClose}>
-            <div className={`modal-skinned w-full ${isLandscape ? 'max-w-5xl h-full rounded-none max-h-screen' : 'max-w-md rounded-2xl max-h-[85vh]'} shadow-2xl overflow-hidden flex flex-col animate-modal-enter`} onClick={e => e.stopPropagation()}>
+            <div className={`modal-skinned w-full ${isLandscape ? 'max-w-5xl h-full rounded-none max-h-screen' : 'max-w-md rounded-2xl max-h-[85vh]'} shadow-2xl overflow-hidden flex flex-col animate-modal-enter`} onClick={e => e.stopPropagation()} style={{ backgroundColor: currentTheme.bg, color: currentTheme.text, borderColor: currentTheme.text === '#ffffff' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}>
                 <div className="theme-header-bg p-4 flex justify-between items-center">
                     <div className="flex items-center gap-2">
                         <Palette className="w-5 h-5" />
@@ -273,19 +273,19 @@ const ToolbarColorPickerModal: React.FC<ToolbarColorPickerModalProps> = ({ onClo
                     {/* Main Toolbars Section */}
                     <div className="space-y-3">
                         <h4 className="text-sm font-bold opacity-60 px-2 flex items-center gap-2">
-                            <div className="w-1 h-4 bg-emerald-500 rounded-full"></div>
+                            <div className="w-1 h-4 rounded-full" style={{ backgroundColor: 'var(--qr-accent)' }}></div>
                             الأشرطة الرئيسية
                         </h4>
                         <div className="grid grid-cols-2 gap-4">
                             <button onClick={() => openEditModal('top-toolbar')} className="themed-card-bg p-4 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all group relative overflow-hidden">
-                                <div className="absolute top-0 left-0 w-full h-1 bg-emerald-500 opacity-50"></div>
+                                <div className="absolute top-0 left-0 w-full h-1 opacity-50" style={{ backgroundColor: 'var(--qr-accent)' }}></div>
                                 <div className="flex flex-col items-center gap-2">
                                     <span className="font-bold text-sm">الشريط العلوى</span>
                                     <div className="h-6 w-12 rounded border border-gray-300 dark:border-gray-600" style={renderCheckerboard(getStyleForType('top-toolbar').bg)}></div>
                                 </div>
                             </button>
                             <button onClick={() => openEditModal('bottom-toolbar')} className="themed-card-bg p-4 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all group relative overflow-hidden">
-                                <div className="absolute bottom-0 left-0 w-full h-1 bg-emerald-500 opacity-50"></div>
+                                <div className="absolute bottom-0 left-0 w-full h-1 opacity-50" style={{ backgroundColor: 'var(--qr-accent)' }}></div>
                                 <div className="flex flex-col items-center gap-2">
                                     <span className="font-bold text-sm">الشريط السفلى</span>
                                     <div className="h-6 w-12 rounded border border-gray-300 dark:border-gray-600" style={renderCheckerboard(getStyleForType('bottom-toolbar').bg)}></div>
@@ -307,7 +307,7 @@ const ToolbarColorPickerModal: React.FC<ToolbarColorPickerModalProps> = ({ onClo
                             </div>
                         </div>
                         <div className="grid grid-cols-2 gap-3">
-                            {['surah', 'juz', 'page', 'audio'].map(type => {
+                            {['surah', 'juz', 'page', 'audio', 'btn-menu'].map(type => {
                                 const style = getStyleForType(type);
                                 return (
                                     <button key={type} onClick={() => openEditModal(type)} className="themed-card-bg p-3 rounded-xl border border-gray-200 dark:border-gray-700 flex items-center justify-between hover:border-emerald-500 transition-colors">
@@ -332,7 +332,7 @@ const ToolbarColorPickerModal: React.FC<ToolbarColorPickerModalProps> = ({ onClo
                             </div>
                         </div>
                         <div className={`grid gap-3 ${isLandscape ? 'grid-cols-4' : 'grid-cols-2'}`}>
-                             {['btn-menu', 'btn-settings', 'btn-home', 'btn-bookmark', 'btn-autoscroll', 'btn-themes', 'btn-bookmarks-list', 'btn-search', 'btn-share'].map(type => {
+                             {['btn-settings', 'btn-home', 'btn-bookmark', 'btn-autoscroll', 'btn-themes', 'btn-bookmarks-list', 'btn-share'].map(type => {
                                 const style = getStyleForType(type);
                                 return (
                                     <button key={type} onClick={() => openEditModal(type)} className="themed-card-bg p-3 rounded-xl border border-gray-200 dark:border-gray-700 flex items-center justify-between hover:border-emerald-500 transition-colors">
@@ -359,7 +359,7 @@ const ToolbarColorPickerModal: React.FC<ToolbarColorPickerModalProps> = ({ onClo
                 <div className="p-4 themed-card-bg border-t border-gray-200 dark:border-gray-700 flex justify-center">
                     <button 
                         onClick={handleClose} 
-                        className="w-full py-3 bg-gray-800 dark:bg-gray-700 text-white rounded-xl font-bold shadow-lg hover:bg-gray-700 dark:hover:bg-gray-600 transition-all flex items-center justify-center gap-2 text-sm"
+                        className="theme-accent-btn w-full py-3 rounded-xl font-bold shadow-lg transition-all flex items-center justify-center gap-2 text-sm"
                     >
                         <ChevronLeft className="w-4 h-4" />
                         الرجوع للإعدادات

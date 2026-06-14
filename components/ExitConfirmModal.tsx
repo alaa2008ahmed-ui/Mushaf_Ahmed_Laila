@@ -49,7 +49,7 @@ const ExitConfirmModal: React.FC<ExitConfirmModalProps> = ({ isOpen, onClose, on
                             className="px-6 py-2 rounded-lg font-bold transition active:scale-95 shadow-md"
                             style={{
                                 backgroundColor: theme.palette[0] || '#ef4444',
-                                color: '#ffffff',
+                                color: theme.name === 'اسود' ? '#000000' : '#ffffff',
                                 boxShadow: `0 4px 10px -2px ${theme.palette[0]}50`
                             }}
                         >

@@ -182,38 +182,44 @@ const DISTRESS_RELIEF_DUAA = [
 const ALL_RAW_DUAA = [...RAW_DUAA, ...RUQYAH_DUAA, ...DISTRESS_RELIEF_DUAA];
 
 const DUAA_SOURCE_SEGMENTS = [
-    { start: 0, end: 49, label: 'من الآيات القرآنية والأدعية النبوية الصحيحة' },
-    { start: 50, end: 99, label: 'من الأدعية النبوية والأقوال المأثورة عن السلف الصالح' },
-    { start: 100, end: 149, label: 'من الأدعية الجامعة المأثورة والدعاء الصالح' },
-    { start: 150, end: 158, label: 'من القرآن والسنة النبوية' },
-    { start: 159, end: ALL_RAW_DUAA.length - 1, label: 'أدعية نبوية صحيحة' }
+    { start: 0, end: 23, label: 'من الآيات القرآنية', categoryId: 'quran' },
+    { start: 24, end: 99, label: 'من الأدعية النبوية الصحيحة والأقوال المأثورة', categoryId: 'sunnah' },
+    { start: 100, end: 153, label: 'من الأدعية الجامعة المأثورة والدعاء الصالح', categoryId: 'jamia' },
+    { start: 154, end: 162, label: 'من القرآن والسنة النبوية', categoryId: 'ruqyah' },
+    { start: 163, end: ALL_RAW_DUAA.length - 1, label: 'أدعية نبوية صحيحة', categoryId: 'distress' }
 ];
 
 function resolveDuaaSource(index: number) {
-    if (index >= 150 && index <= 158) { // Ruqyah section
-        if (index === 150) return 'سورة الفاتحة';
-        if (index === 151) return 'سورة البقرة, 1-5';
-        if (index === 152) return 'آية الكرسي - البقرة, 255';
-        if (index === 153) return 'أواخر سورة البقرة, 285-286';
-        if (index === 154) return 'الإخلاص والفلق والناس (3 مرات)';
-        if (index === 155 || index === 156) return 'صحيح مسلم';
-        if (index === 157 || index === 158) return 'صحيح البخاري';
+    if (index >= 154 && index <= 162) { // Ruqyah section
+        if (index === 154) return 'سورة الفاتحة';
+        if (index === 155) return 'سورة البقرة, 1-5';
+        if (index === 156) return 'آية الكرسي - البقرة, 255';
+        if (index === 157) return 'أواخر سورة البقرة, 285-286';
+        if (index === 158) return 'الإخلاص والفلق والناس (3 مرات)';
+        if (index === 159 || index === 160) return 'صحيح مسلم';
+        if (index === 161 || index === 162) return 'صحيح البخاري';
     }
     const segment = DUAA_SOURCE_SEGMENTS.find(seg => index >= seg.start && index <= seg.end);
     return segment ? segment.label : 'من الأدعية المأثورة';
+}
+
+function resolveDuaaCategory(index: number) {
+    const segment = DUAA_SOURCE_SEGMENTS.find(seg => index >= seg.start && index <= seg.end);
+    return segment ? segment.categoryId : 'jamia';
 }
 
 export const ALL_DUAA = ALL_RAW_DUAA.map((duaa, index) => ({
     id: `adia_${index + 1}`,
     text: duaa.text,
     source: resolveDuaaSource(index),
+    categoryId: resolveDuaaCategory(index),
     count: 1
 }));
 
 export const DUAA_CATEGORIES = [
-    { id: 'quran_sunnah', title: 'أدعية من القرآن والسنة', description: 'أدعية مأثورة من الآيات والأحاديث.', start: 0, end: 49, icon: 'fa-book-quran', color: 'primary' },
-    { id: 'nabawi_salaf', title: 'أدعية نبوية ومأثورة', description: 'أدعية من أقوال النبي والسلف الصالح.', start: 50, end: 99, icon: 'fa-star-and-crescent', color: 'secondary' },
-    { id: 'jamia', title: 'أدعية جامعة', description: 'شاملة لخيري الدنيا والآخرة.', start: 100, end: 149, icon: 'fa-hands-praying', color: 'primary' },
-    { id: 'ruqyah', title: 'الرقية الشرعية', description: 'آيات وأدعية للشفاء والحفظ.', start: 150, end: 158, icon: 'fa-shield-heart', color: 'secondary' },
-    { id: 'distress', title: 'أدعية تفريج الكروب', description: 'للهم والحزن والضيق.', start: 159, end: ALL_DUAA.length - 1, icon: 'fa-face-sad-tear', color: 'primary' }
+    { id: 'quran', title: 'أدعية من القرآن الكريم', description: 'أدعية مأثورة من الآيات الكريمة.', icon: 'fa-book-open' },
+    { id: 'sunnah', title: 'أدعية من السنة النبوية', description: 'أدعية صحيحة عن النبي ﷺ.', icon: 'fa-moon' },
+    { id: 'jamia', title: 'أدعية جامعة', description: 'شاملة لخيري الدنيا والآخرة.', icon: 'fa-hands-praying' },
+    { id: 'ruqyah', title: 'الرقية الشرعية', description: 'آيات وأدعية للشفاء والحفظ.', icon: 'fa-shield-heart' },
+    { id: 'distress', title: 'أدعية تفريج الكروب', description: 'للهم والحزن والضيق.', icon: 'fa-face-sad-tear' }
 ];

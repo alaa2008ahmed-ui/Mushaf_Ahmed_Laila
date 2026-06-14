@@ -70,6 +70,8 @@ export const QuranReaderModals = ({
                     }}
                     showToast={showToast}
                     isLandscape={isLandscapeRef.current}
+                    readingMode={readingMode}
+                    modeSuffix={modeSuffix}
                 />
             )}
 
@@ -87,14 +89,14 @@ export const QuranReaderModals = ({
 
             {activeModals.includes('bookmarks') && (
                 <BookmarksModal
-                    isOpen={true}
                     onClose={() => closeModal('bookmarks')}
                     bookmarks={bookmarks}
-                    onDeleteBookmark={deleteBookmark}
-                    onJumpToBookmark={(s: number, a: number) => {
+                    quranData={quranData}
+                    onSelect={(s: number, a: number, isLandscape: boolean) => {
                         jumpToAyah(s, a, true);
                         closeModal('bookmarks');
                     }}
+                    onDelete={deleteBookmark}
                     currentTheme={currentTheme}
                     isLandscape={isLandscapeRef.current}
                 />
@@ -102,19 +104,20 @@ export const QuranReaderModals = ({
 
             {activeModals.includes('themes') && (
                 <ThemesModal
-                    isOpen={true}
                     onClose={() => closeModal('themes')}
-                    currentTheme={currentTheme}
-                    setCurrentTheme={setCurrentTheme}
-                    isLandscapeRef={isLandscapeRef}
+                    showToast={showToast}
+                    isLandscape={isLandscapeRef.current}
+                    readingMode={readingMode}
+                    modeSuffix={modeSuffix}
                 />
             )}
 
             {activeModals.includes('font-modal') && (
                 <FontSelectModal
+                    isOpen={true}
                     onClose={() => closeModal('font-modal')}
-                    settings={settings}
-                    updateSetting={(k: string, v: any) => updateSetting(k, v, isLandscapeRef)}
+                    onSelect={(fontId: string) => updateSetting('fontFamily', fontId, isLandscapeRef)}
+                    currentFontId={settings.fontFamily}
                     isLandscape={isLandscapeRef.current}
                 />
             )}
@@ -122,17 +125,18 @@ export const QuranReaderModals = ({
             {activeModals.includes('reciter-modal') && (
                 <ReciterSelectModal
                     onClose={() => closeModal('reciter-modal')}
-                    settings={settings}
-                    updateSetting={(k: string, v: any) => updateSetting(k, v, isLandscapeRef)}
+                    currentReader={settings.reader}
+                    onSelect={(readerId: string) => updateSetting('reader', readerId, isLandscapeRef)}
                     isLandscape={isLandscapeRef.current}
                 />
             )}
 
             {activeModals.includes('scroll-speed-modal') && (
                 <ScrollSpeedModal
+                    isOpen={true}
                     onClose={() => closeModal('scroll-speed-modal')}
-                    settings={settings}
-                    updateSetting={(k: string, v: any) => updateSetting(k, v, isLandscapeRef)}
+                    onSelect={(speed: number) => updateSetting('scrollSpeed', speed, isLandscapeRef)}
+                    currentMinutes={settings.scrollSpeed || 5}
                     isLandscape={isLandscapeRef.current}
                 />
             )}
@@ -140,9 +144,15 @@ export const QuranReaderModals = ({
             {activeModals.includes('toolbar-color-picker-modal') && (
                 <ToolbarColorPickerModal
                     onClose={() => closeModal('toolbar-color-picker-modal')}
+                    onOpenModal={(modalName) => {
+                        closeModal('toolbar-color-picker-modal');
+                        openModal(modalName);
+                    }}
+                    showToast={showToast}
+                    currentTheme={currentTheme}
                     toolbarColors={toolbarColors}
-                    setToolbarColors={setToolbarColors}
                     isLandscape={isLandscapeRef.current}
+                    modeSuffix={modeSuffix}
                 />
             )}
 
@@ -166,9 +176,10 @@ export const QuranReaderModals = ({
 
             {activeModals.includes('autoscroll-settings') && (
                 <AutoScrollSettingsModal
+                    isOpen={true}
                     onClose={() => closeModal('autoscroll-settings')}
-                    settings={settings}
-                    updateSetting={(k: string, v: any) => updateSetting(k, v, isLandscapeRef)}
+                    onSelectTime={(minutes: number) => updateSetting('autoScrollDuration', minutes, isLandscapeRef)}
+                    currentMinutes={settings.autoScrollDuration || 30}
                     isLandscape={isLandscapeRef.current}
                 />
             )}
@@ -176,12 +187,13 @@ export const QuranReaderModals = ({
             {activeModals.includes('listen-surah-modal') && (
                 <ListenSurahSelectModal
                     onClose={() => closeModal('listen-surah-modal')}
-                    quranData={quranData}
+                    currentSurah={currentAyah.s}
                     onSelect={(s: number) => {
                         playSurah(s);
                         closeModal('listen-surah-modal');
                     }}
                     isLandscape={isLandscapeRef.current}
+                    surahsList={quranData.surahs}
                 />
             )}
 
@@ -192,9 +204,8 @@ export const QuranReaderModals = ({
                     onClose={() => {
                         setTafseerInfo((p: any) => ({ ...p, isOpen: false, wasAutoscrolling: false }));
                     }}
-                    tafseerText={tafseerInfo.text}
-                    surahName={tafseerInfo.surahName}
-                    ayahNumber={tafseerInfo.a}
+                    text={tafseerInfo.text}
+                    title={`${tafseerInfo.surahName} - آية ${tafseerInfo.a}`}
                     isLoading={isTafseerLoading}
                     currentTheme={currentTheme}
                     isLandscape={isLandscapeRef.current}
@@ -208,8 +219,7 @@ export const QuranReaderModals = ({
                         setTafseerSelectionInfo((p: any) => ({ ...p, isOpen: false, wasAutoscrolling: false }));
                     }}
                     onSelect={handleTafseerSelect}
-                    currentTafseer={settings.tafseer}
-                    currentTheme={currentTheme}
+                    currentTafseerId={settings.tafseer}
                     isLandscape={isLandscapeRef.current}
                 />
             )}
@@ -241,7 +251,7 @@ export const QuranReaderModals = ({
 
             {sajdahCardInfo.show && (
                 <SajdahCardModal
-                    sajdahInfo={sajdahCardInfo.info}
+                    info={sajdahCardInfo.info}
                     onClose={handleCloseSajdahCard}
                     currentTheme={currentTheme}
                     isLandscape={isLandscapeRef.current}

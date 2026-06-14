@@ -1,7 +1,9 @@
 import React from 'react';
+import ThemePageLock from '../ThemePageLock';
 
 interface PrayerTimesHeaderProps {
     handleRefreshLocation: () => void;
+    onOpenNotifications: () => void;
     cityGov: string;
     fullCountry: string;
     combinedCode?: string;
@@ -10,6 +12,7 @@ interface PrayerTimesHeaderProps {
 
 const PrayerTimesHeader: React.FC<PrayerTimesHeaderProps> = ({
     handleRefreshLocation,
+    onOpenNotifications,
     cityGov,
     fullCountry,
     combinedCode,
@@ -18,14 +21,22 @@ const PrayerTimesHeader: React.FC<PrayerTimesHeaderProps> = ({
     return (
         <header className="app-top-bar">
             <div className="app-top-bar__inner">
-                <div className="flex items-center justify-center gap-2">
-                    <i id="location-refresh-btn" onClick={handleRefreshLocation} className="text-xl cursor-pointer active:rotate-180 duration-700 fa-solid fa-location-crosshairs" style={{ color: topBarTextColor }}></i>
-                    <h1 className="app-top-bar__title text-xl sm:text-2xl font-kufi truncate" style={{ color: topBarTextColor }}>{cityGov}</h1>
+                <div className="relative flex items-center justify-center min-h-[40px]">
+                    <div className="absolute left-0">
+                        <ThemePageLock />
+                    </div>
+                    <h1 className="app-top-bar__title text-base sm:text-lg md:text-xl font-kufi truncate px-14 sm:px-20">
+                        {cityGov}
+                    </h1>
+                    <div className="absolute right-0 flex items-center gap-1">
+                         <i onClick={onOpenNotifications} className="text-xl cursor-pointer fa-solid fa-bell p-2 opacity-80 hover:opacity-100"></i>
+                         <i id="location-refresh-btn" onClick={handleRefreshLocation} className="text-xl cursor-pointer active:rotate-180 duration-700 fa-solid fa-location-crosshairs p-2 opacity-80 hover:opacity-100"></i>
+                    </div>
                 </div>
-                 <div className="flex items-center justify-center gap-2" dir="rtl">
-                    <p className="text-xs font-bold" style={{ color: topBarTextColor }}>{fullCountry}</p>
+                 <div className="app-top-bar__subtitle flex items-center justify-center gap-1.5" dir="rtl">
+                    <span className="font-bold">{fullCountry}</span>
                     {combinedCode && (
-                        <span className="text-xs font-black text-white bg-black/20 px-2 py-0.5 rounded-md border border-white/20" dir="ltr">{combinedCode}</span>
+                        <span className="text-[10px] font-black text-white bg-black/20 px-1.5 py-0 rounded border border-white/20" dir="ltr">{combinedCode}</span>
                     )}
                 </div>
             </div>

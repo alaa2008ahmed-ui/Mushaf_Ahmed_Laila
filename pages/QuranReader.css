@@ -28,9 +28,9 @@
     --font-warsh: 'Amiri', serif;
     --font-default: var(--font-amiri-quran);
     --font-ui: var(--font-cairo);
-    --search-result-bg: rgba(16, 185, 129, 0.1);
-    --search-result-border: #10b981;
-    --search-result-text: #e2e8f0;
+    --search-result-bg: rgba(var(--qr-accent-rgb, 16, 185, 129), 0.1);
+    --search-result-border: var(--qr-accent, #10b981);
+    --search-result-text: var(--qr-modal-text, #e2e8f0);
     --search-highlight-bg: #fef08a;
     --search-highlight-text: #000000;
 }
@@ -64,11 +64,11 @@
 .quran-reader-container::before {
     content: '';
     position: absolute;
-    top: var(--logical-safe-top);
-    bottom: var(--logical-safe-bottom);
-    left: var(--logical-safe-left);
-    right: var(--logical-safe-right);
-    border: 4px double var(--quran-border-color, #000);
+    top: calc(var(--logical-safe-top) + 2px);
+    bottom: calc(var(--logical-safe-bottom) + 2px);
+    left: calc(var(--logical-safe-left) + 2px);
+    right: calc(var(--logical-safe-right) + 2px);
+    border: 6px double var(--quran-border-color, #000);
     pointer-events: none;
     z-index: 100;
 }
@@ -97,8 +97,8 @@
     left: 0;
     right: 0;
     z-index: 100;
-    padding-top: calc(var(--logical-safe-top) + 4px) !important;
-    height: calc(50px + var(--logical-safe-top) + 4px);
+    padding-top: calc(var(--logical-safe-top) + 8px) !important;
+    height: calc(3.5rem + var(--logical-safe-top) + 8px);
 }
 
 .quran-reader-container.is-transparent-mode:not(.landscape-mode) #bottom-bar {
@@ -107,13 +107,13 @@
     left: 0;
     right: 0;
     z-index: 100;
-    padding-bottom: calc(var(--logical-safe-bottom) + 4px) !important;
-    height: calc(48px + var(--logical-safe-bottom) + 4px);
+    padding-bottom: calc(var(--logical-safe-bottom) + 12px) !important;
+    height: calc(3.5rem + var(--logical-safe-bottom) + 12px);
 }
 
 .quran-reader-container.is-transparent-mode:not(.landscape-mode) #mushaf-content {
-    padding-top: calc(50px + var(--logical-safe-top)) !important;
-    padding-bottom: calc(48px + var(--logical-safe-bottom)) !important;
+    padding-top: calc(3.5rem + var(--logical-safe-top) + 8px) !important;
+    padding-bottom: calc(3.5rem + var(--logical-safe-bottom) + 12px) !important;
 }
 
 .quran-reader-container .header-default, .quran-reader-container .footer-default { 
@@ -151,9 +151,17 @@
 }
 
 .theme-btn-bg {
-    background-color: var(--qr-btn-bg, #10b981) !important;
-    color: var(--qr-btn-text, #ffffff) !important;
-    border-color: var(--qr-btn-bg, #10b981) !important;
+    background-color: var(--qr-btn-bg, #10b981);
+    color: var(--qr-btn-text, inherit);
+    border-color: var(--qr-btn-bg, #10b981);
+}
+
+.theme-btn-text {
+    color: var(--qr-btn-text, #000000);
+}
+
+.theme-card-border {
+    border-color: var(--qr-card-border, #e5e7eb) !important;
 }
 
 .theme-accent-btn {
@@ -235,7 +243,7 @@
 
 .page-footer {
     display: flex; justify-content: center; align-items: center;
-    margin-top: 15px; padding-bottom: 10px;
+    padding-bottom: 2px;
     font-family: var(--font-default); line-height: 1;
 }
 .page-number-bracket { color: #d97706; font-family: var(--font-hafs), serif; font-size: 1.6rem; margin: 0 2px; font-weight: normal; }
@@ -380,17 +388,17 @@
 .btn-purple:hover { opacity: 0.8; }
 
 #header {
-    height: calc(3.5rem + var(--logical-safe-top) + 4px);
-    padding-top: calc(var(--logical-safe-top) + 4px) !important;
-    padding-left: calc(var(--logical-safe-left) + 4px) !important;
-    padding-right: calc(var(--logical-safe-right) + 4px) !important;
+    height: calc(3.5rem + var(--logical-safe-top) + 8px);
+    padding-top: calc(var(--logical-safe-top) + 8px) !important;
+    padding-left: calc(var(--logical-safe-left) + 8px) !important;
+    padding-right: calc(var(--logical-safe-right) + 8px) !important;
     transition: transform 0.3s ease, opacity 0.3s ease, margin-top 0.3s ease;
 }
 #bottom-bar {
-    height: calc(3.5rem + var(--logical-safe-bottom) + 4px);
-    padding-bottom: calc(var(--logical-safe-bottom) + 4px) !important;
-    padding-left: calc(var(--logical-safe-left) + 4px) !important;
-    padding-right: calc(var(--logical-safe-right) + 4px) !important;
+    height: calc(3.5rem + var(--logical-safe-bottom) + 12px);
+    padding-bottom: calc(var(--logical-safe-bottom) + 12px) !important;
+    padding-left: calc(var(--logical-safe-left) + 8px) !important;
+    padding-right: calc(var(--logical-safe-right) + 8px) !important;
     transition: transform 0.3s ease, opacity 0.3s ease, margin-bottom 0.3s ease;
 }
 #mushaf-content {
@@ -426,8 +434,15 @@
 .dark .color-option-btn.active { background-color: rgba(16, 185, 129, 0.2) !important; border-color: #34d399 !important; }
 .color-preview-dot { width: 20px; height: 20px; border-radius: 50%; border: 1px solid #d1d5db; box-shadow: 0 1px 2px rgba(0,0,0,0.1); flex-shrink: 0; background-color: #fff; }
 
-.toggle-checkbox:checked + .toggle-label { background-color: #10B981; }
+.toggle-checkbox:checked + .toggle-label { background-color: var(--qr-accent, #10B981) !important; }
 .toggle-checkbox { appearance: none; }
+
+.downloaded-item {
+    background-color: var(--qr-accent-bg, rgba(16, 185, 129, 0.1)) !important;
+    border-color: var(--qr-accent, #10B981) !important;
+    color: var(--qr-accent, #10B981) !important;
+}
+
 .toggle-label { transition: background-color 0.2s ease; }
 .sync-toggle:checked + .sync-label { background-color: #8b5cf6; }
 
@@ -436,7 +451,7 @@
     position: fixed;
     bottom: calc(4.5rem + var(--logical-safe-bottom) + 10px);
     right: -400px;
-    z-index: 95;
+    z-index: 3000;
     transition: right 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     background-color: white;
     color: #1f2937;
@@ -568,10 +583,10 @@
     margin-top: 0 !important;
 }
 .quran-reader-container.landscape-mode #header {
-    height: calc(40px + var(--logical-safe-top));
-    padding-top: var(--logical-safe-top) !important;
-    padding-left: calc(4px + var(--logical-safe-left)) !important;
-    padding-right: calc(4px + var(--logical-safe-right)) !important;
+    height: calc(44px + var(--logical-safe-top));
+    padding-top: calc(8px + var(--logical-safe-top)) !important;
+    padding-left: calc(8px + var(--logical-safe-left)) !important;
+    padding-right: calc(8px + var(--logical-safe-right)) !important;
     font-size: 0.85rem;
     transition: transform 0.3s ease, opacity 0.3s ease;
     position: absolute;
@@ -587,9 +602,9 @@
 }
 .quran-reader-container.landscape-mode #bottom-bar {
     height: calc(50px + var(--logical-safe-bottom));
-    padding-bottom: var(--logical-safe-bottom) !important;
-    padding-left: calc(4px + var(--logical-safe-left)) !important;
-    padding-right: calc(4px + var(--logical-safe-right)) !important;
+    padding-bottom: calc(8px + var(--logical-safe-bottom)) !important;
+    padding-left: calc(8px + var(--logical-safe-left)) !important;
+    padding-right: calc(8px + var(--logical-safe-right)) !important;
     transition: transform 0.3s ease, opacity 0.3s ease;
     position: absolute;
     bottom: 0;
@@ -616,14 +631,14 @@
 .quran-reader-container.landscape-mode.landscape-ui-hidden #header,
 .quran-reader-container.hide-toolbars-autoscroll #header {
     transform: translateY(-100%) !important;
-    margin-top: calc(-3.5rem - var(--logical-safe-top)) !important;
+    margin-top: calc(-3.5rem - var(--logical-safe-top) - 8px) !important;
     opacity: 0 !important;
     pointer-events: none !important;
 }
 .quran-reader-container.landscape-mode.landscape-ui-hidden #bottom-bar,
 .quran-reader-container.hide-toolbars-autoscroll #bottom-bar {
     transform: translateY(100%) !important;
-    margin-bottom: calc(-3.5rem - var(--logical-safe-bottom)) !important;
+    margin-bottom: calc(-3.5rem - var(--logical-safe-bottom) - 12px) !important;
     opacity: 0 !important;
     pointer-events: none !important;
 }
@@ -639,7 +654,7 @@
     position: fixed; 
     top: calc(4.5rem + var(--logical-safe-top));
     right: -400px; 
-    z-index: 1000;
+    z-index: 3000;
     transition: right 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     max-width: 90%; 
     font-family: var(--font-ui);

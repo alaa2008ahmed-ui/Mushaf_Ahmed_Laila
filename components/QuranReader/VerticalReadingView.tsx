@@ -9,7 +9,9 @@ interface VerticalReadingViewProps {
     settings: any;
     currentTheme: any;
     currentAyah: { s: number; a: number };
+    highlightedAyahId?: string | null;
     onAyahClick: (s: number, a: number) => void;
+    onAyahLongPress?: (s: number, a: number, x: number, y: number) => void;
     onVisibleAyahChange?: (s: number, a: number) => void;
     showMarkerNotification?: (type: 'quarter' | 'sajda' | 'surah', text: string) => void;
     showJuzNotification?: (text: string) => void;
@@ -20,6 +22,10 @@ interface VerticalReadingViewProps {
     memorizationSettings?: any;
     isLandscape?: boolean;
     onSurahHeaderLongPress?: () => void;
+    isPlaying?: boolean;
+    isRecording?: boolean;
+    revealedAyahs?: string[];
+    tempRevealedAyah?: string | null;
 }
 
 // Global cache to ensure instant loading after first fetch
@@ -33,7 +39,9 @@ const VerticalReadingView: React.FC<VerticalReadingViewProps> = React.memo(({
     settings,
     currentTheme,
     currentAyah,
+    highlightedAyahId,
     onAyahClick,
+    onAyahLongPress,
     onVisibleAyahChange,
     showMarkerNotification,
     showJuzNotification,
@@ -43,7 +51,11 @@ const VerticalReadingView: React.FC<VerticalReadingViewProps> = React.memo(({
     hideVerses = false,
     memorizationSettings,
     isLandscape = false,
-    onSurahHeaderLongPress
+    onSurahHeaderLongPress,
+    isPlaying = false,
+    isRecording = false,
+    revealedAyahs = [],
+    tempRevealedAyah = null
 }) => {
     const [tafseerData, setTafseerData] = useState<any[]>(cachedTafseerData || []);
     const [meaningsData, setMeaningsData] = useState<any[]>(cachedMeaningsData || []);
@@ -65,6 +77,11 @@ const VerticalReadingView: React.FC<VerticalReadingViewProps> = React.memo(({
     const initialPinchDistanceRef = useRef<number | null>(null);
     const initialPinchFontSizeRef = useRef<number | null>(null);
 
+    // Long press refs
+    const longPressTimer = useRef<number | null>(null);
+    const isLongPressTriggered = useRef(false);
+    const touchStartPos = useRef<{x: number, y: number} | null>(null);
+
     const [localFontSize, setLocalFontSize] = useState(settings.fontSize);
 
     const [scrollParent, setScrollParent] = useState<HTMLElement | undefined>(undefined);
@@ -79,6 +96,49 @@ const VerticalReadingView: React.FC<VerticalReadingViewProps> = React.memo(({
     useEffect(() => {
         setLocalFontSize(settings.fontSize);
     }, [settings.fontSize]);
+
+    const handlePointerDown = (s: number, a: number, e: React.PointerEvent) => {
+        if (e.button !== 0 && e.pointerType === 'mouse') return;
+        
+        isLongPressTriggered.current = false;
+        touchStartPos.current = { x: e.clientX, y: e.clientY };
+
+        if (longPressTimer.current) {
+            window.clearTimeout(longPressTimer.current);
+        }
+
+        longPressTimer.current = window.setTimeout(() => {
+            if (onAyahLongPress) {
+                onAyahLongPress(s, a, e.clientX, e.clientY);
+                isLongPressTriggered.current = true;
+            }
+            longPressTimer.current = null;
+        }, 600);
+    };
+
+    const handlePointerMoveItem = (e: React.PointerEvent) => {
+        if (!touchStartPos.current || !longPressTimer.current) return;
+        if (Math.abs(e.clientX - touchStartPos.current.x) > 15 || Math.abs(e.clientY - touchStartPos.current.y) > 15) {
+            if (longPressTimer.current) {
+                window.clearTimeout(longPressTimer.current);
+                longPressTimer.current = null;
+            }
+        }
+    };
+
+    const handlePointerUpItem = () => {
+        if (longPressTimer.current) {
+            clearTimeout(longPressTimer.current);
+            longPressTimer.current = null;
+        }
+    };
+
+    const handlePointerLeaveItem = () => {
+        if (longPressTimer.current) {
+            clearTimeout(longPressTimer.current);
+            longPressTimer.current = null;
+        }
+    };
 
     const handleTouchStart = (e: React.TouchEvent) => {
         if (e.touches.length === 2) {
@@ -268,11 +328,12 @@ const VerticalReadingView: React.FC<VerticalReadingViewProps> = React.memo(({
     const renderItem = useCallback((index: number, item: any) => {
         if (item.type === 'page-marker') {
             const getContrastingColors = () => {
-                const themeId = currentTheme?.id || 'night_sky';
+                const themeId = currentTheme?.id || 'black';
                 const bracketColor = currentTheme?.verseBracket || currentTheme?.accent || '#9333ea';
                 const numColor = currentTheme?.accent || currentTheme?.sajdah || '#9333ea';
                 
                 switch(themeId) {
+                    case 'black': return { num: '#000000', bracket: '#d97706' };
                     case 'night_sky': return { num: '#9333ea', bracket: '#9333ea' };
                     case 'green': return { num: '#dc2626', bracket: '#dc2626' };
                     case 'red': return { num: '#2563eb', bracket: '#2563eb' };
@@ -284,7 +345,7 @@ const VerticalReadingView: React.FC<VerticalReadingViewProps> = React.memo(({
             const { num: pageNumColor, bracket: bracketColor } = getContrastingColors();
 
             return (
-                <div className="page-footer flex flex-col items-center py-10" style={{ color: currentTheme.text }}>
+                <div className="page-footer flex flex-col items-center pt-1 pb-4" style={{ color: currentTheme.text }}>
                     <div className="flex items-center justify-center">
                         <span className="page-number-bracket" style={{ color: bracketColor }}>﴿</span>
                         <span className="page-number-text" style={{ color: pageNumColor }}>{toArabic(item.pageNumber)}</span>
@@ -309,13 +370,39 @@ const VerticalReadingView: React.FC<VerticalReadingViewProps> = React.memo(({
             );
         }
 
-        const isHighlighted = currentAyah.s === item.surahNumber && currentAyah.a === item.ayahNumber;
+        const isHighlighted = highlightedAyahId === `ayah-${item.surahNumber}-${item.ayahNumber}`;
         
         // Determine if this ayah should be hidden
         let shouldHide = hideVerses && !isHighlighted;
         
-        // If in memorization review mode, only hide if it's within the review range
-        if (shouldHide && memorizationSettings?.isReviewMode) {
+        // If in memorization review mode, apply specific hiding rules
+        if (memorizationSettings?.isReviewMode) {
+            const s = item.surahNumber;
+            const a = item.ayahNumber;
+            const { fromSurah, fromAyah, toSurah, toAyah } = memorizationSettings;
+            
+            const isBefore = s < fromSurah || (s === fromSurah && a < fromAyah);
+            const isAfter = s > toSurah || (s === toSurah && a > toAyah);
+            const isInRange = !isBefore && !isAfter;
+            
+            const ayahKey = `${s}-${a}`;
+            const isRevealed = revealedAyahs.includes(ayahKey) || tempRevealedAyah === ayahKey;
+            
+            if (isInRange) {
+                if (isRevealed) {
+                    shouldHide = false; // Show if revealed or hint
+                } else if (isRecording && tempRevealedAyah !== ayahKey) {
+                    shouldHide = true; // Hide others during recording, unless it's the temp revealed one
+                } else if (isPlaying && isHighlighted) {
+                    shouldHide = false; // Show only the playing verse
+                } else {
+                    shouldHide = true; // Hide otherwise
+                }
+            } else {
+                shouldHide = false; // Don't hide verses outside the review range
+            }
+        } else if (shouldHide && memorizationSettings) {
+            // Normal memorization mode logic (hide only within range)
             const s = item.surahNumber;
             const a = item.ayahNumber;
             const { fromSurah, fromAyah, toSurah, toAyah } = memorizationSettings;
@@ -329,43 +416,56 @@ const VerticalReadingView: React.FC<VerticalReadingViewProps> = React.memo(({
         }
 
         return (
-            <div className={`px-4 py-2 ${isLandscape ? 'flex justify-center' : ''}`}>
+            <div className={`${isLandscape ? 'flex justify-center' : ''} px-1`}>
                 <div 
-                    className={`ayah-item p-4 rounded-xl transition-all border ${isHighlighted ? 'ring-2' : ''} ${isLandscape ? 'max-w-3xl w-full' : ''}`}
+                    id={`ayah-${item.surahNumber}-${item.ayahNumber}`}
+                    className={`ayah-item ayah-text-block px-1 py-0 rounded-none border-b ${isLandscape ? 'max-w-3xl w-full' : ''}`}
                     style={{ 
-                        backgroundColor: isHighlighted ? `${currentTheme.accent}20` : 'transparent',
-                        borderColor: isHighlighted ? currentTheme.accent : 'transparent'
+                        borderBottomColor: isHighlighted ? (settings.highlightTextColor || currentTheme.accent) : `${currentTheme.border}33`,
                     }}
+                    onPointerDown={(e) => handlePointerDown(item.surahNumber, item.ayahNumber, e)}
+                    onPointerMove={handlePointerMoveItem}
+                    onPointerUp={handlePointerUpItem}
+                    onPointerLeave={handlePointerLeaveItem}
                     onClick={() => {
+                        if (isLongPressTriggered.current) return;
                         isInternalClickRef.current = true;
                         onAyahClick(item.surahNumber, item.ayahNumber);
                     }}
                 >
-                    <div className="ayah-text mb-4 text-right leading-relaxed transition-all duration-500" 
+                    <div className="ayah-text mb-0 text-right leading-loose" 
                          style={{ 
                              fontSize: `${localFontSize}rem`, 
                              fontFamily: settings.fontFamily,
-                             color: currentTheme.accent,
+                             fontWeight: settings.isBold ? '900' : 'normal',
+                             paddingTop: '4px',
+                             paddingBottom: '2px',
+                             WebkitTextStroke: settings.isBold ? '0.5px currentColor' : '0px',
+                             color: shouldHide ? 'transparent' : (isHighlighted ? (settings.highlightTextColor || currentTheme.highlightText || currentTheme.accent) : (settings.textColor || currentTheme.text)),
+                             backgroundColor: shouldHide ? `${settings.highlightTextColor || currentTheme.accent}33` : 'transparent',
+                             borderRadius: shouldHide ? '8px' : '0',
                              letterSpacing: 0,
                              fontFeatureSettings: '"kern", "liga", "clig", "calt", "ccmp"',
                              textRendering: 'optimizeLegibility',
-                             filter: shouldHide ? 'blur(8px)' : 'none',
-                             opacity: shouldHide ? 0.3 : 1,
-                             cursor: hideVerses ? 'pointer' : 'default'
+                             opacity: shouldHide ? 0.6 : 1,
+                             cursor: hideVerses ? 'pointer' : 'default',
+                             userSelect: shouldHide ? 'none' : 'auto'
                          }}>
                         {item.text}
-                        <span className="inline-flex items-center justify-center w-8 h-8 mr-2 rounded-full border border-current text-sm font-bold"
-                              style={{ color: currentTheme.text }}>
-                            {toArabic(item.ayahNumber)}
+                        <span className="inline-flex items-center justify-center mr-2 font-bold opacity-60"
+                              style={{ 
+                                  fontSize: '0.9em',
+                                  color: isHighlighted ? (settings.highlightTextColor || currentTheme.highlightText || currentTheme.accent) : currentTheme.accent
+                              }}>
+                            ﴿{toArabic(item.ayahNumber)}﴾
                         </span>
                     </div>
                     
-                    <div className="divider h-px w-full my-4 opacity-20" style={{ backgroundColor: currentTheme.text }}></div>
-                    
-                    <div className="explanation-text text-right opacity-90 leading-relaxed"
+                    <div className="explanation-text text-right opacity-90 leading-relaxed pb-2"
                          style={{ 
                              fontSize: `${localFontSize * 0.8}rem`, 
-                             color: currentTheme.text,
+                             marginTop: '-2px',
+                             color: isHighlighted ? (settings.highlightTextColor || currentTheme.highlightText || currentTheme.accent) : (settings.textColor || currentTheme.text),
                              direction: readingMode === 'translation' ? 'ltr' : 'rtl',
                              textAlign: readingMode === 'translation' ? 'left' : 'right'
                          }}>
@@ -376,7 +476,7 @@ const VerticalReadingView: React.FC<VerticalReadingViewProps> = React.memo(({
                 </div>
             </div>
         );
-    }, [currentAyah, currentTheme, settings, readingMode, onAyahClick, meaningsData, tafseerData, translationData, hideVerses, memorizationSettings, localFontSize]);
+    }, [highlightedAyahId, currentTheme, settings, readingMode, onAyahClick, meaningsData, tafseerData, translationData, hideVerses, memorizationSettings, localFontSize]);
 
     if (isLoading) {
         return (
@@ -389,7 +489,7 @@ const VerticalReadingView: React.FC<VerticalReadingViewProps> = React.memo(({
     return (
         <div 
             className="w-full min-h-full" 
-            style={{ direction: 'rtl', backgroundColor: currentTheme.bg }}
+            style={{ direction: 'rtl', backgroundColor: settings.bgColor || currentTheme.bg }}
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
@@ -402,10 +502,11 @@ const VerticalReadingView: React.FC<VerticalReadingViewProps> = React.memo(({
                     data={flattenedItems}
                     initialTopMostItemIndex={{ index: initialIndex, align: 'center' }}
                     overscan={200} // Pre-render items for smoother experience
-                    className="scrollbar-hide"
-                    itemContent={renderItem}
+                    className="scrollbar-hide pb-8"
+                    itemContent={(index, item) => renderItem(index, item)}
                     rangeChanged={(range) => {
-                    const item = flattenedItems[range.startIndex];
+                    const midIndex = Math.round((range.startIndex + range.endIndex) / 2);
+                    const item = flattenedItems[midIndex] || flattenedItems[range.startIndex];
                     if (item && item.type === 'ayah') {
                         // Detect Juz change
                         if (item.juz && lastNotifiedJuz.current !== null && item.juz !== lastNotifiedJuz.current) {
@@ -447,7 +548,7 @@ const VerticalReadingView: React.FC<VerticalReadingViewProps> = React.memo(({
                         }
 
                         lastScrolledAyahRef.current = { s: item.surahNumber, a: item.ayahNumber };
-                        onVisibleAyahChange?.(item.surahNumber, item.ayahNumber);
+                        // onVisibleAyahChange?.(item.surahNumber, item.ayahNumber);
                     }
                 }}
             />

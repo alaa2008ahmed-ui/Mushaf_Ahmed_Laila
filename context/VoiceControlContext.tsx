@@ -62,8 +62,14 @@ const DEFAULT_COMMANDS: VoiceCommand[] = [
     { id: 'nav_adia', phrase: 'الادعيه', action: 'open_adia', isDefault: true },
     { id: 'open_hajj_umrah', phrase: 'فتح الحج والعمرة', action: 'open_hajj_umrah', isDefault: true },
     { id: 'nav_hajj_umrah', phrase: 'الحج والعمرة', action: 'open_hajj_umrah', isDefault: true },
-    { id: 'open_more', phrase: 'فتح المزيد', action: 'open_more', isDefault: true },
-    { id: 'nav_more', phrase: 'المزيد', action: 'open_more', isDefault: true },
+    { id: 'open_asmaul_husna', phrase: 'فتح أسماء الله الحسنى', action: 'open_asmaul_husna', isDefault: true },
+    { id: 'nav_asmaul_husna', phrase: 'اسماء الله الحسنى', action: 'open_asmaul_husna', isDefault: true },
+    { id: 'open_daily_wird', phrase: 'فتح الورد اليومي', action: 'open_daily_wird', isDefault: true },
+    { id: 'nav_daily_wird', phrase: 'الورد اليومي', action: 'open_daily_wird', isDefault: true },
+    { id: 'open_memorization', phrase: 'فتح التحفيظ', action: 'open_memorization', isDefault: true },
+    { id: 'nav_memorization', phrase: 'التحفيظ', action: 'open_memorization', isDefault: true },
+    { id: 'open_more', phrase: 'فتح قائمة التطبيقات', action: 'open_more', isDefault: true },
+    { id: 'nav_more', phrase: 'قائمة التطبيقات', action: 'open_more', isDefault: true },
     { id: 'open_nawawi', phrase: 'فتح الاربعون النوويه', action: 'open_nawawi', isDefault: true },
     { id: 'nav_nawawi', phrase: 'الاربعون النوويه', action: 'open_nawawi', isDefault: true },
     { id: 'go_back', phrase: 'رجوع', action: 'go_back', isDefault: true },
@@ -102,7 +108,7 @@ const DEFAULT_COMMANDS: VoiceCommand[] = [
 const VoiceControlContext = createContext<VoiceControlContextType | undefined>(undefined);
 
 export const VoiceControlProvider: React.FC<{ children: React.ReactNode, onAction: (action: string, text: string, params?: any) => void }> = ({ children, onAction }) => {
-    const [isEnabled, setIsEnabled] = useState(() => localStorage.getItem('voice_control_enabled') === 'true');
+    const [isEnabled, setIsEnabled] = useState(false);
     const [showVoiceIcon, setShowVoiceIcon] = useState(() => localStorage.getItem('show_voice_icon') !== 'false');
     const [isListening, setIsListening] = useState(false);
     const [transcript, setTranscript] = useState('');
@@ -398,7 +404,6 @@ export const VoiceControlProvider: React.FC<{ children: React.ReactNode, onActio
     // Sync state changes to refs and trigger start/stop
     useEffect(() => {
         isEnabledRef.current = isEnabled;
-        localStorage.setItem('voice_control_enabled', isEnabled.toString());
         
         if (isEnabled) {
             startRecognition();

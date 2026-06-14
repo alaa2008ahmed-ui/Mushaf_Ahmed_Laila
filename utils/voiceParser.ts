@@ -137,8 +137,8 @@ export const parseVoiceCommand = (
     
     // Theme names mapping from constants.ts
     const themeNameMap: Record<string, string> = {
-        'الافتراضي': 'night_sky',
-        'افتراضي': 'night_sky',
+        'الافتراضي': 'black',
+        'افتراضي': 'black',
         'اخضر': 'green',
         'احمر': 'red',
         'نبيتي': 'maroon',
@@ -259,6 +259,10 @@ export const parseVoiceCommand = (
         'الادعيه': 'open_adia',
         'فتح الحج والعمرة': 'open_hajj_umrah',
         'الحج والعمرة': 'open_hajj_umrah',
+        'اسماء الله الحسنى': 'open_asmaul_husna',
+        'أسماء الله الحسنى': 'open_asmaul_husna',
+        'الورد اليومي': 'open_daily_wird',
+        'التحفيظ': 'open_memorization',
         'فتح المزيد': 'open_more',
         'المزيد': 'open_more',
         'فتح الاربعون النوويه': 'open_nawawi',

@@ -20,13 +20,16 @@ interface TasbeehModalsProps {
     handleSetCounterColor: (color: string) => void;
     counterColor: string;
     theme: Theme;
+    dailyStats: {date: string, count: number}[];
+    skin: string;
+    handleSetSkin: (skin: 'modern' | 'classic' | 'beads') => void;
 }
 
 const TasbeehModals: React.FC<TasbeehModalsProps> = ({
     modals, setModals, targetInputRef, target, handleSetTarget,
     newPhraseInputRef, handleAddPhrase, phrases, handleDeletePhrase,
     activePhrase, setActivePhrase, handleReset, colorOptions,
-    handleSetCounterColor, counterColor, theme
+    handleSetCounterColor, counterColor, theme, dailyStats, skin, handleSetSkin
 }) => {
     return (
         <>
@@ -38,7 +41,7 @@ const TasbeehModals: React.FC<TasbeehModalsProps> = ({
                     className="w-full p-3 rounded-xl text-center text-2xl font-bold focus:outline-none focus:ring-2 bg-card-bg-hover text-modal-text border border-modal-border"/>
                 <div className="flex gap-3 pt-2">
                     <button onClick={() => setModals((p: any) => ({...p, target: false}))} className="flex-1 py-2 rounded-lg bg-gray-500/20 text-modal-text font-bold hover:bg-gray-500/30 transition-colors">إلغاء</button>
-                    <button onClick={handleSetTarget} className="flex-1 py-2 rounded-lg text-white font-bold" style={{backgroundColor: theme.palette[0]}}>حفظ</button>
+                    <button onClick={handleSetTarget} className="flex-1 py-2 rounded-lg font-bold" style={{backgroundColor: theme.palette[0], color: theme.name === 'اسود' ? '#000000' : '#ffffff'}}>حفظ</button>
                 </div>
             </ModalWrapper>
 
@@ -47,7 +50,7 @@ const TasbeehModals: React.FC<TasbeehModalsProps> = ({
                  <input ref={newPhraseInputRef} id="new-phrase-input" type="text" placeholder="اكتب الذكر هنا..." dir="rtl" className="w-full p-3 rounded-xl text-right text-lg focus:outline-none focus:ring-2 bg-card-bg-hover text-modal-text border border-modal-border"/>
                 <div className="flex gap-3 pt-2">
                     <button onClick={() => setModals((p: any) => ({...p, add: false}))} className="flex-1 py-2 rounded-lg bg-gray-500/20 text-modal-text font-bold hover:bg-gray-500/30 transition-colors">إلغاء</button>
-                    <button onClick={() => handleAddPhrase(newPhraseInputRef.current?.value || '')} className="flex-1 py-2 rounded-lg text-white font-bold" style={{backgroundColor: theme.palette[0]}}>إضافة</button>
+                    <button onClick={() => handleAddPhrase(newPhraseInputRef.current?.value || '')} className="flex-1 py-2 rounded-lg font-bold" style={{backgroundColor: theme.palette[0], color: theme.name === 'اسود' ? '#000000' : '#ffffff'}}>إضافة</button>
                 </div>
             </ModalWrapper>
             
@@ -72,15 +75,22 @@ const TasbeehModals: React.FC<TasbeehModalsProps> = ({
                  </div>
             </ModalWrapper>
 
-            <ModalWrapper isOpen={modals.phrase} onClose={() => setModals((p: any) => ({...p, phrase: false}))}>
-                <h3 className="text-xl font-bold text-center border-b pb-3 border-modal-border">اختر الذكر</h3>
-                <div className="space-y-3 overflow-y-auto max-h-60 pr-2">
-                    {phrases.map(p => (
-                        <div key={p.id} onClick={() => { setActivePhrase(p.text); handleReset(); setModals((p: any) => ({...p, phrase: false})); }}
-                             className={`p-3 rounded-xl cursor-pointer flex items-center justify-between border-2 ${activePhrase === p.text ? 'border-primary bg-primary/10' : 'border-transparent hover:bg-card-bg-hover bg-card-bg-hover/50'}`}>
-                            <span className="text-right text-lg font-amiri text-modal-text">{p.text}</span>
-                            {activePhrase === p.text && <div className="w-3 h-3 bg-primary rounded-full flex-shrink-0"></div>}
-                        </div>
+            <ModalWrapper isOpen={modals.phrase} onClose={() => setModals((p: any) => ({...p, phrase: false}))} noStyles={true}>
+                <div className="overflow-y-auto max-h-[60vh] bg-modal-bg text-modal-text shadow-2xl rounded-2xl border border-modal-border custom-scrollbar">
+                    {phrases.map((p, index) => (
+                        <button 
+                             key={p.id} 
+                             onClick={() => { setActivePhrase(p.text); handleReset(); setModals((p: any) => ({...p, phrase: false})); }}
+                             className={`w-full px-4 py-3.5 flex items-center justify-between transition-all border-b border-modal-border last:border-0 hover:bg-black/5 dark:hover:bg-white/5 active:scale-[0.99] ${activePhrase === p.text ? 'bg-black/5 dark:bg-white/10 font-bold' : ''}`}
+                             style={activePhrase === p.text ? { color: theme.palette[0] } : {}}
+                        >
+                            <span className="text-right text-base leading-relaxed pl-2 font-amiri text-modal-text">{p.text}</span>
+                            {activePhrase === p.text && (
+                                <div className="w-6 h-6 flex-shrink-0 flex items-center justify-center rounded-full bg-black/5 dark:bg-white/10" style={{ color: theme.palette[0] }}>
+                                    <svg className="w-4 h-4" transform="scale(1.1)" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>
+                                </div>
+                            )}
+                        </button>
                     ))}
                 </div>
             </ModalWrapper>
@@ -100,6 +110,61 @@ const TasbeehModals: React.FC<TasbeehModalsProps> = ({
                 </div>
                 <div className="pt-4 mt-2 border-t border-modal-border">
                     <button onClick={() => setModals((p: any) => ({...p, color: false}))} className="w-full py-2 rounded-lg bg-gray-500/20 text-modal-text font-bold hover:bg-gray-500/30 transition-colors">
+                        إغلاق
+                    </button>
+                </div>
+            </ModalWrapper>
+
+            {/* Skins Modal */}
+            <ModalWrapper isOpen={modals.skins} onClose={() => setModals((p: any) => ({...p, skins: false}))}>
+                <h3 className="text-xl font-bold text-center border-b pb-2 border-modal-border">اختر شكل السبحة</h3>
+                <div className="flex flex-col gap-3 pt-4">
+                    <button 
+                        onClick={() => handleSetSkin('modern')}
+                        className={`py-3 px-4 rounded-xl font-bold transition-colors ${skin === 'modern' ? 'bg-primary text-white' : 'bg-card-bg-hover text-modal-text'}`}
+                        style={skin === 'modern' ? {backgroundColor: theme.palette[0]} : {}}
+                    >
+                        عداد حديث
+                    </button>
+                    <button 
+                        onClick={() => handleSetSkin('classic')}
+                        className={`py-3 px-4 rounded-xl font-bold transition-colors ${skin === 'classic' ? 'bg-primary text-white' : 'bg-card-bg-hover text-modal-text'}`}
+                        style={skin === 'classic' ? {backgroundColor: theme.palette[0]} : {}}
+                    >
+                        عداد كلاسيكي
+                    </button>
+                    <button 
+                        onClick={() => handleSetSkin('beads')}
+                        className={`py-3 px-4 rounded-xl font-bold transition-colors ${skin === 'beads' ? 'bg-primary text-white' : 'bg-card-bg-hover text-modal-text'}`}
+                        style={skin === 'beads' ? {backgroundColor: theme.palette[0]} : {}}
+                    >
+                        حبات المسبحة
+                    </button>
+                </div>
+                <div className="pt-4 mt-2 border-t border-modal-border">
+                    <button onClick={() => setModals((p: any) => ({...p, skins: false}))} className="w-full py-2 rounded-lg bg-gray-500/20 text-modal-text font-bold hover:bg-gray-500/30 transition-colors">
+                        إغلاق
+                    </button>
+                </div>
+            </ModalWrapper>
+
+            {/* Stats Modal */}
+            <ModalWrapper isOpen={modals.stats} onClose={() => setModals((p: any) => ({...p, stats: false}))}>
+                <h3 className="text-xl font-bold text-center border-b pb-2 border-modal-border">إحصائيات التسبيح</h3>
+                <div className="space-y-3 overflow-y-auto max-h-60 pt-2 pr-2">
+                    {dailyStats && dailyStats.length > 0 ? (
+                        [...dailyStats].reverse().map((stat, i) => (
+                            <div key={i} className="flex justify-between items-center p-3 rounded-lg bg-card-bg-hover border border-modal-border">
+                                <span className="text-sm font-bold opacity-70">{new Date(stat.date).toLocaleDateString('ar-EG')}</span>
+                                <span className="text-lg font-black" style={{color: theme.palette[0]}}>{toArabicNumerals(stat.count)} تسبيحة</span>
+                            </div>
+                        ))
+                    ) : (
+                        <p className="text-center opacity-60 py-4">ليس لديك إحصائيات بعد.</p>
+                    )}
+                </div>
+                <div className="pt-4 mt-2 border-t border-modal-border">
+                    <button onClick={() => setModals((p: any) => ({...p, stats: false}))} className="w-full py-2 rounded-lg bg-gray-500/20 text-modal-text font-bold hover:bg-gray-500/30 transition-colors">
                         إغلاق
                     </button>
                 </div>

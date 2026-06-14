@@ -24,7 +24,7 @@ const AyahOptionsMenu: React.FC<AyahOptionsMenuProps> = ({
     return (
         <div className={`fixed inset-0 z-[1200] bg-black/30 flex items-center justify-center ${isLandscape ? 'p-2' : 'p-4'} backdrop-blur-sm animate-fadeIn`} onClick={onClose}>
             <div 
-                className={`w-full ${isLandscape ? 'max-w-[280px] max-h-[90vh] rounded-2xl' : 'max-w-[280px] rounded-2xl'} bg-white shadow-2xl transition-all duration-300 flex flex-col pointer-events-auto overflow-hidden animate-modal-enter`} 
+                className={`w-full ${isLandscape ? 'max-w-[300px] max-h-[90vh] rounded-2xl' : 'max-w-[280px] rounded-2xl'} bg-white shadow-2xl transition-all duration-300 flex flex-col pointer-events-auto overflow-hidden animate-modal-enter`} 
                 style={{ 
                     fontFamily: currentTheme.font,
                     border: `2px solid ${currentTheme.barBorder || currentTheme.accent || '#000000'}`

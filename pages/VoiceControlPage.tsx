@@ -7,6 +7,8 @@ import { useTheme } from '../context/ThemeContext';
 import BottomBar from '../components/BottomBar';
 import TutorialOverlay, { TutorialStep } from '../components/Tutorial/TutorialOverlay';
 
+import ThemePageLock from '../components/ThemePageLock';
+
 const AVAILABLE_ACTIONS = [
     { id: 'go_home', name: 'الرئيسية' },
     { id: 'open_quran', name: 'مصحف / صفحة القراءة / القرآن الكريم' },
@@ -22,8 +24,11 @@ const AVAILABLE_ACTIONS = [
     { id: 'open_themes', name: 'الثيمات / ثيمات / السيمات' },
     { id: 'open_voice_control', name: 'التحكم الصوتي / التحكم الصوتى' },
     { id: 'open_adia', name: 'الادعيه / الادعيه' },
-    { id: 'open_hajj_umrah', name: 'الحج والعمرة / الحج والعمرة' },
-    { id: 'open_more', name: 'المزيد / المزيد' },
+    { id: 'open_hajj_umrah', name: 'الحج والعمرة' },
+    { id: 'open_asmaul_husna', name: 'أسماء الله الحسنى' },
+    { id: 'open_daily_wird', name: 'الورد اليومي' },
+    { id: 'open_memorization', name: 'التحفيظ' },
+    { id: 'open_more', name: 'قائمة التطبيقات' },
     { id: 'open_nawawi', name: 'الاربعون النوويه / الاربعون النوويه' },
     { id: 'go_back', name: 'رجوع' },
     { id: 'exit_app', name: 'خروج' },
@@ -48,7 +53,7 @@ const AVAILABLE_ACTIONS = [
 ];
 
 const VoiceControlPage: React.FC<{ onBack: () => void, onNavigate: (pageId: string) => void }> = ({ onBack, onNavigate }) => {
-    const { theme } = useTheme();
+    const { theme, themeKey } = useTheme();
     const { 
         isEnabled, 
         setIsEnabled, 
@@ -111,22 +116,24 @@ const VoiceControlPage: React.FC<{ onBack: () => void, onNavigate: (pageId: stri
     const voiceControlTutorialSteps: TutorialStep[] = [
         {
             id: 'voice-welcome',
-            text: 'التحكم الصوتي: ميزة ثورية تتيح لك التحكم في التطبيق بالكامل عبر أوامرك الصوتية.',
-            position: { top: '20%' },
+            title: 'التحكم الصوتي الذكي',
+            text: 'مرحباً بك في عالم التحكم الصوتي. هذه الميزة تتيح لك التحدث مع التطبيق كما تتحدث مع صديقك. يمكنك طلب أي شيء من التطبيق باللغة العربية الفصحى أو العامية المصرية، وسيفهمك المساعد الذكي وينفذ طلبك فوراً.',
+            position: { top: '60%' },
             icon: <Mic className="w-8 h-8 text-white" />
         },
         {
             id: 'voice-toggle',
-            text: 'تفعيل الخدمة: اضغط هنا لتشغيل أو إيقاف خاصية الاستماع للأوامر الصوتية.',
-            position: { top: '30%' },
-            arrow: 'up',
+            title: 'تفعيل الاستماع المستمر',
+            text: 'هذا الزر هو مفتاح التحكم؛ عند تفعيله، سيظل التطبيق في حالة "استماع" دائمة لأوامرك. يمكنك وضعه بجانبك أثناء القراءة وقول "الآية التالية" أو "شغل التفسير" دون الحاجة للمس الهاتف إطلاقاً.',
             selector: '#voice-toggle-btn',
             icon: <Mic className="w-8 h-8 text-white" />
         },
         {
-            id: 'voice-commands',
-            text: 'دليل الأوامر: استعرض قائمة الأوامر المتاحة وكيفية نطقها للوصول السريع لأي قسم.',
-            position: { top: '50%' },
+            id: 'voice-commands-list',
+            title: 'أمثلة للأوامر الصوتية',
+            text: 'هنا تجد دليلاً شاملاً للأوامر: يمكنك قول "افتح سورة الكهف"، "مواقيت الصلاة في القاهرة"، "شغل أذكار الصباح"، أو حتى "غير الثيم للوضع الليلي". استكشف القائمة لتتعرف على قدرات المساعد الصوتي المذهلة.',
+            selector: '#commands-list-container',
+            position: { top: '65%' },
             icon: <ChevronRight className="w-8 h-8 text-white" />
         }
     ];
@@ -134,15 +141,18 @@ const VoiceControlPage: React.FC<{ onBack: () => void, onNavigate: (pageId: stri
     return (
         <div className="h-screen flex flex-col bg-transparent overflow-hidden">
             <header className="app-top-bar">
-                <div className="app-top-bar__inner flex items-center justify-center px-4">
-                    <div className="text-center">
+                <div className="app-top-bar__inner">
+                    <div className="relative flex items-center justify-center w-full">
+                        <div className="absolute left-0">
+                            <ThemePageLock />
+                        </div>
                         <h1 className="app-top-bar__title text-2xl font-kufi">التحكم الصوتي</h1>
-                        <p className="app-top-bar__subtitle">إدارة الأوامر الصوتية الذكية</p>
                     </div>
+                    <p className="app-top-bar__subtitle">إدارة الأوامر الصوتية الذكية</p>
                 </div>
             </header>
 
-            <main className="w-full flex-1 flex flex-col items-center overflow-hidden p-4 pb-24">
+            <main className="w-full flex-1 flex flex-col items-center overflow-hidden px-4 pb-4">
                 <div className="w-full max-w-lg flex-1 overflow-y-auto hide-scrollbar pb-6 space-y-6">
                     {/* Merged Status & Settings Section */}
                     <div className="themed-card p-4 space-y-4 relative">
@@ -202,38 +212,16 @@ const VoiceControlPage: React.FC<{ onBack: () => void, onNavigate: (pageId: stri
                             </div>
                             <button 
                                 onClick={() => setShowVoiceIcon(!showVoiceIcon)}
-                                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${showVoiceIcon ? 'bg-emerald-500' : 'bg-gray-300'}`}
+                                className="relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none"
+                                style={{ backgroundColor: showVoiceIcon ? (themeKey === 'default' ? '#000000' : theme.palette[0]) : '#9ca3af' }}
                             >
                                 <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${showVoiceIcon ? '-translate-x-5' : '-translate-x-0.5'}`} />
                             </button>
                         </div>
                     </div>
 
-                    {/* Offline Warning & Settings Section */}
-                    <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex flex-col gap-3">
-                        <div className="flex items-start gap-3">
-                            <WifiOff className="w-6 h-6 text-amber-600 shrink-0 mt-0.5" />
-                            <div>
-                                <h4 className="font-bold text-amber-700 text-sm mb-1">تنبيه هام: يتطلب اتصال بالإنترنت</h4>
-                                <p className="text-xs text-amber-700/80 leading-relaxed">
-                                    خاصية التحكم الصوتي تعتمد على محرك التعرف على الصوت الخاص بجهازك (مثل Google أو Apple)، والذي <strong>لا يعمل إلا عند توفر اتصال بالإنترنت</strong>.
-                                </p>
-                            </div>
-                        </div>
-                        <div className="mt-2 pt-3 border-t border-amber-500/20">
-                            <h4 className="font-bold text-amber-700 text-sm mb-2">لتشغيل التحكم الصوتي بدون إنترنت (أوفلاين):</h4>
-                            <p className="text-xs text-amber-700/80 leading-relaxed mb-3">
-                                يجب التأكد من تحميل حزمة اللغة العربية للتعرف على الصوت في إعدادات نظام أندرويد لضمان عمل التطبيق بكفاءة في وضع الأوفلاين:
-                            </p>
-                            
-                            <ul className="text-xs text-amber-700/80 leading-relaxed list-disc list-inside space-y-1 pr-2">
-                                <li><strong>أجهزة أندرويد (Android):</strong> الإعدادات &gt; الإدارة العامة (أو النظام) &gt; اللغة والإدخال &gt; لوحة المفاتيح التي تظهر على الشاشة &gt; الكتابة بالصوت من Google &gt; التعرف على الصوت بلا اتصال بالإنترنت &gt; تحميل اللغة العربية.</li>
-                            </ul>
-                        </div>
-                    </div>
-
                     {/* Instructions Section */}
-                    <div className="themed-card p-6 space-y-6">
+                    <div id="commands-list-container" className="themed-card p-6 space-y-6">
                         <h3 className="font-bold text-lg flex items-center gap-2 border-b pb-2">
                             <ChevronRight className="w-5 h-5 text-primary" />
                             دليل التحكم الصوتي الشامل
@@ -261,7 +249,7 @@ const VoiceControlPage: React.FC<{ onBack: () => void, onNavigate: (pageId: stri
                                     <li>"فتح التحكم الصوتي" / "التحكم الصوتى": للانتقال لإعدادات التحكم الصوتي.</li>
                                     <li>"فتح الادعيه" / "الادعيه": لفتح صفحة الادعيه.</li>
                                     <li>"فتح الحج والعمرة" / "الحج والعمرة": لفتح صفحه الحج والعمرة.</li>
-                                    <li>"فتح المزيد" / "المزيد": لفتح صفحة المزيد (من الصفحة الرئيسية).</li>
+                                    <li>"فتح قائمة التطبيقات" / "قائمة التطبيقات": لفتح صفحة قائمة التطبيقات (من الصفحة الرئيسية).</li>
                                     <li>"فتح الاربعون النوويه" / "الاربعون النوويه": لفتح صفحة الاربعون النوويه.</li>
                                     <li>"رجوع": للعودة الى الصفحه السابقة.</li>
                                     <li>"خروج": لإغلاق التطبيق.</li>
@@ -310,10 +298,34 @@ const VoiceControlPage: React.FC<{ onBack: () => void, onNavigate: (pageId: stri
                             </div>
                         </div>
                     </div>
+
+                    {/* Offline Warning & Settings Section */}
+                    <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex flex-col gap-3">
+                        <div className="flex items-start gap-3">
+                            <WifiOff className="w-6 h-6 text-amber-600 shrink-0 mt-0.5" />
+                            <div>
+                                <h4 className="font-bold text-amber-700 text-sm mb-1">تنبيه هام: يتطلب اتصال بالإنترنت</h4>
+                                <p className="text-xs text-amber-700/80 leading-relaxed">
+                                    خاصية التحكم الصوتي تعتمد على محرك التعرف على الصوت الخاص بجهازك (مثل Google أو Apple)، والذي <strong>لا يعمل إلا عند توفر اتصال بالإنترنت</strong>.
+                                </p>
+                            </div>
+                        </div>
+                        <div className="mt-2 pt-3 border-t border-amber-500/20">
+                            <h4 className="font-bold text-amber-700 text-sm mb-2">لتشغيل التحكم الصوتي بدون إنترنت (أوفلاين):</h4>
+                            <p className="text-xs text-amber-700/80 leading-relaxed mb-3">
+                                يجب التأكد من تحميل حزمة اللغة العربية للتعرف على الصوت في إعدادات نظام أندرويد لضمان عمل التطبيق بكفاءة في وضع الأوفلاين:
+                            </p>
+                            
+                            <ul className="text-xs text-amber-700/80 leading-relaxed list-disc list-inside space-y-1 pr-2">
+                                <li><strong>أجهزة أندرويد (Android):</strong> الإعدادات &gt; الإدارة العامة (أو النظام) &gt; اللغة والإدخال &gt; لوحة المفاتيح التي تظهر على الشاشة &gt; الكتابة بالصوت من Google &gt; التعرف على الصوت بلا اتصال بالإنترنت &gt; تحميل اللغة العربية.</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div className="shrink-0 w-full h-32"></div>
                 </div>
             </main>
 
-            <BottomBar onHomeClick={() => onNavigate('home')} onThemesClick={() => {}} showThemes={false} />
+            <BottomBar onHomeClick={onBack} onThemesClick={() => {}} showThemes={false} />
             <TutorialOverlay tutorialId="voice-control-tutorial" steps={voiceControlTutorialSteps} />
         </div>
     );

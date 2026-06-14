@@ -47,7 +47,7 @@ export const useQuranScrollAndJump = (
         setHighlightedAyahId(`ayah-${s}-${a}`);
         setCurrentAyah({ s, a });
         const key = isLandscapeRef.current ? 'last_pos_h' : 'last_pos_v';
-        localStorage.setItem(key, JSON.stringify({ s, a }));
+        localStorage.setItem(key, JSON.stringify({ s, a })); localStorage.setItem("last_read_ayah_global", JSON.stringify({ s, a, ts: Date.now() }));
     }, [isLandscapeRef, setCurrentAyah, setHighlightedAyahId]);
 
     const jumpToAyah = useCallback((s: number, a: number, instant = false) => {

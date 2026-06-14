@@ -1,12 +1,13 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
+import ThemePageLock from '../components/ThemePageLock';
 import { usePrayerTimes } from '../context/PrayerTimesContext';
 import { Coordinates, CalculationMethod, PrayerTimes as AdhanPrayerTimes } from 'adhan';
 import moment from 'moment-hijri';
 import { formatTime12_clean, applyOffset } from '../utils/prayerTimesUtils';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import { Share, ArrowRight, Download, ChevronRight, ChevronLeft, Calendar, X } from 'lucide-react';
+import { Share2, ArrowRight, Download, ChevronRight, ChevronLeft, Calendar, X, FileText } from 'lucide-react';
 import { Share as CapacitorShare } from '@capacitor/share';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Capacitor } from '@capacitor/core';
@@ -45,7 +46,7 @@ const getCalculationParams = (country: string, code: string) => {
     return params;
 };
 
-export default function MonthlyPrayerTimes({ onBack }: { onBack: () => void }) {
+export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () => void, onNavigate: (id: string) => void }) {
     const { theme, themeKey } = useTheme();
     const { config } = usePrayerTimes();
     const [viewDate, setViewDate] = useState(moment());
@@ -56,10 +57,23 @@ export default function MonthlyPrayerTimes({ onBack }: { onBack: () => void }) {
     const pdfTableRef = useRef<HTMLDivElement>(null);
     const todayRowRef = useRef<HTMLTableRowElement>(null);
 
-    const isBlackAndWhite = themeKey === 'black_and_white';
-    const primaryColor = isBlackAndWhite ? '#FFFFFF' : theme.palette[0];
-    const secondaryColor = isBlackAndWhite ? '#FFFFFF' : theme.palette[1];
-    const topBarTextColor = theme.topBarText || (isBlackAndWhite ? '#FFFFFF' : theme.palette[0]);
+    const isDefaultTheme = themeKey === 'default';
+    const isBlackAndWhite = themeKey === 'deep_black';
+    const primaryColor = isDefaultTheme ? '#000000' : (isBlackAndWhite ? '#FFFFFF' : theme.palette[0]);
+    const secondaryColor = isDefaultTheme ? '#000000' : (isBlackAndWhite ? '#FFFFFF' : theme.palette[1]);
+    const topBarTextColor = isDefaultTheme ? '#000000' : (theme.topBarText || (isBlackAndWhite ? '#FFFFFF' : theme.palette[0]));
+
+    const btnBorderParts = useMemo(() => {
+        if (!theme.btnBorder || theme.btnBorder === 'none') {
+            return { borderWidth: 0, borderStyle: 'none' as const, borderColor: 'transparent' };
+        }
+        const parts = theme.btnBorder.split(' ');
+        return {
+            borderWidth: parts[0] || '1px',
+            borderStyle: (parts[1] || 'solid') as any,
+            borderColor: parts[2] || primaryColor
+        };
+    }, [theme.btnBorder, primaryColor]);
 
     useEffect(() => {
         const interceptor = () => {
@@ -231,8 +245,10 @@ export default function MonthlyPrayerTimes({ onBack }: { onBack: () => void }) {
                             text: text,
                         });
                     }
-                } catch (e) {
-                    await navigator.share({ title: `مواقيت الصلاة`, text: text });
+                } catch (e: any) {
+                    if (e.name !== 'AbortError') {
+                        await navigator.share({ title: `مواقيت الصلاة`, text: text }).catch(() => {});
+                    }
                 }
             } else {
                 alert("المشاركة غير مدعومة في هذا المتصفح");
@@ -288,30 +304,33 @@ export default function MonthlyPrayerTimes({ onBack }: { onBack: () => void }) {
     const getOffset = (key: string) => (config.prayerOffsets[key] || 0) + (config.isSummerTime ? 60 : 0);
 
     return (
-        <div className="h-screen w-screen flex flex-col" style={{ backgroundColor: theme.backgroundColor, color: theme.textColor }}>
+        <div className="h-screen w-screen flex flex-col" style={{ backgroundColor: isDefaultTheme ? '#FFFFFF' : theme.bgColor, color: isDefaultTheme ? '#000000' : theme.textColor }}>
             {/* Top Bar */}
-            <div className="app-top-bar">
-                <div className="app-top-bar__inner relative flex items-center justify-center">
-                    <div className="text-center">
-                        <h1 className="app-top-bar__title text-xl" style={{ color: topBarTextColor }}>
+            <header className="app-top-bar">
+                <div className="app-top-bar__inner">
+                    <div className="relative flex items-center justify-center w-full">
+                        <div className="absolute left-0">
+                            <ThemePageLock />
+                        </div>
+                        <h1 className="app-top-bar__title text-2xl font-kufi">
                             مواقيت الشهر
                         </h1>
-                        <p className="app-top-bar__subtitle" style={{ color: topBarTextColor }}>
-                            {config.location.cityGov}
-                        </p>
                     </div>
+                    <p className="app-top-bar__subtitle font-bold">
+                        {config.location.cityGov}
+                    </p>
                 </div>
-            </div>
+            </header>
 
             {/* Month Navigation */}
-            <div className="flex items-center justify-between px-4 py-3 themed-bg-alt border-b" style={{ borderColor: 'var(--card-border)' }}>
+            <div className={`flex items-center justify-between px-4 py-1.5 ${isDefaultTheme ? 'bg-white' : 'themed-bg-alt'} border-b`} style={{ borderColor: isDefaultTheme ? '#f3f4f6' : 'var(--card-border)' }}>
                 <button onClick={handlePrevMonth} className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
                     <ChevronRight size={24} color={primaryColor} />
                 </button>
-                <div className="flex flex-col items-center gap-1">
+                <div className="flex flex-col items-center gap-0.5">
                     <button 
                         onClick={() => setIsPickerOpen(true)}
-                        className="text-lg font-bold flex items-center gap-2 px-3 py-1 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors" 
+                        className="text-lg font-bold flex items-center gap-2 px-3 py-0.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors" 
                         style={{ color: primaryColor }}
                     >
                         {monthNameDisplay}
@@ -320,15 +339,15 @@ export default function MonthlyPrayerTimes({ onBack }: { onBack: () => void }) {
                     <div className="flex bg-black/5 dark:bg-white/5 p-0.5 rounded-lg">
                         <button 
                             onClick={() => setCalendarType('hijri')}
-                            className={`px-3 py-0.5 text-[10px] rounded-md transition-all ${calendarType === 'hijri' ? 'bg-white dark:bg-gray-800 shadow-sm' : 'opacity-50'}`}
-                            style={{ color: calendarType === 'hijri' ? primaryColor : undefined }}
+                            className={`px-3 py-0.5 text-[10px] rounded-md transition-all ${calendarType === 'hijri' ? 'themed-card shadow-sm' : 'opacity-50'}`}
+                            style={{ color: calendarType === 'hijri' ? (isBlackAndWhite ? '#8B5CF6' : primaryColor) : (isBlackAndWhite ? '#fff' : undefined) }}
                         >
                             هجري
                         </button>
                         <button 
                             onClick={() => setCalendarType('gregorian')}
-                            className={`px-3 py-0.5 text-[10px] rounded-md transition-all ${calendarType === 'gregorian' ? 'bg-white dark:bg-gray-800 shadow-sm' : 'opacity-50'}`}
-                            style={{ color: calendarType === 'gregorian' ? primaryColor : undefined }}
+                            className={`px-3 py-0.5 text-[10px] rounded-md transition-all ${calendarType === 'gregorian' ? 'themed-card shadow-sm' : 'opacity-50'}`}
+                            style={{ color: calendarType === 'gregorian' ? (isBlackAndWhite ? '#8B5CF6' : primaryColor) : (isBlackAndWhite ? '#fff' : undefined) }}
                         >
                             ميلادي
                         </button>
@@ -340,82 +359,95 @@ export default function MonthlyPrayerTimes({ onBack }: { onBack: () => void }) {
             </div>
 
             {/* Table */}
-            <main className="flex-1 overflow-y-auto p-2 pb-24">
-                <div className="max-w-4xl mx-auto overflow-x-auto rounded-xl border shadow-sm" style={{ borderColor: 'var(--card-border)', backgroundColor: 'var(--card-bg)' }}>
-                    <table className="w-full text-center text-[11px] xs:text-xs" dir="rtl">
-                        <thead style={{ backgroundColor: primaryColor, color: isBlackAndWhite ? '#000' : '#fff' }}>
-                            <tr>
-                                <th className="px-1 py-2 border-b border-l border-white/20">اليوم</th>
-                                <th className="px-1 py-2 border-b border-l border-white/20">م/هـ</th>
-                                <th className="px-1 py-2 border-b border-l border-white/20">الفجر</th>
-                                <th className="px-1 py-2 border-b border-l border-white/20">الظهر</th>
-                                <th className="px-1 py-2 border-b border-l border-white/20">العصر</th>
-                                <th className="px-1 py-2 border-b border-l border-white/20">المغرب</th>
-                                <th className="px-1 py-2 border-b border-white/20">العشاء</th>
+            <main className="flex-1 flex flex-col overflow-hidden p-2">
+                <div className="max-w-4xl w-full mx-auto overflow-auto rounded-xl border shadow-sm" style={{ borderColor: isDefaultTheme ? '#e5e7eb' : 'var(--card-border)', backgroundColor: isDefaultTheme ? '#FFFFFF' : 'var(--card-bg)' }}>
+                    <table className="w-full text-center text-[11px] xs:text-xs border-collapse" dir="rtl">
+                        <thead className="z-20" style={{ color: isDefaultTheme ? '#000000' : '#fff' }}>
+                            <tr className={`divide-x ${isDefaultTheme ? 'divide-gray-200' : 'divide-white/20'} divide-x-reverse`}>
+                                <th className={`sticky top-0 px-1 py-2 border-b ${isDefaultTheme ? 'border-gray-200' : 'border-white/20'} z-10`} style={{ backgroundColor: isDefaultTheme ? '#f9fafb' : (isBlackAndWhite ? '#222' : primaryColor) }}>اليوم</th>
+                                <th className={`sticky top-0 px-1 py-2 border-b ${isDefaultTheme ? 'border-gray-200' : 'border-white/20'} z-10`} style={{ backgroundColor: isDefaultTheme ? '#f9fafb' : (isBlackAndWhite ? '#222' : primaryColor) }}>م/هـ</th>
+                                <th className={`sticky top-0 px-1 py-2 border-b ${isDefaultTheme ? 'border-gray-200' : 'border-white/20'} z-10`} style={{ backgroundColor: isDefaultTheme ? '#f9fafb' : (isBlackAndWhite ? '#222' : primaryColor) }}>الفجر</th>
+                                <th className={`sticky top-0 px-1 py-2 border-b ${isDefaultTheme ? 'border-gray-200' : 'border-white/20'} z-10`} style={{ backgroundColor: isDefaultTheme ? '#f9fafb' : (isBlackAndWhite ? '#222' : primaryColor) }}>الظهر</th>
+                                <th className={`sticky top-0 px-1 py-2 border-b ${isDefaultTheme ? 'border-gray-200' : 'border-white/20'} z-10`} style={{ backgroundColor: isDefaultTheme ? '#f9fafb' : (isBlackAndWhite ? '#222' : primaryColor) }}>العصر</th>
+                                <th className={`sticky top-0 px-1 py-2 border-b ${isDefaultTheme ? 'border-gray-200' : 'border-white/20'} z-10`} style={{ backgroundColor: isDefaultTheme ? '#f9fafb' : (isBlackAndWhite ? '#222' : primaryColor) }}>المغرب</th>
+                                <th className={`sticky top-0 px-1 py-2 border-b ${isDefaultTheme ? 'border-gray-200' : 'border-white/20'} z-10`} style={{ backgroundColor: isDefaultTheme ? '#f9fafb' : (isBlackAndWhite ? '#222' : primaryColor) }}>العشاء</th>
                             </tr>
                         </thead>
                         <tbody>
                             {monthData.map((day, idx) => {
                                 const isToday = day.gregorianDateStr === `${new Date().getFullYear()}/${new Date().getMonth() + 1}/${new Date().getDate()}`;
-                                const textColor = isToday ? primaryColor : 'inherit';
+                                const textColor = isToday ? (isDefaultTheme ? '#FFFFFF' : primaryColor) : 'inherit';
                                 return (
                                     <tr 
                                         key={idx} 
                                         ref={isToday ? todayRowRef : null}
-                                        className={`border-b last:border-0 transition-colors ${isToday ? 'bg-primary/10 font-bold' : 'hover:bg-black/5 dark:hover:bg-white/5'}`} 
-                                        style={{ borderColor: 'var(--card-border)', color: textColor }}
+                                        className={`border-b last:border-0 transition-colors ${isToday ? (isDefaultTheme ? 'font-bold' : 'bg-primary/10 font-bold') : 'hover:bg-black/5 dark:hover:bg-white/5'}`} 
+                                        style={{ 
+                                            borderColor: isDefaultTheme ? '#f3f4f6' : 'var(--card-border)', 
+                                            backgroundColor: isToday && isDefaultTheme ? '#000000' : undefined,
+                                            color: isToday && isDefaultTheme ? '#FFFFFF' : textColor 
+                                        }}
                                     >
-                                        <td className="px-1 py-2 border-l" style={{ borderColor: 'var(--card-border)' }}>{day.dayName}</td>
-                                        <td className="px-1 py-2 border-l font-mono text-[9px] xs:text-[10px]" style={{ borderColor: 'var(--card-border)' }} dir="ltr">
-                                            <span style={{ color: isToday ? primaryColor : primaryColor }}>{day.hijriDay}</span>
+                                        <td className="px-1 py-2 border-l" style={{ borderColor: isDefaultTheme ? '#f3f4f6' : 'var(--card-border)' }}>{day.dayName}</td>
+                                        <td className="px-1 py-2 border-l font-mono text-[9px] xs:text-[10px]" style={{ borderColor: isDefaultTheme ? '#f3f4f6' : 'var(--card-border)' }} dir="ltr">
+                                            <span style={{ color: isToday ? (isDefaultTheme ? '#FFFFFF' : primaryColor) : (isDefaultTheme ? '#000000' : primaryColor) }}>{day.hijriDay}</span>
                                             <span className="mx-0.5 opacity-50">/</span>
                                             <span className="opacity-70">{day.gregorianDay}</span>
                                         </td>
-                                        <td className="px-1 py-2 border-l font-mono" style={{ borderColor: 'var(--card-border)' }}>{formatTime12_clean(applyOffset(day.timings.Fajr, getOffset('Fajr')))}</td>
-                                        <td className="px-1 py-2 border-l font-mono" style={{ borderColor: 'var(--card-border)' }}>{formatTime12_clean(applyOffset(day.timings.Dhuhr, getOffset('Dhuhr')))}</td>
-                                        <td className="px-1 py-2 border-l font-mono" style={{ borderColor: 'var(--card-border)' }}>{formatTime12_clean(applyOffset(day.timings.Asr, getOffset('Asr')))}</td>
-                                        <td className="px-1 py-2 border-l font-mono" style={{ borderColor: 'var(--card-border)' }}>{formatTime12_clean(applyOffset(day.timings.Maghrib, getOffset('Maghrib')))}</td>
+                                        <td className="px-1 py-2 border-l font-mono" style={{ borderColor: isDefaultTheme ? '#f3f4f6' : 'var(--card-border)' }}>{formatTime12_clean(applyOffset(day.timings.Fajr, getOffset('Fajr')))}</td>
+                                        <td className="px-1 py-2 border-l font-mono" style={{ borderColor: isDefaultTheme ? '#f3f4f6' : 'var(--card-border)' }}>{formatTime12_clean(applyOffset(day.timings.Dhuhr, getOffset('Dhuhr')))}</td>
+                                        <td className="px-1 py-2 border-l font-mono" style={{ borderColor: isDefaultTheme ? '#f3f4f6' : 'var(--card-border)' }}>{formatTime12_clean(applyOffset(day.timings.Asr, getOffset('Asr')))}</td>
+                                        <td className="px-1 py-2 border-l font-mono" style={{ borderColor: isDefaultTheme ? '#f3f4f6' : 'var(--card-border)' }}>{formatTime12_clean(applyOffset(day.timings.Maghrib, getOffset('Maghrib')))}</td>
                                         <td className="px-1 py-2 font-mono">{formatTime12_clean(applyOffset(day.timings.Isha, getOffset('Isha')))}</td>
                                     </tr>
                                 );
                             })}
                         </tbody>
                     </table>
+                    <div className="h-24 w-full shrink-0"></div>
                 </div>
             </main>
 
-            <nav className="app-bottom-bar">
-                <div className="app-bottom-bar__inner !justify-between gap-3">
-                    <button 
-                        onClick={handleShare}
-                        disabled={isSharing}
-                        className="bar-button btn-3d-effect !flex-1 !py-2.5 !px-2 !text-sm !rounded-xl shadow-lg"
-                        style={{ background: primaryColor, color: 'white', fontFamily: theme.font, border: theme.btnBorder || 'none' }}
-                    >
-                        <Share size={18} />
-                        <span className="hidden xs:inline">{isSharing ? '...' : 'مشاركة'}</span>
-                    </button>
-
-                    <button 
-                        onClick={onBack} 
-                        className="bar-button btn-3d-effect !flex-[2] max-w-[160px] py-2.5 px-4 rounded-xl shadow-lg"
-                        style={{ background: '#8B5CF6', color: 'white', fontFamily: theme.font, border: theme.btnBorder || 'none' }}
-                    >
-                        <span className="text-xl">🏠</span>
-                        <span className="hidden sm:inline">الرئيسية</span>
-                    </button>
-
+            <BottomBar 
+                onHomeClick={onBack} 
+                onThemesClick={() => {}} 
+                showThemes={false} 
+                leftButton={
                     <button 
                         onClick={handleExportPDF}
                         disabled={isExporting}
-                        className="bar-button btn-3d-effect !flex-1 !py-2.5 !px-2 !text-sm !rounded-xl shadow-lg"
-                        style={{ background: primaryColor, color: 'white', fontFamily: theme.font, border: theme.btnBorder || 'none' }}
+                        className="bar-button btn-3d-effect min-w-[44px] h-[44px] flex items-center justify-center gap-2 px-3 rounded-xl shadow-md transition-all active:scale-95"
+                        style={{ 
+                            background: isDefaultTheme ? '#FFFFFF' : primaryColor, 
+                            color: isDefaultTheme ? '#000000' : (isBlackAndWhite ? '#000' : 'white'), 
+                            fontFamily: theme.font,
+                            borderWidth: isDefaultTheme ? '1px' : btnBorderParts.borderWidth,
+                            borderStyle: isDefaultTheme ? 'solid' : btnBorderParts.borderStyle,
+                            borderColor: isDefaultTheme ? 'rgba(0,0,0,0.1)' : btnBorderParts.borderColor
+                        }}
                     >
-                        <Download size={18} />
-                        <span className="hidden xs:inline">{isExporting ? '...' : 'PDF'}</span>
+                        <span className="font-bold text-sm" style={{ color: isDefaultTheme ? '#000000' : 'inherit' }}>{isExporting ? '...' : 'PDF'}</span>
                     </button>
-                </div>
-            </nav>
+                }
+                rightButton={
+                    <button 
+                        onClick={handleShare}
+                        disabled={isSharing}
+                        className="bar-button btn-3d-effect min-w-[44px] h-[44px] flex items-center justify-center gap-2 px-3 rounded-xl shadow-md transition-all active:scale-95"
+                        style={{ 
+                            background: isDefaultTheme ? '#FFFFFF' : primaryColor, 
+                            color: isDefaultTheme ? '#000000' : (isBlackAndWhite ? '#000' : 'white'), 
+                            fontFamily: theme.font,
+                            borderWidth: isDefaultTheme ? '1px' : btnBorderParts.borderWidth,
+                            borderStyle: isDefaultTheme ? 'solid' : btnBorderParts.borderStyle,
+                            borderColor: isDefaultTheme ? 'rgba(0,0,0,0.1)' : btnBorderParts.borderColor
+                        }}
+                    >
+                        <Share2 size={18} color={isDefaultTheme ? '#000000' : 'currentColor'} />
+                        <span className="hidden xs:inline" style={{ color: isDefaultTheme ? '#000000' : 'inherit' }}>{isSharing ? '...' : 'مشاركة'}</span>
+                    </button>
+                }
+            />
 
             {/* Hidden Table for PDF Export */}
             <div style={{ position: 'fixed', top: '-10000px', left: '-10000px', zIndex: -1000 }}>
@@ -428,27 +460,27 @@ export default function MonthlyPrayerTimes({ onBack }: { onBack: () => void }) {
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'center', fontSize: '14px' }}>
                     <thead>
                         <tr style={{ backgroundColor: primaryColor, color: '#fff' }}>
-                            <th style={{ padding: '10px', border: '1px solid #ddd' }}>اليوم</th>
-                            <th style={{ padding: '10px', border: '1px solid #ddd' }}>التاريخ الهجري</th>
-                            <th style={{ padding: '10px', border: '1px solid #ddd' }}>التاريخ الميلادي</th>
-                            <th style={{ padding: '10px', border: '1px solid #ddd' }}>الفجر</th>
-                            <th style={{ padding: '10px', border: '1px solid #ddd' }}>الظهر</th>
-                            <th style={{ padding: '10px', border: '1px solid #ddd' }}>العصر</th>
-                            <th style={{ padding: '10px', border: '1px solid #ddd' }}>المغرب</th>
-                            <th style={{ padding: '10px', border: '1px solid #ddd' }}>العشاء</th>
+                            <th style={{ padding: '10px', borderWidth: '1px', borderStyle: 'solid', borderColor: '#ddd' }}>اليوم</th>
+                            <th style={{ padding: '10px', borderWidth: '1px', borderStyle: 'solid', borderColor: '#ddd' }}>التاريخ الهجري</th>
+                            <th style={{ padding: '10px', borderWidth: '1px', borderStyle: 'solid', borderColor: '#ddd' }}>التاريخ الميلادي</th>
+                            <th style={{ padding: '10px', borderWidth: '1px', borderStyle: 'solid', borderColor: '#ddd' }}>الفجر</th>
+                            <th style={{ padding: '10px', borderWidth: '1px', borderStyle: 'solid', borderColor: '#ddd' }}>الظهر</th>
+                            <th style={{ padding: '10px', borderWidth: '1px', borderStyle: 'solid', borderColor: '#ddd' }}>العصر</th>
+                            <th style={{ padding: '10px', borderWidth: '1px', borderStyle: 'solid', borderColor: '#ddd' }}>المغرب</th>
+                            <th style={{ padding: '10px', borderWidth: '1px', borderStyle: 'solid', borderColor: '#ddd' }}>العشاء</th>
                         </tr>
                     </thead>
                     <tbody>
                         {monthData.map((day, idx) => (
                             <tr key={idx}>
-                                <td style={{ padding: '8px', border: '1px solid #ddd' }}>{day.dayName}</td>
-                                <td style={{ padding: '8px', border: '1px solid #ddd', direction: 'ltr' }}>{day.hijriDateStr}</td>
-                                <td style={{ padding: '8px', border: '1px solid #ddd', direction: 'ltr' }}>{day.gregorianDateStr}</td>
-                                <td style={{ padding: '8px', border: '1px solid #ddd', direction: 'ltr' }}>{formatTime12_clean(applyOffset(day.timings.Fajr, getOffset('Fajr')))}</td>
-                                <td style={{ padding: '8px', border: '1px solid #ddd', direction: 'ltr' }}>{formatTime12_clean(applyOffset(day.timings.Dhuhr, getOffset('Dhuhr')))}</td>
-                                <td style={{ padding: '8px', border: '1px solid #ddd', direction: 'ltr' }}>{formatTime12_clean(applyOffset(day.timings.Asr, getOffset('Asr')))}</td>
-                                <td style={{ padding: '8px', border: '1px solid #ddd', direction: 'ltr' }}>{formatTime12_clean(applyOffset(day.timings.Maghrib, getOffset('Maghrib')))}</td>
-                                <td style={{ padding: '8px', border: '1px solid #ddd', direction: 'ltr' }}>{formatTime12_clean(applyOffset(day.timings.Isha, getOffset('Isha')))}</td>
+                                <td style={{ padding: '8px', borderWidth: '1px', borderStyle: 'solid', borderColor: '#ddd' }}>{day.dayName}</td>
+                                <td style={{ padding: '8px', borderWidth: '1px', borderStyle: 'solid', borderColor: '#ddd', direction: 'ltr' }}>{day.hijriDateStr}</td>
+                                <td style={{ padding: '8px', borderWidth: '1px', borderStyle: 'solid', borderColor: '#ddd', direction: 'ltr' }}>{day.gregorianDateStr}</td>
+                                <td style={{ padding: '8px', borderWidth: '1px', borderStyle: 'solid', borderColor: '#ddd', direction: 'ltr' }}>{formatTime12_clean(applyOffset(day.timings.Fajr, getOffset('Fajr')))}</td>
+                                <td style={{ padding: '8px', borderWidth: '1px', borderStyle: 'solid', borderColor: '#ddd', direction: 'ltr' }}>{formatTime12_clean(applyOffset(day.timings.Dhuhr, getOffset('Dhuhr')))}</td>
+                                <td style={{ padding: '8px', borderWidth: '1px', borderStyle: 'solid', borderColor: '#ddd', direction: 'ltr' }}>{formatTime12_clean(applyOffset(day.timings.Asr, getOffset('Asr')))}</td>
+                                <td style={{ padding: '8px', borderWidth: '1px', borderStyle: 'solid', borderColor: '#ddd', direction: 'ltr' }}>{formatTime12_clean(applyOffset(day.timings.Maghrib, getOffset('Maghrib')))}</td>
+                                <td style={{ padding: '8px', borderWidth: '1px', borderStyle: 'solid', borderColor: '#ddd', direction: 'ltr' }}>{formatTime12_clean(applyOffset(day.timings.Isha, getOffset('Isha')))}</td>
                             </tr>
                         ))}
                     </tbody>

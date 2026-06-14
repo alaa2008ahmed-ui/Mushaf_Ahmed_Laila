@@ -9,11 +9,21 @@ export const toEnglishNumerals = (str: string | null | undefined) => {
     return str.toString().replace(/[٠-٩]/g, m => map[m]);
 };
 
+let audioCtx: AudioContext | any = null;
+
 export const playSound = (freq = 880, dur = 0.05) => {
     try {
-        const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-        if (!AudioContext) return;
-        const audioCtx = new AudioContext();
+        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+        if (!AudioContextClass) return;
+        
+        if (!audioCtx) {
+            audioCtx = new AudioContextClass();
+        }
+
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+
         const oscillator = audioCtx.createOscillator();
         const gainNode = audioCtx.createGain();
         gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);

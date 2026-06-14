@@ -15,10 +15,19 @@ export interface Theme {
     btnBg?: string;
     btnText?: string;
     accent?: string;
+    accentText?: string;
     highlightText?: string;
     cardBg?: string;
+    cardText?: string;
     cardBorder?: string;
     isGlass?: boolean;
+    modalBg?: string;
+    modalText?: string;
+    sajdah?: string;
+    bg?: string;
+    text?: string;
+    headerBg?: string;
+    headerText?: string;
 }
 
 export const presetThemes: { [key: string]: Theme } = {
@@ -36,32 +45,27 @@ export const presetThemes: { [key: string]: Theme } = {
         btnBg: "#FFFFFF",
         btnText: "#FFFFFF",
         btnBorder: "1px solid #000000",
-        accent: "#000000"
+        accent: "#059669"
     },
     deep_black: {
-        name: "(اسود)",
+        name: "اسود",
         bgColor: "#000000",
         textColor: "#FFFFFF",
         font: "'Cairo', sans-serif",
-        palette: ["#000000", "#000000", "#333333"],
+        palette: ["#FFFFFF", "#CCCCCC", "#000000"],
         barBg: "#000000",
-        barBorder: "1px solid #FFFFFF",
-        btnBorder: "1px solid #FFFFFF"
-    },
-    black: {
-        name: "اسود",
-        bgColor: "#FFFFFF",
-        textColor: "#000000",
-        font: "'Cairo', sans-serif",
-        palette: ["#000000", "#000000", "#000000"],
-        barBg: "#FFFFFF",
-        barBorder: "1px solid #000000",
-        topBarBg: "#FFFFFF",
-        topBarText: "#000000",
+        barBorder: "1px solid #333333",
+        btnBorder: "1px solid #FFFFFF",
+        accent: "#FFFFFF",
+        accentText: "#000000",
+        highlightText: "#FFFFFF",
+        cardBg: "#111111",
+        cardBorder: "#333333",
         btnBg: "#FFFFFF",
         btnText: "#000000",
-        btnBorder: "1px solid #000000",
-        accent: "#000000"
+        modalBg: "#000000",
+        modalText: "#FFFFFF",
+        sajdah: "#FFFFFF"
     },
     fajr_light: {
         name: "نور الفجر",
@@ -91,13 +95,59 @@ export const presetThemes: { [key: string]: Theme } = {
         barBorder: "1px solid #D9F99D"
     },
     kaaba_kiswa: {
-        name: "كسوة الكعبة",
-        bgColor: "#000000",
-        textColor: "#FCD34D",
+        name: "صفاء الروح",
+        bgColor: "#F9FAFB",
+        textColor: "#111827",
         font: "'Amiri', serif",
-        palette: ["#F59E0B", "#D97706", "#FFFFFF"],
-        barBg: "#111111",
-        barBorder: "1px solid #F59E0B"
+        palette: ["#059669", "#D97706", "#1F2937"],
+        barBg: "#FFFFFF",
+        barBorder: "1px solid #E5E7EB",
+        accent: "#059669",
+        cardBg: "#FFFFFF",
+        cardBorder: "#F3F4F6",
+        modalBg: "#FFFFFF",
+        modalText: "#111827"
+    },
+    islamic_heritage: {
+        name: "أصالة التراث",
+        bgColor: "#FDFCF0",
+        textColor: "#45322E",
+        font: "'Amiri', serif",
+        palette: ["#8B4513", "#556B2F", "#A0522D"],
+        barBg: "#F5F5DC",
+        barBorder: "1px solid #8B4513",
+        accent: "#8B4513",
+        cardBg: "#FFFFFF",
+        cardBorder: "#F5F5DC",
+        modalBg: "#FDFCF0",
+        modalText: "#45322E"
+    },
+    evening_tranquility: {
+        name: "سكينة المساء",
+        bgColor: "#0F172A",
+        textColor: "#E2E8F0",
+        font: "'Amiri', serif",
+        palette: ["#3B82F6", "#FCD34D", "#1E293B"],
+        barBg: "#1E293B",
+        barBorder: "1px solid #3B82F6",
+        accent: "#FCD34D",
+        accentText: "#000000",
+        cardBg: "#1E293B",
+        cardBorder: "#334155",
+        modalBg: "#0F172A",
+        modalText: "#E2E8F0"
+    },
+    morning_dew: {
+        name: "ندى الصباح",
+        bgColor: "#ECFDF5",
+        textColor: "#064E3B",
+        font: "'Cairo', sans-serif",
+        palette: ["#10B981", "#34D399", "#059669"],
+        barBg: "#D1FAE5",
+        barBorder: "1px solid #10B981",
+        accent: "#10B981",
+        cardBg: "#FFFFFF",
+        cardBorder: "#D1FAE5"
     },
     madinah_rose: {
         name: "ورد المدينة",
@@ -151,7 +201,8 @@ export const presetThemes: { [key: string]: Theme } = {
         font: "'Cairo', sans-serif",
         palette: ["#F97316", "#FB923C", "#EA580C"],
         barBg: "#FFEDD5",
-        barBorder: "1px solid #FED7AA"
+        barBorder: "1px solid #FED7AA",
+        accentText: "#000000"
     },
     electric_violet: {
         name: "بنفسجي كهربائي",
@@ -250,7 +301,9 @@ export const presetThemes: { [key: string]: Theme } = {
         font: "'Cairo', sans-serif",
         palette: ["#0284C7", "#0EA5E9", "#38BDF8"],
         barBg: "#E0F2FE",
-        barBorder: "1px solid #38BDF8"
+        barBorder: "1px solid #38BDF8",
+        btnText: "#0369A1",
+        isGlass: true
     },
     frosted_emerald: {
         name: "زمرد زجاجي",
@@ -259,7 +312,9 @@ export const presetThemes: { [key: string]: Theme } = {
         font: "'Cairo', sans-serif",
         palette: ["#10B981", "#34D399", "#064E3B"],
         barBg: "#D1FAE5",
-        barBorder: "1px solid #10B981"
+        barBorder: "1px solid #10B981",
+        btnText: "#065F46",
+        isGlass: true
     },
     midnight_glass: {
         name: "زجاج ليلي",
@@ -268,6 +323,8 @@ export const presetThemes: { [key: string]: Theme } = {
         font: "'Cairo', sans-serif",
         palette: ["#3B82F6", "#60A5FA", "#0F172A"],
         barBg: "#1E293B",
-        barBorder: "1px solid #3B82F6"
+        barBorder: "1px solid #3B82F6",
+        btnText: "#F1F5F9",
+        isGlass: true
     }
 };

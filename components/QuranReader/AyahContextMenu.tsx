@@ -34,7 +34,7 @@ const AyahContextMenu: React.FC<AyahContextMenuProps> = ({
             setAyahContextMenu((p: any) => ({...p, isOpen: false}));
         }}>
             <div 
-                className={`ayah-context-menu w-full ${isLandscape ? 'max-w-[280px] max-h-[90vh]' : 'max-w-[320px] max-h-[70vh]'} bg-white rounded-2xl shadow-2xl transition-all duration-300 flex flex-col pointer-events-auto overflow-hidden animate-modal-enter`} 
+                className={`ayah-context-menu w-full ${isLandscape ? 'max-w-[300px] max-h-[90vh]' : 'max-w-[320px] max-h-[70vh]'} bg-white rounded-2xl shadow-2xl transition-all duration-300 flex flex-col pointer-events-auto overflow-hidden animate-modal-enter`} 
                 style={{ 
                     fontFamily: currentTheme.font,
                     border: `2px solid ${currentTheme.barBorder || currentTheme.accent || '#000000'}`

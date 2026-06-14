@@ -26,9 +26,6 @@ const FontSelectModal: FC<{
                         </button>
                     ))}
                 </div>
-                <div className="p-3 border-t themed-card-bg rounded-b-2xl">
-                    <button onClick={onClose} className="w-full py-2 rounded-xl font-bold theme-btn-bg">إغلاق</button>
-                </div>
             </div>
         </div>
     );

@@ -9,6 +9,7 @@ import PrayerCard from '../components/PrayerTimes/PrayerCard';
 import PrayerTimesHeader from '../components/PrayerTimes/PrayerTimesHeader';
 import PrayerTimesDateSearch from '../components/PrayerTimes/PrayerTimesDateSearch';
 import NextPrayerCard from '../components/PrayerTimes/NextPrayerCard';
+import NotificationSettingsModal from '../components/QuranReader/NotificationSettingsModal';
 import TutorialOverlay, { TutorialStep } from '../components/Tutorial/TutorialOverlay';
 import { MapPin, Search, Clock, Bell, Calendar, Palette } from 'lucide-react';
 import {
@@ -27,12 +28,15 @@ function PrayerTimes({ onBack, onNavigate }) {
     const { theme, themeKey } = useTheme();
     const { times, dates, nextPrayer, countdown, config, refreshLocation, manualSearch, updateConfig } = usePrayerTimes();
 
-    const isBlackAndWhite = themeKey === 'black_and_white';
-    const primaryColor = isBlackAndWhite ? '#FFFFFF' : theme.palette[0];
-    const secondaryColor = isBlackAndWhite ? '#FFFFFF' : theme.palette[1];
-    const topBarTextColor = theme.topBarText || (isBlackAndWhite ? '#FFFFFF' : theme.palette[0]);
+    const isDefaultTheme = themeKey === 'default';
+    const isBlackAndWhite = themeKey === 'deep_black';
+    const isBlackTheme = theme.bgColor === '#000000';
+    const primaryColor = isBlackTheme ? '#FFFFFF' : (isDefaultTheme ? '#000000' : (isBlackAndWhite ? '#FFFFFF' : theme.palette[0]));
+    const secondaryColor = isBlackTheme ? '#FFFFFF' : (isDefaultTheme ? '#000000' : (isBlackAndWhite ? '#FFFFFF' : theme.palette[1]));
+    const topBarTextColor = isBlackTheme ? '#FFFFFF' : (isDefaultTheme ? '#000000' : (theme.topBarText || (isBlackAndWhite ? '#FFFFFF' : theme.palette[0])));
 
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isNotifModalOpen, setIsNotifModalOpen] = useState(false);
     const [currentEditingKey, setCurrentEditingKey] = useState(null);
     const [tempOffset, setTempOffset] = useState(0);
     const [tempIqama, setTempIqama] = useState(0);
@@ -40,57 +44,59 @@ function PrayerTimes({ onBack, onNavigate }) {
     const searchIconRef = useRef(null);
     const [toastMessage, setToastMessage] = useState('');
     
+    const isAudioMuted = config.audioMutedUntil && Date.now() < config.audioMutedUntil;
+    
     const supportsDST = checkSupportsDST(config.location.combinedCode, config.location.fullCountry);
     const isSummerTimeActive = config.isSummerTime && supportsDST;
 
     const prayerTutorialSteps: TutorialStep[] = [
         {
             id: 'location-refresh',
-            text: 'اضغط هنا لتحديث موقعك الحالي والحصول على مواقيت دقيقة.',
-            position: { top: '60px', left: '20px' },
+            title: 'تحديد الموقع الجغرافي',
+            text: 'اضغط هنا لتحديث موقعك الحالي عبر الـ GPS. هذا يضمن لك الحصول على مواقيت صلاة دقيقة جداً متوافقة مع مكان تواجدك الفعلي، وهو أمر حيوي خاصة عند السفر أو التنقل بين المدن.',
             selector: '#location-refresh-btn',
-            arrow: 'up',
             icon: <MapPin className="w-8 h-8 text-white" />
         },
         {
             id: 'date-search',
-            text: 'يمكنك البحث عن مواقيت الصلاة لأي مدينة أو محافظة أخرى من هنا.',
-            position: { top: '150px' },
+            title: 'البحث العالمي عن المواقيت',
+            text: 'هل تود معرفة مواقيت الصلاة في مدينة أخرى؟ استخدم شريط البحث الذكي هذا للبحث عن أي مدينة حول العالم. سيعرض لك التطبيق المواقيت الخاصة بها فوراً مع إمكانية حفظها كموقع افتراضي.',
             selector: '#search-input-container',
-            arrow: 'up',
             icon: <Search className="w-8 h-8 text-white" />
         },
         {
             id: 'next-prayer',
-            text: 'هنا يظهر الوقت المتبقي للصلاة القادمة.',
-            position: { top: '250px' },
-            selector: '#next-prayer-card',
-            arrow: 'up',
+            title: 'عداد الصلاة',
+            text: 'هذا القسم هو رفيقك لتنظيم وقتك؛ فهو يعرض اسم الصلاة القادمة مع عد تنازلي دقيق بالثواني.',
+            selector: '#next-prayer-countdown-container',
             icon: <Clock className="w-8 h-8 text-white" />
         },
         {
             id: 'night-times',
-            text: 'يمكنك تفعيل أو تعطيل إشعارات أوقات الليل (أول الليل، منتصف الليل، الثلث الأخير) من هنا.',
-            position: { top: '250px' },
+            title: 'أوقات قيام الليل والتهجد',
+            text: 'للمهتمين بقيام الليل، يوفر التطبيق حساباً دقيقاً لمنتصف الليل والثلث الأخير (وقت النزول الإلهي). يمكنك تفعيل تنبيهات خاصة لهذه الأوقات لتعينك على صلاة التهجد والاستغفار بالأسحار.',
             selector: '#night-times-container',
-            arrow: 'up',
             icon: <Bell className="w-8 h-8 text-white" />
         },
         {
             id: 'prayer-settings',
-            text: 'الدائرة العلوية لتفعيل أو كتم صوت الأذان، والزر بالأسفل لتعديل التنبيهات، صوت الأذان، أو وقت الإقامة.',
-            position: { top: '450px' },
+            title: 'التحكم في الأذان',
+            text: 'لكل صلاة إعدادات مستقلة؛ يمكنك تفعيل الأذان الكامل، أو التنبيه فقط، أو كتم الصوت. كما يمكنك الضغط على "تخصيص" لاختيار صوت المؤذن المفضل لديك (مثل الحرم المكي أو المدني) وضبط دقائق التنبيه قبل الصلاة.',
             selector: '#prayer-actions-container',
-            arrow: 'up',
             icon: <Bell className="w-8 h-8 text-white" />
         },
         {
             id: 'monthly-times',
-            text: 'عرض جدول مواقيت الصلاة للشهر الحالي، كما يمكنك عرض الشهور السابقة واللاحقة.',
-            position: { top: '150px' },
+            title: 'إمساكية الشهر الكاملة',
+            text: 'اضغط هنا لعرض جدول كامل لمواقيت الصلاة طوال الشهر الحالي. هذا يساعدك في التخطيط لعباداتك، ومعرفة مواعيد السحور والإفطار في أيام الصيام.',
             selector: '#monthly-times-btn',
-            arrow: 'up',
             icon: <Calendar className="w-8 h-8 text-white" />
+        },
+        {
+            id: 'android-widget',
+            title: 'تطبيق مصغر لشاشة الهاتف',
+            text: 'الآن أصبح بإمكانك وضع تطبيق مصغر (Widget) لمواقيت الصلاة على شاشة هاتفك الرئيسية، لمعرفة مواقيت الصلاة مباشرة ومتابعة ميعاد الصلاة القادمة والعد التنازلي لها دون الحاجة لفتح التطبيق.',
+            icon: <Clock className="w-8 h-8 text-white" />
         }
     ];
     
@@ -160,6 +166,10 @@ function PrayerTimes({ onBack, onNavigate }) {
     };
 
     const togglePrayerSound = (key) => {
+        if (isAudioMuted) {
+            showToast("التنبيهات الصوتية متوقفة حالياً. قم بتفعيلها أولاً.");
+            return;
+        }
         updateConfig({
             mutedPrayers: {...config.mutedPrayers, [key]: !config.mutedPrayers[key] }
         });
@@ -221,27 +231,74 @@ function PrayerTimes({ onBack, onNavigate }) {
     };
 
     return (
-        <div className="h-screen w-screen flex flex-col" style={{ backgroundColor: 'transparent', color: theme.textColor }}>
+        <div className="h-screen w-screen flex flex-col" style={{ backgroundColor: isDefaultTheme ? '#FFFFFF' : 'transparent', color: isDefaultTheme ? '#000000' : theme.textColor }}>
             <PrayerTimesHeader 
                 handleRefreshLocation={handleRefreshLocation}
+                onOpenNotifications={() => setIsNotifModalOpen(true)}
                 cityGov={config.location.cityGov}
                 fullCountry={config.location.fullCountry}
                 combinedCode={config.location.combinedCode}
                 topBarTextColor={topBarTextColor}
             />
 
-            <main className="flex-1 overflow-y-auto hide-scrollbar p-4 pb-24">
-                <div className="max-w-md mx-auto">
-                    <PrayerTimesDateSearch 
-                        dates={dates}
-                        searchInput={searchInput}
-                        setSearchInput={setSearchInput}
-                        handleManualSearch={handleManualSearch}
-                        searchIconRef={searchIconRef}
-                        primaryColor={primaryColor}
-                        secondaryColor={secondaryColor}
-                        onNavigateToMonthly={() => onNavigate('monthly-prayer-times')}
-                    />
+            <main className="flex-1 overflow-y-auto hide-scrollbar px-2 pb-1">
+                <div className="max-w-md mx-auto flex flex-col h-full">
+                    <div className={`themed-card ${isDefaultTheme ? 'bg-white border-gray-200' : 'bg-black/5 dark:bg-white/5 border-black/5 dark:border-white/5'} border rounded-xl p-2 mb-1.5 shadow-sm`}>
+                        <div className="flex gap-2 mb-1.5">
+                            <button
+                                onClick={() => {
+                                    const lat = config.location?.lat;
+                                    const lng = config.location?.lng;
+                                    let url = 'https://www.google.com/maps/search/?api=1&query=مسجد';
+                                    if (lat && lng) {
+                                        url = `https://www.google.com/maps/search/مسجد/@${lat},${lng},15z`;
+                                    }
+                                    window.open(url, '_blank');
+                                }}
+                                className={`${isDefaultTheme ? 'bg-white' : 'themed-card'} flex-1 rounded-xl p-3 flex items-center justify-center gap-1.5 shadow-sm font-bold text-[13px] active:scale-95 transition-all hover:bg-black/5 dark:hover:bg-white/5`}
+                                style={{ color: primaryColor, border: isDefaultTheme ? '1px solid #f3f4f6' : undefined }}
+                            >
+                                <MapPin size={18} className="shrink-0" />
+                                <span className="truncate whitespace-nowrap">البحث عن المساجد</span>
+                            </button>
+                             <button
+                                onClick={() => onNavigate('monthly-prayer-times')}
+                                id="monthly-times-btn"
+                                className={`${isDefaultTheme ? 'bg-white' : 'themed-card'} flex-1 rounded-xl p-3 flex items-center justify-center gap-1.5 shadow-sm font-bold text-[13px] active:scale-95 transition-all hover:bg-black/5 dark:hover:bg-white/5`}
+                                style={{ color: secondaryColor, border: isDefaultTheme ? '1px solid #f3f4f6' : undefined }}
+                            >
+                                <Calendar size={18} className="shrink-0" />
+                                <span className="truncate whitespace-nowrap">المواقيت الشهرية</span>
+                            </button>
+                        </div>
+
+                        <PrayerTimesDateSearch 
+                            searchInput={searchInput}
+                            setSearchInput={setSearchInput}
+                            handleManualSearch={handleManualSearch}
+                            searchIconRef={searchIconRef}
+                            primaryColor={primaryColor}
+                            secondaryColor={secondaryColor}
+                        />
+                    </div>
+                    
+                    {isAudioMuted && (
+                        <div className="bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-3 mb-4 flex items-center justify-between">
+                            <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
+                                <Bell className="w-5 h-5" />
+                                <div className="flex flex-col">
+                                    <span className="text-sm font-bold">التنبيهات الصوتية متوقفة</span>
+                                    <span className="text-xs opacity-80">حتى {new Date(config.audioMutedUntil!).toLocaleDateString('ar-SA')}</span>
+                                </div>
+                            </div>
+                            <button 
+                                onClick={() => updateConfig({ audioMutedUntil: undefined })}
+                                className="text-xs bg-red-200 dark:bg-red-800 text-red-700 dark:text-red-300 px-3 py-1.5 rounded-lg font-bold"
+                            >
+                                تفعيل
+                            </button>
+                        </div>
+                    )}
                     
                     {(() => {
                         const maghribOffset = (config.prayerOffsets.Maghrib || 0) + (isSummerTimeActive ? 60 : 0);
@@ -256,6 +313,8 @@ function PrayerTimes({ onBack, onNavigate }) {
                                 times={times}
                                 countdown={countdown}
                                 isBlackAndWhite={isBlackAndWhite}
+                                isDefaultTheme={isDefaultTheme}
+                                isBlackTheme={isBlackTheme}
                                 themePalette0={theme.palette[0]}
                                 themePalette1={theme.palette[1]}
                                 formatTime12={formatTime12}
@@ -276,27 +335,29 @@ function PrayerTimes({ onBack, onNavigate }) {
                         );
                     })()}
 
-                    <div id="prayer-list" className="space-y-3 mt-5">
+                    <div id="prayer-list" className="grid grid-cols-2 gap-2 mt-2">
                         {['Fajr', 'Sunrise', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'].map((key, idx) => {
                              const totalOffset = (config.prayerOffsets[key] || 0) + (isSummerTimeActive ? 60 : 0);
                              const displayTimeStr = applyOffset(times[key], totalOffset);
                              const iqamaTime = applyOffset(displayTimeStr, config.iqamaOffsets[key]);
-                             const isMuted = config.mutedPrayers[key];
+                             const isMuted = config.mutedPrayers[key] || isAudioMuted;
                              
                             return (
-                                <PrayerCard
-                                    key={key}
-                                    prayerKey={key}
-                                    idx={idx}
-                                    displayTimeStr={displayTimeStr}
-                                    iqamaTime={iqamaTime}
-                                    isMuted={isMuted}
-                                    isNextPrayer={nextPrayer?.key === key}
-                                    prayerNameAr={prayerNamesAr[key]}
-                                    primaryColor={primaryColor}
-                                    secondaryColor={secondaryColor}
-                                    isBlackAndWhite={isBlackAndWhite}
-                                    themePalette1={theme.palette[1]}
+                                    <PrayerCard
+                                        key={key}
+                                        prayerKey={key}
+                                        idx={idx}
+                                        displayTimeStr={displayTimeStr}
+                                        iqamaTime={iqamaTime}
+                                        isMuted={isMuted}
+                                        isNextPrayer={nextPrayer?.key === key}
+                                        prayerNameAr={prayerNamesAr[key]}
+                                        primaryColor={primaryColor}
+                                        secondaryColor={secondaryColor}
+                                        isBlackAndWhite={isBlackAndWhite}
+                                        isDefaultTheme={isDefaultTheme}
+                                        isBlackTheme={isBlackTheme}
+                                        themePalette1={theme.palette[1]}
                                     togglePrayerSound={togglePrayerSound}
                                     openSettings={openSettings}
                                     formatTime12={formatTime12}
@@ -309,10 +370,11 @@ function PrayerTimes({ onBack, onNavigate }) {
                         })}
                     </div>
                     
-                    <p className="text-center text-sm mt-6 opacity-70" style={{ color: secondaryColor }}>
+                    <p className="text-center text-sm mt-3 opacity-70" style={{ color: secondaryColor }}>
                         (يجب تفعيل الموقع للهاتف لحساب الموقع بدقه)
                     </p>
                 </div>
+                <div className="w-full h-12 shrink-0"></div>
             </main>
 
             <PrayerTimesSettingsModal 
@@ -337,6 +399,16 @@ function PrayerTimes({ onBack, onNavigate }) {
                 saveUserConfig={saveUserConfig}
                 isSummerTime={isSummerTimeActive}
             />
+
+            {isNotifModalOpen && (
+                <NotificationSettingsModal 
+                    onClose={() => setIsNotifModalOpen(false)}
+                    showToast={showToast}
+                    isLandscape={false}
+                    modeSuffix="_prayer_times"
+                    initialTab="phone"
+                />
+            )}
 
             {toastMessage && (
                 <div className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg z-[100]">

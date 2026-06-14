@@ -52,7 +52,11 @@ export const useQuranAudio = (settings: any, quranData: any, showToast: (msg: st
             if (!audioCacheRef.current[cacheKey]) {
                 const surahStr = String(s).padStart(3, '0');
                 const ayahStr = String(ayahNum).padStart(3, '0');
-                const audioUrl = `https://everyayah.com/data/${settings.reader}/${surahStr}${ayahStr}.mp3`;
+                let audioUrl = `https://everyayah.com/data/${settings.reader}/${surahStr}${ayahStr}.mp3`;
+                if (/^[a-z]{2,3}\./.test(settings.reader)) {
+                    const globalAyahNum = surah.ayahs[ayahNum - 1].number;
+                    audioUrl = `https://cdn.islamic.network/quran/audio/128/${settings.reader}/${globalAyahNum}.mp3`;
+                }
                 
                 try {
                     if ('caches' in window) {
@@ -90,7 +94,11 @@ export const useQuranAudio = (settings: any, quranData: any, showToast: (msg: st
         } else {
             const surahStr = String(s).padStart(3, '0');
             const ayahStr = String(a).padStart(3, '0');
-            const audioUrl = `https://everyayah.com/data/${settings.reader}/${surahStr}${ayahStr}.mp3`;
+            let audioUrl = `https://everyayah.com/data/${settings.reader}/${surahStr}${ayahStr}.mp3`;
+            if (/^[a-z]{2,3}\./.test(settings.reader) && quranData) {
+                const globalAyahNum = quranData.surahs[s - 1].ayahs[a - 1].number;
+                audioUrl = `https://cdn.islamic.network/quran/audio/128/${settings.reader}/${globalAyahNum}.mp3`;
+            }
             let audioSrc = audioUrl;
 
             try {

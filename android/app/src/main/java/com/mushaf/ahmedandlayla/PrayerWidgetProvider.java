@@ -135,6 +135,24 @@ public class PrayerWidgetProvider extends AppWidgetProvider {
         views.setOnClickPendingIntent(R.id.widget_root, pendingIntent);
 
         if (prayerJson != null) {
+            // التحقق من حجم الويدجت (إذا كان أكبر من صف واحد 4x1)
+            Bundle options = appWidgetManager.getAppWidgetOptions(appWidgetId);
+            int minHeight = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT);
+            
+            // الارتفاع الافتراضي لصف واحد يكون غالباً أقل من 90dp. إذا كان 100 أو أكثر معناه صفين أو أكبر.
+            boolean isLarge = minHeight >= 100;
+
+            if (isLarge) {
+                views.setViewVisibility(R.id.widget_gregorian_date, View.VISIBLE);
+                views.setViewVisibility(R.id.widget_app_icon_small, View.GONE);
+                views.setViewVisibility(R.id.widget_app_icon_large, View.VISIBLE);
+            } else {
+                views.setTextViewText(R.id.widget_gregorian_date, "");
+                views.setViewVisibility(R.id.widget_gregorian_date, View.GONE);
+                views.setViewVisibility(R.id.widget_app_icon_small, View.VISIBLE);
+                views.setViewVisibility(R.id.widget_app_icon_large, View.GONE);
+            }
+
             try {
                 JSONObject data = new JSONObject(prayerJson);
                 JSONObject times = data.getJSONObject("times");
@@ -177,6 +195,64 @@ public class PrayerWidgetProvider extends AppWidgetProvider {
                         }
                     }
                 }
+
+                // --- NEW FALLBACK LOGIC ---
+                // إذا انتهت كل الطوابع الزمنية ولم يتم تحديث التطبيق لفترة طويلة (أو targetTimeMillis صار في الماضي)
+                // نستخرج أوقات الصلوات اليومية ونحسب الصلاة القادمة برمجياً لتجنب توقف العداد (أصفار)
+                if (targetTimeMillis <= System.currentTimeMillis()) {
+                    long now = System.currentTimeMillis();
+                    java.util.Calendar cal = java.util.Calendar.getInstance();
+                    int nowHour = cal.get(java.util.Calendar.HOUR_OF_DAY);
+                    int nowMin = cal.get(java.util.Calendar.MINUTE);
+                    int nowTotal = nowHour * 60 + nowMin;
+
+                    String[] ids = {"fajr", "sunrise", "dhuhr", "asr", "maghrib", "isha"};
+                    String[] namesAr = {"الفجر", "الشروق", "الظهر", "العصر", "المغرب", "العشاء"};
+                    String[] namesEn = {"Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"};
+                    String[] names = isArabic ? namesAr : namesEn;
+
+                    boolean found = false;
+                    for (int i = 0; i < ids.length; i++) {
+                        try {
+                            String timeStr = times.getString(ids[i]);
+                            String[] parts = timeStr.split(":");
+                            int h = Integer.parseInt(parts[0].trim());
+                            int m = Integer.parseInt(parts[1].trim());
+                            int pTotal = h * 60 + m;
+
+                            if (pTotal > nowTotal) {
+                                cal.set(java.util.Calendar.HOUR_OF_DAY, h);
+                                cal.set(java.util.Calendar.MINUTE, m);
+                                cal.set(java.util.Calendar.SECOND, 0);
+                                cal.set(java.util.Calendar.MILLISECOND, 0);
+                                targetTimeMillis = cal.getTimeInMillis();
+                                nextPrayerId = ids[i];
+                                nextPrayerName = names[i];
+                                found = true;
+                                break;
+                            }
+                        } catch (Exception e) {}
+                    }
+
+                    // إذا مرت جميع الصلوات لليوم الحالي، فالصلاة القادمة هي الفجر غداً
+                    if (!found) {
+                        try {
+                            String timeStr = times.getString("fajr");
+                            String[] parts = timeStr.split(":");
+                            int h = Integer.parseInt(parts[0].trim());
+                            int m = Integer.parseInt(parts[1].trim());
+                            cal.add(java.util.Calendar.DAY_OF_YEAR, 1);
+                            cal.set(java.util.Calendar.HOUR_OF_DAY, h);
+                            cal.set(java.util.Calendar.MINUTE, m);
+                            cal.set(java.util.Calendar.SECOND, 0);
+                            cal.set(java.util.Calendar.MILLISECOND, 0);
+                            targetTimeMillis = cal.getTimeInMillis();
+                            nextPrayerId = "fajr";
+                            nextPrayerName = names[0];
+                        } catch (Exception e) {}
+                    }
+                }
+                // --- END FALLBACK LOGIC ---
 
                 // تحديث التاريخ الهجري ومعلومات الصلاة القادمة
                 views.setTextViewText(R.id.widget_hijri_date, formatNumerals(translate(data.getString("day") + "، " + data.getString("hijri"), isArabic)));
@@ -312,11 +388,48 @@ public class PrayerWidgetProvider extends AppWidgetProvider {
         Bundle options = appWidgetManager.getAppWidgetOptions(appWidgetId);
         int minHeight = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT);
         
-        // If the widget is shrunk below a certain threshold (e.g., 100dp), hide the bottom section
+        // If the widget is shrunk below a certain threshold (e.g., 100dp), adjust font sizes to fit everything
         if (minHeight > 0 && minHeight < 100) {
-            views.setViewVisibility(R.id.widget_bottom_section, View.GONE);
+            views.setViewVisibility(R.id.widget_bottom_section, View.VISIBLE);
+            views.setTextViewTextSize(R.id.widget_midnight, android.util.TypedValue.COMPLEX_UNIT_SP, 9);
+            views.setTextViewTextSize(R.id.widget_last_third, android.util.TypedValue.COMPLEX_UNIT_SP, 9);
+            
+            // Shrink middle section text
+            float nameSize = 12;
+            float timeSize = 13;
+            views.setTextViewTextSize(R.id.name_fajr, android.util.TypedValue.COMPLEX_UNIT_SP, nameSize);
+            views.setTextViewTextSize(R.id.time_fajr, android.util.TypedValue.COMPLEX_UNIT_SP, timeSize);
+            views.setTextViewTextSize(R.id.name_sunrise, android.util.TypedValue.COMPLEX_UNIT_SP, nameSize);
+            views.setTextViewTextSize(R.id.time_sunrise, android.util.TypedValue.COMPLEX_UNIT_SP, timeSize);
+            views.setTextViewTextSize(R.id.name_dhuhr, android.util.TypedValue.COMPLEX_UNIT_SP, nameSize);
+            views.setTextViewTextSize(R.id.time_dhuhr, android.util.TypedValue.COMPLEX_UNIT_SP, timeSize);
+            views.setTextViewTextSize(R.id.name_asr, android.util.TypedValue.COMPLEX_UNIT_SP, nameSize);
+            views.setTextViewTextSize(R.id.time_asr, android.util.TypedValue.COMPLEX_UNIT_SP, timeSize);
+            views.setTextViewTextSize(R.id.name_maghrib, android.util.TypedValue.COMPLEX_UNIT_SP, nameSize);
+            views.setTextViewTextSize(R.id.time_maghrib, android.util.TypedValue.COMPLEX_UNIT_SP, timeSize);
+            views.setTextViewTextSize(R.id.name_isha, android.util.TypedValue.COMPLEX_UNIT_SP, nameSize);
+            views.setTextViewTextSize(R.id.time_isha, android.util.TypedValue.COMPLEX_UNIT_SP, timeSize);
+
+            // Hide gregorian date to save space
+            views.setViewVisibility(R.id.widget_gregorian_date, View.GONE);
         } else {
             views.setViewVisibility(R.id.widget_bottom_section, View.VISIBLE);
+            views.setTextViewTextSize(R.id.widget_midnight, android.util.TypedValue.COMPLEX_UNIT_SP, 12);
+            views.setTextViewTextSize(R.id.widget_last_third, android.util.TypedValue.COMPLEX_UNIT_SP, 12);
+            
+            // Standard sizes for large widget
+            views.setTextViewTextSize(R.id.name_fajr, android.util.TypedValue.COMPLEX_UNIT_SP, 14);
+            views.setTextViewTextSize(R.id.time_fajr, android.util.TypedValue.COMPLEX_UNIT_SP, 16);
+            views.setTextViewTextSize(R.id.name_sunrise, android.util.TypedValue.COMPLEX_UNIT_SP, 14);
+            views.setTextViewTextSize(R.id.time_sunrise, android.util.TypedValue.COMPLEX_UNIT_SP, 16);
+            views.setTextViewTextSize(R.id.name_dhuhr, android.util.TypedValue.COMPLEX_UNIT_SP, 14);
+            views.setTextViewTextSize(R.id.time_dhuhr, android.util.TypedValue.COMPLEX_UNIT_SP, 16);
+            views.setTextViewTextSize(R.id.name_asr, android.util.TypedValue.COMPLEX_UNIT_SP, 14);
+            views.setTextViewTextSize(R.id.time_asr, android.util.TypedValue.COMPLEX_UNIT_SP, 16);
+            views.setTextViewTextSize(R.id.name_maghrib, android.util.TypedValue.COMPLEX_UNIT_SP, 14);
+            views.setTextViewTextSize(R.id.time_maghrib, android.util.TypedValue.COMPLEX_UNIT_SP, 16);
+            views.setTextViewTextSize(R.id.name_isha, android.util.TypedValue.COMPLEX_UNIT_SP, 14);
+            views.setTextViewTextSize(R.id.time_isha, android.util.TypedValue.COMPLEX_UNIT_SP, 16);
         }
 
         appWidgetManager.updateAppWidget(appWidgetId, views);

@@ -11,33 +11,159 @@ import { App as CapacitorApp } from '@capacitor/app';
 import { PrayerTimesProvider } from './context/PrayerTimesContext';
 import { VoiceControlProvider } from './context/VoiceControlContext';
 import { TutorialProvider } from './context/TutorialContext';
+import SideMenu from './components/SideMenu';
+import MawlidNotification from './components/MawlidNotification';
 import { Mic, MicOff } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useTheme } from './context/ThemeContext';
 import { normalizeArabic } from './utils/voiceParser';
 import { usePrayerTimes } from './context/PrayerTimesContext';
+import { setupNotifications } from './utils/notifications';
+import { LocalNotifications } from '@capacitor/local-notifications';
+import { Capacitor } from '@capacitor/core';
+import { clearSearchCache } from './pages/GlobalSearch';
+import { ScreenOrientation } from '@capacitor/screen-orientation';
+import { APP_VERSION, REMOTE_VERSION_URL, GOOGLE_PLAY_URL } from './constants';
+import UpdateNotificationModal from './components/UpdateNotificationModal';
+
 // --- Main App Component ---
 function App() {
-  const { theme, applyPresetTheme } = useTheme();
+  const { theme, applyPresetTheme, setCurrentPage } = useTheme();
   const [showSplash, setShowSplash] = useState(true);
   const [history, setHistory] = useState(['home']);
   const [navParams, setNavParams] = useState<any>(null);
+  const [lastMenuPage, setLastMenuPage] = useState('home');
   const [isThemeSelectorOpen, setIsThemeSelectorOpen] = useState(false);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
+  const [isSideMenuOpen, setIsSideMenuOpen] = useState(false);
+  
+  // --- Update Notification Logic ---
+  const [updateInfo, setUpdateInfo] = useState<{ show: boolean; newVersion: string }>({ show: false, newVersion: '' });
+
+  useEffect(() => {
+    const checkUpdate = async () => {
+      if (!REMOTE_VERSION_URL || REMOTE_VERSION_URL.includes('your-server.com')) return;
+
+      try {
+        // إضافة timestamp للرابط لمنع التخزين المؤقت (Cache Busting)
+        const cacheBuster = `t=${new Date().getTime()}`;
+        const fullUrl = REMOTE_VERSION_URL.includes('?') 
+          ? `${REMOTE_VERSION_URL}&${cacheBuster}` 
+          : `${REMOTE_VERSION_URL}?${cacheBuster}`;
+
+        const response = await fetch(fullUrl, { cache: 'no-store' });
+        
+        if (!response.ok) {
+          console.warn('Update check: Server returned error', response.status);
+          return;
+        }
+        
+        const data = await response.json();
+        const localVersion = APP_VERSION.trim();
+        const remoteVersion = (data?.version || '').toString().trim();
+
+        console.log(`Update check: Local [${localVersion}] Remote [${remoteVersion}]`);
+
+        if (remoteVersion && remoteVersion !== localVersion) {
+            console.log('Update found! Showing modal...');
+            setUpdateInfo({ show: true, newVersion: remoteVersion });
+        }
+      } catch (error) {
+        console.warn('Update check failed:', error);
+      }
+    };
+
+    // فحص التحديث بعد ثانية واحدة من التشغيل
+    const timeout = setTimeout(checkUpdate, 1000);
+    return () => clearTimeout(timeout);
+  }, []);
+
+  useEffect(() => {
+    const currentPage = history[history.length - 1];
+    setCurrentPage(currentPage);
+  }, [history, setCurrentPage]);
+
+  useEffect(() => {
+    if (!history.includes('search')) {
+      clearSearchCache();
+    }
+    const currentPage = history[history.length - 1];
+    if (currentPage === 'home' || currentPage === 'more-menu') {
+      setLastMenuPage(currentPage);
+    }
+
+    // --- Orientation Management ---
+    const handleOrientation = async () => {
+      if (!Capacitor.isNativePlatform()) return;
+      
+      try {
+        if (currentPage === 'quran-landscape') {
+          await ScreenOrientation.lock({ orientation: 'landscape' });
+        } else {
+          // If we are not in a landscape page, and we were previously in one (or just to be safe)
+          // we ensure portrait mode. 
+          // Note: ScreenOrientation.unlock() allows normal rotation, 
+          // but usually the main UI is better off in portrait.
+          await ScreenOrientation.lock({ orientation: 'portrait' });
+        }
+      } catch (e) {
+        console.error('Orientation management failed:', e);
+      }
+    };
+    handleOrientation();
+  }, [history]);
 
   const handleNavigate = useCallback((pageId: string, params?: any) => {
+    setIsSideMenuOpen(false);
     const validPages = [
       'home', 'quran', 'quran-landscape', 'quran-download', 'salah-adhkar', 'calendar', 'listen', 'tasbeeh', 
       'hajj-umrah', 'hisn-muslim', 'prayer-times', 'monthly-prayer-times', 'qibla', 
-      'sabah-masaa', 'adia', 'nawawi', 'calculators', 'voice-control', 'more-menu', 'daily-wird', 'memorization'
+      'sabah-masaa', 'adia', 'nawawi', 'calculators', 'voice-control', 'more-menu', 'daily-wird', 'memorization',
+      'phone-notifications', 'search', 'asmaul-husna', 'habit-tracker'
     ];
 
+    if (pageId === 'phone-notifications') {
+      setNavParams({ openModal: 'notification-settings-modal' });
+      setHistory(prev => [...prev, 'quran']);
+      return;
+    }
+
+    if (pageId === 'settings') {
+      setNavParams({ openModal: 'settings-modal' });
+      setHistory(prev => [...prev, 'quran']);
+      return;
+    }
+
     if (pageId === 'home') {
-      // If we are in the Mushaf and it's a practical application from Tajweed,
-      // the Home button should take us back to Tajweed.
-      if (history[history.length - 1] === 'quran') {
+      // 0. If force is true, reset to home
+      if (params?.force) {
+        setHistory(['home']);
+        setNavParams(null);
+        return;
+      }
+
+      // Logic for home button:
+      // 1. If currently in quran, go back (one step)
+      const current = history[history.length - 1];
+      if (current === 'quran' || current === 'quran-landscape') {
         setHistory(prev => (prev.length > 1 ? prev.slice(0, -1) : prev));
         return;
+      }
+      
+      // 2. If we are in more-menu, home should take us back to home
+      if (current === 'more-menu') {
+        setHistory(['home']);
+        setNavParams(null);
+        return;
+      }
+
+      // 3. Return to last menu
+      if (lastMenuPage === 'more-menu') {
+        const moreMenuIndex = history.lastIndexOf('more-menu');
+        if (moreMenuIndex !== -1) {
+          setHistory(prev => prev.slice(0, moreMenuIndex + 1));
+          return;
+        }
       }
 
       const quranIndex = history.lastIndexOf('quran');
@@ -57,15 +183,38 @@ function App() {
     if (validPages.includes(pageId)) {
       setNavParams(params || null);
       setHistory(prev => {
-        if (prev[prev.length - 1] !== pageId) {
-          return [...prev, pageId];
-        }
-        return prev;
+        const current = prev[prev.length - 1];
+        
+        // If we are navigating to the same page, do nothing
+        if (current === pageId) return prev;
+
+        return [...prev, pageId];
       });
     } else {
       alert(`التنقل إلى قسم "${pageId}" قيد الإنشاء.`);
     }
-  }, []);
+  }, [history, lastMenuPage]);
+
+  useEffect(() => {
+    setupNotifications();
+
+    let listener: any = null;
+    if (Capacitor.isNativePlatform()) {
+      listener = LocalNotifications.addListener('localNotificationActionPerformed', (notificationAction) => {
+        const page = notificationAction.notification.extra?.page;
+        const params = notificationAction.notification.extra?.params;
+        if (page) {
+          handleNavigate(page, params);
+        }
+      });
+    }
+
+    return () => {
+      if (listener) {
+        listener.then((l: any) => l.remove());
+      }
+    };
+  }, [handleNavigate]);
 
   const performUiClick = useCallback((label: string) => {
     const normalizedLabel = normalizeArabic(label);
@@ -119,6 +268,9 @@ function App() {
     else if (action === 'open_hisn_muslim' || (action === 'ui_click' && (params?.label?.includes('حصن') || params?.label?.includes('حسن')))) handleNavigate('hisn-muslim');
     else if (action === 'open_calendar' || (action === 'ui_click' && params?.label?.includes('تقويم'))) handleNavigate('calendar');
     else if (action === 'open_hajj_umrah' || (action === 'ui_click' && params?.label?.includes('حج'))) handleNavigate('hajj-umrah');
+    else if (action === 'open_asmaul_husna' || (action === 'ui_click' && params?.label?.includes('اسماء الله'))) handleNavigate('asmaul-husna');
+    else if (action === 'open_daily_wird' || (action === 'ui_click' && params?.label?.includes('ورد'))) handleNavigate('daily-wird');
+    else if (action === 'open_memorization' || (action === 'ui_click' && params?.label?.includes('تحفيظ'))) handleNavigate('memorization');
     else if (action === 'open_quran' || (action === 'ui_click' && params?.label?.includes('مصحف'))) handleNavigate('quran');
     else if (action === 'open_voice_control' || (action === 'ui_click' && params?.label?.includes('تحكم صوتي'))) handleNavigate('voice-control');
     else if (action === 'open_more' || (action === 'ui_click' && params?.label?.includes('مزيد'))) handleNavigate('more-menu');
@@ -126,7 +278,7 @@ function App() {
       window.dispatchEvent(new CustomEvent('voice-command', { detail: { action, text, params } }));
     }
     else if (action === 'open_search' || (action === 'ui_click' && params?.label?.includes('بحث'))) {
-      window.dispatchEvent(new CustomEvent('voice-command', { detail: { action: 'open_search', params } }));
+      handleNavigate('search');
     }
     else if (action === 'open_themes' || (action === 'ui_click' && params?.label?.includes('ثيم'))) {
       if (page === 'quran') {
@@ -171,10 +323,14 @@ function App() {
             navParams={navParams}
             isThemeSelectorOpen={isThemeSelectorOpen}
             showExitConfirm={showExitConfirm}
+            isSideMenuOpen={isSideMenuOpen}
+            setIsSideMenuOpen={setIsSideMenuOpen}
             handleNavigate={handleNavigate}
             navigateBack={navigateBack}
             setIsThemeSelectorOpen={setIsThemeSelectorOpen}
             setShowExitConfirm={setShowExitConfirm}
+            updateInfo={updateInfo}
+            setUpdateInfo={setUpdateInfo}
           />
         </VoiceControlProvider>
       </PrayerTimesProvider>
@@ -189,16 +345,22 @@ function AppContent({
   navParams,
   isThemeSelectorOpen, 
   showExitConfirm, 
+  isSideMenuOpen,
+  setIsSideMenuOpen,
   handleNavigate, 
   navigateBack, 
   setIsThemeSelectorOpen, 
-  setShowExitConfirm 
+  setShowExitConfirm,
+  updateInfo,
+  setUpdateInfo
 }: any) {
-  const { setCurrentPage } = useVoiceControl();
+  const { setCurrentPage: setVoicePage } = useVoiceControl();
+  const { theme, themeKey, applyPresetTheme, setCurrentPage: setThemePage } = useTheme();
 
   useEffect(() => {
-    setCurrentPage(page);
-  }, [page, setCurrentPage]);
+    setVoicePage(page);
+    setThemePage(page);
+  }, [page, setVoicePage, setThemePage]);
 
   useWakeLock();
 
@@ -225,7 +387,14 @@ function AppContent({
     CapacitorApp.exitApp();
   };
   
-  const toggleThemeSelector = () => setIsThemeSelectorOpen(prev => !prev);
+  const handleOpenThemes = useCallback(() => {
+    if (page === 'quran' || page === 'quran-landscape') {
+      window.dispatchEvent(new CustomEvent('voice-command', { detail: { action: 'open_themes' } }));
+    } else {
+      setIsThemeSelectorOpen(prev => !prev);
+    }
+  }, [page]);
+
   const closeThemeSelector = () => setIsThemeSelectorOpen(false);
 
   return (
@@ -234,12 +403,25 @@ function AppContent({
         page={page} 
         onBack={navigateBack} 
         onNavigate={handleNavigate} 
-        onOpenThemes={toggleThemeSelector}
+        onOpenThemes={handleOpenThemes}
+        onOpenSideMenu={() => {
+          setIsSideMenuOpen(true);
+          window.dispatchEvent(new CustomEvent('quran-stop-audio'));
+        }}
         navParams={navParams}
       />
 
-      {/* Global Voice Control Toggle */}
-      {page === 'home' && <VoiceControlToggle />}
+      <SideMenu 
+        isOpen={isSideMenuOpen} 
+        onClose={() => setIsSideMenuOpen(false)} 
+        onNavigate={handleNavigate}
+        onOpenThemes={handleOpenThemes}
+        currentTheme={theme}
+        currentPage={page}
+      />
+
+      {/* Global Voice Control Toggle - Removed from here, moved to MainMenu */}
+      {/* {page === 'home' && <VoiceControlToggle />} */}
 
       {isThemeSelectorOpen && (
         <ThemeSelector 
@@ -256,48 +438,24 @@ function AppContent({
               isLandscape={isLandscape}
           />
       )}
+
+      {updateInfo?.show && (
+          <UpdateNotificationModal 
+              isOpen={updateInfo.show}
+              onClose={() => setUpdateInfo({ ...updateInfo, show: false })}
+              newVersion={updateInfo.newVersion}
+              updateUrl={GOOGLE_PLAY_URL}
+              isLandscape={isLandscape}
+          />
+      )}
       
       <RateUs />
+      <MawlidNotification />
     </div>
   );
 }
 
 import { useVoiceControl } from './context/VoiceControlContext';
 import { useTutorial } from './context/TutorialContext';
-
-const VoiceControlToggle = () => {
-  const { isEnabled, toggleEnabled, isListening, showVoiceIcon } = useVoiceControl();
-  const { shouldShowTutorial } = useTutorial();
-
-  if (!showVoiceIcon) return null;
-
-  return (
-    <motion.button
-      id="voice-control-btn"
-      initial={{ scale: 0, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      whileHover={{ scale: 1.1 }}
-      whileTap={{ scale: 0.9 }}
-      onClick={toggleEnabled}
-      className={`fixed left-4 z-[10005] w-9 h-9 rounded-full flex items-center justify-center shadow-lg transition-colors border-2 border-white ${
-        isEnabled 
-          ? (isListening ? 'bg-red-500 animate-pulse' : 'bg-green-500') 
-          : 'bg-gray-400'
-      }`}
-      style={{ bottom: 'calc(72px + env(safe-area-inset-bottom, 0px))' }}
-      title={isEnabled ? 'تعطيل التحكم الصوتي' : 'تفعيل التحكم الصوتي'}
-    >
-      {isEnabled ? <Mic className="text-white w-5 h-5" /> : <MicOff className="text-white w-5 h-5" />}
-      
-      {isEnabled && isListening && (
-        <motion.div
-          animate={{ scale: [1, 1.5, 1], opacity: [0.5, 0, 0.5] }}
-          transition={{ duration: 2, repeat: Infinity }}
-          className="absolute inset-0 rounded-full bg-red-500 -z-10"
-        />
-      )}
-    </motion.button>
-  );
-};
 
 export default App;

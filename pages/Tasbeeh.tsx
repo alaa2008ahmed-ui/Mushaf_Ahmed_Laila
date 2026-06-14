@@ -11,6 +11,7 @@ import TasbeehControls from '../components/Tasbeeh/TasbeehControls';
 import TasbeehCounter from '../components/Tasbeeh/TasbeehCounter';
 import TasbeehModals from '../components/Tasbeeh/TasbeehModals';
 import { toArabicNumerals, toEnglishNumerals, playSound, vibrate } from '../utils/tasbeehUtils';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // FIX: Renamed to be more specific to phrases
 const PHRASES_STORAGE_KEY = 'ahmed_laila_tasbeeh_phrases';
@@ -18,24 +19,79 @@ const PHRASES_STORAGE_KEY = 'ahmed_laila_tasbeeh_phrases';
 const SETTINGS_STORAGE_KEY = 'ahmed_laila_tasbeeh_settings_v1';
 
 // --- Main Component ---
-function Tasbeeh({ onBack }) {
+function Tasbeeh({ onBack, onNavigate }) {
     const { theme, themeKey } = useTheme();
-    const isBlackAndWhite = themeKey === 'black_and_white';
-    const primaryTextColor = isBlackAndWhite ? '#FFFFFF' : theme.palette[0];
-    const secondaryTextColor = isBlackAndWhite ? '#FFFFFF' : theme.palette[1];
+    const isBlackAndWhite = themeKey === 'deep_black';
+    const isBlackTheme = theme.bgColor === '#000000';
+    const primaryTextColor = isBlackTheme ? '#FFFFFF' : (themeKey === 'default' ? '#000000' : (isBlackAndWhite ? '#FFFFFF' : theme.palette[0]));
+    const secondaryTextColor = isBlackTheme ? '#FFFFFF' : (themeKey === 'default' ? '#000000' : (isBlackAndWhite ? '#FFFFFF' : theme.palette[1]));
+
+    const getDefaultCounterColor = useCallback((tKey: string, tObj: any) => {
+        return tKey === 'default' ? '#FFFFFF' : tObj.palette[0];
+    }, []);
 
     const [phrases, setPhrases] = useState<{id: number, text: string}[]>([]);
     const [count, setCount] = useState(0);
     const [target, setTarget] = useState(33);
     const [activePhrase, setActivePhrase] = useState('');
     const [isCountingStopped, setIsCountingStopped] = useState(false);
-    // FIX: Added 'color' to the modals state object to manage the color picker modal.
-    const [modals, setModals] = useState({ target: false, phrase: false, add: false, delete: false, color: false });
+    const [modals, setModals] = useState({ target: false, phrase: false, add: false, delete: false, color: false, stats: false, skins: false });
     const [message, setMessage] = useState({ text: '', type: 'green', visible: false });
     const targetInputRef = useRef<HTMLInputElement>(null);
     const newPhraseInputRef = useRef<HTMLInputElement>(null);
-    // FIX: Added state to manage the counter's background color, initialized with the primary theme color.
-    const [counterColor, setCounterColor] = useState(theme.palette[0]);
+    
+    // Initial color from theme - we'll update it in useEffect after mounting
+    const [counterColor, setCounterColor] = useState(() => getDefaultCounterColor(themeKey, theme));
+    const prevThemeKeyRef = useRef<string | null>(null);
+    const [skin, setSkin] = useState<'modern' | 'classic' | 'beads'>('modern');
+    const [dailyStats, setDailyStats] = useState<{date: string, count: number}[]>([]);
+
+    useEffect(() => {
+        // 1. Load settings and handle "Dominant Theme" logic
+        try {
+            const savedSettings = localStorage.getItem(SETTINGS_STORAGE_KEY);
+            let finalColor = getDefaultCounterColor(themeKey, theme);
+            
+            if (savedSettings) {
+                const settings = JSON.parse(savedSettings);
+                
+                // If it's the first mount (prevThemeKeyRef is null) 
+                // OR if themeKey has actually changed since last time
+                const themeHasChanged = prevThemeKeyRef.current !== null && prevThemeKeyRef.current !== themeKey;
+                const wasSavedWithDifferentTheme = settings.lastThemeKey && settings.lastThemeKey !== themeKey;
+
+                if (themeHasChanged || wasSavedWithDifferentTheme || !settings.counterColor) {
+                    // Use theme color if theme changed or no saved color
+                    finalColor = getDefaultCounterColor(themeKey, theme);
+                    
+                    // Sync the change to storage immediately
+                    const newSettings = { ...settings, counterColor: finalColor, lastThemeKey: themeKey };
+                    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(newSettings));
+                } else {
+                    // Theme is the same, use saved manual color
+                    finalColor = settings.counterColor;
+                }
+
+                if (settings.skin) setSkin(settings.skin);
+                if (settings.dailyStats) setDailyStats(settings.dailyStats);
+            } else {
+                // No settings at all, use default and save theme key
+                localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify({ 
+                    counterColor: finalColor, 
+                    lastThemeKey: themeKey 
+                }));
+            }
+            
+            setCounterColor(finalColor);
+        } catch(e) {
+            console.error("Error loading tasbeeh settings", e);
+        }
+
+        prevThemeKeyRef.current = themeKey;
+    }, [themeKey, theme, getDefaultCounterColor]);
+
+    const activeCounterColor = counterColor;
+    const isCounterWhite = activeCounterColor === '#FFFFFF' || activeCounterColor === 'white' || activeCounterColor === '#fff';
 
     const loadPhrases = useCallback(() => {
         try {
@@ -64,27 +120,12 @@ function Tasbeeh({ onBack }) {
 
     useEffect(() => {
         loadPhrases();
-        // FIX: Load the counter color from local storage on component mount, falling back to the theme color.
-        try {
-            const savedSettings = localStorage.getItem(SETTINGS_STORAGE_KEY);
-            if (savedSettings) {
-                const settings = JSON.parse(savedSettings);
-                if (settings.counterColor) {
-                    setCounterColor(settings.counterColor);
-                }
-            } else {
-                setCounterColor(theme.palette[0]);
-            }
-        } catch(e) {
-            console.warn("Could not load tasbeeh settings", e);
-            setCounterColor(theme.palette[0]);
-        }
-    }, [loadPhrases, theme.palette]);
+    }, [loadPhrases]);
 
     useEffect(() => {
         const interceptor = () => {
-            if (modals.target || modals.phrase || modals.add || modals.delete || modals.color) {
-                setModals({ target: false, phrase: false, add: false, delete: false, color: false });
+            if (modals.target || modals.phrase || modals.add || modals.delete || modals.color || modals.stats || modals.skins) {
+                setModals({ target: false, phrase: false, add: false, delete: false, color: false, stats: false, skins: false });
                 return true;
             }
             return false;
@@ -92,6 +133,34 @@ function Tasbeeh({ onBack }) {
         const unregister = registerBackInterceptor(interceptor);
         return unregister;
     }, [modals]);
+
+    useEffect(() => {
+        // Expose functions to window for swiping in TasbeehCounter without passing them down all the way, or we can just attach them.
+        (window as any).handleNextPhrase = () => {
+             const currentIndex = phrases.findIndex(p => p.text === activePhrase);
+             if (currentIndex >= 0 && currentIndex < phrases.length - 1) {
+                 setActivePhrase(phrases[currentIndex + 1].text);
+                 handleReset();
+             } else if (phrases.length > 0) {
+                 setActivePhrase(phrases[0].text);
+                 handleReset();
+             }
+        };
+        (window as any).handlePrevPhrase = () => {
+             const currentIndex = phrases.findIndex(p => p.text === activePhrase);
+             if (currentIndex > 0) {
+                 setActivePhrase(phrases[currentIndex - 1].text);
+                 handleReset();
+             } else if (phrases.length > 0) {
+                 setActivePhrase(phrases[phrases.length - 1].text);
+                 handleReset();
+             }
+        };
+        return () => {
+            delete (window as any).handleNextPhrase;
+            delete (window as any).handlePrevPhrase;
+        };
+    }, [phrases, activePhrase]);
 
     const showMessage = (text: string, type = 'green') => {
         setMessage({ text, type, visible: true });
@@ -105,6 +174,26 @@ function Tasbeeh({ onBack }) {
         playSound();
         vibrate(30);
         const newCount = count + 1;
+
+        // Update daily stats
+        const today = new Date().toISOString().split('T')[0];
+        setDailyStats(prev => {
+            const newStats = [...prev];
+            const todayStatIndex = newStats.findIndex(s => s.date === today);
+            if (todayStatIndex >= 0) {
+                newStats[todayStatIndex].count += 1;
+            } else {
+                newStats.push({ date: today, count: 1 });
+            }
+            try {
+                const savedSettings = localStorage.getItem(SETTINGS_STORAGE_KEY);
+                const settings = savedSettings ? JSON.parse(savedSettings) : {};
+                settings.dailyStats = newStats;
+                localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+            } catch (e) {}
+            return newStats;
+        });
+
         if (target > 0 && newCount >= target) {
             setCount(target);
             setIsCountingStopped(true);
@@ -171,6 +260,7 @@ function Tasbeeh({ onBack }) {
             const savedSettings = localStorage.getItem(SETTINGS_STORAGE_KEY);
             const settings = savedSettings ? JSON.parse(savedSettings) : {};
             settings.counterColor = color;
+            settings.lastThemeKey = themeKey; // Save current theme key with this color
             localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
         } catch (e) {
             console.error("Failed to save counter color", e);
@@ -179,23 +269,45 @@ function Tasbeeh({ onBack }) {
         setModals(p => ({...p, color: false}));
     };
 
-    // FIX: A list of predefined color options for the color picker modal.
+    const handleSetSkin = (newSkin: 'modern' | 'classic' | 'beads') => {
+        setSkin(newSkin);
+        try {
+            const savedSettings = localStorage.getItem(SETTINGS_STORAGE_KEY);
+            const settings = savedSettings ? JSON.parse(savedSettings) : {};
+            settings.skin = newSkin;
+            localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+        } catch (e) {
+            console.error("Failed to save skin", e);
+        }
+        showMessage('تم تغيير شكل السبحة.');
+        setModals(p => ({...p, skins: false}));
+    };
+
+    // FIX: A list of predefined distinct color options for the color picker modal.
     const colorOptions = [
-        theme.palette[0],
-        theme.palette[1],
-        ...(theme.palette[2] ? [theme.palette[2]] : []),
+        themeKey === 'default' ? '#FFFFFF' : theme.palette[0],
+        themeKey === 'default' ? theme.palette[0] : '#FFFFFF',
         '#3b82f6', // blue
         '#ef4444', // red
         '#10b981', // green
-        '#f97316', // orange
+        '#f59e0b', // amber
         '#8b5cf6', // violet
+        '#ec4899', // pink
     ].filter((v, i, a) => a.indexOf(v) === i).slice(0, 8);
+
+    const handleHomeClick = () => {
+        if (Object.values(modals).some(Boolean)) {
+            setModals({ target: false, phrase: false, add: false, delete: false, color: false, stats: false, skins: false });
+        } else {
+            onBack();
+        }
+    };
 
     return (
         <div className="h-screen flex flex-col bg-transparent">
             <TasbeehHeader title="السبحة الإلكترونية" subtitle="أضف أذكارك الخاصة وتتبع تسبيحك بدقة" />
             
-            <main className="p-4 flex-grow relative flex flex-col items-center overflow-y-auto pb-24 fade-in">
+            <main className="px-4 pb-4 flex-grow relative flex flex-col items-center overflow-y-auto fade-in">
                  <TasbeehControls 
                     isBlackAndWhite={isBlackAndWhite}
                     theme={theme}
@@ -209,9 +321,13 @@ function Tasbeeh({ onBack }) {
                     target={target}
                     secondaryTextColor={secondaryTextColor}
                     primaryTextColor={primaryTextColor}
-                    counterColor={counterColor}
+                    counterColor={activeCounterColor}
                     count={count}
                     handleIncrement={handleIncrement}
+                    isBlackAndWhite={isBlackAndWhite}
+                    skin={skin}
+                    isDefaultTheme={themeKey === 'default'}
+                    theme={theme}
                  />
                 
                 <div className="w-full max-w-lg px-4 mt-auto mb-2">
@@ -224,6 +340,7 @@ function Tasbeeh({ onBack }) {
                         </ThreeDButton>
                     </div>
                 </div>
+                <div className="w-full h-24 shrink-0"></div>
             </main>
             
             {/* Modals */}
@@ -242,17 +359,27 @@ function Tasbeeh({ onBack }) {
                 handleReset={handleReset}
                 colorOptions={colorOptions}
                 handleSetCounterColor={handleSetCounterColor}
-                counterColor={counterColor}
+                counterColor={activeCounterColor}
                 theme={theme}
+                dailyStats={dailyStats}
+                skin={skin}
+                handleSetSkin={handleSetSkin}
             />
 
-            {message.visible && (
-                <div className={`fixed bottom-24 left-1/2 -translate-x-1/2 p-3 text-white rounded-lg shadow-xl transition-opacity duration-500 z-[200] font-bold ${message.type === 'green' ? 'bg-emerald-500' : 'bg-red-500'}`}>
-                    {message.text}
-                </div>
-            )}
+            <AnimatePresence>
+                {message.visible && (
+                    <motion.div 
+                        initial={{ opacity: 0, y: 20, x: '-50%' }}
+                        animate={{ opacity: 1, y: 0, x: '-50%' }}
+                        exit={{ opacity: 0, y: 10, x: '-50%' }}
+                        className={`fixed bottom-24 left-1/2 p-3 text-white rounded-lg shadow-xl z-[200] font-bold ${message.type === 'green' ? (isBlackTheme ? 'bg-white text-black' : 'bg-emerald-500') : 'bg-red-500'}`}
+                    >
+                        {message.text}
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
-            <BottomBar onHomeClick={onBack} onThemesClick={() => {}} showThemes={false} />
+            <BottomBar onHomeClick={handleHomeClick} onThemesClick={() => {}} showThemes={false} />
         </div>
     );
 }

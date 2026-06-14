@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import BottomBar from '../components/BottomBar';
 import { useTheme } from '../context/ThemeContext';
+import ThemePageLock from '../components/ThemePageLock';
 import { usePrayerTimes } from '../context/PrayerTimesContext';
 import { VisualQibla, ARQibla, SunMoonQibla, ShadowQibla } from '../components/QiblaModes';
 
@@ -10,7 +11,8 @@ const toRad = (deg) => deg * Math.PI / 180;
 const toDeg = (rad) => rad * 180 / Math.PI;
 
 function Qibla({ onBack, onNavigate }) {
-    const { theme } = useTheme();
+    const { theme, themeKey } = useTheme();
+    const isDefaultTheme = themeKey === 'default';
     const { config, refreshLocation } = usePrayerTimes();
     const [heading, setHeading] = useState(0);
     const [qiblaDirection, setQiblaDirection] = useState(null);
@@ -139,45 +141,56 @@ function Qibla({ onBack, onNavigate }) {
     }, [heading, qiblaDirection]);
 
     return (
-        <div className="h-screen w-screen flex flex-col overflow-hidden bg-transparent">
+        <div className="h-screen w-screen relative overflow-hidden bg-transparent">
             <header className="app-top-bar">
                 <div className="app-top-bar__inner">
-                    <div className="flex items-center justify-center gap-2">
-                        <i onClick={handleRefreshLocation} className={`text-xl cursor-pointer ${isRefreshing ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-location-crosshairs active:rotate-180 duration-700'}`} style={{ color: theme.name === 'أبيض وأسود' ? '#ffffff' : theme.palette[0] }}></i>
+                    <div className="relative flex items-center justify-center w-full">
+                        <div className="absolute left-0 flex items-center gap-2">
+                             <ThemePageLock />
+                             <i onClick={handleRefreshLocation} className={`text-xl cursor-pointer ${isRefreshing ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-location-crosshairs active:rotate-180 duration-700'}`} style={{ color: theme.name === 'أبيض وأسود' ? '#ffffff' : theme.palette[0] }}></i>
+                        </div>
                         <h1 className="app-top-bar__title text-2xl font-kufi">اتجاه القبلة</h1>
                     </div>
-                    <p className="app-top-bar__subtitle">
-                        {config?.location?.cityGov ? `حسب موقعك في: ${config.location.cityGov}` : 'استخدم البوصلة لتحديد اتجاه الكعبة المشرفة'}
+                    <p className="app-top-bar__subtitle text-center">
+                        {config?.location?.cityGov ? `حسب موقعك في: ${config.location.cityGov}` : 'تحديد اتجاه القبلة بدقة'}
                     </p>
                 </div>
-                
-                {/* Modes Tabs */}
-                <div className="flex justify-center flex-wrap w-full gap-1.5 px-1 pb-2 mt-4">
+            </header>
+
+            {/* Modes Tabs - Independent Floating Scrollable Row - 100% Transparent */}
+            <div className="w-full overflow-x-auto no-scrollbar scroll-smooth z-30 relative bg-transparent mt-2">
+                <div className="flex items-center gap-3 px-6 min-w-max py-4 bg-transparent pt-4">
                     {[
                         { id: 'compass', label: 'البوصلة', icon: 'fa-compass' },
                         { id: 'visual', label: 'المرئية', icon: 'fa-map-location-dot' },
-                        { id: 'ar', label: 'الواقع المعزز', icon: 'fa-vr-cardboard' },
+                        { id: 'ar', label: 'الواقع معزز', icon: 'fa-vr-cardboard' },
                         { id: 'sun_moon', label: 'الشمس والقمر', icon: 'fa-cloud-sun' },
                         { id: 'shadow', label: 'الظل', icon: 'fa-person-rays' }
                     ].map(mode => (
                         <button
                             key={mode.id}
                             onClick={() => setActiveMode(mode.id)}
-                            className={`whitespace-nowrap px-2 py-1.5 rounded-full text-[10px] sm:text-xs font-bold transition-all flex items-center justify-center gap-1 ${activeMode === mode.id ? 'shadow-md' : 'opacity-90'}`}
+                            className={`whitespace-nowrap px-6 py-3 rounded-full text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 border-none active:scale-95 shadow-lg ${activeMode === mode.id ? 'scale-105 z-10' : 'opacity-90 hover:opacity-100 hover:scale-105'}`}
                             style={{
-                                backgroundColor: activeMode === mode.id ? (theme.name === 'أبيض وأسود' ? '#ffffff' : theme.palette[0]) : 'var(--card-bg)',
-                                color: activeMode === mode.id ? (theme.name === 'أبيض وأسود' ? '#000000' : '#ffffff') : 'var(--text-color)',
-                                border: `1px solid ${theme.name === 'أبيض وأسود' ? '#ffffff' : theme.palette[0]}30`
+                                backgroundColor: activeMode === mode.id 
+                                    ? (isDefaultTheme ? '#000000' : (theme.name === 'أبيض وأسود' ? '#ffffff' : theme.palette[0])) 
+                                    : 'var(--card-bg)',
+                                color: activeMode === mode.id 
+                                    ? (isDefaultTheme ? '#ffffff' : (theme.name === 'أبيض وأسود' ? '#000000' : '#ffffff')) 
+                                    : 'var(--text-color)',
+                                boxShadow: activeMode === mode.id 
+                                    ? `0 12px 24px -10px ${isDefaultTheme ? 'rgba(0,0,0,0.4)' : (theme.name === 'أبيض وأسود' ? 'rgba(255,255,255,0.4)' : `${theme.palette[0]}50`)}` 
+                                    : '0 4px 15px -1px rgba(0,0,0,0.2)'
                             }}
                         >
-                            <i className={`fa-solid ${mode.icon}`}></i>
+                            <i className={`fa-solid ${mode.icon} text-lg`}></i>
                             <span>{mode.label}</span>
                         </button>
                     ))}
                 </div>
-            </header>
+            </div>
 
-            <main className="flex-1 w-full flex flex-col items-center justify-start p-4 gap-4 text-center overflow-y-auto overflow-x-hidden pb-24">
+            <main className="absolute inset-0 w-full flex flex-col items-center justify-start p-4 gap-4 text-center overflow-y-auto overflow-x-hidden pt-44 pb-24 z-10">
                  {error && <p className="themed-card p-3 rounded-lg w-full" style={{backgroundColor: '#ef4444', color: 'white'}}>{error}</p>}
                  {qiblaDirection === null && !error && <p className="themed-text w-full">جاري تحديد اتجاه القبلة...</p>}
                  
@@ -197,7 +210,7 @@ function Qibla({ onBack, onNavigate }) {
                         <div className="relative w-64 h-64 md:w-80 md:h-80 rounded-full flex items-center justify-center themed-card transition-all duration-300" style={{boxShadow: isAligned ? `0 0 20px ${theme.name === 'أبيض وأسود' ? '#ffffff' : theme.palette[0]}90` : 'var(--card-shadow)'}}>
                             
                             <div ref={compassCircleRef} className="absolute w-full h-full transition-transform duration-500 ease-out">
-                                 <div className="absolute top-0 left-1/2 -translate-x-1/2 -mt-4 text-2xl font-bold" style={{color: theme.name === 'أبيض وأسود' ? '#ffffff' : theme.palette[0]}}>ش</div>
+                                 <div className="absolute top-0 left-1/2 -translate-x-1/2 -mt-4 text-2xl font-bold" style={{color: isDefaultTheme ? '#000000' : (theme.name === 'أبيض وأسود' ? '#ffffff' : theme.palette[0])}}>ش</div>
                                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 -mb-2 text-base themed-text-muted">ج</div>
                                  <div className="absolute left-0 top-1/2 -translate-y-1/2 -ml-2 text-base themed-text-muted">غ</div>
                                  <div className="absolute right-0 top-1/2 -translate-y-1/2 -mr-2 text-base themed-text-muted">ش</div>
@@ -209,8 +222,8 @@ function Qibla({ onBack, onNavigate }) {
                             
                             {qiblaDirection !== null && (
                                  <div ref={qiblaPointerRef} className="absolute w-full h-full transition-transform duration-500 ease-out">
-                                     <svg viewBox="0 0 100 100" className="w-full h-full" style={{filter: `drop-shadow(0 2px 4px ${theme.name === 'أبيض وأسود' ? '#ffffff' : theme.palette[0]}50)`}}>
-                                        <path d="M50 0 L60 20 L50 15 L40 20 Z" fill={theme.name === 'أبيض وأسود' ? '#ffffff' : theme.palette[0]} />
+                                     <svg viewBox="0 0 100 100" className="w-full h-full" style={{filter: `drop-shadow(0 2px 4px ${isDefaultTheme ? 'rgba(0,0,0,0.2)' : (theme.name === 'أبيض وأسود' ? 'rgba(255,255,255,0.4)' : `${theme.palette[0]}50`)})`}}>
+                                        <path d="M50 0 L60 20 L50 15 L40 20 Z" fill={isDefaultTheme ? '#000000' : (theme.name === 'أبيض وأسود' ? '#ffffff' : theme.palette[0])} />
                                     </svg>
                                 </div>
                             )}
@@ -224,12 +237,12 @@ function Qibla({ onBack, onNavigate }) {
                         </div>
                         
                         {qiblaDirection !== null && (
-                            <div className="themed-card p-4 rounded-xl transition-all duration-300 w-64" style={{borderColor: isAligned ? (theme.name === 'أبيض وأسود' ? '#ffffff' : theme.palette[0]) : 'var(--card-border)', borderWidth: '2px'}}>
+                            <div className="themed-card p-4 rounded-xl transition-all duration-300 w-64 mt-12 mb-8" style={{borderColor: isAligned ? (theme.name === 'أبيض وأسود' ? '#ffffff' : theme.palette[0]) : 'var(--card-border)', borderWidth: '2px'}}>
                                 <p className="text-lg font-bold transition-colors" style={{color: isAligned ? (theme.name === 'أبيض وأسود' ? '#ffffff' : theme.palette[0]) : 'var(--text-color)'}}>
                                      {isAligned ? "هذا هو اتجاه القبلة" : `اتجاه القبلة: ${Math.round(qiblaDirection)}°`}
                                 </p>
                                 <p className="text-xs themed-text-muted mt-1">
-                                    {isAligned ? "تقبل الله طاعتكم" : "قم بمحاذاة السهم الأخضر مع علامة الشمال (ش)"}
+                                    {isAligned ? "تقبل الله طاعتكم" : `قم بمحاذاة السهم ${isDefaultTheme ? 'الأسود' : 'الأخضر'} مع علامة الشمال (ش)`}
                                 </p>
                             </div>
                         )}
@@ -255,10 +268,10 @@ function Qibla({ onBack, onNavigate }) {
                 {activeMode === 'shadow' && config?.location && qiblaDirection !== null && (
                     <ShadowQibla lat={config.location.lat} lng={config.location.lng} qiblaDirection={qiblaDirection} heading={heading} theme={theme} />
                 )}
-
+                <div className="w-full h-24 shrink-0"></div>
             </main>
             
-            <BottomBar onHomeClick={() => onNavigate('home')} onThemesClick={() => {}} showThemes={false} />
+            <BottomBar onHomeClick={onBack} onThemesClick={() => {}} showThemes={false} />
         </div>
     );
 }

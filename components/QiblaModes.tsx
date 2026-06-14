@@ -63,14 +63,28 @@ export const ARQibla = ({ qiblaDirection, heading, isAligned, theme }: any) => {
                 if (videoRef.current) {
                     videoRef.current.srcObject = stream;
                     videoRef.current.muted = true;
-                    const playPromise = videoRef.current.play();
-                    if (playPromise !== undefined) {
-                        playPromise.catch(err => {
-                            if (err.name !== 'AbortError') {
-                                console.error('Video play failed:', err);
+                    const startPlay = async () => {
+                        if (!videoRef.current) return;
+                        try {
+                            await videoRef.current.play();
+                        } catch (err: any) {
+                            const isAutoplayError = 
+                                err.name === 'NotAllowedError' || 
+                                (err.message && (
+                                    err.message.includes('user agent') || 
+                                    err.message.includes('platform') || 
+                                    err.message.includes('permission') ||
+                                    err.message.includes('interact')
+                                ));
+
+                            if (err.name !== 'AbortError' && !isAutoplayError) {
+                                console.error('Camera video play failed:', err);
+                            } else if (isAutoplayError) {
+                                console.warn('Camera video autoplay blocked by browser context.');
                             }
-                        });
-                    }
+                        }
+                    };
+                    startPlay();
                 }
             } catch (err) {
                 setError('تعذر الوصول إلى الكاميرا. يرجى منح الصلاحية.');

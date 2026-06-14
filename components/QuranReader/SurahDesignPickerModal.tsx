@@ -67,7 +67,7 @@ const SurahDesignPickerModal: React.FC<SurahDesignPickerModalProps> = ({
                                         currentDesign === d ? 'ring-4 ring-offset-2' : ''
                                     }`}
                                     style={{ 
-                                        ringColor: currentTheme.accent,
+                                        boxShadow: currentDesign === d ? `0 0 0 4px ${currentTheme.accent}` : 'none',
                                         backgroundColor: currentTheme.cardBg,
                                         borderColor: currentTheme.barBorder,
                                         borderWidth: '1px'
@@ -83,9 +83,6 @@ const SurahDesignPickerModal: React.FC<SurahDesignPickerModalProps> = ({
                                             design={d}
                                             compact={true}
                                         />
-                                    </div>
-                                    <div className="text-center pb-2 font-bold opacity-60" style={{ color: currentTheme.text }}>
-                                        تصميم {index + 1}
                                     </div>
                                 </div>
                             ))}

@@ -77,12 +77,26 @@ export function useBackButton({
             handleBackButton();
         });
 
+        const handlePopState = (e: PopStateEvent) => {
+            e.preventDefault();
+            // User pressed the browser back button
+            handleBackButton();
+            // Push state again so the browser doesn't actually exit the page immediately
+            // We only want it to exit if the user confirms on the dialog.
+            window.history.pushState(null, '', window.location.href);
+        };
+
+        // Push initial state to trap the user
+        window.history.pushState(null, '', window.location.href);
+        window.addEventListener('popstate', handlePopState);
+
         // Also keep the document listener for broader compatibility
         document.addEventListener('backbutton', handleBackButton, false);
 
         return () => {
             listener.then(l => l.remove());
             document.removeEventListener('backbutton', handleBackButton, false);
+            window.removeEventListener('popstate', handlePopState);
         };
     }, [handleBackButton]);
 }

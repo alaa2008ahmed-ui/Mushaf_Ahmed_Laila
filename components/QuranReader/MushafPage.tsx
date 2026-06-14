@@ -18,10 +18,16 @@ interface MushafPageProps {
         fontFamily: string;
         textColor: string;
         theme: string;
+        surahHeaderDesign?: number;
+        isBold?: boolean;
     };
     currentTheme?: any;
     hideVerses?: boolean;
     memorizationSettings?: any;
+    isPlaying?: boolean;
+    isRecording?: boolean;
+    revealedAyahs?: string[];
+    tempRevealedAyah?: string | null;
 }
 
 export const fixQuranText = (text: string) => {
@@ -47,7 +53,7 @@ export const renderTajweedTextHtml = (text: string) => {
     return fixQuranText(text);
 };
 
-const MushafPage: React.FC<MushafPageProps> = React.memo(({ pageNum, pageData, highlightedAyahId, onAyahClick, onVerseClick, onVerseLongPress, onAyahLongPress, onInteractionStart, onInteractionEnd, onSurahHeaderLongPress, settings, currentTheme, hideVerses, memorizationSettings }) => {
+const MushafPage: React.FC<MushafPageProps> = React.memo(({ pageNum, pageData, highlightedAyahId, onAyahClick, onVerseClick, onVerseLongPress, onAyahLongPress, onInteractionStart, onInteractionEnd, onSurahHeaderLongPress, settings, currentTheme, hideVerses, memorizationSettings, isPlaying, isRecording, revealedAyahs = [], tempRevealedAyah }) => {
     const pageRef = useRef<HTMLDivElement | null>(null);
     const longPressTimer = useRef<number | null>(null);
     const isLongPressTriggered = useRef(false);
@@ -114,16 +120,20 @@ const MushafPage: React.FC<MushafPageProps> = React.memo(({ pageNum, pageData, h
     
     const pageStyle = {
         fontSize: settings ? `${settings.fontSize}rem` : '1.7rem',
+        fontWeight: settings?.isBold ? '900' : 'normal',
+        WebkitTextStroke: settings?.isBold ? '0.5px currentColor' : '0px',
         fontFamily: 'var(--qr-fontFamily)',
         color: 'var(--qr-text)',
         letterSpacing: 0,
         fontFeatureSettings: '"kern", "liga", "clig", "calt", "ccmp"',
-        textRendering: 'optimizeLegibility'
+        textRendering: 'optimizeLegibility' as const
     };
 
     const headerStyle = {
         fontSize: settings ? `${settings.fontSize * 0.94}rem` : '1.6rem',
         fontFamily: settings?.fontFamily || 'var(--font-amiri-quran)',
+        fontWeight: settings?.isBold ? '900' : 'normal',
+        WebkitTextStroke: settings?.isBold ? '0.5px currentColor' : '0px',
         color: currentTheme?.accent || '#6d28d9'
     };
 
@@ -132,15 +142,16 @@ const MushafPage: React.FC<MushafPageProps> = React.memo(({ pageNum, pageData, h
     // Use contrasting colors for page numbers as requested
     // If theme is blue-ish, use purple/orange. If green, use blue/red.
     const getContrastingColors = () => {
-        const themeId = currentTheme?.id || 'night_sky';
+        const themeId = currentTheme?.id || 'black';
         const bracketColor = currentTheme?.verseBracket || currentTheme?.sajdah || '#9333ea';
         const numColor = currentTheme?.accent || currentTheme?.sajdah || '#9333ea';
         
         switch(themeId) {
+            case 'black': return { num: '#000000', bracket: '#d97706' };
             case 'night_sky': return { num: '#9333ea', bracket: '#9333ea' }; // Purple for both
             case 'green': return { num: '#dc2626', bracket: '#dc2626' }; // Red for both
             case 'red': return { num: '#2563eb', bracket: '#2563eb' }; // Blue for both
-            case 'deep_black': return { num: '#f59e0b', bracket: '#f59e0b' }; // Orange for both
+            case 'deep_black': return { num: '#10B981', bracket: '#10B981' }; // Turquoise Green for both
             default: return { 
                 num: numColor, 
                 bracket: bracketColor 
@@ -176,7 +187,34 @@ const MushafPage: React.FC<MushafPageProps> = React.memo(({ pageNum, pageData, h
                     let shouldHide = hideVerses && highlightedAyahId !== id;
                     
                     // If in memorization review mode, only hide if it's within the review range
-                    if (shouldHide && memorizationSettings?.isReviewMode) {
+                    if (memorizationSettings?.isReviewMode) {
+                        const s = ayah.sNum;
+                        const a = ayah.numberInSurah;
+                        const { fromSurah, fromAyah, toSurah, toAyah } = memorizationSettings;
+                        
+                        const isBefore = s < fromSurah || (s === fromSurah && a < fromAyah);
+                        const isAfter = s > toSurah || (s === toSurah && a > toAyah);
+                        const isInRange = !isBefore && !isAfter;
+                        
+                        const isHighlighted = highlightedAyahId === id;
+                        const ayahKey = `${s}-${a}`;
+                        const isRevealed = revealedAyahs.includes(ayahKey) || tempRevealedAyah === ayahKey;
+
+                        if (isInRange) {
+                            if (isRevealed) {
+                                shouldHide = false; // Show if revealed or hint
+                            } else if (isRecording && tempRevealedAyah !== ayahKey) {
+                                shouldHide = true; // Hide others during recording, unless it's the temp revealed one
+                            } else if (isPlaying && isHighlighted) {
+                                shouldHide = false; // Show only the playing verse
+                            } else {
+                                shouldHide = true; // Hide otherwise
+                            }
+                        } else {
+                            shouldHide = false; // Don't hide verses outside the review range
+                        }
+                    } else if (shouldHide && memorizationSettings) {
+                        // Normal memorization mode logic (hide only within range)
                         const s = ayah.sNum;
                         const a = ayah.numberInSurah;
                         const { fromSurah, fromAyah, toSurah, toAyah } = memorizationSettings;

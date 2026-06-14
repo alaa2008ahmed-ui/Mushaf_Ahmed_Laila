@@ -43,13 +43,9 @@ const ListenSurahSelectModal: React.FC<ListenSurahSelectModalProps> = ({ onClose
                         >
                             <div className="flex flex-col justify-center items-center w-full gap-2">
                                 <span className="text-sm">{s.number} - {s.name}</span>
-                                {currentSurah === s.number && <i className="fa-solid fa-check text-xs"></i>}
                             </div>
                         </button>
                     ))}
-                </div>
-                <div className="p-3 border-t themed-card-bg rounded-b-2xl">
-                    <button onClick={handleClose} className="w-full py-2 rounded-xl font-bold theme-btn-bg">إغلاق</button>
                 </div>
             </div>
         </div>

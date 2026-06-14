@@ -29,6 +29,7 @@ interface PrayerConfig {
         midnight: boolean;
         lastThird: boolean;
     };
+    audioMutedUntil?: number;
 }
 
 interface PrayerTimesContextType {
@@ -353,19 +354,38 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                     cityGov: 'موقعي الحالي', fullCountry: '', combinedCode: ''
                 };
                 try {
-                    const res = await fetchWithTimeout(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&accept-language=ar`, {}, 5000);
+                    const res = await fetchWithTimeout(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&accept-language=ar`, {}, 7000);
                     const data = await res.json();
-                    const addr = data.address;
-                    const city = addr.village || addr.town || addr.city || "موقعي";
-                    const countryInfo = getCountryInfo(addr.country_code, addr.country, city);
-                    newLoc = {
-                        ...newLoc,
-                        cityGov: `${city} - ${addr.state || ""}`,
-                        fullCountry: countryInfo.fullName,
-                        combinedCode: countryInfo.combinedCode
-                    };
+                    if (data && data.address) {
+                        const addr = data.address;
+                        const city = addr.village || addr.town || addr.city || "موقعي";
+                        const countryInfo = getCountryInfo(addr.country_code, addr.country, city);
+                        newLoc = {
+                            ...newLoc,
+                            cityGov: `${city}${addr.state ? ` - ${addr.state}` : ''}`,
+                            fullCountry: countryInfo.fullName,
+                            combinedCode: countryInfo.combinedCode
+                        };
+                    } else {
+                        throw new Error("No address");
+                    }
                 } catch(e) {
-                    newLoc.cityGov = "موقعي الحالي (بدون اتصال)";
+                    try {
+                        const res2 = await fetchWithTimeout(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=ar`, {}, 7000);
+                        const data2 = await res2.json();
+                        if (data2 && data2.countryName) {
+                            newLoc = {
+                                ...newLoc,
+                                cityGov: data2.city || data2.locality || "موقعي الحالي",
+                                fullCountry: data2.countryName,
+                                combinedCode: ""
+                            };
+                        } else {
+                            throw new Error("No data");
+                        }
+                    } catch (err) {
+                        newLoc.cityGov = "موقعي الحالي";
+                    }
                 }
                 setConfig(prev => ({ ...prev, location: newLoc }));
                 resolve();
@@ -474,7 +494,10 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                                     let soundPath = "/assets/audio/takbeer1.mp3"; // Default to Takbeer 1
                                     let playSound = true;
                                     
-                                    if (toneConfig && toneConfig.data) {
+                                    if (config.audioMutedUntil && prayerDate.getTime() < config.audioMutedUntil) {
+                                        playSound = false;
+                                        soundPath = '';
+                                    } else if (toneConfig && toneConfig.data) {
                                         if (toneConfig.data === 'none') {
                                             playSound = false;
                                             soundPath = '';
@@ -547,6 +570,8 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                                         androidLockscreen: true,
                                         androidChannelEnableVibration: true,
                                         launch: true,
+                                        smallIcon: 'ic_stat_name',
+                                        icon: 'ic_stat_name',
                                         // Explicitly define channel properties for Android 8+
                                         // The plugin will create this channel if it doesn't exist
                                         androidChannelName: `Adhan ${prayerNamesAr[key]}`,
@@ -618,6 +643,8 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                                     foreground: true,
                                     priority: 1,
                                     androidChannelId: 'night_times_channel',
+                                    smallIcon: 'ic_stat_name',
+                                    icon: 'ic_stat_name',
                                     androidChannelName: 'تنبيهات أوقات الليل',
                                     androidChannelDescription: 'إشعارات لأوقات أول الليل، منتصف الليل، والثلث الأخير',
                                     androidChannelImportance: 4,
@@ -635,6 +662,8 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                                     foreground: true,
                                     priority: 1,
                                     androidChannelId: 'night_times_channel',
+                                    smallIcon: 'ic_stat_name',
+                                    icon: 'ic_stat_name',
                                     androidChannelName: 'تنبيهات أوقات الليل',
                                     androidChannelDescription: 'إشعارات لأوقات أول الليل، منتصف الليل، والثلث الأخير',
                                     androidChannelImportance: 4,
@@ -652,33 +681,14 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                                     foreground: true,
                                     priority: 2,
                                     androidChannelId: 'night_times_channel',
+                                    smallIcon: 'ic_stat_name',
+                                    icon: 'ic_stat_name',
                                     androidChannelName: 'تنبيهات أوقات الليل',
                                     androidChannelDescription: 'إشعارات لأوقات أول الليل، منتصف الليل، والثلث الأخير',
                                     androidChannelImportance: 4,
                                     androidAllowWhileIdle: true,
                                     androidWakeUpScreen: true
                                 });
-                            }
-
-                            // Surah Al-Kahf reminder on Thursday at 9:00 PM
-                            if (date.getDay() === 4) {
-                                const kahfDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 21, 0, 0);
-                                if (kahfDate > new Date()) {
-                                    notificationsToSchedule.push({
-                                        id: 2000 + day,
-                                        title: 'تذكير بسورة الكهف',
-                                        text: 'قال رسول الله ﷺ: "من قرأ سورة الكهف في يوم الجمعة أضاء له من النور ما بين الجمعتين"',
-                                        trigger: { at: kahfDate },
-                                        foreground: true,
-                                        priority: 1,
-                                        androidChannelId: 'night_times_channel',
-                                        androidChannelName: 'تنبيهات أوقات الليل',
-                                        androidChannelDescription: 'إشعارات لأوقات أول الليل، منتصف الليل، والثلث الأخير',
-                                        androidChannelImportance: 4,
-                                        androidAllowWhileIdle: true,
-                                        androidWakeUpScreen: true
-                                    });
-                                }
                             }
                         }
 

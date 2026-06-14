@@ -4,7 +4,7 @@ import { BookOpen } from 'lucide-react';
 const JuzNotification: FC<{isVisible: boolean, text: string, currentTheme: any}> = ({isVisible, text, currentTheme}) => {
     return (
         <div 
-            className={`fixed z-[96] transition-all duration-500 pointer-events-none flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg border-2`}
+            className={`fixed z-[3000] transition-all duration-500 pointer-events-none flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg border-2`}
             style={{ 
                 bottom: 'calc(4.5rem + env(safe-area-inset-bottom) + 70px)', 
                 right: isVisible ? 'calc(16px + env(safe-area-inset-right))' : '-400px',

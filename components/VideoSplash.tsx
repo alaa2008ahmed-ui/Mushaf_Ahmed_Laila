@@ -18,15 +18,33 @@ const VideoSplash: React.FC<VideoSplashProps> = ({ onEnded }) => {
       }
       
       videoRef.current.muted = true;
-      const playPromise = videoRef.current.play();
-      if (playPromise !== undefined) {
-        playPromise.catch(error => {
-          if (error.name !== 'AbortError') {
+      videoRef.current.playsInline = true;
+      
+      const startPlay = async () => {
+        if (!videoRef.current) return;
+        try {
+          await videoRef.current.play();
+        } catch (error: any) {
+          const isAutoplayError = 
+            error.name === 'NotAllowedError' || 
+            (error.message && (
+              error.message.includes('user agent') || 
+              error.message.includes('platform') || 
+              error.message.includes('permission') ||
+              error.message.includes('interact')
+            ));
+
+          if (isAutoplayError) {
+            console.warn("Video autoplay blocked by browser policy. Skipping splash.");
+            onEnded();
+          } else if (error.name !== 'AbortError') {
             console.error("Video play failed:", error);
             onEnded();
           }
-        });
-      }
+        }
+      };
+
+      startPlay();
     }
   }, [onEnded]);
 
