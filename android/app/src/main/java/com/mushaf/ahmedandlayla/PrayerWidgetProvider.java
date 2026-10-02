@@ -211,21 +211,33 @@ public class PrayerWidgetProvider extends AppWidgetProvider {
                     String[] namesEn = {"Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"};
                     String[] names = isArabic ? namesAr : namesEn;
 
+                    JSONObject sourceTimes = (data.has("times_24h") && !data.isNull("times_24h"))
+                            ? data.getJSONObject("times_24h")
+                            : times;
+
                     boolean found = false;
                     for (int i = 0; i < ids.length; i++) {
                         try {
-                            String timeStr = times.getString(ids[i]);
+                            String timeStr = sourceTimes.getString(ids[i]);
                             String[] parts = timeStr.split(":");
                             int h = Integer.parseInt(parts[0].trim());
                             int m = Integer.parseInt(parts[1].trim());
+
+                            // إذا كانت الأوقات المرجعية بصيغة 12 ساعة ولم تتضمن times_24h
+                            if (sourceTimes == times) {
+                                if (ids[i].equals("dhuhr") && h < 11) h += 12;
+                                else if ((ids[i].equals("asr") || ids[i].equals("maghrib") || ids[i].equals("isha")) && h < 12) h += 12;
+                            }
+
                             int pTotal = h * 60 + m;
 
                             if (pTotal > nowTotal) {
-                                cal.set(java.util.Calendar.HOUR_OF_DAY, h);
-                                cal.set(java.util.Calendar.MINUTE, m);
-                                cal.set(java.util.Calendar.SECOND, 0);
-                                cal.set(java.util.Calendar.MILLISECOND, 0);
-                                targetTimeMillis = cal.getTimeInMillis();
+                                java.util.Calendar nextCal = java.util.Calendar.getInstance();
+                                nextCal.set(java.util.Calendar.HOUR_OF_DAY, h);
+                                nextCal.set(java.util.Calendar.MINUTE, m);
+                                nextCal.set(java.util.Calendar.SECOND, 0);
+                                nextCal.set(java.util.Calendar.MILLISECOND, 0);
+                                targetTimeMillis = nextCal.getTimeInMillis();
                                 nextPrayerId = ids[i];
                                 nextPrayerName = names[i];
                                 found = true;
@@ -237,16 +249,18 @@ public class PrayerWidgetProvider extends AppWidgetProvider {
                     // إذا مرت جميع الصلوات لليوم الحالي، فالصلاة القادمة هي الفجر غداً
                     if (!found) {
                         try {
-                            String timeStr = times.getString("fajr");
+                            String timeStr = sourceTimes.getString("fajr");
                             String[] parts = timeStr.split(":");
                             int h = Integer.parseInt(parts[0].trim());
                             int m = Integer.parseInt(parts[1].trim());
-                            cal.add(java.util.Calendar.DAY_OF_YEAR, 1);
-                            cal.set(java.util.Calendar.HOUR_OF_DAY, h);
-                            cal.set(java.util.Calendar.MINUTE, m);
-                            cal.set(java.util.Calendar.SECOND, 0);
-                            cal.set(java.util.Calendar.MILLISECOND, 0);
-                            targetTimeMillis = cal.getTimeInMillis();
+                            
+                            java.util.Calendar nextCal = java.util.Calendar.getInstance();
+                            nextCal.add(java.util.Calendar.DAY_OF_YEAR, 1);
+                            nextCal.set(java.util.Calendar.HOUR_OF_DAY, h);
+                            nextCal.set(java.util.Calendar.MINUTE, m);
+                            nextCal.set(java.util.Calendar.SECOND, 0);
+                            nextCal.set(java.util.Calendar.MILLISECOND, 0);
+                            targetTimeMillis = nextCal.getTimeInMillis();
                             nextPrayerId = "fajr";
                             nextPrayerName = names[0];
                         } catch (Exception e) {}

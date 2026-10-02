@@ -22,6 +22,8 @@ import Memorization from '../pages/Memorization';
 import GlobalSearch from '../pages/GlobalSearch';
 import AsmaulHusna from '../pages/AsmaulHusna';
 import HabitTracker from '../pages/HabitTracker';
+import CommunityPage from '../pages/CommunityPage';
+import DirectChatPage from '../pages/DirectChatPage';
 
 interface AppRouterProps {
     page: string;
@@ -80,6 +82,10 @@ const AppRouter: React.FC<AppRouterProps> = ({ page, onBack, onNavigate, onOpenT
         return <AsmaulHusna onBack={onBack} onNavigate={onNavigate} />;
       case 'habit-tracker':
         return <HabitTracker onBack={onBack} onNavigate={onNavigate} />;
+      case 'community':
+        return <CommunityPage onBack={onBack} onNavigate={onNavigate} initialTab={navParams?.initialTab} />;
+      case 'direct-chat':
+        return <DirectChatPage partnerUserId={navParams?.partnerUserId || ''} onBack={onBack} onNavigate={onNavigate} />;
       case 'home':
       default:
         return <MainMenu onNavigate={onNavigate} onOpenThemes={onOpenThemes} onOpenSideMenu={onOpenSideMenu} />;

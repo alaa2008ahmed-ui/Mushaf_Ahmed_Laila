@@ -1,0 +1,78 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "App user profile in the global community",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128 },
+        "username": { "type": "string", "minLength": 2, "maxLength": 50 },
+        "avatarUrl": { "type": "string", "maxLength": 500 },
+        "country": { "type": "string", "maxLength": 50 },
+        "bio": { "type": "string", "maxLength": 150 },
+        "isOnline": { "type": "boolean" },
+        "lastSeen": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["userId", "username"]
+    },
+    "Chat": {
+      "title": "Chat Metadata",
+      "description": "Metadata for a direct 1-on-1 chat",
+      "type": "object",
+      "properties": {
+        "chatId": { "type": "string", "maxLength": 256 },
+        "participants": { "type": "string" },
+        "lastMessage": { "type": "string", "maxLength": 2000 },
+        "lastMessageTime": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["chatId"]
+    },
+    "Message": {
+      "title": "Chat Message",
+      "description": "Direct message sent between users",
+      "type": "object",
+      "properties": {
+        "messageId": { "type": "string", "maxLength": 128 },
+        "chatId": { "type": "string", "maxLength": 256 },
+        "senderId": { "type": "string", "maxLength": 128 },
+        "recipientId": { "type": "string", "maxLength": 128 },
+        "text": { "type": "string", "maxLength": 2000 },
+        "isRead": { "type": "boolean" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["messageId", "chatId", "senderId", "recipientId", "text"]
+    },
+    "BlockRecord": {
+      "title": "User Block Record",
+      "description": "Record created when a user blocks another user",
+      "type": "object",
+      "properties": {
+        "blockId": { "type": "string", "maxLength": 256 },
+        "blockerId": { "type": "string", "maxLength": 128 },
+        "blockedId": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["blockerId", "blockedId"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Global user profiles collection"
+    },
+    "/chats/{chatId}": {
+      "schema": "Chat",
+      "description": "Conversations metadata"
+    },
+    "/chats/{chatId}/messages/{messageId}": {
+      "schema": "Message",
+      "description": "Direct chat messages"
+    },
+    "/blockedUsers/{blockId}": {
+      "schema": "BlockRecord",
+      "description": "Block relationships between users"
+    }
+  }
+}

@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Share2, Plus, Minus, Type, Image as ImageIcon, FileText, Volume2, Palette, LayoutTemplate, Check } from 'lucide-react';
 import html2canvas from 'html2canvas';
+import { safeHtml2Canvas } from '../../utils/canvasHelper';
 import { Share } from '@capacitor/share';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Capacitor } from '@capacitor/core';
@@ -370,7 +371,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                     // Smaller delay for faster response
                     await new Promise(r => setTimeout(r, 100));
 
-                    const canvas = await html2canvas(captureElement, {
+                    const canvas = await safeHtml2Canvas(captureElement, {
                         scale: 2, // 2x is high quality (2560px width) and safe for mobile
                         backgroundColor: null,
                         useCORS: true,

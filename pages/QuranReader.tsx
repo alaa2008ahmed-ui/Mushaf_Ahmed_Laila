@@ -3436,7 +3436,7 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
     };
 
     const getToolbarStyle = (type: string, defaultBg: string, defaultText: string, defaultBorder: string) => {
-        const isBlackTheme = currentTheme?.bg === '#000000';
+        const isBlackTheme = currentTheme?.bg === '#000000' && currentTheme?.id !== 'deep_black';
         if (isBlackTheme && type === 'btn-home') {
             return {
                 backgroundColor: '#000000',

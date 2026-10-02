@@ -25,6 +25,7 @@ import { clearSearchCache } from './pages/GlobalSearch';
 import { ScreenOrientation } from '@capacitor/screen-orientation';
 import { APP_VERSION, REMOTE_VERSION_URL, GOOGLE_PLAY_URL } from './constants';
 import UpdateNotificationModal from './components/UpdateNotificationModal';
+import { InAppChatNotification } from './components/InAppChatNotification';
 
 // --- Main App Component ---
 function App() {
@@ -119,7 +120,7 @@ function App() {
       'home', 'quran', 'quran-landscape', 'quran-download', 'salah-adhkar', 'calendar', 'listen', 'tasbeeh', 
       'hajj-umrah', 'hisn-muslim', 'prayer-times', 'monthly-prayer-times', 'qibla', 
       'sabah-masaa', 'adia', 'nawawi', 'calculators', 'voice-control', 'more-menu', 'daily-wird', 'memorization',
-      'phone-notifications', 'search', 'asmaul-husna', 'habit-tracker'
+      'phone-notifications', 'search', 'asmaul-husna', 'habit-tracker', 'community', 'direct-chat'
     ];
 
     if (pageId === 'phone-notifications') {
@@ -451,6 +452,7 @@ function AppContent({
       
       <RateUs />
       <MawlidNotification />
+      <InAppChatNotification currentPage={page} navParams={navParams} onNavigate={handleNavigate} />
     </div>
   );
 }

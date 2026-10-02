@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "node scripts/prepare-android-audio.cjs && vite build",
+    "build": "vite build",
+    "prepare:android": "node scripts/prepare-android-audio.cjs",
     "preview": "vite preview",
     "lint": "tsc --noEmit"
   },
@@ -49,6 +50,7 @@
     "cordova-plugin-device": "^3.0.0",
     "cordova-plugin-local-notification": "^1.2.3",
     "dom-to-image-more": "^3.7.2",
+    "firebase": "^12.19.0",
     "framer-motion": "^12.34.3",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.1",

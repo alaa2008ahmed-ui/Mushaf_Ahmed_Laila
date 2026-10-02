@@ -18,8 +18,49 @@ function Adia({ onBack, onNavigate }) {
     const [toastMessage, setToastMessage] = useState('');
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [menuOpenDirection, setMenuOpenDirection] = useState<'up' | 'down'>('up');
+    const [playingId, setPlayingId] = useState<string | null>(null);
     const fabRef = useRef<HTMLButtonElement>(null);
     const mainRef = useRef<HTMLElement>(null);
+
+    useEffect(() => {
+        return () => {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+            }
+        };
+    }, []);
+
+    const handlePlayAudio = (id: string, text: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!('speechSynthesis' in window)) {
+            setToastMessage('خدمة القراءة الصوتية غير مدعومة على هذا المتصفح');
+            setTimeout(() => setToastMessage(''), 2500);
+            return;
+        }
+
+        if (playingId === id) {
+            window.speechSynthesis.cancel();
+            setPlayingId(null);
+            return;
+        }
+
+        window.speechSynthesis.cancel();
+
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'ar-SA';
+        
+        utterance.onend = () => {
+            setPlayingId(null);
+        };
+        
+        utterance.onerror = (event) => {
+            console.error('TTS error', event);
+            setPlayingId(null);
+        };
+
+        setPlayingId(id);
+        window.speechSynthesis.speak(utterance);
+    };
 
     useEffect(() => {
         if (mainRef.current) {
@@ -193,14 +234,23 @@ function Adia({ onBack, onNavigate }) {
                                                 }} 
                                                 className="w-9 h-9 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors opacity-70 hover:opacity-100"
                                                 style={{ color: 'var(--text-color)' }}
+                                                title="تكبير"
                                             >
                                                 <i className="fa-solid fa-magnifying-glass-plus"></i>
                                             </button>
-                                            <button onClick={(e) => handleCopy(duaa.text, e)} className="w-9 h-9 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors opacity-70 hover:opacity-100" style={{ color: 'var(--text-color)' }}>
+                                            <button onClick={(e) => handleCopy(duaa.text, e)} className="w-9 h-9 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors opacity-70 hover:opacity-100" style={{ color: 'var(--text-color)' }} title="نسخ">
                                                 <i className="fa-regular fa-copy"></i>
                                             </button>
-                                            <button onClick={(e) => handleShare(duaa, e)} className="w-9 h-9 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors opacity-70 hover:opacity-100" style={{ color: 'var(--text-color)' }}>
+                                            <button onClick={(e) => handleShare(duaa, e)} className="w-9 h-9 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors opacity-70 hover:opacity-100" style={{ color: 'var(--text-color)' }} title="مشاركة">
                                                 <i className="fa-solid fa-share-nodes"></i>
+                                            </button>
+                                            <button 
+                                                onClick={(e) => handlePlayAudio(duaa.id, duaa.text, e)} 
+                                                className="w-9 h-9 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors opacity-70 hover:opacity-100" 
+                                                style={{ color: playingId === duaa.id ? '#ef4444' : 'var(--text-color)' }}
+                                                title={playingId === duaa.id ? "إيقاف الاستماع" : "استماع صوتي"}
+                                            >
+                                                <i className={`fa-solid ${playingId === duaa.id ? 'fa-circle-pause text-red-500 animate-pulse' : 'fa-volume-high'}`}></i>
                                             </button>
                                         </div>
                                     </div>

@@ -743,6 +743,12 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
             hInt = hInt % 12 || 12;
             return `${hInt.toString().padStart(2, '0')}:${mm}`;
         };
+
+        const formatTime24 = (timeStr: string, offset: number) => {
+            const adjusted = applyOffset(timeStr, offset + (isSummerTimeActive ? 60 : 0));
+            if (!adjusted || adjusted.includes('--')) return "00:00";
+            return adjusted;
+        };
         
         const dayNamesAr = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
         const currentDayName = dayNamesAr[new Date().getDay()];
@@ -786,6 +792,14 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                 asr: formatTime(currentTimes.Asr, config.prayerOffsets.Asr || 0),
                 maghrib: formatTime(currentTimes.Maghrib, config.prayerOffsets.Maghrib || 0),
                 isha: formatTime(currentTimes.Isha, config.prayerOffsets.Isha || 0)
+            },
+            times_24h: {
+                fajr: formatTime24(currentTimes.Fajr, config.prayerOffsets.Fajr || 0),
+                sunrise: formatTime24(currentTimes.Sunrise, config.prayerOffsets.Sunrise || 0),
+                dhuhr: formatTime24(currentTimes.Dhuhr, config.prayerOffsets.Dhuhr || 0),
+                asr: formatTime24(currentTimes.Asr, config.prayerOffsets.Asr || 0),
+                maghrib: formatTime24(currentTimes.Maghrib, config.prayerOffsets.Maghrib || 0),
+                isha: formatTime24(currentTimes.Isha, config.prayerOffsets.Isha || 0)
             },
             timestamps: {
                 fajr: getTimestamp(currentTimes.Fajr, config.prayerOffsets.Fajr || 0),

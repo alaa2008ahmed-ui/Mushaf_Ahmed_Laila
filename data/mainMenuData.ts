@@ -17,6 +17,7 @@ export const verses = [
 
 export const navItems = [
   { id: 'quran', title: "القرآن الكريم", icon: QuranIcon, isFeatured: true },
+  { id: 'community', title: "مجتمع المصحف والتواصل", icon: RadioIcon },
   { id: 'habit-tracker', title: "مربّي العبادات", icon: HabitTrackerIcon },
   { id: 'sabah-masaa', title: "أذكار الصباح والمساء", icon: SabahMasaaIcon },
   { id: 'adia', title: "الأدعية المأثورة", icon: AdiaIcon },
