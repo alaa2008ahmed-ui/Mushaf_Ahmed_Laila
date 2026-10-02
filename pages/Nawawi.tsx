@@ -10,8 +10,17 @@ import { shareAsImage } from '../utils/shareAsImage';
 const HadithModal = ({ hadith, onClose, favorites, toggleFavorite, handleCopy, handleShare }) => {
     const { theme, themeKey } = useTheme();
     const [fontSize, setFontSize] = useState(18);
+    const [isPlaying, setIsPlaying] = useState(false);
     const isBlackAndWhite = themeKey === 'deep_black';
     const primaryColor = isBlackAndWhite ? '#FFFFFF' : theme.palette[0];
+
+    useEffect(() => {
+        return () => {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+            }
+        };
+    }, []);
 
     const increaseFontSize = () => {
         setFontSize(prev => (prev >= 32 ? 18 : prev + 4));
@@ -26,6 +35,67 @@ const HadithModal = ({ hadith, onClose, favorites, toggleFavorite, handleCopy, h
             return title.split(': ')[1];
         }
         return title;
+    };
+
+    const handlePlayAudio = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!('speechSynthesis' in window)) {
+            return;
+        }
+
+        if (isPlaying) {
+            window.speechSynthesis.cancel();
+            setIsPlaying(false);
+            return;
+        }
+
+        window.speechSynthesis.cancel();
+
+        const utterance = new SpeechSynthesisUtterance(hadith.hadith);
+        utterance.lang = 'ar-SA';
+
+        // Select a male Arabic voice if available on the user's system
+        const voices = window.speechSynthesis.getVoices();
+        const arabicVoices = voices.filter(v => v.lang.startsWith('ar') || v.lang.includes('ar-'));
+        
+        let maleVoice = arabicVoices.find(v => {
+            const name = v.name.toLowerCase();
+            return name.includes('maged') || 
+                   name.includes('naayf') || 
+                   name.includes('male') || 
+                   name.includes('hazem') || 
+                   name.includes('hamid') || 
+                   name.includes('shakir');
+        });
+
+        if (!maleVoice && arabicVoices.length > 0) {
+            // Fallback: exclude known female voices to get a male voice if possible
+            maleVoice = arabicVoices.find(v => {
+                const name = v.name.toLowerCase();
+                return !name.includes('laila') && 
+                       !name.includes('hoda') && 
+                       !name.includes('female') && 
+                       !name.includes('yasmine') && 
+                       !name.includes('mary') && 
+                       !name.includes('zeina');
+            }) || arabicVoices[0];
+        }
+
+        if (maleVoice) {
+            utterance.voice = maleVoice;
+        }
+
+        utterance.onend = () => {
+            setIsPlaying(false);
+        };
+
+        utterance.onerror = (event) => {
+            console.error('TTS error', event);
+            setIsPlaying(false);
+        };
+
+        setIsPlaying(true);
+        window.speechSynthesis.speak(utterance);
     };
 
     return (
@@ -57,11 +127,19 @@ const HadithModal = ({ hadith, onClose, favorites, toggleFavorite, handleCopy, h
                             >
                                 <i className="fas fa-search-plus text-lg"></i>
                             </button>
-                            <button onClick={(e) => handleCopy(hadith.hadith, e)} className="w-10 h-10 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors text-gray-600 dark:text-gray-300">
+                            <button onClick={(e) => handleCopy(hadith.hadith, e)} className="w-10 h-10 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors text-gray-600 dark:text-gray-300" title="نسخ">
                                 <i className="fa-regular fa-copy text-lg"></i>
                             </button>
-                            <button onClick={(e) => handleShare(hadith, e)} className="w-10 h-10 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors text-gray-600 dark:text-gray-300">
+                            <button onClick={(e) => handleShare(hadith, e)} className="w-10 h-10 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors text-gray-600 dark:text-gray-300" title="مشاركة">
                                 <i className="fa-solid fa-share-nodes text-lg"></i>
+                            </button>
+                            <button 
+                                onClick={handlePlayAudio} 
+                                className="w-10 h-10 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors text-gray-600 dark:text-gray-300" 
+                                style={{ color: isPlaying ? '#ef4444' : 'inherit' }}
+                                title={isPlaying ? "إيقاف الاستماع" : "استماع صوتي"}
+                            >
+                                <i className={`fa-solid ${isPlaying ? 'fa-circle-pause text-red-500 animate-pulse' : 'fa-volume-high'} text-lg`}></i>
                             </button>
                         </div>
                     </div>

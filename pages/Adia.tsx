@@ -49,6 +49,39 @@ function Adia({ onBack, onNavigate }) {
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = 'ar-SA';
         
+        // Select a male Arabic voice if available on the user's system
+        if ('speechSynthesis' in window) {
+            const voices = window.speechSynthesis.getVoices();
+            const arabicVoices = voices.filter(v => v.lang.startsWith('ar') || v.lang.includes('ar-'));
+            
+            let maleVoice = arabicVoices.find(v => {
+                const name = v.name.toLowerCase();
+                return name.includes('maged') || 
+                       name.includes('naayf') || 
+                       name.includes('male') || 
+                       name.includes('hazem') || 
+                       name.includes('hamid') || 
+                       name.includes('shakir');
+            });
+
+            if (!maleVoice && arabicVoices.length > 0) {
+                // Fallback: exclude known female voices to get a male voice if possible
+                maleVoice = arabicVoices.find(v => {
+                    const name = v.name.toLowerCase();
+                    return !name.includes('laila') && 
+                           !name.includes('hoda') && 
+                           !name.includes('female') && 
+                           !name.includes('yasmine') && 
+                           !name.includes('mary') && 
+                           !name.includes('zeina');
+                }) || arabicVoices[0];
+            }
+
+            if (maleVoice) {
+                utterance.voice = maleVoice;
+            }
+        }
+        
         utterance.onend = () => {
             setPlayingId(null);
         };

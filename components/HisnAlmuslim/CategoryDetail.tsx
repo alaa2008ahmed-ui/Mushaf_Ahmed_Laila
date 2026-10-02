@@ -12,11 +12,20 @@ interface CategoryDetailProps {
 const HisnItemCard = ({ item, onZoom, setToastMessage }: { item: any; onZoom: (item: any) => void; setToastMessage: (msg: string) => void }) => {
     const { theme } = useTheme();
     const [isFav, setIsFav] = useState(false);
+    const [isPlaying, setIsPlaying] = useState(false);
 
     useEffect(() => {
         const favs = JSON.parse(localStorage.getItem('favorite_dhikr') || '[]');
         setIsFav(favs.includes(item.text));
     }, [item.text]);
+
+    useEffect(() => {
+        return () => {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+            }
+        };
+    }, []);
 
     const toggleFav = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -29,6 +38,68 @@ const HisnItemCard = ({ item, onZoom, setToastMessage }: { item: any; onZoom: (i
         }
         localStorage.setItem('favorite_dhikr', JSON.stringify(newFavs));
         setIsFav(!isFav);
+    };
+
+    const handlePlayAudio = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!('speechSynthesis' in window)) {
+            setToastMessage('خدمة القراءة الصوتية غير مدعومة على هذا المتصفح');
+            return;
+        }
+
+        if (isPlaying) {
+            window.speechSynthesis.cancel();
+            setIsPlaying(false);
+            return;
+        }
+
+        window.speechSynthesis.cancel();
+
+        const utterance = new SpeechSynthesisUtterance(item.text);
+        utterance.lang = 'ar-SA';
+
+        // Select a male Arabic voice if available on the user's system
+        const voices = window.speechSynthesis.getVoices();
+        const arabicVoices = voices.filter(v => v.lang.startsWith('ar') || v.lang.includes('ar-'));
+        
+        let maleVoice = arabicVoices.find(v => {
+            const name = v.name.toLowerCase();
+            return name.includes('maged') || 
+                   name.includes('naayf') || 
+                   name.includes('male') || 
+                   name.includes('hazem') || 
+                   name.includes('hamid') || 
+                   name.includes('shakir');
+        });
+
+        if (!maleVoice && arabicVoices.length > 0) {
+            // Fallback: exclude known female voices to get a male voice if possible
+            maleVoice = arabicVoices.find(v => {
+                const name = v.name.toLowerCase();
+                return !name.includes('laila') && 
+                       !name.includes('hoda') && 
+                       !name.includes('female') && 
+                       !name.includes('yasmine') && 
+                       !name.includes('mary') && 
+                       !name.includes('zeina');
+            }) || arabicVoices[0];
+        }
+
+        if (maleVoice) {
+            utterance.voice = maleVoice;
+        }
+
+        utterance.onend = () => {
+            setIsPlaying(false);
+        };
+
+        utterance.onerror = (event) => {
+            console.error('TTS error', event);
+            setIsPlaying(false);
+        };
+
+        setIsPlaying(true);
+        window.speechSynthesis.speak(utterance);
     };
 
     return (
@@ -44,13 +115,13 @@ const HisnItemCard = ({ item, onZoom, setToastMessage }: { item: any; onZoom: (i
                     <i className={`fa-heart ${isFav ? 'fa-solid text-red-500' : 'fa-regular opacity-70'}`} style={isFav ? {} : { color: 'var(--text-color)' }}></i>
                 </button>
                 <div className="flex gap-2">
-                   <button onClick={(e) => { e.stopPropagation(); onZoom(item); }} className="w-8 h-8 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors opacity-70 hover:opacity-100" style={{ color: 'var(--text-color)' }}>
+                   <button onClick={(e) => { e.stopPropagation(); onZoom(item); }} className="w-8 h-8 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors opacity-70 hover:opacity-100" style={{ color: 'var(--text-color)' }} title="تكبير">
                        <i className="fa-solid fa-magnifying-glass-plus"></i>
                    </button>
                    <button onClick={(e) => {
                        e.stopPropagation();
                        navigator.clipboard.writeText(item.text);
-                   }} className="w-8 h-8 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors opacity-70 hover:opacity-100" style={{ color: 'var(--text-color)' }}>
+                   }} className="w-8 h-8 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors opacity-70 hover:opacity-100" style={{ color: 'var(--text-color)' }} title="نسخ">
                        <i className="fa-regular fa-copy"></i>
                    </button>
                    <button onClick={async (e) => {
@@ -62,8 +133,16 @@ const HisnItemCard = ({ item, onZoom, setToastMessage }: { item: any; onZoom: (i
                            theme,
                            setToastMessage
                        });
-                   }} className="w-8 h-8 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors opacity-70 hover:opacity-100" style={{ color: 'var(--text-color)' }}>
+                   }} className="w-8 h-8 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors opacity-70 hover:opacity-100" style={{ color: 'var(--text-color)' }} title="مشاركة">
                        <i className="fa-solid fa-share-nodes"></i>
+                   </button>
+                   <button 
+                       onClick={handlePlayAudio} 
+                       className="w-8 h-8 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors opacity-70 hover:opacity-100" 
+                       style={{ color: isPlaying ? '#ef4444' : 'var(--text-color)' }}
+                       title={isPlaying ? "إيقاف الاستماع" : "استماع صوتي"}
+                   >
+                       <i className={`fa-solid ${isPlaying ? 'fa-circle-pause text-red-500 animate-pulse' : 'fa-volume-high'}`}></i>
                    </button>
                 </div>
             </div>
