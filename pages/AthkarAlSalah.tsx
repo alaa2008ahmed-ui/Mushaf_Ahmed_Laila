@@ -7,10 +7,11 @@ import { baseAthkar, specialZikr, prayerOptions, fajrDhikr, fajrMaghribDhikr } f
 import { registerBackInterceptor } from '../hooks/useBackButton';
 import { motion, AnimatePresence } from 'motion/react';
 import { shareAsImage } from '../utils/shareAsImage';
+import { playTTS, stopTTS, subscribeTTS } from '../utils/ttsEngine';
 
 const SalahZikrCard = ({ zikr, theme, onDecrement, onZoom, setToastMessage }: { zikr: any; theme: any; onDecrement: () => void; onZoom: () => void; setToastMessage: (msg: string) => void }) => {
     const [isFav, setIsFav] = useState(false);
-    const [isPlaying, setIsPlaying] = useState(false);
+    const [playingText, setPlayingText] = useState<string | null>(null);
     const isFinished = zikr.currentCount === 0;
     const textClass = zikr.isQuran ? 'font-amiri text-2xl text-center leading-relaxed' : 'text-lg leading-loose font-medium';
 
@@ -20,12 +21,14 @@ const SalahZikrCard = ({ zikr, theme, onDecrement, onZoom, setToastMessage }: { 
     }, [zikr.text]);
 
     useEffect(() => {
+        const unsubscribe = subscribeTTS(setPlayingText);
         return () => {
-            if ('speechSynthesis' in window) {
-                window.speechSynthesis.cancel();
-            }
+            unsubscribe();
+            stopTTS();
         };
     }, []);
+
+    const isPlaying = playingText === zikr.text;
 
     const toggleFav = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -42,69 +45,7 @@ const SalahZikrCard = ({ zikr, theme, onDecrement, onZoom, setToastMessage }: { 
 
     const handlePlayAudio = (e: React.MouseEvent) => {
         e.stopPropagation();
-        if (!('speechSynthesis' in window)) {
-            setToastMessage('خدمة القراءة الصوتية غير مدعومة على هذا المتصفح');
-            return;
-        }
-
-        if (isPlaying) {
-            window.speechSynthesis.cancel();
-            setIsPlaying(false);
-            return;
-        }
-
-        window.speechSynthesis.cancel();
-
-        // Strip HTML tags from text
-        const tempDiv = document.createElement("div");
-        tempDiv.innerHTML = zikr.text;
-        const cleanText = tempDiv.textContent || tempDiv.innerText || "";
-
-        const utterance = new SpeechSynthesisUtterance(cleanText);
-        utterance.lang = 'ar-SA';
-
-        // Select a male Arabic voice if available on the user's system
-        const voices = window.speechSynthesis.getVoices();
-        const arabicVoices = voices.filter(v => v.lang.startsWith('ar') || v.lang.includes('ar-'));
-        
-        let maleVoice = arabicVoices.find(v => {
-            const name = v.name.toLowerCase();
-            return name.includes('maged') || 
-                   name.includes('naayf') || 
-                   name.includes('male') || 
-                   name.includes('hazem') || 
-                   name.includes('hamid') || 
-                   name.includes('shakir');
-        });
-
-        if (!maleVoice && arabicVoices.length > 0) {
-            // Fallback: exclude known female voices to get a male voice if possible
-            maleVoice = arabicVoices.find(v => {
-                const name = v.name.toLowerCase();
-                return !name.includes('laila') && 
-                       !name.includes('hoda') && 
-                       !name.includes('female') && 
-                       !name.includes('yasmine') && 
-                       !name.includes('mary') && 
-                       !name.includes('zeina');
-            }) || arabicVoices[0];
-        }
-
-        if (maleVoice) {
-            utterance.voice = maleVoice;
-        }
-
-        utterance.onend = () => {
-            setIsPlaying(false);
-        };
-
-        utterance.onerror = (event) => {
-            console.error('TTS error', event);
-            setIsPlaying(false);
-        };
-
-        setIsPlaying(true);
-        window.speechSynthesis.speak(utterance);
+        playTTS(zikr.text, setToastMessage);
     };
 
     return (

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { HISN_ALMUSLIM_DATA } from '../../data/hisnAlmuslimData';
 import { useTheme } from '../../context/ThemeContext';
 import { shareAsImage } from '../../utils/shareAsImage';
+import { playTTS, stopTTS, subscribeTTS } from '../../utils/ttsEngine';
 
 interface CategoryDetailProps {
     selectedCategory: any;
@@ -12,7 +13,7 @@ interface CategoryDetailProps {
 const HisnItemCard = ({ item, onZoom, setToastMessage }: { item: any; onZoom: (item: any) => void; setToastMessage: (msg: string) => void }) => {
     const { theme } = useTheme();
     const [isFav, setIsFav] = useState(false);
-    const [isPlaying, setIsPlaying] = useState(false);
+    const [playingText, setPlayingText] = useState<string | null>(null);
 
     useEffect(() => {
         const favs = JSON.parse(localStorage.getItem('favorite_dhikr') || '[]');
@@ -20,12 +21,14 @@ const HisnItemCard = ({ item, onZoom, setToastMessage }: { item: any; onZoom: (i
     }, [item.text]);
 
     useEffect(() => {
+        const unsubscribe = subscribeTTS(setPlayingText);
         return () => {
-            if ('speechSynthesis' in window) {
-                window.speechSynthesis.cancel();
-            }
+            unsubscribe();
+            stopTTS();
         };
     }, []);
+
+    const isPlaying = playingText === item.text;
 
     const toggleFav = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -42,64 +45,7 @@ const HisnItemCard = ({ item, onZoom, setToastMessage }: { item: any; onZoom: (i
 
     const handlePlayAudio = (e: React.MouseEvent) => {
         e.stopPropagation();
-        if (!('speechSynthesis' in window)) {
-            setToastMessage('خدمة القراءة الصوتية غير مدعومة على هذا المتصفح');
-            return;
-        }
-
-        if (isPlaying) {
-            window.speechSynthesis.cancel();
-            setIsPlaying(false);
-            return;
-        }
-
-        window.speechSynthesis.cancel();
-
-        const utterance = new SpeechSynthesisUtterance(item.text);
-        utterance.lang = 'ar-SA';
-
-        // Select a male Arabic voice if available on the user's system
-        const voices = window.speechSynthesis.getVoices();
-        const arabicVoices = voices.filter(v => v.lang.startsWith('ar') || v.lang.includes('ar-'));
-        
-        let maleVoice = arabicVoices.find(v => {
-            const name = v.name.toLowerCase();
-            return name.includes('maged') || 
-                   name.includes('naayf') || 
-                   name.includes('male') || 
-                   name.includes('hazem') || 
-                   name.includes('hamid') || 
-                   name.includes('shakir');
-        });
-
-        if (!maleVoice && arabicVoices.length > 0) {
-            // Fallback: exclude known female voices to get a male voice if possible
-            maleVoice = arabicVoices.find(v => {
-                const name = v.name.toLowerCase();
-                return !name.includes('laila') && 
-                       !name.includes('hoda') && 
-                       !name.includes('female') && 
-                       !name.includes('yasmine') && 
-                       !name.includes('mary') && 
-                       !name.includes('zeina');
-            }) || arabicVoices[0];
-        }
-
-        if (maleVoice) {
-            utterance.voice = maleVoice;
-        }
-
-        utterance.onend = () => {
-            setIsPlaying(false);
-        };
-
-        utterance.onerror = (event) => {
-            console.error('TTS error', event);
-            setIsPlaying(false);
-        };
-
-        setIsPlaying(true);
-        window.speechSynthesis.speak(utterance);
+        playTTS(item.text, setToastMessage);
     };
 
     return (
