@@ -54,7 +54,12 @@ const DhikrCard: React.FC<DhikrCardProps> = ({ dhikr, currentCount, isFinished, 
 
     const handlePlayAudio = (e: React.MouseEvent) => {
         e.stopPropagation();
-        playTTS(dhikr.text, setToastMessage);
+        const isMorning = dhikr.category === 'أذكار الصباح';
+        const isEvening = dhikr.category === 'أذكار المساء';
+        playTTS(dhikr.text, {
+            onToast: setToastMessage,
+            categoryId: isMorning ? 'hisn_27' : isEvening ? 'hisn_28' : undefined
+        });
     };
 
     return (

@@ -1,8 +1,10 @@
 import { 
   db, auth, googleProvider, 
   signInWithPopup, signInWithRedirect, getRedirectResult, 
-  signOut, onAuthStateChanged 
+  signOut, onAuthStateChanged, signInWithCredential
 } from '../lib/firebase';
+import { GoogleAuthProvider } from 'firebase/auth';
+import { Capacitor } from '@capacitor/core';
 import { 
   collection, doc, setDoc, getDoc, getDocs, onSnapshot, 
   updateDoc, deleteDoc 
@@ -217,10 +219,37 @@ class CommunityService {
     return this.currentUser;
   }
 
-  public async loginWithGoogle(useRedirect: boolean = false): Promise<CommunityUser> {
-    if (useRedirect) {
-      await signInWithRedirect(auth, googleProvider);
-      return this.getCurrentUser();
+  public async loginWithGoogle(): Promise<CommunityUser> {
+    if (Capacitor.isNativePlatform()) {
+      try {
+        const { GoogleAuth } = await import('@codetrix-studio/capacitor-google-auth');
+        try {
+          GoogleAuth.initialize({
+            clientId: '820638063534-web.apps.googleusercontent.com',
+            scopes: ['profile', 'email'],
+            grantOfflineAccess: true,
+          });
+        } catch (initErr) {
+          console.warn('GoogleAuth initialize notice:', initErr);
+        }
+
+        const googleUser = await GoogleAuth.signIn();
+        if (googleUser && googleUser.authentication && googleUser.authentication.idToken) {
+          const idToken = googleUser.authentication.idToken;
+          const credential = GoogleAuthProvider.credential(idToken);
+          const result = await signInWithCredential(auth, credential);
+          const fbUser = result.user;
+          const gUser = googleUser as any;
+          return await this.loginWithGoogleAccount(
+            fbUser.uid,
+            fbUser.displayName || gUser.displayName || gUser.name || '',
+            fbUser.photoURL || gUser.imageUrl || '',
+            fbUser.email || gUser.email || undefined
+          );
+        }
+      } catch (nativeErr) {
+        console.warn('Native GoogleAuth failed, trying web fallback:', nativeErr);
+      }
     }
 
     try {
@@ -233,16 +262,7 @@ class CommunityService {
         fbUser.email || undefined
       );
     } catch (e: any) {
-      console.warn('signInWithPopup error:', e);
-      // If popup was blocked or failed due to mobile / browser restrictions, trigger redirect
-      if (
-        e?.code === 'auth/popup-blocked' || 
-        e?.code === 'auth/popup-closed-by-user' || 
-        e?.code === 'auth/cancelled-popup-request' ||
-        e?.code === 'auth/unauthorized-domain'
-      ) {
-        throw e;
-      }
+      console.warn('loginWithGoogle error:', e);
       throw e;
     }
   }

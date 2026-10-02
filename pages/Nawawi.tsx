@@ -42,7 +42,7 @@ const HadithModal = ({ hadith, onClose, favorites, toggleFavorite, handleCopy, h
 
     const handlePlayAudio = (e: React.MouseEvent) => {
         e.stopPropagation();
-        playTTS(hadith.hadith);
+        playTTS(hadith.hadith, { hadithId: hadith.id });
     };
 
     return (

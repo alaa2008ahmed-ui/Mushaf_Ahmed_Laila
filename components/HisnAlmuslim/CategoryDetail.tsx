@@ -10,7 +10,7 @@ interface CategoryDetailProps {
     setToastMessage: (msg: string) => void;
 }
 
-const HisnItemCard = ({ item, onZoom, setToastMessage }: { item: any; onZoom: (item: any) => void; setToastMessage: (msg: string) => void }) => {
+const HisnItemCard = ({ item, categoryId, onZoom, setToastMessage }: { item: any; categoryId: string; onZoom: (item: any) => void; setToastMessage: (msg: string) => void }) => {
     const { theme } = useTheme();
     const [isFav, setIsFav] = useState(false);
     const [playingText, setPlayingText] = useState<string | null>(null);
@@ -45,7 +45,7 @@ const HisnItemCard = ({ item, onZoom, setToastMessage }: { item: any; onZoom: (i
 
     const handlePlayAudio = (e: React.MouseEvent) => {
         e.stopPropagation();
-        playTTS(item.text, setToastMessage);
+        playTTS(item.text, { onToast: setToastMessage, categoryId });
     };
 
     return (
@@ -127,7 +127,7 @@ const CategoryDetail: React.FC<CategoryDetailProps> = ({ selectedCategory, onZoo
     return (
         <div className="space-y-4">
             {items.map((item: any, index: number) => (
-                <HisnItemCard key={index} item={item} onZoom={onZoom} setToastMessage={setToastMessage} />
+                <HisnItemCard key={index} item={item} categoryId={selectedCategory.id} onZoom={onZoom} setToastMessage={setToastMessage} />
             ))}
         </div>
     );

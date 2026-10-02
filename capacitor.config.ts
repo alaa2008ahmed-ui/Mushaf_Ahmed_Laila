@@ -1,12 +1,19 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
-const config: CapacitorConfig = {
+const config: any = {
   appId: 'com.mushaf.ahmedandlayla',
   appName: 'مصحف أحمد وليلى',
   webDir: 'dist',
   backgroundColor: '#000000',
   server: {
-    androidScheme: 'https'
+    androidScheme: 'https',
+    allowNavigation: [
+      '*.firebaseapp.com',
+      '*.firebase.com',
+      '*.google.com',
+      'accounts.google.com',
+      'ssl.gstatic.com'
+    ]
   },
   plugins: {
     Keyboard: {
@@ -21,4 +28,4 @@ const config: CapacitorConfig = {
   },
 };
 
-export default config;
+export default config as CapacitorConfig;

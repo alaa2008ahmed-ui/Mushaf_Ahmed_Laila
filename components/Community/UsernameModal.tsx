@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { User, Globe, Check, Sparkles, ArrowRight, HeartHandshake, Camera, Upload, Trash2, Loader2, Shield, CheckCircle2 } from 'lucide-react';
 import { communityService, CommunityUser } from '../../services/communityService';
+import { Capacitor } from '@capacitor/core';
 
 interface UsernameModalProps {
   isOpen: boolean;
@@ -70,30 +71,12 @@ const UsernameModal: React.FC<UsernameModalProps> = ({ isOpen, onClose, onSaved,
     return () => window.removeEventListener('community_user_updated', syncUser);
   }, [isOpen]);
 
-  const handleGoogleLogin = (useRedirect = false) => {
+  const handleGoogleLogin = () => {
     setError('');
-    
-    // Check if we are inside an iframe (like AI studio preview) where redirect is blocked by Google (403)
-    const isIframe = typeof window !== 'undefined' && window.self !== window.top;
-    const shouldRedirect = useRedirect && !isIframe;
-
-    if (shouldRedirect) {
-      setIsGoogleLoading(true);
-      setLoadingMessage('جارٍ التوجيه لصفحة Google الرسمية...');
-      communityService.loginWithGoogleRedirect().catch((err: any) => {
-        console.error('Google direct redirect error:', err);
-        setError('تعذر فتح صفحة Google المباشرة. يرجى تجربة خيار النافذة المنبثقة.');
-        setIsGoogleLoading(false);
-        setLoadingMessage('');
-      });
-      return;
-    }
-
-    // Popup approach - MUST be completely synchronous to avoid browser popup blockers!
     setIsGoogleLoading(true);
-    setLoadingMessage('جارٍ فتح نافذة تسجيل Google لتوثيق الحساب...');
+    setLoadingMessage('جارٍ تسجيل الدخول عبر حساب Google...');
 
-    communityService.loginWithGoogle(false)
+    communityService.loginWithGoogle()
       .then((user) => {
         setCurrentUser(user);
         setUsername(user.username || '');
@@ -101,16 +84,11 @@ const UsernameModal: React.FC<UsernameModalProps> = ({ isOpen, onClose, onSaved,
         setBio(user.bio || '');
         if (user.avatarUrl) setAvatarUrl(user.avatarUrl);
         if (onSaved) onSaved();
+        onClose();
       })
       .catch((err: any) => {
-        console.warn('Google popup attempt result:', err);
-        if (err?.code === 'auth/popup-blocked' || err?.code === 'auth/popup-closed-by-user' || err?.code === 'auth/cancelled-popup-request') {
-          setError('حجب المتصفح النافذة المنبثقة أو تم إغلاقها. يمكنك المتابعة وكتابة بياناتك بالأسفل مباشرة كزائر مبارك دون الحاجة لحساب Google.');
-        } else if (err?.code === 'auth/unauthorized-domain') {
-          setError('هذا النطاق غير مصرح به في Firebase. لا قلق، يمكنك كتابة بياناتك وتعديل ملفك الشخصي بالأسفل مباشرة كزائر مبارك.');
-        } else {
-          setError('لم يتم تسجيل الدخول عبر Google. يمكنك الاستمرار بكتابة بياناتك الشخصية وصورتك بالأسفل مباشرة للدردشة كزائر مبارك.');
-        }
+        console.warn('Google auth error:', err);
+        setError('تعذر تسجيل الدخول عبر Google. يرجى المحاولة مرة أخرى.');
       })
       .finally(() => {
         setIsGoogleLoading(false);
@@ -262,10 +240,9 @@ const UsernameModal: React.FC<UsernameModalProps> = ({ isOpen, onClose, onSaved,
                   <span>لحفظ حسابك وتوثيقه بشكل رسمي:</span>
                 </p>
 
-                {/* Primary Button: Direct Redirect (Method 2 - 100% Reliable without popups) */}
                 <button
                   type="button"
-                  onClick={() => handleGoogleLogin(true)}
+                  onClick={handleGoogleLogin}
                   disabled={isGoogleLoading}
                   className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2.5 text-xs active:scale-98"
                 >
@@ -291,23 +268,8 @@ const UsernameModal: React.FC<UsernameModalProps> = ({ isOpen, onClose, onSaved,
                       />
                     </svg>
                   )}
-                  <span>تسجيل الدخول الرسمي بحساب Google (مباشر)</span>
+                  <span>تسجيل الدخول والتسجيل عبر حساب Google</span>
                 </button>
-
-                {/* Secondary Button: Popup Mode */}
-                <button
-                  type="button"
-                  onClick={() => handleGoogleLogin(false)}
-                  disabled={isGoogleLoading}
-                  className="w-full py-2 px-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 hover:border-emerald-500 text-slate-700 dark:text-slate-300 rounded-xl font-medium text-[11px] shadow-sm transition-all flex items-center justify-center gap-2"
-                >
-                  <Globe size={13} className="text-slate-400" />
-                  <span>أو الدخول عبر نافذة منبثقة (Popup)</span>
-                </button>
-
-                <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed">
-                  💡 <strong>ملاحظة هامة:</strong> إذا كانت النوافذ المنبثقة محجوبة بمتصفحك، لا قلق! يمكنك ملء الاسم والصورة بالأسفل والمتابعة مباشرةً كـ <strong>زائر مبارك</strong> للدردشة وحفظ حسابك محلياً وبالسيرفر.
-                </p>
 
                 {loadingMessage && (
                   <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold animate-pulse">

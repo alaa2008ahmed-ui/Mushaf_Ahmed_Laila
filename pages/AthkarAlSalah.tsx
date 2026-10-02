@@ -45,7 +45,7 @@ const SalahZikrCard = ({ zikr, theme, onDecrement, onZoom, setToastMessage }: { 
 
     const handlePlayAudio = (e: React.MouseEvent) => {
         e.stopPropagation();
-        playTTS(zikr.text, setToastMessage);
+        playTTS(zikr.text, { onToast: setToastMessage, categoryId: 'hisn_25' });
     };
 
     return (
