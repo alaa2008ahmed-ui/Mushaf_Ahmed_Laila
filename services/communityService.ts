@@ -3,6 +3,7 @@ import {
   signInWithPopup, signInWithRedirect, getRedirectResult, 
   signOut, onAuthStateChanged, signInWithCredential
 } from '../lib/firebase';
+import firebaseConfig from '../firebase-applet-config.json';
 import { GoogleAuthProvider } from 'firebase/auth';
 import { Capacitor } from '@capacitor/core';
 import { 
@@ -220,35 +221,38 @@ class CommunityService {
   }
 
   public async loginWithGoogle(): Promise<CommunityUser> {
+    const oAuthClientId = firebaseConfig.oAuthClientId || '903816597633-1ph0t287hi7as4astptibanphv4dfp47.apps.googleusercontent.com';
+
     if (Capacitor.isNativePlatform()) {
       try {
-        const { GoogleAuth } = await import('@codetrix-studio/capacitor-google-auth');
+        const { GoogleSignIn } = await import('@capawesome/capacitor-google-sign-in');
+        
         try {
-          GoogleAuth.initialize({
-            clientId: '820638063534-web.apps.googleusercontent.com',
-            scopes: ['profile', 'email'],
-            grantOfflineAccess: true,
+          await (GoogleSignIn as any).initialize({
+            clientId: oAuthClientId
           });
         } catch (initErr) {
-          console.warn('GoogleAuth initialize notice:', initErr);
+          console.warn('GoogleSignIn initialize notice:', initErr);
         }
 
-        const googleUser = await GoogleAuth.signIn();
-        if (googleUser && googleUser.authentication && googleUser.authentication.idToken) {
-          const idToken = googleUser.authentication.idToken;
-          const credential = GoogleAuthProvider.credential(idToken);
+        const res: any = await (GoogleSignIn as any).signIn({
+          clientId: oAuthClientId
+        });
+
+        if (res && res.idToken) {
+          const credential = GoogleAuthProvider.credential(res.idToken);
           const result = await signInWithCredential(auth, credential);
           const fbUser = result.user;
-          const gUser = googleUser as any;
+          const userObj = (res.user || {}) as any;
           return await this.loginWithGoogleAccount(
             fbUser.uid,
-            fbUser.displayName || gUser.displayName || gUser.name || '',
-            fbUser.photoURL || gUser.imageUrl || '',
-            fbUser.email || gUser.email || undefined
+            fbUser.displayName || userObj.givenName || userObj.name || '',
+            fbUser.photoURL || userObj.imageUrl || '',
+            fbUser.email || userObj.email || undefined
           );
         }
-      } catch (nativeErr) {
-        console.warn('Native GoogleAuth failed, trying web fallback:', nativeErr);
+      } catch (nativeErr: any) {
+        console.warn('Capawesome GoogleSignIn native failed, trying web fallback:', nativeErr);
       }
     }
 
@@ -261,9 +265,25 @@ class CommunityService {
         fbUser.photoURL || '',
         fbUser.email || undefined
       );
-    } catch (e: any) {
-      console.warn('loginWithGoogle error:', e);
-      throw e;
+    } catch (popupErr: any) {
+      console.warn('signInWithPopup error:', popupErr);
+      if (
+        popupErr?.code === 'auth/popup-blocked' ||
+        popupErr?.code === 'auth/popup-closed-by-user' ||
+        popupErr?.code === 'auth/cancelled-popup-request' ||
+        popupErr?.code === 'auth/operation-not-supported-in-this-environment'
+      ) {
+        if (popupErr?.code === 'auth/popup-closed-by-user') {
+          throw new Error('تم إلغاء عملية تسجيل الدخول.');
+        }
+        try {
+          await signInWithRedirect(auth, googleProvider);
+          return this.getCurrentUser();
+        } catch (redirectErr: any) {
+          throw new Error(redirectErr?.message || 'تعذر فتح صفحة تسجيل الدخول.');
+        }
+      }
+      throw new Error(popupErr?.message || 'تعذر تسجيل الدخول عبر Google. يرجى المحاولة مرة أخرى.');
     }
   }
 

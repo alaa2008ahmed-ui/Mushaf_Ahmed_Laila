@@ -17,6 +17,7 @@
         "@capacitor/preferences": "^8.0.1",
         "@capacitor/screen-orientation": "^8.0.1",
         "@capacitor/share": "^8.0.1",
+        "@capawesome/capacitor-google-sign-in": "^0.1.4",
         "@codetrix-studio/capacitor-google-auth": "^3.4.0-rc.4",
         "@fontsource/amiri": "^5.2.8",
         "@fontsource/amiri-quran": "^5.2.10",
@@ -149,6 +150,8 @@
     "@capacitor/share": ["@capacitor/share@8.0.1", "", { "peerDependencies": { "@capacitor/core": ">=8.0.0" } }, "sha512-3cSBKBCJVon54rKDROP2rqGyeGks4pBh9TbaEk9S375Kbek/ZHe72N50zIa0Vn9Eac/SuhwgehO/mmA4CsUOiw=="],
 
     "@capacitor/synapse": ["@capacitor/synapse@1.0.4", "", {}, "sha512-/C1FUo8/OkKuAT4nCIu/34ny9siNHr9qtFezu4kxm6GY1wNFxrCFWjfYx5C1tUhVGz3fxBABegupkpjXvjCHrw=="],
+
+    "@capawesome/capacitor-google-sign-in": ["@capawesome/capacitor-google-sign-in@0.1.4", "", { "peerDependencies": { "@capacitor/core": ">=8.0.0" } }, "sha512-+8+3mfWN1B0+qB5r1xUZpy0hrYkpEDD5XHxa5LQ5wwDIVKoFLj/orYGRf/RrsB1AbkSpRfZZ1N2U7C3gPcjAdA=="],
 
     "@codetrix-studio/capacitor-google-auth": ["@codetrix-studio/capacitor-google-auth@3.4.0-rc.4", "", { "peerDependencies": { "@capacitor/core": "^6.0.0" } }, "sha512-d548/xKrbMHHbzMYSWnlgZCLZYo2zzY7Onrh3x8ujojrb7atkNK68I6su5WgmaBt4E+R4gxBsWams4554aOFjA=="],
 
