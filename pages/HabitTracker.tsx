@@ -320,8 +320,8 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack , onNavigate }) => {
   ];
 
   return (
-    <div className={`h-screen flex flex-col bg-transparent relative`}>
-      <header className="app-top-bar">
+    <div className={`h-screen h-[100dvh] max-h-screen max-h-[100dvh] flex flex-col bg-transparent relative overflow-hidden`} dir="rtl">
+      <header className="app-top-bar shrink-0">
           <div className="app-top-bar__inner">
               <div className="relative flex items-center justify-center w-full">
                   <div className="absolute left-0">
@@ -338,7 +338,7 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack , onNavigate }) => {
       </header>
 
       {/* Content */}
-      <main className="w-full flex-1 overflow-y-auto px-4 pt-0 pb-24">
+      <main className="w-full flex-1 min-h-0 overflow-y-auto px-4 pt-0 pb-36 overscroll-contain">
         
         <div id="daily-achievement-card" className="bg-white/80 dark:bg-gray-800/80 rounded-2xl p-4 shadow-sm border border-black/5 dark:border-white/5 mb-6 mt-2">
             <div className="flex items-center justify-between gap-4">
@@ -544,7 +544,9 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack , onNavigate }) => {
 
       </main>
 
-      <BottomBar onHomeClick={handleHomeClick} onThemesClick={() => {}} showThemes={false} />
+      <div className="shrink-0 z-30">
+        <BottomBar onHomeClick={handleHomeClick} onThemesClick={() => {}} showThemes={false} />
+      </div>
 
       <TutorialOverlay tutorialId="habit-tracker-tutorial" steps={habitTrackerTutorialSteps} />
 

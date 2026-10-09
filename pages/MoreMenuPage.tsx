@@ -1,13 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import BottomBar from '../components/BottomBar';
 import { useTheme } from '../context/ThemeContext';
 import InteractiveBackground from '../components/InteractiveBackground';
 import NavButton from '../components/MainMenu/NavButton';
 import { motion } from 'motion/react';
+import { useShowNewBadge } from '../utils/badgeManager';
 
 const ALL_MENU_ITEMS = [
     { id: 'quran', label: "📖 القرآن الكريم", className: "col-span-2 h-14", colorIndex: 0 },
-    { id: 'community', label: "💬 مجتمع المصحف والتواصل", className: "col-span-2 h-14", colorIndex: 0 },
+    { id: 'community', label: "💬 مجتمع التواصل", className: "col-span-2 h-14", colorIndex: 0 },
+    { id: 'ahl-al-quran', label: "🏆 أهل القرآن", className: "col-span-1 h-14", colorIndex: 0 },
+    { id: 'others', label: "✨ الرقية الشرعية", className: "col-span-1 h-14", colorIndex: 0 },
     { id: 'listen', label: "🎧 الاستماع للقرآن", className: "col-span-1 h-14", colorIndex: 0 },
     { id: 'prayer-times', label: "⏱️ مواقيت الصلاة", className: "col-span-1 h-14", colorIndex: 0 },
     { id: 'adia', label: "🤲 الأدعية", className: "col-span-1 h-14", colorIndex: 1 },
@@ -26,6 +29,7 @@ const ALL_MENU_ITEMS = [
     { id: 'memorization', label: "🧠 التحفيظ", className: "col-span-1 h-14", colorIndex: 0 },
     { id: 'voice-control', label: "🎙️ التحكم الصوتي", className: "col-span-1 h-14", colorIndex: 0 },
     { id: 'asmaul-husna', label: "✨ أسماء الله الحسنى", className: "col-span-2 h-14", colorIndex: 0 },
+    { id: 'islamic-sites', label: "🌐 مواقع إسلامية", className: "col-span-2 h-14", colorIndex: 0 },
 ];
 
 interface MoreMenuPageProps {
@@ -36,18 +40,11 @@ import ThemePageLock from '../components/ThemePageLock';
 
 const MoreMenuPage: React.FC<MoreMenuPageProps> = ({ onNavigate, onBack }) => {
     const { theme, themeKey, togglePageLock, isPageLocked } = useTheme();
-    const [showNewBadges, setShowNewBadges] = useState(false);
+    const showNewBadges = useShowNewBadge();
     const [visibleItems, setVisibleItems] = useState<string[]>(() => {
         const savedVisible = localStorage.getItem('visibleMenuItems');
         return savedVisible ? JSON.parse(savedVisible) : ALL_MENU_ITEMS.map(i => i.id);
     });
-
-    useEffect(() => {
-        const currentOpens = parseInt(localStorage.getItem('app_opens_count_new') || '1');
-        if (currentOpens <= 5) {
-            setShowNewBadges(true);
-        }
-    }, []);
 
     const getPrimaryColor = (itemId: string, index: number) => {
         // تخصيص اللون البنفسجي للأزرار المطلوبة
@@ -81,12 +78,12 @@ const MoreMenuPage: React.FC<MoreMenuPageProps> = ({ onNavigate, onBack }) => {
                     <div className="main-layout px-4 flex flex-col" style={{ fontFamily: theme.font }}>
                         <div className="grid grid-cols-2 gap-x-4 gap-y-5 w-full max-w-sm mx-auto mt-6">
                             {ALL_MENU_ITEMS.map((item, idx) => {
-                                const isVisible = visibleItems.includes(item.id) || ['daily-wird', 'memorization', 'voice-control', 'habit-tracker', 'asmaul-husna', 'community'].includes(item.id);
+                                const isVisible = visibleItems.includes(item.id) || ['daily-wird', 'memorization', 'voice-control', 'habit-tracker', 'asmaul-husna', 'community', 'ahl-al-quran', 'others', 'islamic-sites'].includes(item.id);
                                 const isDefault = themeKey === 'default';
                                 const isBlackTheme = theme.bgColor === '#000000';
                                 const primaryColor = isBlackTheme ? '#000000' : (isDefault ? '#FFFFFF' : getPrimaryColor(item.id, item.colorIndex));
                                 const textColor = isBlackTheme ? '#FFFFFF' : (isDefault ? '#000000' : theme.btnText);
-                                const isNew = showNewBadges && ['daily-wird', 'memorization', 'voice-control', 'asmaul-husna', 'habit-tracker'].includes(item.id);
+                                const isNew = showNewBadges && ['memorization', 'community', 'ahl-al-quran', 'others', 'islamic-sites'].includes(item.id);
                                 
                                 return (
                                     <div

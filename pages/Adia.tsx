@@ -12,6 +12,12 @@ import { playTTS, stopTTS, subscribeTTS } from '../utils/ttsEngine';
 function Adia({ onBack, onNavigate }) {
     const { theme, themeKey } = useTheme();
     const isBlackTheme = theme.bgColor === '#000000';
+    const isDefaultTheme = themeKey === 'default';
+    const cardBorderColor = isDefaultTheme 
+        ? '#000000' 
+        : (isBlackTheme 
+            ? '#FFFFFF' 
+            : (theme.palette?.[0] || '#000000'));
     const [zoomedDuaa, setZoomedDuaa] = useState(null);
     const [activeCategory, setActiveCategory] = useState('all');
     const [favorites, setFavorites] = useState<string[]>([]);
@@ -164,7 +170,7 @@ function Adia({ onBack, onNavigate }) {
 
             <main ref={mainRef} className="w-full flex-1 overflow-y-auto px-4 pt-0 pb-4">
                 <div className="mb-6">
-                    <div className="relative max-w-2xl mx-auto border-2 rounded-2xl overflow-hidden focus-within:ring-2 transition-all shadow-sm" style={{ borderColor: 'var(--card-border)', ...themeKey === 'default' ? { focusRingColor: '#000'} : { focusRingColor: theme.palette[0]} }}>
+                    <div className="relative max-w-2xl mx-auto border-2 rounded-2xl overflow-hidden focus-within:ring-2 transition-all shadow-sm" style={{ borderColor: cardBorderColor, ...themeKey === 'default' ? { focusRingColor: '#000'} : { focusRingColor: theme.palette[0]} }}>
                         <input 
                             type="text" 
                             placeholder="ابحث في الأدعية..." 
@@ -185,7 +191,9 @@ function Adia({ onBack, onNavigate }) {
                                 className="p-5 rounded-3xl relative transition-all overflow-hidden themed-card group shadow-sm border" 
                                 style={{ 
                                     fontFamily: theme.font,
-                                    borderColor: 'var(--card-border)',
+                                    borderColor: cardBorderColor,
+                                    borderWidth: '1.5px',
+                                    borderStyle: 'solid'
                                 }}
                             >
                                 <p className="text-xl md:text-2xl leading-relaxed text-center font-amiri mb-6" style={{ color: 'var(--text-color)' }}>

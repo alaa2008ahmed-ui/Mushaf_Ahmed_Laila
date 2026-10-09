@@ -37,7 +37,7 @@ export const presetThemes: { [key: string]: Theme } = {
         isOriginal: true,
         textColor: "#000000",
         font: "'Cairo', sans-serif",
-        palette: ["#059669", "#8b5cf6", "#059669"],
+        palette: ["#059669", "#8B5CF6", "#059669"],
         barBg: "#FFFFFF",
         barBorder: "1px solid #000000",
         topBarBg: "#FFFFFF",

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Calendar, ChevronRight, BarChart2, CalendarDays } from 'lucide-react';
 import moment from 'moment-hijri';
@@ -12,12 +12,10 @@ interface HabitArchiveProps {
 
 const HabitArchive: React.FC<HabitArchiveProps> = ({ onBack }) => {
     const { theme } = useTheme();
-    const hexColor = theme.palette && theme.palette.length > 0 ? theme.palette[0] : '#059669';
+    const isBlackTheme = theme.bgColor === '#000000';
+    const hexColor = isBlackTheme ? '#FFFFFF' : (theme.palette && theme.palette.length > 0 ? theme.palette[0] : '#059669');
     const records = useHabitTracker((state) => state.records);
     const getDailyProgress = useHabitTracker((state) => state.getDailyProgress);
-    
-    const [compareDate1, setCompareDate1] = useState(moment().subtract(1, 'days').format('YYYY-MM-DD'));
-    const [compareDate2, setCompareDate2] = useState(moment().format('YYYY-MM-DD'));
     
     const [activeTab, setActiveTab] = useState<'days' | 'months'>('days');
     
@@ -25,6 +23,54 @@ const HabitArchive: React.FC<HabitArchiveProps> = ({ onBack }) => {
     const allDates = useMemo(() => {
         return Object.keys(records).sort((a, b) => moment(b).valueOf() - moment(a).valueOf());
     }, [records]);
+
+    const [compareDate1, setCompareDate1] = useState(() => {
+        return moment().subtract(1, 'days').format('YYYY-MM-DD');
+    });
+    const [compareDate2, setCompareDate2] = useState(() => {
+        return moment().format('YYYY-MM-DD');
+    });
+
+    useEffect(() => {
+        if (allDates.length > 0) {
+            if (!allDates.includes(compareDate2)) {
+                setCompareDate2(allDates[0]);
+            }
+            if (!allDates.includes(compareDate1)) {
+                setCompareDate1(allDates.length > 1 ? allDates[1] : allDates[0]);
+            }
+        }
+    }, [allDates]);
+
+    // Group by month
+    const monthsData = useMemo(() => {
+        const data: Record<string, { total: number, count: number }> = {};
+        allDates.forEach(date => {
+            const m = moment(date).format('YYYY-MM');
+            if (!data[m]) data[m] = { total: 0, count: 0 };
+            data[m].total += getDailyProgress(date);
+            data[m].count += 1;
+        });
+        return data;
+    }, [allDates, records, getDailyProgress]);
+
+    const monthKeys = useMemo(() => {
+        return Object.keys(monthsData).sort((a, b) => moment(b, 'YYYY-MM').valueOf() - moment(a, 'YYYY-MM').valueOf());
+    }, [monthsData]);
+
+    const [m1, setM1] = useState(() => monthKeys.length > 1 ? monthKeys[1] : (monthKeys[0] || ''));
+    const [m2, setM2] = useState(() => monthKeys[0] || '');
+
+    useEffect(() => {
+        if (monthKeys.length > 0) {
+            if (!monthKeys.includes(m2)) {
+                setM2(monthKeys[0]);
+            }
+            if (!monthKeys.includes(m1)) {
+                setM1(monthKeys.length > 1 ? monthKeys[1] : monthKeys[0]);
+            }
+        }
+    }, [monthKeys]);
 
     const prog1 = getDailyProgress(compareDate1);
     const prog2 = getDailyProgress(compareDate2);
@@ -42,7 +88,7 @@ const HabitArchive: React.FC<HabitArchiveProps> = ({ onBack }) => {
                     <select 
                         value={compareDate1} 
                         onChange={(e) => setCompareDate1(e.target.value)}
-                        className="w-full bg-gray-100 dark:bg-gray-700 text-sm font-bold p-2 rounded-xl"
+                        className="w-full bg-gray-100 dark:bg-gray-700 text-sm font-bold p-2 rounded-xl text-gray-900 dark:text-white"
                     >
                         {allDates.map(d => <option key={d} value={d}>{d}</option>)}
                     </select>
@@ -53,7 +99,7 @@ const HabitArchive: React.FC<HabitArchiveProps> = ({ onBack }) => {
                     <select 
                         value={compareDate2} 
                         onChange={(e) => setCompareDate2(e.target.value)}
-                        className="w-full bg-gray-100 dark:bg-gray-700 text-sm font-bold p-2 rounded-xl"
+                        className="w-full bg-gray-100 dark:bg-gray-700 text-sm font-bold p-2 rounded-xl text-gray-900 dark:text-white"
                     >
                         {allDates.map(d => <option key={d} value={d}>{d}</option>)}
                     </select>
@@ -63,6 +109,7 @@ const HabitArchive: React.FC<HabitArchiveProps> = ({ onBack }) => {
             <div className="flex justify-between items-center p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50">
                <div className="text-center">
                   <div className="text-xl font-bold font-sans" style={{ color: hexColor }}>{prog1}%</div>
+                  <div className="text-[10px] opacity-70 dark:text-gray-300">{compareDate1}</div>
                </div>
                <div className="text-center font-bold text-sm">
                   {diff > 0 
@@ -73,36 +120,23 @@ const HabitArchive: React.FC<HabitArchiveProps> = ({ onBack }) => {
                </div>
                <div className="text-center">
                   <div className="text-xl font-bold font-sans" style={{ color: hexColor }}>{prog2}%</div>
+                  <div className="text-[10px] opacity-70 dark:text-gray-300">{compareDate2}</div>
                </div>
             </div>
         </div>
     );
 
     const renderMonthComparisonTab = () => {
-        // Group by month
-        const monthsData: Record<string, { total: number, count: number }> = {};
-        allDates.forEach(date => {
-            const m = moment(date).format('YYYY-MM');
-            if(!monthsData[m]) monthsData[m] = { total: 0, count: 0 };
-            monthsData[m].total += getDailyProgress(date);
-            monthsData[m].count += 1;
-        });
-
-        const monthKeys = Object.keys(monthsData).sort((a,b) => moment(b, 'YYYY-MM').valueOf() - moment(a, 'YYYY-MM').valueOf());
-
         if (monthKeys.length < 2) {
              return (
-                 <div className="text-center p-8 opacity-70 text-sm font-bold dark:text-gray-300">
-                     لا يوجد بيانات لأكثر من شهر للمقارنة.
+                 <div className="text-center p-8 opacity-70 text-sm font-bold dark:text-gray-300 bg-white/80 dark:bg-gray-800/80 rounded-2xl mb-6 border border-black/5 dark:border-white/5">
+                     لا توجد بيانات لأكثر من شهر للمقارنة حتى الآن.
                  </div>
              );
         }
 
-        const [m1, setM1] = useState(monthKeys[1]);
-        const [m2, setM2] = useState(monthKeys[0]);
-
-        const avg1 = Math.round(monthsData[m1].total / monthsData[m1].count);
-        const avg2 = Math.round(monthsData[m2].total / monthsData[m2].count);
+        const avg1 = m1 && monthsData[m1] ? Math.round(monthsData[m1].total / monthsData[m1].count) : 0;
+        const avg2 = m2 && monthsData[m2] ? Math.round(monthsData[m2].total / monthsData[m2].count) : 0;
         const mDiff = avg2 - avg1;
 
         return (
@@ -117,7 +151,7 @@ const HabitArchive: React.FC<HabitArchiveProps> = ({ onBack }) => {
                          <select 
                              value={m1} 
                              onChange={(e) => setM1(e.target.value)}
-                             className="w-full bg-gray-100 dark:bg-gray-700 text-sm font-bold p-2 rounded-xl"
+                             className="w-full bg-gray-100 dark:bg-gray-700 text-sm font-bold p-2 rounded-xl text-gray-900 dark:text-white"
                          >
                              {monthKeys.map(d => <option key={d} value={d}>{d}</option>)}
                          </select>
@@ -128,7 +162,7 @@ const HabitArchive: React.FC<HabitArchiveProps> = ({ onBack }) => {
                          <select 
                              value={m2} 
                              onChange={(e) => setM2(e.target.value)}
-                             className="w-full bg-gray-100 dark:bg-gray-700 text-sm font-bold p-2 rounded-xl"
+                             className="w-full bg-gray-100 dark:bg-gray-700 text-sm font-bold p-2 rounded-xl text-gray-900 dark:text-white"
                          >
                              {monthKeys.map(d => <option key={d} value={d}>{d}</option>)}
                          </select>
@@ -138,7 +172,7 @@ const HabitArchive: React.FC<HabitArchiveProps> = ({ onBack }) => {
                  <div className="flex justify-between items-center p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50">
                     <div className="text-center">
                        <div className="text-xl font-bold font-sans" style={{ color: hexColor }}>{avg1}%</div>
-                       <div className="text-[10px] opacity-70">متوسط الإنجاز</div>
+                       <div className="text-[10px] opacity-70 dark:text-gray-300">متوسط الإنجاز</div>
                     </div>
                     <div className="text-center font-bold text-sm">
                        {mDiff > 0 
@@ -149,21 +183,22 @@ const HabitArchive: React.FC<HabitArchiveProps> = ({ onBack }) => {
                     </div>
                     <div className="text-center">
                        <div className="text-xl font-bold font-sans" style={{ color: hexColor }}>{avg2}%</div>
-                       <div className="text-[10px] opacity-70">متوسط الإنجاز</div>
+                       <div className="text-[10px] opacity-70 dark:text-gray-300">متوسط الإنجاز</div>
                     </div>
                  </div>
             </div>
         );
-    }
+    };
 
     return (
-        <div className={`h-screen flex flex-col bg-transparent relative`}>
-            <header className="app-top-bar">
+        <div className="h-screen h-[100dvh] max-h-screen max-h-[100dvh] flex flex-col bg-transparent relative overflow-hidden" dir="rtl">
+            <header className="app-top-bar shrink-0">
                 <div className="app-top-bar__inner">
                     <button 
                         onClick={onBack}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/20 dark:bg-gray-800/50 active:scale-95 transition-transform z-10"
+                        className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-xl bg-white/20 dark:bg-gray-800/50 hover:opacity-80 active:scale-95 transition-all z-10 flex items-center justify-center"
                         style={{ color: 'inherit' }}
+                        title="الرجوع"
                     >
                         <ChevronRight className="w-5 h-5" />
                     </button>
@@ -178,19 +213,18 @@ const HabitArchive: React.FC<HabitArchiveProps> = ({ onBack }) => {
                 </div>
             </header>
 
-            <main className="flex-1 overflow-y-auto px-4 py-6 pb-24">
-                
+            <main className="flex-1 min-h-0 overflow-y-auto px-4 py-6 pb-36 overscroll-contain">
                 {/* Tabs */}
                 <div className="flex bg-gray-100 dark:bg-gray-800 rounded-xl p-1 mb-6">
                     <button 
-                        className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors ${activeTab === 'days' ? 'bg-white dark:bg-gray-700 shadow-sm' : 'text-gray-500'}`}
+                        className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors ${activeTab === 'days' ? 'bg-white dark:bg-gray-700 shadow-sm' : 'text-gray-500 dark:text-gray-400'}`}
                         onClick={() => setActiveTab('days')}
                         style={activeTab === 'days' ? { color: hexColor } : {}}
                     >
                         مقارنة الأيام
                     </button>
                     <button 
-                        className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors ${activeTab === 'months' ? 'bg-white dark:bg-gray-700 shadow-sm' : 'text-gray-500'}`}
+                        className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors ${activeTab === 'months' ? 'bg-white dark:bg-gray-700 shadow-sm' : 'text-gray-500 dark:text-gray-400'}`}
                         onClick={() => setActiveTab('months')}
                         style={activeTab === 'months' ? { color: hexColor } : {}}
                     >
@@ -200,8 +234,8 @@ const HabitArchive: React.FC<HabitArchiveProps> = ({ onBack }) => {
 
                 {activeTab === 'days' ? renderComparisonTab() : renderMonthComparisonTab()}
 
-                <h3 className="font-bold text-lg mb-4 text-gray-800 dark:text-gray-200">الأرشيف المفصل</h3>
-                <div className="space-y-3">
+                <h3 className="font-bold text-lg mb-4 text-gray-800 dark:text-gray-200">الأرشيف المفصل ({allDates.length} يوم)</h3>
+                <div className="space-y-3 pb-8">
                     {allDates.length === 0 && (
                         <div className="text-center p-8 opacity-70 text-sm font-bold dark:text-gray-300">
                             لا يوجد إنجازات مسجلة بعد.
@@ -217,8 +251,8 @@ const HabitArchive: React.FC<HabitArchiveProps> = ({ onBack }) => {
                                    </div>
                                    <div>
                                        <span className="font-bold block text-sm dark:text-white">{date}</span>
-                                       <span className="text-[10px] font-semibold opacity-70">
-                                            {progress === 100 ? 'إنجاز كامل' : 'إنجاز جزئي'}
+                                       <span className="text-[10px] font-semibold opacity-70 dark:text-gray-300">
+                                            {progress === 100 ? 'إنجاز كامل 🌟' : `${progress}% مكتمل`}
                                        </span>
                                    </div>
                                </div>
@@ -226,12 +260,14 @@ const HabitArchive: React.FC<HabitArchiveProps> = ({ onBack }) => {
                                    {progress}%
                                </div>
                            </div>
-                        )
+                        );
                     })}
                 </div>
             </main>
             
-            <BottomBar onHomeClick={onBack} onThemesClick={() => {}} showThemes={false} />
+            <div className="shrink-0 z-30">
+                <BottomBar onHomeClick={onBack} onThemesClick={() => {}} showThemes={false} />
+            </div>
         </div>
     );
 };

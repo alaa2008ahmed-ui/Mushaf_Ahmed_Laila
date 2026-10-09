@@ -11,10 +11,9 @@ import { registerBackInterceptor } from '../hooks/useBackButton';
 import VerseSection from '../components/MainMenu/VerseSection';
 import TitleSection from '../components/MainMenu/TitleSection';
 import GridSection from '../components/MainMenu/GridSection';
-import FloatingNeonTicker from '../components/FloatingNeonTicker';
 import VerseContextMenu from '../components/MainMenu/VerseContextMenu';
 import TutorialOverlay, { TutorialStep } from '../components/Tutorial/TutorialOverlay';
-import { Mic, Palette, Grid, BookOpen } from 'lucide-react';
+import { Mic, Palette, Grid, BookOpen, MessageCircle, Trophy } from 'lucide-react';
 import { useVoiceControl } from '../context/VoiceControlContext';
 import { usePrayerTimes } from '../context/PrayerTimesContext';
 import { prayerNamesAr } from '../data/prayerTimesData';
@@ -43,30 +42,24 @@ const ISLAMIC_EVENTS = [
 const HIJRI_MONTHS = ["محرم", "صفر", "ربيع الأول", "ربيع الآخر", "جمادى الأولى", "جمادى الآخرة", "رجب", "شعبان", "رمضان", "شوال", "ذو القعدة", "ذو الحجة"];
 const GREGORIAN_MONTHS = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
 
-const APP_SHARE_TEXT = `إليك التحديث الأضخم لتطبيق "مصحف أحمد وليلى"! 🕋✨
+const APP_SHARE_TEXT = `🕋✨ التحديث الأكبر لتطبيق "مصحف أحمد وليلى"! ✨🕋
+(تطبيقك الإسلامي الشامل — يعمل بدون إنترنت وبدون إعلانات)
 
-بشرى سارة لكل مسلم، تطبيقك الإسلامي الشامل الذي يعمل "بدون إنترنت" صار الآن أفضل وأجمل بكثير! لقد قمنا بتحديث جميع صفحات التطبيق بالكامل لضمان تجربة أسرع وسهولة تامة في الاستخدام.
+نسعد بأن نضع بين أيديكم إصداراً جديداً كلياً يجمع بين روعة التلاوة وروح التنافس في الخيرات، مع صفحات وميزات حصرية أُضيفت خصيصاً لترافق يومك الإيماني:
 
-ما الجديد في هذا التحديث؟ 🚀
-لقد تمت إضافة صفحات وميزات جديدة وحصرية لتكون رفيقك اليومي في التقرب إلى الله:
+🚀 أبرز ما تم إضافته في هذا التحديث:
+🏆 صفحة أهل القرآن: لوحة المتصدرين وترتيب القرّاء؛ لمتابعة إحصائيات تلاوتك وتنافس إيماني مبارك في قراءة وختم القرآن الكريم شهرياً وتراكمياً.
+💬 صفحة مجتمع التواصل: ملتقى إيماني للتواصل الأخوي ومجموعات النقاش الهادف والتواصي بالحق.
+🛡️ صفحة الرقية الشرعية: رقية شرعية كاملة وشاملة من القرآن الكريم والسنة النبوية للتحصين والشفاء.
+🌐 صفحة مواقع إسلامية: دليل متكامل لأوثق المواقع والمنصات الإسلامية للفتوى والبحث الشرعي.
 
-✅ صفحة التحفيظ: لمساعدتك على حفظ كتاب الله ومراجعته بيسر وسهولة.
-✅ الورد اليومي: لتنظيم قراءتك اليومية والالتزام بها بانتظام.
-✅ التحكم الصوتي: ميزة ذكية فريدة تمكنك من التنقل داخل التطبيق عبر أوامرك الصوتية.
-✅ أسماء الله الحسنى: شرح وتدبر لمعاني أسماء الله العظيمة بتصميم مميز.
-✅ مربي العبادات: دليلك العملي والمحفز للالتزام بالفرائض والسنن اليومية.
+🌟 بجانب ميزاتك المفضلة:
+(المصحف الشريف كاملاً • حصن المسلم والأذكار • مواقيت الصلاة والقبلة • الورد اليومي والتحفيظ • التحكم الصوتي • مربي العبادات • الحاسبة الشرعية • الأربعون النووية).
 
-مميزات التطبيق المتكاملة:
-بجانب الإضافات الجديدة، التطبيق يوفر لك: (القرآن الكريم كاملاً، حصن المسلم والأذكار، الادعية، مواقيت الصلاة بدقة، اتجاه القبلة ، التقويم ، اذكار الصلاه ، السبحة الإلكترونية ، الحاسبة الشرعية ، الاربعون النوويه).. وكل ذلك بدون الحاجة للاتصال بالإنترنت.
+📥 حمّل التطبيق الآن أو حدّثه عبر متجر Google Play:
+👉 https://play.google.com/store/apps/details?id=com.AhmedLaila.Quran
 
-مميزات اخرى كثيرة تنتظرك اكتشفها بنفسك .
-
-حمل التطبيق الآن وشاركه مع أحبابك لتكون لك صدقة جارية:
-📥 رابط التطبيق على متجر جوجل بلاي:
-
-https://play.google.com/store/apps/details?id=com.AhmedLaila.Quran
-
-نفعنا الله وإياكم به، وجعله في ميزان حسناتنا جميعاً. 🤲✨`;
+🤍 شاركه مع أهلك وأصحابك.. فالدال على الخير كفاعله، واجعله صدقة جارية لك ولوالديك. 🤲🌱`;
 
 const ALL_POSSIBLE_ITEMS = [
     { id: 'quran', label: "📖 القرآن الكريم", className: "col-span-2 h-12", colorIndex: 0 },
@@ -83,7 +76,9 @@ const ALL_POSSIBLE_ITEMS = [
     { id: 'nawawi', label: "📚 الأربعون النووية", className: "h-10", colorIndex: 1 },
     { id: 'calculators', label: "🧮 الحاسبة الشرعية", className: "h-10", colorIndex: 1 },
     { id: 'asmaul-husna', label: "✨ أسماء الله الحسنى", className: "col-span-2 h-10", colorIndex: 1 },
-    { id: 'more', label: "✨ قائمة التطبيقات", className: "col-span-2 h-10 flex justify-center", colorIndex: 0 },
+    { id: 'ahl-al-quran', label: "🏆 أهل القرآن", className: "col-span-2 h-10", colorIndex: 0 },
+    { id: 'community', label: "💬 مجتمع التواصل", className: "col-span-2 h-10", colorIndex: 0 },
+    { id: 'more', label: "قائمة التطبيقات", className: "col-span-2 h-10 flex justify-center", colorIndex: 0 },
 ];
 
 const DEFAULT_MENU_ITEMS = [
@@ -98,7 +93,7 @@ const DEFAULT_MENU_ITEMS = [
     { id: 'calendar', label: "📅 التقويم", className: "h-10", colorIndex: 1 },
     { id: 'qibla', label: "🧭 القبلة", className: "h-10", colorIndex: 1 },
     { id: 'hajj-umrah', label: "🕋 الحج والعمرة", className: "h-10", colorIndex: 1 },
-    { id: 'more', label: "✨ قائمة التطبيقات", className: "col-span-2 h-10 flex justify-center", colorIndex: 0 },
+    { id: 'more', label: "قائمة التطبيقات", className: "col-span-2 h-10 flex justify-center", colorIndex: 0 },
 ];
 
 function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
@@ -125,7 +120,14 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
     if (savedLayout) {
         try {
             const parsed = JSON.parse(savedLayout);
-            const filtered = parsed.filter((item: any) => item.id !== 'habit-tracker');
+            const filtered = parsed
+                .filter((item: any) => item.id !== 'habit-tracker')
+                .map((item: any) => {
+                    let updated = { ...item };
+                    if (updated.customColor) delete updated.customColor;
+                    if (updated.id === 'more') updated.label = "قائمة التطبيقات";
+                    return updated;
+                });
             return filtered;
         } catch (e) {
             return DEFAULT_MENU_ITEMS;
@@ -193,6 +195,20 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
       text: 'هذه جولة سريعة لتعريفك بأهم مميزات التطبيق وكيفية استخدامها. تم تصميم هذا التطبيق ليكون رفيقك الدائم في العبادة، حيث يجمع بين سهولة الاستخدام والجمال البصري.',
       selector: '#app-title',
       icon: <BookOpen className="w-8 h-8 text-white" />
+    },
+    {
+      id: 'community',
+      title: 'مجتمع التواصل',
+      text: 'تواصل وتفاعل مع قراء القرآن، وشارك في المجموعات المباركة والرسائل الخاصة لتبادل الفوائد والتواصي بالحق.',
+      selector: '#home-community-btn',
+      icon: <MessageCircle className="w-8 h-8 text-white" />
+    },
+    {
+      id: 'ahl-al-quran',
+      title: 'أهل القرآن',
+      text: 'لوحة المتصدرين وتنافس إيماني في قراءة وختم القرآن الكريم، مع متابعة إحصائياتك وإنجازاتك اليومية والشهرية.',
+      selector: '#home-ahl-al-quran-btn',
+      icon: <Trophy className="w-8 h-8 text-white" />
     },
     {
       id: 'voice',
@@ -485,15 +501,19 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
             let changed = false;
             const updated = parsed.map((item: any) => {
                 let currentItem = { ...item };
-                if (currentItem.id === 'calculators' || currentItem.id === 'calendar') {
-                    if (currentItem.customColor) {
-                        delete currentItem.customColor;
-                        changed = true;
-                    }
-                }
-                if (currentItem.id === 'more' && !currentItem.className.includes('flex justify-center')) {
+                if (currentItem.customColor) {
+                    delete currentItem.customColor;
                     changed = true;
-                    currentItem.className = currentItem.className + " flex justify-center";
+                }
+                if (currentItem.id === 'more') {
+                    if (currentItem.label && (currentItem.label.includes('✨') || currentItem.label !== "قائمة التطبيقات")) {
+                        changed = true;
+                        currentItem.label = "قائمة التطبيقات";
+                    }
+                    if (!currentItem.className.includes('flex justify-center')) {
+                        changed = true;
+                        currentItem.className = currentItem.className + " flex justify-center";
+                    }
                 }
                 if (currentItem.className) {
                     const newClass = currentItem.className.replace(/h-\d+/g, (match) => {
@@ -830,7 +850,7 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
 
                           <div className="flex items-center justify-center gap-3 mt-0.5">
                               <button 
-                                  onClick={() => window.open('https://mushaf-ahmed-and-laila.netlify.app/', '_blank')}
+                                  onClick={() => window.open('https://mushaf-ahmed-laila.vercel.app/', '_blank')}
                                   className="py-1.5 px-3 rounded-xl font-bold text-[10px] text-center flex items-center justify-center gap-2 shadow-md active:scale-95 transition-all"
                                   style={{ 
                                       backgroundColor: theme.palette[0], 
@@ -845,7 +865,7 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
                                   onClick={async (e) => {
                                       e.stopPropagation();
                                       try {
-                                          await navigator.clipboard.writeText('https://mushaf-ahmed-and-laila.netlify.app/');
+                                          await navigator.clipboard.writeText('https://mushaf-ahmed-laila.vercel.app/');
                                           setToastMessage('تم نسخ الرابط');
                                           setTimeout(() => setToastMessage(''), 2000);
                                       } catch (err) {
@@ -865,7 +885,7 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
                                       e.stopPropagation();
                                       const shareData = {
                                           title: 'تطبيق القرآن الكريم',
-                                          text: 'لمشاهدة التطبيق على المتصفح او الايفون اضغط على الرابط\nhttps://mushaf-ahmed-and-laila.netlify.app/',
+                                          text: 'لمشاهدة التطبيق على المتصفح او الايفون اضغط على الرابط\nhttps://mushaf-ahmed-laila.vercel.app/',
                                       };
 
                                       if (Capacitor.isNativePlatform()) {
@@ -994,18 +1014,11 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
 
                       {/* Dua Card */}
                       <div className="flex items-center justify-center gap-2 h-10 mt-3">
-                          {!showVoiceIcon && (
-                              <div className="flex items-center justify-center shrink-0">
-                                  <WhatsAppButton />
-                              </div>
-                          )}
                           <div className="themed-card p-1 rounded-2xl text-center flex-1 relative h-full flex flex-col justify-center overflow-hidden">
-                              <FloatingNeonTicker />
                               <p className="text-sm font-bold leading-tight" style={{ color: theme.bgColor === '#000000' ? '#FFFFFF' : (themeKey === 'default' ? '#a855f7' : (themeKey === 'olive_grove' ? '#65A30D' : theme.textColor)) }}>
                                   اللهم ارحمهما واغفر لهما واجعل مثواهما الجنة
                               </p>
                           </div>
-
                       </div>
                   </div>
               )}
@@ -1133,7 +1146,7 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
       />
 
       <TutorialOverlay 
-        tutorialId="home-tutorial" 
+        tutorialId="home-tutorial-v2" 
         steps={homeTutorialSteps} 
         onStepChange={setCurrentTutorialStep}
         onComplete={() => {
@@ -1143,16 +1156,6 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
             }
         }}
       />
-      {currentTutorialStep && (
-        <style>{`
-          #voice-control-btn {
-            opacity: ${currentTutorialStep === 'voice' ? '1' : '0'} !important;
-            pointer-events: ${currentTutorialStep === 'voice' ? 'auto' : 'none'} !important;
-            z-index: 10005 !important;
-            transition: opacity 0.3s ease !important;
-          }
-        `}</style>
-      )}
 
       <AnimatePresence>
         {toastMessage && (

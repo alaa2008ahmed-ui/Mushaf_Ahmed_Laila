@@ -74,7 +74,7 @@ const FloatingNeonTicker: React.FC = () => {
   }
 
   return (
-    <>
+    <div className="absolute inset-0 z-10 w-full h-full overflow-hidden rounded-2xl shadow-lg">
       <style>
         {`
           @keyframes neon-ticker-scroll {
@@ -100,23 +100,22 @@ const FloatingNeonTicker: React.FC = () => {
           }
           .neon-ticker-container {
             position: absolute;
-            /* Fills the parent Dua box perfectly */
             inset: 0;
             z-index: 10;
             pointer-events: none;
             overflow: hidden;
             display: flex;
             align-items: center;
-            background: #000000; /* Pure black to completely hide the Dua underneath */
+            background: #000000;
             backdrop-filter: blur(20px);
             border: 2px solid #39FF14;
-            border-radius: 1rem; /* Matches the parent's rounded-2xl roughly */
+            border-radius: 1rem;
             box-shadow: 0 0 20px rgba(57, 255, 20, 0.4);
             animation: neon-border-glow 8s linear infinite;
           }
           .neon-text {
             font-weight: 900;
-            font-size: 1.2rem; /* Mobile optimized size */
+            font-size: 1.15rem;
             text-transform: uppercase;
             letter-spacing: 1.5px;
             font-family: 'Cairo', sans-serif;
@@ -129,7 +128,7 @@ const FloatingNeonTicker: React.FC = () => {
           <span className="neon-text" dangerouslySetInnerHTML={{ __html: tickerData.message }}></span>
         </div>
       </div>
-    </>
+    </div>
   );
 };
 

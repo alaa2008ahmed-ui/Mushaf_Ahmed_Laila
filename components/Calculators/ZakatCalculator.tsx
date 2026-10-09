@@ -174,7 +174,7 @@ const ZakatCalculator: React.FC = () => {
                     )}
                 </h2>
                 <button onClick={clearAll} className="flex items-center gap-1 text-sm text-red-500 hover:bg-red-500/10 px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap">
-                    <RefreshCw size={14} /> تنظيف
+                    <RefreshCw size={14} /> إعادة ضبط
                 </button>
             </div>
 

@@ -38,6 +38,13 @@ const DhikrCard: React.FC<DhikrCardProps> = ({ dhikr, currentCount, isFinished, 
     }, []);
 
     const isPlaying = playingText === dhikr.text;
+    const isBlackTheme = theme.bgColor === '#000000';
+    const isDefaultTheme = themeKey === 'default';
+    const cardBorderColor = isDefaultTheme 
+        ? '#000000' 
+        : (isBlackTheme 
+            ? '#FFFFFF' 
+            : (theme.palette?.[0] || '#000000'));
 
     const toggleFav = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -66,7 +73,12 @@ const DhikrCard: React.FC<DhikrCardProps> = ({ dhikr, currentCount, isFinished, 
         <div 
             className={`themed-card p-5 pb-0 rounded-2xl border relative overflow-hidden group transition-all duration-300 ${isFinished ? 'opacity-60' : 'cursor-pointer'}`} 
             onClick={onDecrement}
-            style={{ borderColor: 'var(--card-border)', color: 'var(--text-color)' }}
+            style={{ 
+                borderColor: cardBorderColor, 
+                borderWidth: '1.5px', 
+                borderStyle: 'solid',
+                color: 'var(--text-color)' 
+            }}
         >
             <div className="flex justify-between items-start mb-2">
                 <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-bold shadow-sm" style={{backgroundColor: theme.palette[1]+'30', color: theme.palette[1]}}>

@@ -55,12 +55,71 @@
         "createdAt": { "type": "string" }
       },
       "required": ["blockerId", "blockedId"]
+    },
+    "AhlAlQuranRecord": {
+      "title": "Ahl Al Quran Stats Record",
+      "description": "Quran reading statistics and khatma records for Ahl Al-Quran leaderboard",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128 },
+        "username": { "type": "string", "maxLength": 50 },
+        "avatarUrl": { "type": "string", "maxLength": 500 },
+        "country": { "type": "string", "maxLength": 50 },
+        "privacyMode": { "type": "string", "maxLength": 20 },
+        "totalLifetimePages": { "type": "number" },
+        "totalLifetimeKhatmas": { "type": "number" },
+        "lastReadTimestamp": { "type": "number" }
+      },
+      "required": ["userId", "username"]
+    },
+    "GroupChat": {
+      "title": "Group Chat Room",
+      "description": "Group conversation room for multiple users",
+      "type": "object",
+      "properties": {
+        "groupId": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "minLength": 2, "maxLength": 100 },
+        "description": { "type": "string", "maxLength": 300 },
+        "avatarUrl": { "type": "string", "maxLength": 500 },
+        "createdBy": { "type": "string", "maxLength": 128 },
+        "creatorName": { "type": "string", "maxLength": 50 },
+        "members": { "type": "array", "items": { "type": "string" } },
+        "memberCount": { "type": "number" },
+        "lastMessage": { "type": "string", "maxLength": 2000 },
+        "lastMessageSenderName": { "type": "string", "maxLength": 50 },
+        "lastMessageTime": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "isPublic": { "type": "boolean" }
+      },
+      "required": ["groupId", "name", "createdBy"]
+    },
+    "GroupMessage": {
+      "title": "Group Chat Message",
+      "description": "Message posted inside a group chat",
+      "type": "object",
+      "properties": {
+        "messageId": { "type": "string", "maxLength": 128 },
+        "groupId": { "type": "string", "maxLength": 128 },
+        "senderId": { "type": "string", "maxLength": 128 },
+        "senderName": { "type": "string", "maxLength": 50 },
+        "senderAvatarUrl": { "type": "string", "maxLength": 500 },
+        "senderCountry": { "type": "string", "maxLength": 50 },
+        "text": { "type": "string", "maxLength": 2000 },
+        "audioUrl": { "type": "string" },
+        "audioDuration": { "type": "number" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["messageId", "groupId", "senderId", "senderName"]
     }
   },
   "firestore": {
     "/users/{userId}": {
       "schema": "User",
       "description": "Global user profiles collection"
+    },
+    "/ahl_al_quran_stats/{userId}": {
+      "schema": "AhlAlQuranRecord",
+      "description": "Monthly and lifetime Quran reading stats for leaderboard"
     },
     "/chats/{chatId}": {
       "schema": "Chat",
@@ -69,6 +128,14 @@
     "/chats/{chatId}/messages/{messageId}": {
       "schema": "Message",
       "description": "Direct chat messages"
+    },
+    "/group_chats/{groupId}": {
+      "schema": "GroupChat",
+      "description": "Group chat rooms"
+    },
+    "/group_messages/{messageId}": {
+      "schema": "GroupMessage",
+      "description": "Group chat messages"
     },
     "/blockedUsers/{blockId}": {
       "schema": "BlockRecord",

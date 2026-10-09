@@ -73,7 +73,12 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
             return settings.themeKey || 'default';
         }
 
-        return settings.pageThemes[pageKey] || settings.themeKey || 'default';
+        const isLocked = settings.lockedPages?.includes(pageKey);
+        if (isLocked && settings.pageThemes[pageKey]) {
+            return settings.pageThemes[pageKey];
+        }
+
+        return settings.themeKey || 'default';
     }, [settings, currentPage]);
 
     const theme = useMemo(() => {

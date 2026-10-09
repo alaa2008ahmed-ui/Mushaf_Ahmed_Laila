@@ -13,6 +13,7 @@ interface NavButtonProps {
     btnText?: string;
     showNewBadge?: boolean;
     badgeText?: string;
+    unreadBadgeCount?: number;
     dataId?: string;
 }
 
@@ -20,7 +21,7 @@ const NavButton: React.FC<NavButtonProps> = ({
     label, 
     onClick, 
     className, 
-    color = '#4F46E5', 
+    color = '#8B5CF6', 
     border, 
     isEditMode, 
     onResize, 
@@ -28,6 +29,7 @@ const NavButton: React.FC<NavButtonProps> = ({
     btnText,
     showNewBadge,
     badgeText = 'جديد',
+    unreadBadgeCount,
     dataId
 }) => (
     <div className={`h-full ${className} relative group`} data-id={dataId}>
@@ -57,7 +59,7 @@ const NavButton: React.FC<NavButtonProps> = ({
                 <div className="absolute inset-x-0 top-0 h-[1px] bg-white/20 rounded-t-2xl"></div>
             )}
             
-            <span className="relative z-10 font-kufi">
+            <span className="relative z-10 font-kufi whitespace-nowrap">
                 {label}
             </span>
 
@@ -67,10 +69,19 @@ const NavButton: React.FC<NavButtonProps> = ({
             )}
         </motion.button>
         
-        {showNewBadge && (
-            <div className="absolute -top-2 -right-1 bg-yellow-400 text-black text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full z-20 shadow-lg border border-white animate-bounce pointer-events-none">
-                {badgeText}
+        {unreadBadgeCount !== undefined && unreadBadgeCount > 0 ? (
+            <div 
+                className="absolute -top-2 -right-1 bg-red-600 text-white text-[10px] sm:text-xs font-black min-w-[20px] h-5 px-1.5 rounded-full z-20 shadow-lg border-2 border-white flex items-center justify-center animate-pulse pointer-events-none"
+                style={{ backgroundColor: '#DC2626' }}
+            >
+                {unreadBadgeCount > 99 ? '+99' : unreadBadgeCount}
             </div>
+        ) : (
+            showNewBadge && (
+                <div className="absolute -top-2 -right-1 bg-yellow-400 text-black text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full z-20 shadow-lg border border-white animate-bounce pointer-events-none">
+                    {badgeText}
+                </div>
+            )
         )}
         
         {isEditMode && (

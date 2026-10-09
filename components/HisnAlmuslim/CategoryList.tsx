@@ -9,6 +9,13 @@ interface CategoryListProps {
 
 const CategoryList: React.FC<CategoryListProps> = ({ onSelectCategory }) => {
     const { theme, themeKey } = useTheme();
+    const isBlackTheme = theme.bgColor === '#000000';
+    const isDefaultTheme = themeKey === 'default';
+    const cardBorderColor = isDefaultTheme 
+        ? '#000000' 
+        : (isBlackTheme 
+            ? '#FFFFFF' 
+            : (theme.palette?.[0] || '#000000'));
 
     const containerVariants = {
         hidden: { opacity: 0 },
@@ -33,7 +40,15 @@ const CategoryList: React.FC<CategoryListProps> = ({ onSelectCategory }) => {
                         onClick={() => onSelectCategory(category)}
                         className="relative group cursor-pointer active:scale-95 transition-transform"
                     >
-                        <div className="h-full p-3 rounded-3xl themed-card border shadow-sm hover:shadow-md transition-shadow flex flex-col items-center text-center gap-1 overflow-hidden" style={{ borderColor: 'var(--card-border)', color: 'var(--text-color)' }}>
+                        <div 
+                            className="h-full p-3 rounded-3xl themed-card border shadow-sm hover:shadow-md transition-shadow flex flex-col items-center text-center gap-1 overflow-hidden" 
+                            style={{ 
+                                borderColor: cardBorderColor, 
+                                borderWidth: '1.5px', 
+                                borderStyle: 'solid', 
+                                color: 'var(--text-color)' 
+                            }}
+                        >
                             {/* Background hint */}
                             {themeKey !== 'default' && (
                                 <div 

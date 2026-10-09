@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { MessageCircle, Trophy } from 'lucide-react';
 import NavButton from './NavButton';
 import WhatsAppButton from '../WhatsAppButton';
 import VoiceControlToggle from '../VoiceControlToggle';
 import { useVoiceControl } from '../../context/VoiceControlContext';
+import { useShowNewBadge } from '../../utils/badgeManager';
+import { communityService } from '../../services/communityService';
 
 interface GridSectionProps {
     menuItems: any[];
@@ -27,19 +30,32 @@ const GridSection: React.FC<GridSectionProps> = ({
     DEFAULT_MENU_ITEMS
 }) => {
     const { showVoiceIcon } = useVoiceControl();
-    const [showNewBadges, setShowNewBadges] = useState(false);
+    const showNewBadges = useShowNewBadge();
+    const [unreadCommunityCount, setUnreadCommunityCount] = useState<number>(() => {
+        return communityService.getTotalUnreadCount();
+    });
 
     useEffect(() => {
-        const opens = parseInt(localStorage.getItem('app_opens_count_new') || '0');
-        if (!sessionStorage.getItem('app_opened_this_session')) {
-            localStorage.setItem('app_opens_count_new', (opens + 1).toString());
-            sessionStorage.setItem('app_opened_this_session', 'true');
-        }
-        
-        const currentOpens = parseInt(localStorage.getItem('app_opens_count_new') || '1');
-        if (currentOpens <= 5) {
-            setShowNewBadges(true);
-        }
+        const updateUnread = () => {
+            setUnreadCommunityCount(communityService.getTotalUnreadCount());
+        };
+
+        // Fetch latest messages from server in background to keep counter in sync
+        communityService.fetchLatestMessages().then(() => {
+            updateUnread();
+        });
+
+        window.addEventListener('community_messages_updated', updateUnread);
+        window.addEventListener('community_user_updated', updateUnread);
+        window.addEventListener('community_groups_updated', updateUnread);
+        window.addEventListener('storage', updateUnread);
+
+        return () => {
+            window.removeEventListener('community_messages_updated', updateUnread);
+            window.removeEventListener('community_user_updated', updateUnread);
+            window.removeEventListener('community_groups_updated', updateUnread);
+            window.removeEventListener('storage', updateUnread);
+        };
     }, []);
 
     const handleResize = (id: string, e: React.MouseEvent) => {
@@ -98,13 +114,45 @@ const GridSection: React.FC<GridSectionProps> = ({
 
     const isBlackTheme = theme.bgColor === '#000000';
 
+    // Dynamic colors for community and ahl-al-quran icons based on current theme
+    const communityBg = isBlackTheme 
+        ? '#000000' 
+        : (theme.isGlass 
+            ? 'rgba(255, 255, 255, 0.25)' 
+            : (themeKey === 'default' 
+                ? '#8B5CF6' 
+                : (theme.palette[1] || theme.palette[0] || '#8B5CF6')));
+
+    const ahlQuranBg = isBlackTheme 
+        ? '#000000' 
+        : (theme.isGlass 
+            ? 'rgba(255, 255, 255, 0.25)' 
+            : (themeKey === 'default' 
+                ? '#059669' 
+                : (theme.palette[0] || theme.palette[2] || '#059669')));
+
+    const iconTextColor = isBlackTheme 
+        ? '#FFFFFF' 
+        : (theme.isGlass ? (theme.btnText || '#FFFFFF') : '#FFFFFF');
+
+    const iconBorderColor = isBlackTheme 
+        ? '#FFFFFF' 
+        : (theme.isGlass ? 'rgba(255, 255, 255, 0.5)' : '#FFFFFF');
+
+    const GREEN_ITEMS = ['quran', 'listen', 'prayer-times', 'more'];
+
     return (
         <div className="grid grid-cols-2 gap-x-4 gap-y-3 w-full max-w-sm mx-auto flex-grow content-center relative mt-6 pb-4">
             {menuItems.map(item => {
                 const isVisible = visibleItems.includes(item.id);
+                const isGreen = GREEN_ITEMS.includes(item.id);
                 const buttonColor = isBlackTheme 
                     ? '#000000' 
-                    : (themeKey === 'olive_grove' ? (['quran', 'listen', 'prayer-times'].includes(item.id) ? '#4D7C0F' : '#65A30D') : (item.customColor || theme.palette[DEFAULT_MENU_ITEMS.find(d => d.id === item.id)?.colorIndex ?? item.colorIndex]));
+                    : (themeKey === 'olive_grove' 
+                        ? (isGreen ? '#4D7C0F' : '#65A30D') 
+                        : (themeKey === 'default'
+                            ? (isGreen ? '#059669' : '#8B5CF6')
+                            : (isGreen ? theme.palette[0] : (theme.palette[1] || theme.palette[0] || '#8B5CF6'))));
                 const textColor = isBlackTheme ? '#FFFFFF' : theme.btnText;
                 const buttonBorder = isBlackTheme ? '1px solid #333333' : theme.btnBorder;
 
@@ -125,11 +173,39 @@ const GridSection: React.FC<GridSectionProps> = ({
                         onDragEnd={(e, info) => handleDragEnd(e, info, item.id)}
                     >
                         {item.id === 'more' ? (
-                            <div className="flex items-center justify-center gap-2 w-full h-full px-2">
-                                {showVoiceIcon && <WhatsAppButton />}
-                                <div className="w-36 h-full">
+                            <div className="flex items-center justify-center gap-1.5 sm:gap-2 w-full h-full px-1">
+                                <div className="relative shrink-0">
+                                    <motion.button
+                                        type="button"
+                                        id="home-community-btn"
+                                        onClick={() => !isEditMode && onNavigate('community')}
+                                        whileHover={{ scale: 1.1 }}
+                                        whileTap={{ scale: 0.9 }}
+                                        className="w-9 h-9 rounded-full flex items-center justify-center shadow-lg transition-transform border-2 shrink-0 active:scale-95 relative"
+                                        style={{
+                                            backgroundColor: communityBg,
+                                            borderColor: iconBorderColor,
+                                            backdropFilter: theme.isGlass ? 'blur(8px)' : 'none',
+                                            WebkitBackdropFilter: theme.isGlass ? 'blur(8px)' : 'none'
+                                        }}
+                                        title="مجتمع التواصل"
+                                        aria-label="مجتمع التواصل"
+                                    >
+                                        <MessageCircle className="w-5 h-5" style={{ color: iconTextColor }} />
+                                        {unreadCommunityCount > 0 && (
+                                            <span 
+                                                className="absolute -top-1.5 -right-1.5 min-w-[19px] h-[19px] px-1 rounded-full bg-red-600 text-white text-[10px] font-black flex items-center justify-center border-2 border-white shadow-md animate-pulse leading-none pointer-events-none z-30"
+                                                style={{ backgroundColor: '#DC2626' }}
+                                            >
+                                                {unreadCommunityCount > 99 ? '+99' : unreadCommunityCount}
+                                            </span>
+                                        )}
+                                    </motion.button>
+                                </div>
+                                <WhatsAppButton />
+                                <div className="flex-1 min-w-[130px] max-w-[210px] h-full">
                                     <NavButton 
-                                        label={item.label} 
+                                        label={item.label.replace(/^[✨\s]+/, '')} 
                                         onClick={() => !isEditMode && onNavigate(item.id)} 
                                         className="w-full h-full shadow-lg"
                                         color={buttonColor} 
@@ -138,11 +214,29 @@ const GridSection: React.FC<GridSectionProps> = ({
                                         onResize={(e) => handleResize(item.id, e)}
                                         isGlass={theme.isGlass}
                                         btnText={textColor}
-                                        showNewBadge={showNewBadges && ['daily-wird', 'memorization', 'voice-control', 'habit-tracker'].includes(item.id)}
+                                        showNewBadge={showNewBadges && ['memorization', 'community', 'ahl-al-quran', 'others', 'islamic-sites'].includes(item.id)}
                                         badgeText="جديد"
                                     />
                                 </div>
                                 <VoiceControlToggle />
+                                <motion.button
+                                    type="button"
+                                    id="home-ahl-al-quran-btn"
+                                    onClick={() => !isEditMode && onNavigate('ahl-al-quran')}
+                                    whileHover={{ scale: 1.1 }}
+                                    whileTap={{ scale: 0.9 }}
+                                    className="w-9 h-9 rounded-full flex items-center justify-center shadow-lg transition-transform border-2 shrink-0 active:scale-95"
+                                    style={{
+                                        backgroundColor: ahlQuranBg,
+                                        borderColor: iconBorderColor,
+                                        backdropFilter: theme.isGlass ? 'blur(8px)' : 'none',
+                                        WebkitBackdropFilter: theme.isGlass ? 'blur(8px)' : 'none'
+                                    }}
+                                    title="أهل القرآن"
+                                    aria-label="أهل القرآن"
+                                >
+                                    <Trophy className="w-5 h-5" style={{ color: iconTextColor }} />
+                                </motion.button>
                             </div>
                         ) : (
                             <NavButton 
@@ -155,8 +249,9 @@ const GridSection: React.FC<GridSectionProps> = ({
                                 onResize={(e) => handleResize(item.id, e)}
                                 isGlass={theme.isGlass}
                                 btnText={textColor}
-                                showNewBadge={showNewBadges && ['daily-wird', 'memorization', 'voice-control', 'habit-tracker'].includes(item.id)}
+                                showNewBadge={showNewBadges && ['memorization', 'ahl-al-quran', 'others', 'islamic-sites'].includes(item.id)}
                                 badgeText="جديد"
+                                unreadBadgeCount={item.id === 'community' ? unreadCommunityCount : undefined}
                             />
                         )}
                         {item.id === 'quran' && !isEditMode && (

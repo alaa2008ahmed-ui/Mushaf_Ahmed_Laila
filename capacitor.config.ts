@@ -16,9 +16,6 @@ const config: any = {
     ]
   },
   plugins: {
-    GoogleSignIn: {
-      clientId: "903816597633-1ph0t287hi7as4astptibanphv4dfp47.apps.googleusercontent.com",
-    },
     Keyboard: {
       resize: 'native' as any,
       style: 'dark' as any,

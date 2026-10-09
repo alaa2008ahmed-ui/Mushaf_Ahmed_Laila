@@ -43,7 +43,7 @@ const KaffaratCalculator: React.FC = () => {
                     <i className="fa-solid fa-hand-holding-heart text-primary"></i> حساب الكفارات
                 </h2>
                 <button onClick={clearAll} className="flex items-center gap-1 text-sm text-red-500 hover:bg-red-500/10 px-3 py-1.5 rounded-lg transition-colors">
-                    <RefreshCw size={14} /> تنظيف
+                    <RefreshCw size={14} /> إعادة ضبط
                 </button>
             </div>
 
@@ -102,12 +102,9 @@ const KaffaratCalculator: React.FC = () => {
                     </span>
                 </div>
             </div>
-            
-            <div className="mt-4 p-3 rounded-xl bg-yellow-500/10 border border-yellow-500/20 flex items-start gap-2">
-                <Info className="text-yellow-600 dark:text-yellow-400 shrink-0 mt-0.5" size={16} />
-                <p className="text-xs leading-relaxed opacity-90" style={{ color: theme.textColor }}>
-                    الأصل في الكفارات والفدية إخراجها طعاماً، ويجوز إخراج قيمتها نقداً عند بعض المذاهب إذا كان في ذلك مصلحة للفقير.
-                </p>
+
+            <div className="p-4 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-xs opacity-70 text-center" style={{ color: theme.textColor }}>
+                * ملاحظة: الأصل في الكفارات والفدية هو إخراج الطعام عيناً (أرز، قمح، تمر) بمقدار مد أو نصف صاع حسب المذهب، وتجوز القيمة النقدية عند جماعة من أهل العلم تيسيراً على الفقراء.
             </div>
         </div>
     );
