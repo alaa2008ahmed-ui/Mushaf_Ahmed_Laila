@@ -3,12 +3,15 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   ArrowRight, Send, Smile, MoreVertical, Trash2, Check, 
   CheckCheck, Ban, User, Sparkles, AlertCircle, BookOpen, Play, Pause, CheckCircle2,
-  Mic, Volume2, Loader2, UserPlus, Clock, X
+  Mic, Volume2, Loader2, UserPlus, Clock, X, Paperclip, Video, FileText
 } from 'lucide-react';
-import { communityService, CommunityUser, ChatMessage, QuranVerseAttachment, ADMIN_USER_ID } from '../services/communityService';
+import { communityService, CommunityUser, ChatMessage, QuranVerseAttachment, ChatAttachment, ADMIN_USER_ID } from '../services/communityService';
 import { SUPPORT_AVATAR_BASE64 } from '../src/supportAvatarBase64';
 import EmojiPicker from '../components/Community/EmojiPicker';
 import QuranVerseModal from '../components/Community/QuranVerseModal';
+import { ChatAttachmentView, formatFileSize } from '../components/Community/ChatAttachmentView';
+import { MediaAttachmentPicker } from '../components/Community/MediaAttachmentPicker';
+import { processFileForAttachment } from '../components/Community/mediaPickerUtils';
 import { Capacitor } from '@capacitor/core';
 import { registerBackInterceptor } from '../hooks/useBackButton';
 
@@ -232,26 +235,20 @@ export const ChatMessageAudioPlayer: React.FC<{
     const audio = new Audio(audioUrl);
     audioRef.current = audio;
 
+    if (audioDuration && audioDuration > 0) {
+      setDuration(audioDuration);
+    }
+
     const handleLoadedMetadata = () => {
       if (audio.duration && !isNaN(audio.duration) && isFinite(audio.duration) && audio.duration > 0) {
         setDuration(audio.duration);
-      } else {
-        // WebM MediaRecorder duration fix trick for browsers/WebViews
-        audio.currentTime = 1e101;
       }
     };
 
     const handleTimeUpdate = () => {
-      // If we jumped to 1e101 to extract duration, reset to 0 once duration is resolved
-      if (audio.currentTime > 10000) {
-        if (audio.duration && isFinite(audio.duration) && !isNaN(audio.duration) && audio.duration > 0) {
-          setDuration(audio.duration);
-        }
-        audio.currentTime = 0;
-        return;
+      if (!isNaN(audio.currentTime) && isFinite(audio.currentTime)) {
+        setCurrentTime(audio.currentTime);
       }
-
-      setCurrentTime(audio.currentTime);
       if (audio.duration && !isNaN(audio.duration) && isFinite(audio.duration) && audio.duration > 0) {
         setDuration(audio.duration);
       }
@@ -260,12 +257,20 @@ export const ChatMessageAudioPlayer: React.FC<{
     const handleEnded = () => {
       setIsPlaying(false);
       setCurrentTime(0);
+      if (audioRef.current) {
+        audioRef.current.currentTime = 0;
+      }
+    };
+
+    const handlePause = () => {
+      setIsPlaying(false);
     };
 
     audio.addEventListener('loadedmetadata', handleLoadedMetadata);
     audio.addEventListener('durationchange', handleLoadedMetadata);
     audio.addEventListener('timeupdate', handleTimeUpdate);
     audio.addEventListener('ended', handleEnded);
+    audio.addEventListener('pause', handlePause);
 
     // Fast Web Audio API duration calculation for base64 / WebM voice notes
     let isCancelled = false;
@@ -296,22 +301,50 @@ export const ChatMessageAudioPlayer: React.FC<{
       audio.removeEventListener('durationchange', handleLoadedMetadata);
       audio.removeEventListener('timeupdate', handleTimeUpdate);
       audio.removeEventListener('ended', handleEnded);
+      audio.removeEventListener('pause', handlePause);
     };
   }, [audioUrl, audioDuration]);
 
   const togglePlay = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!audioRef.current) return;
+    const audio = audioRef.current;
+    if (!audio) return;
 
     if (isPlaying) {
-      audioRef.current.pause();
+      audio.pause();
       setIsPlaying(false);
     } else {
-      audioRef.current.play().then(() => {
-        setIsPlaying(true);
-      }).catch(err => {
-        console.error('Audio playback error:', err);
+      // Pause any other audio on page
+      document.querySelectorAll('audio').forEach(el => {
+        if (el !== audio) {
+          try { el.pause(); } catch (err) {}
+        }
       });
+
+      // Reset to start if finished or near end
+      if (audio.ended || isNaN(audio.currentTime) || audio.currentTime >= (duration || 1) || audio.currentTime > 10000) {
+        audio.currentTime = 0;
+        setCurrentTime(0);
+      }
+
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            setIsPlaying(true);
+          })
+          .catch(err => {
+            console.warn('Playback retry on user click:', err);
+            audio.currentTime = 0;
+            setCurrentTime(0);
+            audio.play()
+              .then(() => setIsPlaying(true))
+              .catch(retryErr => {
+                console.error('Audio playback failed:', retryErr);
+                setIsPlaying(false);
+              });
+          });
+      }
     }
   };
 
@@ -419,6 +452,11 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
   const [playingAudioUrl, setPlayingAudioUrl] = useState<string | null>(null);
   const [audioPlayer, setAudioPlayer] = useState<HTMLAudioElement | null>(null);
 
+  // Media Attachment state (image, video, file)
+  const [showAttachmentPicker, setShowAttachmentPicker] = useState(false);
+  const [stagedAttachment, setStagedAttachment] = useState<ChatAttachment | null>(null);
+  const [isProcessingMedia, setIsProcessingMedia] = useState(false);
+
   // Voice Recording state
   const [isRecording, setIsRecording] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
@@ -484,6 +522,11 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
   // Back interceptor for device/phone back button (Capacitor/Android & browser back)
   useEffect(() => {
     const interceptor = () => {
+      // 0. Close attachment picker
+      if (showAttachmentPicker) {
+        setShowAttachmentPicker(false);
+        return true;
+      }
       // 1. Close verse modal
       if (showVerseModal) {
         setShowVerseModal(false);
@@ -642,17 +685,38 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
     }
   };
 
+  const handleFileSelected = async (file: File) => {
+    if (file.size > 15 * 1024 * 1024) {
+      showToast('حجم الملف كبير جداً (أكثر من 15 ميجابايت).');
+      return;
+    }
+    if (file.size > 800 * 1024 && !file.type.startsWith('image/')) {
+      showToast('تنبيه: حجم الفيديو/الملف أكبر من 800 ك.ب. يُفضل اختيار ملف أصغر لسرعة الإرسال.');
+    }
+    setIsProcessingMedia(true);
+    try {
+      const att = await processFileForAttachment(file);
+      setStagedAttachment(att);
+    } catch (err) {
+      showToast('تعذر تجهيز الملف للإرسال');
+    } finally {
+      setIsProcessingMedia(false);
+    }
+  };
+
   const handleSend = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!inputText.trim() || isBlocked) return;
+    if ((!inputText.trim() && !stagedAttachment) || isBlocked) return;
 
     const textToSend = inputText;
-    // Automatically clear the written text immediately from the message input box
+    const attachmentToSend = stagedAttachment;
+    // Automatically clear input & attachment immediately
     setInputText('');
+    setStagedAttachment(null);
     setShowEmojiPicker(false);
 
     try {
-      await communityService.sendMessage(partnerUserId, textToSend);
+      await communityService.sendMessage(partnerUserId, textToSend, undefined, undefined, attachmentToSend || undefined);
       communityService.setTypingStatus(partnerUserId, false);
       loadData(true);
       setTimeout(() => scrollToBottom('smooth'), 50);
@@ -719,19 +783,6 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
 
   const startRecording = async () => {
     if (isBlocked) return;
-
-    // Direct native platform permission prompt trigger
-    if (Capacitor.isNativePlatform()) {
-      try {
-        const { SpeechRecognition } = await import('@capacitor-community/speech-recognition');
-        const checkPerm = await SpeechRecognition.checkPermissions();
-        if (checkPerm.speechRecognition !== 'granted') {
-          await SpeechRecognition.requestPermissions();
-        }
-      } catch (permError) {
-        console.warn('Native speech recognition permission check failed (proceeding to web API):', permError);
-      }
-    }
 
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -1249,6 +1300,11 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
                       />
                     )}
 
+                    {/* Media File / Image / Video Attachment */}
+                    {msg.attachment && (
+                      <ChatAttachmentView attachment={msg.attachment} isMe={isMe} />
+                    )}
+
                     {msg.text && <p className="whitespace-pre-wrap leading-relaxed">{msg.text}</p>}
 
                     {!msg.audioUrl && (
@@ -1294,8 +1350,8 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
 
       {/* Input Footer Bar */}
       <div 
-        className="sticky bottom-0 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 px-3 pt-3 pb-8 sm:pb-4 sm:px-4 z-30 shadow-md"
-        style={{ paddingBottom: 'max(2.25rem, calc(env(safe-area-inset-bottom, 0px) + 2rem))' }}
+        className="sticky bottom-0 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 px-2 sm:px-4 pt-2 pb-8 sm:pb-3.5 z-30 shadow-md"
+        style={{ paddingBottom: 'max(2rem, calc(env(safe-area-inset-bottom, 0px) + 1.75rem))' }}
       >
         <div className="max-w-3xl mx-auto relative">
           <div ref={emojiPickerContainerRef}>
@@ -1317,6 +1373,48 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
               )}
             </AnimatePresence>
           </div>
+
+          {/* Staged Attachment Preview */}
+          <AnimatePresence>
+            {stagedAttachment && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                className="mb-2 p-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-emerald-500/30 flex items-center justify-between gap-3 shadow-xs"
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  {stagedAttachment.type === 'image' ? (
+                    <img src={stagedAttachment.url} alt="معاينة" className="w-10 h-10 rounded-xl object-cover border border-slate-200 dark:border-slate-700" />
+                  ) : stagedAttachment.type === 'video' ? (
+                    <div className="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-500 flex items-center justify-center font-bold">
+                      <Video size={18} />
+                    </div>
+                  ) : (
+                    <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-500 flex items-center justify-center font-bold">
+                      <FileText size={18} />
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
+                      {stagedAttachment.fileName || (stagedAttachment.type === 'image' ? 'صورة مختارة' : stagedAttachment.type === 'video' ? 'مقطع مرئي' : 'ملف')}
+                    </p>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                      جاهز للإرسال والاسترداد • {formatFileSize(stagedAttachment.fileSize)}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setStagedAttachment(null)}
+                  className="p-1.5 rounded-xl hover:bg-rose-500/10 text-rose-500 transition-colors cursor-pointer"
+                  title="إلغاء المرفق"
+                >
+                  <X size={16} />
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {isRecording ? (
             /* Active Voice Recording Panel */
@@ -1364,26 +1462,40 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
               </button>
             </div>
           ) : (
-            /* Normal Input Bar with Mic button */
-            <form onSubmit={handleSend} className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setShowVerseModal(true)}
-                disabled={isBlocked || isIntroMessageSent || (friendship.status === 'none' && partnerUserId !== ADMIN_USER_ID)}
-                className="p-3 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-2xl transition-colors flex items-center justify-center shrink-0 disabled:opacity-40"
-                title="مشاركة آية قرآنية"
-              >
-                <BookOpen size={18} />
-              </button>
+            /* Normal Input Bar with Mic / Send button */
+            <form onSubmit={handleSend} className="flex items-center gap-1 sm:gap-1.5 w-full max-w-full overflow-hidden">
+              {/* Three action buttons clustered tightly with minimal spacing */}
+              <div className="flex items-center gap-0 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setShowVerseModal(true)}
+                  disabled={isBlocked || isIntroMessageSent || (friendship.status === 'none' && partnerUserId !== ADMIN_USER_ID)}
+                  className="w-7 h-8 sm:w-8 sm:h-8.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-r-xl rounded-l-none transition-colors flex items-center justify-center shrink-0 disabled:opacity-40 cursor-pointer p-0"
+                  title="مشاركة آية قرآنية"
+                >
+                  <BookOpen size={16} />
+                </button>
 
-              <button
-                type="button"
-                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                disabled={isBlocked || isIntroMessageSent || (friendship.status === 'none' && partnerUserId !== ADMIN_USER_ID)}
-                className="p-3 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0 disabled:opacity-40"
-              >
-                <Smile size={20} />
-              </button>
+                <button
+                  type="button"
+                  onClick={() => setShowAttachmentPicker(true)}
+                  disabled={isBlocked || isIntroMessageSent || (friendship.status === 'none' && partnerUserId !== ADMIN_USER_ID)}
+                  className="w-7 h-8 sm:w-8 sm:h-8.5 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 rounded-none hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center justify-center shrink-0 disabled:opacity-40 cursor-pointer p-0"
+                  title="إرفاق واسترداد ملف أو صورة أو فيديو"
+                >
+                  <Paperclip size={16} />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                  disabled={isBlocked || isIntroMessageSent || (friendship.status === 'none' && partnerUserId !== ADMIN_USER_ID)}
+                  className="w-7 h-8 sm:w-8 sm:h-8.5 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 rounded-l-xl rounded-r-none hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center justify-center shrink-0 disabled:opacity-40 cursor-pointer p-0"
+                  title="إدراج أذكار وتعبيرات"
+                >
+                  <Smile size={16} />
+                </button>
+              </div>
 
               <input
                 type="text"
@@ -1394,34 +1506,37 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
                   isBlocked
                     ? 'التواصل معطل بسبب الحظر'
                     : isIntroMessageSent
-                      ? 'بانتظار قبول طلب الإضافة لمواصلة المحادثة...'
+                      ? 'بانتظار قبول طلب الإضافة...'
                       : canSendIntroMessage
-                        ? 'اكتب رسالة للتعريف بنفسك (رسالة واحدة فقط)...'
+                        ? 'اكتب رسالة للتعريف بنفسك...'
                         : (friendship.status === 'none' && partnerUserId !== ADMIN_USER_ID)
                           ? 'يجب إرسال طلب إضافة أولاً...'
-                          : 'اكتب رسالة مباركة...'
+                          : stagedAttachment
+                            ? 'أضف تعليقاً مع المرفق (اختياري)...'
+                            : 'اكتب رسالة مباركة...'
                 }
-                className="flex-1 px-4 py-3 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-white disabled:opacity-50"
+                className="flex-1 min-w-0 px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-white disabled:opacity-50"
               />
 
-              {/* Mic recording button when input is empty, or Send button when text exists */}
-              {!inputText.trim() ? (
+              {/* Mic recording button when input is empty and no attachment, or Send button when text or attachment exists */}
+              {!inputText.trim() && !stagedAttachment ? (
                 <button
                   type="button"
                   onClick={startRecording}
                   disabled={isBlocked || isIntroMessageSent || (friendship.status === 'none' && partnerUserId !== ADMIN_USER_ID)}
-                  className="p-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl shadow-lg shadow-emerald-600/20 active:scale-95 transition-all flex items-center justify-center shrink-0 disabled:opacity-40"
+                  className="w-8 h-8 sm:w-9 sm:h-9 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl sm:rounded-2xl shadow-md active:scale-95 transition-all flex items-center justify-center shrink-0 disabled:opacity-40 cursor-pointer"
                   title="تسجيل صوتي"
                 >
-                  <Mic size={18} />
+                  <Mic size={16} />
                 </button>
               ) : (
                 <button
                   type="submit"
-                  disabled={!inputText.trim() || isBlocked || isIntroMessageSent || (friendship.status === 'none' && partnerUserId !== ADMIN_USER_ID)}
-                  className="p-3 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white rounded-2xl shadow-lg shadow-emerald-600/20 active:scale-95 transition-all flex items-center justify-center shrink-0"
+                  disabled={(!inputText.trim() && !stagedAttachment) || isBlocked || isIntroMessageSent || (friendship.status === 'none' && partnerUserId !== ADMIN_USER_ID)}
+                  className="w-8 h-8 sm:w-9 sm:h-9 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white rounded-xl sm:rounded-2xl shadow-md active:scale-95 transition-all flex items-center justify-center shrink-0 cursor-pointer"
+                  title="إرسال"
                 >
-                  <Send size={18} className="rotate-180" />
+                  <Send size={16} className="rotate-180" />
                 </button>
               )}
             </form>
@@ -1435,6 +1550,23 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
         onClose={() => setShowVerseModal(false)}
         onSendVerse={handleSendVerse}
       />
+
+      {/* Media Attachment Picker Modal (Photos, Videos, Files) */}
+      <MediaAttachmentPicker
+        isOpen={showAttachmentPicker}
+        onClose={() => setShowAttachmentPicker(false)}
+        onFileSelected={handleFileSelected}
+      />
+
+      {/* Media Processing Loading Overlay */}
+      {isProcessingMedia && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4" dir="rtl">
+          <div className="bg-white dark:bg-slate-800 rounded-3xl p-5 shadow-2xl flex items-center gap-3 text-sm font-bold border border-slate-200 dark:border-slate-700">
+            <Loader2 size={22} className="animate-spin text-emerald-500 shrink-0" />
+            <span className="text-slate-800 dark:text-slate-200">جاري تجهيز واسترداد بيانات الملف للإرسال...</span>
+          </div>
+        </div>
+      )}
 
       {/* Block User Confirmation Modal */}
       <AnimatePresence>

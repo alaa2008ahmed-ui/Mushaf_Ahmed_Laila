@@ -48,6 +48,14 @@ export interface CommunityUser {
   typingToUserId?: string;
 }
 
+export interface ChatAttachment {
+  type: 'image' | 'video' | 'file';
+  url: string;
+  fileName?: string;
+  fileSize?: number;
+  mimeType?: string;
+}
+
 export interface ChatMessage {
   messageId: string;
   chatId: string;
@@ -57,6 +65,7 @@ export interface ChatMessage {
   text: string;
   verseData?: QuranVerseAttachment;
   audioUrl?: string;
+  attachment?: ChatAttachment;
   isRead: boolean;
   isViolationReport?: boolean;
   isBroadcast?: boolean;
@@ -133,6 +142,7 @@ export interface GroupMessage {
   verseData?: QuranVerseAttachment;
   audioUrl?: string;
   audioDuration?: number;
+  attachment?: ChatAttachment;
   createdAt: string;
 }
 
@@ -319,7 +329,7 @@ class CommunityService {
       .trim();
   }
 
-  public normalizeArabicText(str?: string): string {
+  public normalizeUsernameForMatch(str?: string): string {
     if (!str) return '';
     return str
       .replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d).toString())
@@ -328,78 +338,169 @@ class CommunityService {
       .replace(/[أإآٱ]/g, 'ا')
       .replace(/ة/g, 'ه')
       .replace(/[ىي]/g, 'ي')
-      .replace(/\s+/g, '')
+      .trim()
+      .replace(/\s+/g, ' ')
       .toLowerCase();
+  }
+
+  public normalizeArabicText(str?: string): string {
+    return this.normalizeUsernameForMatch(str);
   }
 
   public async restoreAccount(codeOrUsername: string, inputPasscode?: string): Promise<CommunityUser> {
     const rawInput = (codeOrUsername || '').trim();
     if (!rawInput) {
-      throw new Error('يرجى إدخال كود الحساب (مثل MQ-XXXXX) أو اسم المستخدم');
+      throw new Error('يرجى إدخال كود الحساب (مثل MQ-XXXXX) أو اسم المستخدم بالكامل');
     }
 
-    const normQuery = this.normalizeArabicText(rawInput);
-    const cleanCode = this.normalizeDigits(rawInput).toUpperCase().replace(/\s+/g, '');
-    const cleanCodeNoMQ = cleanCode.replace(/^MQ-?/i, '');
-    const cleanInputPasscode = this.normalizeDigits(inputPasscode);
+    // 1. Gather all registered users from Firestore and in-memory cache
+    const candidateMap = new Map<string, CommunityUser>();
 
-    let foundUser: CommunityUser | null = null;
-
-    const matchUser = (u: CommunityUser, docId?: string): boolean => {
-      if (!u) return false;
-      const uCode = (u.accountCode || '').toUpperCase().replace(/\s+/g, '');
-      const uCodeNoMQ = uCode.replace(/^MQ-?/i, '');
-      const uNameNorm = this.normalizeArabicText(u.username);
-      const uIdNorm = this.normalizeArabicText(u.userId || docId || '');
-
-      return Boolean(
-        (uCode && (uCode === cleanCode || uCodeNoMQ === cleanCodeNoMQ)) ||
-        (uCodeNoMQ && cleanCode && (uCodeNoMQ === cleanCode || cleanCode.includes(uCodeNoMQ))) ||
-        (uNameNorm && (uNameNorm === normQuery || uNameNorm.includes(normQuery) || normQuery.includes(uNameNorm))) ||
-        (uIdNorm && uIdNorm === normQuery)
-      );
-    };
-
-    // 1. Check in local memory map first
-    for (const u of this.usersMap.values()) {
-      if (matchUser(u)) {
-        foundUser = u;
-        break;
+    // Add cached users from local memory
+    for (const [uid, u] of this.usersMap.entries()) {
+      if (u && u.userId && u.userId !== ADMIN_USER_ID) {
+        candidateMap.set(uid, u);
       }
     }
 
-    // 2. Fetch fresh snapshot from Firestore to find the user or sync latest data
+    // Also load from localStorage in case of cached offline data
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY_USERS_ALL);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          parsed.forEach((u: CommunityUser) => {
+            if (u && u.userId && u.userId !== ADMIN_USER_ID && !candidateMap.has(u.userId)) {
+              candidateMap.set(u.userId, u);
+            }
+          });
+        }
+      }
+    } catch (e) {}
+
+    // Fetch fresh snapshot from Firestore to guarantee we have every registered user
     try {
       const snap = await getDocs(collection(db, 'users'));
       for (const docSnap of snap.docs) {
         const u = docSnap.data() as CommunityUser;
         const uid = u.userId || docSnap.id;
-        const fullUser = { ...u, userId: uid };
-        this.usersMap.set(uid, fullUser);
-        if (!foundUser && matchUser(fullUser, docSnap.id)) {
-          foundUser = fullUser;
+        if (uid !== ADMIN_USER_ID) {
+          const fullUser = { ...u, userId: uid };
+          candidateMap.set(uid, fullUser);
+          this.usersMap.set(uid, fullUser);
         }
       }
     } catch (e: any) {
       console.warn('Firestore fetch during restore:', e);
-      if (!foundUser) {
+      if (candidateMap.size === 0) {
         throw new Error('تعذر الاتصال بقاعدة البيانات. يرجى التأكد من اتصال الإنترنت.');
       }
     }
 
-    if (!foundUser) {
-      throw new Error('لم يتم العثور على أي حساب بهذا الكود أو الاسم. تأكد من صحة كود الحساب أو قم بإنشاء حساب جديد.');
+    const allCandidates = Array.from(candidateMap.values());
+
+    // 2. Prepare normalized representations
+    const cleanInputPasscode = this.normalizeDigits(inputPasscode);
+
+    const cleanCodeUpper = this.normalizeDigits(rawInput).toUpperCase().replace(/\s+/g, '');
+    const cleanCodeNoMQ = cleanCodeUpper.replace(/^MQ-?/i, '');
+
+    // Full exact username normalization (with single space between words)
+    const normQuerySingleSpace = this.normalizeUsernameForMatch(rawInput);
+    // No-spaces normalization (for compound words like "عبد الله" vs "عبدالله")
+    const normQueryNoSpaces = normQuerySingleSpace.replace(/\s+/g, '');
+
+    // 3. Search for candidates with strict priority
+    // Priority 1: Exact Account Code Match (e.g. MQ-XXXXX or XXXXX)
+    const accountCodeMatches = allCandidates.filter(u => {
+      const uCode = (u.accountCode || '').toUpperCase().replace(/\s+/g, '');
+      const uCodeNoMQ = uCode.replace(/^MQ-?/i, '');
+      return Boolean(
+        (uCode && cleanCodeUpper && uCode === cleanCodeUpper) ||
+        (uCodeNoMQ && cleanCodeNoMQ && uCodeNoMQ.length >= 3 && uCodeNoMQ === cleanCodeNoMQ)
+      );
+    });
+
+    // Priority 2: Exact User ID Match
+    const userIdMatches = allCandidates.filter(u => {
+      return u.userId && u.userId.trim() === rawInput;
+    });
+
+    // Priority 3: Exact Full Username Match
+    // CRITICAL: The entire name must match exactly.
+    // NEVER use substring .includes() so that:
+    // - "علاء احمد" matches only "علاء احمد" and NEVER matches "علاء"
+    // - "علاء" matches only "علاء" and NEVER matches "علاء احمد" or "علاء الدين"
+    // - Compound / multi-part names of any length match completely and reliably.
+    const usernameMatches = allCandidates.filter(u => {
+      if (!u.username || !u.username.trim()) return false;
+      const uNameSingle = this.normalizeUsernameForMatch(u.username);
+      const uNameNoSpace = uNameSingle.replace(/\s+/g, '');
+
+      return (
+        uNameSingle === normQuerySingleSpace || 
+        uNameNoSpace === normQueryNoSpaces
+      );
+    });
+
+    let targetMatches: CommunityUser[] = [];
+    if (accountCodeMatches.length > 0) {
+      targetMatches = accountCodeMatches;
+    } else if (userIdMatches.length > 0) {
+      targetMatches = userIdMatches;
+    } else {
+      targetMatches = usernameMatches;
     }
 
-    // Verify PIN passcode if one was set for this account
-    const storedPasscode = this.normalizeDigits(foundUser.passcode);
-    if (storedPasscode) {
-      if (!cleanInputPasscode) {
+    if (targetMatches.length === 0) {
+      throw new Error('لم يتم العثور على أي حساب بهذا الاسم أو الكود. تأكد من كتابة الاسم كاملاً وبشكل صحيح أو استخدام كود الحساب.');
+    }
+
+    // 4. Resolve candidate with Passcode / PIN verification
+    let foundUser: CommunityUser | null = null;
+
+    if (cleanInputPasscode) {
+      // If user entered a PIN passcode, look for candidate account whose passcode matches
+      const pinMatched = targetMatches.find(u => {
+        const storedPin = this.normalizeDigits(u.passcode);
+        return storedPin && storedPin === cleanInputPasscode;
+      });
+
+      if (pinMatched) {
+        foundUser = pinMatched;
+      } else {
+        // If candidate accounts have a passcode set and none matched the entered PIN
+        const anyHasPasscode = targetMatches.some(u => Boolean(this.normalizeDigits(u.passcode)));
+        if (anyHasPasscode) {
+          throw new Error('رمز الحماية (PIN) غير صحيح لهذا الحساب.');
+        } else {
+          // If none of the candidate accounts have a passcode set, pick the most active/recent
+          foundUser = targetMatches.sort((a, b) => 
+            new Date(b.lastSeen || b.createdAt || 0).getTime() - new Date(a.lastSeen || a.createdAt || 0).getTime()
+          )[0];
+        }
+      }
+    } else {
+      // User did NOT enter a PIN passcode
+      const protectedAccounts = targetMatches.filter(u => Boolean(this.normalizeDigits(u.passcode)));
+      const unprotectedAccounts = targetMatches.filter(u => !this.normalizeDigits(u.passcode));
+
+      if (protectedAccounts.length > 0 && unprotectedAccounts.length === 0) {
         throw new Error('هذا الحساب محمي برمز مرور (PIN). يرجى إدخال رمز المرور للمتابعة.');
+      } else if (unprotectedAccounts.length > 0) {
+        // Pick the most recent unprotected account
+        foundUser = unprotectedAccounts.sort((a, b) => 
+          new Date(b.lastSeen || b.createdAt || 0).getTime() - new Date(a.lastSeen || a.createdAt || 0).getTime()
+        )[0];
+      } else {
+        foundUser = targetMatches.sort((a, b) => 
+          new Date(b.lastSeen || b.createdAt || 0).getTime() - new Date(a.lastSeen || a.createdAt || 0).getTime()
+        )[0];
       }
-      if (cleanInputPasscode !== storedPasscode) {
-        throw new Error('رمز الحماية (PIN) غير صحيح لهذا الحساب.');
-      }
+    }
+
+    if (!foundUser) {
+      throw new Error('لم يتم العثور على أي حساب مطابق.');
     }
 
     // Activate restored user session
@@ -1438,7 +1539,8 @@ class CommunityService {
     recipientId: string, 
     text: string, 
     verseData?: QuranVerseAttachment, 
-    audioUrl?: string
+    audioUrl?: string,
+    attachment?: ChatAttachment
   ): Promise<ChatMessage> {
     const current = this.getCurrentUser();
     if (!this.isProfileComplete()) {
@@ -1528,6 +1630,7 @@ class CommunityService {
       text: text.trim(),
       verseData,
       audioUrl,
+      attachment,
       isRead: false,
       createdAt: new Date().toISOString()
     };
@@ -1799,7 +1902,7 @@ class CommunityService {
         chatId: this.getChatId(current.userId, partnerId),
         partner: partnerUser,
         lastMessage: val.lastMsg 
-          ? (val.lastMsg.text || (val.lastMsg.verseData ? `آية من سورة ${val.lastMsg.verseData.surahName}` : 'مقطع صوتي 🎙️'))
+          ? (val.lastMsg.text || (val.lastMsg.attachment ? (val.lastMsg.attachment.type === 'image' ? 'صورة 📷' : val.lastMsg.attachment.type === 'video' ? 'فيديو 🎥' : `ملف: ${val.lastMsg.attachment.fileName || 'مستند'} 📄`) : (val.lastMsg.verseData ? `آية من سورة ${val.lastMsg.verseData.surahName}` : 'مقطع صوتي 🎙️')))
           : (partnerId === ADMIN_USER_ID ? 'تواصل مع إدارة التطبيق للدعم الفني والشكاوى ✉️' : 'لا توجد رسائل (تم حذفها من السيرفر)'),
         lastMessageTime: val.time,
         unreadCount: val.unread
@@ -2519,11 +2622,19 @@ class CommunityService {
       const isCreator = this.isGroupCreator(g, current);
       const isMember = Array.isArray(g.members) && g.members.includes(current.userId);
       const isInvited = Array.isArray(g.invitedMembers) && g.invitedMembers.includes(current.userId);
+
+      // CRITICAL: If user has a pending invitation and is not yet a member,
+      // DO NOT show it in getGroups()! It is exclusively displayed in getPendingGroupInvitations()
+      // at the top of the Community page to avoid showing duplicate cards.
+      if (isInvited && !isMember) {
+        return false;
+      }
+
       const hasLeftOrRemoved = this.hasUserLeftOrBeenRemoved(g, current.userId);
 
       if (g.isPublic) return true;
 
-      return isCreator || isMember || isInvited || hasLeftOrRemoved;
+      return isCreator || isMember || hasLeftOrRemoved;
     }).sort((a, b) => new Date(b.lastMessageTime || b.createdAt || 0).getTime() - new Date(a.lastMessageTime || a.createdAt || 0).getTime());
   }
 
@@ -2585,11 +2696,27 @@ class CommunityService {
     const current = this.getCurrentUser();
     if (!current || !current.userId) return [];
 
+    const seenGroupIds = new Set<string>();
+    const seenGroupNames = new Set<string>();
+
     return this.groupsList.filter(g => {
+      if (!g || !g.groupId) return false;
       const isInvited = Array.isArray(g.invitedMembers) && g.invitedMembers.includes(current.userId);
       const isMember = Array.isArray(g.members) && g.members.includes(current.userId);
       const isRejected = Array.isArray(g.rejectedMembers) && g.rejectedMembers.includes(current.userId);
-      return isInvited && !isMember && !isRejected;
+      if (!isInvited || isMember || isRejected) return false;
+
+      // Keep only one request per group ID
+      if (seenGroupIds.has(g.groupId)) return false;
+      seenGroupIds.add(g.groupId);
+
+      // Also prevent duplicate requests if duplicate groups with same name/creator exist
+      const normName = (this.cleanGroupName(g.name) || '').trim().toLowerCase();
+      const creatorKey = `${g.createdBy || (g as any).creatorId || ''}_${normName}`;
+      if (normName && seenGroupNames.has(creatorKey)) return false;
+      if (normName) seenGroupNames.add(creatorKey);
+
+      return true;
     });
   }
 
@@ -2612,6 +2739,13 @@ class CommunityService {
     if (group.rejectedMembers) {
       group.rejectedMembers = group.rejectedMembers.filter(id => id !== current.userId);
     }
+    if (group.leftMembers) {
+      group.leftMembers = group.leftMembers.filter(id => id !== current.userId);
+    }
+    if (group.memberExitTimes) {
+      delete group.memberExitTimes[current.userId];
+    }
+    this.groupExitTimesMap.delete(`${groupId}_${current.userId}`);
 
     this.saveToLocalStorage();
 
@@ -2620,7 +2754,9 @@ class CommunityService {
         members: group.members,
         memberCount: group.memberCount,
         invitedMembers: group.invitedMembers || [],
-        rejectedMembers: group.rejectedMembers || []
+        rejectedMembers: group.rejectedMembers || [],
+        leftMembers: group.leftMembers || [],
+        memberExitTimes: group.memberExitTimes || {}
       });
     } catch (e) {
       try {
@@ -3108,7 +3244,8 @@ class CommunityService {
     text: string,
     verseData?: QuranVerseAttachment,
     audioUrl?: string,
-    audioDuration?: number
+    audioDuration?: number,
+    attachment?: ChatAttachment
   ): Promise<GroupMessage> {
     const current = this.getCurrentUser();
     if (!this.isProfileComplete()) {
@@ -3143,13 +3280,14 @@ class CommunityService {
       verseData,
       audioUrl,
       audioDuration,
+      attachment,
       createdAt: new Date().toISOString()
     };
 
     this.groupMessagesList.push(newMsg);
 
     if (group) {
-      group.lastMessage = text.trim() || (verseData ? `آية من سورة ${verseData.surahName}` : 'مقطع صوتي 🎙️');
+      group.lastMessage = text.trim() || (attachment ? (attachment.type === 'image' ? 'صورة 📷' : attachment.type === 'video' ? 'فيديو 🎥' : `ملف: ${attachment.fileName || 'مستند'} 📄`) : (verseData ? `آية من سورة ${verseData.surahName}` : audioUrl ? 'مقطع صوتي 🎙️' : 'رسالة جديدة'));
       group.lastMessageSenderName = current.username;
       group.lastMessageTime = newMsg.createdAt;
       if (!group.members) group.members = [];

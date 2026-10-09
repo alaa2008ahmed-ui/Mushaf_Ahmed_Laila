@@ -1,12 +1,12 @@
 {
-  "projectId": "dialy-sales",
-  "appId": "1:900314310640:web:566a671c9684cbad231f35",
-  "apiKey": "AIzaSyBXp4xCa0bpa8ruNmT6DKZDW2qt0KeIMDg",
-  "authDomain": "dialy-sales.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-remixquran104-100714e5-a4a2-43a5-a85c-c1cc15b090b9",
-  "storageBucket": "dialy-sales.firebasestorage.app",
-  "messagingSenderId": "900314310640",
+  "projectId": "sweet-water-company-ltd",
+  "appId": "1:903816597633:web:cfa17c168a106d45877d80",
+  "apiKey": "AIzaSyAa3rqutBamvjjVzS89mOQA1DTP7UaZVnM",
+  "authDomain": "sweet-water-company-ltd.firebaseapp.com",
+  "firestoreDatabaseId": "ai-studio-quran107-1901e98d-8bba-42e9-a753-0b2e42461701",
+  "storageBucket": "sweet-water-company-ltd.firebasestorage.app",
+  "messagingSenderId": "903816597633",
   "measurementId": "",
-  "oAuthClientId": "900314310640-aakjat6siqgbgg1ddv54ajh8f30rc34o.apps.googleusercontent.com",
+  "oAuthClientId": "903816597633-1ph0t287hi7as4astptibanphv4dfp47.apps.googleusercontent.com",
   "recaptchaSiteKey": ""
 }

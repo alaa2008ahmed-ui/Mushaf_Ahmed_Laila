@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Edit3, X, Check, Camera, Image as ImageIcon, Trash2 } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
+import { Camera as CapCamera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { communityService, GroupChat } from '../../services/communityService';
 import { useTheme } from '../../context/ThemeContext';
 import { PRESET_GROUP_IMAGES, PRESET_ICONS } from './CreateGroupModal';
@@ -109,6 +111,38 @@ export const EditGroupModal: React.FC<EditGroupModalProps> = ({
       }
     };
     reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const handlePickImage = async () => {
+    try {
+      if (Capacitor.isNativePlatform()) {
+        try {
+          const image = await CapCamera.getPhoto({
+            quality: 90,
+            allowEditing: false,
+            resultType: CameraResultType.DataUrl,
+            source: CameraSource.Photos
+          });
+
+          if (image && image.dataUrl) {
+            const compressed = await compressAvatar(image.dataUrl);
+            setSelectedAvatar(compressed);
+            setErrorMsg(null);
+            return;
+          }
+        } catch (camErr: any) {
+          const msg = (camErr?.message || '').toLowerCase();
+          if (msg.includes('cancel') || msg.includes('user cancelled')) {
+            return;
+          }
+        }
+      }
+
+      fileInputRef.current?.click();
+    } catch {
+      fileInputRef.current?.click();
+    }
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -209,13 +243,13 @@ export const EditGroupModal: React.FC<EditGroupModalProps> = ({
                 type="file"
                 accept="image/*"
                 onChange={handleFileChange}
-                className="hidden"
+                style={{ display: 'none' }}
               />
 
               {/* Main Avatar Preview */}
               <div className="relative group mb-3">
                 <div 
-                  onClick={() => fileInputRef.current?.click()}
+                  onClick={handlePickImage}
                   className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl border-2 shadow-md flex items-center justify-center overflow-hidden cursor-pointer transition-all hover:scale-105 active:scale-95"
                   style={{
                     backgroundColor: `${primaryColor}15`,
@@ -227,7 +261,7 @@ export const EditGroupModal: React.FC<EditGroupModalProps> = ({
                     <img 
                       src={selectedAvatar} 
                       alt="صورة المجموعة" 
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover" 
                     />
                   ) : (
                     <span className="text-3xl sm:text-4xl leading-none select-none">
@@ -238,7 +272,7 @@ export const EditGroupModal: React.FC<EditGroupModalProps> = ({
 
                 <button
                   type="button"
-                  onClick={() => fileInputRef.current?.click()}
+                  onClick={handlePickImage}
                   className="absolute -bottom-1.5 -left-1.5 w-8 h-8 rounded-full border shadow-md flex items-center justify-center transition-all hover:scale-110 active:scale-90 cursor-pointer"
                   style={{
                     backgroundColor: primaryColor,

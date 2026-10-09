@@ -1,6 +1,8 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Users, X, Sparkles, Check, Camera, Image as ImageIcon } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
+import { Camera as CapCamera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { communityService, CommunityUser } from '../../services/communityService';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -114,6 +116,38 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
       }
     };
     reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const handlePickImage = async () => {
+    try {
+      if (Capacitor.isNativePlatform()) {
+        try {
+          const image = await CapCamera.getPhoto({
+            quality: 90,
+            allowEditing: false,
+            resultType: CameraResultType.DataUrl,
+            source: CameraSource.Photos
+          });
+
+          if (image && image.dataUrl) {
+            const compressed = await compressAvatar(image.dataUrl);
+            setSelectedAvatar(compressed);
+            setErrorMsg(null);
+            return;
+          }
+        } catch (camErr: any) {
+          const msg = (camErr?.message || '').toLowerCase();
+          if (msg.includes('cancel') || msg.includes('user cancelled')) {
+            return;
+          }
+        }
+      }
+
+      fileInputRef.current?.click();
+    } catch {
+      fileInputRef.current?.click();
+    }
   };
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -213,13 +247,13 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
                 type="file"
                 accept="image/*"
                 onChange={handleFileChange}
-                className="hidden"
+                style={{ display: 'none' }}
               />
 
               {/* Main Avatar Preview */}
               <div className="relative group mb-3">
                 <div 
-                  onClick={() => fileInputRef.current?.click()}
+                  onClick={handlePickImage}
                   className="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl border-2 shadow-md flex items-center justify-center overflow-hidden cursor-pointer transition-all hover:scale-105 active:scale-95"
                   style={{
                     backgroundColor: `${primaryColor}15`,
@@ -237,7 +271,7 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
                 {/* Camera upload badge */}
                 <button
                   type="button"
-                  onClick={() => fileInputRef.current?.click()}
+                  onClick={handlePickImage}
                   className="absolute -bottom-1 -left-1 w-7 h-7 rounded-xl border flex items-center justify-center shadow-md transition-all active:scale-95 cursor-pointer"
                   style={{
                     backgroundColor: primaryColor,

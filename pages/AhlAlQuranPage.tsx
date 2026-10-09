@@ -16,6 +16,7 @@ import {
 import { communityService } from '../services/communityService';
 import UsernameModal from '../components/Community/UsernameModal';
 import TutorialOverlay, { TutorialStep } from '../components/Tutorial/TutorialOverlay';
+import ThemePageLock from '../components/ThemePageLock';
 
 interface AhlAlQuranPageProps {
   onBack: () => void;
@@ -210,53 +211,61 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
         backgroundColor: 'transparent',
         color: theme.textColor,
         fontFamily: theme.font,
-        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 0.75rem)',
         paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 3.75rem + 1cm)'
       }}
     >
-      <div className="w-full max-w-3xl mx-auto px-3 sm:px-4">
-        {/* Top Header Bar */}
-        <div className="flex items-center justify-between gap-2 mb-3">
-          {/* Right: Quran Shortcut */}
-          <button
-            type="button"
-            onClick={() => onNavigate('quran')}
-            className="w-10 h-10 rounded-2xl border flex items-center justify-center shadow-xs active:scale-95 transition-all cursor-pointer flex-shrink-0"
-            style={{
-              backgroundColor: cardBg,
-              borderColor: cardBorder,
-              color: primaryColor
-            }}
-            title="الذهاب للمصحف الشريف"
-          >
-            <BookOpen size={20} />
-          </button>
-
-          {/* Center Title */}
-          <div className="text-center flex-1">
-            <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight" style={{ color: theme.textColor }}>
-              أهل القرآن الكريم
-            </h1>
-          </div>
-
-          {/* Left: Admin reset button or Spacer */}
-          {isAdmin ? (
+      {/* Top Header Bar */}
+      <header className="app-top-bar z-20 shrink-0">
+        <div className="app-top-bar__inner">
+          <div className="relative flex items-center justify-between w-full">
+            {/* Right: Quran Shortcut */}
             <button
               type="button"
-              onClick={() => setShowResetConfirm(true)}
-              className="w-10 h-10 rounded-2xl border flex items-center justify-center shadow-xs active:scale-95 transition-all cursor-pointer flex-shrink-0 text-rose-500 hover:bg-rose-500/10"
+              onClick={() => onNavigate('quran')}
+              className="w-10 h-10 rounded-2xl border flex items-center justify-center shadow-xs active:scale-95 transition-all cursor-pointer flex-shrink-0"
               style={{
                 backgroundColor: cardBg,
-                borderColor: cardBorder
+                borderColor: cardBorder,
+                color: primaryColor
               }}
-              title="تصفير وحذف ترتيب أهل القرآن (إدارة التطبيق)"
+              title="الذهاب للمصحف الشريف"
             >
-              <Trash2 size={18} />
+              <BookOpen size={20} />
             </button>
-          ) : (
-            <div className="w-10 h-10 flex-shrink-0" />
-          )}
+
+            {/* Center Title */}
+            <h1 className="app-top-bar__title text-xl sm:text-2xl font-kufi text-center flex-1" style={{ color: theme.textColor }}>
+              أهل القرآن الكريم
+            </h1>
+
+            {/* Left: Admin reset button and ThemePageLock */}
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              {isAdmin ? (
+                <button
+                  type="button"
+                  onClick={() => setShowResetConfirm(true)}
+                  className="w-10 h-10 rounded-2xl border flex items-center justify-center shadow-xs active:scale-95 transition-all cursor-pointer text-rose-500 hover:bg-rose-500/10"
+                  style={{
+                    backgroundColor: cardBg,
+                    borderColor: cardBorder
+                  }}
+                  title="تصفير وحذف ترتيب أهل القرآن (إدارة التطبيق)"
+                >
+                  <Trash2 size={18} />
+                </button>
+              ) : (
+                <div className="w-10 h-10 flex-shrink-0 opacity-0 pointer-events-none" />
+              )}
+              <ThemePageLock />
+            </div>
+          </div>
+          <p className="app-top-bar__subtitle text-xs" style={{ color: theme.textColor + 'aa' }}>
+            لوحة المتصدرين وإنجازات قراء كتاب الله الكريم
+          </p>
         </div>
+      </header>
+
+      <div className="w-full max-w-3xl mx-auto px-3 sm:px-4 pt-3">
 
         {/* Unregistered User Warning / Invitation Banner */}
         {!isProfileComplete && (

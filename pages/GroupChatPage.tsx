@@ -4,13 +4,15 @@ import {
   ArrowRight, Send, Smile, MoreVertical, Trash2, 
   User, Sparkles, BookOpen, Play, Pause, CheckCircle2,
   Mic, Volume2, Users, Info, Shield, LogOut, Check, X,
-  UserPlus, UserMinus, Search, AlertTriangle, EyeOff, Edit3
+  UserPlus, UserMinus, Search, AlertTriangle, EyeOff, Edit3,
+  MessageCircle, UserCheck, Clock, MapPin, Hash, Paperclip, Loader2, Video, FileText
 } from 'lucide-react';
 import { 
   communityService, 
   GroupChat, 
   GroupMessage, 
   QuranVerseAttachment, 
+  ChatAttachment,
   CommunityUser,
   ADMIN_USER_ID 
 } from '../services/communityService';
@@ -18,6 +20,9 @@ import { ChatQuranCard, ChatMessageAudioPlayer } from './DirectChatPage';
 import EmojiPicker from '../components/Community/EmojiPicker';
 import QuranVerseModal from '../components/Community/QuranVerseModal';
 import EditGroupModal from '../components/Community/EditGroupModal';
+import { ChatAttachmentView, formatFileSize } from '../components/Community/ChatAttachmentView';
+import { MediaAttachmentPicker } from '../components/Community/MediaAttachmentPicker';
+import { processFileForAttachment } from '../components/Community/mediaPickerUtils';
 import { registerBackInterceptor } from '../hooks/useBackButton';
 import { useTheme } from '../context/ThemeContext';
 
@@ -55,9 +60,23 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [playingAudioUrl, setPlayingAudioUrl] = useState<string | null>(null);
 
+  // Media Attachment state (image, video, file)
+  const [showAttachmentPicker, setShowAttachmentPicker] = useState(false);
+  const [stagedAttachment, setStagedAttachment] = useState<ChatAttachment | null>(null);
+  const [isProcessingMedia, setIsProcessingMedia] = useState(false);
+
+  // Selected Member Profile Modal State
+  const [selectedMember, setSelectedMember] = useState<CommunityUser | null>(null);
+  const [selectedMemberFriendship, setSelectedMemberFriendship] = useState<{
+    status: 'none' | 'pending' | 'accepted' | 'rejected';
+    isRequester: boolean;
+    contact?: any;
+  }>({ status: 'none', isRequester: false });
+
   // Voice Recording state
   const [isRecording, setIsRecording] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
+  const recordingDurationRef = useRef<number>(0);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const recordingTimerRef = useRef<any>(null);
@@ -102,6 +121,60 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3000);
   };
+
+  const handleOpenMemberProfile = (userId: string, fallbackName?: string, fallbackAvatar?: string, fallbackCountry?: string) => {
+    let user = communityService.getUserById(userId);
+    if (!user) {
+      user = {
+        userId,
+        username: fallbackName || 'قارئ',
+        avatarUrl: fallbackAvatar,
+        country: fallbackCountry || 'غير محدد',
+        isOnline: false,
+        createdAt: new Date().toISOString()
+      };
+    }
+    setSelectedMember(user);
+    const fs = communityService.getFriendshipStatus(userId);
+    setSelectedMemberFriendship(fs);
+  };
+
+  const handleSendFriendRequest = async (targetUserId: string) => {
+    try {
+      await communityService.sendFriendRequest(targetUserId);
+      const updatedStatus = communityService.getFriendshipStatus(targetUserId);
+      setSelectedMemberFriendship(updatedStatus);
+      showToast('تم إرسال طلب إضافة بنجاح 🌿');
+    } catch (err: any) {
+      showToast(err?.message || 'تعذر إرسال طلب الإضافة');
+    }
+  };
+
+  const handleAcceptFriendRequest = async (targetUserId: string) => {
+    try {
+      await communityService.acceptFriendRequest(targetUserId);
+      const updatedStatus = communityService.getFriendshipStatus(targetUserId);
+      setSelectedMemberFriendship(updatedStatus);
+      showToast('تم قبول طلب الإضافة بنجاح 🌿');
+    } catch (err: any) {
+      showToast(err?.message || 'تعذر قبول طلب الإضافة');
+    }
+  };
+
+  const handleStartDirectChat = (targetUserId: string) => {
+    setSelectedMember(null);
+    onNavigate('direct-chat', { partnerUserId: targetUserId, returnTab: 'community' });
+  };
+
+  // Back button interceptor to close Member Profile modal
+  useEffect(() => {
+    if (!selectedMember) return;
+    const cleanup = registerBackInterceptor(() => {
+      setSelectedMember(null);
+      return true;
+    });
+    return cleanup;
+  }, [selectedMember]);
 
   const handleBack = () => {
     if (hasExitedRef.current) return;
@@ -181,6 +254,10 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
   // Back interceptor
   useEffect(() => {
     const interceptor = () => {
+      if (showAttachmentPicker) {
+        setShowAttachmentPicker(false);
+        return true;
+      }
       if (showEmojiPicker) {
         setShowEmojiPicker(false);
         return true;
@@ -219,16 +296,46 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
     return registerBackInterceptor(interceptor);
   }, [showEmojiPicker, showVerseModal, showAddMembersModal, memberToRemove, showDeleteGroupConfirm, showClearConfirm, showInfoModal, showMenu, onBack]);
 
-  // Handle Send Text Message
+  const handleFileSelected = async (file: File) => {
+    if (file.size > 15 * 1024 * 1024) {
+      showToast('حجم الملف كبير جداً (أكثر من 15 ميجابايت).');
+      return;
+    }
+    if (file.size > 800 * 1024 && !file.type.startsWith('image/')) {
+      showToast('تنبيه: حجم الفيديو/الملف أكبر من 800 ك.ب. يُفضل اختيار ملف أصغر لسرعة الإرسال.');
+    }
+    setIsProcessingMedia(true);
+    try {
+      const att = await processFileForAttachment(file);
+      setStagedAttachment(att);
+    } catch (err) {
+      showToast('تعذر تجهيز الملف للإرسال');
+    } finally {
+      setIsProcessingMedia(false);
+    }
+  };
+
+  // Handle Send Text & Media Message
   const handleSendMessage = async () => {
     const text = inputText.trim();
-    if (!text) return;
+    if (!text && !stagedAttachment) return;
+
+    const textToSend = text;
+    const attachmentToSend = stagedAttachment;
 
     setInputText('');
+    setStagedAttachment(null);
     setShowEmojiPicker(false);
 
     try {
-      await communityService.sendGroupMessage(groupId, text);
+      await communityService.sendGroupMessage(
+        groupId,
+        textToSend,
+        undefined,
+        undefined,
+        undefined,
+        attachmentToSend || undefined
+      );
       loadGroupData();
     } catch (err: any) {
       showToast(err?.message || 'تعذر إرسال الرسالة');
@@ -260,13 +367,14 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
       mediaRecorderRef.current = mediaRecorder;
 
       mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
+        if (event.data && event.data.size > 0) {
           audioChunksRef.current.push(event.data);
         }
       };
 
       mediaRecorder.onstop = async () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const durationSecs = recordingDurationRef.current;
         const reader = new FileReader();
         reader.onloadend = async () => {
           const base64Audio = reader.result as string;
@@ -276,7 +384,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
               'تسجيل صوتي 🎙️',
               undefined,
               base64Audio,
-              recordingDuration
+              durationSecs
             );
             loadGroupData();
             showToast('تم إرسال التسجيل الصوتي بنجاح');
@@ -289,12 +397,18 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
         stream.getTracks().forEach(track => track.stop());
       };
 
-      mediaRecorder.start();
+      mediaRecorder.start(100);
       setIsRecording(true);
       setRecordingDuration(0);
+      recordingDurationRef.current = 0;
 
+      if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
       recordingTimerRef.current = setInterval(() => {
-        setRecordingDuration(prev => prev + 1);
+        setRecordingDuration(prev => {
+          const next = prev + 1;
+          recordingDurationRef.current = next;
+          return next;
+        });
       }, 1000);
     } catch (err) {
       console.error('Audio recording permission error:', err);
@@ -825,35 +939,42 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
               >
                 {/* Sender Avatar (Only for others) */}
                 {!isMe && (
-                  <div 
-                    className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs border overflow-hidden flex-shrink-0 mb-1"
+                  <button 
+                    type="button"
+                    onClick={() => handleOpenMemberProfile(msg.senderId, msg.senderName, msg.senderAvatarUrl, msg.senderCountry)}
+                    className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs border overflow-hidden flex-shrink-0 mb-1 cursor-pointer transition-transform hover:scale-105 active:scale-95"
                     style={{
                       backgroundColor: `${primaryColor}20`,
                       borderColor: `${primaryColor}40`,
                       color: primaryColor
                     }}
-                    title={msg.senderName}
+                    title={`عرض بيانات ${msg.senderName}`}
                   >
                     {msg.senderAvatarUrl ? (
                       <img src={msg.senderAvatarUrl} alt={msg.senderName} className="w-full h-full object-cover" />
                     ) : (
                       (msg.senderName || 'ق').charAt(0)
                     )}
-                  </div>
+                  </button>
                 )}
 
                 {/* Message Bubble Container */}
                 <div className={`max-w-[85%] sm:max-w-[75%] flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
                   {/* Sender Name Badge for others */}
                   {!isMe && (
-                    <div className="flex items-center gap-1.5 mb-1 px-1 text-[11px] font-bold">
-                      <span style={{ color: primaryColor }}>{msg.senderName}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleOpenMemberProfile(msg.senderId, msg.senderName, msg.senderAvatarUrl, msg.senderCountry)}
+                      className="flex items-center gap-1.5 mb-1 px-1 text-[11px] font-bold cursor-pointer hover:opacity-80 transition-opacity text-right group"
+                      title={`عرض بيانات ${msg.senderName}`}
+                    >
+                      <span style={{ color: primaryColor }} className="group-hover:underline">{msg.senderName}</span>
                       {msg.senderCountry && (
                         <span className="text-[10px] px-1.5 py-0.2 rounded-md" style={{ backgroundColor: secondaryBg, color: textMuted }}>
                           {msg.senderCountry}
                         </span>
                       )}
-                    </div>
+                    </button>
                   )}
 
                   {/* Quran Card if present */}
@@ -874,6 +995,13 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                       timeStr={timeStr}
                       isRead={true}
                     />
+                  )}
+
+                  {/* Media File / Image / Video Attachment */}
+                  {msg.attachment && (
+                    <div className="mb-1.5 w-full">
+                      <ChatAttachmentView attachment={msg.attachment} isMe={isMe} />
+                    </div>
                   )}
 
                   {/* Text Content */}
@@ -904,6 +1032,23 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                           </button>
                         )}
                       </div>
+                    </div>
+                  )}
+
+                  {/* Attachment without text timestamp & delete button */}
+                  {!msg.text && msg.attachment && (
+                    <div className="flex items-center justify-end gap-1.5 mt-0.5 text-[9px] px-1" style={{ color: textMuted }}>
+                      <span>{timeStr}</span>
+                      {isMe && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteMessage(msg.messageId)}
+                          className="p-0.5 rounded hover:text-rose-500 transition-colors cursor-pointer"
+                          title="حذف رسالتي"
+                        >
+                          <Trash2 size={11} />
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
@@ -952,44 +1097,15 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
         )}
       </AnimatePresence>
 
-      {/* Bottom Message Input Bar or Pending Invitation Prompt */}
+      {/* Bottom Message Input Bar or Pending Invitation Note */}
       {Boolean(group && group.invitedMembers?.includes(currentUser.userId) && !group.members?.includes(currentUser.userId)) ? (
         <div 
-          className="w-full px-3 py-3 border-t flex flex-wrap items-center justify-between gap-2 shadow-md z-30"
+          className="w-full px-4 py-3 border-t flex items-center justify-center gap-2 shadow-sm z-30"
           style={{ backgroundColor: cardBg, borderColor: cardBorder }}
         >
-          <div className="flex items-center gap-1.5 text-xs font-bold" style={{ color: textColor }}>
-            <Sparkles size={14} className="text-amber-500" />
-            <span>دعوة انضمام معلقة لهذه المجموعة</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={async () => {
-                await communityService.acceptGroupInvitation(groupId);
-                loadGroupData();
-                showToast('تم الانضمام إلى المجموعة بنجاح 🌿');
-              }}
-              className="py-2 px-3 rounded-xl text-xs font-bold flex items-center gap-1 shadow-sm active:scale-95 cursor-pointer"
-              style={{ backgroundColor: primaryColor, color: primaryTextColor }}
-            >
-              <Check size={13} />
-              <span>قبول والانضمام</span>
-            </button>
-            <button
-              type="button"
-              onClick={async () => {
-                await communityService.declineGroupInvitation(groupId);
-                showToast('تم رفض الدعوة');
-                handleBack();
-              }}
-              className="py-2 px-3 rounded-xl text-xs font-bold border text-rose-500 hover:bg-rose-500/10 active:scale-95 cursor-pointer"
-              style={{ backgroundColor: secondaryBg, borderColor: cardBorder }}
-            >
-              <X size={13} />
-              <span>رفض</span>
-            </button>
-          </div>
+          <span className="text-xs font-medium" style={{ color: textMuted }}>
+            يرجى قبول دعوة الانضمام من البطاقة أعلاه للمشاركة في المحادثة
+          </span>
         </div>
       ) : hasLeftOrRemoved ? (
         <div 
@@ -1015,93 +1131,159 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
         </div>
       ) : !isRecording && (
         <div 
-          className="w-full px-2 sm:px-3 py-2 border-t flex items-center gap-1.5 shadow-md z-30"
+          className="w-full px-2 sm:px-3 py-2 border-t flex flex-col shadow-md z-30"
           style={{
             backgroundColor: cardBg,
             borderColor: cardBorder
           }}
         >
-          {/* Quran Verse Share Button */}
-          <button
-            type="button"
-            onClick={() => setShowVerseModal(true)}
-            className="w-10 h-10 rounded-2xl flex items-center justify-center border transition-all active:scale-95 flex-shrink-0 cursor-pointer"
-            style={{
-              backgroundColor: secondaryBg,
-              borderColor: cardBorder,
-              color: '#f59e0b'
-            }}
-            title="مشاركة آية كريمة في المجموعة"
-          >
-            <BookOpen size={18} />
-          </button>
+          {/* Staged Attachment Preview */}
+          <AnimatePresence>
+            {stagedAttachment && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                className="mb-2 p-2.5 rounded-2xl border flex items-center justify-between gap-3 shadow-xs"
+                style={{
+                  backgroundColor: secondaryBg,
+                  borderColor: `${primaryColor}40`
+                }}
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  {stagedAttachment.type === 'image' ? (
+                    <img src={stagedAttachment.url} alt="معاينة" className="w-10 h-10 rounded-xl object-cover border" style={{ borderColor: cardBorder }} />
+                  ) : stagedAttachment.type === 'video' ? (
+                    <div className="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-500 flex items-center justify-center font-bold">
+                      <Video size={18} />
+                    </div>
+                  ) : (
+                    <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-500 flex items-center justify-center font-bold">
+                      <FileText size={18} />
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold truncate" style={{ color: textColor }}>
+                      {stagedAttachment.fileName || (stagedAttachment.type === 'image' ? 'صورة مختارة' : stagedAttachment.type === 'video' ? 'مقطع مرئي' : 'ملف')}
+                    </p>
+                    <p className="text-[10px]" style={{ color: textMuted }}>
+                      جاهز للإرسال والاسترداد • {formatFileSize(stagedAttachment.fileSize)}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setStagedAttachment(null)}
+                  className="p-1.5 rounded-xl hover:bg-rose-500/10 text-rose-500 transition-colors cursor-pointer"
+                  title="إلغاء المرفق"
+                >
+                  <X size={16} />
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-          {/* Emoji / Adhkar Picker Button */}
-          <button
-            type="button"
-            onClick={() => setShowEmojiPicker(prev => !prev)}
-            className="w-10 h-10 rounded-2xl flex items-center justify-center border transition-all active:scale-95 flex-shrink-0 cursor-pointer"
-            style={{
-              backgroundColor: secondaryBg,
-              borderColor: cardBorder,
-              color: primaryColor
-            }}
-            title="إدراج أذكار وتعبيرات"
-          >
-            <Smile size={18} />
-          </button>
+          <div className="flex items-center gap-1 sm:gap-1.5 w-full max-w-full overflow-hidden">
+            {/* Three action buttons clustered tightly with minimal spacing */}
+            <div className="flex items-center gap-0 shrink-0">
+              {/* Quran Verse Share Button */}
+              <button
+                type="button"
+                onClick={() => setShowVerseModal(true)}
+                className="w-7 h-8 sm:w-8 sm:h-8.5 rounded-r-xl rounded-l-none flex items-center justify-center border transition-all active:scale-95 flex-shrink-0 cursor-pointer p-0"
+                style={{
+                  backgroundColor: secondaryBg,
+                  borderColor: cardBorder,
+                  color: '#f59e0b'
+                }}
+                title="مشاركة آية كريمة في المجموعة"
+              >
+                <BookOpen size={16} />
+              </button>
 
-          {/* Text Input */}
-          <div className="flex-1 relative min-w-0">
-            <input
-              type="text"
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  handleSendMessage();
-                }
-              }}
-              placeholder="اكتب رسالتك للمجموعة..."
-              className="w-full px-3.5 py-2.5 rounded-2xl border text-xs sm:text-sm font-medium focus:outline-none transition-all shadow-inner"
-              style={{
-                backgroundColor: secondaryBg,
-                borderColor: cardBorder,
-                color: textColor
-              }}
-            />
+              {/* Paperclip Media Attachment Button */}
+              <button
+                type="button"
+                onClick={() => setShowAttachmentPicker(true)}
+                className="w-7 h-8 sm:w-8 sm:h-8.5 rounded-none flex items-center justify-center border transition-all active:scale-95 flex-shrink-0 cursor-pointer p-0"
+                style={{
+                  backgroundColor: secondaryBg,
+                  borderColor: cardBorder,
+                  color: primaryColor
+                }}
+                title="إرفاق واسترداد ملف أو صورة أو فيديو"
+              >
+                <Paperclip size={16} />
+              </button>
+
+              {/* Emoji / Adhkar Picker Button */}
+              <button
+                type="button"
+                onClick={() => setShowEmojiPicker(prev => !prev)}
+                className="w-7 h-8 sm:w-8 sm:h-8.5 rounded-l-xl rounded-r-none flex items-center justify-center border transition-all active:scale-95 flex-shrink-0 cursor-pointer p-0"
+                style={{
+                  backgroundColor: secondaryBg,
+                  borderColor: cardBorder,
+                  color: primaryColor
+                }}
+                title="إدراج أذكار وتعبيرات"
+              >
+                <Smile size={16} />
+              </button>
+            </div>
+
+            {/* Text Input */}
+            <div className="flex-1 relative min-w-0">
+              <input
+                type="text"
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleSendMessage();
+                  }
+                }}
+                placeholder={stagedAttachment ? "أضف تعليقاً مع المرفق (اختياري)..." : "اكتب رسالتك للمجموعة..."}
+                className="w-full px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl border text-xs sm:text-sm font-medium focus:outline-none transition-all shadow-inner min-w-0"
+                style={{
+                  backgroundColor: secondaryBg,
+                  borderColor: cardBorder,
+                  color: textColor
+                }}
+              />
+            </div>
+
+            {/* Voice Record or Send Button */}
+            {inputText.trim() || stagedAttachment ? (
+              <button
+                type="button"
+                onClick={handleSendMessage}
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl sm:rounded-2xl flex items-center justify-center font-bold text-white shadow-md transition-all active:scale-95 flex-shrink-0 cursor-pointer"
+                style={{
+                  backgroundColor: primaryColor,
+                  color: primaryTextColor
+                }}
+                title="إرسال"
+              >
+                <Send size={16} />
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={startRecording}
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl sm:rounded-2xl flex items-center justify-center border transition-all active:scale-95 flex-shrink-0 cursor-pointer"
+                style={{
+                  backgroundColor: secondaryBg,
+                  borderColor: cardBorder,
+                  color: primaryColor
+                }}
+                title="تسجيل رسالة صوتية"
+              >
+                <Mic size={16} />
+              </button>
+            )}
           </div>
-
-          {/* Voice Record or Send Button */}
-          {inputText.trim() ? (
-            <button
-              type="button"
-              onClick={handleSendMessage}
-              className="w-10 h-10 rounded-2xl flex items-center justify-center font-bold text-white shadow-md transition-all active:scale-95 flex-shrink-0 cursor-pointer"
-              style={{
-                backgroundColor: primaryColor,
-                color: primaryTextColor
-              }}
-              title="إرسال"
-            >
-              <Send size={18} />
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={startRecording}
-              className="w-10 h-10 rounded-2xl flex items-center justify-center border transition-all active:scale-95 flex-shrink-0 cursor-pointer"
-              style={{
-                backgroundColor: secondaryBg,
-                borderColor: cardBorder,
-                color: primaryColor
-              }}
-              title="تسجيل رسالة صوتية"
-            >
-              <Mic size={18} />
-            </button>
-          )}
         </div>
       )}
 
@@ -1214,13 +1396,21 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                   style={{ backgroundColor: secondaryBg, borderColor: cardBorder }}
                 >
                   {/* Current User */}
-                  <div className="flex items-center justify-between p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs">
+                  <div 
+                    onClick={() => handleOpenMemberProfile(currentUser.userId, currentUser.username, currentUser.avatarUrl, currentUser.country)}
+                    className="flex items-center justify-between p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs cursor-pointer hover:bg-emerald-500/15 transition-all"
+                    title="عرض حسابك الشخصي"
+                  >
                     <div className="flex items-center gap-2 min-w-0">
-                      <div className="w-7 h-7 rounded-full bg-emerald-500 text-white font-bold flex items-center justify-center text-xs shrink-0">
-                        {currentUser.username?.charAt(0) || 'أ'}
+                      <div className="w-7 h-7 rounded-full bg-emerald-500 text-white font-bold flex items-center justify-center text-xs shrink-0 overflow-hidden">
+                        {currentUser.avatarUrl ? (
+                          <img src={currentUser.avatarUrl} alt={currentUser.username} className="w-full h-full object-cover" />
+                        ) : (
+                          currentUser.username?.charAt(0) || 'أ'
+                        )}
                       </div>
                       <div className="min-w-0 flex items-center gap-1.5 truncate">
-                        <span className="font-bold truncate" style={{ color: textColor }}>{currentUser.username} (أنت)</span>
+                        <span className="font-bold truncate hover:underline" style={{ color: textColor }}>{currentUser.username} (أنت)</span>
                         {group?.createdBy === currentUser.userId && (
                           <span className="text-[10px] px-1.5 py-0.2 rounded-md bg-amber-500/20 text-amber-600 dark:text-amber-400 font-bold shrink-0">
                             منشئ 👑
@@ -1237,11 +1427,17 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                     .map(u => {
                       const isMemberCreator = u.userId === group?.createdBy;
                       return (
-                        <div key={u.userId} className="flex items-center justify-between p-2 rounded-xl border text-xs gap-2" style={{ borderColor: cardBorder }}>
+                        <div 
+                          key={u.userId} 
+                          onClick={() => handleOpenMemberProfile(u.userId, u.username, u.avatarUrl, u.country)}
+                          className="flex items-center justify-between p-2 rounded-xl border text-xs gap-2 cursor-pointer transition-all hover:bg-slate-500/10 active:scale-[0.99]" 
+                          style={{ borderColor: cardBorder }}
+                          title={`عرض بيانات ${u.username}`}
+                        >
                           <div className="flex items-center gap-2 min-w-0 flex-1">
                             <div 
-                              className="w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs overflow-hidden shrink-0"
-                              style={{ backgroundColor: `${primaryColor}20`, color: primaryColor }}
+                              className="w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs overflow-hidden shrink-0 border"
+                              style={{ backgroundColor: `${primaryColor}20`, borderColor: `${primaryColor}40`, color: primaryColor }}
                             >
                               {u.avatarUrl ? (
                                 <img src={u.avatarUrl} alt={u.username} className="w-full h-full object-cover" />
@@ -1251,7 +1447,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                             </div>
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-1.5 truncate">
-                                <span className="font-bold truncate" style={{ color: textColor }}>{u.username}</span>
+                                <span className="font-bold truncate hover:underline" style={{ color: textColor }}>{u.username}</span>
                                 {isMemberCreator && (
                                   <span className="text-[10px] px-1.5 py-0.2 rounded-md bg-amber-500/20 text-amber-600 dark:text-amber-400 font-bold shrink-0">
                                     المنشئ 👑
@@ -1270,7 +1466,10 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                             {isCreatorOrAdmin && !isMemberCreator && (
                               <button
                                 type="button"
-                                onClick={() => setMemberToRemove({ userId: u.userId, username: u.username })}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setMemberToRemove({ userId: u.userId, username: u.username });
+                                }}
                                 className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-500/15 transition-all cursor-pointer flex items-center gap-1 text-[11px] font-bold"
                                 title={`إزالة ${u.username} من المجموعة`}
                               >
@@ -1591,6 +1790,167 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
         )}
       </AnimatePresence>
 
+      {/* Member Profile & Actions Modal */}
+      <AnimatePresence>
+        {selectedMember && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" dir="rtl" style={{ fontFamily: theme.font }}>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              className="w-full max-w-sm rounded-3xl border shadow-2xl p-5 space-y-4"
+              style={{
+                backgroundColor: cardBg,
+                borderColor: cardBorder,
+                color: textColor
+              }}
+            >
+              {/* Header with Close */}
+              <div className="flex items-center justify-between pb-3 border-b" style={{ borderColor: cardBorder }}>
+                <div className="flex items-center gap-1.5">
+                  <User size={16} style={{ color: primaryColor }} />
+                  <span className="text-xs font-bold" style={{ color: textColor }}>
+                    بطاقة عضو المجموعة
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedMember(null)}
+                  className="w-8 h-8 rounded-xl flex items-center justify-center border transition-all active:scale-95 cursor-pointer"
+                  style={{ backgroundColor: secondaryBg, borderColor: cardBorder, color: textMuted }}
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              {/* Avatar & Main Identity */}
+              <div className="flex flex-col items-center text-center pt-1">
+                <div className="relative mb-2.5">
+                  <div 
+                    className="w-20 h-20 rounded-3xl flex items-center justify-center font-bold text-2xl border-2 shadow-md overflow-hidden"
+                    style={{
+                      backgroundColor: `${primaryColor}15`,
+                      borderColor: `${primaryColor}40`,
+                      color: primaryColor
+                    }}
+                  >
+                    {selectedMember.avatarUrl ? (
+                      <img src={selectedMember.avatarUrl} alt={selectedMember.username} className="w-full h-full object-cover" />
+                    ) : (
+                      selectedMember.username?.charAt(0) || 'ق'
+                    )}
+                  </div>
+                  {/* Online indicator */}
+                  <div 
+                    className={`absolute -bottom-1 -left-1 w-4 h-4 rounded-full border-2 border-white dark:border-slate-900 ${
+                      communityService.isUserOnline(selectedMember) ? 'bg-emerald-500' : 'bg-slate-400'
+                    }`}
+                    title={communityService.isUserOnline(selectedMember) ? 'متصل الآن' : 'غير متصل'}
+                  />
+                </div>
+
+                <h3 className="font-bold text-base sm:text-lg" style={{ color: textColor }}>
+                  {selectedMember.username}
+                </h3>
+
+                <div className="flex items-center gap-1.5 mt-1.5 flex-wrap justify-center">
+                  {selectedMember.userId === group?.createdBy ? (
+                    <span className="text-[10px] px-2.5 py-0.5 rounded-full font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                      منشئ المجموعة 👑
+                    </span>
+                  ) : (
+                    <span className="text-[10px] px-2.5 py-0.5 rounded-full font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                      عضو في المجموعة 🌿
+                    </span>
+                  )}
+
+                  <span className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold border ${
+                    communityService.isUserOnline(selectedMember)
+                      ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+                      : 'bg-slate-500/10 text-slate-500 border-slate-500/30'
+                  }`}>
+                    {communityService.isUserOnline(selectedMember) ? 'متصل الآن 🟢' : 'غير متصل ⚪'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Info Details Grid */}
+              <div className="space-y-2.5 p-3 rounded-2xl border text-xs" style={{ backgroundColor: secondaryBg, borderColor: cardBorder }}>
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-1.5 font-medium" style={{ color: textMuted }}>
+                    <MapPin size={13} />
+                    <span>الدولة / الإقامة:</span>
+                  </span>
+                  <span className="font-bold" style={{ color: textColor }}>
+                    {selectedMember.country || 'غير محدد 🌍'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Action Buttons: Add Friend + Start Chat */}
+              {selectedMember.userId === currentUser.userId ? (
+                <div className="text-center py-2.5 px-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                  ✨ هذا حسابك الشخصي في المجتمع
+                </div>
+              ) : (
+                <div className="space-y-2 pt-1">
+                  {/* زر الإضافة */}
+                  {selectedMemberFriendship.status === 'accepted' ? (
+                    <div className="w-full py-2.5 px-3 rounded-2xl text-xs font-bold border flex items-center justify-center gap-2 bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400">
+                      <UserCheck size={16} />
+                      <span>أصدقاء في المجتمع بالفعل 🌿</span>
+                    </div>
+                  ) : selectedMemberFriendship.status === 'pending' && selectedMemberFriendship.isRequester ? (
+                    <div className="w-full py-2.5 px-3 rounded-2xl text-xs font-bold border flex items-center justify-center gap-2 bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400">
+                      <Clock size={16} />
+                      <span>طلب الإضافة قيد الانتظار ⏳</span>
+                    </div>
+                  ) : selectedMemberFriendship.status === 'pending' && !selectedMemberFriendship.isRequester ? (
+                    <button
+                      type="button"
+                      onClick={() => handleAcceptFriendRequest(selectedMember.userId)}
+                      className="w-full py-2.5 px-3 rounded-2xl text-xs font-bold shadow-md flex items-center justify-center gap-2 active:scale-95 transition-all cursor-pointer"
+                      style={{ backgroundColor: primaryColor, color: primaryTextColor }}
+                    >
+                      <Check size={16} />
+                      <span>قبول طلب الإضافة الوارد</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleSendFriendRequest(selectedMember.userId)}
+                      className="w-full py-2.5 px-3 rounded-2xl text-xs font-bold border shadow-xs flex items-center justify-center gap-2 active:scale-95 transition-all hover:bg-emerald-500/10 hover:border-emerald-500/30 cursor-pointer"
+                      style={{
+                        backgroundColor: secondaryBg,
+                        borderColor: cardBorder,
+                        color: textColor
+                      }}
+                    >
+                      <UserPlus size={16} className="text-emerald-500" />
+                      <span>إرسال طلب إضافة كصديق</span>
+                    </button>
+                  )}
+
+                  {/* زر لإجراء محادثة */}
+                  <button
+                    type="button"
+                    onClick={() => handleStartDirectChat(selectedMember.userId)}
+                    className="w-full py-2.5 px-3 rounded-2xl text-xs font-bold shadow-md flex items-center justify-center gap-2 active:scale-95 transition-all cursor-pointer"
+                    style={{
+                      backgroundColor: primaryColor,
+                      color: primaryTextColor
+                    }}
+                  >
+                    <MessageCircle size={16} />
+                    <span>بدء محادثة خاصة 💬</span>
+                  </button>
+                </div>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       {/* Edit Group Modal */}
       <EditGroupModal
         isOpen={showEditGroupModal}
@@ -1605,6 +1965,30 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
           setShowDeleteGroupConfirm(true);
         }}
       />
+
+      {/* Media Attachment Picker Modal (Photos, Videos, Files) */}
+      <MediaAttachmentPicker
+        isOpen={showAttachmentPicker}
+        onClose={() => setShowAttachmentPicker(false)}
+        onFileSelected={handleFileSelected}
+      />
+
+      {/* Media Processing Loading Overlay */}
+      {isProcessingMedia && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4" dir="rtl">
+          <div 
+            className="rounded-3xl p-5 shadow-2xl flex items-center gap-3 text-sm font-bold border"
+            style={{
+              backgroundColor: cardBg,
+              borderColor: cardBorder,
+              color: textColor
+            }}
+          >
+            <Loader2 size={22} className="animate-spin text-emerald-500 shrink-0" />
+            <span>جاري تجهيز واسترداد بيانات الملف للإرسال...</span>
+          </div>
+        </div>
+      )}
 
       {/* Toast Notification */}
       <AnimatePresence>

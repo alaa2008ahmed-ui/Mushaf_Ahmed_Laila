@@ -294,17 +294,45 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
     });
   }, [chats, searchQuery]);
 
+  const uniquePendingInvitations = useMemo(() => {
+    const seen = new Set<string>();
+    const seenNames = new Set<string>();
+    return pendingInvitations.filter((inv) => {
+      if (!inv || !inv.groupId) return false;
+      if (seen.has(inv.groupId)) return false;
+      seen.add(inv.groupId);
+      const normName = (inv.name || '').trim().toLowerCase();
+      if (normName && seenNames.has(normName)) return false;
+      if (normName) seenNames.add(normName);
+      return true;
+    });
+  }, [pendingInvitations]);
+
   const filteredGroups = useMemo(() => {
-    if (!searchQuery.trim()) return groups;
+    // Exclude any group where current user has a pending invitation
+    // Those invitations are shown exclusively in the "دعوات الانضمام للمحادثات الجماعية" section at the top
+    const pendingIds = new Set(uniquePendingInvitations.map(p => p.groupId));
+    const pendingNames = new Set(uniquePendingInvitations.map(p => (p.name || '').trim().toLowerCase()));
+    const activeGroups = groups.filter((g) => {
+      if (!g || !g.groupId) return false;
+      if (pendingIds.has(g.groupId)) return false;
+      const gNormName = (g.name || '').trim().toLowerCase();
+      if (gNormName && pendingNames.has(gNormName)) return false;
+      const isMember = Array.isArray(g.members) && g.members.includes(currentUser.userId);
+      const hasPendingInvite = Array.isArray(g.invitedMembers) && g.invitedMembers.includes(currentUser.userId) && !isMember;
+      return !hasPendingInvite;
+    });
+
+    if (!searchQuery.trim()) return activeGroups;
     const q = searchQuery.toLowerCase().trim();
-    return groups.filter((g) => {
+    return activeGroups.filter((g) => {
       const name = (g.name || '').toLowerCase();
       const desc = (g.description || '').toLowerCase();
       const lastMsg = (g.lastMessage || '').toLowerCase();
       const creator = (g.creatorName || '').toLowerCase();
       return name.includes(q) || desc.includes(q) || lastMsg.includes(q) || creator.includes(q);
     });
-  }, [groups, searchQuery]);
+  }, [groups, uniquePendingInvitations, searchQuery, currentUser.userId]);
 
   const newMatchingFriends = useMemo(() => {
     if (!searchQuery.trim()) return [];
@@ -416,13 +444,6 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
 
   const communityTutorialSteps: TutorialStep[] = [
     {
-      id: 'community-members',
-      title: 'قائمة الأعضاء',
-      text: 'استعراض قراء القرآن، والبحث بالاسم، وإرسال طلبات الإضافة والتواصل بكل سهولة.',
-      selector: '#community-tab-users',
-      icon: <UserPlus className="w-8 h-8 text-sky-400" />
-    },
-    {
       id: 'community-chats',
       title: 'المحادثات الخاصة',
       text: 'مراسلة إخوانك والتواصل بالرسائل النصية والتسجيلات الصوتية ومشاركة الآيات الكريمة.',
@@ -435,6 +456,13 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
       text: 'الانضمام إلى مجموعات تدارس القرآن الكريم أو إنشاء مجموعة جديدة وإدارتها كمنشئ.',
       selector: '#community-tab-groups',
       icon: <BookOpen className="w-8 h-8 text-amber-400" />
+    },
+    {
+      id: 'community-members',
+      title: 'قائمة الأعضاء',
+      text: 'استعراض قراء القرآن، والبحث بالاسم، وإرسال طلبات الإضافة والتواصل بكل سهولة.',
+      selector: '#community-tab-users',
+      icon: <UserPlus className="w-8 h-8 text-sky-400" />
     },
     {
       id: 'community-profile',
@@ -547,24 +575,11 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
           </button>
         </div>
 
-        {/* Navigation Tabs (Equally divided 4 tabs: Members, Chats, Community, Blocked) */}
+        {/* Navigation Tabs (Equally divided 4 tabs: Chats, Community, Members, Blocked) */}
         <div 
           className="grid grid-cols-4 gap-1 sm:gap-1.5 p-1 sm:p-1.5 rounded-2xl border mb-3"
           style={{ backgroundColor: secondaryBg, borderColor: cardBorder }}
         >
-          <button
-            id="community-tab-users"
-            onClick={() => setActiveTab('users')}
-            className="w-full flex items-center justify-center py-2 sm:py-2.5 px-1 sm:px-2 rounded-xl text-xs sm:text-sm font-bold transition-all truncate cursor-pointer"
-            style={{
-              backgroundColor: activeTab === 'users' ? cardBg : 'transparent',
-              color: activeTab === 'users' ? primaryColor : textMuted,
-              boxShadow: activeTab === 'users' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
-            }}
-          >
-            <span>الأعضاء</span>
-          </button>
-
           <button
             id="community-tab-chats"
             onClick={() => setActiveTab('chats')}
@@ -594,14 +609,27 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
             }}
           >
             <span>المجتمع</span>
-            {pendingInvitations.length > 0 && (
+            {uniquePendingInvitations.length > 0 && (
               <span 
                 className="px-1.5 py-0.5 min-w-[18px] h-[18px] rounded-full bg-amber-500 text-white text-[10px] font-extrabold flex items-center justify-center leading-none shadow-sm animate-pulse"
-                title={`${pendingInvitations.length} دعوة جديدة`}
+                title={`${uniquePendingInvitations.length} دعوة جديدة`}
               >
-                {pendingInvitations.length}
+                {uniquePendingInvitations.length}
               </span>
             )}
+          </button>
+
+          <button
+            id="community-tab-users"
+            onClick={() => setActiveTab('users')}
+            className="w-full flex items-center justify-center py-2 sm:py-2.5 px-1 sm:px-2 rounded-xl text-xs sm:text-sm font-bold transition-all truncate cursor-pointer"
+            style={{
+              backgroundColor: activeTab === 'users' ? cardBg : 'transparent',
+              color: activeTab === 'users' ? primaryColor : textMuted,
+              boxShadow: activeTab === 'users' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+            }}
+          >
+            <span>الأعضاء</span>
           </button>
 
           <button
@@ -915,7 +943,7 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
         {activeTab === 'chats' && (
           <div className="space-y-2.5">
             {/* Quick Banner linking to Community Tab if user has pending group invitations */}
-            {pendingInvitations.length > 0 && (
+            {uniquePendingInvitations.length > 0 && (
               <div 
                 onClick={() => setActiveTab('community')}
                 className="p-3 sm:p-3.5 rounded-2xl border flex items-center justify-between cursor-pointer mb-2 transition-all hover:opacity-95 shadow-xs"
@@ -930,7 +958,7 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
                   </div>
                   <div>
                     <div className="text-xs font-bold" style={{ color: textColor }}>
-                      لديك ({pendingInvitations.length}) دعوة انضمام لمحادثة جماعية
+                      لديك ({uniquePendingInvitations.length}) دعوة انضمام لمحادثة جماعية
                     </div>
                     <div className="text-[10px]" style={{ color: textMuted }}>
                       انقر هنا للانتقال إلى تبويب المجتمع للقبول أو الرفض
@@ -1170,16 +1198,16 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
             </div>
 
             {/* Pending Group Invitations Section */}
-            {pendingInvitations.length > 0 && (
+            {uniquePendingInvitations.length > 0 && (
               <div className="space-y-2 mb-3">
                 <div className="flex items-center gap-1.5 px-1">
                   <Sparkles size={14} className="text-amber-500 animate-pulse" />
                   <span className="text-xs font-bold" style={{ color: textColor }}>
-                    دعوات الانضمام للمحادثات الجماعية ({pendingInvitations.length})
+                    دعوات الانضمام للمحادثات الجماعية ({uniquePendingInvitations.length})
                   </span>
                 </div>
 
-                {pendingInvitations.map(invitation => (
+                {uniquePendingInvitations.map(invitation => (
                   <motion.div
                     key={invitation.groupId}
                     initial={{ opacity: 0, y: 10 }}
@@ -1300,7 +1328,6 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
                 const canDelete = (isCreator && !isSystemDefaultGroup) || currentUser.userId === ADMIN_USER_ID;
                 const isCurrentMember = Array.isArray(grp.members) && grp.members.includes(currentUser.userId);
                 const hasLeftOrRemoved = !isSystemDefaultGroup && !isCreator && !isCurrentMember;
-                const hasPendingInvite = grp.invitedMembers?.includes(currentUser.userId) && !grp.members?.includes(currentUser.userId);
 
                 return (
                   <div
@@ -1364,37 +1391,7 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
                       </div>
                     </div>
 
-                    {hasPendingInvite ? (
-                      <div className="flex items-center gap-1.5 flex-shrink-0 mr-2" onClick={(e) => e.stopPropagation()}>
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            await communityService.acceptGroupInvitation(grp.groupId);
-                            loadData();
-                            showToast(`تم الانضمام إلى "${grp.name}" بنجاح 🌿`);
-                            handleStartGroupChat(grp.groupId);
-                          }}
-                          className="px-2.5 py-1.5 rounded-xl text-xs font-bold shadow-xs active:scale-95 flex items-center gap-1 cursor-pointer"
-                          style={{ backgroundColor: primaryColor, color: primaryTextColor }}
-                        >
-                          <Check size={12} />
-                          <span>قبول</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            await communityService.declineGroupInvitation(grp.groupId);
-                            loadData();
-                            showToast('تم رفض دعوة الانضمام');
-                          }}
-                          className="px-2.5 py-1.5 rounded-xl text-xs font-bold border active:scale-95 text-rose-500 hover:bg-rose-500/10 cursor-pointer"
-                          style={{ backgroundColor: secondaryBg, borderColor: cardBorder }}
-                        >
-                          <X size={12} />
-                          <span>رفض</span>
-                        </button>
-                      </div>
-                    ) : grp.lastMessageTime ? (
+                    {grp.lastMessageTime ? (
                       <span className="text-[10px] font-medium flex-shrink-0 mr-2" style={{ color: textMuted }}>
                         {new Date(grp.lastMessageTime).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}
                       </span>

@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
-  User, Check, Sparkles, ArrowRight, Camera, Trash2, 
+  User, Check, Sparkles, ArrowRight, Camera as CameraIcon, Trash2, 
   Loader2, KeyRound, Copy, LogIn, Lock, CheckCircle2, Shield
 } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
+import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { communityService, CommunityUser } from '../../services/communityService';
 import { registerBackInterceptor } from '../../hooks/useBackButton';
 import { AvatarCropperModal } from './AvatarCropperModal';
@@ -302,6 +304,47 @@ const UsernameModal: React.FC<UsernameModalProps> = ({
     e.target.value = '';
   };
 
+  const handlePickImage = async (isNew: boolean) => {
+    try {
+      if (Capacitor.isNativePlatform()) {
+        try {
+          const image = await Camera.getPhoto({
+            quality: 90,
+            allowEditing: false,
+            resultType: CameraResultType.DataUrl,
+            source: CameraSource.Photos
+          });
+
+          if (image && image.dataUrl) {
+            setCropperImgSrc(image.dataUrl);
+            setCropperTargetIsNew(isNew);
+            setCropperOpen(true);
+            return;
+          }
+        } catch (camErr: any) {
+          const msg = (camErr?.message || '').toLowerCase();
+          if (msg.includes('cancel') || msg.includes('user cancelled')) {
+            return;
+          }
+          console.warn('Native camera picker failed, falling back to file input:', camErr);
+        }
+      }
+
+      if (isNew) {
+        newFileInputRef.current?.click();
+      } else {
+        fileInputRef.current?.click();
+      }
+    } catch (err: any) {
+      console.warn('Error picking image:', err);
+      if (isNew) {
+        newFileInputRef.current?.click();
+      } else {
+        fileInputRef.current?.click();
+      }
+    }
+  };
+
   const handleCropComplete = async (croppedDataUrl: string) => {
     try {
       const compressed = await compressAvatar(croppedDataUrl, 180, 0.8);
@@ -414,7 +457,7 @@ const UsernameModal: React.FC<UsernameModalProps> = ({
     e?.preventDefault();
     const cleanCode = restoreCode.trim();
     if (!cleanCode) {
-      setError('يرجى إدخال كود الحساب (مثل MQ-XXXXX) أو اسم المستخدم');
+      setError('يرجى إدخال اسم المستخدم بالكامل أو كود الحساب (مثل MQ-XXXXX)');
       return;
     }
 
@@ -452,7 +495,7 @@ const UsernameModal: React.FC<UsernameModalProps> = ({
         }
       }, 500);
     } catch (err: any) {
-      setError(err?.message || 'تعذر استعادة الحساب. تأكد من صحة الكود ورمز المرور.');
+      setError(err?.message || 'تعذر استعادة الحساب. تأكد من صحة الاسم أو الكود ورمز المرور.');
     } finally {
       setIsRestoring(false);
     }
@@ -635,21 +678,31 @@ const UsernameModal: React.FC<UsernameModalProps> = ({
 
                     <button
                       type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="absolute bottom-0 left-0 p-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full shadow-lg transition-transform active:scale-95"
-                      title="رفع صورة جديدة"
+                      onClick={() => handlePickImage(false)}
+                      className="absolute bottom-0 left-0 p-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full shadow-lg transition-transform active:scale-95 cursor-pointer z-10"
+                      title="رفع صورة جديدة من الهاتف"
                     >
-                      <Camera size={14} />
+                      <CameraIcon size={14} />
                     </button>
 
                     <input
+                      id="profile-avatar-upload"
                       ref={fileInputRef}
                       type="file"
                       accept="image/*"
                       onChange={(e) => handleFileChange(e, false)}
-                      className="hidden"
+                      style={{ display: 'none' }}
                     />
                   </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handlePickImage(false)}
+                    className="mt-1.5 text-[11px] text-emerald-600 dark:text-emerald-400 font-bold hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <CameraIcon size={12} />
+                    <span>استيراد صورة من الهاتف</span>
+                  </button>
 
                   {avatarUrl && (
                     <button
@@ -847,21 +900,31 @@ const UsernameModal: React.FC<UsernameModalProps> = ({
 
                     <button
                       type="button"
-                      onClick={() => newFileInputRef.current?.click()}
-                      className="absolute bottom-0 left-0 p-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full shadow-lg transition-transform active:scale-95"
-                      title="رفع صورة جديدة"
+                      onClick={() => handlePickImage(true)}
+                      className="absolute bottom-0 left-0 p-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full shadow-lg transition-transform active:scale-95 cursor-pointer z-10"
+                      title="اختيار صورة من الهاتف"
                     >
-                      <Camera size={14} />
+                      <CameraIcon size={14} />
                     </button>
 
                     <input
+                      id="new-avatar-upload"
                       ref={newFileInputRef}
                       type="file"
                       accept="image/*"
                       onChange={(e) => handleFileChange(e, true)}
-                      className="hidden"
+                      style={{ display: 'none' }}
                     />
                   </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handlePickImage(true)}
+                    className="mt-1.5 text-[11px] text-emerald-600 dark:text-emerald-400 font-bold hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <CameraIcon size={12} />
+                    <span>استيراد صورة من الهاتف</span>
+                  </button>
 
                   {/* Preset Avatars */}
                   <div className="mt-2.5 flex items-center justify-center gap-1.5">
@@ -1031,14 +1094,14 @@ const UsernameModal: React.FC<UsernameModalProps> = ({
                   <span>فتح حسابك من أي جهاز أو نسخة أخرى:</span>
                 </p>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                  إذا كنت قد سجلت حساباً في السابق على هاتف آخر، قم بإدخال كود حسابك الفريد (مثل: <span className="font-mono font-bold text-emerald-600">MQ-XXXXX</span>) أو اسم المستخدم، وسيتم فتح حسابك ومحادثاتك ودردشاتك فوراً بدون تكرار!
+                  إذا كنت قد سجلت حساباً في السابق، قم بإدخال اسم المستخدم بالكامل (أحادي، ثنائي، ثلاثي، مهما كان طوله) أو كود حسابك الفريد (مثل: <span className="font-mono font-bold text-emerald-600">MQ-XXXXX</span>)، وسيتم فتح حسابك ومحادثاتك فوراً!
                 </p>
               </div>
 
               <form onSubmit={handleRestoreAccount} className="space-y-3.5">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    كود الحساب الفريد أو اسم المستخدم:
+                    اسم المستخدم بالكامل أو كود الحساب الفريد:
                   </label>
                   <input
                     type="text"
@@ -1047,7 +1110,7 @@ const UsernameModal: React.FC<UsernameModalProps> = ({
                       setRestoreCode(e.target.value);
                       setError('');
                     }}
-                    placeholder=""
+                    placeholder="اكتب اسمك بالكامل (مثل: علاء أحمد) أو كود الحساب"
                     enterKeyHint="next"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
@@ -1055,7 +1118,7 @@ const UsernameModal: React.FC<UsernameModalProps> = ({
                         restorePasscodeRef.current?.focus();
                       }
                     }}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-slate-900 dark:text-white uppercase tracking-wider"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-slate-900 dark:text-white"
                   />
                 </div>
 

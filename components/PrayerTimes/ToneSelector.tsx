@@ -48,7 +48,7 @@ const ToneSelector: React.FC<ToneSelectorProps> = ({
                      <i className="fa-solid fa-chevron-down text-xs" style={{color: secondaryColor}}></i>
                 </div>
             </div>
-            <input type="file" id="sound-file-input" accept="audio/*" className="hidden" onChange={handleToneUpload}/>
+            <input type="file" id="sound-file-input" accept="audio/*" className="sr-only absolute w-0 h-0 opacity-0 overflow-hidden pointer-events-none" onChange={handleToneUpload}/>
             {selectValue === 'custom' && currentTone && <p className="text-center text-[10px] mt-1 truncate" style={{ color: secondaryColor }}>الملف الحالي: {currentTone.name}</p>}
         </div>
     );
