@@ -5,6 +5,8 @@ import { useTheme } from '../context/ThemeContext';
 import ThemePageLock from '../components/ThemePageLock';
 import { usePrayerTimes } from '../context/PrayerTimesContext';
 import { VisualQibla, ARQibla, SunMoonQibla, ShadowQibla } from '../components/QiblaModes';
+import { Haptics, ImpactStyle } from '@capacitor/haptics';
+import { Capacitor } from '@capacitor/core';
 
 // --- Helper Functions ---
 const toRad = (deg) => deg * Math.PI / 180;
@@ -23,6 +25,7 @@ function Qibla({ onBack, onNavigate }) {
     
     const compassCircleRef = useRef(null);
     const qiblaPointerRef = useRef(null);
+    const hasVibratedRef = useRef(false);
     const [permissionStatus, setPermissionStatus] = useState('unknown'); // 'unknown', 'granted', 'denied'
 
     const handleOrientation = (event) => {
@@ -132,7 +135,21 @@ function Qibla({ onBack, onNavigate }) {
             if (diff > 180) {
                 diff = 360 - diff;
             }
-            setIsAligned(diff <= 3); // Threshold of 3 degrees
+            const aligned = diff <= 3;
+            setIsAligned(aligned);
+
+            const perfectAligned = diff <= 1.5; // 100% precision alignment
+            if (perfectAligned && !hasVibratedRef.current) {
+                hasVibratedRef.current = true;
+                if (Capacitor.isNativePlatform()) {
+                    Haptics.impact({ style: ImpactStyle.Heavy }).catch(() => {});
+                }
+                if ('vibrate' in navigator) {
+                    navigator.vibrate([150, 50, 150]);
+                }
+            } else if (!perfectAligned && diff > 3.5) {
+                hasVibratedRef.current = false;
+            }
         }
 
         if (compassCircleRef.current) {

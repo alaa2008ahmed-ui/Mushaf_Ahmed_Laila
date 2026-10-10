@@ -31,14 +31,14 @@ const TasbeehControls: React.FC<TasbeehControlsProps> = ({ isBlackAndWhite, them
                     </div>
                 </button>
             </motion.div>
-            <div className="grid grid-cols-4 gap-2 h-16">
+            <div className="grid grid-cols-5 gap-1 sm:gap-2 h-16">
                  <motion.button 
                     whileTap={{ scale: 0.95 }} 
                     onClick={() => setModals((p: any) => ({...p, add: true}))} 
                     className="flex flex-col items-center justify-center py-1 px-1 font-bold rounded-xl themed-card text-[10px] sm:text-xs shadow-md transition-shadow hover:shadow-lg border border-black/5 h-full" 
                     style={{color: isBlackAndWhite ? '#FFF' : undefined, border: isBlackAndWhite ? '1px solid #FFF' : undefined}}
                  >
-                     <svg className="w-5 h-5 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" /></svg>
+                     <svg className="w-4 h-4 sm:w-5 sm:h-5 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" /></svg>
                      إضافة
                  </motion.button>
                  
@@ -48,7 +48,7 @@ const TasbeehControls: React.FC<TasbeehControlsProps> = ({ isBlackAndWhite, them
                     className="flex flex-col items-center justify-center py-1 px-1 font-bold rounded-xl themed-card text-[10px] sm:text-xs shadow-md transition-shadow hover:shadow-lg border border-black/5 h-full" 
                     style={{color: isBlackAndWhite ? '#FFF' : undefined, border: isBlackAndWhite ? '1px solid #FFF' : undefined}}
                  >
-                     <svg className="w-5 h-5 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                     <svg className="w-4 h-4 sm:w-5 sm:h-5 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                      حذف
                  </motion.button>
                  
@@ -58,7 +58,7 @@ const TasbeehControls: React.FC<TasbeehControlsProps> = ({ isBlackAndWhite, them
                     className="flex flex-col items-center justify-center py-1 px-1 font-bold rounded-xl themed-card text-[10px] sm:text-xs shadow-md transition-shadow hover:shadow-lg border border-black/5 h-full" 
                     style={{color: isBlackAndWhite ? '#FFF' : undefined, border: isBlackAndWhite ? '1px solid #FFF' : undefined}}
                  >
-                     <svg className="w-5 h-5 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" /></svg>
+                     <svg className="w-4 h-4 sm:w-5 sm:h-5 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" /></svg>
                      لون العداد
                  </motion.button>
 
@@ -68,8 +68,21 @@ const TasbeehControls: React.FC<TasbeehControlsProps> = ({ isBlackAndWhite, them
                     className="flex flex-col items-center justify-center py-1 px-1 font-bold rounded-xl themed-card text-[10px] sm:text-xs shadow-md transition-shadow hover:shadow-lg border border-black/5 h-full" 
                     style={{color: isBlackAndWhite ? '#FFF' : undefined, border: isBlackAndWhite ? '1px solid #FFF' : undefined}}
                  >
-                     <svg className="w-5 h-5 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
+                     <svg className="w-4 h-4 sm:w-5 sm:h-5 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
                      شكل العداد
+                 </motion.button>
+
+                 <motion.button 
+                    whileTap={{ scale: 0.95 }} 
+                    onClick={() => setModals((p: any) => ({...p, stats: true}))} 
+                    className="flex flex-col items-center justify-center py-1 px-1 font-bold rounded-xl themed-card text-[10px] sm:text-xs shadow-md transition-shadow hover:shadow-lg border border-black/5 h-full" 
+                    style={{color: isBlackAndWhite ? '#FFF' : undefined, border: isBlackAndWhite ? '1px solid #FFF' : undefined}}
+                    title="الرسم البياني وتطور التسبيح"
+                 >
+                     <svg className="w-4 h-4 sm:w-5 sm:h-5 mb-1 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                     </svg>
+                     الرسم البياني
                  </motion.button>
 
             </div>

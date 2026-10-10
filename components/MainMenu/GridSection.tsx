@@ -7,6 +7,7 @@ import VoiceControlToggle from '../VoiceControlToggle';
 import { useVoiceControl } from '../../context/VoiceControlContext';
 import { useShowNewBadge } from '../../utils/badgeManager';
 import { communityService } from '../../services/communityService';
+import { ahlAlQuranService, getAhlAlQuranRankColor } from '../../services/ahlAlQuranService';
 
 interface GridSectionProps {
     menuItems: any[];
@@ -34,6 +35,9 @@ const GridSection: React.FC<GridSectionProps> = ({
     const [unreadCommunityCount, setUnreadCommunityCount] = useState<number>(() => {
         return communityService.getTotalUnreadCount();
     });
+    const [userRank, setUserRank] = useState<number | null>(() => {
+        return ahlAlQuranService.getCurrentUserRank()?.rank ?? null;
+    });
 
     useEffect(() => {
         const updateUnread = () => {
@@ -55,6 +59,36 @@ const GridSection: React.FC<GridSectionProps> = ({
             window.removeEventListener('community_user_updated', updateUnread);
             window.removeEventListener('community_groups_updated', updateUnread);
             window.removeEventListener('storage', updateUnread);
+        };
+    }, []);
+
+    useEffect(() => {
+        const updateRank = () => {
+            const info = ahlAlQuranService.getCurrentUserRank();
+            setUserRank(info ? info.rank : null);
+        };
+
+        updateRank();
+
+        const unsub = ahlAlQuranService.subscribe(() => {
+            updateRank();
+        });
+
+        window.addEventListener('ahl_al_quran_updated', updateRank);
+        window.addEventListener('ahl_al_quran_page_recorded', updateRank);
+        window.addEventListener('community_user_updated', updateRank);
+        window.addEventListener('community_user_deleted', updateRank);
+        window.addEventListener('storage', updateRank);
+        window.addEventListener('focus', updateRank);
+
+        return () => {
+            unsub();
+            window.removeEventListener('ahl_al_quran_updated', updateRank);
+            window.removeEventListener('ahl_al_quran_page_recorded', updateRank);
+            window.removeEventListener('community_user_updated', updateRank);
+            window.removeEventListener('community_user_deleted', updateRank);
+            window.removeEventListener('storage', updateRank);
+            window.removeEventListener('focus', updateRank);
         };
     }, []);
 
@@ -128,8 +162,8 @@ const GridSection: React.FC<GridSectionProps> = ({
         : (theme.isGlass 
             ? 'rgba(255, 255, 255, 0.25)' 
             : (themeKey === 'default' 
-                ? '#059669' 
-                : (theme.palette[0] || theme.palette[2] || '#059669')));
+                ? '#8B5CF6' 
+                : (theme.palette[1] || theme.palette[0] || '#8B5CF6')));
 
     const iconTextColor = isBlackTheme 
         ? '#FFFFFF' 
@@ -219,24 +253,39 @@ const GridSection: React.FC<GridSectionProps> = ({
                                     />
                                 </div>
                                 <VoiceControlToggle />
-                                <motion.button
-                                    type="button"
-                                    id="home-ahl-al-quran-btn"
-                                    onClick={() => !isEditMode && onNavigate('ahl-al-quran')}
-                                    whileHover={{ scale: 1.1 }}
-                                    whileTap={{ scale: 0.9 }}
-                                    className="w-9 h-9 rounded-full flex items-center justify-center shadow-lg transition-transform border-2 shrink-0 active:scale-95"
-                                    style={{
-                                        backgroundColor: ahlQuranBg,
-                                        borderColor: iconBorderColor,
-                                        backdropFilter: theme.isGlass ? 'blur(8px)' : 'none',
-                                        WebkitBackdropFilter: theme.isGlass ? 'blur(8px)' : 'none'
-                                    }}
-                                    title="أهل القرآن"
-                                    aria-label="أهل القرآن"
-                                >
-                                    <Trophy className="w-5 h-5" style={{ color: iconTextColor }} />
-                                </motion.button>
+                                <div className="relative shrink-0">
+                                    <motion.button
+                                        type="button"
+                                        id="home-ahl-al-quran-btn"
+                                        onClick={() => !isEditMode && onNavigate('ahl-al-quran')}
+                                        whileHover={{ scale: 1.1 }}
+                                        whileTap={{ scale: 0.9 }}
+                                        className="w-9 h-9 rounded-full flex items-center justify-center shadow-lg transition-transform border-2 shrink-0 active:scale-95 relative"
+                                        style={{
+                                            backgroundColor: ahlQuranBg,
+                                            borderColor: iconBorderColor,
+                                            backdropFilter: theme.isGlass ? 'blur(8px)' : 'none',
+                                            WebkitBackdropFilter: theme.isGlass ? 'blur(8px)' : 'none'
+                                        }}
+                                        title="أهل القرآن"
+                                        aria-label="أهل القرآن"
+                                    >
+                                        <Trophy className="w-5 h-5" style={{ color: iconTextColor }} />
+                                        {userRank !== null && userRank !== undefined && (
+                                            <span 
+                                                className="absolute -top-1.5 -right-1.5 min-w-[19px] h-[19px] px-1 rounded-full bg-white text-[11px] font-black flex items-center justify-center border-2 shadow-md leading-none pointer-events-none z-30"
+                                                style={{ 
+                                                    color: getAhlAlQuranRankColor(userRank).textColor,
+                                                    borderColor: getAhlAlQuranRankColor(userRank).borderColor,
+                                                    backgroundColor: getAhlAlQuranRankColor(userRank).bg,
+                                                    boxShadow: `0 2px 5px ${getAhlAlQuranRankColor(userRank).shadowColor}`
+                                                }}
+                                            >
+                                                {userRank}
+                                            </span>
+                                        )}
+                                    </motion.button>
+                                </div>
                             </div>
                         ) : (
                             <NavButton 

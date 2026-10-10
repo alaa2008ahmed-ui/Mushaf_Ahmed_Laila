@@ -173,7 +173,9 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
   }, [searchQuery]);
 
   useEffect(() => {
-    if (searchQuery.trim().toLowerCase() === '/alaa.ahmed') {
+    const raw = searchQuery.trim().toLowerCase();
+    if (raw === '/alaa.ahmed' || raw === 'alaa.ahmed' || raw === '/alaa_ahmed' || raw === 'alaa_ahmed') {
+      communityService.setAdminSession(true);
       setShowAdminModal(true);
       setSearchQuery('');
     }
@@ -381,12 +383,22 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
         setSearchQuery('');
         return true;
       }
+      // 7. Step back through community tab history
+      if (tabHistory.length > 1) {
+        const nextHistory = [...tabHistory];
+        nextHistory.pop();
+        const prevTab = nextHistory[nextHistory.length - 1];
+        setTabHistory(nextHistory);
+        setActiveTabState(prevTab);
+        communityService.setActiveTab(prevTab);
+        return true;
+      }
       return false; // Let global handler navigate back to origin (home or more-menu)
     };
 
     const unregister = registerBackInterceptor(interceptor);
     return unregister;
-  }, [showProfileModal, showCreateGroupModal, showAdminModal, userToBlock, groupToDelete, groupToHide, searchQuery]);
+  }, [showProfileModal, showCreateGroupModal, showAdminModal, userToBlock, groupToDelete, groupToHide, searchQuery, tabHistory]);
 
   if (showProfileModal) {
     return (
@@ -1322,83 +1334,37 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
                 </button>
               </div>
             ) : (
-              filteredGroups.map(grp => {
-                const isSystemDefaultGroup = grp.groupId === 'group_default_quran_readers' || grp.groupId === 'group_default_tadabbur';
-                const isCreator = communityService.isGroupCreator(grp, currentUser);
-                const canDelete = (isCreator && !isSystemDefaultGroup) || currentUser.userId === ADMIN_USER_ID;
-                const isCurrentMember = Array.isArray(grp.members) && grp.members.includes(currentUser.userId);
-                const hasLeftOrRemoved = !isSystemDefaultGroup && !isCreator && !isCurrentMember;
-
-                return (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
+                {filteredGroups.map(grp => (
                   <div
                     key={grp.groupId}
                     onClick={() => handleStartGroupChat(grp.groupId)}
-                    className="border rounded-2xl p-4 flex items-center justify-between cursor-pointer transition-all shadow-xs hover:shadow-md active:scale-[0.99]"
+                    className="border rounded-2xl p-3 flex items-center gap-2.5 cursor-pointer transition-all shadow-xs hover:shadow-md active:scale-95 group"
                     style={{
                       backgroundColor: cardBg,
-                      borderColor: isSystemDefaultGroup ? `${primaryColor}40` : (hasLeftOrRemoved ? '#f59e0b40' : cardBorder)
+                      borderColor: cardBorder
                     }}
+                    title={cleanGroupName(grp.name)}
                   >
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                      <div 
-                        className="w-12 h-12 rounded-2xl font-bold flex items-center justify-center border overflow-hidden flex-shrink-0 text-xl shadow-inner"
-                        style={{
-                          backgroundColor: `${primaryColor}15`,
-                          borderColor: `${primaryColor}30`,
-                          color: primaryColor
-                        }}
-                      >
-                        {renderGroupAvatar(grp)}
-                      </div>
-
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="font-bold text-sm sm:text-base break-words whitespace-normal leading-snug" style={{ color: textColor }}>
-                            {cleanGroupName(grp.name)}
-                          </h3>
-                          {isSystemDefaultGroup ? (
-                            <span 
-                              className="text-[10px] px-2 py-0.5 rounded-full font-extrabold flex items-center"
-                              style={{ backgroundColor: `${primaryColor}20`, color: primaryColor }}
-                            >
-                              <span>حلقة عامة</span>
-                            </span>
-                          ) : hasLeftOrRemoved ? (
-                            <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-                              <span 
-                                className="text-[10px] px-2 py-0.5 rounded-full font-bold flex items-center bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30"
-                              >
-                                <span>عضو سابق / تمت المغادرة</span>
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => setGroupToHide(grp)}
-                                className="w-6 h-6 rounded-lg flex items-center justify-center bg-slate-500/15 text-slate-600 dark:text-slate-400 border border-slate-500/30 hover:bg-slate-500/25 active:scale-95 transition-all cursor-pointer"
-                                title="إزالة من صفحتي"
-                              >
-                                <EyeOff size={12} />
-                              </button>
-                            </div>
-                          ) : null}
-                        </div>
-                        <p className="text-xs mt-1 line-clamp-1 font-medium" style={{ color: hasLeftOrRemoved ? '#f59e0b' : textMuted }}>
-                          {hasLeftOrRemoved
-                            ? 'توقف ظهور الرسائل الجديدة لك في هذه المجموعة'
-                            : (!grp.lastMessage || grp.lastMessage.startsWith('تم إنشاء') || grp.lastMessage.includes('إنشاء المجموعة'))
-                              ? (grp.creatorName || grp.lastMessageSenderName || currentUser.username || 'عضو')
-                              : (grp.lastMessageSenderName ? `${grp.lastMessageSenderName}: ` : '') + grp.lastMessage}
-                        </p>
-                      </div>
+                    <div 
+                      className="w-10 h-10 rounded-xl font-bold flex items-center justify-center border overflow-hidden flex-shrink-0 text-lg shadow-inner group-hover:scale-105 transition-transform"
+                      style={{
+                        backgroundColor: `${primaryColor}15`,
+                        borderColor: `${primaryColor}30`,
+                        color: primaryColor
+                      }}
+                    >
+                      {renderGroupAvatar(grp)}
                     </div>
 
-                    {grp.lastMessageTime ? (
-                      <span className="text-[10px] font-medium flex-shrink-0 mr-2" style={{ color: textMuted }}>
-                        {new Date(grp.lastMessageTime).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                    ) : null}
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-bold text-xs sm:text-sm truncate leading-snug" style={{ color: textColor }}>
+                        {cleanGroupName(grp.name)}
+                      </h3>
+                    </div>
                   </div>
-                );
-              })
+                ))}
+              </div>
             )}
           </div>
         )}
@@ -1593,6 +1559,13 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
             loadData();
             setShowAdminModal(true);
             showToast('تمت العودة لقائمة المستخدمين بنجاح');
+          } else if (tabHistory.length > 1) {
+            const nextHistory = [...tabHistory];
+            nextHistory.pop();
+            const prevTab = nextHistory[nextHistory.length - 1];
+            setTabHistory(nextHistory);
+            setActiveTabState(prevTab);
+            communityService.setActiveTab(prevTab);
           } else {
             onBack();
           }
@@ -1638,6 +1611,7 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
         isOpen={showAdminModal}
         onClose={() => setShowAdminModal(false)}
         currentTheme={{ bg: theme.bgColor || '#0D1B2A', text: textColor }}
+        onNavigate={onNavigate}
       />
 
       {/* Tutorial Overlay */}

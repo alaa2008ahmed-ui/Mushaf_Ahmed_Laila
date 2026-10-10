@@ -26,7 +26,10 @@ import {
 // Main Component
 function PrayerTimes({ onBack, onNavigate }) {
     const { theme, themeKey } = useTheme();
-    const { times, dates, nextPrayer, countdown, config, refreshLocation, manualSearch, updateConfig } = usePrayerTimes();
+    const { 
+        times, dates, nextPrayer, countdown, config, refreshLocation, manualSearch, updateConfig,
+        isPrayerSilentActive, activeSilentPrayerName
+    } = usePrayerTimes();
 
     const isDefaultTheme = themeKey === 'default';
     const isBlackAndWhite = themeKey === 'deep_black';
@@ -334,6 +337,17 @@ function PrayerTimes({ onBack, onNavigate }) {
                             />
                         );
                     })()}
+
+                    {/* Live active notification banner if currently active during prayer */}
+                    {isPrayerSilentActive && (
+                        <div className="p-2.5 px-3.5 mt-2 rounded-2xl bg-purple-100 dark:bg-purple-900/40 border border-purple-300 dark:border-purple-700 text-purple-900 dark:text-purple-100 flex items-center justify-between text-xs font-bold">
+                            <div className="flex items-center gap-2">
+                                <span className="text-base">🔕</span>
+                                <span>وضع الصامت نَشِط حالياً لأداء صلاة {activeSilentPrayerName}</span>
+                            </div>
+                            <span className="text-[10px] opacity-75 font-normal">تقبل الله طاعتكم</span>
+                        </div>
+                    )}
 
                     <div id="prayer-list" className="grid grid-cols-2 gap-2 mt-2">
                         {['Fajr', 'Sunrise', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'].map((key, idx) => {

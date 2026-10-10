@@ -544,6 +544,60 @@ class AhlAlQuranService {
     }));
   }
 
+  /**
+   * Retrieves the current user's active rank in Ahl Al-Quran if it exists.
+   * A rank exists if the user has an account, is not hidden, and has recorded reading (pages > 0 || khatmas > 0).
+   * Checks current month first; falls back to lifetime ranking if they have lifetime progress.
+   */
+  public getCurrentUserRank(): {
+    rank: number;
+    pages: number;
+    khatmas: number;
+    monthKey: string;
+  } | null {
+    const cur = communityService.getCurrentUser();
+    if (!cur?.userId) return null;
+
+    const privacy = this.getCurrentUserPrivacy();
+    if (privacy === 'hidden') return null;
+
+    let calType: CalendarType = 'hijri';
+    try {
+      const saved = localStorage.getItem('ahl_al_quran_calendar_type');
+      if (saved === 'hijri' || saved === 'gregorian') calType = saved as CalendarType;
+    } catch (e) {}
+
+    const curMonthKey = calType === 'hijri' ? this.getCurrentHijriKey() : this.getCurrentGregorianKey();
+
+    // 1. Check current month first
+    const currentMonthBoard = this.getLeaderboard(curMonthKey, cur.userId);
+    const userEntryMonth = currentMonthBoard.find(item => item.isCurrentUser);
+
+    if (userEntryMonth && (userEntryMonth.pages > 0 || userEntryMonth.khatmas > 0)) {
+      return {
+        rank: userEntryMonth.rank,
+        pages: userEntryMonth.pages,
+        khatmas: userEntryMonth.khatmas,
+        monthKey: curMonthKey
+      };
+    }
+
+    // 2. If no progress in current month, check lifetime
+    const lifetimeBoard = this.getLeaderboard('lifetime', cur.userId);
+    const userEntryLifetime = lifetimeBoard.find(item => item.isCurrentUser);
+
+    if (userEntryLifetime && (userEntryLifetime.pages > 0 || userEntryLifetime.khatmas > 0)) {
+      return {
+        rank: userEntryLifetime.rank,
+        pages: userEntryLifetime.pages,
+        khatmas: userEntryLifetime.khatmas,
+        monthKey: 'lifetime'
+      };
+    }
+
+    return null;
+  }
+
   // --- User deletion & ranking cleanup methods ---
 
   public deleteUserStatsLocally(userId: string): void {
@@ -723,3 +777,49 @@ class AhlAlQuranService {
 }
 
 export const ahlAlQuranService = new AhlAlQuranService();
+
+/**
+ * Returns color styling for user rank number:
+ * - 1st: Gold (#D4AF37)
+ * - 2nd: Silver (#94A3B8)
+ * - 3rd: Bronze (#CD7F32)
+ * - Any other: Black (#000000)
+ */
+export const getAhlAlQuranRankColor = (rank: number): {
+  textColor: string;
+  borderColor: string;
+  bg: string;
+  shadowColor: string;
+} => {
+  if (rank === 1) {
+    return {
+      textColor: '#D4AF37', // ذهبي
+      borderColor: '#D4AF37',
+      bg: '#FFFFFF',
+      shadowColor: 'rgba(212, 175, 55, 0.4)'
+    };
+  }
+  if (rank === 2) {
+    return {
+      textColor: '#94A3B8', // فضي
+      borderColor: '#94A3B8',
+      bg: '#FFFFFF',
+      shadowColor: 'rgba(148, 163, 184, 0.4)'
+    };
+  }
+  if (rank === 3) {
+    return {
+      textColor: '#CD7F32', // برونزي
+      borderColor: '#CD7F32',
+      bg: '#FFFFFF',
+      shadowColor: 'rgba(205, 127, 50, 0.4)'
+    };
+  }
+  return {
+    textColor: '#000000', // أسود
+    borderColor: '#000000',
+    bg: '#FFFFFF',
+    shadowColor: 'rgba(0, 0, 0, 0.25)'
+  };
+};
+

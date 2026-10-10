@@ -76,7 +76,7 @@ const ALL_POSSIBLE_ITEMS = [
     { id: 'nawawi', label: "📚 الأربعون النووية", className: "h-10", colorIndex: 1 },
     { id: 'calculators', label: "🧮 الحاسبة الشرعية", className: "h-10", colorIndex: 1 },
     { id: 'asmaul-husna', label: "✨ أسماء الله الحسنى", className: "col-span-2 h-10", colorIndex: 1 },
-    { id: 'ahl-al-quran', label: "🏆 أهل القرآن", className: "col-span-2 h-10", colorIndex: 0 },
+    { id: 'ahl-al-quran', label: "🏆 أهل القرآن", className: "col-span-2 h-10", colorIndex: 1 },
     { id: 'community', label: "💬 مجتمع التواصل", className: "col-span-2 h-10", colorIndex: 0 },
     { id: 'more', label: "قائمة التطبيقات", className: "col-span-2 h-10 flex justify-center", colorIndex: 0 },
 ];

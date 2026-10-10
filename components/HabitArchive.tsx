@@ -1,6 +1,6 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Calendar, ChevronRight, BarChart2, CalendarDays } from 'lucide-react';
+import { Calendar, ChevronRight, BarChart2, CalendarDays, Edit3, Plus } from 'lucide-react';
 import moment from 'moment-hijri';
 import { useHabitTracker } from '../hooks/useHabitTracker';
 import { useTheme } from '../context/ThemeContext';
@@ -8,9 +8,10 @@ import BottomBar from './BottomBar';
 
 interface HabitArchiveProps {
     onBack: () => void;
+    onSelectDate?: (date: string) => void;
 }
 
-const HabitArchive: React.FC<HabitArchiveProps> = ({ onBack }) => {
+const HabitArchive: React.FC<HabitArchiveProps> = ({ onBack, onSelectDate }) => {
     const { theme } = useTheme();
     const isBlackTheme = theme.bgColor === '#000000';
     const hexColor = isBlackTheme ? '#FFFFFF' : (theme.palette && theme.palette.length > 0 ? theme.palette[0] : '#059669');
@@ -18,6 +19,8 @@ const HabitArchive: React.FC<HabitArchiveProps> = ({ onBack }) => {
     const getDailyProgress = useHabitTracker((state) => state.getDailyProgress);
     
     const [activeTab, setActiveTab] = useState<'days' | 'months'>('days');
+    const dateInputRef = useRef<HTMLInputElement>(null);
+    const todayStr = moment().format('YYYY-MM-DD');
     
     // Sort all dates
     const allDates = useMemo(() => {
@@ -194,22 +197,11 @@ const HabitArchive: React.FC<HabitArchiveProps> = ({ onBack }) => {
         <div className="h-screen h-[100dvh] max-h-screen max-h-[100dvh] flex flex-col bg-transparent relative overflow-hidden" dir="rtl">
             <header className="app-top-bar shrink-0">
                 <div className="app-top-bar__inner">
-                    <button 
-                        onClick={onBack}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-xl bg-white/20 dark:bg-gray-800/50 hover:opacity-80 active:scale-95 transition-all z-10 flex items-center justify-center"
-                        style={{ color: 'inherit' }}
-                        title="الرجوع"
-                    >
-                        <ChevronRight className="w-5 h-5" />
-                    </button>
                     <div className="relative flex items-center justify-center w-full">
-                        <h1 className="app-top-bar__title text-2xl font-kufi">
-                            سجل الإنجاز والمقارنة
+                        <h1 className="app-top-bar__title text-xl font-kufi">
+                            السجل
                         </h1>
                     </div>
-                    <p className="app-top-bar__subtitle">
-                        متابعة الأداء والتقييم الشهري
-                    </p>
                 </div>
             </header>
 
@@ -234,30 +226,74 @@ const HabitArchive: React.FC<HabitArchiveProps> = ({ onBack }) => {
 
                 {activeTab === 'days' ? renderComparisonTab() : renderMonthComparisonTab()}
 
-                <h3 className="font-bold text-lg mb-4 text-gray-800 dark:text-gray-200">الأرشيف المفصل ({allDates.length} يوم)</h3>
+                <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-bold text-lg text-gray-800 dark:text-gray-200">الأرشيف المفصل ({allDates.length} يوم)</h3>
+                    {onSelectDate && (
+                        <div>
+                            <input
+                                type="date"
+                                ref={dateInputRef}
+                                max={todayStr}
+                                onChange={(e) => {
+                                    if (e.target.value) {
+                                        onSelectDate(e.target.value);
+                                    }
+                                }}
+                                className="sr-only"
+                            />
+                            <motion.button
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => dateInputRef.current?.showPicker ? dateInputRef.current.showPicker() : dateInputRef.current?.click()}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white shadow-sm transition-opacity hover:opacity-90"
+                                style={{ backgroundColor: hexColor }}
+                            >
+                                <Plus className="w-3.5 h-3.5" />
+                                <span>تسجيل يوم سابق 🗓️</span>
+                            </motion.button>
+                        </div>
+                    )}
+                </div>
+
                 <div className="space-y-3 pb-8">
                     {allDates.length === 0 && (
-                        <div className="text-center p-8 opacity-70 text-sm font-bold dark:text-gray-300">
-                            لا يوجد إنجازات مسجلة بعد.
+                        <div className="text-center p-8 opacity-70 text-sm font-bold dark:text-gray-300 bg-white/80 dark:bg-gray-800/80 rounded-2xl border border-black/5 dark:border-white/5">
+                            لا يوجد إنجازات مسجلة بعد. يمكنك النقر على "تسجيل يوم سابق" بالأعلى لتسجيل أي يوم فاتك.
                         </div>
                     )}
                     {allDates.map(date => {
                         const progress = getDailyProgress(date);
                         return (
-                           <div key={date} className="bg-white/80 dark:bg-gray-800/80 rounded-2xl p-4 shadow-sm border border-black/5 dark:border-white/5 flex items-center justify-between">
-                               <div className="flex items-center gap-3">
-                                   <div className="p-2 rounded-xl bg-gray-100 dark:bg-gray-700" style={{ color: hexColor }}>
+                           <div 
+                               key={date} 
+                               className="bg-white/80 dark:bg-gray-800/80 rounded-2xl p-4 shadow-sm border border-black/5 dark:border-white/5 flex items-center justify-between gap-3"
+                           >
+                               <div className="flex items-center gap-3 min-w-0 flex-1">
+                                   <div className="p-2 rounded-xl bg-gray-100 dark:bg-gray-700 shrink-0" style={{ color: hexColor }}>
                                       <Calendar className="w-5 h-5" />
                                    </div>
-                                   <div>
-                                       <span className="font-bold block text-sm dark:text-white">{date}</span>
-                                       <span className="text-[10px] font-semibold opacity-70 dark:text-gray-300">
+                                   <div className="min-w-0">
+                                       <span className="font-bold block text-sm dark:text-white truncate">{date}</span>
+                                       <span className="text-[10px] font-semibold opacity-70 dark:text-gray-300 block">
                                             {progress === 100 ? 'إنجاز كامل 🌟' : `${progress}% مكتمل`}
                                        </span>
                                    </div>
                                </div>
-                               <div className="text-xl font-bold font-sans" style={{ color: hexColor }}>
-                                   {progress}%
+
+                               <div className="flex items-center gap-3 shrink-0">
+                                   <div className="text-xl font-bold font-sans" style={{ color: hexColor }}>
+                                       {progress}%
+                                   </div>
+                                   {onSelectDate && (
+                                       <motion.button
+                                           whileTap={{ scale: 0.95 }}
+                                           onClick={() => onSelectDate(date)}
+                                           className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                                           title="تعديل عبادات هذا اليوم"
+                                       >
+                                           <Edit3 className="w-3.5 h-3.5" style={{ color: hexColor }} />
+                                           <span className="hidden sm:inline">تعديل</span>
+                                       </motion.button>
+                                   )}
                                </div>
                            </div>
                         );

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import BottomBar from '../components/BottomBar';
 import { useTheme } from '../context/ThemeContext';
 import InteractiveBackground from '../components/InteractiveBackground';
@@ -41,6 +41,7 @@ import ThemePageLock from '../components/ThemePageLock';
 const MoreMenuPage: React.FC<MoreMenuPageProps> = ({ onNavigate, onBack }) => {
     const { theme, themeKey, togglePageLock, isPageLocked } = useTheme();
     const showNewBadges = useShowNewBadge();
+
     const [visibleItems, setVisibleItems] = useState<string[]>(() => {
         const savedVisible = localStorage.getItem('visibleMenuItems');
         return savedVisible ? JSON.parse(savedVisible) : ALL_MENU_ITEMS.map(i => i.id);

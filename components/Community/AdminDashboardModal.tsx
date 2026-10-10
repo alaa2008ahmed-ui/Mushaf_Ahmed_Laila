@@ -1,17 +1,31 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
     X, Trash2, ShieldAlert, Users, Info, ShieldCheck, Mail, Send, Reply, 
     ArrowRight, User, Globe, Calendar, Activity, UserMinus, Eye, AlertTriangle, 
     CheckCircle2, Megaphone, Filter, Search, Ban, Clock, UserCheck, History,
-    MessageSquarePlus
+    MessageSquarePlus, MessageSquare, ExternalLink, Edit3, MessageCircle, MoreVertical,
+    LogIn, Volume2, FileText, ChevronLeft, ChevronRight, RefreshCw, Shield, Copy, Check,
+    UserPlus, Play, Pause, Paperclip, Sparkles
 } from 'lucide-react';
-import { communityService, CommunityUser, ServerContact, ChatMessage, ADMIN_USER_ID } from '../../services/communityService';
+import { 
+    communityService, 
+    CommunityUser, 
+    ServerContact, 
+    ChatMessage, 
+    GroupChat, 
+    GroupMessage, 
+    ADMIN_USER_ID 
+} from '../../services/communityService';
 import BottomBar from '../BottomBar';
+import { registerBackInterceptor } from '../../hooks/useBackButton';
+import CreateGroupModal from './CreateGroupModal';
+import { EditGroupModal } from './EditGroupModal';
 
 interface AdminDashboardModalProps {
     isOpen: boolean;
     onClose: () => void;
     currentTheme: any;
+    onNavigate?: (pageId: string, params?: any) => void;
 }
 
 interface ParsedViolationData {
@@ -25,20 +39,33 @@ interface ParsedViolationData {
 }
 
 interface NavigationSource {
-    tab: 'users' | 'support' | 'violations' | 'broadcast';
+    tab: 'users' | 'support' | 'violations' | 'broadcast' | 'community';
     violatorUserId?: string | null;
     supportUserId?: string | null;
+    groupId?: string | null;
 }
 
 export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     isOpen,
     onClose,
-    currentTheme
+    currentTheme,
+    onNavigate
 }) => {
     const [users, setUsers] = useState<CommunityUser[]>([]);
     const [contacts, setContacts] = useState<ServerContact[]>([]);
     const [serverMessages, setServerMessages] = useState<ChatMessage[]>([]);
-    const [activeTab, setActiveTab] = useState<'users' | 'support' | 'violations' | 'broadcast'>('users');
+    const [activeTab, setActiveTab] = useState<'users' | 'support' | 'violations' | 'broadcast' | 'community'>('users');
+    const [adminTabHistory, setAdminTabHistory] = useState<('users' | 'support' | 'violations' | 'broadcast' | 'community')[]>(['users']);
+
+    const switchAdminTab = (tab: 'users' | 'support' | 'violations' | 'broadcast' | 'community') => {
+        setSelectedInspectorUser(null);
+        setSelectedUserForSupport(null);
+        setSelectedViolatorUserId(null);
+        setSelectedGroup(null);
+        if (tab === activeTab) return;
+        setActiveTab(tab);
+        setAdminTabHistory(prev => [...prev, tab]);
+    };
     
     // Detailed User Inspector State & Return Navigation
     const [selectedInspectorUser, setSelectedInspectorUser] = useState<CommunityUser | null>(null);
@@ -57,6 +84,46 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     const [selectedViolatorUserId, setSelectedViolatorUserId] = useState<string | null>(null);
     const [violationFilter, setViolationFilter] = useState<'all' | 'offensive' | 'political'>('all');
     const [violationSearchQuery, setViolationSearchQuery] = useState('');
+
+    // Community / Groups Management State
+    const [groups, setGroups] = useState<GroupChat[]>([]);
+    const [groupSearchQuery, setGroupSearchQuery] = useState('');
+    const [selectedGroup, setSelectedGroup] = useState<GroupChat | null>(null);
+    const [groupMessages, setGroupMessages] = useState<GroupMessage[]>([]);
+    const [isLoadingGroupMessages, setIsLoadingGroupMessages] = useState(false);
+    const [copiedGroupId, setCopiedGroupId] = useState(false);
+
+    // Group Controls & Modals State
+    const [showGroupOptionsDropdown, setShowGroupOptionsDropdown] = useState(false);
+    const [selectedMessageForDetails, setSelectedMessageForDetails] = useState<GroupMessage | null>(null);
+    const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
+    const [showEditGroupModal, setShowEditGroupModal] = useState(false);
+    const [showManageMembersModal, setShowManageMembersModal] = useState(false);
+    const [showAddMembersModal, setShowAddMembersModal] = useState(false);
+    const [showGroupInfoModal, setShowGroupInfoModal] = useState(false);
+    const [manageMemberSearch, setManageMemberSearch] = useState('');
+    const [addMemberSearch, setAddMemberSearch] = useState('');
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    // Group Deletion / Message Deletion Modals
+    const [groupToDeleteConfirm, setGroupToDeleteConfirm] = useState<GroupChat | null>(null);
+    const [isDeletingGroup, setIsDeletingGroup] = useState(false);
+    const [msgToDeleteConfirm, setMsgToDeleteConfirm] = useState<GroupMessage | null>(null);
+    const [isDeletingMsg, setIsDeletingMsg] = useState(false);
+    const [showClearGroupMsgsConfirm, setShowClearGroupMsgsConfirm] = useState(false);
+    const [isClearingGroupMsgs, setIsClearingGroupMsgs] = useState(false);
+    const [memberToRemoveConfirm, setMemberToRemoveConfirm] = useState<{ userId: string; username: string } | null>(null);
+    const [isRemovingMember, setIsRemovingMember] = useState(false);
+
+    // Group editing state
+    const [editGroupName, setEditGroupName] = useState('');
+    const [editGroupDesc, setEditGroupDesc] = useState('');
+    const [editGroupAvatar, setEditGroupAvatar] = useState('');
+    const [isSavingGroupEdit, setIsSavingGroupEdit] = useState(false);
+
+    // Admin official message in group
+    const [adminGroupMessageText, setAdminGroupMessageText] = useState('');
+    const [isSendingGroupMessage, setIsSendingGroupMessage] = useState(false);
 
     // In-app Confirmation Modal State
     const [userToDeleteConfirm, setUserToDeleteConfirm] = useState<CommunityUser | null>(null);
@@ -101,6 +168,17 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
         
         const msgs = await communityService.fetchAllServerMessages(forceServerFetch);
         setServerMessages(msgs);
+
+        if (forceServerFetch) {
+            await communityService.fetchLatestGroups();
+        }
+        const grps = communityService.getAllGroupsForAdmin();
+        setGroups(grps);
+
+        if (selectedGroup) {
+            const grpMsgs = communityService.getGroupMessages(selectedGroup.groupId);
+            setGroupMessages(grpMsgs);
+        }
     };
 
     const debouncedLoadData = () => {
@@ -116,14 +194,20 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
             
             const handleUserUpdate = () => debouncedLoadData();
             const handleMsgUpdate = () => debouncedLoadData();
+            const handleGroupsUpdate = () => debouncedLoadData();
+            const handleGroupMsgsUpdate = () => debouncedLoadData();
 
             window.addEventListener('community_user_updated', handleUserUpdate);
             window.addEventListener('community_messages_updated', handleMsgUpdate);
+            window.addEventListener('community_groups_updated', handleGroupsUpdate);
+            window.addEventListener('community_group_messages_updated', handleGroupMsgsUpdate);
 
             return () => {
                 if (loadDebounceTimerRef.current) clearTimeout(loadDebounceTimerRef.current);
                 window.removeEventListener('community_user_updated', handleUserUpdate);
                 window.removeEventListener('community_messages_updated', handleMsgUpdate);
+                window.removeEventListener('community_groups_updated', handleGroupsUpdate);
+                window.removeEventListener('community_group_messages_updated', handleGroupMsgsUpdate);
             };
         }
     }, [isOpen]);
@@ -131,6 +215,203 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     const showAdminToast = (msg: string) => {
         setToastMessage(msg);
         setTimeout(() => setToastMessage(null), 3500);
+    };
+
+    const cleanGroupName = (name?: string): string => {
+        if (!name) return '';
+        return name.replace(/[\p{Extended_Pictographic}\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '').trim() || name;
+    };
+
+    const renderGroupAvatar = (grp: GroupChat) => {
+        if (grp.avatarUrl && grp.avatarUrl.trim()) {
+            const url = grp.avatarUrl.trim();
+            if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:image') || url.startsWith('/')) {
+                return <img src={url} alt={grp.name} className="w-full h-full object-cover" />;
+            }
+            return <span className="text-2xl leading-none select-none">{url}</span>;
+        }
+        const trailingEmojiMatch = grp.name?.match(/[\p{Extended_Pictographic}\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]$/u);
+        if (trailingEmojiMatch) {
+            return <span className="text-2xl leading-none select-none">{trailingEmojiMatch[0]}</span>;
+        }
+        if (grp.groupId === 'group_default_quran_readers') {
+            return <span className="text-2xl leading-none select-none">📖</span>;
+        }
+        if (grp.groupId === 'group_default_tadabbur') {
+            return <span className="text-2xl leading-none select-none">🌿</span>;
+        }
+        return <span className="text-2xl leading-none select-none">💬</span>;
+    };
+
+    // Group Management Actions
+    const handleSelectGroup = async (group: GroupChat) => {
+        setSelectedGroup(group);
+        setEditGroupName(group.name || '');
+        setEditGroupDesc(group.description || '');
+        setEditGroupAvatar(group.avatarUrl || '');
+        setShowGroupOptionsDropdown(false);
+        setSelectedMessageForDetails(null);
+        setIsLoadingGroupMessages(true);
+        try {
+            await communityService.fetchLatestGroupMessages(group.groupId);
+            const msgs = communityService.getGroupMessages(group.groupId);
+            setGroupMessages(msgs);
+        } catch (e) {
+            console.error('Error loading group messages:', e);
+        } finally {
+            setIsLoadingGroupMessages(false);
+        }
+    };
+
+    const handleAddMemberToGroup = async (targetUserId: string, username: string) => {
+        if (!selectedGroup) return;
+        try {
+            await communityService.addMemberToGroup(selectedGroup.groupId, targetUserId);
+            showAdminToast(`تمت إضافة "${username}" إلى المجموعة بنجاح 🌿`);
+            const updated = communityService.getGroupById(selectedGroup.groupId);
+            if (updated) setSelectedGroup(updated);
+            loadData();
+        } catch (e: any) {
+            showAdminToast(e?.message || 'حدث خطأ أثناء إضافة العضو');
+        }
+    };
+
+    const handleCopyGroupId = (gId: string) => {
+        try {
+            navigator.clipboard?.writeText(gId);
+            setCopiedGroupId(true);
+            setTimeout(() => setCopiedGroupId(false), 2000);
+            showAdminToast('تم نسخ معرف المجموعة 📋');
+        } catch {
+            showAdminToast(gId);
+        }
+    };
+
+    const executeDeleteGroup = async () => {
+        if (!groupToDeleteConfirm) return;
+        setIsDeletingGroup(true);
+        try {
+            const targetGid = groupToDeleteConfirm.groupId;
+            const targetName = groupToDeleteConfirm.name || 'المجموعة';
+
+            setGroups(prev => prev.filter(g => g.groupId !== targetGid));
+            if (selectedGroup?.groupId === targetGid) {
+                setSelectedGroup(null);
+            }
+            setGroupToDeleteConfirm(null);
+
+            await communityService.adminDeleteGroup(targetGid);
+            showAdminToast(`تم حذف مجموعة "${targetName}" وجميع محادثاتها بنجاح ✅`);
+            loadData();
+        } catch (e) {
+            console.error('Error deleting group:', e);
+            showAdminToast('حدث خطأ أثناء محاولة حذف المجموعة');
+            loadData(true);
+        } finally {
+            setIsDeletingGroup(false);
+        }
+    };
+
+    const executeDeleteGroupMessage = async () => {
+        if (!msgToDeleteConfirm || !selectedGroup) return;
+        setIsDeletingMsg(true);
+        try {
+            const mId = msgToDeleteConfirm.messageId;
+            setGroupMessages(prev => prev.filter(m => m.messageId !== mId));
+            setMsgToDeleteConfirm(null);
+
+            await communityService.adminDeleteGroupMessage(mId);
+            showAdminToast('تم حذف المحادثة من المجموعة بنجاح ✅');
+            if (selectedGroup) {
+                const refreshed = communityService.getGroupMessages(selectedGroup.groupId);
+                setGroupMessages(refreshed);
+            }
+        } catch (e) {
+            console.error('Error deleting group message:', e);
+            showAdminToast('حدث خطأ أثناء حذف الرسالة');
+        } finally {
+            setIsDeletingMsg(false);
+        }
+    };
+
+    const executeClearAllGroupMessages = async () => {
+        if (!selectedGroup) return;
+        setIsClearingGroupMsgs(true);
+        try {
+            setGroupMessages([]);
+            setShowClearGroupMsgsConfirm(false);
+            await communityService.adminClearGroupMessages(selectedGroup.groupId);
+            showAdminToast('تم مسح جميع رسائل ومحادثات المجموعة بنجاح ✅');
+        } catch (e) {
+            console.error('Error clearing group messages:', e);
+            showAdminToast('حدث خطأ أثناء مسح رسائل المجموعة');
+        } finally {
+            setIsClearingGroupMsgs(false);
+        }
+    };
+
+    const executeRemoveMember = async () => {
+        if (!memberToRemoveConfirm || !selectedGroup) return;
+        setIsRemovingMember(true);
+        try {
+            const mId = memberToRemoveConfirm.userId;
+            const mName = memberToRemoveConfirm.username;
+            await communityService.adminRemoveMemberFromGroup(selectedGroup.groupId, mId);
+            showAdminToast(`تمت إزالة العضو "${mName}" من المجموعة بنجاح ✅`);
+            setMemberToRemoveConfirm(null);
+            const updated = communityService.getGroupById(selectedGroup.groupId);
+            if (updated) setSelectedGroup(updated);
+            loadData();
+        } catch (e) {
+            console.error('Error removing member:', e);
+            showAdminToast('حدث خطأ أثناء إزالة العضو');
+        } finally {
+            setIsRemovingMember(false);
+        }
+    };
+
+    const handleSendAdminGroupMessage = async () => {
+        if (!selectedGroup || !adminGroupMessageText.trim()) return;
+        setIsSendingGroupMessage(true);
+        try {
+            await communityService.adminSendGroupMessage(selectedGroup.groupId, adminGroupMessageText.trim());
+            setAdminGroupMessageText('');
+            showAdminToast('تم إرسال الرسالة إلى المجموعة بنجاح 🛡️');
+            const refreshed = communityService.getGroupMessages(selectedGroup.groupId);
+            setGroupMessages(refreshed);
+        } catch (e) {
+            console.error('Error sending group message:', e);
+            showAdminToast('حدث خطأ أثناء إرسال الرسالة');
+        } finally {
+            setIsSendingGroupMessage(false);
+        }
+    };
+
+    const handleSaveGroupEdit = async () => {
+        if (!selectedGroup || !editGroupName.trim()) return;
+        setIsSavingGroupEdit(true);
+        try {
+            const updated = await communityService.adminUpdateGroup(selectedGroup.groupId, {
+                name: editGroupName.trim(),
+                description: editGroupDesc.trim(),
+                avatarUrl: editGroupAvatar.trim()
+            });
+            setSelectedGroup(updated);
+            showAdminToast('تم حفظ تعديلات المجموعة بنجاح 🌿');
+            loadData();
+        } catch (e: any) {
+            showAdminToast(e?.message || 'حدث خطأ أثناء حفظ التعديلات');
+        } finally {
+            setIsSavingGroupEdit(false);
+        }
+    };
+
+    const handleEnterGroupChat = (groupId: string) => {
+        communityService.setAdminSession(true);
+        onClose();
+        if (onNavigate) {
+            onNavigate('group-chat', { groupId, returnTab: 'community', adminMode: true });
+        }
     };
 
     // Navigation: Open Inspector with precise back-tracking
@@ -159,22 +440,112 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
         }
     };
 
-    // Navigation: Home click handles smart back action depending on sub-state
+    // Navigation: Home click handles smart step-by-step back action
     const handleHomeClick = () => {
+        // 1. If inside a group inspector, return to groups list
+        if (selectedGroup) {
+            setSelectedGroup(null);
+            return;
+        }
+        // 2. If inside user inspector, return to previous inspector source
         if (selectedInspectorUser) {
             handleCloseInspector();
             return;
         }
+        // 3. If inside user support chat, return to support list
         if (selectedUserForSupport) {
             setSelectedUserForSupport(null);
             return;
         }
+        // 4. If inside violator reports, return to violations list
         if (selectedViolatorUserId) {
             setSelectedViolatorUserId(null);
             return;
         }
+        // 5. If there is a tab history to step back through
+        if (adminTabHistory.length > 1) {
+            const nextHistory = [...adminTabHistory];
+            nextHistory.pop();
+            const prevTab = nextHistory[nextHistory.length - 1];
+            setAdminTabHistory(nextHistory);
+            setActiveTab(prevTab);
+            return;
+        }
+        // 6. If currently on another tab than 'users', go to 'users' tab
+        if (activeTab !== 'users') {
+            setActiveTab('users');
+            setAdminTabHistory(['users']);
+            return;
+        }
+        // 7. At root of admin modal, close the modal
         onClose();
     };
+
+    // Hardware & Gesture Back Button interceptor for step-by-step navigation
+    useEffect(() => {
+        if (!isOpen) return;
+        const unregister = registerBackInterceptor(() => {
+            if (selectedMessageForDetails) {
+                setSelectedMessageForDetails(null);
+                return true;
+            }
+            if (showManageMembersModal) {
+                setShowManageMembersModal(false);
+                return true;
+            }
+            if (showAddMembersModal) {
+                setShowAddMembersModal(false);
+                return true;
+            }
+            if (showGroupInfoModal) {
+                setShowGroupInfoModal(false);
+                return true;
+            }
+            if (showEditGroupModal) {
+                setShowEditGroupModal(false);
+                return true;
+            }
+            if (showCreateGroupModal) {
+                setShowCreateGroupModal(false);
+                return true;
+            }
+            if (showGroupOptionsDropdown) {
+                setShowGroupOptionsDropdown(false);
+                return true;
+            }
+            if (userToDeleteConfirm) {
+                setUserToDeleteConfirm(null);
+                return true;
+            }
+            if (groupToDeleteConfirm) {
+                setGroupToDeleteConfirm(null);
+                return true;
+            }
+            if (msgToDeleteConfirm) {
+                setMsgToDeleteConfirm(null);
+                return true;
+            }
+            if (showClearGroupMsgsConfirm) {
+                setShowClearGroupMsgsConfirm(false);
+                return true;
+            }
+            if (memberToRemoveConfirm) {
+                setMemberToRemoveConfirm(null);
+                return true;
+            }
+            if (messagingUser) {
+                setMessagingUser(null);
+                return true;
+            }
+            if (selectedGroup) {
+                setSelectedGroup(null);
+                return true;
+            }
+            handleHomeClick();
+            return true;
+        });
+        return unregister;
+    }, [isOpen, selectedGroup, selectedInspectorUser, selectedUserForSupport, selectedViolatorUserId, activeTab, adminTabHistory, userToDeleteConfirm, groupToDeleteConfirm, msgToDeleteConfirm, showClearGroupMsgsConfirm, memberToRemoveConfirm, messagingUser, selectedMessageForDetails, showManageMembersModal, showAddMembersModal, showGroupInfoModal, showEditGroupModal, showCreateGroupModal, showGroupOptionsDropdown]);
 
     const promptDeleteUser = (user: CommunityUser) => {
         setUserToDeleteConfirm(user);
@@ -190,14 +561,16 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
             // Optimistically remove user and messages from modal state immediately (0ms delay)
             setUsers(prev => prev.filter(u => u.userId !== targetUid));
             setServerMessages(prev => prev.filter(m => m.senderId !== targetUid && m.recipientId !== targetUid));
+            setGroupMessages(prev => prev.filter(m => m.senderId !== targetUid));
             setUserToDeleteConfirm(null);
             setSelectedInspectorUser(null);
             setSelectedViolatorUserId(null);
             setSelectedUserForSupport(null);
 
-            // Execute high-speed batch deletion in Firestore
+            // Execute high-speed comprehensive batch deletion in Firestore
             await communityService.deleteUser(targetUid);
-            showAdminToast(`تم حذف حساب القارئ "${uName}" بنجاح ✅`);
+            showAdminToast(`تم حذف حساب القارئ "${uName}" ومسح جميع رسائله الخاصة وبالمجموعات نهائياً ✅`);
+            loadData(false);
         } catch (e) {
             console.error('Error deleting user:', e);
             showAdminToast('حدث خطأ أثناء محاولة الحذف، يرجى المحاولة ثانية');
@@ -475,6 +848,37 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
         return Array.from(map.values()).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     }, [serverMessages]);
 
+    // Filtered groups matching search query
+    const filteredGroups = useMemo(() => {
+        return groups.filter(g => {
+            if (!groupSearchQuery.trim()) return true;
+            const q = groupSearchQuery.trim().toLowerCase();
+            return (g.name || '').toLowerCase().includes(q) || (g.description || '').toLowerCase().includes(q) || (g.groupId || '').toLowerCase().includes(q);
+        });
+    }, [groups, groupSearchQuery]);
+
+    // Group Statistics for Info Tab
+    const groupStats = useMemo(() => {
+        if (!selectedGroup) return { totalMsgs: 0, verseMsgs: 0, audioMsgs: 0, mediaMsgs: 0, textMsgs: 0 };
+        let verseMsgs = 0;
+        let audioMsgs = 0;
+        let mediaMsgs = 0;
+        let textMsgs = 0;
+        groupMessages.forEach(m => {
+            if (m.verseData) verseMsgs++;
+            else if (m.audioUrl) audioMsgs++;
+            else if (m.attachment) mediaMsgs++;
+            else textMsgs++;
+        });
+        return {
+            totalMsgs: groupMessages.length,
+            verseMsgs,
+            audioMsgs,
+            mediaMsgs,
+            textMsgs
+        };
+    }, [selectedGroup, groupMessages]);
+
     if (!isOpen) return null;
 
     return (
@@ -505,8 +909,9 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                         </p>
 
                         <div className="p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 rounded-2xl text-[11px] text-rose-700 dark:text-rose-300 text-right leading-relaxed space-y-1">
-                            <div>• سيتم مسح ملف الحساب وجميع رسائله وجهات اتصاله فوراً.</div>
-                            <div>• سيتم إنهاء جلسته، وسيعامل كزائر جديد تماماً وبحساب جديد.</div>
+                            <div>• سيتم مسح ملف الحساب بالكامل من السيرفر.</div>
+                            <div>• سيتم حذف جميع رسائله الخاصة ورسائله بكل المجموعات نهائياً وكأنه لم يكن موجوداً.</div>
+                            <div>• سيتم حذف جهات اتصاله وسجلاته وإحصائياته من السيرفر بالكامل.</div>
                         </div>
 
                         <div className="flex gap-2.5 pt-2">
@@ -657,6 +1062,168 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                 </div>
             )}
 
+            {/* In-App Delete Group Confirmation Modal */}
+            {groupToDeleteConfirm && (
+                <div className="fixed inset-0 z-[1400] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
+                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 text-center animate-scaleUp text-right" dir="rtl">
+                        <div className="w-16 h-16 rounded-full bg-rose-500/15 text-rose-600 dark:text-rose-400 mx-auto flex items-center justify-center">
+                            <Trash2 size={34} />
+                        </div>
+                        
+                        <h3 className="font-extrabold text-lg sm:text-xl text-slate-900 dark:text-white text-center">
+                            تأكيد حذف المجموعة بالكامل ⚠️
+                        </h3>
+
+                        <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed text-center">
+                            هل أنت متأكد من حذف مجموعة <strong className="text-rose-600 dark:text-rose-400 font-bold underline">"{groupToDeleteConfirm.name}"</strong> نهائياً من التطبيق؟
+                        </p>
+
+                        <div className="p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 rounded-2xl text-[11px] text-rose-700 dark:text-rose-300 text-right leading-relaxed space-y-1">
+                            <div>• سيتم مسح المجموعة نهائياً من خادم التطبيق لجميع الأعضاء.</div>
+                            <div>• سيتم مسح كافة الرسائل والمحادثات والصوتيات والمرفقات داخلها فوراً.</div>
+                            <div>• يملك المشرف العام كامل الصلاحيات لحذف أي مجموعة منشأة.</div>
+                        </div>
+
+                        <div className="flex gap-2.5 pt-2">
+                            <button
+                                type="button"
+                                disabled={isDeletingGroup}
+                                onClick={executeDeleteGroup}
+                                className="flex-1 py-3 px-4 bg-rose-600 hover:bg-rose-700 active:scale-95 disabled:opacity-50 text-white rounded-2xl font-bold text-xs sm:text-sm shadow-lg shadow-rose-600/25 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                            >
+                                {isDeletingGroup ? (
+                                    <>
+                                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                        <span>جارٍ حذف المجموعة...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Trash2 size={16} />
+                                        <span>تأكيد حذف المجموعة</span>
+                                    </>
+                                )}
+                            </button>
+                            <button
+                                type="button"
+                                disabled={isDeletingGroup}
+                                onClick={() => setGroupToDeleteConfirm(null)}
+                                className="py-3 px-5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-2xl font-bold text-xs sm:text-sm transition-all cursor-pointer"
+                            >
+                                إلغاء
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* In-App Delete Single Group Message Modal */}
+            {msgToDeleteConfirm && (
+                <div className="fixed inset-0 z-[1400] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
+                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-6 max-w-sm w-full shadow-2xl space-y-4 animate-scaleUp text-right" dir="rtl">
+                        <div className="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-600 mx-auto flex items-center justify-center">
+                            <Trash2 size={24} />
+                        </div>
+                        <h3 className="font-extrabold text-base text-slate-900 dark:text-white text-center">
+                            حذف هذه الرسالة من المجموعة؟ 🗑️
+                        </h3>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 text-center">
+                            سيتم حذف الرسالة نهائياً من محادثة المجموعة ولن تظهر لأي عضو.
+                        </p>
+                        <div className="p-3 bg-slate-50 dark:bg-slate-950 rounded-2xl text-xs text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 line-clamp-3">
+                            "{msgToDeleteConfirm.text || (msgToDeleteConfirm.verseData ? 'آية قرآنية' : msgToDeleteConfirm.audioUrl ? 'تسجيل صوتي' : 'مرفق')}"
+                        </div>
+                        <div className="flex gap-2 pt-1">
+                            <button
+                                type="button"
+                                disabled={isDeletingMsg}
+                                onClick={executeDeleteGroupMessage}
+                                className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold text-xs cursor-pointer shadow-md shadow-rose-600/20"
+                            >
+                                {isDeletingMsg ? 'جارٍ الحذف...' : 'حذف الرسالة'}
+                            </button>
+                            <button
+                                type="button"
+                                disabled={isDeletingMsg}
+                                onClick={() => setMsgToDeleteConfirm(null)}
+                                className="py-2.5 px-4 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl font-bold text-xs cursor-pointer"
+                            >
+                                إلغاء
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* In-App Clear All Group Messages Modal */}
+            {showClearGroupMsgsConfirm && selectedGroup && (
+                <div className="fixed inset-0 z-[1400] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
+                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-6 max-w-sm w-full shadow-2xl space-y-4 animate-scaleUp text-right" dir="rtl">
+                        <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-600 mx-auto flex items-center justify-center">
+                            <AlertTriangle size={24} />
+                        </div>
+                        <h3 className="font-extrabold text-base text-slate-900 dark:text-white text-center">
+                            مسح جميع رسائل المجموعة؟ ⚠️
+                        </h3>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 text-center leading-relaxed">
+                            سيتم مسح كافة الرسائل والمحادثات داخل مجموعة "{selectedGroup.name}" مع الإبقاء على المجموعة وأعضائها.
+                        </p>
+                        <div className="flex gap-2 pt-1">
+                            <button
+                                type="button"
+                                disabled={isClearingGroupMsgs}
+                                onClick={executeClearAllGroupMessages}
+                                className="flex-1 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold text-xs cursor-pointer shadow-md"
+                            >
+                                {isClearingGroupMsgs ? 'جارٍ المسح...' : 'تأكيد مسح الرسائل'}
+                            </button>
+                            <button
+                                type="button"
+                                disabled={isClearingGroupMsgs}
+                                onClick={() => setShowClearGroupMsgsConfirm(false)}
+                                className="py-2.5 px-4 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl font-bold text-xs cursor-pointer"
+                            >
+                                إلغاء
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* In-App Remove Member Modal */}
+            {memberToRemoveConfirm && selectedGroup && (
+                <div className="fixed inset-0 z-[1400] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
+                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-6 max-w-sm w-full shadow-2xl space-y-4 animate-scaleUp text-right" dir="rtl">
+                        <div className="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-600 mx-auto flex items-center justify-center">
+                            <UserMinus size={24} />
+                        </div>
+                        <h3 className="font-extrabold text-base text-slate-900 dark:text-white text-center">
+                            إزالة العضو من المجموعة؟
+                        </h3>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 text-center">
+                            هل تريد إزالة <strong className="text-slate-900 dark:text-white font-bold">"{memberToRemoveConfirm.username}"</strong> من مجموعة "{selectedGroup.name}"؟
+                        </p>
+                        <div className="flex gap-2 pt-1">
+                            <button
+                                type="button"
+                                disabled={isRemovingMember}
+                                onClick={executeRemoveMember}
+                                className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold text-xs cursor-pointer"
+                            >
+                                {isRemovingMember ? 'جارٍ الإزالة...' : 'تأكيد الإزالة'}
+                            </button>
+                            <button
+                                type="button"
+                                disabled={isRemovingMember}
+                                onClick={() => setMemberToRemoveConfirm(null)}
+                                className="py-2.5 px-4 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl font-bold text-xs cursor-pointer"
+                            >
+                                إلغاء
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Sub-tabs & Return Button - Headerless Clean Full-Screen Layout */}
             <div 
                 className="flex items-center border-b text-sm font-bold bg-white dark:bg-slate-900 px-3 py-2 shrink-0 shadow-sm gap-2" 
@@ -668,7 +1235,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                 <div className="flex flex-1 items-center gap-1 bg-slate-100 dark:bg-slate-800/80 p-1 rounded-2xl overflow-x-auto no-scrollbar">
                     {/* 1. Users Tab */}
                     <button 
-                        onClick={() => { setActiveTab('users'); setSelectedInspectorUser(null); setSelectedUserForSupport(null); setSelectedViolatorUserId(null); }}
+                        onClick={() => switchAdminTab('users')}
                         className={`flex-1 py-2 px-2 text-center transition-all rounded-xl flex items-center justify-center gap-1.5 text-xs sm:text-sm font-bold whitespace-nowrap cursor-pointer ${
                             activeTab === 'users' 
                                 ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm' 
@@ -678,9 +1245,29 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                         <span>إدارة المستخدمين</span>
                     </button>
 
-                    {/* 2. Support Inbox Tab */}
+                    {/* 2. Community / Groups Tab (المجتمع) */}
                     <button 
-                        onClick={() => { setActiveTab('support'); setSelectedInspectorUser(null); setSelectedViolatorUserId(null); }}
+                        onClick={() => switchAdminTab('community')}
+                        className={`flex-1 py-2 px-2 text-center transition-all rounded-xl flex items-center justify-center gap-1.5 text-xs sm:text-sm font-bold whitespace-nowrap cursor-pointer ${
+                            activeTab === 'community' 
+                                ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' 
+                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                        }`}
+                    >
+                        <Users size={14} className="opacity-80" />
+                        <span>المجتمع</span>
+                        {groups.length > 0 && (
+                            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                                activeTab === 'community' ? 'bg-indigo-600 text-white' : 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400'
+                            }`}>
+                                {groups.length}
+                            </span>
+                        )}
+                    </button>
+
+                    {/* 3. Support Inbox Tab */}
+                    <button 
+                        onClick={() => switchAdminTab('support')}
                         className={`flex-1 py-2 px-2 text-center transition-all rounded-xl flex items-center justify-center gap-1.5 relative text-xs sm:text-sm font-bold whitespace-nowrap cursor-pointer ${
                             activeTab === 'support' 
                                 ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm' 
@@ -695,9 +1282,9 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                         )}
                     </button>
 
-                    {/* 3. Dedicated Violations / Flagged Offensive Messages Tab */}
+                    {/* 4. Dedicated Violations / Flagged Offensive Messages Tab */}
                     <button 
-                        onClick={() => { setActiveTab('violations'); setSelectedInspectorUser(null); setSelectedUserForSupport(null); }}
+                        onClick={() => switchAdminTab('violations')}
                         className={`flex-1 py-2 px-2 text-center transition-all rounded-xl flex items-center justify-center gap-1.5 relative text-xs sm:text-sm font-bold whitespace-nowrap cursor-pointer ${
                             activeTab === 'violations' 
                                 ? 'bg-rose-500 text-white shadow-sm' 
@@ -714,9 +1301,9 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                         )}
                     </button>
 
-                    {/* 4. Broadcast Tab */}
+                    {/* 5. Broadcast Tab */}
                     <button 
-                        onClick={() => { setActiveTab('broadcast'); setSelectedInspectorUser(null); setSelectedUserForSupport(null); setSelectedViolatorUserId(null); }}
+                        onClick={() => switchAdminTab('broadcast')}
                         className={`flex-1 py-2 px-2 text-center transition-all rounded-xl flex items-center justify-center gap-1.5 text-xs sm:text-sm font-bold whitespace-nowrap cursor-pointer ${
                             activeTab === 'broadcast' 
                                 ? 'bg-white dark:bg-slate-700 text-amber-600 dark:text-amber-400 shadow-sm' 
@@ -1536,6 +2123,888 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                             </div>
                         )}
 
+                    </div>
+                )}
+
+                {/* 2. COMMUNITY / GROUPS MANAGEMENT TAB (المجتمع) */}
+                {activeTab === 'community' && (
+                    <div className="flex-1 flex flex-col overflow-hidden">
+                        {!selectedGroup ? (
+                            /* --- Groups Grid List (Matching User Community Tab Exactly) --- */
+                            <div className="flex-1 flex flex-col overflow-y-auto p-3.5 sm:p-5 w-full animate-fadeIn space-y-3.5">
+                                {/* Header: Groups count & Create Group Button */}
+                                <div className="flex items-center justify-between gap-2 p-1">
+                                    <div className="flex items-center gap-2">
+                                        <Users size={18} className="text-indigo-600 dark:text-indigo-400" />
+                                        <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
+                                            المحادثات وحلقات المجتمع ({filteredGroups.length})
+                                        </span>
+                                    </div>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowCreateGroupModal(true)}
+                                        className="px-3.5 py-2 rounded-2xl text-xs font-bold shadow-sm transition-all flex items-center gap-1.5 flex-shrink-0 active:scale-95 cursor-pointer bg-indigo-600 hover:bg-indigo-700 text-white"
+                                        title="إنشاء محادثة جماعية جديدة"
+                                    >
+                                        <Users size={14} />
+                                        <span>+ إنشاء مجموعة</span>
+                                    </button>
+                                </div>
+
+                                {/* Search Bar */}
+                                <div className="flex items-center gap-2">
+                                    <div className="relative flex-1">
+                                        <Search size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                                        <input
+                                            type="text"
+                                            value={groupSearchQuery}
+                                            onChange={(e) => setGroupSearchQuery(e.target.value)}
+                                            placeholder="ابحث في المحادثات الجماعية والمجموعات..."
+                                            className="w-full pr-10 pl-10 py-2.5 rounded-2xl border text-xs sm:text-sm font-medium focus:outline-none transition-all shadow-2xs bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
+                                        />
+                                        {groupSearchQuery && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setGroupSearchQuery('')}
+                                                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
+                                            >
+                                                <X size={14} />
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => loadData(true)}
+                                        className="p-2.5 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-2xl border border-slate-200 dark:border-slate-800 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs shrink-0"
+                                        title="تحديث قائمة المجموعات"
+                                    >
+                                        <RefreshCw size={15} />
+                                    </button>
+                                </div>
+
+                                {/* Groups Grid - Identical to User Community Tab */}
+                                {filteredGroups.length === 0 ? (
+                                    <div className="text-center py-12 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 space-y-2">
+                                        <Users size={36} className="mx-auto text-slate-400 opacity-40" />
+                                        <p className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                                            {groupSearchQuery ? 'لا توجد مجموعات مطابقة للبحث' : 'لا توجد محادثات جماعية حالياً'}
+                                        </p>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowCreateGroupModal(true)}
+                                            className="mt-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-sm inline-flex items-center gap-1.5 active:scale-95 cursor-pointer"
+                                        >
+                                            <Users size={14} />
+                                            <span>إنشاء محادثة جماعية الآن</span>
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
+                                        {filteredGroups.map(grp => (
+                                            <div
+                                                key={grp.groupId}
+                                                onClick={() => handleSelectGroup(grp)}
+                                                className="border rounded-2xl p-3 flex items-center gap-2.5 cursor-pointer transition-all shadow-2xs hover:shadow-md active:scale-95 group text-right bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-indigo-500/50"
+                                                title={cleanGroupName(grp.name)}
+                                            >
+                                                <div 
+                                                    className="w-10 h-10 rounded-xl font-bold flex items-center justify-center border overflow-hidden flex-shrink-0 text-lg shadow-inner group-hover:scale-105 transition-transform bg-indigo-50 dark:bg-indigo-950/40 border-indigo-500/20 text-indigo-600 dark:text-indigo-400"
+                                                >
+                                                    {renderGroupAvatar(grp)}
+                                                </div>
+
+                                                <div className="min-w-0 flex-1">
+                                                    <h3 className="font-bold text-xs sm:text-sm truncate leading-snug text-slate-900 dark:text-white">
+                                                        {cleanGroupName(grp.name)}
+                                                    </h3>
+                                                    <p className="text-[10px] text-slate-400 truncate mt-0.5 font-medium">
+                                                        {grp.members?.length || 1} عضو
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            /* --- Selected Group Chat View (Matching Group Chat Page Exactly) --- */
+                            <div className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-slate-900 animate-slideLeft">
+                                {/* Group Chat Header */}
+                                <div className="p-3 sm:p-3.5 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between gap-2 relative z-30 shadow-2xs">
+                                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                                        <button
+                                            type="button"
+                                            onClick={() => setSelectedGroup(null)}
+                                            className="w-8 h-8 rounded-xl flex items-center justify-center border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all active:scale-95 cursor-pointer shrink-0"
+                                            title="العودة لقائمة المجموعات"
+                                        >
+                                            <ChevronRight size={18} />
+                                        </button>
+
+                                        <div className="w-10 h-10 rounded-xl flex items-center justify-center border border-indigo-500/20 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 font-bold text-lg overflow-hidden shrink-0 shadow-inner">
+                                            {renderGroupAvatar(selectedGroup)}
+                                        </div>
+
+                                        <div className="min-w-0 flex-1">
+                                            <h3 className="font-extrabold text-xs sm:text-sm text-slate-900 dark:text-white truncate">
+                                                {cleanGroupName(selectedGroup.name)}
+                                            </h3>
+                                            <p className="text-[11px] text-slate-400 truncate flex items-center gap-1.5 font-medium">
+                                                <span>{selectedGroup.members?.length || 1} عضو</span>
+                                                <span>•</span>
+                                                <span>{groupMessages.length} رسالة</span>
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* 3-dots Menu Button */}
+                                    <div className="relative">
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowGroupOptionsDropdown(prev => !prev)}
+                                            className="w-9 h-9 rounded-xl flex items-center justify-center border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all active:scale-95 cursor-pointer"
+                                            title="خيارات وعناصر التحكم بالمجموعة"
+                                        >
+                                            <MoreVertical size={17} />
+                                        </button>
+
+                                        {/* 3-dots Dropdown Menu (All Group Controls) */}
+                                        {showGroupOptionsDropdown && (
+                                            <>
+                                                <div 
+                                                    className="fixed inset-0 z-40 bg-transparent"
+                                                    onClick={() => setShowGroupOptionsDropdown(false)}
+                                                />
+                                                <div className="absolute left-0 top-11 w-52 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xl p-1.5 z-50 text-xs font-bold space-y-0.5 animate-scaleUp text-right" dir="rtl">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setShowGroupOptionsDropdown(false);
+                                                            setShowGroupInfoModal(true);
+                                                        }}
+                                                        className="w-full flex items-center gap-2 p-2 rounded-xl transition-all hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 cursor-pointer"
+                                                    >
+                                                        <Info size={15} className="text-indigo-600 dark:text-indigo-400 shrink-0" />
+                                                        <span>معلومات وإحصائيات المجموعة</span>
+                                                    </button>
+
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setShowGroupOptionsDropdown(false);
+                                                            setEditGroupName(selectedGroup.name || '');
+                                                            setEditGroupDesc(selectedGroup.description || '');
+                                                            setEditGroupAvatar(selectedGroup.avatarUrl || '');
+                                                            setShowEditGroupModal(true);
+                                                        }}
+                                                        className="w-full flex items-center gap-2 p-2 rounded-xl transition-all hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 cursor-pointer"
+                                                    >
+                                                        <Edit3 size={15} className="text-indigo-600 dark:text-indigo-400 shrink-0" />
+                                                        <span>تعديل بيانات المجموعة</span>
+                                                    </button>
+
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setShowGroupOptionsDropdown(false);
+                                                            setManageMemberSearch('');
+                                                            setShowManageMembersModal(true);
+                                                        }}
+                                                        className="w-full flex items-center gap-2 p-2 rounded-xl transition-all hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 cursor-pointer"
+                                                    >
+                                                        <Users size={15} className="text-indigo-600 dark:text-indigo-400 shrink-0" />
+                                                        <span>إدارة وأعضاء المجموعة ({selectedGroup.members?.length || 1})</span>
+                                                    </button>
+
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setShowGroupOptionsDropdown(false);
+                                                            setAddMemberSearch('');
+                                                            setShowAddMembersModal(true);
+                                                        }}
+                                                        className="w-full flex items-center gap-2 p-2 rounded-xl transition-all hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 cursor-pointer"
+                                                    >
+                                                        <UserPlus size={15} className="text-indigo-600 dark:text-indigo-400 shrink-0" />
+                                                        <span>إضافة أعضاء جدد</span>
+                                                    </button>
+
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setShowGroupOptionsDropdown(false);
+                                                            handleCopyGroupId(selectedGroup.groupId);
+                                                        }}
+                                                        className="w-full flex items-center gap-2 p-2 rounded-xl transition-all hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 cursor-pointer"
+                                                    >
+                                                        <Copy size={15} className="text-indigo-600 dark:text-indigo-400 shrink-0" />
+                                                        <span>نسخ معرّف المجموعة</span>
+                                                    </button>
+
+                                                    {onNavigate && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setShowGroupOptionsDropdown(false);
+                                                                onClose();
+                                                                onNavigate('group-chat', { groupId: selectedGroup.groupId, returnTab: 'community', initialTab: 'community' });
+                                                            }}
+                                                            className="w-full flex items-center gap-2 p-2 rounded-xl transition-all hover:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 cursor-pointer"
+                                                        >
+                                                            <ExternalLink size={15} className="shrink-0" />
+                                                            <span>فتح شاشة المحادثة الكاملة</span>
+                                                        </button>
+                                                    )}
+
+                                                    <div className="h-px bg-slate-200 dark:bg-slate-800 my-1" />
+
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setShowGroupOptionsDropdown(false);
+                                                            setShowClearGroupMsgsConfirm(true);
+                                                        }}
+                                                        className="w-full flex items-center gap-2 p-2 rounded-xl transition-all hover:bg-amber-500/10 text-amber-600 dark:text-amber-400 cursor-pointer"
+                                                    >
+                                                        <Trash2 size={15} className="shrink-0" />
+                                                        <span>مسح كافة رسائل المجموعة</span>
+                                                    </button>
+
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setShowGroupOptionsDropdown(false);
+                                                            setGroupToDeleteConfirm(selectedGroup);
+                                                        }}
+                                                        className="w-full flex items-center gap-2 p-2 rounded-xl transition-all hover:bg-rose-500/10 text-rose-600 dark:text-rose-400 cursor-pointer"
+                                                    >
+                                                        <Trash2 size={15} className="shrink-0" />
+                                                        <span>حذف المجموعة نهائياً</span>
+                                                    </button>
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Chat Messages Feed */}
+                                <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 bg-slate-50/50 dark:bg-slate-950/40">
+                                    {isLoadingGroupMessages ? (
+                                        <div className="text-center py-20 text-slate-400 text-xs sm:text-sm font-bold animate-pulse">
+                                            جارٍ تحميل محادثات المجموعة...
+                                        </div>
+                                    ) : groupMessages.length === 0 ? (
+                                        <div className="text-center py-20 text-slate-400 text-xs sm:text-sm space-y-2">
+                                            <MessageSquare size={36} className="mx-auto opacity-40 mb-2 text-indigo-500" />
+                                            <div className="font-bold text-slate-700 dark:text-slate-300">
+                                                لا توجد رسائل في هذه المجموعة حتى الآن
+                                            </div>
+                                            <p className="text-[11px] opacity-75">
+                                                يمكنك كتابة رسالة أو توجيه إداري في الأسفل أو إدارة أعضاء المجموعة من زر النقاط الثلاثة.
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        groupMessages.map((msg) => {
+                                            const isAdminMsg = msg.senderId === ADMIN_USER_ID;
+                                            const senderUser = users.find(u => u.userId === msg.senderId);
+                                            const senderName = msg.senderName || senderUser?.username || 'قارئ';
+                                            const timeStr = new Date(msg.createdAt).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+
+                                            return (
+                                                <div
+                                                    key={msg.messageId}
+                                                    className={`flex items-end gap-2 ${isAdminMsg ? 'justify-start' : 'justify-end'}`}
+                                                >
+                                                    {/* Sender Avatar for non-admin members */}
+                                                    {!isAdminMsg && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setSelectedMessageForDetails(msg)}
+                                                            className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs border overflow-hidden flex-shrink-0 mb-1 cursor-pointer transition-transform hover:scale-105 active:scale-95 bg-indigo-500/10 border-indigo-500/30 text-indigo-600 dark:text-indigo-400"
+                                                            title={`عرض بيانات ${senderName} وإدارة الرسالة`}
+                                                        >
+                                                            {msg.senderAvatarUrl || senderUser?.avatarUrl ? (
+                                                                <img src={msg.senderAvatarUrl || senderUser?.avatarUrl} alt={senderName} className="w-full h-full object-cover" />
+                                                            ) : (
+                                                                senderName.charAt(0) || 'ق'
+                                                            )}
+                                                        </button>
+                                                    )}
+
+                                                    {/* Bubble Container */}
+                                                    <div className={`max-w-[85%] sm:max-w-[75%] flex flex-col ${isAdminMsg ? 'items-start' : 'items-end'}`}>
+                                                        {/* Sender Name header button */}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setSelectedMessageForDetails(msg)}
+                                                            className="flex items-center gap-1.5 mb-1 px-1 text-[11px] font-bold cursor-pointer hover:opacity-80 transition-opacity text-right group"
+                                                            title={`عرض بيانات ${senderName} والتحكم بالرسالة`}
+                                                        >
+                                                            <span className="text-indigo-600 dark:text-indigo-400 group-hover:underline">
+                                                                {isAdminMsg ? 'الإدارة العامة 🛡️' : senderName}
+                                                            </span>
+                                                            {msg.senderCountry && !isAdminMsg && (
+                                                                <span className="text-[10px] px-1.5 py-0.2 rounded-md bg-slate-200/60 dark:bg-slate-800 text-slate-500">
+                                                                    {msg.senderCountry}
+                                                                </span>
+                                                            )}
+                                                        </button>
+
+                                                        {/* Interactive message card - clicking it opens sender details + delete button */}
+                                                        <div
+                                                            onClick={() => setSelectedMessageForDetails(msg)}
+                                                            className={`p-3 rounded-2xl text-xs sm:text-sm leading-relaxed shadow-xs relative group cursor-pointer transition-all hover:opacity-95 active:scale-[0.99] ${
+                                                                isAdminMsg
+                                                                    ? 'bg-indigo-600 text-white rounded-br-none'
+                                                                    : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-bl-none'
+                                                            }`}
+                                                        >
+                                                            {/* Quran Verse */}
+                                                            {msg.verseData && (
+                                                                <div className="mb-2 p-2 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-900 dark:text-amber-200 text-xs">
+                                                                    <div className="font-bold mb-0.5">📖 سورة {msg.verseData.surahName} (آية {msg.verseData.ayahNumber})</div>
+                                                                    <p className="font-amiri leading-loose">"{msg.verseData.text}"</p>
+                                                                </div>
+                                                            )}
+
+                                                            {/* Audio message */}
+                                                            {msg.audioUrl && (
+                                                                <div className="mb-2 p-2 rounded-xl bg-slate-100 dark:bg-slate-800/80 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                                                                    <Volume2 size={16} className="text-emerald-500 shrink-0" />
+                                                                    <audio controls src={msg.audioUrl} className="h-8 max-w-full" />
+                                                                </div>
+                                                            )}
+
+                                                            {/* Attachment */}
+                                                            {msg.attachment && (
+                                                                <div className="mb-2" onClick={(e) => e.stopPropagation()}>
+                                                                    {msg.attachment.type === 'image' ? (
+                                                                        <img src={msg.attachment.url} alt="مرفق" className="max-h-40 rounded-xl object-contain" />
+                                                                    ) : (
+                                                                        <div className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center gap-1.5 text-xs">
+                                                                            <FileText size={14} />
+                                                                            <span>ملف: {msg.attachment.fileName || 'مستند'}</span>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            )}
+
+                                                            {/* Text */}
+                                                            {msg.text && (
+                                                                <p className="whitespace-pre-wrap break-words">{msg.text}</p>
+                                                            )}
+
+                                                            {/* Time & Quick trash icon */}
+                                                            <div className="flex items-center justify-end gap-1.5 mt-1.5 text-[9px] opacity-75 font-mono">
+                                                                <span>{timeStr}</span>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setMsgToDeleteConfirm(msg);
+                                                                    }}
+                                                                    className="p-0.5 rounded text-rose-400 hover:text-rose-600 transition-colors cursor-pointer"
+                                                                    title="حذف الرسالة مباشرة"
+                                                                >
+                                                                    <Trash2 size={11} />
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })
+                                    )}
+                                    <div ref={messagesEndRef} />
+                                </div>
+
+                                {/* Bottom Chat Input Bar */}
+                                <div className="p-2.5 sm:p-3 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center gap-2">
+                                    <input
+                                        type="text"
+                                        value={adminGroupMessageText}
+                                        onChange={(e) => setAdminGroupMessageText(e.target.value)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') handleSendAdminGroupMessage();
+                                        }}
+                                        placeholder="اكتب رسالة أو توجيهاً رسمياً في هذه المجموعة..."
+                                        className="flex-1 p-2.5 text-xs sm:text-sm rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-900 dark:text-white"
+                                    />
+                                    <button
+                                        type="button"
+                                        disabled={isSendingGroupMessage || !adminGroupMessageText.trim()}
+                                        onClick={handleSendAdminGroupMessage}
+                                        className="py-2.5 px-3.5 bg-indigo-600 hover:bg-indigo-700 active:scale-95 disabled:opacity-50 text-white rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-sm shadow-indigo-600/25 shrink-0"
+                                    >
+                                        <Send size={14} />
+                                        <span className="hidden sm:inline">إرسال كإدارة</span>
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Modal 1: Message Details & Sender Profile & Delete Action */}
+                        {selectedMessageForDetails && (() => {
+                            const sender = users.find(u => u.userId === selectedMessageForDetails.senderId);
+                            const isSenderCreator = selectedGroup && selectedMessageForDetails.senderId === selectedGroup.createdBy;
+                            const isSenderAdmin = selectedMessageForDetails.senderId === ADMIN_USER_ID;
+                            const msgTime = new Date(selectedMessageForDetails.createdAt).toLocaleString('ar-EG');
+
+                            return (
+                                <div className="fixed inset-0 z-[1400] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
+                                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 max-w-sm w-full shadow-2xl space-y-4 animate-scaleUp text-right" dir="rtl">
+                                        {/* Header */}
+                                        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2.5">
+                                            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-slate-200">
+                                                <User size={15} className="text-indigo-600 dark:text-indigo-400" />
+                                                <span>بيانات المرسل والتحكم بالرسالة</span>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => setSelectedMessageForDetails(null)}
+                                                className="w-7 h-7 rounded-xl flex items-center justify-center border border-slate-200 dark:border-slate-800 text-slate-400 hover:text-slate-600 cursor-pointer"
+                                            >
+                                                <X size={15} />
+                                            </button>
+                                        </div>
+
+                                        {/* Sender Identity */}
+                                        <div className="flex flex-col items-center text-center">
+                                            <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-2xl overflow-hidden border border-indigo-500/20 mb-2">
+                                                {selectedMessageForDetails.senderAvatarUrl || sender?.avatarUrl ? (
+                                                    <img src={selectedMessageForDetails.senderAvatarUrl || sender?.avatarUrl} alt="صورة" className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <span>{selectedMessageForDetails.senderName?.charAt(0) || sender?.username?.charAt(0) || 'ق'}</span>
+                                                )}
+                                            </div>
+                                            <h4 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white">
+                                                {selectedMessageForDetails.senderName || sender?.username || 'عضو بالمجموعة'}
+                                            </h4>
+                                            <div className="flex items-center gap-1.5 mt-1">
+                                                {isSenderAdmin ? (
+                                                    <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30">
+                                                        الإدارة العامة 🛡️
+                                                    </span>
+                                                ) : isSenderCreator ? (
+                                                    <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                                                        منشئ المجموعة 👑
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                                                        عضو بالمجموعة 🌿
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Details list */}
+                                        <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800 text-xs space-y-2">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-slate-400 font-medium">كود الحساب:</span>
+                                                <span className="font-mono font-bold text-slate-800 dark:text-slate-200">
+                                                    {sender?.accountCode || selectedMessageForDetails.senderId}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-slate-400 font-medium">الدولة / الإقامة:</span>
+                                                <span className="font-bold text-slate-800 dark:text-slate-200">
+                                                    {sender?.country || selectedMessageForDetails.senderCountry || 'غير محدد 🌍'}
+                                                </span>
+                                            </div>
+                                            {sender?.createdAt && (
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-slate-400 font-medium">تاريخ التسجيل:</span>
+                                                    <span className="text-slate-700 dark:text-slate-300">
+                                                        {new Date(sender.createdAt).toLocaleDateString('ar-EG')}
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Message preview snippet */}
+                                        <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800 text-xs space-y-1">
+                                            <div className="flex items-center justify-between text-[10px] text-slate-400">
+                                                <span>محتوى الرسالة:</span>
+                                                <span className="font-mono">{msgTime}</span>
+                                            </div>
+                                            <p className="text-slate-700 dark:text-slate-300 font-medium leading-relaxed line-clamp-3">
+                                                {selectedMessageForDetails.text || (selectedMessageForDetails.verseData ? '📖 آية قرآنية' : selectedMessageForDetails.audioUrl ? '🎤 تسجيل صوتي' : '📎 مرفق')}
+                                            </p>
+                                        </div>
+
+                                        {/* Primary Action: Delete Message Button */}
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const target = selectedMessageForDetails;
+                                                setSelectedMessageForDetails(null);
+                                                setMsgToDeleteConfirm(target);
+                                            }}
+                                            className="w-full py-2.5 px-3 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-rose-600/20 transition-all"
+                                        >
+                                            <Trash2 size={16} />
+                                            <span>حذف هذه الرسالة من المجموعة</span>
+                                        </button>
+
+                                        {/* Secondary Actions */}
+                                        <div className="flex gap-2">
+                                            {sender && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const target = sender;
+                                                        setSelectedMessageForDetails(null);
+                                                        openSendMessageModal(target);
+                                                    }}
+                                                    className="flex-1 py-2 px-2 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 rounded-xl font-bold text-xs flex items-center justify-center gap-1 cursor-pointer transition-all"
+                                                >
+                                                    <Mail size={13} />
+                                                    <span>مراسلة بالدعم</span>
+                                                </button>
+                                            )}
+                                            {!isSenderCreator && !isSenderAdmin && selectedGroup && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const sId = selectedMessageForDetails.senderId;
+                                                        const sName = selectedMessageForDetails.senderName || sender?.username || 'العضو';
+                                                        setSelectedMessageForDetails(null);
+                                                        setMemberToRemoveConfirm({ userId: sId, username: sName });
+                                                    }}
+                                                    className="flex-1 py-2 px-2 bg-rose-50 dark:bg-rose-950/40 border border-rose-500/20 text-rose-600 dark:text-rose-400 hover:bg-rose-100 rounded-xl font-bold text-xs flex items-center justify-center gap-1 cursor-pointer transition-all"
+                                                >
+                                                    <UserMinus size={13} />
+                                                    <span>طرد العضو</span>
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })()}
+
+                        {/* Modal 2: Manage Group Members Modal */}
+                        {showManageMembersModal && selectedGroup && (() => {
+                            const membersList = (selectedGroup.members || []).map(mId => {
+                                const u = users.find(usr => usr.userId === mId);
+                                return u || {
+                                    userId: mId,
+                                    username: 'عضو',
+                                    avatarUrl: '',
+                                    country: 'غير محدد',
+                                    accountCode: mId.substring(0, 8),
+                                    isOnline: false,
+                                    createdAt: ''
+                                };
+                            }).filter(u => {
+                                if (!manageMemberSearch.trim()) return true;
+                                const q = manageMemberSearch.trim().toLowerCase();
+                                return (u.username || '').toLowerCase().includes(q) || (u.accountCode || '').toLowerCase().includes(q) || (u.country || '').toLowerCase().includes(q);
+                            });
+
+                            return (
+                                <div className="fixed inset-0 z-[1400] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
+                                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 max-w-md w-full shadow-2xl space-y-4 max-h-[85vh] flex flex-col text-right animate-scaleUp" dir="rtl">
+                                        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2.5">
+                                            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900 dark:text-white">
+                                                <Users size={16} className="text-indigo-600 dark:text-indigo-400" />
+                                                <span>أعضاء المجموعة ({selectedGroup.members?.length || 1})</span>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowManageMembersModal(false)}
+                                                className="w-7 h-7 rounded-xl flex items-center justify-center border border-slate-200 dark:border-slate-800 text-slate-400 hover:text-slate-600 cursor-pointer"
+                                            >
+                                                <X size={15} />
+                                            </button>
+                                        </div>
+
+                                        <div className="relative">
+                                            <Search size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                                            <input
+                                                type="text"
+                                                value={manageMemberSearch}
+                                                onChange={(e) => setManageMemberSearch(e.target.value)}
+                                                placeholder="ابحث بالاسم أو كود الحساب أو الدولة..."
+                                                className="w-full pr-9 pl-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                            />
+                                        </div>
+
+                                        <div className="flex-1 overflow-y-auto space-y-2 pr-0.5">
+                                            {membersList.length === 0 ? (
+                                                <div className="text-center py-10 text-slate-400 text-xs font-bold">
+                                                    لا يوجد أعضاء يطابقون بحثك
+                                                </div>
+                                            ) : (
+                                                membersList.map(member => {
+                                                    const isCreator = member.userId === selectedGroup.createdBy;
+                                                    return (
+                                                        <div
+                                                            key={member.userId}
+                                                            className="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2"
+                                                        >
+                                                            <div className="flex items-center gap-2.5 min-w-0">
+                                                                <div className="w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center font-bold text-xs overflow-hidden shrink-0">
+                                                                    {member.avatarUrl ? (
+                                                                        <img src={member.avatarUrl} alt={member.username} className="w-full h-full object-cover" />
+                                                                    ) : (
+                                                                        <span>{member.username?.charAt(0) || 'ق'}</span>
+                                                                    )}
+                                                                </div>
+                                                                <div className="min-w-0">
+                                                                    <div className="font-bold text-xs text-slate-900 dark:text-white truncate flex items-center gap-1.5">
+                                                                        <span>{member.username}</span>
+                                                                        {isCreator && (
+                                                                            <span className="text-[9px] px-1.5 py-0.2 rounded-full font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400">
+                                                                                المنشئ 👑
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="text-[10px] text-slate-400 font-mono mt-0.5 truncate">
+                                                                        {member.accountCode} • 🌍 {member.country}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="flex items-center gap-1 shrink-0">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        setShowManageMembersModal(false);
+                                                                        openInspectorForUser(member, { tab: 'community', groupId: selectedGroup.groupId });
+                                                                    }}
+                                                                    className="p-1.5 text-slate-400 hover:text-emerald-600 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-950/40 cursor-pointer"
+                                                                    title="معاينة ملف العضو"
+                                                                >
+                                                                    <Eye size={14} />
+                                                                </button>
+                                                                {!isCreator && (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                            setShowManageMembersModal(false);
+                                                                            setMemberToRemoveConfirm({ userId: member.userId, username: member.username });
+                                                                        }}
+                                                                        className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer"
+                                                                        title="طرد العضو من المجموعة"
+                                                                    >
+                                                                        <UserMinus size={14} />
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })()}
+
+                        {/* Modal 3: Add Members Modal */}
+                        {showAddMembersModal && selectedGroup && (() => {
+                            const availableToAdd = users.filter(u => !(selectedGroup.members || []).includes(u.userId)).filter(u => {
+                                if (!addMemberSearch.trim()) return true;
+                                const q = addMemberSearch.trim().toLowerCase();
+                                return (u.username || '').toLowerCase().includes(q) || (u.accountCode || '').toLowerCase().includes(q) || (u.country || '').toLowerCase().includes(q);
+                            });
+
+                            return (
+                                <div className="fixed inset-0 z-[1400] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
+                                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 max-w-md w-full shadow-2xl space-y-4 max-h-[85vh] flex flex-col text-right animate-scaleUp" dir="rtl">
+                                        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2.5">
+                                            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900 dark:text-white">
+                                                <UserPlus size={16} className="text-indigo-600 dark:text-indigo-400" />
+                                                <span>إضافة أعضاء جدد لمجموعة "{cleanGroupName(selectedGroup.name)}"</span>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowAddMembersModal(false)}
+                                                className="w-7 h-7 rounded-xl flex items-center justify-center border border-slate-200 dark:border-slate-800 text-slate-400 hover:text-slate-600 cursor-pointer"
+                                            >
+                                                <X size={15} />
+                                            </button>
+                                        </div>
+
+                                        <div className="relative">
+                                            <Search size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                                            <input
+                                                type="text"
+                                                value={addMemberSearch}
+                                                onChange={(e) => setAddMemberSearch(e.target.value)}
+                                                placeholder="ابحث عن مستخدمين لإضافتهم..."
+                                                className="w-full pr-9 pl-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                            />
+                                        </div>
+
+                                        <div className="flex-1 overflow-y-auto space-y-2 pr-0.5">
+                                            {availableToAdd.length === 0 ? (
+                                                <div className="text-center py-10 text-slate-400 text-xs font-bold">
+                                                    {addMemberSearch ? 'لا يوجد مستخدمون يطابقون بحثك' : 'جميع المستخدمين مضافون بالفعل في هذه المجموعة'}
+                                                </div>
+                                            ) : (
+                                                availableToAdd.map(candidate => (
+                                                    <div
+                                                        key={candidate.userId}
+                                                        className="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2"
+                                                    >
+                                                        <div className="flex items-center gap-2.5 min-w-0">
+                                                            <div className="w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center font-bold text-xs overflow-hidden shrink-0">
+                                                                {candidate.avatarUrl ? (
+                                                                    <img src={candidate.avatarUrl} alt={candidate.username} className="w-full h-full object-cover" />
+                                                                ) : (
+                                                                    <span>{candidate.username?.charAt(0) || 'ق'}</span>
+                                                                )}
+                                                            </div>
+                                                            <div className="min-w-0">
+                                                                <div className="font-bold text-xs text-slate-900 dark:text-white truncate">
+                                                                    {candidate.username}
+                                                                </div>
+                                                                <div className="text-[10px] text-slate-400 font-mono mt-0.5 truncate">
+                                                                    {candidate.accountCode} • 🌍 {candidate.country}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleAddMemberToGroup(candidate.userId, candidate.username)}
+                                                            className="py-1.5 px-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1 active:scale-95 cursor-pointer shadow-xs shrink-0"
+                                                        >
+                                                            <UserPlus size={13} />
+                                                            <span>إضافة</span>
+                                                        </button>
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })()}
+
+                        {/* Modal 4: Group Info & Statistics Modal */}
+                        {showGroupInfoModal && selectedGroup && (() => {
+                            const creator = users.find(u => u.userId === selectedGroup.createdBy);
+                            const audioCount = groupMessages.filter(m => !!m.audioUrl).length;
+                            const verseCount = groupMessages.filter(m => !!m.verseData).length;
+
+                            return (
+                                <div className="fixed inset-0 z-[1400] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
+                                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-6 max-w-sm w-full shadow-2xl space-y-4 animate-scaleUp text-right" dir="rtl">
+                                        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2.5">
+                                            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900 dark:text-white">
+                                                <Info size={16} className="text-indigo-600 dark:text-indigo-400" />
+                                                <span>بيانات وإحصائيات المجموعة</span>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowGroupInfoModal(false)}
+                                                className="w-7 h-7 rounded-xl flex items-center justify-center border border-slate-200 dark:border-slate-800 text-slate-400 hover:text-slate-600 cursor-pointer"
+                                            >
+                                                <X size={15} />
+                                            </button>
+                                        </div>
+
+                                        <div className="flex flex-col items-center text-center">
+                                            <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-2xl overflow-hidden border border-indigo-500/20 mb-2">
+                                                {renderGroupAvatar(selectedGroup)}
+                                            </div>
+                                            <h4 className="font-extrabold text-base text-slate-900 dark:text-white">
+                                                {selectedGroup.name}
+                                            </h4>
+                                            {selectedGroup.description && (
+                                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                                                    {selectedGroup.description}
+                                                </p>
+                                            )}
+                                        </div>
+
+                                        {/* Statistics Grid */}
+                                        <div className="grid grid-cols-3 gap-2 text-center">
+                                            <div className="p-2.5 rounded-xl bg-indigo-50/60 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-900/50">
+                                                <div className="font-black text-sm text-indigo-950 dark:text-indigo-100">{selectedGroup.members?.length || 1}</div>
+                                                <div className="text-[10px] text-indigo-600 dark:text-indigo-300 font-bold">الأعضاء</div>
+                                            </div>
+                                            <div className="p-2.5 rounded-xl bg-emerald-50/60 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/50">
+                                                <div className="font-black text-sm text-emerald-950 dark:text-emerald-100">{groupMessages.length}</div>
+                                                <div className="text-[10px] text-emerald-600 dark:text-emerald-300 font-bold">الرسائل</div>
+                                            </div>
+                                            <div className="p-2.5 rounded-xl bg-amber-50/60 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50">
+                                                <div className="font-black text-sm text-amber-950 dark:text-amber-100">{audioCount}</div>
+                                                <div className="text-[10px] text-amber-600 dark:text-amber-300 font-bold">صوتيات</div>
+                                            </div>
+                                        </div>
+
+                                        <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800 text-xs space-y-2">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-slate-400 font-medium">المنشئ:</span>
+                                                <span className="font-bold text-slate-800 dark:text-slate-200">
+                                                    {selectedGroup.creatorName || creator?.username || 'المشرف'}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-slate-400 font-medium">تاريخ الإنشاء:</span>
+                                                <span className="text-slate-700 dark:text-slate-300 font-mono">
+                                                    {new Date(selectedGroup.createdAt).toLocaleDateString('ar-EG')}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center justify-between gap-1 pt-1 border-t border-slate-200 dark:border-slate-800">
+                                                <span className="text-slate-400 font-medium">معرّف المجموعة:</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleCopyGroupId(selectedGroup.groupId)}
+                                                    className="font-mono text-[10px] text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 cursor-pointer"
+                                                >
+                                                    <Copy size={11} />
+                                                    <span>نسخ المعرّف</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })()}
+
+                        {/* Modal 5: Edit Group Details Modal */}
+                        {showEditGroupModal && selectedGroup && (
+                            <EditGroupModal
+                                isOpen={showEditGroupModal}
+                                onClose={() => setShowEditGroupModal(false)}
+                                group={selectedGroup}
+                                onUpdated={(updated) => {
+                                    setSelectedGroup(updated);
+                                    setShowEditGroupModal(false);
+                                    loadData();
+                                    showAdminToast('تم حفظ تعديلات المجموعة بنجاح 🌿');
+                                }}
+                                onDelete={() => {
+                                    setShowEditGroupModal(false);
+                                    setGroupToDeleteConfirm(selectedGroup);
+                                }}
+                            />
+                        )}
+
+                        {/* Modal 6: Create Group Modal */}
+                        {showCreateGroupModal && (
+                            <CreateGroupModal
+                                isOpen={showCreateGroupModal}
+                                onClose={() => setShowCreateGroupModal(false)}
+                                availableUsers={users}
+                                onCreated={async (newGid) => {
+                                    setShowCreateGroupModal(false);
+                                    await loadData(true);
+                                    const created = communityService.getGroupById(newGid);
+                                    if (created) {
+                                        handleSelectGroup(created);
+                                    }
+                                    showAdminToast('تم إنشاء المجموعة بنجاح 🌿');
+                                }}
+                            />
+                        )}
                     </div>
                 )}
 

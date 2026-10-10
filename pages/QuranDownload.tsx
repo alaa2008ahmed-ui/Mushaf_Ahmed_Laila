@@ -36,11 +36,8 @@ const QuranDownload: React.FC<{ onBack: () => void, onNavigate?: (pageId: string
 
     return (
         <div className="min-h-screen flex flex-col font-cairo" style={{ backgroundColor: theme.bgColor, color: theme.textColor }}>
-            <header className="p-4 shadow-md theme-header-bg flex items-center gap-4">
-                <button onClick={onBack} className="text-2xl">
-                    <i className="fa-solid fa-arrow-right"></i>
-                </button>
-                <h1 className="text-xl font-bold">تحميل سور القرآن</h1>
+            <header className="p-4 shadow-md theme-header-bg flex items-center justify-center">
+                <h1 className="text-xl font-bold font-kufi">التحميل</h1>
             </header>
 
             <main className="flex-1 overflow-y-auto px-4 pb-4 space-y-2">

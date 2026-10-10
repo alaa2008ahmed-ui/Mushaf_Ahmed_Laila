@@ -5,7 +5,8 @@ import {
   User, Sparkles, BookOpen, Play, Pause, CheckCircle2,
   Mic, Volume2, Users, Info, Shield, LogOut, Check, X,
   UserPlus, UserMinus, Search, AlertTriangle, EyeOff, Edit3,
-  MessageCircle, UserCheck, Clock, MapPin, Hash, Paperclip, Loader2, Video, FileText
+  MessageCircle, UserCheck, Clock, MapPin, Hash, Paperclip, Loader2, Video, FileText,
+  Copy, Mail
 } from 'lucide-react';
 import { 
   communityService, 
@@ -67,6 +68,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
 
   // Selected Member Profile Modal State
   const [selectedMember, setSelectedMember] = useState<CommunityUser | null>(null);
+  const [selectedMessageForMemberModal, setSelectedMessageForMemberModal] = useState<GroupMessage | null>(null);
   const [selectedMemberFriendship, setSelectedMemberFriendship] = useState<{
     status: 'none' | 'pending' | 'accepted' | 'rejected';
     isRequester: boolean;
@@ -122,7 +124,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  const handleOpenMemberProfile = (userId: string, fallbackName?: string, fallbackAvatar?: string, fallbackCountry?: string) => {
+  const handleOpenMemberProfile = (userId: string, fallbackName?: string, fallbackAvatar?: string, fallbackCountry?: string, msg?: GroupMessage) => {
     let user = communityService.getUserById(userId);
     if (!user) {
       user = {
@@ -135,6 +137,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
       };
     }
     setSelectedMember(user);
+    setSelectedMessageForMemberModal(msg || null);
     const fs = communityService.getFriendshipStatus(userId);
     setSelectedMemberFriendship(fs);
   };
@@ -540,12 +543,13 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
   const groupDisplayName = cleanGroupName(group?.name || 'محادثة جماعية');
   const groupMembersCount = group?.members?.length || 1;
   const isSystemDefaultGroup = group?.groupId === 'group_default_quran_readers' || group?.groupId === 'group_default_tadabbur';
+  const isAdminSession = currentUser.userId === ADMIN_USER_ID || communityService.isUserAdminSession();
   const isCreator = Boolean(group && communityService.isGroupCreator(group, currentUser));
-  const isCreatorOrAdmin = isCreator || currentUser.userId === ADMIN_USER_ID;
-  const canDeleteGroup = (isCreator && !isSystemDefaultGroup) || currentUser.userId === ADMIN_USER_ID;
+  const isCreatorOrAdmin = isCreator || isAdminSession;
+  const canDeleteGroup = (isCreator && !isSystemDefaultGroup) || isAdminSession;
   const isCurrentMember = Boolean(group && Array.isArray(group.members) && group.members.includes(currentUser.userId));
   const hasPendingInvite = Boolean(group && Array.isArray(group.invitedMembers) && group.invitedMembers.includes(currentUser.userId) && !isCurrentMember);
-  const hasLeftOrRemoved = !isSystemDefaultGroup && !isCreator && !isCurrentMember && !hasPendingInvite;
+  const hasLeftOrRemoved = !isAdminSession && !isSystemDefaultGroup && !isCreator && !isCurrentMember && !hasPendingInvite;
 
   const renderGroupAvatar = (size = 20) => {
     if (group?.avatarUrl && group.avatarUrl.trim()) {
@@ -730,6 +734,20 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                 >
                   <Users size={14} style={{ color: primaryColor }} />
                   <span>معلومات المجموعه</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowMenu(false);
+                    navigator.clipboard?.writeText(groupId);
+                    showToast('تم نسخ معرّف المجموعة 📋');
+                  }}
+                  className="w-full flex items-center gap-2 p-2 rounded-xl transition-all hover:bg-slate-500/10 text-right cursor-pointer"
+                  style={{ color: textColor }}
+                >
+                  <Copy size={14} style={{ color: primaryColor }} />
+                  <span>نسخ معرّف المجموعة</span>
                 </button>
 
                 {isCreatorOrAdmin && (
@@ -941,14 +959,14 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                 {!isMe && (
                   <button 
                     type="button"
-                    onClick={() => handleOpenMemberProfile(msg.senderId, msg.senderName, msg.senderAvatarUrl, msg.senderCountry)}
+                    onClick={() => handleOpenMemberProfile(msg.senderId, msg.senderName, msg.senderAvatarUrl, msg.senderCountry, msg)}
                     className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs border overflow-hidden flex-shrink-0 mb-1 cursor-pointer transition-transform hover:scale-105 active:scale-95"
                     style={{
                       backgroundColor: `${primaryColor}20`,
                       borderColor: `${primaryColor}40`,
                       color: primaryColor
                     }}
-                    title={`عرض بيانات ${msg.senderName}`}
+                    title={`عرض بيانات ${msg.senderName} والتحكم بالرسالة`}
                   >
                     {msg.senderAvatarUrl ? (
                       <img src={msg.senderAvatarUrl} alt={msg.senderName} className="w-full h-full object-cover" />
@@ -964,9 +982,9 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                   {!isMe && (
                     <button
                       type="button"
-                      onClick={() => handleOpenMemberProfile(msg.senderId, msg.senderName, msg.senderAvatarUrl, msg.senderCountry)}
+                      onClick={() => handleOpenMemberProfile(msg.senderId, msg.senderName, msg.senderAvatarUrl, msg.senderCountry, msg)}
                       className="flex items-center gap-1.5 mb-1 px-1 text-[11px] font-bold cursor-pointer hover:opacity-80 transition-opacity text-right group"
-                      title={`عرض بيانات ${msg.senderName}`}
+                      title={`عرض بيانات ${msg.senderName} والتحكم بالرسالة`}
                     >
                       <span style={{ color: primaryColor }} className="group-hover:underline">{msg.senderName}</span>
                       {msg.senderCountry && (
@@ -979,27 +997,68 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
 
                   {/* Quran Card if present */}
                   {msg.verseData && (
-                    <ChatQuranCard 
-                      verseData={msg.verseData}
-                      playingAudioUrl={playingAudioUrl}
-                      onToggleAudio={handleToggleAudio}
-                    />
+                    <div 
+                      className="relative group w-full cursor-pointer"
+                      onClick={() => handleOpenMemberProfile(msg.senderId, msg.senderName, msg.senderAvatarUrl, msg.senderCountry, msg)}
+                    >
+                      <ChatQuranCard 
+                        verseData={msg.verseData}
+                        playingAudioUrl={playingAudioUrl}
+                        onToggleAudio={handleToggleAudio}
+                      />
+                      {(isMe || isCreatorOrAdmin) && (
+                        <div className="flex items-center justify-end gap-1.5 mt-0.5 text-[9px] px-1" style={{ color: textMuted }}>
+                          <span>{timeStr}</span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteMessage(msg.messageId);
+                            }}
+                            className="p-0.5 rounded text-rose-400 hover:text-rose-600 transition-colors cursor-pointer"
+                            title={isMe ? "حذف رسالتي" : "حذف الرسالة (صلاحية المشرف)"}
+                          >
+                            <Trash2 size={11} />
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   )}
 
                   {/* Audio Player if present */}
                   {msg.audioUrl && (
-                    <ChatMessageAudioPlayer 
-                      audioUrl={msg.audioUrl}
-                      isMe={isMe}
-                      audioDuration={msg.audioDuration}
-                      timeStr={timeStr}
-                      isRead={true}
-                    />
+                    <div className="relative group w-full">
+                      <ChatMessageAudioPlayer 
+                        audioUrl={msg.audioUrl}
+                        isMe={isMe}
+                        audioDuration={msg.audioDuration}
+                        timeStr={timeStr}
+                        isRead={true}
+                      />
+                      {(isMe || isCreatorOrAdmin) && (
+                        <div className="flex items-center justify-end gap-1.5 mt-0.5 text-[9px] px-1" style={{ color: textMuted }}>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteMessage(msg.messageId);
+                            }}
+                            className="p-0.5 rounded text-rose-400 hover:text-rose-600 transition-colors cursor-pointer"
+                            title={isMe ? "حذف رسالتي" : "حذف التسجيل (صلاحية المشرف)"}
+                          >
+                            <Trash2 size={11} />
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   )}
 
                   {/* Media File / Image / Video Attachment */}
                   {msg.attachment && (
-                    <div className="mb-1.5 w-full">
+                    <div 
+                      className="mb-1.5 w-full cursor-pointer"
+                      onClick={() => handleOpenMemberProfile(msg.senderId, msg.senderName, msg.senderAvatarUrl, msg.senderCountry, msg)}
+                    >
                       <ChatAttachmentView attachment={msg.attachment} isMe={isMe} />
                     </div>
                   )}
@@ -1007,7 +1066,8 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                   {/* Text Content */}
                   {msg.text && !msg.verseData && !msg.audioUrl && (
                     <div
-                      className={`p-3 rounded-2xl text-xs sm:text-sm leading-relaxed shadow-xs relative group ${
+                      onClick={() => handleOpenMemberProfile(msg.senderId, msg.senderName, msg.senderAvatarUrl, msg.senderCountry, msg)}
+                      className={`p-3 rounded-2xl text-xs sm:text-sm leading-relaxed shadow-xs relative group cursor-pointer transition-all hover:opacity-95 ${
                         isMe 
                           ? 'rounded-bl-none text-white' 
                           : 'rounded-br-none border'
@@ -1017,16 +1077,20 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                         color: isMe ? primaryTextColor : textColor,
                         borderColor: isMe ? 'transparent' : cardBorder
                       }}
+                      title="اضغط لعرض بيانات المرسل وإدارة الرسالة"
                     >
                       <p className="whitespace-pre-wrap break-words">{msg.text}</p>
                       <div className="flex items-center justify-end gap-1.5 mt-1.5 text-[9px] opacity-75">
                         <span>{timeStr}</span>
-                        {isMe && (
+                        {(isMe || isCreatorOrAdmin) && (
                           <button
                             type="button"
-                            onClick={() => handleDeleteMessage(msg.messageId)}
-                            className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded text-rose-300 hover:text-rose-100"
-                            title="حذف رسالتي"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteMessage(msg.messageId);
+                            }}
+                            className="opacity-70 sm:opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded text-rose-400 hover:text-rose-600 cursor-pointer"
+                            title={isMe ? "حذف رسالتي" : "حذف الرسالة (صلاحية المشرف)"}
                           >
                             <Trash2 size={11} />
                           </button>
@@ -1039,12 +1103,12 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                   {!msg.text && msg.attachment && (
                     <div className="flex items-center justify-end gap-1.5 mt-0.5 text-[9px] px-1" style={{ color: textMuted }}>
                       <span>{timeStr}</span>
-                      {isMe && (
+                      {(isMe || isCreatorOrAdmin) && (
                         <button
                           type="button"
                           onClick={() => handleDeleteMessage(msg.messageId)}
                           className="p-0.5 rounded hover:text-rose-500 transition-colors cursor-pointer"
-                          title="حذف رسالتي"
+                          title={isMe ? "حذف رسالتي" : "حذف المرفق (صلاحية المشرف)"}
                         >
                           <Trash2 size={11} />
                         </button>
@@ -1886,6 +1950,71 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                   </span>
                 </div>
               </div>
+
+              {/* Message preview & Delete button if a message was clicked */}
+              {selectedMessageForMemberModal && (
+                <div className="space-y-2 p-3 rounded-2xl border text-xs text-right" style={{ backgroundColor: secondaryBg, borderColor: cardBorder }} dir="rtl">
+                  <div className="flex items-center justify-between text-[11px]" style={{ color: textMuted }}>
+                    <span>محتوى الرسالة:</span>
+                    <span className="font-mono">{new Date(selectedMessageForMemberModal.createdAt).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}</span>
+                  </div>
+                  <p className="line-clamp-3 leading-relaxed font-medium" style={{ color: textColor }}>
+                    {selectedMessageForMemberModal.text || (selectedMessageForMemberModal.verseData ? '📖 آية قرآنية' : selectedMessageForMemberModal.audioUrl ? '🎤 تسجيل صوتي' : '📎 مرفق')}
+                  </p>
+
+                  {(selectedMessageForMemberModal.senderId === currentUser.userId || isCreatorOrAdmin) && (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const mId = selectedMessageForMemberModal.messageId;
+                        setSelectedMessageForMemberModal(null);
+                        setSelectedMember(null);
+                        await handleDeleteMessage(mId);
+                      }}
+                      className="w-full mt-1.5 py-2.5 px-3 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-sm transition-all"
+                    >
+                      <Trash2 size={15} />
+                      <span>حذف هذه الرسالة من المجموعة</span>
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* Admin Actions if in admin session */}
+              {isAdminSession && selectedMember.userId !== currentUser.userId && (
+                <div className="space-y-1.5 pt-1 border-t text-right" style={{ borderColor: cardBorder }} dir="rtl">
+                  <div className="text-[10px] font-bold px-1" style={{ color: textMuted }}>إجراءات الإدارة:</div>
+                  <div className="flex gap-2">
+                    {!isCreator && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const u = selectedMember;
+                          setSelectedMember(null);
+                          setSelectedMessageForMemberModal(null);
+                          setMemberToRemove({ userId: u.userId, username: u.username });
+                        }}
+                        className="flex-1 py-2 px-2 bg-rose-50 dark:bg-rose-950/40 border border-rose-500/20 text-rose-600 dark:text-rose-400 hover:bg-rose-100 rounded-xl font-bold text-xs flex items-center justify-center gap-1 cursor-pointer transition-all"
+                      >
+                        <UserMinus size={13} />
+                        <span>طرد من المجموعة</span>
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedMember(null);
+                        setSelectedMessageForMemberModal(null);
+                        onNavigate('direct-chat', { partnerUserId: selectedMember.userId, returnTab: 'community' });
+                      }}
+                      className="flex-1 py-2 px-2 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-500/20 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 rounded-xl font-bold text-xs flex items-center justify-center gap-1 cursor-pointer transition-all"
+                    >
+                      <Mail size={13} />
+                      <span>مراسلة بالدعم</span>
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* Action Buttons: Add Friend + Start Chat */}
               {selectedMember.userId === currentUser.userId ? (

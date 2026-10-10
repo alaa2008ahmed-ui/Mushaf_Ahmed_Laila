@@ -12,6 +12,7 @@ import TasbeehCounter from '../components/Tasbeeh/TasbeehCounter';
 import TasbeehModals from '../components/Tasbeeh/TasbeehModals';
 import { toArabicNumerals, toEnglishNumerals, playSound, vibrate } from '../utils/tasbeehUtils';
 import { motion, AnimatePresence } from 'framer-motion';
+import { BarChart3, ChevronLeft } from 'lucide-react';
 
 // FIX: Renamed to be more specific to phrases
 const PHRASES_STORAGE_KEY = 'ahmed_laila_tasbeeh_phrases';
@@ -305,7 +306,11 @@ function Tasbeeh({ onBack, onNavigate }) {
 
     return (
         <div className="h-screen flex flex-col bg-transparent">
-            <TasbeehHeader title="السبحة الإلكترونية" subtitle="أضف أذكارك الخاصة وتتبع تسبيحك بدقة" />
+            <TasbeehHeader 
+                title="السبحة الإلكترونية" 
+                subtitle="أضف أذكارك الخاصة وتتبع تسبيحك بدقة" 
+                onOpenStats={() => setModals(p => ({...p, stats: true}))}
+            />
             
             <main className="px-4 pb-4 flex-grow relative flex flex-col items-center overflow-y-auto fade-in">
                  <TasbeehControls 
@@ -339,6 +344,24 @@ function Tasbeeh({ onBack, onNavigate }) {
                              {/* No children */}
                         </ThreeDButton>
                     </div>
+
+                    {/* Quick Chart Trigger Card */}
+                    <motion.button
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => setModals(p => ({...p, stats: true}))}
+                        className="w-full mt-2.5 p-2.5 px-3.5 rounded-2xl themed-card shadow-sm border border-black/5 dark:border-white/5 flex items-center justify-between text-xs transition-all hover:shadow-md active:scale-95 group"
+                    >
+                        <div className="flex items-center gap-2 font-bold">
+                            <span className="p-1.5 rounded-lg bg-black/5 dark:bg-white/10 text-amber-500">
+                                <BarChart3 className="w-4 h-4" />
+                            </span>
+                            <span className="text-gray-800 dark:text-gray-200">الرسم البياني وتطور التسبيح</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 font-bold" style={{ color: primaryTextColor }}>
+                            <span className="text-[11px] opacity-80">أسبوعي وشهري</span>
+                            <ChevronLeft className="w-3.5 h-3.5 opacity-60 group-hover:translate-x-[-2px] transition-transform" />
+                        </div>
+                    </motion.button>
                 </div>
                 <div className="w-full h-24 shrink-0"></div>
             </main>
@@ -364,6 +387,7 @@ function Tasbeeh({ onBack, onNavigate }) {
                 dailyStats={dailyStats}
                 skin={skin}
                 handleSetSkin={handleSetSkin}
+                themeKey={themeKey}
             />
 
             <AnimatePresence>

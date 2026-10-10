@@ -1,5 +1,6 @@
 import React from 'react';
 import ModalWrapper from './ModalWrapper';
+import TasbeehChartModal from './TasbeehChartModal';
 import { toArabicNumerals, toEnglishNumerals } from '../../utils/tasbeehUtils';
 import { Theme } from '../../context/themes';
 
@@ -23,13 +24,15 @@ interface TasbeehModalsProps {
     dailyStats: {date: string, count: number}[];
     skin: string;
     handleSetSkin: (skin: 'modern' | 'classic' | 'beads') => void;
+    themeKey?: string;
 }
 
 const TasbeehModals: React.FC<TasbeehModalsProps> = ({
     modals, setModals, targetInputRef, target, handleSetTarget,
     newPhraseInputRef, handleAddPhrase, phrases, handleDeletePhrase,
     activePhrase, setActivePhrase, handleReset, colorOptions,
-    handleSetCounterColor, counterColor, theme, dailyStats, skin, handleSetSkin
+    handleSetCounterColor, counterColor, theme, dailyStats, skin, handleSetSkin,
+    themeKey = 'default'
 }) => {
     return (
         <>
@@ -148,27 +151,14 @@ const TasbeehModals: React.FC<TasbeehModalsProps> = ({
                 </div>
             </ModalWrapper>
 
-            {/* Stats Modal */}
-            <ModalWrapper isOpen={modals.stats} onClose={() => setModals((p: any) => ({...p, stats: false}))}>
-                <h3 className="text-xl font-bold text-center border-b pb-2 border-modal-border">إحصائيات التسبيح</h3>
-                <div className="space-y-3 overflow-y-auto max-h-60 pt-2 pr-2">
-                    {dailyStats && dailyStats.length > 0 ? (
-                        [...dailyStats].reverse().map((stat, i) => (
-                            <div key={i} className="flex justify-between items-center p-3 rounded-lg bg-card-bg-hover border border-modal-border">
-                                <span className="text-sm font-bold opacity-70">{new Date(stat.date).toLocaleDateString('ar-EG')}</span>
-                                <span className="text-lg font-black" style={{color: theme.palette[0]}}>{toArabicNumerals(stat.count)} تسبيحة</span>
-                            </div>
-                        ))
-                    ) : (
-                        <p className="text-center opacity-60 py-4">ليس لديك إحصائيات بعد.</p>
-                    )}
-                </div>
-                <div className="pt-4 mt-2 border-t border-modal-border">
-                    <button onClick={() => setModals((p: any) => ({...p, stats: false}))} className="w-full py-2 rounded-lg bg-gray-500/20 text-modal-text font-bold hover:bg-gray-500/30 transition-colors">
-                        إغلاق
-                    </button>
-                </div>
-            </ModalWrapper>
+            {/* Stats & Charts Modal */}
+            <TasbeehChartModal
+                isOpen={modals.stats}
+                onClose={() => setModals((p: any) => ({...p, stats: false}))}
+                dailyStats={dailyStats}
+                theme={theme}
+                themeKey={themeKey}
+            />
         </>
     );
 };
