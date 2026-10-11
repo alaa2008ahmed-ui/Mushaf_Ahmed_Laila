@@ -238,6 +238,9 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
             let activeName = '';
 
             for (const key of prayerKeys) {
+                // If prayer is muted by user (red circle), skip auto-silent completely for it
+                if (config.mutedPrayers?.[key]) continue;
+
                 // Determine if auto-silent is enabled for this prayer
                 let isSilentEnabled = false;
                 let duration = 30;
@@ -280,7 +283,7 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
         checkSilentStatus();
         const interval = setInterval(checkSilentStatus, 30000);
         return () => clearInterval(interval);
-    }, [config.autoSilent, config.autoSilentDuration, config.prayerAutoSilent, config.iqamaOffsets, config.iqamaReminder, times, config.prayerOffsets, config.isSummerTime, config.location]);
+    }, [config.autoSilent, config.autoSilentDuration, config.prayerAutoSilent, config.mutedPrayers, config.iqamaOffsets, config.iqamaReminder, times, config.prayerOffsets, config.isSummerTime, config.location]);
 
     // --- Save Config ---
     useEffect(() => {
