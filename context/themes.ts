@@ -37,7 +37,7 @@ export const presetThemes: { [key: string]: Theme } = {
         isOriginal: true,
         textColor: "#000000",
         font: "'Cairo', sans-serif",
-        palette: ["#059669", "#8b5cf6", "#059669"],
+        palette: ["#059669", "#8B5CF6", "#059669"],
         barBg: "#FFFFFF",
         barBorder: "1px solid #000000",
         topBarBg: "#FFFFFF",
@@ -52,7 +52,7 @@ export const presetThemes: { [key: string]: Theme } = {
         bgColor: "#000000",
         textColor: "#FFFFFF",
         font: "'Cairo', sans-serif",
-        palette: ["#FFFFFF", "#CCCCCC", "#000000"],
+        palette: ["#1E293B", "#374151", "#000000"],
         barBg: "#000000",
         barBorder: "1px solid #333333",
         btnBorder: "1px solid #FFFFFF",
@@ -62,7 +62,7 @@ export const presetThemes: { [key: string]: Theme } = {
         cardBg: "#111111",
         cardBorder: "#333333",
         btnBg: "#FFFFFF",
-        btnText: "#000000",
+        btnText: "#FFFFFF",
         modalBg: "#000000",
         modalText: "#FFFFFF",
         sajdah: "#FFFFFF"
@@ -72,7 +72,7 @@ export const presetThemes: { [key: string]: Theme } = {
         bgColor: "#F0F9FF",
         textColor: "#0C4A6E",
         font: "'Cairo', sans-serif",
-        palette: ["#0284C7", "#0EA5E9", "#38BDF8"],
+        palette: ["#0284C7", "#6366F1", "#38BDF8"],
         barBg: "#E0F2FE",
         barBorder: "1px solid #BAE6FD"
     },
@@ -81,7 +81,7 @@ export const presetThemes: { [key: string]: Theme } = {
         bgColor: "#FFFBEB",
         textColor: "#451A03",
         font: "'Amiri', serif",
-        palette: ["#B45309", "#D97706", "#92400E"],
+        palette: ["#B45309", "#059669", "#92400E"],
         barBg: "#FEF3C7",
         barBorder: "1px solid #FDE68A"
     },
@@ -90,7 +90,7 @@ export const presetThemes: { [key: string]: Theme } = {
         bgColor: "#F7FEE7",
         textColor: "#1A2E05",
         font: "'Scheherazade New', serif",
-        palette: ["#4D7C0F", "#65A30D", "#3F6212"],
+        palette: ["#4D7C0F", "#B45309", "#3F6212"],
         barBg: "#ECFCCB",
         barBorder: "1px solid #D9F99D"
     },
@@ -127,7 +127,7 @@ export const presetThemes: { [key: string]: Theme } = {
         bgColor: "#0F172A",
         textColor: "#E2E8F0",
         font: "'Amiri', serif",
-        palette: ["#3B82F6", "#FCD34D", "#1E293B"],
+        palette: ["#2563EB", "#D97706", "#1E293B"],
         barBg: "#1E293B",
         barBorder: "1px solid #3B82F6",
         accent: "#FCD34D",
@@ -142,7 +142,7 @@ export const presetThemes: { [key: string]: Theme } = {
         bgColor: "#ECFDF5",
         textColor: "#064E3B",
         font: "'Cairo', sans-serif",
-        palette: ["#10B981", "#34D399", "#059669"],
+        palette: ["#059669", "#0284C7", "#10B981"],
         barBg: "#D1FAE5",
         barBorder: "1px solid #10B981",
         accent: "#10B981",
@@ -154,7 +154,7 @@ export const presetThemes: { [key: string]: Theme } = {
         bgColor: "#FFF1F2",
         textColor: "#881337",
         font: "'Cairo', sans-serif",
-        palette: ["#BE123C", "#E11D48", "#9F1239"],
+        palette: ["#BE123C", "#7C3AED", "#9F1239"],
         barBg: "#FFE4E6",
         barBorder: "1px solid #FECDD3"
     },
@@ -172,7 +172,7 @@ export const presetThemes: { [key: string]: Theme } = {
         bgColor: "#ECFEFF",
         textColor: "#164E63",
         font: "'Amiri', serif",
-        palette: ["#0E7490", "#0891B2", "#06B6D4"],
+        palette: ["#0E7490", "#4338CA", "#06B6D4"],
         barBg: "#CFFAFE",
         barBorder: "1px solid #A5F3FC"
     },
@@ -181,7 +181,7 @@ export const presetThemes: { [key: string]: Theme } = {
         bgColor: "#FAFAF9",
         textColor: "#44403C",
         font: "'Cairo', sans-serif",
-        palette: ["#44403C", "#57534E", "#78716C"],
+        palette: ["#44403C", "#9A3412", "#78716C"],
         barBg: "#E7E5E4",
         barBorder: "1px solid #D6D3D1"
     },
@@ -190,7 +190,7 @@ export const presetThemes: { [key: string]: Theme } = {
         bgColor: "#F8FAFC",
         textColor: "#334155",
         font: "'Cairo', sans-serif",
-        palette: ["#334155", "#475569", "#64748B"],
+        palette: ["#334155", "#0D9488", "#64748B"],
         barBg: "#E2E8F0",
         barBorder: "1px solid #CBD5E1"
     },
@@ -199,7 +199,7 @@ export const presetThemes: { [key: string]: Theme } = {
         bgColor: "#FFF7ED",
         textColor: "#9A3412",
         font: "'Cairo', sans-serif",
-        palette: ["#F97316", "#FB923C", "#EA580C"],
+        palette: ["#EA580C", "#9333EA", "#F97316"],
         barBg: "#FFEDD5",
         barBorder: "1px solid #FED7AA",
         accentText: "#000000"
@@ -209,7 +209,7 @@ export const presetThemes: { [key: string]: Theme } = {
         bgColor: "#0F172A",
         textColor: "#F8FAFC",
         font: "'Cairo', sans-serif",
-        palette: ["#A855F7", "#D946EF", "#7C3AED"],
+        palette: ["#7C3AED", "#06B6D4", "#A855F7"],
         barBg: "#1E1B4B",
         barBorder: "1px solid #A855F7"
     },
@@ -218,7 +218,7 @@ export const presetThemes: { [key: string]: Theme } = {
         bgColor: "#FFF1F2",
         textColor: "#9D174D",
         font: "'Cairo', sans-serif",
-        palette: ["#F472B6", "#EC4899", "#DB2777"],
+        palette: ["#DB2777", "#7C3AED", "#F472B6"],
         barBg: "#FFE4E6",
         barBorder: "1px solid #FBCFE8"
     },
@@ -227,7 +227,7 @@ export const presetThemes: { [key: string]: Theme } = {
         bgColor: "#0F172A",
         textColor: "#F8FAFC",
         font: "'Cairo', sans-serif",
-        palette: ["#06B6D4", "#D946EF", "#8B5CF6"],
+        palette: ["#0891B2", "#D946EF", "#8B5CF6"],
         barBg: "#1E293B",
         barBorder: "1px solid #06B6D4"
     },
@@ -236,7 +236,7 @@ export const presetThemes: { [key: string]: Theme } = {
         bgColor: "#2E1065",
         textColor: "#F3E8FF",
         font: "'Amiri', serif",
-        palette: ["#6D28D9", "#7C3AED", "#5B21B6"],
+        palette: ["#6D28D9", "#D97706", "#5B21B6"],
         barBg: "#4C1D95",
         barBorder: "1px solid #7C3AED"
     },
@@ -245,7 +245,7 @@ export const presetThemes: { [key: string]: Theme } = {
         bgColor: "#0B0F19",
         textColor: "#C7D2FE",
         font: "'Cairo', sans-serif",
-        palette: ["#4F46E5", "#7C3AED", "#C026D3"],
+        palette: ["#4338CA", "#C026D3", "#7C3AED"],
         barBg: "#1E1B4B",
         barBorder: "1px solid #4F46E5"
     },
@@ -254,7 +254,7 @@ export const presetThemes: { [key: string]: Theme } = {
         bgColor: "#0F172A",
         textColor: "#E2E8F0",
         font: "'Cairo', sans-serif",
-        palette: ["#0EA5E9", "#0284C7", "#0369A1"],
+        palette: ["#0284C7", "#0D9488", "#0369A1"],
         barBg: "#1E293B",
         barBorder: "1px solid #0EA5E9"
     },
@@ -263,7 +263,7 @@ export const presetThemes: { [key: string]: Theme } = {
         bgColor: "#FEFBF1",
         textColor: "#3D3328",
         font: "'Amiri', serif",
-        palette: ["#8C7B65", "#A69177", "#C2B092"],
+        palette: ["#78350F", "#4D7C0F", "#C2B092"],
         barBg: "#EDE6D3",
         barBorder: "1px solid #D4C5A9"
     },
@@ -272,7 +272,7 @@ export const presetThemes: { [key: string]: Theme } = {
         bgColor: "#F0FDFA",
         textColor: "#134E4A",
         font: "'Cairo', sans-serif",
-        palette: ["#0D9488", "#14B8A6", "#2DD4BF"],
+        palette: ["#0D9488", "#2563EB", "#2DD4BF"],
         barBg: "#CCFBF1",
         barBorder: "1px solid #99F6E4"
     },
@@ -281,7 +281,7 @@ export const presetThemes: { [key: string]: Theme } = {
         bgColor: "#022C22",
         textColor: "#D1FAE5",
         font: "'Amiri', serif",
-        palette: ["#059669", "#10B981", "#047857"],
+        palette: ["#047857", "#B45309", "#059669"],
         barBg: "#064E3B",
         barBorder: "1px solid #059669"
     },
@@ -290,7 +290,7 @@ export const presetThemes: { [key: string]: Theme } = {
         bgColor: "#FAF5FF",
         textColor: "#581C87",
         font: "'Cairo', sans-serif",
-        palette: ["#7C3AED", "#8B5CF6", "#A855F7"],
+        palette: ["#7C3AED", "#BE185D", "#A855F7"],
         barBg: "#F3E8FF",
         barBorder: "1px solid #E9D5FF"
     },
@@ -299,10 +299,10 @@ export const presetThemes: { [key: string]: Theme } = {
         bgColor: "#FFFFFF",
         textColor: "#0369A1",
         font: "'Cairo', sans-serif",
-        palette: ["#0284C7", "#0EA5E9", "#38BDF8"],
+        palette: ["#0284C7", "#7C3AED", "#38BDF8"],
         barBg: "#E0F2FE",
         barBorder: "1px solid #38BDF8",
-        btnText: "#0369A1",
+        btnText: "#FFFFFF",
         isGlass: true
     },
     frosted_emerald: {
@@ -310,10 +310,10 @@ export const presetThemes: { [key: string]: Theme } = {
         bgColor: "#ECFDF5",
         textColor: "#065F46",
         font: "'Cairo', sans-serif",
-        palette: ["#10B981", "#34D399", "#064E3B"],
+        palette: ["#059669", "#8B5CF6", "#064E3B"],
         barBg: "#D1FAE5",
         barBorder: "1px solid #10B981",
-        btnText: "#065F46",
+        btnText: "#FFFFFF",
         isGlass: true
     },
     midnight_glass: {
@@ -321,10 +321,10 @@ export const presetThemes: { [key: string]: Theme } = {
         bgColor: "#0F172A",
         textColor: "#F1F5F9",
         font: "'Cairo', sans-serif",
-        palette: ["#3B82F6", "#60A5FA", "#0F172A"],
+        palette: ["#2563EB", "#7C3AED", "#0F172A"],
         barBg: "#1E293B",
         barBorder: "1px solid #3B82F6",
-        btnText: "#F1F5F9",
+        btnText: "#FFFFFF",
         isGlass: true
     }
 };

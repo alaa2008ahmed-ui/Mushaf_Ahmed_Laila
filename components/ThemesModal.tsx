@@ -95,7 +95,7 @@ function ThemeSelector({ onClose, isLandscape }: { onClose: () => void, isLandsc
                         ))}
                     </div>
                 </div>
-                <input type="file" ref={fileInputRef} id="bg-upload" accept="image/*,video/*" className="hidden" onChange={handleBgUpload} />
+                <input type="file" ref={fileInputRef} id="bg-upload" accept="image/*,video/*" className="sr-only absolute w-0 h-0 opacity-0 overflow-hidden pointer-events-none" onChange={handleBgUpload} />
             </div>
         </div>
     );

@@ -1,4 +1,4 @@
-import html2canvas from 'html2canvas';
+import { safeHtml2Canvas } from './canvasHelper';
 import { Share } from '@capacitor/share';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
@@ -133,7 +133,7 @@ export const shareAsImage = async ({ text, source, category, theme, setToastMess
         // Wait for fonts and styles to settle
         await new Promise(r => setTimeout(r, 500));
 
-        const canvas = await html2canvas(container, {
+        const canvas = await safeHtml2Canvas(container, {
             scale: 3, // High quality scale
             backgroundColor: null,
             useCORS: true,

@@ -133,12 +133,12 @@ const TutorialOverlay: React.FC<TutorialOverlayProps> = ({
   const getTooltipStyle = (): React.CSSProperties => {
     const windowWidth = window.innerWidth;
     const windowHeight = window.innerHeight;
-    const tooltipWidth = Math.min(280, windowWidth * 0.85);
-    const margin = 40;
+    const tooltipWidth = Math.min(330, windowWidth - 24);
 
     let style: React.CSSProperties = {
       position: "fixed",
       width: `${tooltipWidth}px`,
+      maxWidth: "calc(100vw - 24px)",
       zIndex: 10001,
     };
 
@@ -161,52 +161,19 @@ const TutorialOverlay: React.FC<TutorialOverlayProps> = ({
       return style;
     }
 
-    const availableWidthLeft = targetRect.left - margin * 2;
-    const availableWidthRight = windowWidth - targetRect.right - margin * 2;
+    // Always center horizontally for optimal readability and full text display
+    style.left = "50%";
+    style.transform = "translateX(-50%)";
 
-    if (availableWidthLeft > 150) {
-      style.left = `${margin}px`;
-      style.top = "50%";
-      style.transform = "translateY(-50%)";
-      style.width = `${Math.min(tooltipWidth, availableWidthLeft)}px`;
-    } else if (availableWidthRight > 150) {
-      style.left = "auto";
-      style.right = `${margin}px`;
-      style.top = "50%";
-      style.transform = "translateY(-50%)";
-      style.width = `${Math.min(tooltipWidth, availableWidthRight)}px`;
+    const spaceAbove = targetRect.top;
+    const spaceBelow = windowHeight - targetRect.bottom;
+    const margin = 16;
+
+    // Place below if there is enough space below or more space than above
+    if (spaceBelow >= 200 || spaceBelow >= spaceAbove) {
+      style.top = `${Math.min(targetRect.bottom + margin, windowHeight - 210)}px`;
     } else {
-      style.top = "50%";
-      style.left = "50%";
-      style.transform = "translate(-50%, -50%)";
-
-      const tooltipHeight = 240;
-      const centerRect = {
-        left: windowWidth / 2 - tooltipWidth / 2,
-        right: windowWidth / 2 + tooltipWidth / 2,
-        top: windowHeight / 2 - tooltipHeight / 2,
-        bottom: windowHeight / 2 + tooltipHeight / 2,
-      };
-
-      const isOverlapping = !(
-        targetRect.right + margin < centerRect.left ||
-        targetRect.left - margin > centerRect.right ||
-        targetRect.bottom + margin < centerRect.top ||
-        targetRect.top - margin > centerRect.bottom
-      );
-
-      if (isOverlapping) {
-        style.transform = "translateX(-50%)";
-        const spaceAbove = targetRect.top;
-        const spaceBelow = windowHeight - targetRect.bottom;
-        
-        if (spaceAbove > spaceBelow) {
-          style.top = "auto";
-          style.bottom = `${windowHeight - targetRect.top + margin}px`;
-        } else {
-          style.top = `${targetRect.bottom + margin + 40}px`;
-        }
-      }
+      style.bottom = `${Math.min(windowHeight - targetRect.top + margin, windowHeight - 60)}px`;
     }
 
     return style;
@@ -272,21 +239,21 @@ const TutorialOverlay: React.FC<TutorialOverlayProps> = ({
                 className="bg-white rounded-2xl shadow-2xl pointer-events-auto border border-white/20 overflow-hidden"
                 onClick={(e) => e.stopPropagation()}
               >
-                <div className="p-4">
+                <div className="p-4 sm:p-5">
                   <div className="text-right mb-3">
                     {step.title && (
-                      <h3 className="font-bold text-[16px] text-gray-900 mb-1 truncate leading-tight">
+                      <h3 className="font-bold text-[16px] text-gray-900 mb-1 leading-snug break-words">
                         {step.title}
                       </h3>
                     )}
-                    <p className="text-[14px] text-gray-600 leading-relaxed">
+                    <p className="text-[14px] text-gray-600 leading-relaxed break-words">
                       {step.text}
                     </p>
                   </div>
 
-                  <div className="flex items-center justify-end mt-4 pt-3 border-t border-gray-50">
+                  <div className="flex items-center justify-end mt-4 pt-3 border-t border-gray-100">
                     <button
-                      className="px-6 py-2 bg-emerald-500 text-white rounded-lg text-[14px] font-bold shadow-md active:scale-95 transition-all"
+                      className="px-6 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-[14px] font-bold shadow-md active:scale-95 transition-all cursor-pointer"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleNext();

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, Check, X, Smartphone, AppWindow, VolumeX, Clock, Shuffle } from 'lucide-react';
+import { Bell, Check, X, Smartphone, AppWindow, VolumeX, Clock, Shuffle, BellRing } from 'lucide-react';
 import { toArabic } from './constants';
 import { usePrayerTimes } from '../../context/PrayerTimesContext';
 import { setupNotifications } from '../../utils/notifications';
@@ -207,6 +207,212 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({ o
                             <p className="text-[11px] opacity-80 text-center mb-2">
                                 إشعارات تظهر على شاشة الهاتف حتى لو كان التطبيق مغلقاً
                             </p>
+
+                            {/* إعدادات الاستعداد للصلاة والصامت التلقائي */}
+                            <div className="space-y-3">
+                                <h4 className="font-bold text-sm mb-1 opacity-90 flex items-center gap-1.5" style={{ color: 'var(--qr-accent)' }}>
+                                    <BellRing className="w-4 h-4" />
+                                    <span>تنبيهات الاستعداد والصامت التلقائي</span>
+                                </h4>
+
+                                {/* 1. تنبيه الاستعداد للصلاة */}
+                                <div 
+                                    className="p-3.5 rounded-2xl border-2 border-black dark:border-white transition-all space-y-2.5 themed-card-bg shadow-xs"
+                                >
+                                    <div className="flex items-center justify-between gap-3">
+                                        {/* Toggle Switch */}
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const preReminder = config.preAthanReminder || { enabled: false, minutes: 15 };
+                                                const nextState = !preReminder.enabled;
+                                                const currentMins = preReminder.minutes || 15;
+                                                updateConfig({
+                                                    preAthanReminder: {
+                                                        enabled: nextState,
+                                                        minutes: currentMins
+                                                    }
+                                                });
+                                                showToast(nextState ? `تم تفعيل تنبيه الاستعداد قبل ${currentMins} د 🕌` : 'تم تعطيل تنبيه الاستعداد عاماً');
+                                            }}
+                                            className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors shrink-0 ${
+                                                config.preAthanReminder?.enabled ? '' : 'bg-gray-300 dark:bg-gray-600'
+                                            }`}
+                                            style={{ backgroundColor: config.preAthanReminder?.enabled ? 'var(--qr-accent)' : undefined }}
+                                            title="تنبيه الاستعداد"
+                                        >
+                                            <div
+                                                className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                                                    config.preAthanReminder?.enabled ? '-translate-x-5' : 'translate-x-0'
+                                                }`}
+                                            />
+                                        </button>
+
+                                        {/* Info */}
+                                        <div className="min-w-0 flex-1 text-right" dir="rtl">
+                                            <div className="flex items-center justify-start gap-1.5 flex-wrap">
+                                                <span className="font-bold text-xs sm:text-sm">تنبيه الاستعداد</span>
+                                                <span 
+                                                    className="text-[10px] font-bold px-1.5 py-0.5 rounded-full transition-colors"
+                                                    style={{
+                                                        backgroundColor: 'color-mix(in srgb, var(--qr-accent) 15%, transparent)',
+                                                        color: 'var(--qr-accent)'
+                                                    }}
+                                                >
+                                                    قبل {config.preAthanReminder?.minutes || 15}د
+                                                </span>
+                                            </div>
+                                            <p className="text-[11px] opacity-75 mt-0.5 leading-snug">
+                                                {config.preAthanReminder?.enabled 
+                                                    ? 'للوضوء والمسجد (شامل لكل الصلوات)' 
+                                                    : 'معطّل (يمكن تفعيله عاماً أو لكل صلاة على حدة)'}
+                                            </p>
+                                        </div>
+
+                                        {/* Icon */}
+                                        <div 
+                                            className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors"
+                                            style={{
+                                                backgroundColor: config.preAthanReminder?.enabled 
+                                                    ? 'color-mix(in srgb, var(--qr-accent) 15%, transparent)' 
+                                                    : 'rgba(0,0,0,0.05)',
+                                                color: config.preAthanReminder?.enabled 
+                                                    ? 'var(--qr-accent)' 
+                                                    : 'inherit'
+                                            }}
+                                        >
+                                            <BellRing className="w-4 h-4" />
+                                        </div>
+                                    </div>
+
+                                    {/* Duration selector - ALWAYS VISIBLE whether enabled or disabled */}
+                                    <div className="flex items-center justify-start gap-1.5 pt-1.5 border-t border-black/10 dark:border-white/10" dir="rtl">
+                                        <span className="text-[10px] opacity-60">الوقت:</span>
+                                        {[10, 15, 20].map((mins) => {
+                                            const isSelected = (config.preAthanReminder?.minutes || 15) === mins;
+                                            return (
+                                                <button
+                                                    key={mins}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        updateConfig({
+                                                            preAthanReminder: { 
+                                                                enabled: config.preAthanReminder?.enabled !== false, 
+                                                                minutes: mins 
+                                                            }
+                                                        });
+                                                        showToast(`قبل ${mins}د`);
+                                                    }}
+                                                    className={`px-2.5 py-0.5 rounded-md text-[10px] font-bold transition-all cursor-pointer ${
+                                                        isSelected
+                                                            ? 'shadow-xs'
+                                                            : 'bg-black/5 dark:bg-white/10 opacity-80 hover:opacity-100'
+                                                    }`}
+                                                    style={isSelected ? {
+                                                        backgroundColor: 'var(--qr-accent)',
+                                                        color: 'var(--qr-accent-text, #ffffff)'
+                                                    } : undefined}
+                                                >
+                                                    {mins}د
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                {/* 2. تفعيل الصامت التلقائي */}
+                                <div 
+                                    className="p-3.5 rounded-2xl border-2 border-black dark:border-white transition-all space-y-2.5 themed-card-bg shadow-xs"
+                                >
+                                    <div className="flex items-center justify-between gap-3">
+                                        {/* Toggle Switch */}
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const nextState = !config.autoSilent;
+                                                updateConfig({ autoSilent: nextState });
+                                                showToast(nextState ? 'تم تفعيل الصامت التلقائي 🔕' : 'تم التعطيل العام (تحكم فردي لكل صلاة)');
+                                            }}
+                                            className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors shrink-0 ${
+                                                config.autoSilent ? '' : 'bg-gray-300 dark:bg-gray-600'
+                                            }`}
+                                            style={{ backgroundColor: config.autoSilent ? 'var(--qr-accent)' : undefined }}
+                                            title="الصامت التلقائي"
+                                        >
+                                            <div
+                                                className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                                                    config.autoSilent ? '-translate-x-5' : 'translate-x-0'
+                                                }`}
+                                            />
+                                        </button>
+
+                                        {/* Info */}
+                                        <div className="min-w-0 flex-1 text-right" dir="rtl">
+                                            <div className="flex items-center justify-start gap-1.5 flex-wrap">
+                                                <span className="font-bold text-xs sm:text-sm">الصامت التلقائي</span>
+                                                <span 
+                                                    className="text-[10px] font-bold px-1.5 py-0.5 rounded-full transition-colors"
+                                                    style={{
+                                                        backgroundColor: 'color-mix(in srgb, var(--qr-accent) 15%, transparent)',
+                                                        color: 'var(--qr-accent)'
+                                                    }}
+                                                >
+                                                    {config.autoSilentDuration || 30}د
+                                                </span>
+                                            </div>
+                                            <p className="text-[11px] opacity-75 mt-0.5 leading-snug">
+                                                {config.autoSilent 
+                                                    ? 'كتم الهاتف وقت الصلاة (شامل لكل الصلوات)' 
+                                                    : 'معطّل عاماً (يتم التحكم بكل صلاة على حدة من بطاقتها)'}
+                                            </p>
+                                        </div>
+
+                                        {/* Icon */}
+                                        <div 
+                                            className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors"
+                                            style={{
+                                                backgroundColor: config.autoSilent 
+                                                    ? 'color-mix(in srgb, var(--qr-accent) 15%, transparent)' 
+                                                    : 'rgba(0,0,0,0.05)',
+                                                color: config.autoSilent 
+                                                    ? 'var(--qr-accent)' 
+                                                    : 'inherit'
+                                            }}
+                                        >
+                                            <VolumeX className="w-4 h-4" />
+                                        </div>
+                                    </div>
+
+                                    {/* Duration selector - ALWAYS VISIBLE whether enabled or disabled */}
+                                    <div className="flex items-center justify-start gap-1.5 pt-1.5 border-t border-black/10 dark:border-white/10" dir="rtl">
+                                        <span className="text-[10px] opacity-60">المدة:</span>
+                                        {[20, 30, 45].map((duration) => {
+                                            const isSelected = (config.autoSilentDuration || 30) === duration;
+                                            return (
+                                                <button
+                                                    key={duration}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        updateConfig({ autoSilentDuration: duration });
+                                                        showToast(`المدة: ${duration}د`);
+                                                    }}
+                                                    className={`px-2.5 py-0.5 rounded-md text-[10px] font-bold transition-all cursor-pointer ${
+                                                        isSelected
+                                                            ? 'shadow-xs'
+                                                            : 'bg-black/5 dark:bg-white/10 opacity-80 hover:opacity-100'
+                                                    }`}
+                                                    style={isSelected ? {
+                                                        backgroundColor: 'var(--qr-accent)',
+                                                        color: 'var(--qr-accent-text, #ffffff)'
+                                                    } : undefined}
+                                                >
+                                                    {duration}د
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            </div>
 
                             <div className="space-y-2">
                                 <h4 className="font-bold text-sm mb-2 opacity-90">أوقات الليل</h4>

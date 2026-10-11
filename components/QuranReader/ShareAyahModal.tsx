@@ -308,7 +308,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
         if (isSharing) return;
         setIsSharing(true);
         
-        let shareText = `${surahInfo}\nايات من القران الكريم . بواسطة : مصحف احمد وليلى`;
+        let shareText = `${surahInfo}\nآيات من القرآن الكريم . بواسطة : مصحف أحمد وليلى`;
         
         if (shareType === 'page') {
             let pageSurahInfo = surahInfo;
@@ -320,7 +320,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                     : `سورة ${getSurahName(firstPageAyah.sNum)} آية ${toArabic(firstPageAyah.numberInSurah)} - سورة ${getSurahName(lastPageAyah.sNum)} آية ${toArabic(lastPageAyah.numberInSurah)}`;
             }
             
-            shareText = `صفحة ${toArabic(pageNum)} - ${pageSurahInfo}\nايات من القران الكريم . بواسطة : مصحف احمد وليلى`;
+            shareText = `صفحة ${toArabic(pageNum)} - ${pageSurahInfo}\nآيات من القرآن الكريم . بواسطة : مصحف أحمد وليلى`;
         }
         
         const fullText = `${combinedText}\n\n${combinedExplanation ? combinedExplanation + '\n\n' : ''}${shareText}`;
@@ -483,7 +483,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                         // Smaller delay for faster response
                         await new Promise(r => setTimeout(r, 100));
 
-                        const canvas = await html2canvas(captureElement, {
+                        const canvas = await safeHtml2Canvas(captureElement, {
                             scale: 2, // 2x of 1000px = 2000px, very safe and high quality
                             backgroundColor: '#ffffff',
                             useCORS: true,
@@ -620,8 +620,13 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                     ayahsToShare.push({ s: currentAyah.s, a });
                 }
 
-                // Custom file name: Use safe characters for filename
-                const fileName = `quran_audio_${currentAyah.s}_${start}${start !== end ? '_' + end : ''}.mp3`;
+                // Custom file name formatted exactly: سورة [اسم السورة] الايه01 أو سورة [اسم السورة] الايه من 01 الى 20
+                const surahName = getSurahName(currentAyah.s);
+                const fromStr = String(start).padStart(2, '0');
+                const toStr = String(end).padStart(2, '0');
+                const fileName = start === end 
+                    ? `سورة ${surahName} الايه${fromStr}.mp3` 
+                    : `سورة ${surahName} الايه من ${fromStr} الى ${toStr}.mp3`;
 
                 try {
                         // Helper to strip ID3v2, ID3v1 tags, and neutralize Xing/Info headers
@@ -758,7 +763,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
     const handleCopy = async () => {
         if (isCopying) return;
         setIsCopying(true);
-        const shareText = `${surahInfo}\nايات من القران الكريم . بواسطة : مصحف احمد وليلى`;
+        const shareText = `${surahInfo}\nآيات من القرآن الكريم . بواسطة : مصحف أحمد وليلى`;
         const fullText = `${combinedText}\n\n${combinedExplanation ? combinedExplanation + '\n\n' : ''}${shareText}`;
         
         try {

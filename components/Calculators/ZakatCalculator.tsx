@@ -12,9 +12,15 @@ const Tooltip = ({ text }: { text: string }) => (
     </div>
 );
 
-const ZakatCalculator: React.FC = () => {
-    const { theme } = useTheme();
-    const isBlackTheme = theme.bgColor === '#000000';
+const ZakatCalculator: React.FC<{ cardBorderColor?: string }> = ({ cardBorderColor: propCardBorderColor }) => {
+    const { theme, themeKey } = useTheme();
+    const isBlackTheme = theme.bgColor === '#000000' || theme.name === 'أبيض وأسود';
+    const isDefaultTheme = themeKey === 'default' || !themeKey;
+    const cardBorderColor = propCardBorderColor || (isDefaultTheme 
+        ? '#000000' 
+        : (isBlackTheme 
+            ? '#FFFFFF' 
+            : (theme.palette?.[0] || '#000000')));
     
     // Money
     const [cashAmount, setCashAmount] = useState('');
@@ -174,14 +180,14 @@ const ZakatCalculator: React.FC = () => {
                     )}
                 </h2>
                 <button onClick={clearAll} className="flex items-center gap-1 text-sm text-red-500 hover:bg-red-500/10 px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap">
-                    <RefreshCw size={14} /> تنظيف
+                    <RefreshCw size={14} /> إعادة ضبط
                 </button>
             </div>
 
             {/* 1. Money & Savings */}
-            <div className={`themed-card p-4 rounded-xl border-l-4 ${isBlackTheme ? 'border-white' : 'border-primary'}`}>
+            <div className="themed-card p-4 rounded-xl" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                 <h3 className="font-bold mb-3 flex items-center gap-2" style={{ color: theme.textColor }}>
-                    <i className={`fa-solid fa-wallet ${isBlackTheme ? 'text-white' : 'text-primary'}`}></i> زكاة النقود والمدخرات
+                    <i className={`fa-solid fa-wallet ${isBlackTheme ? 'text-white' : (isDefaultTheme ? 'text-black' : 'text-primary')}`}></i> زكاة النقود والمدخرات
                 </h3>
                 <div>
                     {renderInput('المبلغ النقدي', cashAmount, setCashAmount, 'الأموال النقدية والمدخرات البنكية التي حال عليها الحول')}
@@ -189,7 +195,7 @@ const ZakatCalculator: React.FC = () => {
             </div>
 
             {/* 2. Gold & Silver */}
-            <div className="themed-card p-4 rounded-xl border-l-4 border-yellow-500">
+            <div className="themed-card p-4 rounded-xl" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                 <h3 className="font-bold mb-3 flex items-center gap-2" style={{ color: theme.textColor }}>
                     <i className="fa-solid fa-ring text-yellow-500"></i> زكاة الذهب والفضة
                 </h3>
@@ -218,7 +224,7 @@ const ZakatCalculator: React.FC = () => {
             </div>
 
             {/* 3. Trade Goods & Real Estate */}
-            <div className="themed-card p-4 rounded-xl border-l-4 border-blue-500">
+            <div className="themed-card p-4 rounded-xl" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                 <h3 className="font-bold mb-3 flex items-center gap-2" style={{ color: theme.textColor }}>
                     <i className="fa-solid fa-shop text-blue-500"></i> عروض التجارة والعقارات
                 </h3>
@@ -229,9 +235,9 @@ const ZakatCalculator: React.FC = () => {
             </div>
 
             {/* 4. Crops */}
-            <div className={`themed-card p-4 rounded-xl border-l-4 ${isBlackTheme ? 'border-white' : 'border-green-500'}`}>
+            <div className="themed-card p-4 rounded-xl" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                 <h3 className="font-bold mb-3 flex items-center gap-2" style={{ color: theme.textColor }}>
-                    <i className={`fa-solid fa-wheat-awn ${isBlackTheme ? 'text-white' : 'text-green-500'}`}></i> زكاة الزروع والثمار
+                    <i className={`fa-solid fa-wheat-awn ${isBlackTheme ? 'text-white' : (isDefaultTheme ? 'text-black' : 'text-green-500')}`}></i> زكاة الزروع والثمار
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {renderInput('الكمية (كجم)', cropsQuantity, setCropsQuantity, 'نصاب الزروع 5 أوسق (حوالي 653 كجم)')}
@@ -247,14 +253,14 @@ const ZakatCalculator: React.FC = () => {
                     {renderInput(`سعر الكيلو`, cropPricePerKg, setCropPricePerKg, 'اختياري: لحساب القيمة النقدية للزكاة')}
                 </div>
                 {cropsZakatKg > 0 && (
-                    <div className={`mt-3 text-sm font-bold ${isBlackTheme ? 'text-white' : 'text-green-600 dark:text-green-400'}`}>
+                    <div className={`mt-3 text-sm font-bold ${isBlackTheme ? 'text-white' : (isDefaultTheme ? 'text-black' : 'text-green-600 dark:text-green-400')}`}>
                         المقدار الواجب إخراجه: {cropsZakatKg.toFixed(2)} كجم
                     </div>
                 )}
             </div>
 
             {/* 5. Livestock & Rikaz */}
-            <div className="themed-card p-4 rounded-xl border-l-4 border-orange-500">
+            <div className="themed-card p-4 rounded-xl" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                 <h3 className="font-bold mb-3 flex items-center gap-2" style={{ color: theme.textColor }}>
                     <i className="fa-solid fa-cow text-orange-500"></i> الأنعام والركاز
                 </h3>
@@ -274,8 +280,8 @@ const ZakatCalculator: React.FC = () => {
             </div>
 
             {/* Final Summary */}
-            <div className={`mt-8 p-6 rounded-2xl border text-center shadow-lg relative overflow-hidden ${isBlackTheme ? 'bg-white/10 border-white/30' : 'bg-gradient-to-br from-primary/20 to-primary/5 border-primary/30'}`}>
-                <div className={`absolute top-0 left-0 w-full h-1 ${isBlackTheme ? 'bg-white' : 'bg-gradient-to-r from-primary to-blue-500'}`}></div>
+            <div className={`mt-8 p-6 rounded-2xl border text-center shadow-lg relative overflow-hidden ${isBlackTheme ? 'bg-white/10' : 'bg-gradient-to-br from-primary/20 to-primary/5'}`} style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
+                <div className={`absolute top-0 left-0 w-full h-1 ${isBlackTheme ? 'bg-white' : (isDefaultTheme ? 'bg-black' : 'bg-gradient-to-r from-primary to-blue-500')}`}></div>
                 <h3 className="text-lg font-bold opacity-90 mb-2" style={{ color: theme.textColor }}>الملخص النهائي للزكاة النقدية</h3>
                 
                 <div className="flex justify-center items-baseline gap-2 mb-4">

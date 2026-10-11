@@ -63,6 +63,12 @@ function formatTime(seconds) {
 function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
     const { theme, themeKey } = useTheme();
     const isBlackTheme = theme.bgColor === '#000000';
+    const isDefaultTheme = themeKey === 'default' || !themeKey;
+    const cardBorderColor = isDefaultTheme 
+        ? '#000000' 
+        : (isBlackTheme 
+            ? '#FFFFFF' 
+            : (theme.palette?.[0] || '#000000'));
     const [reciterId, setReciterId] = useState(RECITERS[0].id);
     const [surahNumber, setSurahNumber] = useState(1);
     const [isPlaying, setIsPlaying] = useState(false);
@@ -473,14 +479,16 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
                 <div className="space-y-3 flex-shrink-0 py-4">
                     <button 
                         onClick={() => setShowReciterModal(true)} 
-                        className="w-full p-3 text-center rounded-xl border font-bold themed-card flex justify-between items-center"
+                        className="w-full p-3 text-center rounded-xl font-bold themed-card flex justify-between items-center transition-all"
+                        style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
                     >
                         <span>{reciterName}</span>
                         <i className="fa-solid fa-chevron-down opacity-50"></i>
                     </button>
                     <button 
                         onClick={() => setShowSurahModal(true)} 
-                        className="w-full p-3 text-center rounded-xl border font-bold themed-card flex justify-between items-center"
+                        className="w-full p-3 text-center rounded-xl font-bold themed-card flex justify-between items-center transition-all"
+                        style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
                     >
                         <span>{surahNumber} - {surahName}</span>
                         <i className="fa-solid fa-chevron-down opacity-50"></i>
@@ -489,7 +497,10 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
 
 
 
-                <div className="themed-card rounded-3xl p-6 space-y-5 flex-shrink-0">
+                <div 
+                    className="themed-card rounded-3xl p-6 space-y-5 flex-shrink-0 transition-all"
+                    style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                >
                     <div className="w-full space-y-1.5" dir="rtl">
                         <input
                             type="range"
@@ -521,7 +532,10 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
                 </div>
 
                 <div className="pt-6 pb-2 flex-shrink-0 space-y-3">
-                    <div className="themed-card rounded-2xl p-4 space-y-4">
+                    <div 
+                        className="themed-card rounded-2xl p-4 space-y-4 transition-all"
+                        style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                    >
                         <div className="flex items-center justify-between">
                             <label htmlFor="continuous-play-toggle" className="font-bold text-sm flex items-center gap-2" style={{ color: theme.textColor }}>
                                 <i className="fa-solid fa-repeat" style={{ color: (themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF' : '#000000') : theme.palette[0] }}></i>

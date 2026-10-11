@@ -1,4 +1,5 @@
 import React from 'react';
+import { BellRing, VolumeX, Clock } from 'lucide-react';
 import ToneSelector from './ToneSelector';
 
 interface PrayerTimesSettingsModalProps {
@@ -8,11 +9,15 @@ interface PrayerTimesSettingsModalProps {
     primaryColor: string;
     secondaryColor: string;
     isBlackAndWhite: boolean;
+    cardBorderColor?: string;
+    isDefaultTheme?: boolean;
     closeModal: () => void;
     tempOffset: number;
     setTempOffset: React.Dispatch<React.SetStateAction<number>>;
     tempIqama: number;
     setTempIqama: React.Dispatch<React.SetStateAction<number>>;
+    tempIqamaEnabled: boolean;
+    setTempIqamaEnabled: React.Dispatch<React.SetStateAction<boolean>>;
     times: Record<string, string>;
     formatTime12_EN: (time: string) => string;
     applyOffset: (timeStr: string, offsetMins: number) => string;
@@ -22,6 +27,19 @@ interface PrayerTimesSettingsModalProps {
     handleToneUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
     saveUserConfig: () => void;
     isSummerTime?: boolean;
+    // Readiness alert & Auto-silent settings
+    isGlobalPreReminderActive: boolean;
+    globalPreReminderMinutes: number;
+    tempPreReminderEnabled: boolean;
+    setTempPreReminderEnabled: React.Dispatch<React.SetStateAction<boolean>>;
+    tempPreReminderMinutes: number;
+    setTempPreReminderMinutes: React.Dispatch<React.SetStateAction<number>>;
+    isGlobalAutoSilentActive: boolean;
+    globalAutoSilentDuration: number;
+    tempAutoSilentEnabled: boolean;
+    setTempAutoSilentEnabled: React.Dispatch<React.SetStateAction<boolean>>;
+    tempAutoSilentDuration: number;
+    setTempAutoSilentDuration: React.Dispatch<React.SetStateAction<number>>;
 }
 
 const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
@@ -31,11 +49,15 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
     primaryColor,
     secondaryColor,
     isBlackAndWhite,
+    cardBorderColor,
+    isDefaultTheme,
     closeModal,
     tempOffset,
     setTempOffset,
     tempIqama,
     setTempIqama,
+    tempIqamaEnabled,
+    setTempIqamaEnabled,
     times,
     formatTime12_EN,
     applyOffset,
@@ -44,25 +66,50 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
     handleToneSelection,
     handleToneUpload,
     saveUserConfig,
-    isSummerTime
+    isSummerTime,
+    isGlobalPreReminderActive,
+    globalPreReminderMinutes,
+    tempPreReminderEnabled,
+    setTempPreReminderEnabled,
+    tempPreReminderMinutes,
+    setTempPreReminderMinutes,
+    isGlobalAutoSilentActive,
+    globalAutoSilentDuration,
+    tempAutoSilentEnabled,
+    setTempAutoSilentEnabled,
+    tempAutoSilentDuration,
+    setTempAutoSilentDuration
 }) => {
     if (!isOpen || !currentEditingKey) return null;
 
+    const modalBorderColor = cardBorderColor || (isDefaultTheme ? '#000000' : (isBlackAndWhite ? '#FFFFFF' : primaryColor));
     const totalPreviewOffset = tempOffset + (isSummerTime ? 60 : 0);
+    const isSunrise = currentEditingKey === 'Sunrise';
 
     return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-6 scale-in">
-            <div className="rounded-[2.5rem] w-full max-w-xs p-6 shadow-2xl" style={{ backgroundColor: 'var(--modal-bg)', color: 'var(--modal-text)' }}>
-                <div className="flex justify-between items-center mb-6 pb-2 border-b" style={{ borderColor: 'var(--card-border)' }}>
-                    <h3 className="font-black text-sm" style={{ color: primaryColor }}>إعدادات صلاة {prayerNamesAr[currentEditingKey]}</h3>
-                    <button onClick={closeModal} className="hover:text-red-500" style={{ color: secondaryColor }}>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4 sm:p-6 scale-in">
+            <div 
+                className="rounded-[2.5rem] w-full max-w-sm max-h-[92vh] flex flex-col p-5 sm:p-6 shadow-2xl" 
+                style={{ 
+                    backgroundColor: 'var(--modal-bg)', 
+                    color: 'var(--modal-text)',
+                    border: `2px solid ${modalBorderColor}`
+                }}
+            >
+                {/* Header */}
+                <div className="flex justify-between items-center mb-4 pb-2 border-b shrink-0" style={{ borderColor: 'var(--card-border)' }}>
+                    <h3 className="font-black text-sm sm:text-base" style={{ color: primaryColor }}>إعدادات صلاة {prayerNamesAr[currentEditingKey]}</h3>
+                    <button onClick={closeModal} className="hover:text-red-500 transition-colors cursor-pointer" style={{ color: secondaryColor }}>
                         <i className="fa-solid fa-circle-xmark text-2xl"></i>
                     </button>
                 </div>
-                <div className="space-y-6">
+
+                {/* Scrollable Content */}
+                <div className="space-y-4 overflow-y-auto hide-scrollbar flex-1 pr-0.5">
+                    {/* تعديل وقت الأذان */}
                     <div>
-                        <label className="block text-[10px] font-black mb-3 uppercase tracking-widest text-center" style={{ color: secondaryColor }}>تعديل وقت الأذان (بالدقائق)</label>
-                        <div className="flex items-center justify-between themed-bg-alt p-2 rounded-2xl border themed-card-border shadow-inner">
+                        <label className="block text-[10px] font-black mb-2 uppercase tracking-widest text-center" style={{ color: secondaryColor }}>تعديل وقت الأذان (بالدقائق)</label>
+                        <div className="flex items-center justify-between themed-bg-alt p-2.5 rounded-2xl border-2 border-black dark:border-white shadow-xs">
                             <button onClick={() => setTempOffset(p => p - 1)} className="control-btn text-red-500 shadow-sm"><i className="fa-solid fa-minus"></i></button>
                             <div className="text-center">
                                 <div className="text-lg font-black en-digits" style={{ color: primaryColor }}>{formatTime12_EN(applyOffset(times[currentEditingKey], totalPreviewOffset))}</div>
@@ -71,17 +118,8 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
                             <button onClick={() => setTempOffset(p => p + 1)} className="control-btn shadow-sm" style={{color: primaryColor}}><i className="fa-solid fa-plus"></i></button>
                         </div>
                     </div>
-                    <div>
-                        <label className="block text-[10px] font-black mb-3 uppercase tracking-widest text-center" style={{ color: secondaryColor }}>تنبيه الإقامة (بالدقائق)</label>
-                        <div className="flex items-center justify-between themed-bg-alt p-2 rounded-2xl border themed-card-border shadow-inner">
-                            <button onClick={() => setTempIqama(p => Math.max(0, p - 1))} className="control-btn text-red-500 shadow-sm"><i className="fa-solid fa-minus"></i></button>
-                            <div className="text-center">
-                                <div className="text-lg font-black en-digits" style={{ color: primaryColor }}>{tempIqama}</div>
-                                <div className="text-[10px] font-bold mt-0.5 uppercase tracking-tighter" style={{color: secondaryColor}}>min</div>
-                            </div>
-                            <button onClick={() => setTempIqama(p => p + 1)} className="control-btn shadow-sm" style={{color: primaryColor}}><i className="fa-solid fa-plus"></i></button>
-                        </div>
-                    </div>
+
+                    {/* نغمة التنبيه - تم نقلها لتكون تحت بطاقة تعديل وقت الأذان مباشرة */}
                     <ToneSelector 
                         currentEditingKey={currentEditingKey}
                         configTones={configTones}
@@ -91,8 +129,277 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
                         secondaryColor={secondaryColor}
                         primaryColor={primaryColor}
                     />
+
+                    {/* تنبيه الإقامة - بنفس حجم بطاقتي الاستعداد والصامت التلقائي */}
+                    {!isSunrise && (
+                        <div className="themed-bg-alt p-3 rounded-2xl border-2 border-black dark:border-white shadow-xs space-y-2.5 transition-all">
+                            <div className="flex items-center justify-between gap-3">
+                                {/* Toggle Switch */}
+                                <button
+                                    type="button"
+                                    onClick={() => setTempIqamaEnabled(p => !p)}
+                                    className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors shrink-0 ${
+                                        tempIqamaEnabled ? '' : 'bg-gray-300 dark:bg-gray-600'
+                                    }`}
+                                    style={{ backgroundColor: tempIqamaEnabled ? primaryColor : undefined }}
+                                    title="تفعيل/تعطيل تنبيه الإقامة"
+                                >
+                                    <div
+                                        className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                                            tempIqamaEnabled ? '-translate-x-5' : 'translate-x-0'
+                                        }`}
+                                    />
+                                </button>
+
+                                {/* Info */}
+                                <div className="min-w-0 flex-1 text-right" dir="rtl">
+                                    <div className="flex items-center justify-start gap-1.5 flex-wrap">
+                                        <span className="font-bold text-xs">تنبيه الإقامة</span>
+                                        <span 
+                                            className="text-[10px] font-bold px-1.5 py-0.5 rounded-full transition-colors"
+                                            style={{
+                                                backgroundColor: `${primaryColor}18`,
+                                                color: primaryColor
+                                            }}
+                                        >
+                                            بعد {tempIqama}د
+                                        </span>
+                                    </div>
+                                    <p className="text-[11px] opacity-75 mt-0.5 leading-snug">
+                                        التنبيه عند حلول موعد الإقامة
+                                    </p>
+                                </div>
+
+                                {/* Icon */}
+                                <div 
+                                    className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors"
+                                    style={{
+                                        backgroundColor: tempIqamaEnabled ? `${primaryColor}18` : 'rgba(0,0,0,0.05)',
+                                        color: tempIqamaEnabled ? primaryColor : secondaryColor
+                                    }}
+                                >
+                                    <Clock className="w-4 h-4" />
+                                </div>
+                            </div>
+
+                            {/* Duration options and inline +/- (Always visible whether enabled or disabled) */}
+                            <div className="flex items-center justify-between pt-1.5 border-t border-black/10 dark:border-white/10" dir="rtl">
+                                <div className="flex items-center gap-1.5">
+                                    <span className="text-[10px] opacity-60">المدة:</span>
+                                    {[10, 15, 20, 25].map((mins) => {
+                                        const isSelected = tempIqama === mins;
+                                        return (
+                                            <button
+                                                key={mins}
+                                                type="button"
+                                                onClick={() => setTempIqama(mins)}
+                                                className={`px-2.5 py-0.5 rounded-md text-[10px] font-bold transition-all cursor-pointer ${
+                                                    isSelected
+                                                        ? 'shadow-xs'
+                                                        : 'bg-black/5 dark:bg-white/10 opacity-80 hover:opacity-100'
+                                                }`}
+                                                style={isSelected ? {
+                                                    backgroundColor: primaryColor,
+                                                    color: isBlackAndWhite ? '#000000' : '#ffffff'
+                                                } : undefined}
+                                            >
+                                                {mins}د
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+
+                                {/* Fine-tuning +/- buttons */}
+                                <div className="flex items-center gap-1">
+                                    <button 
+                                        type="button" 
+                                        onClick={() => setTempIqama(p => Math.max(0, p - 1))} 
+                                        className="w-5 h-5 rounded-md bg-black/5 dark:bg-white/10 flex items-center justify-center text-red-500 text-[10px] font-bold hover:scale-105 active:scale-95 cursor-pointer"
+                                        title="إنقاص دقيقة"
+                                    >
+                                        <i className="fa-solid fa-minus"></i>
+                                    </button>
+                                    <button 
+                                        type="button" 
+                                        onClick={() => setTempIqama(p => p + 1)} 
+                                        className="w-5 h-5 rounded-md bg-black/5 dark:bg-white/10 flex items-center justify-center text-[10px] font-bold hover:scale-105 active:scale-95 cursor-pointer"
+                                        style={{ color: primaryColor }}
+                                        title="زيادة دقيقة"
+                                    >
+                                        <i className="fa-solid fa-plus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* تنبيه الاستعداد للصلاة */}
+                    {!isSunrise && (
+                        <div 
+                            className="themed-bg-alt p-3 rounded-2xl border-2 border-black dark:border-white shadow-xs space-y-2.5 transition-all"
+                        >
+                            <div className="flex items-center justify-between gap-3">
+                                {/* Toggle Switch */}
+                                <button
+                                    type="button"
+                                    onClick={() => setTempPreReminderEnabled(p => !p)}
+                                    className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors shrink-0 ${
+                                        tempPreReminderEnabled ? '' : 'bg-gray-300 dark:bg-gray-600'
+                                    }`}
+                                    style={{ backgroundColor: tempPreReminderEnabled ? primaryColor : undefined }}
+                                    title="تنبيه الاستعداد"
+                                >
+                                    <div
+                                        className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                                            tempPreReminderEnabled ? '-translate-x-5' : 'translate-x-0'
+                                        }`}
+                                    />
+                                </button>
+
+                                {/* Info */}
+                                <div className="min-w-0 flex-1 text-right" dir="rtl">
+                                    <div className="flex items-center justify-start gap-1.5 flex-wrap">
+                                        <span className="font-bold text-xs">تنبيه الاستعداد</span>
+                                        <span 
+                                            className="text-[10px] font-bold px-1.5 py-0.5 rounded-full transition-colors"
+                                            style={{
+                                                backgroundColor: `${primaryColor}18`,
+                                                color: primaryColor
+                                            }}
+                                        >
+                                            قبل {tempPreReminderMinutes}د
+                                        </span>
+                                    </div>
+                                    <p className="text-[11px] opacity-75 mt-0.5 leading-snug">
+                                        للوضوء والمسجد
+                                    </p>
+                                </div>
+
+                                {/* Icon */}
+                                <div 
+                                    className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors"
+                                    style={{
+                                        backgroundColor: tempPreReminderEnabled ? `${primaryColor}18` : 'rgba(0,0,0,0.05)',
+                                        color: tempPreReminderEnabled ? primaryColor : secondaryColor
+                                    }}
+                                >
+                                    <BellRing className="w-4 h-4" />
+                                </div>
+                            </div>
+
+                            {/* Duration options - ALWAYS VISIBLE whether enabled or disabled */}
+                            <div className="flex items-center justify-start gap-1.5 pt-1.5 border-t border-black/10 dark:border-white/10" dir="rtl">
+                                <span className="text-[10px] opacity-60">الوقت:</span>
+                                {[10, 15, 20].map((mins) => {
+                                    const isSelected = tempPreReminderMinutes === mins;
+                                    return (
+                                        <button
+                                            key={mins}
+                                            type="button"
+                                            onClick={() => setTempPreReminderMinutes(mins)}
+                                            className={`px-2.5 py-0.5 rounded-md text-[10px] font-bold transition-all cursor-pointer ${
+                                                isSelected
+                                                    ? 'shadow-xs'
+                                                    : 'bg-black/5 dark:bg-white/10 opacity-80 hover:opacity-100'
+                                            }`}
+                                            style={isSelected ? {
+                                                backgroundColor: primaryColor,
+                                                color: isBlackAndWhite ? '#000000' : '#ffffff'
+                                            } : undefined}
+                                        >
+                                            {mins}د
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* الصامت التلقائي */}
+                    {!isSunrise && (
+                        <div 
+                            className="themed-bg-alt p-3 rounded-2xl border-2 border-black dark:border-white shadow-xs space-y-2.5 transition-all"
+                        >
+                            <div className="flex items-center justify-between gap-3">
+                                {/* Toggle Switch */}
+                                <button
+                                    type="button"
+                                    onClick={() => setTempAutoSilentEnabled(p => !p)}
+                                    className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors shrink-0 ${
+                                        tempAutoSilentEnabled ? '' : 'bg-gray-300 dark:bg-gray-600'
+                                    }`}
+                                    style={{ backgroundColor: tempAutoSilentEnabled ? primaryColor : undefined }}
+                                    title="الصامت التلقائي"
+                                >
+                                    <div
+                                        className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                                            tempAutoSilentEnabled ? '-translate-x-5' : 'translate-x-0'
+                                        }`}
+                                    />
+                                </button>
+
+                                {/* Info */}
+                                <div className="min-w-0 flex-1 text-right" dir="rtl">
+                                    <div className="flex items-center justify-start gap-1.5 flex-wrap">
+                                        <span className="font-bold text-xs">الصامت التلقائي</span>
+                                        <span 
+                                            className="text-[10px] font-bold px-1.5 py-0.5 rounded-full transition-colors"
+                                            style={{
+                                                backgroundColor: `${primaryColor}18`,
+                                                color: primaryColor
+                                            }}
+                                        >
+                                            {tempAutoSilentDuration}د
+                                        </span>
+                                    </div>
+                                    <p className="text-[11px] opacity-75 mt-0.5 leading-snug">
+                                        كتم الهاتف وقت الصلاة
+                                    </p>
+                                </div>
+
+                                {/* Icon */}
+                                <div 
+                                    className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors"
+                                    style={{
+                                        backgroundColor: tempAutoSilentEnabled ? `${primaryColor}18` : 'rgba(0,0,0,0.05)',
+                                        color: tempAutoSilentEnabled ? primaryColor : secondaryColor
+                                    }}
+                                >
+                                    <VolumeX className="w-4 h-4" />
+                                </div>
+                            </div>
+
+                            {/* Duration options - ALWAYS VISIBLE whether enabled or disabled */}
+                            <div className="flex items-center justify-start gap-1.5 pt-1.5 border-t border-black/10 dark:border-white/10" dir="rtl">
+                                <span className="text-[10px] opacity-60">المدة:</span>
+                                {[20, 30, 45].map((duration) => {
+                                    const isSelected = tempAutoSilentDuration === duration;
+                                    return (
+                                        <button
+                                            key={duration}
+                                            type="button"
+                                            onClick={() => setTempAutoSilentDuration(duration)}
+                                            className={`px-2.5 py-0.5 rounded-md text-[10px] font-bold transition-all cursor-pointer ${
+                                                isSelected
+                                                    ? 'shadow-xs'
+                                                    : 'bg-black/5 dark:bg-white/10 opacity-80 hover:opacity-100'
+                                            }`}
+                                            style={isSelected ? {
+                                                backgroundColor: primaryColor,
+                                                color: isBlackAndWhite ? '#000000' : '#ffffff'
+                                            } : undefined}
+                                        >
+                                            {duration}د
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
                 </div>
-                <button onClick={saveUserConfig} className="w-full mt-8 text-white py-4 rounded-2xl font-black text-sm shadow-lg active:scale-95 transition-all" style={{backgroundColor: primaryColor, color: isBlackAndWhite ? '#000' : '#FFF'}}>حفظ التغييرات</button>
+
+                {/* Save button */}
+                <button onClick={saveUserConfig} className="w-full mt-4 text-white py-3 sm:py-3.5 rounded-2xl font-black text-sm shadow-lg active:scale-95 transition-all shrink-0 cursor-pointer" style={{backgroundColor: primaryColor, color: isBlackAndWhite ? '#000' : '#FFF'}}>حفظ التغييرات</button>
             </div>
         </div>
     );

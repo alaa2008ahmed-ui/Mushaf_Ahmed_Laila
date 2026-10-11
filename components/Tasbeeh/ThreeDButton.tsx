@@ -9,15 +9,19 @@ interface ThreeDButtonProps {
     padding?: string;
     children?: React.ReactNode;
     theme: Theme;
+    cardBorderColor?: string;
 }
 
-const ThreeDButton: React.FC<ThreeDButtonProps> = ({ label, onClick, padding = "py-3 px-4 text-base", children = null, theme }) => (
+const ThreeDButton: React.FC<ThreeDButtonProps> = ({ label, onClick, padding = "py-3 px-4 text-base", children = null, theme, cardBorderColor }) => (
     <motion.button
         whileTap={{ scale: 0.95 }}
         onClick={onClick}
-        className={`w-full rounded-2xl font-bold cursor-pointer focus:outline-none overflow-hidden themed-card shadow-md transition-shadow hover:shadow-lg border border-black/5 ${padding}`}
+        className={`w-full rounded-2xl font-bold cursor-pointer focus:outline-none overflow-hidden themed-card shadow-md transition-all hover:shadow-lg ${padding}`}
         style={{
-            color: 'var(--text-color, #000000)'
+            color: 'var(--text-color, #000000)',
+            borderColor: cardBorderColor || (theme?.bgColor === '#000000' ? '#FFFFFF' : (theme?.palette?.[0] || '#000000')),
+            borderWidth: '1.5px',
+            borderStyle: 'solid'
         }}
     >
         <div className="flex items-center justify-center relative z-10 h-full w-full gap-2">

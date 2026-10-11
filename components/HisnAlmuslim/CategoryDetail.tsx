@@ -11,7 +11,14 @@ interface CategoryDetailProps {
 }
 
 const HisnItemCard = ({ item, categoryId, onZoom, setToastMessage }: { item: any; categoryId: string; onZoom: (item: any) => void; setToastMessage: (msg: string) => void }) => {
-    const { theme } = useTheme();
+    const { theme, themeKey } = useTheme();
+    const isBlackTheme = theme.bgColor === '#000000';
+    const isDefaultTheme = themeKey === 'default';
+    const cardBorderColor = isDefaultTheme 
+        ? '#000000' 
+        : (isBlackTheme 
+            ? '#FFFFFF' 
+            : (theme.palette?.[0] || '#000000'));
     const [isFav, setIsFav] = useState(false);
     const [playingText, setPlayingText] = useState<string | null>(null);
 
@@ -51,7 +58,12 @@ const HisnItemCard = ({ item, categoryId, onZoom, setToastMessage }: { item: any
     return (
         <div 
             className="themed-card p-5 pb-2 rounded-2xl border relative overflow-hidden group mb-4 transition-shadow hover:shadow-md duration-300"
-            style={{ borderColor: 'var(--card-border)', color: 'var(--text-color)' }}
+            style={{ 
+                borderColor: cardBorderColor, 
+                borderWidth: '1.5px', 
+                borderStyle: 'solid', 
+                color: 'var(--text-color)' 
+            }}
         >
             <p className="text-xl leading-relaxed text-center font-amiri select-none">{item.text}</p>
             {item.source && <p className="text-xs mt-3 text-center themed-text-muted opacity-80">المصدر: {item.source}</p>}

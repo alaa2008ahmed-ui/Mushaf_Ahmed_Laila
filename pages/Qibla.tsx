@@ -5,6 +5,8 @@ import { useTheme } from '../context/ThemeContext';
 import ThemePageLock from '../components/ThemePageLock';
 import { usePrayerTimes } from '../context/PrayerTimesContext';
 import { VisualQibla, ARQibla, SunMoonQibla, ShadowQibla } from '../components/QiblaModes';
+import { Haptics, ImpactStyle } from '@capacitor/haptics';
+import { Capacitor } from '@capacitor/core';
 
 // --- Helper Functions ---
 const toRad = (deg) => deg * Math.PI / 180;
@@ -12,7 +14,13 @@ const toDeg = (rad) => rad * 180 / Math.PI;
 
 function Qibla({ onBack, onNavigate }) {
     const { theme, themeKey } = useTheme();
-    const isDefaultTheme = themeKey === 'default';
+    const isBlackTheme = theme.bgColor === '#000000' || theme.name === 'أبيض وأسود';
+    const isDefaultTheme = themeKey === 'default' || !themeKey;
+    const cardBorderColor = isDefaultTheme 
+        ? '#000000' 
+        : (isBlackTheme 
+            ? '#FFFFFF' 
+            : (theme.palette?.[0] || '#000000'));
     const { config, refreshLocation } = usePrayerTimes();
     const [heading, setHeading] = useState(0);
     const [qiblaDirection, setQiblaDirection] = useState(null);
@@ -23,6 +31,7 @@ function Qibla({ onBack, onNavigate }) {
     
     const compassCircleRef = useRef(null);
     const qiblaPointerRef = useRef(null);
+    const hasVibratedRef = useRef(false);
     const [permissionStatus, setPermissionStatus] = useState('unknown'); // 'unknown', 'granted', 'denied'
 
     const handleOrientation = (event) => {
@@ -132,7 +141,21 @@ function Qibla({ onBack, onNavigate }) {
             if (diff > 180) {
                 diff = 360 - diff;
             }
-            setIsAligned(diff <= 3); // Threshold of 3 degrees
+            const aligned = diff <= 3;
+            setIsAligned(aligned);
+
+            const perfectAligned = diff <= 1.5; // 100% precision alignment
+            if (perfectAligned && !hasVibratedRef.current) {
+                hasVibratedRef.current = true;
+                if (Capacitor.isNativePlatform()) {
+                    Haptics.impact({ style: ImpactStyle.Heavy }).catch(() => {});
+                }
+                if ('vibrate' in navigator) {
+                    navigator.vibrate([150, 50, 150]);
+                }
+            } else if (!perfectAligned && diff > 3.5) {
+                hasVibratedRef.current = false;
+            }
         }
 
         if (compassCircleRef.current) {
@@ -170,7 +193,7 @@ function Qibla({ onBack, onNavigate }) {
                         <button
                             key={mode.id}
                             onClick={() => setActiveMode(mode.id)}
-                            className={`whitespace-nowrap px-6 py-3 rounded-full text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 border-none active:scale-95 shadow-lg ${activeMode === mode.id ? 'scale-105 z-10' : 'opacity-90 hover:opacity-100 hover:scale-105'}`}
+                            className={`whitespace-nowrap px-6 py-3 rounded-full text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 active:scale-95 shadow-lg ${activeMode === mode.id ? 'scale-105 z-10' : 'opacity-90 hover:opacity-100 hover:scale-105'}`}
                             style={{
                                 backgroundColor: activeMode === mode.id 
                                     ? (isDefaultTheme ? '#000000' : (theme.name === 'أبيض وأسود' ? '#ffffff' : theme.palette[0])) 
@@ -178,6 +201,9 @@ function Qibla({ onBack, onNavigate }) {
                                 color: activeMode === mode.id 
                                     ? (isDefaultTheme ? '#ffffff' : (theme.name === 'أبيض وأسود' ? '#000000' : '#ffffff')) 
                                     : 'var(--text-color)',
+                                borderColor: cardBorderColor,
+                                borderWidth: '1.5px',
+                                borderStyle: 'solid',
                                 boxShadow: activeMode === mode.id 
                                     ? `0 12px 24px -10px ${isDefaultTheme ? 'rgba(0,0,0,0.4)' : (theme.name === 'أبيض وأسود' ? 'rgba(255,255,255,0.4)' : `${theme.palette[0]}50`)}` 
                                     : '0 4px 15px -1px rgba(0,0,0,0.2)'
@@ -191,23 +217,23 @@ function Qibla({ onBack, onNavigate }) {
             </div>
 
             <main className="absolute inset-0 w-full flex flex-col items-center justify-start p-4 gap-4 text-center overflow-y-auto overflow-x-hidden pt-44 pb-24 z-10">
-                 {error && <p className="themed-card p-3 rounded-lg w-full" style={{backgroundColor: '#ef4444', color: 'white'}}>{error}</p>}
+                 {error && <p className="themed-card p-3 rounded-lg w-full" style={{backgroundColor: '#ef4444', color: 'white', borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid'}}>{error}</p>}
                  {qiblaDirection === null && !error && <p className="themed-text w-full">جاري تحديد اتجاه القبلة...</p>}
                  
                  {permissionStatus === 'unknown' && activeMode === 'compass' && (
                      <button 
                          onClick={requestPermission}
                          className="themed-card p-4 rounded-xl font-bold flex flex-col items-center gap-2 animate-pulse"
-                         style={{ borderColor: theme.palette[0], borderWidth: '2px' }}
+                         style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
                      >
-                         <i className="fa-solid fa-compass text-3xl" style={{ color: theme.palette[0] }}></i>
+                         <i className="fa-solid fa-compass text-3xl" style={{ color: isDefaultTheme ? '#000000' : theme.palette[0] }}></i>
                          <span>اضغط هنا لتفعيل البوصلة</span>
                      </button>
                  )}
 
                 {activeMode === 'compass' && (
                     <div className="flex-1 flex flex-col items-center justify-center w-full">
-                        <div className="relative w-64 h-64 md:w-80 md:h-80 rounded-full flex items-center justify-center themed-card transition-all duration-300" style={{boxShadow: isAligned ? `0 0 20px ${theme.name === 'أبيض وأسود' ? '#ffffff' : theme.palette[0]}90` : 'var(--card-shadow)'}}>
+                        <div className="relative w-64 h-64 md:w-80 md:h-80 rounded-full flex items-center justify-center themed-card transition-all duration-300" style={{borderColor: isAligned ? (theme.name === 'أبيض وأسود' ? '#ffffff' : (isDefaultTheme ? '#000000' : theme.palette[0])) : cardBorderColor, borderWidth: '2px', borderStyle: 'solid', boxShadow: isAligned ? `0 0 20px ${theme.name === 'أبيض وأسود' ? '#ffffff' : theme.palette[0]}90` : 'var(--card-shadow)'}}>
                             
                             <div ref={compassCircleRef} className="absolute w-full h-full transition-transform duration-500 ease-out">
                                  <div className="absolute top-0 left-1/2 -translate-x-1/2 -mt-4 text-2xl font-bold" style={{color: isDefaultTheme ? '#000000' : (theme.name === 'أبيض وأسود' ? '#ffffff' : theme.palette[0])}}>ش</div>
@@ -237,12 +263,12 @@ function Qibla({ onBack, onNavigate }) {
                         </div>
                         
                         {qiblaDirection !== null && (
-                            <div className="themed-card p-4 rounded-xl transition-all duration-300 w-64 mt-12 mb-8" style={{borderColor: isAligned ? (theme.name === 'أبيض وأسود' ? '#ffffff' : theme.palette[0]) : 'var(--card-border)', borderWidth: '2px'}}>
+                            <div className="themed-card p-4 rounded-xl transition-all duration-300 w-64 mt-12 mb-8" style={{borderColor: isAligned ? (theme.name === 'أبيض وأسود' ? '#ffffff' : (isDefaultTheme ? '#000000' : theme.palette[0])) : cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid'}}>
                                 <p className="text-lg font-bold transition-colors" style={{color: isAligned ? (theme.name === 'أبيض وأسود' ? '#ffffff' : theme.palette[0]) : 'var(--text-color)'}}>
                                      {isAligned ? "هذا هو اتجاه القبلة" : `اتجاه القبلة: ${Math.round(qiblaDirection)}°`}
                                 </p>
                                 <p className="text-xs themed-text-muted mt-1">
-                                    {isAligned ? "تقبل الله طاعتكم" : `قم بمحاذاة السهم ${isDefaultTheme ? 'الأسود' : 'الأخضر'} مع علامة الشمال (ش)`}
+                                     {isAligned ? "تقبل الله طاعتكم" : `قم بمحاذاة السهم ${isDefaultTheme ? 'الأسود' : 'الأخضر'} مع علامة الشمال (ش)`}
                                 </p>
                             </div>
                         )}
@@ -254,19 +280,19 @@ function Qibla({ onBack, onNavigate }) {
                 )}
 
                 {activeMode === 'visual' && config?.location && (
-                    <VisualQibla lat={config.location.lat} lng={config.location.lng} theme={theme} />
+                    <VisualQibla lat={config.location.lat} lng={config.location.lng} theme={theme} cardBorderColor={cardBorderColor} />
                 )}
 
                 {activeMode === 'ar' && qiblaDirection !== null && (
-                    <ARQibla qiblaDirection={qiblaDirection} heading={heading} isAligned={isAligned} theme={theme} />
+                    <ARQibla qiblaDirection={qiblaDirection} heading={heading} isAligned={isAligned} theme={theme} cardBorderColor={cardBorderColor} />
                 )}
 
                 {activeMode === 'sun_moon' && config?.location && qiblaDirection !== null && (
-                    <SunMoonQibla lat={config.location.lat} lng={config.location.lng} qiblaDirection={qiblaDirection} heading={heading} theme={theme} />
+                    <SunMoonQibla lat={config.location.lat} lng={config.location.lng} qiblaDirection={qiblaDirection} heading={heading} theme={theme} cardBorderColor={cardBorderColor} />
                 )}
 
                 {activeMode === 'shadow' && config?.location && qiblaDirection !== null && (
-                    <ShadowQibla lat={config.location.lat} lng={config.location.lng} qiblaDirection={qiblaDirection} heading={heading} theme={theme} />
+                    <ShadowQibla lat={config.location.lat} lng={config.location.lng} qiblaDirection={qiblaDirection} heading={heading} theme={theme} cardBorderColor={cardBorderColor} />
                 )}
                 <div className="w-full h-24 shrink-0"></div>
             </main>

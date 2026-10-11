@@ -53,7 +53,8 @@ function BottomBar({ onHomeClick, onThemesClick, showHome = true, showThemes = t
             };
         }
 
-        if (isDefaultNonQuran || isDefaultMoreMenu) {
+        // In default theme: both Home button and Themes button are white with black text and 2px black border
+        if (themeKey === 'default') {
             return {
                 background: '#FFFFFF',
                 color: '#000000',

@@ -12,6 +12,7 @@ import { QuranDownloadModal } from '../components/QuranReader/DownloadModals';
 import ReciterSelectModal from '../components/QuranReader/ReciterSelectModal';
 import Toast from '../components/QuranReader/Toast';
 import { memorizationService, MemorizedRange } from '../services/memorizationService';
+import { useShowNewBadge } from '../utils/badgeManager';
 import './QuranReader.css';
 
 interface MemorizationProps {
@@ -21,9 +22,14 @@ interface MemorizationProps {
 
 const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
     const { theme, themeKey } = useTheme();
-    const isDefaultTheme = themeKey === 'default';
+    const isDefaultTheme = themeKey === 'default' || !themeKey || theme.name?.includes('الافتراضي') || theme.name === 'Default';
     const isBlackAndWhite = themeKey === 'deep_black';
-    const isBlackTheme = theme.bgColor === '#000000';
+    const isBlackTheme = theme.bgColor === '#000000' || theme.name === 'أبيض وأسود' || themeKey === 'deep_black';
+    const cardBorderColor = isDefaultTheme 
+      ? '#000000' 
+      : (isBlackTheme 
+          ? '#FFFFFF' 
+          : (theme.palette?.[0] || theme.accent || '#000000'));
     const primaryColor = theme.accent || (isBlackTheme ? '#FFFFFF' : (isBlackAndWhite ? '#FFFFFF' : theme.palette[0]));
     const btnTextColor = theme.btnText || (isBlackTheme ? '#000000' : (isBlackAndWhite ? '#000000' : '#FFFFFF'));
     
@@ -48,6 +54,7 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
     const [savedSession, setSavedSession] = useState<any>(null);
     const [activePicker, setActivePicker] = useState<'range' | 'ayah' | 'pause' | 'reader' | 'fromSurah' | 'fromAyah' | 'toSurah' | 'toAyah' | null>(null);
     const [showDownloadModal, setShowDownloadModal] = useState(false);
+    const showNewBadge = useShowNewBadge();
     const [toast, setToast] = useState<{ show: boolean; message: string }>({ show: false, message: '' });
 
     const showToast = (message: string) => {
@@ -241,7 +248,7 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
             <div 
                 onClick={() => setActivePicker(label as any)}
                 className="flex flex-col items-center justify-center min-w-[80px] h-11 rounded-2xl shadow-sm border cursor-pointer hover:bg-black/5 transition-all active:scale-95" 
-                style={{ backgroundColor: theme.bgColor, borderColor: 'var(--card-border)' }}
+                style={{ backgroundColor: theme.bgColor, borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
             >
                 <span className="font-bold text-lg" style={{ color: 'var(--text-color)' }}>{value}</span>
                 <span className="text-[10px] opacity-60" style={{ color: 'var(--text-color)' }}>مرة</span>
@@ -258,20 +265,23 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
     const handleReviewRange = (range: MemorizedRange) => {
         onNavigate('quran', {
             isMemorization: true,
+            surah: range.fromSurah,
+            ayah: range.fromAyah,
             initialSurah: range.fromSurah,
             initialAyah: range.fromAyah,
             memorizationSettings: {
-                reader: range.readerId,
+                rangeId: range.id,
+                reader: range.readerId || selectedReader,
                 fromSurah: range.fromSurah,
                 fromAyah: range.fromAyah,
                 toSurah: range.toSurah,
                 toAyah: range.toAyah,
-                rangeRepeat: 3,
+                rangeRepeat: 2,
                 ayahRepeat: 1,
                 linkedRepeat: false,
                 pauseLength: 1,
                 testAfterSession: true,
-                isReviewMode: true // New flag for review mode
+                isReviewMode: true
             }
         });
     };
@@ -316,7 +326,7 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
 
                 <main className="flex-1 overflow-y-auto p-3 space-y-4 hide-scrollbar relative z-10" dir="rtl">
                     {/* Tabs */}
-                    <div className="flex p-1 rounded-2xl bg-black/5 border mb-2" style={{ borderColor: 'var(--card-border)' }}>
+                    <div className="flex p-1 rounded-2xl bg-black/5 border mb-2" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                         <button 
                             onClick={() => setActiveTab('setup')}
                             className={`flex-1 py-3.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${activeTab === 'setup' ? 'shadow-md' : 'opacity-60'}`}
@@ -330,16 +340,21 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                         </button>
                         <button 
                             onClick={() => setActiveTab('review')}
-                            className={`flex-1 py-3.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${activeTab === 'review' ? 'shadow-md' : 'opacity-60'}`}
+                            className={`flex-1 py-3.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 relative ${activeTab === 'review' ? 'shadow-md' : 'opacity-60'}`}
                             style={{ 
                                 backgroundColor: activeTab === 'review' ? primaryColor : 'transparent',
                                 color: activeTab === 'review' ? btnTextColor : 'var(--text-color)'
                             }}
                         >
+                            {showNewBadge && (
+                                <div className="absolute -top-2.5 -left-1 bg-yellow-400 text-black text-[10px] font-bold px-2 py-0.5 rounded-full z-20 shadow-md border border-white animate-bounce pointer-events-none">
+                                    جديد
+                                </div>
+                            )}
                             <Calendar size={16} />
-                            جدول المراجعة
-                            {false && memorizedRanges.length > 0 && (
-                                <span className="w-4 h-4 rounded-full bg-red-500 text-white text-[9px] flex items-center justify-center">
+                            <span>جدول المراجعة</span>
+                            {memorizedRanges.length > 0 && (
+                                <span className="w-5 h-5 rounded-full bg-emerald-500 text-white text-[10px] font-bold flex items-center justify-center">
                                     {memorizedRanges.length}
                                 </span>
                             )}
@@ -358,7 +373,7 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                             <div 
                                 onClick={() => setActivePicker('reader')}
                                 className="w-full p-4 rounded-2xl cursor-pointer text-right font-medium text-sm shadow-sm border flex items-center justify-between"
-                                style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-color)', borderColor: 'var(--card-border)' }}
+                                style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-color)', borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
                             >
                                 <div className="w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[7px]" style={{ borderTopColor: 'var(--text-color)' }}></div>
                                 <span>{MEMORIZATION_READERS.find(r => r.id === selectedReader)?.name}</span>
@@ -376,14 +391,14 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                         
                         <div className="flex gap-2">
                             {/* From */}
-                            <div className="flex-1 p-2 rounded-xl border" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--card-border)' }}>
+                            <div className="flex-1 p-2 rounded-xl border" style={{ backgroundColor: 'var(--card-bg)', borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                                 <div className="text-center font-bold mb-1 text-xs" style={{ color: 'var(--text-color)' }}>من</div>
                                 <div className="space-y-1.5">
                                     <div className="relative">
                                         <div 
                                             onClick={() => setActivePicker('fromSurah')}
                                             className="w-full p-3 border rounded-lg cursor-pointer text-center font-bold shadow-sm text-xs transition-colors hover:bg-black/5"
-                                            style={{ backgroundColor: theme.bgColor, color: 'var(--text-color)', borderColor: 'var(--card-border)' }}
+                                            style={{ backgroundColor: theme.bgColor, color: 'var(--text-color)', borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
                                         >
                                             {SURAH_NAMES_AR[fromSurah - 1]}
                                         </div>
@@ -392,7 +407,7 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                                         <div 
                                             onClick={() => setActivePicker('fromAyah')}
                                             className="w-full p-3 border rounded-lg cursor-pointer text-center font-bold shadow-sm text-xs transition-colors hover:bg-black/5"
-                                            style={{ backgroundColor: theme.bgColor, color: 'var(--text-color)', borderColor: 'var(--card-border)' }}
+                                            style={{ backgroundColor: theme.bgColor, color: 'var(--text-color)', borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
                                         >
                                              آية {fromAyah}
                                         </div>
@@ -401,14 +416,14 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                             </div>
 
                             {/* To */}
-                            <div className="flex-1 p-2 rounded-xl border" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--card-border)' }}>
+                            <div className="flex-1 p-2 rounded-xl border" style={{ backgroundColor: 'var(--card-bg)', borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                                 <div className="text-center font-bold mb-1 text-xs" style={{ color: 'var(--text-color)' }}>إلى</div>
                                 <div className="space-y-1.5">
                                     <div className="relative">
                                         <div 
                                             onClick={() => setActivePicker('toSurah')}
                                             className="w-full p-3 border rounded-lg cursor-pointer text-center font-bold shadow-sm text-xs transition-colors hover:bg-black/5"
-                                            style={{ backgroundColor: theme.bgColor, color: 'var(--text-color)', borderColor: 'var(--card-border)' }}
+                                            style={{ backgroundColor: theme.bgColor, color: 'var(--text-color)', borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
                                         >
                                             {SURAH_NAMES_AR[toSurah - 1]}
                                         </div>
@@ -417,7 +432,7 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                                         <div 
                                             onClick={() => setActivePicker('toAyah')}
                                             className="w-full p-3 border rounded-lg cursor-pointer text-center font-bold shadow-sm text-xs transition-colors hover:bg-black/5"
-                                            style={{ backgroundColor: theme.bgColor, color: 'var(--text-color)', borderColor: 'var(--card-border)' }}
+                                            style={{ backgroundColor: theme.bgColor, color: 'var(--text-color)', borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
                                         >
                                              آية {toAyah}
                                         </div>
@@ -436,19 +451,19 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
 
                         <div className="grid grid-cols-2 gap-2">
                             {/* Range Repeat */}
-                            <div className="flex items-center justify-between p-1 px-2 rounded-xl border" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--card-border)' }}>
+                            <div className="flex items-center justify-between p-1 px-2 rounded-xl border" style={{ backgroundColor: 'var(--card-bg)', borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                                 <span className="font-bold text-[10px] leading-tight" style={{ color: 'var(--text-color)' }}>تكرار النطاق</span>
                                 <NumberPicker value={rangeRepeat} onChange={(v) => { setRangeRepeat(v); setSavedSession(null); }} label="range" />
                             </div>
 
                             {/* Ayah Repeat */}
-                            <div className="flex items-center justify-between p-1 px-2 rounded-xl border" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--card-border)' }}>
+                            <div className="flex items-center justify-between p-1 px-2 rounded-xl border" style={{ backgroundColor: 'var(--card-bg)', borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                                 <span className="font-bold text-[10px] leading-tight" style={{ color: 'var(--text-color)' }}>تكرار الآية</span>
                                 <NumberPicker value={ayahRepeat} onChange={(v) => { setAyahRepeat(v); setSavedSession(null); }} label="ayah" />
                             </div>
 
                             {/* Linked Repeat */}
-                            <div className="flex items-center justify-between p-1 px-2 rounded-xl border" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--card-border)' }}>
+                            <div className="flex items-center justify-between p-1 px-2 rounded-xl border" style={{ backgroundColor: 'var(--card-bg)', borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                                 <div className="flex flex-col items-start">
                                     <span className="font-bold text-[10px] leading-tight" style={{ color: 'var(--text-color)' }}>ربط الآيات</span>
                                     <button 
@@ -469,7 +484,7 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                             </div>
 
                             {/* Pause Length */}
-                            <div className="flex items-center justify-between p-1 px-2 rounded-xl border" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--card-border)' }}>
+                            <div className="flex items-center justify-between p-1 px-2 rounded-xl border" style={{ backgroundColor: 'var(--card-bg)', borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                                 <span className="font-bold text-[10px] leading-tight" style={{ color: 'var(--text-color)' }}>السكتة</span>
                                 <NumberPicker value={pauseLength} onChange={(v) => { setPauseLength(v); setSavedSession(null); }} label="pause" />
                             </div>
@@ -477,7 +492,7 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                     </div>
 
                     {/* Test After Session */}
-                    <div className="flex items-center justify-between p-3 rounded-xl border" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--card-border)' }}>
+                    <div className="flex items-center justify-between p-3 rounded-xl border" style={{ backgroundColor: 'var(--card-bg)', borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                         <div className="flex items-center gap-2 font-bold text-base" style={{ color: theme.textColor }}>
                             <span>اختبار بعد الجلسة</span>
                             <CheckSquare size={20} />
@@ -522,7 +537,9 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                                 className="w-full h-12 px-4 flex items-center justify-between transition-all active:scale-[0.98] rounded-2xl border shadow-sm"
                                 style={{ 
                                     backgroundColor: 'var(--card-bg)', 
-                                    borderColor: 'var(--card-border)', 
+                                    borderColor: cardBorderColor, 
+                                    borderWidth: '1.5px',
+                                    borderStyle: 'solid',
                                     color: 'var(--text-color)' 
                                 }}
                             >
@@ -539,74 +556,79 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                         </>
                     ) : (
                         <div className="space-y-4 animate-fadeIn">
-                            <div className="flex flex-col items-center justify-center mt-12 opacity-60">
-                                <Calendar size={64} className="mb-4 opacity-30" />
-                                <h2 className="text-xl font-bold">جدول المراجعة</h2>
-                                <p className="mt-2 text-sm text-center font-medium">جاري الإنشاء في التحديث القادم إن شاء الله</p>
-                            </div>
-
-                            {/* Hidden for now: to be completed in the next update */}
-                            {false && (
-                                <>
                             {/* Review Stats */}
                             <div className="grid grid-cols-2 gap-3">
-                                <div className="p-4 rounded-2xl border text-center" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--card-border)' }}>
+                                <div className="p-4 rounded-2xl border text-center shadow-sm" style={{ backgroundColor: 'var(--card-bg)', borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                                     <div className="w-10 h-10 bg-emerald-500/10 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-2">
                                         <Trophy size={20} />
                                     </div>
-                                    <div className="text-2xl font-bold">{memorizedRanges.length}</div>
-                                    <div className="text-[10px] opacity-50">نطاق تم حفظه</div>
+                                    <div className="text-2xl font-bold" style={{ color: 'var(--text-color)' }}>{memorizedRanges.length}</div>
+                                    <div className="text-xs opacity-70" style={{ color: 'var(--text-color)' }}>نطاق تم حفظه</div>
                                 </div>
-                                <div className="p-4 rounded-2xl border text-center" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--card-border)' }}>
+                                <div className="p-4 rounded-2xl border text-center shadow-sm" style={{ backgroundColor: 'var(--card-bg)', borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                                     <div className="w-10 h-10 bg-blue-500/10 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-2">
                                         <RotateCcw size={20} />
                                     </div>
-                                    <div className="text-2xl font-bold">
-                                        {memorizedRanges.filter(r => r.nextReviewDate <= Date.now()).length}
+                                    <div className="text-2xl font-bold" style={{ color: 'var(--text-color)' }}>
+                                        {memorizedRanges.filter(r => (r.nextReviewDate || 0) <= Date.now()).length}
                                     </div>
-                                    <div className="text-[10px] opacity-50">بانتظار المراجعة</div>
+                                    <div className="text-xs opacity-70" style={{ color: 'var(--text-color)' }}>بانتظار المراجعة اليوم</div>
                                 </div>
                             </div>
 
                             {/* Review List */}
                             <div className="space-y-3">
                                 <div className="flex items-center justify-between px-1">
-                                    <h3 className="font-bold text-base">قائمة المراجعة</h3>
+                                    <h3 className="font-bold text-base" style={{ color: 'var(--text-color)' }}>قائمة محفوظاتك للمراجعة</h3>
                                     <List size={18} className="opacity-50" />
                                 </div>
 
                                 {memorizedRanges.length === 0 ? (
-                                    <div className="p-8 text-center opacity-50 space-y-2">
-                                        <Calendar size={48} className="mx-auto opacity-20" />
-                                        <p>لا توجد محفوظات حالياً</p>
-                                        <p className="text-xs">ابدأ بحفظ نطاق جديد ليظهر هنا</p>
+                                    <div className="p-8 text-center rounded-3xl border border-dashed space-y-3 shadow-sm" style={{ backgroundColor: 'var(--card-bg)', borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
+                                        <Calendar size={48} className="mx-auto text-emerald-500/40" />
+                                        <h4 className="font-bold text-sm" style={{ color: 'var(--text-color)' }}>لا توجد محفوظات في جدول المراجعة حالياً</h4>
+                                        <p className="text-xs opacity-70 leading-relaxed max-w-xs mx-auto" style={{ color: 'var(--text-color)' }}>
+                                            ابدأ بحفظ وتكرار أي سورة أو نطاق آيات من تبويب (إعداد الحفظ)، وسيتم إدراجه تلقائياً في جدول المراجعة الذكي.
+                                        </p>
+                                        <button
+                                            type="button"
+                                            onClick={() => setActiveTab('setup')}
+                                            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 mt-2"
+                                        >
+                                            إعداد نطاق جديد للحفظ
+                                        </button>
                                     </div>
                                 ) : (
                                     memorizedRanges.map((range) => {
-                                        const isDue = range.nextReviewDate <= Date.now();
+                                        const isDue = (range.nextReviewDate || 0) <= Date.now();
                                         return (
                                             <div 
                                                 key={range.id} 
-                                                className="p-4 rounded-2xl border space-y-3 relative overflow-hidden"
-                                                style={{ backgroundColor: 'var(--card-bg)', borderColor: isDue ? 'rgba(16, 185, 129, 0.3)' : 'var(--card-border)' }}
+                                                className="p-4 rounded-2xl border space-y-3 relative overflow-hidden shadow-sm transition-all"
+                                                style={{ 
+                                                    backgroundColor: 'var(--card-bg)', 
+                                                    borderColor: isDue ? primaryColor : cardBorderColor, 
+                                                    borderWidth: '1.5px',
+                                                    borderStyle: 'solid'
+                                                }}
                                             >
-                                                {isDue && <div className="absolute top-0 right-0 w-1 h-full bg-emerald-500"></div>}
+                                                {isDue && <div className="absolute top-0 right-0 w-1.5 h-full bg-emerald-500"></div>}
                                                 
                                                 <div className="flex items-center justify-between">
                                                     <div>
-                                                        <div className="font-bold text-sm">
+                                                        <div className="font-bold text-sm" style={{ color: 'var(--text-color)' }}>
                                                             سورة {SURAH_NAMES_AR[range.fromSurah - 1]}
                                                         </div>
-                                                        <div className="text-xs opacity-60">
-                                                            الآيات: {range.fromAyah} - {range.toAyah}
+                                                        <div className="text-xs opacity-70 mt-0.5" style={{ color: 'var(--text-color)' }}>
+                                                            الآيات: {range.fromAyah} إلى {range.toAyah}
                                                         </div>
                                                     </div>
                                                     <div className="text-left">
-                                                        <div className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isDue ? 'bg-emerald-500/10 text-emerald-600' : 'bg-gray-500/10 opacity-50'}`}>
-                                                            {isDue ? 'حان وقت المراجعة' : 'مراجعة قادمة'}
+                                                        <div className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isDue ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30' : 'bg-gray-500/10 opacity-70'}`}>
+                                                            {isDue ? 'حان وقت المراجعة ⏱️' : 'مراجعة قادمة ⏳'}
                                                         </div>
-                                                        <div className="text-[9px] opacity-40 mt-1">
-                                                            {new Date(range.nextReviewDate).toLocaleDateString('ar-SA')}
+                                                        <div className="text-[10px] opacity-60 mt-1 font-sans">
+                                                            {range.nextReviewDate ? new Date(range.nextReviewDate).toLocaleDateString('ar-SA') : 'اليوم'}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -614,14 +636,15 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                                                 <div className="flex gap-2 pt-1">
                                                     <button 
                                                         onClick={() => handleReviewRange(range)}
-                                                        className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm flex items-center justify-center gap-2 transition-all active:scale-95"
+                                                        className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm flex items-center justify-center gap-2 transition-all active:scale-95"
                                                     >
                                                         <Play size={14} />
-                                                        بدء المراجعة
+                                                        بدء جلسة المراجعة والتثبيت
                                                     </button>
                                                     <button 
                                                         onClick={() => handleDeleteRange(range.id)}
-                                                        className="w-10 h-10 flex items-center justify-center rounded-xl border border-red-500/20 text-red-500 hover:bg-red-500/5 transition-all"
+                                                        className="w-10 h-10 flex items-center justify-center rounded-xl border border-red-500/20 text-red-500 hover:bg-red-500/10 transition-all active:scale-95"
+                                                        title="حذف من جدول المراجعة"
                                                     >
                                                         <Trash2 size={16} />
                                                     </button>
@@ -631,8 +654,6 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                                     })
                                 )}
                             </div>
-                                </>
-                            )}
                         </div>
                     )}
                     <div className="shrink-0 w-full h-32"></div>
@@ -646,8 +667,8 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
             {/* Help Modal */}
             {showHelpModal && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fadeIn" onClick={() => setShowHelpModal(false)}>
-                    <div className="w-full max-w-sm rounded-3xl p-6 shadow-2xl animate-modal-enter text-right" onClick={e => e.stopPropagation()} style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-color)', borderWidth: '1px', borderStyle: 'solid', borderColor: 'var(--card-border)' }}>
-                        <h2 className="text-xl font-bold mb-4 border-b pb-2" style={{ borderColor: 'var(--card-border)' }}>دليل التحفيظ</h2>
+                    <div className="w-full max-w-sm rounded-3xl p-6 shadow-2xl animate-modal-enter text-right border" onClick={e => e.stopPropagation()} style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-color)', borderWidth: '1.5px', borderStyle: 'solid', borderColor: cardBorderColor }}>
+                        <h2 className="text-xl font-bold mb-4 border-b pb-2" style={{ borderColor: cardBorderColor }}>دليل التحفيظ</h2>
                         <div className="space-y-4 text-sm leading-relaxed">
                             <p>• <span className="font-bold">تكرار الآية:</span> عدد مرات تكرار كل آية على حدة قبل الانتقال للتالية.</p>
                             <p>• <span className="font-bold">تكرار النطاق:</span> عدد مرات إعادة المجموعة كاملة بعد الانتهاء منها.</p>
@@ -662,8 +683,8 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
             {/* Explanation Modal */}
             {showExplanationModal && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fadeIn" onClick={() => setShowExplanationModal(false)}>
-                    <div className="w-full max-w-sm rounded-3xl p-6 shadow-2xl animate-modal-enter text-right" onClick={e => e.stopPropagation()} style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-color)', borderWidth: '1px', borderStyle: 'solid', borderColor: 'var(--card-border)' }}>
-                        <h2 className="text-xl font-bold mb-4 border-b pb-2" style={{ borderColor: 'var(--card-border)' }}>التكرار المترابط</h2>
+                    <div className="w-full max-w-sm rounded-3xl p-6 shadow-2xl animate-modal-enter text-right border" onClick={e => e.stopPropagation()} style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-color)', borderWidth: '1.5px', borderStyle: 'solid', borderColor: cardBorderColor }}>
+                        <h2 className="text-xl font-bold mb-4 border-b pb-2" style={{ borderColor: cardBorderColor }}>التكرار المترابط</h2>
                         <p className="text-sm leading-relaxed mb-6">
                             هذه الميزة تساعدك على ربط الآيات ببعضها. عند تفعيلها، سيقوم التطبيق بتشغيل الآية السابقة مرة واحدة قبل البدء بتكرار الآية الحالية، مما يرسخ تسلسل الآيات في ذاكرتك.
                         </p>
@@ -675,7 +696,7 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
             {/* Resume Session Modal */}
             {showResumePrompt && savedSession && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fadeIn">
-                    <div className="w-full max-w-sm rounded-3xl p-6 shadow-2xl animate-modal-enter text-center" onClick={e => e.stopPropagation()} style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-color)', borderWidth: '1px', borderStyle: 'solid', borderColor: 'var(--card-border)' }}>
+                    <div className="w-full max-w-sm rounded-3xl p-6 shadow-2xl animate-modal-enter text-center border" onClick={e => e.stopPropagation()} style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-color)', borderWidth: '1.5px', borderStyle: 'solid', borderColor: cardBorderColor }}>
                         <div className="w-16 h-16 bg-emerald-500/20 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
                             <Play size={32} />
                         </div>
@@ -734,7 +755,7 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
             {/* Custom Picker Modal */}
             {activePicker && activePicker !== 'reader' && (
                 <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-fadeIn" onClick={() => setActivePicker(null)}>
-                    <div className="w-full max-w-[280px] rounded-[2rem] p-4 shadow-2xl animate-modal-enter flex flex-col max-h-[75vh]" onClick={e => e.stopPropagation()} style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-color)', borderWidth: '1px', borderStyle: 'solid', borderColor: 'var(--card-border)' }}>
+                    <div className="w-full max-w-[280px] rounded-[2rem] p-4 shadow-2xl animate-modal-enter flex flex-col max-h-[75vh] border" onClick={e => e.stopPropagation()} style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-color)', borderWidth: '1.5px', borderStyle: 'solid', borderColor: cardBorderColor }}>
                         <div className="flex-1 overflow-y-auto scrollbar-hide space-y-2 p-2" dir="rtl">
                             {(activePicker === 'fromSurah' || activePicker === 'toSurah') && SURAH_NAMES_AR.map((name, i) => {
                                 const surahNum = i + 1;

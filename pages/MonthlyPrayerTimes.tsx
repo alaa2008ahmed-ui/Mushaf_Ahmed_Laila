@@ -6,7 +6,7 @@ import { Coordinates, CalculationMethod, PrayerTimes as AdhanPrayerTimes } from 
 import moment from 'moment-hijri';
 import { formatTime12_clean, applyOffset } from '../utils/prayerTimesUtils';
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+import { safeHtml2Canvas } from '../utils/canvasHelper';
 import { Share2, ArrowRight, Download, ChevronRight, ChevronLeft, Calendar, X, FileText } from 'lucide-react';
 import { Share as CapacitorShare } from '@capacitor/share';
 import { Filesystem, Directory } from '@capacitor/filesystem';
@@ -81,12 +81,11 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
                 setIsPickerOpen(false);
                 return true;
             }
-            onBack();
-            return true;
+            return false;
         };
         const unregister = registerBackInterceptor(interceptor);
         return unregister;
-    }, [isPickerOpen, onBack]);
+    }, [isPickerOpen]);
 
     const monthData = useMemo(() => {
         const data = [];
@@ -194,7 +193,7 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
 
     const generateImage = async () => {
         if (!pdfTableRef.current) return null;
-        const canvas = await html2canvas(pdfTableRef.current, {
+        const canvas = await safeHtml2Canvas(pdfTableRef.current, {
             scale: 2.5, // Increased scale for better print quality and clarity
             useCORS: true,
             backgroundColor: '#ffffff',

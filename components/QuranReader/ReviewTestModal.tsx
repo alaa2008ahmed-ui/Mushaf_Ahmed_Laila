@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, CheckCircle2, XCircle, HelpCircle, ArrowRight } from 'lucide-react';
 import { toArabic } from './constants';
+import { registerBackInterceptor } from '../../hooks/useBackButton';
 
 const stripTajweed = (text: string) => {
     if (!text) return '';
@@ -39,6 +40,16 @@ const ReviewTestModal: React.FC<ReviewTestModalProps> = ({
     const [testAyahs, setTestAyahs] = useState<any[]>([]);
 
     useEffect(() => {
+        if (!isOpen) return;
+        const interceptor = () => {
+            onClose();
+            return true;
+        };
+        const unregister = registerBackInterceptor(interceptor);
+        return unregister;
+    }, [isOpen, onClose]);
+
+    useEffect(() => {
         if (isOpen) {
             // Prepare test ayahs from range
             const ayahs: any[] = [];
@@ -68,12 +79,24 @@ const ReviewTestModal: React.FC<ReviewTestModalProps> = ({
         const correctAyah = ayahs[step];
         const distractors: any[] = [];
         
-        // Pick random distractors from the same surah or nearby
+        // Pick random distractors from the same surah or nearby safely
         const surah = quranData.surahs[correctAyah.surahNumber - 1];
-        while (distractors.length < 3) {
-            const randomAyah = surah.ayahs[Math.floor(Math.random() * surah.ayahs.length)];
-            if (randomAyah.numberInSurah !== correctAyah.ayahNumber && !distractors.find(d => d.numberInSurah === randomAyah.numberInSurah)) {
-                distractors.push(randomAyah);
+        let attempts = 0;
+        while (distractors.length < 3 && attempts < 100) {
+            attempts++;
+            const targetSurah = (surah && surah.ayahs.length >= 4 && attempts < 30)
+                ? surah
+                : quranData.surahs[Math.floor(Math.random() * quranData.surahs.length)];
+            
+            if (targetSurah?.ayahs?.length) {
+                const randomAyah = targetSurah.ayahs[Math.floor(Math.random() * targetSurah.ayahs.length)];
+                if (
+                    randomAyah && 
+                    !(targetSurah.number === correctAyah.surahNumber && randomAyah.numberInSurah === correctAyah.ayahNumber) &&
+                    !distractors.some(d => d.number === randomAyah.number)
+                ) {
+                    distractors.push(randomAyah);
+                }
             }
         }
         
@@ -112,18 +135,26 @@ const ReviewTestModal: React.FC<ReviewTestModalProps> = ({
     const prevAyah = currentStep > 0 ? testAyahs[currentStep - 1] : null;
 
     return (
-        <div className="fixed inset-0 z-[1200] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn" dir="rtl">
-            <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-modal-enter" style={{ backgroundColor: currentTheme.bg, color: currentTheme.text }}>
+        <div className="fixed inset-0 z-[1200] bg-black/60 backdrop-blur-sm flex items-center justify-center p-0 sm:p-4 animate-fadeIn" dir="rtl">
+            <div className="w-full max-w-lg h-full sm:h-auto max-h-[100dvh] sm:max-h-[90vh] bg-white rounded-none sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-modal-enter" style={{ backgroundColor: currentTheme.bg, color: currentTheme.text }}>
                 {/* Header */}
-                <div className="p-4 border-b flex items-center justify-between" style={{ borderColor: 'rgba(0,0,0,0.1)' }}>
-                    <button onClick={onClose} className="p-2 hover:bg-black/5 rounded-full transition-colors">
+                <div 
+                    className="px-4 pb-4 border-b flex items-center justify-between shadow-sm" 
+                    style={{ 
+                        borderColor: 'rgba(0,0,0,0.1)',
+                        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1.25rem)'
+                    }}
+                >
+                    <button onClick={onClose} className="p-2 hover:bg-black/10 rounded-xl transition-colors text-slate-700 dark:text-slate-200" title="رجوع">
+                        <ArrowRight size={20} />
+                    </button>
+                    <div className="text-center flex-1">
+                        <div className="font-bold text-sm">اختبار الحفظ</div>
+                        <div className="text-[10px] opacity-60">الخطوة {currentStep + 1} من {testAyahs.length}</div>
+                    </div>
+                    <button onClick={onClose} className="p-2 hover:bg-black/10 rounded-xl transition-colors text-slate-400" title="إغلاق">
                         <X size={20} />
                     </button>
-                    <div className="text-center">
-                        <div className="font-bold text-sm">اختبار الحفظ</div>
-                        <div className="text-[10px] opacity-50">الخطوة {currentStep + 1} من {testAyahs.length}</div>
-                    </div>
-                    <div className="w-10"></div>
                 </div>
 
                 {/* Progress Bar */}

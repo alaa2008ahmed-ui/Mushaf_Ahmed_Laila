@@ -63,17 +63,26 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
         const pageKey = currentPage === 'quran' || currentPage === 'quran-landscape' || (currentPage && currentPage.startsWith('quran_')) || currentPage === 'search' ? 'quran' : currentPage;
 
         if (pageKey === 'quran') {
-            const modeSuffix = (currentPage && currentPage.includes('landscape')) ? '_h' : '_v';
-            const savedQuranTheme = localStorage.getItem('current_theme_id' + modeSuffix);
-            if (savedQuranTheme && presetThemes[savedQuranTheme]) return savedQuranTheme;
-            return settings.pageThemes[pageKey] || 'default';
+            const isLocked = settings.lockedPages?.includes('quran');
+            if (isLocked) {
+                const modeSuffix = (currentPage && currentPage.includes('landscape')) ? '_h' : '_v';
+                const savedQuranTheme = localStorage.getItem('current_theme_id' + modeSuffix);
+                if (savedQuranTheme && presetThemes[savedQuranTheme]) return savedQuranTheme;
+                return settings.pageThemes[pageKey] || 'default';
+            }
+            return settings.themeKey || 'default';
         }
 
         if (pageKey === 'home') {
             return settings.themeKey || 'default';
         }
 
-        return settings.pageThemes[pageKey] || settings.themeKey || 'default';
+        const isLocked = settings.lockedPages?.includes(pageKey);
+        if (isLocked && settings.pageThemes[pageKey]) {
+            return settings.pageThemes[pageKey];
+        }
+
+        return settings.themeKey || 'default';
     }, [settings, currentPage]);
 
     const theme = useMemo(() => {
@@ -166,9 +175,23 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
             }
             
             nextSettings.pageThemes = nextPageThemes;
+
+            // Also keep Quran themes in sync if not locked
+            if (!settings.lockedPages?.includes('quran')) {
+                try {
+                    localStorage.setItem('current_theme_id_v', key);
+                    localStorage.setItem('current_theme_id_h', key);
+                } catch (e) {}
+            }
         } else {
             // Updating only the current LOCKED page
             nextSettings.pageThemes = { ...settings.pageThemes, [pageKey]: key };
+            if (pageKey === 'quran') {
+                try {
+                    const modeSuffix = (currentPage && currentPage.includes('landscape')) ? '_h' : '_v';
+                    localStorage.setItem('current_theme_id' + modeSuffix, key);
+                } catch (e) {}
+            }
         }
         
         saveSettings(nextSettings);

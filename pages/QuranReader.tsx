@@ -33,6 +33,7 @@ import QuranHeader from '../components/QuranReader/QuranHeader';
 import QuranFooter from '../components/QuranReader/QuranFooter';
 import FloatingMenu from '../components/QuranReader/FloatingMenu';
 import AyahContextMenu from '../components/QuranReader/AyahContextMenu';
+import { ahlAlQuranService } from '../services/ahlAlQuranService';
 import ShareAyahModal from '../components/QuranReader/ShareAyahModal';
 import TutorialOverlay, { TutorialStep } from '../components/Tutorial/TutorialOverlay';
 import { MousePointer2, Move, ZoomIn, Grid, Mic, Bookmark, Home, Share2, BookOpen, Trophy, Play, Menu, Palette } from 'lucide-react';
@@ -1984,16 +1985,17 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
                                 isSessionFinishedRef.current = true;
                                 stopAudio();
                                 localStorage.removeItem('memorization_session_v1');
-                                showToast('انتهت جلسة التحفيظ');
+                                showToast('انتهت جلسة التحفيظ والمراجعة');
                                 if (memSettings.testAfterSession) {
-                                    showToast('حان وقت الاختبار!');
+                                    setShowReviewTest(true);
+                                } else {
+                                    // Auto-return to memorization page
+                                    setTimeout(() => {
+                                        if (!isMountedRef.current) return;
+                                        if (onBack) handleHomeClick();
+                                        else if (onNavigate) onNavigate('memorization');
+                                    }, 1500);
                                 }
-                                // Auto-return to memorization page
-                                setTimeout(() => {
-                                    if (!isMountedRef.current) return;
-                                    if (onBack) handleHomeClick();
-                                    else if (onNavigate) onNavigate('memorization');
-                                }, 1500);
                             }
                         } else {
                             playNextAyahRef.current();
@@ -3563,6 +3565,98 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
     const currentPageNumber = quranData?.surahs[currentAyah.s - 1]?.ayahs.find((ay:any) => ay.numberInSurah === currentAyah.a)?.page || 1;
     const tafseerName = TAFSEERS.find(t => t.id === settings.tafseer)?.name || 'التفسير';
 
+    // Smart Real-Time Page Reading Tracker for Ahl Al-Quran Leaderboard
+    const pageDwellSecondsRef = useRef<Record<number, number>>({});
+    const lastCreditedTimestampMapRef = useRef<Map<number, number>>(new Map());
+
+    const getCurrentlyVisiblePage = useCallback((): number => {
+        const content = mushafContentRef.current;
+        if (content && readingMode === 'mushaf') {
+            const pages = content.querySelectorAll('.mushaf-page');
+            if (pages.length > 0) {
+                const containerRect = content.getBoundingClientRect();
+                const focalY = containerRect.top + containerRect.height * 0.40;
+
+                let bestPage = 0;
+                let closestDist = Infinity;
+
+                for (let i = 0; i < pages.length; i++) {
+                    const pageEl = pages[i] as HTMLElement;
+                    const rect = pageEl.getBoundingClientRect();
+                    const pageNum = parseInt(pageEl.dataset.page || pageEl.id.replace('page-', ''), 10);
+                    if (!pageNum || pageNum < 1 || pageNum > 604) continue;
+
+                    if (rect.top <= focalY && rect.bottom >= focalY) {
+                        return pageNum;
+                    }
+
+                    const pageCenter = rect.top + rect.height / 2;
+                    const dist = Math.abs(pageCenter - focalY);
+                    if (dist < closestDist) {
+                        closestDist = dist;
+                        bestPage = pageNum;
+                    }
+                }
+
+                if (bestPage >= 1 && bestPage <= 604) {
+                    return bestPage;
+                }
+            }
+        }
+
+        // Fallback for non-mushaf mode or before DOM layout
+        if (currentAyahRef.current?.s && quranData?.surahs) {
+            const s = currentAyahRef.current.s;
+            const a = currentAyahRef.current.a;
+            const pg = quranData.surahs[s - 1]?.ayahs?.find((ay: any) => ay.numberInSurah === a)?.page;
+            if (pg && pg >= 1 && pg <= 604) return pg;
+        }
+
+        return currentPageNumber || 1;
+    }, [currentPageNumber, quranData, readingMode]);
+
+    useEffect(() => {
+        const timer = setInterval(() => {
+            if (typeof document !== 'undefined' && document.hidden) return;
+            const isModalOpen = activeModals.length > 0 || tafseerInfo.isOpen || tafseerSelectionInfo.isOpen;
+            if (isModalOpen) return;
+
+            const visiblePage = getCurrentlyVisiblePage();
+            if (!visiblePage || visiblePage < 1 || visiblePage > 604) return;
+
+            const now = Date.now();
+            const lastCredited = lastCreditedTimestampMapRef.current.get(visiblePage) || 0;
+            // Prevent duplicate crediting of same page within 45 seconds
+            if (now - lastCredited < 45000) return;
+
+            const currentSecs = (pageDwellSecondsRef.current[visiblePage] || 0) + 1;
+            pageDwellSecondsRef.current[visiblePage] = currentSecs;
+
+            // 8 seconds threshold: allows normal calm reading, tadabbur, manual scroll and auto-scroll
+            const REQUIRED_SECONDS = 8;
+            if (currentSecs >= REQUIRED_SECONDS) {
+                const isAutoScroll = autoScrollStateRef.current.isActive && !autoScrollStateRef.current.isPaused;
+                const scrollMinutes = parseInt(String(settingsRef.current.scrollMinutes), 10) || 20;
+                const isAudioPlaying = isPlayingRef.current;
+
+                ahlAlQuranService.validateAndRecordPage(visiblePage, currentSecs, {
+                    isAutoScroll,
+                    scrollMinutes,
+                    isPlayingAudio: isAudioPlaying
+                }).then(result => {
+                    if (result.success) {
+                        lastCreditedTimestampMapRef.current.set(visiblePage, Date.now());
+                        pageDwellSecondsRef.current[visiblePage] = 0;
+                    }
+                });
+            }
+        }, 1000);
+
+        return () => {
+            clearInterval(timer);
+        };
+    }, [getCurrentlyVisiblePage, activeModals.length, tafseerInfo.isOpen, tafseerSelectionInfo.isOpen]);
+
     const renderPlayButtonIcon = () => {
         const iconColor = currentTheme.barText || '#000000';
         if (isAudioLoading) return <i className="fa-solid fa-spinner fa-spin text-xl" style={{ color: iconColor }}></i>;
@@ -4047,10 +4141,9 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
                     onComplete={(success) => {
                         setShowReviewTest(false);
                         if (success) {
-                            showToast('أحسنت! لقد نجحت في الاختبار');
-                            // Update review schedule if in review mode
-                            if (localMemorizationSettings.isReviewMode) {
-                                // We need the range ID, but for now let's just show success
+                            showToast('أحسنت! لقد نجحت في الاختبار وجرى تحديث جدول المراجعة 🎉');
+                            if (localMemorizationSettings?.rangeId) {
+                                memorizationService.updateReviewStatus(localMemorizationSettings.rangeId);
                             }
                         } else {
                             showToast('تحتاج لمزيد من المراجعة، حاول مرة أخرى');

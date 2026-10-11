@@ -12,8 +12,15 @@ const Tooltip = ({ text }: { text: string }) => (
     </div>
 );
 
-const KaffaratCalculator: React.FC = () => {
-    const { theme } = useTheme();
+const KaffaratCalculator: React.FC<{ cardBorderColor?: string }> = ({ cardBorderColor: propCardBorderColor }) => {
+    const { theme, themeKey } = useTheme();
+    const isBlackTheme = theme.bgColor === '#000000' || theme.name === 'أبيض وأسود';
+    const isDefaultTheme = themeKey === 'default' || !themeKey;
+    const cardBorderColor = propCardBorderColor || (isDefaultTheme 
+        ? '#000000' 
+        : (isBlackTheme 
+            ? '#FFFFFF' 
+            : (theme.palette?.[0] || '#000000')));
     
     const [missedFastingDays, setMissedFastingDays] = useState('');
     const [fidyahFeedingCost, setFidyahFeedingCost] = useState('');
@@ -22,7 +29,7 @@ const KaffaratCalculator: React.FC = () => {
 
     const inputStyle = {
         backgroundColor: theme.isOriginal ? '#fff' : 'rgba(255,255,255,0.05)',
-        borderColor: theme.isOriginal ? '#e5e7eb' : 'rgba(255,255,255,0.2)',
+        borderColor: isDefaultTheme ? '#000000' : (isBlackTheme ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.2)'),
         color: theme.textColor,
     };
 
@@ -40,17 +47,17 @@ const KaffaratCalculator: React.FC = () => {
             {/* Header Actions */}
             <div className="flex justify-between items-center">
                 <h2 className="text-xl font-bold flex items-center gap-2" style={{ color: theme.textColor }}>
-                    <i className="fa-solid fa-hand-holding-heart text-primary"></i> حساب الكفارات
+                    <i className={`fa-solid fa-hand-holding-heart ${isBlackTheme ? 'text-white' : (isDefaultTheme ? 'text-black' : 'text-primary')}`}></i> حساب الكفارات
                 </h2>
                 <button onClick={clearAll} className="flex items-center gap-1 text-sm text-red-500 hover:bg-red-500/10 px-3 py-1.5 rounded-lg transition-colors">
-                    <RefreshCw size={14} /> تنظيف
+                    <RefreshCw size={14} /> إعادة ضبط
                 </button>
             </div>
 
             {/* Fidyah */}
-            <div className="themed-card p-5 rounded-xl border-l-4 border-primary">
+            <div className="themed-card p-5 rounded-xl" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                 <h3 className="text-lg font-bold mb-2 flex items-center gap-2" style={{ color: theme.textColor }}>
-                    <i className="fa-solid fa-bowl-food text-primary"></i> فدية الصيام
+                    <i className={`fa-solid fa-bowl-food ${isBlackTheme ? 'text-white' : (isDefaultTheme ? 'text-black' : 'text-primary')}`}></i> فدية الصيام
                 </h3>
                 <p className="text-xs mb-4 opacity-80" style={{ color: theme.textColor }}>
                     تجب على من عجز عن الصيام عجزاً لا يُرجى برؤه (كالكبير في السن والمريض مرضاً مزمناً).
@@ -71,16 +78,16 @@ const KaffaratCalculator: React.FC = () => {
                     </div>
                 </div>
                 
-                <div className="mt-4 p-4 rounded-lg bg-primary/10 flex justify-between items-center border border-primary/20">
+                <div className="mt-4 p-4 rounded-lg bg-primary/10 flex justify-between items-center" style={{ borderColor: cardBorderColor, borderWidth: '1px', borderStyle: 'solid' }}>
                     <span className="font-bold opacity-90" style={{ color: theme.textColor }}>إجمالي فدية الصيام: </span>
-                    <span className="text-2xl font-black text-primary">
+                    <span className={`text-2xl font-black ${isBlackTheme ? 'text-white' : (isDefaultTheme ? 'text-black' : 'text-primary')}`}>
                         {fidyahTotal > 0 ? fidyahTotal.toFixed(2) : '0.00'}
                     </span>
                 </div>
             </div>
 
             {/* Kaffarat Yamin */}
-            <div className="themed-card p-5 rounded-xl border-l-4 border-blue-500">
+            <div className="themed-card p-5 rounded-xl" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                 <h3 className="text-lg font-bold mb-2 flex items-center gap-2" style={{ color: theme.textColor }}>
                     <i className="fa-solid fa-hand-sparkles text-blue-500"></i> كفارة اليمين
                 </h3>
@@ -95,19 +102,16 @@ const KaffaratCalculator: React.FC = () => {
                     <input type="number" placeholder="التكلفة" value={yaminFeedingCost} onChange={e => setYaminFeedingCost(e.target.value)} className="w-full p-3 rounded-lg border focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all" style={inputStyle} />
                 </div>
                 
-                <div className="mt-4 p-4 rounded-lg bg-blue-500/10 flex justify-between items-center border border-blue-500/20">
+                <div className="mt-4 p-4 rounded-lg bg-blue-500/10 flex justify-between items-center" style={{ borderColor: cardBorderColor, borderWidth: '1px', borderStyle: 'solid' }}>
                     <span className="font-bold opacity-90" style={{ color: theme.textColor }}>إجمالي كفارة اليمين (10 مساكين): </span>
                     <span className="text-2xl font-black text-blue-500">
                         {yaminTotal > 0 ? yaminTotal.toFixed(2) : '0.00'}
                     </span>
                 </div>
             </div>
-            
-            <div className="mt-4 p-3 rounded-xl bg-yellow-500/10 border border-yellow-500/20 flex items-start gap-2">
-                <Info className="text-yellow-600 dark:text-yellow-400 shrink-0 mt-0.5" size={16} />
-                <p className="text-xs leading-relaxed opacity-90" style={{ color: theme.textColor }}>
-                    الأصل في الكفارات والفدية إخراجها طعاماً، ويجوز إخراج قيمتها نقداً عند بعض المذاهب إذا كان في ذلك مصلحة للفقير.
-                </p>
+
+            <div className="p-4 rounded-xl bg-black/5 dark:bg-white/5 text-xs opacity-70 text-center" style={{ color: theme.textColor, borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
+                * ملاحظة: الأصل في الكفارات والفدية هو إخراج الطعام عيناً (أرز، قمح، تمر) بمقدار مد أو نصف صاع حسب المذهب، وتجوز القيمة النقدية عند جماعة من أهل العلم تيسيراً على الفقراء.
             </div>
         </div>
     );

@@ -24,10 +24,10 @@ export interface IslamicEvent {
 
 export const islamicEvents: IslamicEvent[] = [
     { id: '1', day: 1, month: 1, name: 'رأس السنة الهجرية', description: 'بداية العام الهجري الجديد', isPrimary: true },
-    { id: '2', day: 10, month: 1, name: 'يوم عاشوراء', description: 'اليوم الذي نجى الله فيه موسى عليه السلام', isPrimary: false },
+    { id: '2', day: 10, month: 1, name: 'يوم عاشوراء', description: 'اليوم الذي نجَّى الله فيه موسى عليه السلام', isPrimary: false },
     { id: '3', day: 12, month: 3, name: 'المولد النبوي الشريف', description: 'ذكرى مولد النبي محمد ﷺ', isPrimary: true },
     { id: '4', day: 27, month: 7, name: 'الإسراء والمعراج', description: 'ذكرى رحلة الإسراء والمعراج', isPrimary: true },
-    { id: '5', day: 15, month: 8, name: 'ليلة النصف من شعبان', description: 'ليلة مباركة يتم فيها تحويل القبلة', isPrimary: false },
+    { id: '5', day: 15, month: 8, name: 'ليلة النصف من شعبان', description: 'ليلة مباركة تم فيها تحويل القبلة', isPrimary: false },
     { id: '6', day: 1, month: 9, name: 'بداية شهر رمضان', description: 'بداية شهر الصيام الفضيل', isPrimary: true },
     { id: '7', day: 27, month: 9, name: 'ليلة القدر (تقديرياً)', description: 'خير من ألف شهر', isPrimary: true },
     { id: '8', day: 1, month: 10, name: 'عيد الفطر المبارك', description: 'عيد الإفطار بعد انتهاء شهر رمضان', isPrimary: true },

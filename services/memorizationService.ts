@@ -47,6 +47,8 @@ class MemorizationService {
             ...range,
             id: Math.random().toString(36).substring(2, 9),
             timestamp: Date.now(),
+            lastReviewed: Date.now(),
+            nextReviewDate: Date.now() + 24 * 60 * 60 * 1000,
             reviewCount: 0
         };
 
@@ -67,6 +69,9 @@ class MemorizationService {
         if (range) {
             range.lastReviewed = Date.now();
             range.reviewCount = (range.reviewCount || 0) + 1;
+            const intervals = [1, 3, 7, 15, 30];
+            const days = intervals[Math.min(range.reviewCount, intervals.length - 1)];
+            range.nextReviewDate = Date.now() + days * 24 * 60 * 60 * 1000;
             localStorage.setItem(STORAGE_KEY, JSON.stringify(ranges));
         }
     }

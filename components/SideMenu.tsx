@@ -4,10 +4,11 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
     Home, BookOpen, Headphones, Clock, Calendar, Brain, 
     Mic, Settings, Palette, MessageCircle, X, ChevronLeft,
-    Menu, Info, HelpCircle, Star, Type, Bell, Compass, Search
+    Menu, Info, HelpCircle, Star, Type, Bell, Compass, Search, Trophy
 } from 'lucide-react';
 import TutorialOverlay, { TutorialStep } from './Tutorial/TutorialOverlay';
 import { THEMES } from './QuranReader/constants';
+import { useShowNewBadge } from '../utils/badgeManager';
 
 interface SideMenuProps {
     isOpen: boolean;
@@ -19,6 +20,7 @@ interface SideMenuProps {
 }
 
 const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onNavigate, onOpenThemes, currentTheme: _appTheme, currentPage }) => {
+    const showNewBadges = useShowNewBadge();
     const [readerTheme, setReaderTheme] = React.useState(() => {
         try {
             const themeId = localStorage.getItem('current_theme_id_v') || 'black';
@@ -48,7 +50,8 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onNavigate, onOpen
     };
 
     const menuItems = [
-        { id: 'community', label: 'مجتمع المصحف والتواصل', icon: MessageCircle, color: '#10b981', description: 'التواصل والمحادثات مع القراء والحفاظ من جميع أنحاء العالم.' },
+        { id: 'community', label: 'مجتمع التواصل', icon: MessageCircle, color: '#10b981', description: 'التواصل والمحادثات مع القراء والحفاظ من جميع أنحاء العالم.' },
+        { id: 'ahl-al-quran', label: 'أهل القرآن (لوحة الشرف)', icon: Trophy, color: '#f59e0b', description: 'لوحة صدارة وتنافس محمود لقراء القرآن الكريم مع تحديث شهري للأجزاء والختمات.' },
         { id: 'search', label: 'البحث المتقدم', icon: Search, color: '#14b8a6', description: 'البحث عن آية، أو دعاء، أو أذكار.' },
         { id: 'habit-tracker', label: 'مربّي العبادات', icon: Calendar, color: '#ec4899', description: 'متابعة الصلاة وتلاوة القرآن والأذكار والأهداف اليومية.' },
         { id: 'home', label: 'الرئيسية', icon: Home, color: '#3b82f6', description: 'العودة إلى الشاشة الرئيسية للتطبيق.' },
@@ -166,7 +169,14 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onNavigate, onOpen
                                         >
                                             <item.icon size={22} />
                                         </div>
-                                        <span className="font-bold text-[15px]">{item.label}</span>
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-bold text-[15px]">{item.label}</span>
+                                            {showNewBadges && (item.id === 'community' || item.id === 'ahl-al-quran') && (
+                                                <span className="bg-yellow-400 text-black text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-xs border border-white dark:border-slate-800">
+                                                    جديد
+                                                </span>
+                                            )}
+                                        </div>
                                         <ChevronLeft size={16} className="mr-auto opacity-30 group-hover:opacity-100 transition-opacity" />
                                     </button>
                                 ))}

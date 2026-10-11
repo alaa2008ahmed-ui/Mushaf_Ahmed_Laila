@@ -32,7 +32,7 @@ export const RECITERS = [
     { id: 'https://server14.mp3quran.net/shamsan/Rewayat-Hafs-A-n-Assem', name: 'الوليد الشمسان' },
     { id: 'https://server16.mp3quran.net/a_alemadi/Rewayat-Hafs-A-n-Assem', name: 'أنس العمادي' },
     { id: 'https://server10.mp3quran.net/bader/Rewayat-Hafs-A-n-Assem', name: 'بدر التركي' },
-    { id: 'https://server6.mp3quran.net/balilah', name: 'بندر بليله' },
+    { id: 'https://server6.mp3quran.net/balilah', name: 'بندر بليلة' },
     { id: 'https://server16.mp3quran.net/peshawa/Rewayat-Hafs-A-n-Assem', name: 'بيشه وا قادر الكردي' },
     { id: 'https://server6.mp3quran.net/twfeeq', name: 'توفيق الصايغ' },
     { id: 'https://server6.mp3quran.net/jamal', name: 'جمال شاكر عبدالله' },

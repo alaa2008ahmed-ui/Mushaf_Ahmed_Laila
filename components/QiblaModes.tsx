@@ -15,8 +15,11 @@ L.Icon.Default.mergeOptions({
 const KAABA_LAT = 21.4225;
 const KAABA_LNG = 39.8262;
 
-export const VisualQibla = ({ lat, lng, theme }: { lat: number, lng: number, theme: any }) => {
+export const VisualQibla = ({ lat, lng, theme, cardBorderColor }: { lat: number, lng: number, theme: any, cardBorderColor?: string }) => {
     const [isOnline, setIsOnline] = useState(navigator.onLine);
+    const isDefaultTheme = theme?.key === 'default' || theme?.name === 'الأصلي';
+    const isBlackTheme = theme?.bgColor === '#000000' || theme?.name === 'أبيض وأسود';
+    const effectiveBorder = cardBorderColor || (isDefaultTheme ? '#000000' : (isBlackTheme ? '#FFFFFF' : (theme?.palette?.[0] || '#000000')));
 
     useEffect(() => {
         const handleOnline = () => setIsOnline(true);
@@ -31,7 +34,7 @@ export const VisualQibla = ({ lat, lng, theme }: { lat: number, lng: number, the
 
     if (!isOnline) {
         return (
-            <div className="w-full h-full rounded-2xl flex flex-col items-center justify-center p-6 text-center themed-card border-2" style={{ borderColor: `${theme.palette[0]}30` }}>
+            <div className="w-full h-full rounded-2xl flex flex-col items-center justify-center p-6 text-center themed-card" style={{ borderColor: effectiveBorder, borderWidth: '1.5px', borderStyle: 'solid' }}>
                 <i className="fa-solid fa-wifi text-6xl mb-4 opacity-50" style={{ color: theme.palette[0] }}></i>
                 <h3 className="text-xl font-bold mb-2">لا يوجد اتصال بالإنترنت</h3>
                 <p className="opacity-70">الخريطة المرئية تتطلب اتصالاً بالإنترنت لتحميل الخرائط. يرجى التحقق من اتصالك والمحاولة مرة أخرى.</p>
@@ -40,7 +43,7 @@ export const VisualQibla = ({ lat, lng, theme }: { lat: number, lng: number, the
     }
 
     return (
-        <div className="w-full h-full rounded-2xl overflow-hidden shadow-lg border-2 relative z-0" style={{ borderColor: `${theme.palette[0]}30` }}>
+        <div className="w-full h-full rounded-2xl overflow-hidden shadow-lg relative z-0" style={{ borderColor: effectiveBorder, borderWidth: '2px', borderStyle: 'solid' }}>
             <MapContainer center={[lat, lng]} zoom={4} style={{ height: '100%', width: '100%' }}>
                 <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                 <Marker position={[lat, lng]} />
@@ -51,9 +54,12 @@ export const VisualQibla = ({ lat, lng, theme }: { lat: number, lng: number, the
     );
 };
 
-export const ARQibla = ({ qiblaDirection, heading, isAligned, theme }: any) => {
+export const ARQibla = ({ qiblaDirection, heading, isAligned, theme, cardBorderColor }: any) => {
     const videoRef = useRef<HTMLVideoElement>(null);
     const [error, setError] = useState('');
+    const isDefaultTheme = theme?.key === 'default' || theme?.name === 'الأصلي';
+    const isBlackTheme = theme?.bgColor === '#000000' || theme?.name === 'أبيض وأسود';
+    const effectiveBorder = cardBorderColor || (isDefaultTheme ? '#000000' : (isBlackTheme ? '#FFFFFF' : (theme?.palette?.[0] || '#000000')));
 
     useEffect(() => {
         let stream: MediaStream | null = null;
@@ -101,7 +107,7 @@ export const ARQibla = ({ qiblaDirection, heading, isAligned, theme }: any) => {
     const rotation = qiblaDirection - heading;
 
     return (
-        <div className="w-full h-full relative rounded-2xl overflow-hidden bg-black flex flex-col items-center justify-center shadow-lg">
+        <div className="w-full h-full relative rounded-2xl overflow-hidden bg-black flex flex-col items-center justify-center shadow-lg" style={{ borderColor: effectiveBorder, borderWidth: '2px', borderStyle: 'solid' }}>
             {error ? (
                 <p className="text-red-500 p-4 text-center">{error}</p>
             ) : (
@@ -121,7 +127,7 @@ export const ARQibla = ({ qiblaDirection, heading, isAligned, theme }: any) => {
                         <div className="absolute inset-0 bg-green-500/20 rounded-full animate-pulse"></div>
                     )}
                 </div>
-                <div className="mt-8 bg-black/50 backdrop-blur-md px-6 py-3 rounded-full text-white font-bold text-lg border border-white/20">
+                <div className="mt-8 bg-black/50 backdrop-blur-md px-6 py-3 rounded-full text-white font-bold text-lg" style={{ borderColor: effectiveBorder, borderWidth: '1.5px', borderStyle: 'solid' }}>
                     {isAligned ? 'أنت متجه للقبلة' : 'وجه الكاميرا نحو الكعبة'}
                 </div>
             </div>
@@ -129,8 +135,11 @@ export const ARQibla = ({ qiblaDirection, heading, isAligned, theme }: any) => {
     );
 };
 
-export const SunMoonQibla = ({ lat, lng, qiblaDirection, heading, theme }: any) => {
+export const SunMoonQibla = ({ lat, lng, qiblaDirection, heading, theme, cardBorderColor }: any) => {
     const [time, setTime] = useState(new Date());
+    const isDefaultTheme = theme?.key === 'default' || theme?.name === 'الأصلي';
+    const isBlackTheme = theme?.bgColor === '#000000' || theme?.name === 'أبيض وأسود';
+    const effectiveBorder = cardBorderColor || (isDefaultTheme ? '#000000' : (isBlackTheme ? '#FFFFFF' : (theme?.palette?.[0] || '#000000')));
 
     useEffect(() => {
         const timer = setInterval(() => setTime(new Date()), 60000);
@@ -184,7 +193,7 @@ export const SunMoonQibla = ({ lat, lng, qiblaDirection, heading, theme }: any) 
 
     return (
         <div className="w-full shrink-0 flex flex-col gap-6 pb-8">
-            <div className="themed-card p-8 rounded-2xl flex flex-col items-center justify-center text-center relative overflow-hidden shadow-md">
+            <div className="themed-card p-8 rounded-2xl flex flex-col items-center justify-center text-center relative overflow-hidden shadow-md" style={{ borderColor: effectiveBorder, borderWidth: '1.5px', borderStyle: 'solid' }}>
                 <div className="absolute top-4 right-4 text-yellow-500 opacity-10"><i className="fa-solid fa-sun text-6xl"></i></div>
                 <h3 className="text-2xl font-bold mb-4" style={{ color: theme.palette[0] }}>تحديد القبلة عن طريق الشمس</h3>
                 
@@ -197,11 +206,11 @@ export const SunMoonQibla = ({ lat, lng, qiblaDirection, heading, theme }: any) 
                 <CompassDial targetHeading={sunHeading} targetIcon="fa-sun" targetColor="#eab308" label="الشمس" />
 
                 <div className="w-full space-y-2 mb-4">
-                    <div className="flex justify-between items-center p-3 rounded-lg themed-bg-alt">
+                    <div className="flex justify-between items-center p-3 rounded-lg themed-bg-alt" style={{ borderColor: effectiveBorder, borderWidth: '1px', borderStyle: 'solid' }}>
                         <span className="text-sm font-bold">اتجاه الشمس:</span>
                         <span className="font-mono text-lg">{Math.round(sunHeading)}°</span>
                     </div>
-                    <div className="flex justify-between items-center p-3 rounded-lg themed-bg-alt">
+                    <div className="flex justify-between items-center p-3 rounded-lg themed-bg-alt" style={{ borderColor: effectiveBorder, borderWidth: '1px', borderStyle: 'solid' }}>
                         <span className="text-sm font-bold">اتجاه القبلة:</span>
                         <span className="font-mono text-lg">{Math.round(qiblaDirection)}°</span>
                     </div>
@@ -214,7 +223,7 @@ export const SunMoonQibla = ({ lat, lng, qiblaDirection, heading, theme }: any) 
                 </div>
             </div>
 
-            <div className="themed-card p-8 rounded-2xl flex flex-col items-center justify-center text-center relative overflow-hidden shadow-md">
+            <div className="themed-card p-8 rounded-2xl flex flex-col items-center justify-center text-center relative overflow-hidden shadow-md" style={{ borderColor: effectiveBorder, borderWidth: '1.5px', borderStyle: 'solid' }}>
                 <div className="absolute top-4 right-4 text-blue-400 opacity-10"><i className="fa-solid fa-moon text-6xl"></i></div>
                 <h3 className="text-2xl font-bold mb-4" style={{ color: theme.palette[0] }}>تحديد القبلة عن طريق القمر</h3>
                 
@@ -227,11 +236,11 @@ export const SunMoonQibla = ({ lat, lng, qiblaDirection, heading, theme }: any) 
                 <CompassDial targetHeading={moonHeading} targetIcon="fa-moon" targetColor="#60a5fa" label="القمر" />
 
                 <div className="w-full space-y-2 mb-4">
-                    <div className="flex justify-between items-center p-3 rounded-lg themed-bg-alt">
+                    <div className="flex justify-between items-center p-3 rounded-lg themed-bg-alt" style={{ borderColor: effectiveBorder, borderWidth: '1px', borderStyle: 'solid' }}>
                         <span className="text-sm font-bold">اتجاه القمر:</span>
                         <span className="font-mono text-lg">{Math.round(moonHeading)}°</span>
                     </div>
-                    <div className="flex justify-between items-center p-3 rounded-lg themed-bg-alt">
+                    <div className="flex justify-between items-center p-3 rounded-lg themed-bg-alt" style={{ borderColor: effectiveBorder, borderWidth: '1px', borderStyle: 'solid' }}>
                         <span className="text-sm font-bold">اتجاه القبلة:</span>
                         <span className="font-mono text-lg">{Math.round(qiblaDirection)}°</span>
                     </div>
@@ -247,8 +256,11 @@ export const SunMoonQibla = ({ lat, lng, qiblaDirection, heading, theme }: any) 
     );
 };
 
-export const ShadowQibla = ({ lat, lng, qiblaDirection, heading, theme }: any) => {
+export const ShadowQibla = ({ lat, lng, qiblaDirection, heading, theme, cardBorderColor }: any) => {
     const [time, setTime] = useState(new Date());
+    const isDefaultTheme = theme?.key === 'default' || theme?.name === 'الأصلي';
+    const isBlackTheme = theme?.bgColor === '#000000' || theme?.name === 'أبيض وأسود';
+    const effectiveBorder = cardBorderColor || (isDefaultTheme ? '#000000' : (isBlackTheme ? '#FFFFFF' : (theme?.palette?.[0] || '#000000')));
 
     useEffect(() => {
         const timer = setInterval(() => setTime(new Date()), 60000);
@@ -261,7 +273,7 @@ export const ShadowQibla = ({ lat, lng, qiblaDirection, heading, theme }: any) =
     const shadowDiff = Math.abs(shadowHeading - qiblaDirection);
 
     return (
-        <div className="w-full shrink-0 flex flex-col items-center justify-start themed-card p-8 rounded-2xl text-center relative overflow-hidden shadow-md mb-8">
+        <div className="w-full shrink-0 flex flex-col items-center justify-start themed-card p-8 rounded-2xl text-center relative overflow-hidden shadow-md mb-8" style={{ borderColor: effectiveBorder, borderWidth: '1.5px', borderStyle: 'solid' }}>
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-5">
                 <i className="fa-solid fa-person-rays text-[15rem]"></i>
             </div>
@@ -310,17 +322,17 @@ export const ShadowQibla = ({ lat, lng, qiblaDirection, heading, theme }: any) =
                 </div>
 
                 <div className="w-full space-y-3 mt-4">
-                    <div className="flex justify-between items-center p-3 rounded-lg themed-bg-alt">
+                    <div className="flex justify-between items-center p-3 rounded-lg themed-bg-alt" style={{ borderColor: effectiveBorder, borderWidth: '1px', borderStyle: 'solid' }}>
                         <span className="text-sm font-bold">اتجاه الظل الحالي:</span>
                         <span className="font-mono text-lg">{Math.round(shadowHeading)}°</span>
                     </div>
-                    <div className="flex justify-between items-center p-3 rounded-lg themed-bg-alt">
+                    <div className="flex justify-between items-center p-3 rounded-lg themed-bg-alt" style={{ borderColor: effectiveBorder, borderWidth: '1px', borderStyle: 'solid' }}>
                         <span className="text-sm font-bold">اتجاه القبلة:</span>
                         <span className="font-mono text-lg">{Math.round(qiblaDirection)}°</span>
                     </div>
                 </div>
 
-                <div className="mt-4 p-4 rounded-xl border w-full" style={{ backgroundColor: `${theme.palette[0]}1a`, borderColor: `${theme.palette[0]}4d` }}>
+                <div className="mt-4 p-4 rounded-xl border w-full" style={{ backgroundColor: `${theme.palette[0]}1a`, borderColor: effectiveBorder, borderWidth: '1px', borderStyle: 'solid' }}>
                     <p className="font-bold text-sm" style={{ color: theme.palette[0] }}>
                         القبلة تبعد عن الظل بـ {Math.round(shadowDiff)} درجة
                     </p>
