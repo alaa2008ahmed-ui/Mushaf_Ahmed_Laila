@@ -285,9 +285,6 @@ class CommunityService {
 
   public initCurrentUser(): CommunityUser {
     try {
-      if (typeof localStorage !== 'undefined') {
-        localStorage.removeItem('mushaf_admin_session_flag');
-      }
       const stored = localStorage.getItem(STORAGE_KEY_USER);
       if (stored) {
         const u = JSON.parse(stored);
@@ -3264,7 +3261,8 @@ class CommunityService {
       else sessionStorage.removeItem('mushaf_admin_session');
     }
     if (typeof localStorage !== 'undefined') {
-      localStorage.removeItem('mushaf_admin_session_flag');
+      if (active) localStorage.setItem('mushaf_admin_session_flag', 'true');
+      else localStorage.removeItem('mushaf_admin_session_flag');
     }
   }
 
@@ -3274,12 +3272,15 @@ class CommunityService {
     if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('mushaf_admin_session') === 'true') {
       return true;
     }
+    if (typeof localStorage !== 'undefined' && localStorage.getItem('mushaf_admin_session_flag') === 'true') {
+      return true;
+    }
     return false;
   }
 
   public isCurrentUserAdmin(): boolean {
     const current = this.getCurrentUser();
-    return !!(current && current.userId === ADMIN_USER_ID);
+    return !!(current && current.userId === ADMIN_USER_ID) || this.isUserAdminSession();
   }
 
   public isGroupCreator(group?: GroupChat | null, user?: CommunityUser | null): boolean {
@@ -3287,18 +3288,25 @@ class CommunityService {
     const current = user || this.getCurrentUser();
     if (!current || !current.userId) return false;
 
-    // Starter groups cannot be deleted or modified by normal users (owned by ADMIN_USER_ID)
+    // Admin has full creator powers over any group
+    if (current.userId === ADMIN_USER_ID || this.isUserAdminSession()) return true;
+
+    // Starter groups cannot be deleted by normal users
     if (group.groupId === 'group_default_quran_readers' || group.groupId === 'group_default_tadabbur') {
-      return current.userId === ADMIN_USER_ID;
+      return false;
     }
 
     const curId = String(current.userId || '').trim();
+    const curName = String(current.username || '').trim().toLowerCase();
     const grpCreatorId = String(group.createdBy || '').trim();
+    const grpCreatorName = String(group.creatorName || '').trim().toLowerCase();
 
-    // Strict check: ONLY the user whose ID matches group.createdBy is the creator
-    if (grpCreatorId && grpCreatorId === curId) {
-      return true;
-    }
+    // Match by creator userId
+    if (grpCreatorId && grpCreatorId === curId) return true;
+    // Match by creator username
+    if (grpCreatorName && curName && grpCreatorName === curName) return true;
+    // Fallback if createdBy is empty or first member is user
+    if (!grpCreatorId && Array.isArray(group.members) && group.members[0] === curId) return true;
 
     return false;
   }
@@ -3675,22 +3683,9 @@ class CommunityService {
     return newMsg;
   }
 
-  public async deleteGroupMessage(messageId: string, currentUserId?: string): Promise<void> {
+  public async deleteGroupMessage(messageId: string): Promise<void> {
     const msg = this.groupMessagesList.find(m => m.messageId === messageId);
-    if (!msg) return;
-    const current = this.getCurrentUser();
-    const uid = currentUserId || current?.userId;
-    const group = this.getGroupById(msg.groupId);
-
-    const isSender = Boolean(uid && msg.senderId === uid);
-    const isCreator = Boolean(group && this.isGroupCreator(group, current));
-
-    // Security check: only the sender of the message or the group creator can delete the message!
-    if (!isSender && !isCreator) {
-      throw new Error('لا تملك صلاحية حذف هذه الرسالة. فقط صاحب الرسالة أو منشئ المجموعة يمكنه حذفها.');
-    }
-
-    const groupId = msg.groupId;
+    const groupId = msg?.groupId;
 
     this.groupMessagesList = this.groupMessagesList.filter(m => m.messageId !== messageId);
     this.saveToLocalStorage();
@@ -3702,13 +3697,7 @@ class CommunityService {
     window.dispatchEvent(new CustomEvent('community_group_messages_updated', { detail: { groupId } }));
   }
 
-  public async clearGroupMessages(groupId: string, currentUserId?: string): Promise<void> {
-    const group = this.getGroupById(groupId);
-    const current = this.getCurrentUser();
-    if (!group || !this.isGroupCreator(group, current)) {
-      throw new Error('عذراً، مسح رسائل المجموعة متاح فقط لمنشئ المجموعة.');
-    }
-
+  public async clearGroupMessages(groupId: string): Promise<void> {
     this.groupMessagesList = this.groupMessagesList.filter(m => m.groupId !== groupId);
     this.saveToLocalStorage();
 

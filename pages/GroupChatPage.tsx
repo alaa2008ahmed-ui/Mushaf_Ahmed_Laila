@@ -457,35 +457,18 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
 
   // Delete single message
   const handleDeleteMessage = async (msgId: string) => {
-    const targetMsg = messages.find(m => m.messageId === msgId);
-    if (targetMsg && targetMsg.senderId !== currentUser.userId && !isCreator) {
-      showToast('عذراً، لا يحق لك حذف رسائل الأعضاء الآخرين؛ هذه الصلاحية لمنشئ المجموعة فقط');
-      return;
-    }
-    try {
-      await communityService.deleteGroupMessage(msgId, currentUser.userId);
-      loadGroupData();
-      showToast('تم حذف الرسالة بنجاح 🗑️');
-    } catch (err: any) {
-      showToast(err?.message || 'تعذر حذف الرسالة');
-    }
+    await communityService.deleteGroupMessage(msgId);
+    loadGroupData();
+    showToast('تم حذف الرسالة');
   };
 
   // Clear group messages
   const handleClearMessages = async () => {
-    if (!isCreator) {
-      showToast('عذراً، مسح رسائل المجموعة متاح فقط لمنشئ المجموعة');
-      return;
-    }
-    try {
-      await communityService.clearGroupMessages(groupId, currentUser.userId);
-      setShowClearConfirm(false);
-      setShowMenu(false);
-      loadGroupData();
-      showToast('تم مسح محادثات المجموعة');
-    } catch (err: any) {
-      showToast(err?.message || 'تعذر مسح الرسائل');
-    }
+    await communityService.clearGroupMessages(groupId);
+    setShowClearConfirm(false);
+    setShowMenu(false);
+    loadGroupData();
+    showToast('تم مسح محادثات المجموعة');
   };
 
   // Leave group
@@ -526,7 +509,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
 
   // Add member to group
   const handleAddMember = async (targetUser: CommunityUser) => {
-    if (!isCreator) {
+    if (!isCreatorOrAdmin) {
       showToast('عذراً، إضافة الأعضاء مقتصرة على منشئ المجموعة فقط');
       return;
     }
@@ -541,7 +524,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
 
   // Remove member from group
   const handleConfirmRemoveMember = async () => {
-    if (!memberToRemove || !isCreator) return;
+    if (!memberToRemove) return;
     try {
       await communityService.removeMemberFromGroup(groupId, memberToRemove.userId);
       showToast(`تمت إزالة ${memberToRemove.username} من المجموعة`);
@@ -560,19 +543,13 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
   const groupDisplayName = cleanGroupName(group?.name || 'محادثة جماعية');
   const groupMembersCount = group?.members?.length || 1;
   const isSystemDefaultGroup = group?.groupId === 'group_default_quran_readers' || group?.groupId === 'group_default_tadabbur';
-  const isAdminSession = currentUser.userId === ADMIN_USER_ID;
-  const isCreator = Boolean(
-    group && 
-    group.createdBy && 
-    currentUser?.userId && 
-    (group.createdBy === currentUser.userId || (isAdminSession && !isSystemDefaultGroup)) &&
-    !isSystemDefaultGroup
-  );
-  const isCreatorOrAdmin = isCreator;
-  const canDeleteGroup = isCreator && !isSystemDefaultGroup;
+  const isAdminSession = currentUser.userId === ADMIN_USER_ID || communityService.isUserAdminSession();
+  const isCreator = Boolean(group && communityService.isGroupCreator(group, currentUser));
+  const isCreatorOrAdmin = isCreator || isAdminSession;
+  const canDeleteGroup = (isCreator && !isSystemDefaultGroup) || isAdminSession;
   const isCurrentMember = Boolean(group && Array.isArray(group.members) && group.members.includes(currentUser.userId));
   const hasPendingInvite = Boolean(group && Array.isArray(group.invitedMembers) && group.invitedMembers.includes(currentUser.userId) && !isCurrentMember);
-  const hasLeftOrRemoved = !isSystemDefaultGroup && !isCreator && !isCurrentMember && !hasPendingInvite;
+  const hasLeftOrRemoved = !isAdminSession && !isSystemDefaultGroup && !isCreator && !isCurrentMember && !hasPendingInvite;
 
   const renderGroupAvatar = (size = 20) => {
     if (group?.avatarUrl && group.avatarUrl.trim()) {
@@ -773,8 +750,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                   <span>نسخ معرّف المجموعة</span>
                 </button>
 
-                {/* تعديل المجموعة: لمنشئ المجموعة فقط */}
-                {isCreator && (
+                {isCreatorOrAdmin && (
                   <button
                     type="button"
                     onClick={() => {
@@ -790,7 +766,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                 )}
 
                 {/* إضافة أعضاء: لمنشئ المجموعة فقط */}
-                {isCreator && (
+                {isCreatorOrAdmin && !isSystemDefaultGroup && (
                   <button
                     type="button"
                     onClick={() => {
@@ -805,8 +781,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                   </button>
                 )}
 
-                {/* مسح الرسائل: لمنشئ المجموعة فقط */}
-                {isCreator && (
+                {isCreatorOrAdmin && (
                   <button
                     type="button"
                     onClick={() => {
@@ -820,7 +795,6 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                   </button>
                 )}
 
-                {/* حذف المجموعة: لمنشئ المجموعة فقط */}
                 {canDeleteGroup && (
                   <button
                     type="button"
@@ -1032,7 +1006,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                         playingAudioUrl={playingAudioUrl}
                         onToggleAudio={handleToggleAudio}
                       />
-                      {(isMe || isCreator) && (
+                      {(isMe || isCreatorOrAdmin) && (
                         <div className="flex items-center justify-end gap-1.5 mt-0.5 text-[9px] px-1" style={{ color: textMuted }}>
                           <span>{timeStr}</span>
                           <button
@@ -1042,7 +1016,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                               handleDeleteMessage(msg.messageId);
                             }}
                             className="p-0.5 rounded text-rose-400 hover:text-rose-600 transition-colors cursor-pointer"
-                            title={isMe ? "حذف رسالتي" : "حذف الرسالة (صلاحية منشئ المجموعة)"}
+                            title={isMe ? "حذف رسالتي" : "حذف الرسالة (صلاحية المشرف)"}
                           >
                             <Trash2 size={11} />
                           </button>
@@ -1061,7 +1035,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                         timeStr={timeStr}
                         isRead={true}
                       />
-                      {(isMe || isCreator) && (
+                      {(isMe || isCreatorOrAdmin) && (
                         <div className="flex items-center justify-end gap-1.5 mt-0.5 text-[9px] px-1" style={{ color: textMuted }}>
                           <button
                             type="button"
@@ -1070,7 +1044,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                               handleDeleteMessage(msg.messageId);
                             }}
                             className="p-0.5 rounded text-rose-400 hover:text-rose-600 transition-colors cursor-pointer"
-                            title={isMe ? "حذف رسالتي" : "حذف التسجيل (صلاحية منشئ المجموعة)"}
+                            title={isMe ? "حذف رسالتي" : "حذف التسجيل (صلاحية المشرف)"}
                           >
                             <Trash2 size={11} />
                           </button>
@@ -1103,12 +1077,12 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                         color: isMe ? primaryTextColor : textColor,
                         borderColor: isMe ? 'transparent' : cardBorder
                       }}
-                      title="اضغط لعرض بيانات المرسل"
+                      title="اضغط لعرض بيانات المرسل وإدارة الرسالة"
                     >
                       <p className="whitespace-pre-wrap break-words">{msg.text}</p>
                       <div className="flex items-center justify-end gap-1.5 mt-1.5 text-[9px] opacity-75">
                         <span>{timeStr}</span>
-                        {(isMe || isCreator) && (
+                        {(isMe || isCreatorOrAdmin) && (
                           <button
                             type="button"
                             onClick={(e) => {
@@ -1116,7 +1090,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                               handleDeleteMessage(msg.messageId);
                             }}
                             className="opacity-70 sm:opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded text-rose-400 hover:text-rose-600 cursor-pointer"
-                            title={isMe ? "حذف رسالتي" : "حذف الرسالة (صلاحية منشئ المجموعة)"}
+                            title={isMe ? "حذف رسالتي" : "حذف الرسالة (صلاحية المشرف)"}
                           >
                             <Trash2 size={11} />
                           </button>
@@ -1129,12 +1103,12 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                   {!msg.text && msg.attachment && (
                     <div className="flex items-center justify-end gap-1.5 mt-0.5 text-[9px] px-1" style={{ color: textMuted }}>
                       <span>{timeStr}</span>
-                      {(isMe || isCreator) && (
+                      {(isMe || isCreatorOrAdmin) && (
                         <button
                           type="button"
                           onClick={() => handleDeleteMessage(msg.messageId)}
                           className="p-0.5 rounded hover:text-rose-500 transition-colors cursor-pointer"
-                          title={isMe ? "حذف رسالتي" : "حذف المرفق (صلاحية منشئ المجموعة)"}
+                          title={isMe ? "حذف رسالتي" : "حذف المرفق (صلاحية المشرف)"}
                         >
                           <Trash2 size={11} />
                         </button>
@@ -1553,7 +1527,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                               {communityService.isUserOnline(u) ? 'متصل الآن' : 'عضو'}
                             </span>
                             {/* Remove member button for Creator */}
-                            {isCreator && !isMemberCreator && (
+                            {isCreatorOrAdmin && !isMemberCreator && (
                               <button
                                 type="button"
                                 onClick={(e) => {
@@ -1988,7 +1962,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                     {selectedMessageForMemberModal.text || (selectedMessageForMemberModal.verseData ? '📖 آية قرآنية' : selectedMessageForMemberModal.audioUrl ? '🎤 تسجيل صوتي' : '📎 مرفق')}
                   </p>
 
-                  {(selectedMessageForMemberModal.senderId === currentUser.userId || isCreator) && (
+                  {(selectedMessageForMemberModal.senderId === currentUser.userId || isCreatorOrAdmin) && (
                     <button
                       type="button"
                       onClick={async () => {
@@ -2000,14 +1974,14 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                       className="w-full mt-1.5 py-2.5 px-3 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-sm transition-all"
                     >
                       <Trash2 size={15} />
-                      <span>{selectedMessageForMemberModal.senderId === currentUser.userId ? 'حذف رسالتي من المجموعة' : 'حذف هذه الرسالة من المجموعة (صلاحية المنشئ)'}</span>
+                      <span>حذف هذه الرسالة من المجموعة</span>
                     </button>
                   )}
                 </div>
               )}
 
               {/* Admin Actions if in admin session */}
-              {currentUser.userId === ADMIN_USER_ID && selectedMember.userId !== currentUser.userId && (
+              {isAdminSession && selectedMember.userId !== currentUser.userId && (
                 <div className="space-y-1.5 pt-1 border-t text-right" style={{ borderColor: cardBorder }} dir="rtl">
                   <div className="text-[10px] font-bold px-1" style={{ color: textMuted }}>إجراءات الإدارة:</div>
                   <div className="flex gap-2">

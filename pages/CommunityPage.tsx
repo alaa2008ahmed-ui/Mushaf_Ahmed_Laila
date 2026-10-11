@@ -388,11 +388,14 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
         setSearchQuery('');
         return true;
       }
-      // 7. Return directly to users tab if on another tab
-      if (activeTab !== 'users') {
-        setActiveTabState('users');
-        communityService.setActiveTab('users');
-        setTabHistory(['users']);
+      // 7. Step back through community tab history
+      if (tabHistory.length > 1) {
+        const nextHistory = [...tabHistory];
+        nextHistory.pop();
+        const prevTab = nextHistory[nextHistory.length - 1];
+        setTabHistory(nextHistory);
+        setActiveTabState(prevTab);
+        communityService.setActiveTab(prevTab);
         return true;
       }
       return false; // Let global handler navigate back to origin (home or more-menu)
@@ -1569,11 +1572,13 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
             loadData();
             setShowAdminModal(true);
             showToast('تمت العودة لقائمة المستخدمين بنجاح');
-          } else if (activeTab !== 'users') {
-            setActiveTabState('users');
-            communityService.setActiveTab('users');
-            setTabHistory(['users']);
-            setSearchQuery('');
+          } else if (tabHistory.length > 1) {
+            const nextHistory = [...tabHistory];
+            nextHistory.pop();
+            const prevTab = nextHistory[nextHistory.length - 1];
+            setTabHistory(nextHistory);
+            setActiveTabState(prevTab);
+            communityService.setActiveTab(prevTab);
           } else {
             onBack();
           }
