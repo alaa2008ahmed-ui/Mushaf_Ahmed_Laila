@@ -36,6 +36,13 @@ export const WeeklyAchievementModal: React.FC<WeeklyAchievementModalProps> = ({
 
   const cardRef = useRef<HTMLDivElement>(null);
 
+  const isDefaultTheme = !theme?.name || theme?.name?.includes('الافتراضي') || theme?.name === 'Default';
+  const cardBorderColor = isDefaultTheme 
+    ? '#000000' 
+    : (isBlackTheme 
+        ? '#FFFFFF' 
+        : (theme?.palette?.[0] || '#000000'));
+
   // Compute the 7 days based on viewRange
   const days = useMemo(() => {
     const list = [];
@@ -509,7 +516,8 @@ export const WeeklyAchievementModal: React.FC<WeeklyAchievementModalProps> = ({
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className="w-full max-w-lg bg-white dark:bg-gray-900 rounded-3xl shadow-2xl border border-black/10 dark:border-white/10 overflow-hidden flex flex-col max-h-[92vh]"
+        className="w-full max-w-lg bg-white dark:bg-gray-900 rounded-3xl shadow-2xl border overflow-hidden flex flex-col max-h-[92vh]"
+        style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
       >
         {/* Modal Top Bar */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-black/5 dark:border-white/5 shrink-0">

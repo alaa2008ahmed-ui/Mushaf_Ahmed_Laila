@@ -36,6 +36,15 @@ interface PrayerConfig {
     };
     autoSilent?: boolean;
     autoSilentDuration?: number;
+    // Per-prayer overrides (when global setting is off)
+    prayerPreReminders?: Record<string, { enabled: boolean; minutes: number }>;
+    prayerAutoSilent?: Record<string, { enabled: boolean; duration: number }>;
+    // Iqama alert settings
+    iqamaReminder?: {
+        enabled: boolean;
+        minutes?: number;
+    };
+    prayerIqamaReminders?: Record<string, { enabled: boolean; minutes?: number }>;
 }
 
 interface PrayerTimesContextType {
@@ -62,9 +71,10 @@ const DEFAULT_CONFIG: PrayerConfig = {
     isSummerTime: false,
     syncWidgetTheme: true,
     nightNotifications: { firstThird: true, midnight: true, lastThird: true },
-    preAthanReminder: { enabled: true, minutes: 15 },
+    preAthanReminder: { enabled: false, minutes: 15 },
     autoSilent: false,
-    autoSilentDuration: 30
+    autoSilentDuration: 30,
+    iqamaReminder: { enabled: false, minutes: 15 }
 };
 
 
@@ -181,8 +191,23 @@ const PrayerTimesContext = createContext<PrayerTimesContextType | undefined>(und
 export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
     const [config, setConfig] = useState<PrayerConfig>(() => {
         try {
-            const saved = localStorage.getItem('prayerFinal_v33');
-            return saved ? { ...DEFAULT_CONFIG, ...JSON.parse(saved) } : DEFAULT_CONFIG;
+            const saved = localStorage.getItem('prayerFinal_v34');
+            if (saved) {
+                return { ...DEFAULT_CONFIG, ...JSON.parse(saved) };
+            }
+            // Migrate from v33 ensuring new default: preAthanReminder, autoSilent, iqamaReminder are false
+            const oldSaved = localStorage.getItem('prayerFinal_v33');
+            if (oldSaved) {
+                const parsed = JSON.parse(oldSaved);
+                return {
+                    ...DEFAULT_CONFIG,
+                    ...parsed,
+                    preAthanReminder: { enabled: false, minutes: parsed.preAthanReminder?.minutes || 15 },
+                    autoSilent: false,
+                    iqamaReminder: { enabled: false, minutes: parsed.iqamaReminder?.minutes || 15 }
+                };
+            }
+            return DEFAULT_CONFIG;
         } catch (e) {
             return DEFAULT_CONFIG;
         }
@@ -198,7 +223,7 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
 
     // Check if phone/app should be automatically silent during prayer time
     useEffect(() => {
-        if (!config.autoSilent || !times || Object.keys(times).length === 0) {
+        if (!times || Object.keys(times).length === 0) {
             setIsPrayerSilentActive(false);
             setActiveSilentPrayerName('');
             return;
@@ -207,13 +232,28 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
         const checkSilentStatus = () => {
             const now = new Date();
             const nowMinutes = now.getHours() * 60 + now.getMinutes();
-            const duration = config.autoSilentDuration || 30;
 
             const prayerKeys = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
             let foundActive = false;
             let activeName = '';
 
             for (const key of prayerKeys) {
+                // Determine if auto-silent is enabled for this prayer
+                let isSilentEnabled = false;
+                let duration = 30;
+
+                if (config.prayerAutoSilent?.[key] !== undefined) {
+                    // Per-prayer override takes precedence
+                    isSilentEnabled = !!config.prayerAutoSilent[key].enabled;
+                    duration = config.prayerAutoSilent[key].duration || 30;
+                } else if (config.autoSilent) {
+                    // Global is ON: applies to all prayers
+                    isSilentEnabled = true;
+                    duration = config.autoSilentDuration || 30;
+                }
+
+                if (!isSilentEnabled) continue;
+
                 const timeStr = times[key];
                 if (!timeStr || timeStr.includes('--')) continue;
 
@@ -221,8 +261,12 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                 const supportsDST = checkSupportsDST(config.location?.combinedCode, config.location?.fullCountry);
                 const totalOffset = (config.prayerOffsets[key] || 0) + ((config.isSummerTime && supportsDST) ? 60 : 0);
                 const prayerMin = h * 60 + m + totalOffset;
+                
+                // Silent mode starts at Iqama time (Adhan + Iqama offset), not at Adhan time
+                const iqamaOffset = config.iqamaOffsets?.[key] !== undefined ? config.iqamaOffsets[key] : (config.iqamaReminder?.minutes ?? 15);
+                const silentStartMin = prayerMin + iqamaOffset;
 
-                if (nowMinutes >= prayerMin && nowMinutes < prayerMin + duration) {
+                if (nowMinutes >= silentStartMin && nowMinutes < silentStartMin + duration) {
                     foundActive = true;
                     activeName = prayerNamesAr[key] || key;
                     break;
@@ -236,11 +280,11 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
         checkSilentStatus();
         const interval = setInterval(checkSilentStatus, 30000);
         return () => clearInterval(interval);
-    }, [config.autoSilent, config.autoSilentDuration, times, config.prayerOffsets, config.isSummerTime, config.location]);
+    }, [config.autoSilent, config.autoSilentDuration, config.prayerAutoSilent, config.iqamaOffsets, config.iqamaReminder, times, config.prayerOffsets, config.isSummerTime, config.location]);
 
     // --- Save Config ---
     useEffect(() => {
-        localStorage.setItem('prayerFinal_v33', JSON.stringify(config));
+        localStorage.setItem('prayerFinal_v34', JSON.stringify(config));
         // Re-calculate times when config changes (e.g. location)
         fetchTimesForLocation(config.location);
     }, [config]);
@@ -648,10 +692,21 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
 
                                     notificationsToSchedule.push(notificationObj);
 
-                                    // --- Pre-Adhan Preparation Reminder (15 mins before adhan) ---
-                                    const preReminder = config.preAthanReminder || { enabled: true, minutes: 15 };
-                                    if (preReminder.enabled && !config.mutedPrayers[key] && key !== 'Sunrise') {
-                                        const reminderMinutes = preReminder.minutes || 15;
+                                    // --- Pre-Adhan Preparation Reminder ---
+                                    let isPreReminderEnabled = false;
+                                    let reminderMinutes = 15;
+
+                                    if (config.prayerPreReminders?.[key] !== undefined) {
+                                        // Per-prayer override takes precedence
+                                        isPreReminderEnabled = !!config.prayerPreReminders[key].enabled;
+                                        reminderMinutes = config.prayerPreReminders[key].minutes || 15;
+                                    } else if (config.preAthanReminder && config.preAthanReminder.enabled !== false) {
+                                        // Global is ON: applies to all prayers
+                                        isPreReminderEnabled = true;
+                                        reminderMinutes = config.preAthanReminder.minutes || 15;
+                                    }
+
+                                    if (isPreReminderEnabled && !config.mutedPrayers[key] && key !== 'Sunrise') {
                                         const prePrayerDate = new Date(prayerDate.getTime() - reminderMinutes * 60000);
 
                                         if (prePrayerDate > new Date()) {
@@ -660,7 +715,7 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                                                 localNotifier.createChannel({
                                                     androidChannelId: preChannelId,
                                                     androidChannelName: 'تنبيه الاستعداد للصلاة',
-                                                    androidChannelDescription: 'تنبيه قبل الأذان بـ 15 دقيقة للوضوء والاستعداد والذهاب إلى المسجد',
+                                                    androidChannelDescription: 'تنبيه قبل الأذان للوضوء والاستعداد والذهاب إلى المسجد',
                                                     androidChannelImportance: 4,
                                                     androidChannelEnableVibration: true,
                                                     androidChannelVisibility: 1,
@@ -681,6 +736,55 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                                                 androidChannelName: 'تنبيه الاستعداد للصلاة',
                                                 androidChannelDescription: 'تنبيه قبل الأذان للوضوء والاستعداد والذهاب إلى المسجد',
                                                 androidChannelImportance: 4,
+                                                androidAllowWhileIdle: true,
+                                                androidWakeUpScreen: true
+                                            });
+                                        }
+                                    }
+
+                                    // --- Iqama Reminder Notification ---
+                                    let isIqamaReminderEnabled = false;
+                                    let iqamaMinutes = config.iqamaOffsets[key] || 15;
+
+                                    if (config.prayerIqamaReminders?.[key] !== undefined) {
+                                        // Per-prayer override takes precedence
+                                        isIqamaReminderEnabled = !!config.prayerIqamaReminders[key].enabled;
+                                        iqamaMinutes = config.prayerIqamaReminders[key].minutes ?? (config.iqamaOffsets[key] || 15);
+                                    } else {
+                                        isIqamaReminderEnabled = config.iqamaReminder ? config.iqamaReminder.enabled !== false : true;
+                                        iqamaMinutes = config.iqamaOffsets[key] || 15;
+                                    }
+
+                                    if (isIqamaReminderEnabled && !config.mutedPrayers[key] && key !== 'Sunrise') {
+                                        const iqamaPrayerDate = new Date(prayerDate.getTime() + iqamaMinutes * 60000);
+
+                                        if (iqamaPrayerDate > new Date()) {
+                                            const iqamaChannelId = 'iqama_reminder_channel';
+                                            if (isAndroidNative && localNotifier.createChannel) {
+                                                localNotifier.createChannel({
+                                                    androidChannelId: iqamaChannelId,
+                                                    androidChannelName: 'تنبيه إقامة الصلاة',
+                                                    androidChannelDescription: 'تنبيه عند حلول موعد إقامة الصلاة',
+                                                    androidChannelImportance: 5,
+                                                    androidChannelEnableVibration: true,
+                                                    androidChannelVisibility: 1,
+                                                    androidChannelLockscreenVisibility: 1
+                                                });
+                                            }
+
+                                            notificationsToSchedule.push({
+                                                id: 6000 + (day * 10) + prayerKeys.indexOf(key) + 1,
+                                                title: `🕌 حان الآن موعد إقامة صلاة ${prayerNamesAr[key]}`,
+                                                text: `أقيمت الصلاة.. استووا وتراصوا واعتدلوا أثابكم الله 🤲`,
+                                                trigger: { at: iqamaPrayerDate },
+                                                foreground: true,
+                                                androidChannelId: iqamaChannelId,
+                                                priority: 2,
+                                                smallIcon: 'ic_stat_name',
+                                                icon: 'ic_stat_name',
+                                                androidChannelName: 'تنبيه إقامة الصلاة',
+                                                androidChannelDescription: 'تنبيه عند حلول موعد إقامة الصلاة',
+                                                androidChannelImportance: 5,
                                                 androidAllowWhileIdle: true,
                                                 androidWakeUpScreen: true
                                             });

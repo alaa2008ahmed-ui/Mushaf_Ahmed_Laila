@@ -48,16 +48,7 @@ const MoreMenuPage: React.FC<MoreMenuPageProps> = ({ onNavigate, onBack }) => {
     });
 
     const getPrimaryColor = (itemId: string, index: number) => {
-        // تخصيص اللون البنفسجي للأزرار المطلوبة
-        if (['quran', 'listen', 'prayer-times'].includes(itemId)) {
-            return '#8B5CF6'; // اللون البنفسجي
-        }
-
-        if (themeKey === 'olive_grove') {
-            return ['daily-wird', 'memorization', 'voice-control'].includes(itemId) 
-                ? '#4D7C0F' : '#65A30D';
-        }
-        return theme.palette[index] || theme.palette[0];
+        return index === 0 ? theme.palette[0] : (theme.palette[1] || theme.palette[0]);
     };
 
     return (
@@ -82,8 +73,15 @@ const MoreMenuPage: React.FC<MoreMenuPageProps> = ({ onNavigate, onBack }) => {
                                 const isVisible = visibleItems.includes(item.id) || ['daily-wird', 'memorization', 'voice-control', 'habit-tracker', 'asmaul-husna', 'community', 'ahl-al-quran', 'others', 'islamic-sites'].includes(item.id);
                                 const isDefault = themeKey === 'default';
                                 const isBlackTheme = theme.bgColor === '#000000';
-                                const primaryColor = isBlackTheme ? '#000000' : (isDefault ? '#FFFFFF' : getPrimaryColor(item.id, item.colorIndex));
-                                const textColor = isBlackTheme ? '#FFFFFF' : (isDefault ? '#000000' : theme.btnText);
+                                const primaryColor = isDefault 
+                                    ? '#FFFFFF' 
+                                    : (isBlackTheme 
+                                        ? (item.colorIndex === 0 ? (theme.palette[0] || '#1E293B') : (theme.palette[1] || '#374151'))
+                                        : getPrimaryColor(item.id, item.colorIndex));
+                                const textColor = isDefault ? '#000000' : (isBlackTheme ? '#FFFFFF' : (theme.btnText || '#FFFFFF'));
+                                const buttonBorder = isDefault 
+                                    ? '2px solid #000000' 
+                                    : (isBlackTheme ? '1px solid rgba(255, 255, 255, 0.2)' : theme.btnBorder);
                                 const isNew = showNewBadges && ['memorization', 'community', 'ahl-al-quran', 'others', 'islamic-sites'].includes(item.id);
                                 
                                 return (
@@ -101,7 +99,7 @@ const MoreMenuPage: React.FC<MoreMenuPageProps> = ({ onNavigate, onBack }) => {
                                             badgeText="جديد"
                                             isGlass={isBlackTheme ? false : (isDefault ? false : theme.isGlass)}
                                             btnText={textColor}
-                                            border={isBlackTheme ? '1px solid #333333' : (isDefault ? '2px solid #000000' : undefined)}
+                                            border={buttonBorder}
                                         />
                                         {item.id === 'quran' && (
                                             <button
@@ -111,9 +109,9 @@ const MoreMenuPage: React.FC<MoreMenuPageProps> = ({ onNavigate, onBack }) => {
                                                 }}
                                                 className="absolute top-1/2 left-2 -translate-y-1/2 rounded-full w-9 h-9 flex items-center justify-center z-[20] transition-all shadow-xl border"
                                                 style={{ 
-                                                    backgroundColor: isBlackTheme ? '#000000' : (themeKey === 'default' ? '#ffffff' : (theme.isGlass ? 'rgba(255, 255, 255, 0.2)' : (theme.palette[1] || '#8B5CF6'))),
+                                                    backgroundColor: isBlackTheme ? '#1E293B' : (themeKey === 'default' ? '#ffffff' : (theme.isGlass ? 'rgba(255, 255, 255, 0.2)' : (theme.palette[1] || theme.palette[0]))),
                                                     color: isBlackTheme ? '#ffffff' : (themeKey === 'default' ? '#000000' : '#ffffff'),
-                                                    borderColor: isBlackTheme ? '#333333' : (themeKey === 'default' ? '#000000' : (theme.isGlass ? 'rgba(255, 255, 255, 0.3)' : 'transparent')),
+                                                    borderColor: isBlackTheme ? 'rgba(255, 255, 255, 0.2)' : (themeKey === 'default' ? '#000000' : (theme.isGlass ? 'rgba(255, 255, 255, 0.3)' : 'transparent')),
                                                     backdropFilter: theme.isGlass ? 'blur(4px)' : 'none',
                                                     WebkitBackdropFilter: theme.isGlass ? 'blur(4px)' : 'none',
                                                     borderWidth: (isBlackTheme || themeKey === 'default') ? '2px' : '1px'

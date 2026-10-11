@@ -25,6 +25,7 @@ interface TasbeehModalsProps {
     skin: string;
     handleSetSkin: (skin: 'modern' | 'classic' | 'beads') => void;
     themeKey?: string;
+    cardBorderColor?: string;
 }
 
 const TasbeehModals: React.FC<TasbeehModalsProps> = ({
@@ -32,11 +33,16 @@ const TasbeehModals: React.FC<TasbeehModalsProps> = ({
     newPhraseInputRef, handleAddPhrase, phrases, handleDeletePhrase,
     activePhrase, setActivePhrase, handleReset, colorOptions,
     handleSetCounterColor, counterColor, theme, dailyStats, skin, handleSetSkin,
-    themeKey = 'default'
+    themeKey = 'default',
+    cardBorderColor
 }) => {
+    const isBlackTheme = theme.bgColor === '#000000';
+    const isDefaultTheme = themeKey === 'default' || !themeKey;
+    const activeBorderColor = cardBorderColor || (isDefaultTheme ? '#000000' : (isBlackTheme ? '#FFFFFF' : (theme.palette?.[0] || '#000000')));
+
     return (
         <>
-            <ModalWrapper isOpen={modals.target} onClose={() => setModals((p: any) => ({...p, target: false}))}>
+            <ModalWrapper isOpen={modals.target} onClose={() => setModals((p: any) => ({...p, target: false}))} cardBorderColor={activeBorderColor}>
                 <h3 className="text-xl font-bold text-center border-b pb-2 border-modal-border">تعيين الهدف</h3>
                 <p className='text-sm text-center opacity-80'>أدخل العدد المستهدف (مثل 33). أدخل 0 للإلغاء.</p>
                 <input ref={targetInputRef} id="target-input" type="text" inputMode="numeric" dir="rtl" defaultValue={toArabicNumerals(target > 0 ? target : '')}
@@ -48,7 +54,7 @@ const TasbeehModals: React.FC<TasbeehModalsProps> = ({
                 </div>
             </ModalWrapper>
 
-            <ModalWrapper isOpen={modals.add} onClose={() => setModals((p: any) => ({...p, add: false}))}>
+            <ModalWrapper isOpen={modals.add} onClose={() => setModals((p: any) => ({...p, add: false}))} cardBorderColor={activeBorderColor}>
                  <h3 className="text-xl font-bold text-center border-b pb-2 border-modal-border">إضافة تسبيح</h3>
                  <input ref={newPhraseInputRef} id="new-phrase-input" type="text" placeholder="اكتب الذكر هنا..." dir="rtl" className="w-full p-3 rounded-xl text-right text-lg focus:outline-none focus:ring-2 bg-card-bg-hover text-modal-text border border-modal-border"/>
                 <div className="flex gap-3 pt-2">
@@ -57,7 +63,7 @@ const TasbeehModals: React.FC<TasbeehModalsProps> = ({
                 </div>
             </ModalWrapper>
             
-            <ModalWrapper isOpen={modals.delete} onClose={() => setModals((p: any) => ({...p, delete: false}))}>
+            <ModalWrapper isOpen={modals.delete} onClose={() => setModals((p: any) => ({...p, delete: false}))} cardBorderColor={activeBorderColor}>
                  <h3 className="text-xl font-bold text-center border-b pb-3 border-modal-border">حذف تسبيح</h3>
                  <div className="space-y-3 overflow-y-auto max-h-60 pr-2">
                     {phrases.length > 0 ? (
@@ -78,8 +84,8 @@ const TasbeehModals: React.FC<TasbeehModalsProps> = ({
                  </div>
             </ModalWrapper>
 
-            <ModalWrapper isOpen={modals.phrase} onClose={() => setModals((p: any) => ({...p, phrase: false}))} noStyles={true}>
-                <div className="overflow-y-auto max-h-[60vh] bg-modal-bg text-modal-text shadow-2xl rounded-2xl border border-modal-border custom-scrollbar">
+            <ModalWrapper isOpen={modals.phrase} onClose={() => setModals((p: any) => ({...p, phrase: false}))} noStyles={true} cardBorderColor={activeBorderColor}>
+                <div className="overflow-y-auto max-h-[60vh] bg-modal-bg text-modal-text shadow-2xl rounded-2xl custom-scrollbar" style={{ borderColor: activeBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                     {phrases.map((p, index) => (
                         <button 
                              key={p.id} 
@@ -99,7 +105,7 @@ const TasbeehModals: React.FC<TasbeehModalsProps> = ({
             </ModalWrapper>
             
             {/* FIX: Added a new modal for selecting the counter color. */}
-            <ModalWrapper isOpen={modals.color} onClose={() => setModals((p: any) => ({...p, color: false}))}>
+            <ModalWrapper isOpen={modals.color} onClose={() => setModals((p: any) => ({...p, color: false}))} cardBorderColor={activeBorderColor}>
                 <h3 className="text-xl font-bold text-center border-b pb-2 border-modal-border">اختر لون العداد</h3>
                 <div className="grid grid-cols-4 gap-4 pt-4 justify-items-center">
                     {colorOptions.map(color => (
@@ -119,7 +125,7 @@ const TasbeehModals: React.FC<TasbeehModalsProps> = ({
             </ModalWrapper>
 
             {/* Skins Modal */}
-            <ModalWrapper isOpen={modals.skins} onClose={() => setModals((p: any) => ({...p, skins: false}))}>
+            <ModalWrapper isOpen={modals.skins} onClose={() => setModals((p: any) => ({...p, skins: false}))} cardBorderColor={activeBorderColor}>
                 <h3 className="text-xl font-bold text-center border-b pb-2 border-modal-border">اختر شكل السبحة</h3>
                 <div className="flex flex-col gap-3 pt-4">
                     <button 

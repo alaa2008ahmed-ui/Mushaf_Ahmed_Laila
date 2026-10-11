@@ -1,12 +1,12 @@
 {
-  "projectId": "sweet-water-company-ltd",
-  "appId": "1:903816597633:web:cfa17c168a106d45877d80",
-  "apiKey": "AIzaSyAa3rqutBamvjjVzS89mOQA1DTP7UaZVnM",
-  "authDomain": "sweet-water-company-ltd.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-quran108-c9d9464a-c8bb-4330-9821-c2aabd3d9166",
-  "storageBucket": "sweet-water-company-ltd.firebasestorage.app",
-  "messagingSenderId": "903816597633",
+  "projectId": "gen-lang-client-0443116846",
+  "appId": "1:829696263867:web:94232776950f5f61c2cb9e",
+  "apiKey": "AIzaSyDLzH8SbRw7roSKTtT7uU5o_l6lW-GHyn8",
+  "authDomain": "gen-lang-client-0443116846.firebaseapp.com",
+  "firestoreDatabaseId": "ai-studio-remixremixremixr-ebd8d94f-0a8a-4679-b4fa-47edad67eff4",
+  "storageBucket": "gen-lang-client-0443116846.firebasestorage.app",
+  "messagingSenderId": "829696263867",
   "measurementId": "",
-  "oAuthClientId": "903816597633-1ph0t287hi7as4astptibanphv4dfp47.apps.googleusercontent.com",
+  "oAuthClientId": "829696263867-jcv8piu7pgvk9b0e0lgba62keeku37pm.apps.googleusercontent.com",
   "recaptchaSiteKey": ""
 }

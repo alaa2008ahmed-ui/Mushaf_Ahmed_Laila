@@ -34,7 +34,8 @@ export const TasbeehChartModal: React.FC<TasbeehChartModalProps> = ({
     const [selectedDayIndex, setSelectedDayIndex] = useState<number | null>(null);
 
     const isBlackTheme = theme.bgColor === '#000000';
-    const isDefaultTheme = themeKey === 'default';
+    const isDefaultTheme = themeKey === 'default' || !themeKey;
+    const cardBorderColor = isDefaultTheme ? '#000000' : (isBlackTheme ? '#FFFFFF' : (theme.palette?.[0] || '#000000'));
     const primaryColor = isDefaultTheme ? '#000000' : (isBlackTheme ? '#FFFFFF' : theme.palette[0]);
     const secondaryColor = isDefaultTheme ? '#4b5563' : (isBlackTheme ? '#d1d5db' : (theme.palette[1] || theme.palette[0]));
     const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
@@ -133,11 +134,14 @@ export const TasbeehChartModal: React.FC<TasbeehChartModalProps> = ({
                 </header>
 
                 {/* Main Scrollable Content */}
-                <main className="flex-1 overflow-y-auto px-3 sm:px-4 pt-3 pb-36 max-w-lg mx-auto w-full space-y-3.5 overscroll-contain">
+                <main 
+                    className="flex-1 overflow-y-auto px-3 sm:px-4 pt-3 max-w-lg mx-auto w-full space-y-3.5 overscroll-contain"
+                    style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 5rem)' }}
+                >
                     
                     {/* Period Switcher (Weekly / Monthly) */}
                     <div className="shrink-0">
-                        <div className="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-gray-200/70 dark:bg-gray-800 border border-black/5 dark:border-white/5">
+                        <div className="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-gray-200/70 dark:bg-gray-800" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                             <button
                                 type="button"
                                 onClick={() => {
@@ -176,7 +180,10 @@ export const TasbeehChartModal: React.FC<TasbeehChartModalProps> = ({
 
                     {/* Quick Stats Summary Grid */}
                     <div className="grid grid-cols-3 gap-2 shrink-0">
-                        <div className="p-2.5 rounded-2xl bg-white dark:bg-gray-800/80 border border-black/5 dark:border-white/5 shadow-xs text-center flex flex-col items-center justify-center">
+                        <div 
+                            className="p-2.5 rounded-2xl bg-white dark:bg-gray-800/80 shadow-xs text-center flex flex-col items-center justify-center transition-all"
+                            style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                        >
                             <span className="text-[10px] text-gray-500 dark:text-gray-400 font-semibold mb-0.5">الإجمالي</span>
                             <span className="text-base sm:text-lg font-black leading-tight" style={{ color: primaryColor }}>
                                 {toArabicNumerals(statsSummary.total)}
@@ -184,7 +191,10 @@ export const TasbeehChartModal: React.FC<TasbeehChartModalProps> = ({
                             <span className="text-[9px] opacity-60">تسبيحة</span>
                         </div>
 
-                        <div className="p-2.5 rounded-2xl bg-white dark:bg-gray-800/80 border border-black/5 dark:border-white/5 shadow-xs text-center flex flex-col items-center justify-center">
+                        <div 
+                            className="p-2.5 rounded-2xl bg-white dark:bg-gray-800/80 shadow-xs text-center flex flex-col items-center justify-center transition-all"
+                            style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                        >
                             <span className="text-[10px] text-gray-500 dark:text-gray-400 font-semibold mb-0.5">المتوسط اليومي</span>
                             <span className="text-base sm:text-lg font-black leading-tight" style={{ color: secondaryColor }}>
                                 {toArabicNumerals(statsSummary.average)}
@@ -192,7 +202,10 @@ export const TasbeehChartModal: React.FC<TasbeehChartModalProps> = ({
                             <span className="text-[9px] opacity-60">تسبيحة / يوم</span>
                         </div>
 
-                        <div className="p-2.5 rounded-2xl bg-white dark:bg-gray-800/80 border border-black/5 dark:border-white/5 shadow-xs text-center flex flex-col items-center justify-center">
+                        <div 
+                            className="p-2.5 rounded-2xl bg-white dark:bg-gray-800/80 shadow-xs text-center flex flex-col items-center justify-center transition-all"
+                            style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                        >
                             <span className="text-[10px] text-gray-500 dark:text-gray-400 font-semibold mb-0.5">أعلى يوم</span>
                             <span className="text-base sm:text-lg font-black leading-tight text-amber-600 dark:text-amber-400">
                                 {toArabicNumerals(statsSummary.max)}
@@ -204,7 +217,10 @@ export const TasbeehChartModal: React.FC<TasbeehChartModalProps> = ({
                     </div>
 
                     {/* Interactive SVG Chart Box */}
-                    <div className="p-3 rounded-2xl bg-white dark:bg-gray-800/80 border border-black/5 dark:border-white/5 shadow-xs flex flex-col">
+                    <div 
+                        className="p-3 rounded-2xl bg-white dark:bg-gray-800/80 shadow-xs flex flex-col transition-all"
+                        style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                    >
                         {/* Selected Day Info Banner */}
                         {activeSelectedDay && (
                             <div className="flex items-center justify-between pb-2 mb-2 border-b border-black/5 dark:border-white/5 text-xs">
@@ -392,11 +408,16 @@ export const TasbeehChartModal: React.FC<TasbeehChartModalProps> = ({
                                             const origIdx = chartData.findIndex(d => d.date === item.date);
                                             setSelectedDayIndex(origIdx);
                                         }}
-                                        className={`p-2 sm:p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
+                                        className={`p-2 sm:p-2.5 rounded-xl transition-all cursor-pointer flex items-center justify-between gap-3 ${
                                             isSelected 
-                                                ? 'bg-amber-500/10 border-amber-500/30 dark:bg-amber-500/10' 
-                                                : 'bg-white dark:bg-gray-800/80 border-black/5 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-gray-800'
+                                                ? 'bg-amber-500/10 dark:bg-amber-500/10' 
+                                                : 'bg-white dark:bg-gray-800/80 hover:bg-gray-50 dark:hover:bg-gray-800'
                                         }`}
+                                        style={{
+                                            borderColor: cardBorderColor,
+                                            borderWidth: '1.5px',
+                                            borderStyle: 'solid',
+                                        }}
                                     >
                                         {/* Day & Date */}
                                         <div className="min-w-0 flex-1">
@@ -438,7 +459,6 @@ export const TasbeehChartModal: React.FC<TasbeehChartModalProps> = ({
                             })}
                         </div>
                     </div>
-
                 </main>
 
                 {/* Bottom Bar with Home button */}

@@ -670,7 +670,13 @@ const CalendarGrid = ({ viewDate, onSelectDay, selectedDay, theme, primaryColor,
 function HijriCalendar({ onBack , onNavigate }: { onBack: () => void, onNavigate: (id: string, params?: any) => void; }) {
     const { theme, themeKey } = useTheme();
     const isBlackAndWhite = themeKey === 'deep_black';
-    const isDefaultTheme = themeKey === 'default';
+    const isBlackTheme = theme.bgColor === '#000000';
+    const isDefaultTheme = themeKey === 'default' || !themeKey;
+    const cardBorderColor = isDefaultTheme 
+        ? '#000000' 
+        : (isBlackTheme 
+            ? '#FFFFFF' 
+            : (theme.palette?.[0] || '#000000'));
     const primaryColor = isBlackAndWhite ? '#FFFFFF' : theme.palette[0];
     const secondaryColor = isBlackAndWhite ? '#FFFFFF' : theme.palette[1];
     
@@ -896,7 +902,7 @@ function HijriCalendar({ onBack , onNavigate }: { onBack: () => void, onNavigate
                 <div className="w-full max-w-lg mx-auto space-y-3">
                     
                     {/* Mode Toggles */}
-                    <div className="flex p-1 rounded-2xl themed-bg-alt shadow-inner bg-white border border-gray-100">
+                    <div className="flex p-1 rounded-2xl themed-bg-alt shadow-inner bg-white" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                         <button 
                             onClick={() => setActiveTab('calendar')}
                             className={`flex-1 py-2 px-1 rounded-xl font-bold transition-all flex items-center justify-center gap-2 duration-300 ${activeTab === 'calendar' ? 'shadow-lg' : (isDefaultTheme ? 'text-black opacity-60' : 'themed-text-muted hover:bg-black/5')}`}
@@ -918,7 +924,7 @@ function HijriCalendar({ onBack , onNavigate }: { onBack: () => void, onNavigate
                     {activeTab === 'calendar' ? (
                         <div className="space-y-2">
                             {/* Calendar Header Card */}
-                            <div className="themed-card rounded-2xl shadow-lg overflow-hidden relative">
+                            <div className="themed-card rounded-2xl shadow-lg overflow-hidden relative" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                                 <div className="absolute top-0 left-0 w-full h-1" style={{ backgroundColor: isDefaultTheme ? '#000000' : primaryColor }}></div>
                                 <div className="flex items-center justify-between p-3">
                                     <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-all group active:scale-90">
@@ -953,7 +959,7 @@ function HijriCalendar({ onBack , onNavigate }: { onBack: () => void, onNavigate
                             </div>
 
                             {/* Event List Section */}
-                            <div className="themed-card p-5 rounded-2xl shadow-md">
+                            <div className="themed-card p-5 rounded-2xl shadow-md" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                                 <h3 className="font-kufi font-black text-lg mb-4 flex items-center gap-2">
                                     <div className="w-1.5 h-6 rounded-full" style={{ backgroundColor: secondaryColor }}></div>
                                     أبرز المناسبات هذا الشهر
@@ -983,7 +989,7 @@ function HijriCalendar({ onBack , onNavigate }: { onBack: () => void, onNavigate
                                             const gFormatted = `${toArabicNumerals(gDate.getDate())} ${gregorianMonths[gDate.getMonth()].name}`;
 
                                             return (
-                                                <div key={event.id} className="flex items-center gap-4 p-3 hover:bg-black/5 dark:hover:bg-white/5 rounded-2xl transition-all border border-black/5 dark:border-white/5 shadow-sm">
+                                                <div key={event.id} className="flex items-center gap-4 p-3 hover:bg-black/5 dark:hover:bg-white/5 rounded-2xl transition-all shadow-sm" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                                                     <div className={`w-2.5 h-2.5 rounded-full shadow-sm shrink-0 ${event.isPrimary ? 'bg-red-500 animate-pulse' : 'bg-blue-500'}`}></div>
                                                     <div className="flex-1">
                                                         <p className="font-black text-base opacity-95 mb-1" style={{ color: primaryColor }}>{event.name}</p>
@@ -1015,17 +1021,19 @@ function HijriCalendar({ onBack , onNavigate }: { onBack: () => void, onNavigate
                     ) : (
                         /* Converter View */
                         <div className="space-y-3">
-                            <div className="themed-card p-5 rounded-2xl shadow-lg space-y-5 relative overflow-hidden">
+                            <div className="themed-card p-5 rounded-2xl shadow-lg space-y-5 relative overflow-hidden" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                                 <div className="absolute top-0 right-0 w-24 h-24 blur-3xl opacity-10 -mr-12 -mt-12" style={{ backgroundColor: isDefaultTheme ? '#000000' : primaryColor }}></div>
                                 
-                                <div className="flex p-1 rounded-xl bg-black/5 dark:bg-white/5 text-[10px] font-bold ring-1 ring-black/5">
+                                <div className="flex p-1 rounded-xl bg-black/5 dark:bg-white/5 text-[10px] font-bold" style={{ borderColor: cardBorderColor, borderWidth: '1px', borderStyle: 'solid' }}>
                                     <button 
                                         onClick={() => setConvTab('hijriToGregorian')}
-                                        className={`flex-1 py-2 px-1 rounded-lg transition-all duration-300 ${convTab === 'hijriToGregorian' ? 'themed-card shadow-md transform scale-100' : 'themed-text-muted opacity-50 scale-95'}`}
+                                        className={`flex-1 py-2 px-1 rounded-lg transition-all duration-300 ${convTab === 'hijriToGregorian' ? 'themed-card shadow-md transform scale-100 font-black' : 'themed-text-muted opacity-50 scale-95'}`}
+                                        style={convTab === 'hijriToGregorian' ? { borderColor: cardBorderColor, borderWidth: '1px', borderStyle: 'solid' } : {}}
                                     >هجري ← ميلادي</button>
                                     <button 
                                         onClick={() => setConvTab('gregorianToHijri')}
-                                        className={`flex-1 py-2 px-1 rounded-lg transition-all duration-300 ${convTab === 'gregorianToHijri' ? 'themed-card shadow-md transform scale-100' : 'themed-text-muted opacity-50 scale-95'}`}
+                                        className={`flex-1 py-2 px-1 rounded-lg transition-all duration-300 ${convTab === 'gregorianToHijri' ? 'themed-card shadow-md transform scale-100 font-black' : 'themed-text-muted opacity-50 scale-95'}`}
+                                        style={convTab === 'gregorianToHijri' ? { borderColor: cardBorderColor, borderWidth: '1px', borderStyle: 'solid' } : {}}
                                     >ميلادي ← هجري</button>
                                 </div>
 
@@ -1034,19 +1042,19 @@ function HijriCalendar({ onBack , onNavigate }: { onBack: () => void, onNavigate
                                         <>
                                             <div className="space-y-1 text-center cursor-pointer" onClick={() => openPicker('gDay')}>
                                                 <label className="text-[10px] themed-text-muted font-black">اليوم</label>
-                                                <div className="w-full p-2.5 themed-bg-alt rounded-xl font-black text-center shadow-inner border border-black/5 text-xs">
+                                                <div className="w-full p-2.5 themed-bg-alt rounded-xl font-black text-center shadow-inner text-xs" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                                                     {toArabicNumerals(inputs.gDay)}
                                                 </div>
                                             </div>
                                             <div className="space-y-1 text-center cursor-pointer" onClick={() => openPicker('gMonth')}>
                                                 <label className="text-[10px] themed-text-muted font-black">الشهر</label>
-                                                <div className="w-full p-2.5 themed-bg-alt rounded-xl font-black text-center shadow-inner text-[10px] border border-black/5">
+                                                <div className="w-full p-2.5 themed-bg-alt rounded-xl font-black text-center shadow-inner text-[10px]" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                                                     {gregorianMonths[inputs.gMonth - 1].name}
                                                 </div>
                                             </div>
                                             <div className="space-y-1 text-center cursor-pointer" onClick={() => openPicker('gYear')}>
                                                 <label className="text-[10px] themed-text-muted font-black">السنة</label>
-                                                <div className="w-full p-2.5 themed-bg-alt rounded-xl font-black text-center shadow-inner border border-black/5 text-xs">
+                                                <div className="w-full p-2.5 themed-bg-alt rounded-xl font-black text-center shadow-inner text-xs" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                                                     {toArabicNumerals(inputs.gYear)}
                                                 </div>
                                             </div>
@@ -1055,19 +1063,19 @@ function HijriCalendar({ onBack , onNavigate }: { onBack: () => void, onNavigate
                                         <>
                                             <div className="space-y-1 text-center cursor-pointer" onClick={() => openPicker('hDay')}>
                                                 <label className="text-[10px] themed-text-muted font-black">اليوم</label>
-                                                <div className="w-full p-2.5 themed-bg-alt rounded-xl font-black text-center shadow-inner border border-black/5 text-xs">
+                                                <div className="w-full p-2.5 themed-bg-alt rounded-xl font-black text-center shadow-inner text-xs" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                                                     {toArabicNumerals(inputs.hDay)}
                                                 </div>
                                             </div>
                                             <div className="space-y-1 text-center cursor-pointer" onClick={() => openPicker('hMonth')}>
                                                 <label className="text-[10px] themed-text-muted font-black">الشهر</label>
-                                                <div className="w-full p-2.5 themed-bg-alt rounded-xl font-black text-center shadow-inner text-[10px] border border-black/5">
+                                                <div className="w-full p-2.5 themed-bg-alt rounded-xl font-black text-center shadow-inner text-[10px]" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                                                     {hijriMonths[inputs.hMonth - 1].name}
                                                 </div>
                                             </div>
                                             <div className="space-y-1 text-center cursor-pointer" onClick={() => openPicker('hYear')}>
                                                 <label className="text-[10px] themed-text-muted font-black">السنة</label>
-                                                <div className="w-full p-2.5 themed-bg-alt rounded-xl font-black text-center shadow-inner border border-black/5 text-xs">
+                                                <div className="w-full p-2.5 themed-bg-alt rounded-xl font-black text-center shadow-inner text-xs" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                                                     {toArabicNumerals(inputs.hYear)}
                                                 </div>
                                             </div>
@@ -1081,8 +1089,8 @@ function HijriCalendar({ onBack , onNavigate }: { onBack: () => void, onNavigate
                                             initial={{ opacity: 0, y: 10 }} 
                                             animate={{ opacity: 1, y: 0 }}
                                             exit={{ opacity: 0, y: -10 }}
-                                            className="text-center p-4 rounded-2xl bg-black/5 dark:bg-white/5 border-2 border-dashed relative"
-                                            style={{ borderColor: `${secondaryColor}30` }}
+                                            className="text-center p-4 rounded-2xl bg-black/5 dark:bg-white/5 relative"
+                                            style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'dashed' }}
                                         >
                                             <p className="text-[10px] themed-text-muted font-black mb-1 tracking-widest">{convMessage}</p>
                                             <p className="text-xl font-black" style={{ color: isDefaultTheme ? '#000000' : primaryColor }}>{convResult}</p>
@@ -1096,6 +1104,7 @@ function HijriCalendar({ onBack , onNavigate }: { onBack: () => void, onNavigate
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
                                     className="themed-card p-4 rounded-2xl shadow-md relative mt-1 group"
+                                    style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
                                 >
                                     <div className="absolute top-0 right-0 w-12 h-1 bg-gradient-to-l from-transparent" style={{ backgroundColor: isDefaultTheme ? '#000000' : secondaryColor, borderTopRightRadius: '999px' }}></div>
                                     <div className="flex justify-between items-center mb-3">
@@ -1178,6 +1187,7 @@ function HijriCalendar({ onBack , onNavigate }: { onBack: () => void, onNavigate
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.9, opacity: 0 }}
                             className="themed-card p-8 rounded-3xl w-full max-w-2xl text-center relative shadow-2xl flex flex-col max-h-[90vh] overflow-hidden" 
+                            style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
                             onClick={e => e.stopPropagation()}
                         >
                             <div className="overflow-y-auto hide-scrollbar flex-1 py-4">
@@ -1213,7 +1223,8 @@ function HijriCalendar({ onBack , onNavigate }: { onBack: () => void, onNavigate
                     onClick={() => setPickerConfig(p => ({ ...p, isOpen: false }))}
                 >
                     <div 
-                        className="themed-card w-full max-w-[280px] rounded-[2.5rem] shadow-2xl flex flex-col max-h-[450px] overflow-hidden border border-white/20"
+                        className="themed-card w-full max-w-[280px] rounded-[2.5rem] shadow-2xl flex flex-col max-h-[450px] overflow-hidden"
+                        style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
                         onClick={e => e.stopPropagation()}
                     >
                         <div className="p-5 border-b border-black/5 dark:border-white/5 text-center shrink-0 bg-black/[0.03] dark:bg-white/[0.03]">

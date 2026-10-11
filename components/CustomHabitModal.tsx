@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Plus, Sparkles, Check, ChevronRight } from 'lucide-react';
 import { useHabitTracker } from '../hooks/useHabitTracker';
+import { useTheme } from '../context/ThemeContext';
 import BottomBar from './BottomBar';
 
 interface CustomHabitModalProps {
@@ -40,6 +41,15 @@ export const CustomHabitModal: React.FC<CustomHabitModalProps> = ({
   onClose,
   onAdded
 }) => {
+  const { theme, themeKey } = useTheme();
+  const isDarkBlack = theme.bgColor === '#000000' || theme.name === 'أبيض وأسود' || themeKey === 'deep_black' || isBlackTheme;
+  const isDefaultTheme = themeKey === 'default' || !themeKey || theme.name?.includes('الافتراضي') || theme.name === 'Default';
+  const cardBorderColor = isDefaultTheme 
+    ? '#000000' 
+    : (isDarkBlack 
+        ? '#FFFFFF' 
+        : (theme.palette?.[0] || '#000000'));
+
   const addCustomHabit = useHabitTracker((state) => state.addCustomHabit);
 
   const [title, setTitle] = useState('');
@@ -115,11 +125,17 @@ export const CustomHabitModal: React.FC<CustomHabitModalProps> = ({
         </header>
 
         {/* Scrollable Form Body */}
-        <main className="flex-1 overflow-y-auto px-4 pt-3 pb-36 max-w-lg mx-auto w-full overscroll-contain">
+        <main 
+          className="flex-1 overflow-y-auto px-4 pt-3 max-w-lg mx-auto w-full overscroll-contain"
+          style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 5rem)' }}
+        >
           <form onSubmit={handleSave} className="space-y-4">
             
             {/* Quick Preset Badges */}
-            <div className="bg-white dark:bg-gray-800/80 p-3.5 rounded-2xl border border-black/5 dark:border-white/5 shadow-xs">
+            <div 
+              className="bg-white dark:bg-gray-800/80 p-3.5 rounded-2xl shadow-xs border"
+              style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+            >
               <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-2">
                 اقتراحات سريعة بنقرة واحدة:
               </label>
@@ -143,7 +159,10 @@ export const CustomHabitModal: React.FC<CustomHabitModalProps> = ({
             </div>
 
             {/* Title Input */}
-            <div className="bg-white dark:bg-gray-800/80 p-3.5 rounded-2xl border border-black/5 dark:border-white/5 shadow-xs">
+            <div 
+              className="bg-white dark:bg-gray-800/80 p-3.5 rounded-2xl shadow-xs border"
+              style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+            >
               <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
                 اسم العبادة أو الطاعة <span className="text-red-500">*</span>
               </label>
@@ -164,7 +183,10 @@ export const CustomHabitModal: React.FC<CustomHabitModalProps> = ({
             </div>
 
             {/* Icon Selector */}
-            <div className="bg-white dark:bg-gray-800/80 p-3.5 rounded-2xl border border-black/5 dark:border-white/5 shadow-xs">
+            <div 
+              className="bg-white dark:bg-gray-800/80 p-3.5 rounded-2xl shadow-xs border"
+              style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+            >
               <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
                 اختر رمز العبادة:
               </label>
@@ -187,7 +209,10 @@ export const CustomHabitModal: React.FC<CustomHabitModalProps> = ({
             </div>
 
             {/* Recurrence Mode */}
-            <div className="bg-white dark:bg-gray-800/80 p-3.5 rounded-2xl border border-black/5 dark:border-white/5 shadow-xs">
+            <div 
+              className="bg-white dark:bg-gray-800/80 p-3.5 rounded-2xl shadow-xs border"
+              style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+            >
               <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
                 تكرار العبادة:
               </label>
@@ -224,7 +249,10 @@ export const CustomHabitModal: React.FC<CustomHabitModalProps> = ({
 
               {/* Days Selection when Specific */}
               {isSpecificDays && (
-                <div className="bg-gray-50 dark:bg-gray-900/70 p-3 rounded-2xl border border-gray-200 dark:border-gray-700 space-y-2">
+                <div 
+                  className="bg-gray-50 dark:bg-gray-900/70 p-3 rounded-2xl border space-y-2"
+                  style={{ borderColor: cardBorderColor, borderWidth: '1px', borderStyle: 'solid' }}
+                >
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] font-semibold text-gray-600 dark:text-gray-400">
                       حدد الأيام المجدولة:
@@ -271,7 +299,10 @@ export const CustomHabitModal: React.FC<CustomHabitModalProps> = ({
             </div>
 
             {/* Description (Optional) */}
-            <div className="bg-white dark:bg-gray-800/80 p-3.5 rounded-2xl border border-black/5 dark:border-white/5 shadow-xs">
+            <div 
+              className="bg-white dark:bg-gray-800/80 p-3.5 rounded-2xl shadow-xs border"
+              style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+            >
               <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
                 ملاحظة أو وصف مختصر (اختياري):
               </label>

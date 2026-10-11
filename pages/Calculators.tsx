@@ -12,6 +12,13 @@ interface CalculatorsProps {
 
 const Calculators: React.FC<CalculatorsProps> = ({ onBack , onNavigate }) => {
     const { theme, themeKey } = useTheme();
+    const isBlackTheme = theme.bgColor === '#000000' || theme.name === 'أبيض وأسود';
+    const isDefaultTheme = themeKey === 'default' || !themeKey;
+    const cardBorderColor = isDefaultTheme 
+        ? '#000000' 
+        : (isBlackTheme 
+            ? '#FFFFFF' 
+            : (theme.palette?.[0] || '#000000'));
     const [activeTab, setActiveTab] = useState<'zakat' | 'mawarith' | 'kaffarat'>('zakat');
 
     return (
@@ -41,14 +48,19 @@ const Calculators: React.FC<CalculatorsProps> = ({ onBack , onNavigate }) => {
                         onClick={() => setActiveTab(tab.id as any)}
                         className={`flex-1 py-3 px-2 rounded-t-xl font-bold transition-all duration-300 flex flex-col items-center gap-1
                             ${activeTab === tab.id 
-                                ? (themeKey === 'default' 
+                                ? (isDefaultTheme 
                                     ? 'bg-black text-white scale-105 origin-bottom shadow-lg' 
-                                    : 'bg-primary text-white shadow-[0_-4px_10px_rgba(16,185,129,0.2)] scale-105 origin-bottom'
+                                    : (isBlackTheme ? 'bg-white text-black scale-105 origin-bottom shadow-lg' : 'bg-primary text-white shadow-[0_-4px_10px_rgba(16,185,129,0.2)] scale-105 origin-bottom')
                                   ) 
-                                : (themeKey === 'default' 
-                                    ? 'bg-white text-black border border-gray-100 shadow-sm opacity-80 hover:opacity-100' 
+                                : (isDefaultTheme 
+                                    ? 'bg-white text-black shadow-sm opacity-80 hover:opacity-100' 
                                     : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
                                   )}`}
+                        style={{
+                            borderColor: cardBorderColor,
+                            borderWidth: '1.5px',
+                            borderStyle: 'solid',
+                        }}
                     >
                         <i className={`fa-solid ${tab.icon} ${activeTab === tab.id ? 'text-lg' : 'text-base'}`}></i>
                         <span className="text-sm">{tab.label}</span>
@@ -58,10 +70,10 @@ const Calculators: React.FC<CalculatorsProps> = ({ onBack , onNavigate }) => {
 
             {/* Main Content */}
             <main className="flex-1 overflow-y-auto px-4 pb-4 hide-scrollbar font-cairo bg-gray-50/50 dark:bg-black/20">
-                <div className="max-w-3xl mx-auto">
-                    {activeTab === 'zakat' && <ZakatCalculator />}
-                    {activeTab === 'mawarith' && <MawarithCalculator />}
-                    {activeTab === 'kaffarat' && <KaffaratCalculator />}
+                <div className="max-w-3xl mx-auto pt-2">
+                    {activeTab === 'zakat' && <ZakatCalculator cardBorderColor={cardBorderColor} />}
+                    {activeTab === 'mawarith' && <MawarithCalculator cardBorderColor={cardBorderColor} />}
+                    {activeTab === 'kaffarat' && <KaffaratCalculator cardBorderColor={cardBorderColor} />}
                 </div>
                 <div className="shrink-0 w-full h-32"></div>
             </main>

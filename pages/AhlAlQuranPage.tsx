@@ -238,24 +238,8 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
               أهل القرآن الكريم
             </h1>
 
-            {/* Left: Admin reset button and ThemePageLock */}
-            <div className="flex items-center gap-1.5 flex-shrink-0">
-              {isAdmin ? (
-                <button
-                  type="button"
-                  onClick={() => setShowResetConfirm(true)}
-                  className="w-10 h-10 rounded-2xl border flex items-center justify-center shadow-xs active:scale-95 transition-all cursor-pointer text-rose-500 hover:bg-rose-500/10"
-                  style={{
-                    backgroundColor: cardBg,
-                    borderColor: cardBorder
-                  }}
-                  title="تصفير وحذف ترتيب أهل القرآن (إدارة التطبيق)"
-                >
-                  <Trash2 size={18} />
-                </button>
-              ) : (
-                <div className="w-10 h-10 flex-shrink-0 opacity-0 pointer-events-none" />
-              )}
+            {/* Left: Spacer to keep title centered and balanced with Quran shortcut */}
+            <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center pointer-events-none">
               <ThemePageLock />
             </div>
           </div>
@@ -888,6 +872,29 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
                 )}
               </div>
             </div>
+
+            {/* Admin Reset Rankings Option */}
+            {isAdmin && (
+              <div 
+                className="border border-rose-500/20 rounded-3xl p-5 shadow-xs space-y-3 bg-rose-500/5 text-right"
+              >
+                <h4 className="font-extrabold text-sm text-rose-500 flex items-center gap-2">
+                  <AlertTriangle size={18} />
+                  <span>إدارة التطبيق: تصفير ترتيب أهل القرآن</span>
+                </h4>
+                <p className="text-xs opacity-75 leading-relaxed" style={{ color: theme.textColor }}>
+                  يمكنك كمسؤول تصفير وحذف جميع إحصائيات وترتيب قراء أهل القرآن للبدء من جديد.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowResetConfirm(true)}
+                  className="px-4 py-2.5 rounded-xl text-xs font-bold bg-rose-500 text-white shadow-xs active:scale-95 transition-all cursor-pointer flex items-center gap-2"
+                >
+                  <Trash2 size={15} />
+                  <span>تصفير وحذف الترتيب</span>
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

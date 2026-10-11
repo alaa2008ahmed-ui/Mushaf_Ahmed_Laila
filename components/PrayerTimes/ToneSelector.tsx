@@ -37,14 +37,14 @@ const ToneSelector: React.FC<ToneSelectorProps> = ({
 
     return (
         <div>
-            <label className="block text-[10px] font-black mb-2 uppercase tracking-widest" style={{ color: secondaryColor }}>نغمة التنبيه</label>
+            <label className="block text-[10px] font-black mb-2 uppercase tracking-widest text-center" style={{ color: secondaryColor }}>نغمة التنبيه</label>
             <div className="relative">
-                <select value={selectValue} onChange={handleToneSelection} className="w-full appearance-none themed-bg-alt border themed-card-border rounded-xl py-3 px-4 text-xs font-bold" style={{ color: primaryColor }}>
+                <select value={selectValue} onChange={handleToneSelection} className="w-full appearance-none themed-bg-alt border-2 border-black dark:border-white rounded-2xl py-3 px-4 text-xs font-bold" style={{ color: primaryColor }}>
                     <option value="none">بدون تنبيه</option>
                     {internetTones.map(tone => <option key={tone.path} value={tone.path}>{tone.name}</option>)}
                     <option value="custom">نغمة مخصصة...</option>
                 </select>
-                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center px-3">
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center px-3.5">
                      <i className="fa-solid fa-chevron-down text-xs" style={{color: secondaryColor}}></i>
                 </div>
             </div>

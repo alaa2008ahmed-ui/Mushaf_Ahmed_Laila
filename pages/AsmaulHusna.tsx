@@ -6,8 +6,18 @@ import BottomBar from '../components/BottomBar';
 import ThemePageLock from '../components/ThemePageLock';
 import { asmaulHusna, AsmaulHusnaItem } from '../data/asmaulHusnaData';
 import { X, Info, Book } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
 
 const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, params?: any) => void; }> = ({ onBack, onNavigate }) => {
+    const { theme, themeKey } = useTheme();
+    const isDefaultTheme = themeKey === 'default' || !themeKey || theme.name?.includes('الافتراضي') || theme.name === 'Default';
+    const isBlackTheme = theme.bgColor === '#000000' || theme.name === 'أبيض وأسود' || themeKey === 'deep_black';
+    const cardBorderColor = isDefaultTheme 
+      ? '#000000' 
+      : (isBlackTheme 
+          ? '#FFFFFF' 
+          : (theme.palette?.[0] || theme.accent || '#000000'));
+
     const [selectedName, setSelectedName] = useState<AsmaulHusnaItem | null>(null);
 
     const handleHomeClick = () => {
@@ -72,7 +82,8 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                                 whileHover={{ y: -5, scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
                                 onClick={() => setSelectedName(item)}
-                                className="relative themed-card rounded-xl sm:rounded-2xl p-1.5 sm:p-3 flex flex-col items-center justify-center text-center aspect-square group border border-black/5 shadow-sm transition-all duration-300 overflow-hidden"
+                                className="relative themed-card rounded-xl sm:rounded-2xl p-1.5 sm:p-3 flex flex-col items-center justify-center text-center aspect-square group border shadow-sm transition-all duration-300 overflow-hidden"
+                                style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
                             >
                                 {/* ID Badge */}
                                 <div className="absolute top-1 sm:top-2 right-1 sm:right-2 w-4 sm:w-6 h-4 sm:h-6 flex items-center justify-center rounded-full bg-black/5 dark:bg-white/10 text-[8px] font-bold opacity-60">
@@ -103,7 +114,8 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                             initial={{ scale: 0.9, y: 20 }}
                             animate={{ scale: 1, y: 0 }}
                             exit={{ scale: 0.9, y: 20 }}
-                            className="bg-white dark:bg-[#1E1E1E] w-full max-w-md rounded-3xl p-6 shadow-2xl overflow-hidden relative border border-white/20 text-right"
+                            className="bg-white dark:bg-[#1E1E1E] w-full max-w-md rounded-3xl p-6 shadow-2xl overflow-hidden relative border text-right"
+                            style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
                             onClick={(e) => e.stopPropagation()}
                             dir="rtl"
                         >
@@ -124,7 +136,7 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                             </div>
 
                             <div className="space-y-4">
-                                <div className="bg-black/5 dark:bg-white/5 p-4 rounded-2xl">
+                                <div className="bg-black/5 dark:bg-white/5 p-4 rounded-2xl border" style={{ borderColor: cardBorderColor, borderWidth: '1px', borderStyle: 'solid' }}>
                                     <div className="flex items-center gap-2 mb-2 text-xs font-bold opacity-60">
                                         <Info className="w-4 h-4" />
                                         <span>المعنى والدلالة</span>
@@ -135,7 +147,7 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                                 </div>
 
                                 {selectedName.evidence && (
-                                    <div className="bg-amber-500/5 border border-amber-500/10 p-4 rounded-2xl">
+                                    <div className="bg-amber-500/5 p-4 rounded-2xl border" style={{ borderColor: cardBorderColor, borderWidth: '1px', borderStyle: 'solid' }}>
                                         <div className="flex items-center gap-2 mb-2 text-xs font-bold text-amber-600 dark:text-amber-400">
                                             <Book className="w-4 h-4" />
                                             <span>الدليل من القرآن والسنة</span>

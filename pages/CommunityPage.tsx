@@ -26,15 +26,20 @@ interface CommunityPageProps {
 const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initialTab }) => {
   const { theme, themeKey } = useTheme();
   const showNewBadge = useShowNewBadge();
-  const isBlackTheme = theme.bgColor === '#000000';
+  const isDefaultTheme = themeKey === 'default' || !themeKey || theme.name?.includes('الافتراضي') || theme.name === 'Default';
+  const isDeepBlack = theme.bgColor === '#000000' || theme.name === 'أبيض وأسود' || themeKey === 'deep_black';
+  const cardBorderColor = isDefaultTheme 
+    ? '#000000' 
+    : (isDeepBlack 
+        ? '#FFFFFF' 
+        : (theme.palette?.[0] || theme.accent || '#000000'));
+  const isBlackTheme = isDeepBlack;
   const primaryColor = isBlackTheme ? '#FFFFFF' : (theme.palette?.[0] || '#10b981');
   const primaryTextColor = isBlackTheme ? '#000000' : (theme.btnText || '#FFFFFF');
   const cardBg = isBlackTheme 
     ? '#111111' 
     : (theme.isGlass ? 'rgba(255, 255, 255, 0.15)' : (theme.cardBg || (theme.isDark ? '#1e293b' : '#ffffff')));
-  const cardBorder = isBlackTheme 
-    ? '#333333' 
-    : (theme.cardBorder || (theme.isDark ? '#334155' : '#e2e8f0'));
+  const cardBorder = cardBorderColor;
   const secondaryBg = isBlackTheme 
     ? '#1a1a1a' 
     : (theme.isDark ? '#0f172a' : '#f8fafc');
@@ -457,7 +462,7 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
   const communityTutorialSteps: TutorialStep[] = [
     {
       id: 'community-chats',
-      title: 'المحادثات الخاصة',
+      title: 'الأصدقاء',
       text: 'مراسلة إخوانك والتواصل بالرسائل النصية والتسجيلات الصوتية ومشاركة الآيات الكريمة.',
       selector: '#community-tab-chats',
       icon: <MessageSquare className="w-8 h-8 text-teal-400" />
@@ -508,6 +513,8 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
               style={{
                 backgroundColor: cardBg,
                 borderColor: cardBorder,
+                borderWidth: '1.5px',
+                borderStyle: 'solid',
                 color: primaryColor
               }}
               title="صفحة القرآن الكريم"
@@ -525,7 +532,9 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
               className="flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-bold cursor-pointer transition-all active:scale-95 shadow-sm overflow-hidden"
               style={{
                 backgroundColor: `${primaryColor}15`,
-                borderColor: `${primaryColor}35`,
+                borderColor: cardBorder,
+                borderWidth: '1.5px',
+                borderStyle: 'solid',
                 color: primaryColor
               }}
               title="تعديل الملف الشخصي"
@@ -555,7 +564,9 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
               className="flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-bold cursor-pointer transition-all active:scale-95 shadow-sm"
               style={{
                 backgroundColor: `${primaryColor}15`,
-                borderColor: `${primaryColor}35`,
+                borderColor: cardBorder,
+                borderWidth: '1.5px',
+                borderStyle: 'solid',
                 color: primaryColor
               }}
               title="تسجيل الملف الشخصي"
@@ -573,6 +584,8 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
             style={{
               backgroundColor: cardBg,
               borderColor: cardBorder,
+              borderWidth: '1.5px',
+              borderStyle: 'solid',
               color: '#f59e0b'
             }}
             title="صفحة أهل القرآن الكريم"
@@ -590,7 +603,7 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
         {/* Navigation Tabs (Equally divided 4 tabs: Chats, Community, Members, Blocked) */}
         <div 
           className="grid grid-cols-4 gap-1 sm:gap-1.5 p-1 sm:p-1.5 rounded-2xl border mb-3"
-          style={{ backgroundColor: secondaryBg, borderColor: cardBorder }}
+          style={{ backgroundColor: secondaryBg, borderColor: cardBorder, borderWidth: '1.5px', borderStyle: 'solid' }}
         >
           <button
             id="community-tab-chats"
@@ -602,7 +615,7 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
               boxShadow: activeTab === 'chats' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
             }}
           >
-            <span>المحادثة</span>
+            <span>الأصدقاء</span>
             {totalUnreadCount > 0 && (
               <span className="px-1.5 py-0.5 min-w-[18px] h-[18px] rounded-full bg-rose-500 text-white text-[10px] font-extrabold flex items-center justify-center leading-none shadow-sm animate-pulse">
                 {totalUnreadCount > 99 ? '+99' : totalUnreadCount}
@@ -720,6 +733,8 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
                 style={{
                   backgroundColor: cardBg,
                   borderColor: cardBorder,
+                  borderWidth: '1.5px',
+                  borderStyle: 'solid',
                   color: textColor
                 }}
               />
@@ -741,7 +756,9 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
               className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl border text-xs font-bold transition-all flex-shrink-0 active:scale-95"
               style={{
                 backgroundColor: `${primaryColor}15`,
-                borderColor: `${primaryColor}30`,
+                borderColor: cardBorder,
+                borderWidth: '1.5px',
+                borderStyle: 'solid',
                 color: primaryColor
               }}
               title="تحديث القائمة الآن من الخادم"
@@ -762,7 +779,7 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
             {users.length === 0 ? (
               <div 
                 className="col-span-full text-center py-12 rounded-3xl border p-6"
-                style={{ backgroundColor: cardBg, borderColor: cardBorder }}
+                style={{ backgroundColor: cardBg, borderColor: cardBorder, borderWidth: '1.5px', borderStyle: 'solid' }}
               >
                 <Globe size={40} className="mx-auto mb-2" style={{ color: textMuted }} />
                 <p className="text-sm font-bold" style={{ color: textColor }}>
@@ -789,7 +806,9 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
                     } flex items-center justify-between shadow-xs hover:shadow-md transition-all cursor-pointer active:scale-[0.99] group`}
                     style={{
                       backgroundColor: cardBg,
-                      borderColor: cardBorder
+                      borderColor: cardBorder,
+                      borderWidth: '1.5px',
+                      borderStyle: 'solid'
                     }}
                   >
                     <div className={`flex items-center ${isDense ? 'gap-2' : 'gap-3'} min-w-0 flex-1`}>
@@ -840,33 +859,13 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
                     <div className="shrink-0 mr-2" onClick={(e) => e.stopPropagation()}>
                       {(() => {
                         if (u.userId === ADMIN_USER_ID) {
-                          return (
-                            <button
-                              type="button"
-                              onClick={() => handleStartChat(u.userId)}
-                              className="px-3 py-1.5 rounded-xl text-xs font-bold shadow-xs active:scale-95 flex items-center gap-1 cursor-pointer"
-                              style={{ backgroundColor: primaryColor, color: primaryTextColor }}
-                            >
-                              <MessageSquare size={13} />
-                              <span>محادثة</span>
-                            </button>
-                          );
+                          return null;
                         }
 
                         const friendship = communityService.getFriendshipStatus(u.userId);
 
                         if (friendship.status === 'accepted') {
-                          return (
-                            <button
-                              type="button"
-                              onClick={() => handleStartChat(u.userId)}
-                              className="px-3 py-1.5 rounded-xl text-xs font-bold shadow-xs active:scale-95 flex items-center gap-1 cursor-pointer"
-                              style={{ backgroundColor: primaryColor, color: primaryTextColor }}
-                            >
-                              <MessageSquare size={13} />
-                              <span>محادثة</span>
-                            </button>
-                          );
+                          return null;
                         }
 
                         if (friendship.status === 'pending' && friendship.isRequester) {
@@ -961,7 +960,9 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
                 className="p-3 sm:p-3.5 rounded-2xl border flex items-center justify-between cursor-pointer mb-2 transition-all hover:opacity-95 shadow-xs"
                 style={{
                   backgroundColor: `${primaryColor}12`,
-                  borderColor: `${primaryColor}35`
+                  borderColor: cardBorder,
+                  borderWidth: '1.5px',
+                  borderStyle: 'solid'
                 }}
               >
                 <div className="flex items-center gap-2.5">
@@ -990,7 +991,7 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
             {filteredChats.length === 0 && newMatchingFriends.length === 0 ? (
                   <div 
                     className="text-center py-12 rounded-3xl border p-6"
-                    style={{ backgroundColor: cardBg, borderColor: cardBorder }}
+                    style={{ backgroundColor: cardBg, borderColor: cardBorder, borderWidth: '1.5px', borderStyle: 'solid' }}
                   >
                     <MessageSquare size={40} className="mx-auto mb-2" style={{ color: textMuted }} />
                     <p className="text-sm font-bold" style={{ color: textColor }}>
@@ -1011,7 +1012,9 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
                           className="border rounded-2xl p-4 flex items-center justify-between cursor-pointer transition-all shadow-xs"
                           style={{
                             backgroundColor: cardBg,
-                            borderColor: cardBorder
+                            borderColor: cardBorder,
+                            borderWidth: '1.5px',
+                            borderStyle: 'solid'
                           }}
                         >
                           <div className="flex items-center gap-3">
@@ -1083,7 +1086,9 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
                               className="border rounded-2xl p-3 flex items-center justify-between cursor-pointer transition-all shadow-xs"
                               style={{
                                 backgroundColor: cardBg,
-                                borderColor: cardBorder
+                                borderColor: cardBorder,
+                                borderWidth: '1.5px',
+                                borderStyle: 'solid'
                               }}
                             >
                               <div className="flex items-center gap-3">
@@ -1115,17 +1120,7 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
                                 {(() => {
                                   const friendship = communityService.getFriendshipStatus(friend.userId);
                                   if (friendship.status === 'accepted') {
-                                    return (
-                                      <button
-                                        type="button"
-                                        onClick={() => handleStartChat(friend.userId)}
-                                        className="px-3 py-1.5 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1 active:scale-95 cursor-pointer"
-                                        style={{ backgroundColor: primaryColor, color: primaryTextColor }}
-                                      >
-                                        <MessageSquare size={13} />
-                                        <span>محادثة</span>
-                                      </button>
-                                    );
+                                    return null;
                                   }
                                   if (friendship.status === 'pending' && friendship.isRequester) {
                                     return (
@@ -1227,7 +1222,9 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
                     className="p-3.5 sm:p-4 rounded-2xl border shadow-sm transition-all"
                     style={{
                       backgroundColor: cardBg,
-                      borderColor: `${primaryColor}40`,
+                      borderColor: cardBorder,
+                      borderWidth: '1.5px',
+                      borderStyle: 'solid'
                     }}
                   >
                     <div className="flex items-center gap-3">
@@ -1310,11 +1307,11 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
               </div>
             )}
 
-            {/* Groups List */}
+            {/* Groups List - 1 group per row */}
             {filteredGroups.length === 0 ? (
               <div 
                 className="text-center py-10 rounded-3xl border p-6"
-                style={{ backgroundColor: cardBg, borderColor: cardBorder }}
+                style={{ backgroundColor: cardBg, borderColor: cardBorder, borderWidth: '1.5px', borderStyle: 'solid' }}
               >
                 <Users size={40} className="mx-auto mb-2" style={{ color: textMuted }} />
                 <p className="text-sm font-bold" style={{ color: textColor }}>
@@ -1334,33 +1331,45 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
+              <div className="grid grid-cols-1 gap-2.5">
                 {filteredGroups.map(grp => (
                   <div
                     key={grp.groupId}
                     onClick={() => handleStartGroupChat(grp.groupId)}
-                    className="border rounded-2xl p-3 flex items-center gap-2.5 cursor-pointer transition-all shadow-xs hover:shadow-md active:scale-95 group"
+                    className="border rounded-2xl p-3 sm:p-3.5 flex items-center justify-between gap-3 cursor-pointer transition-all shadow-xs hover:shadow-md active:scale-[0.99] group"
                     style={{
                       backgroundColor: cardBg,
-                      borderColor: cardBorder
+                      borderColor: cardBorder,
+                      borderWidth: '1.5px',
+                      borderStyle: 'solid'
                     }}
                     title={cleanGroupName(grp.name)}
                   >
-                    <div 
-                      className="w-10 h-10 rounded-xl font-bold flex items-center justify-center border overflow-hidden flex-shrink-0 text-lg shadow-inner group-hover:scale-105 transition-transform"
-                      style={{
-                        backgroundColor: `${primaryColor}15`,
-                        borderColor: `${primaryColor}30`,
-                        color: primaryColor
-                      }}
-                    >
-                      {renderGroupAvatar(grp)}
-                    </div>
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div 
+                        className="w-11 h-11 rounded-2xl font-bold flex items-center justify-center border overflow-hidden flex-shrink-0 text-xl shadow-inner group-hover:scale-105 transition-transform"
+                        style={{
+                          backgroundColor: `${primaryColor}15`,
+                          borderColor: `${primaryColor}30`,
+                          color: primaryColor
+                        }}
+                      >
+                        {renderGroupAvatar(grp)}
+                      </div>
 
-                    <div className="min-w-0 flex-1">
-                      <h3 className="font-bold text-xs sm:text-sm truncate leading-snug" style={{ color: textColor }}>
-                        {cleanGroupName(grp.name)}
-                      </h3>
+                      <div className="min-w-0 flex-1">
+                        <h3 className="font-bold text-xs sm:text-sm truncate leading-snug" style={{ color: textColor }}>
+                          {cleanGroupName(grp.name)}
+                        </h3>
+                        {grp.description && (
+                          <p className="text-[11px] truncate mt-0.5" style={{ color: textMuted }}>
+                            {grp.description}
+                          </p>
+                        )}
+                        <p className="text-[10px] mt-0.5 font-medium" style={{ color: textMuted }}>
+                          {grp.members?.length || 1} عضو
+                        </p>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -1375,7 +1384,7 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
             {blockedUsers.length === 0 ? (
               <div 
                 className="text-center py-12 rounded-3xl border p-6"
-                style={{ backgroundColor: cardBg, borderColor: cardBorder }}
+                style={{ backgroundColor: cardBg, borderColor: cardBorder, borderWidth: '1.5px', borderStyle: 'solid' }}
               >
                 <Shield size={40} className="mx-auto mb-2 opacity-60" style={{ color: primaryColor }} />
                 <p className="text-sm font-bold" style={{ color: textColor }}>لا يوجد مستخدمون محظورون</p>
@@ -1391,7 +1400,9 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
                     className="border rounded-2xl p-4 flex items-center justify-between shadow-xs"
                     style={{
                       backgroundColor: cardBg,
-                      borderColor: cardBorder
+                      borderColor: cardBorder,
+                      borderWidth: '1.5px',
+                      borderStyle: 'solid'
                     }}
                   >
                     <div className="flex items-center gap-3">
@@ -1419,6 +1430,8 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
                       style={{
                         backgroundColor: secondaryBg,
                         borderColor: cardBorder,
+                        borderWidth: '1.5px',
+                        borderStyle: 'solid',
                         color: primaryColor
                       }}
                     >
@@ -1456,7 +1469,7 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
               className="w-full max-w-sm rounded-3xl border shadow-2xl p-5 text-center space-y-3.5"
-              style={{ backgroundColor: cardBg, borderColor: cardBorder, color: textColor }}
+              style={{ backgroundColor: cardBg, borderColor: cardBorder, borderWidth: '1.5px', borderStyle: 'solid', color: textColor }}
             >
               <div className="w-14 h-14 rounded-full bg-rose-500/15 text-rose-500 flex items-center justify-center mx-auto">
                 <Trash2 size={28} />
@@ -1489,7 +1502,7 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
                   type="button"
                   onClick={() => setGroupToDelete(null)}
                   className="flex-1 py-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer"
-                  style={{ backgroundColor: secondaryBg, borderColor: cardBorder, color: textColor }}
+                  style={{ backgroundColor: secondaryBg, borderColor: cardBorder, borderWidth: '1.5px', borderStyle: 'solid', color: textColor }}
                 >
                   تراجع
                 </button>
@@ -1508,7 +1521,7 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
               className="w-full max-w-sm rounded-3xl border shadow-2xl p-5 text-center space-y-3.5"
-              style={{ backgroundColor: cardBg, borderColor: cardBorder, color: textColor }}
+              style={{ backgroundColor: cardBg, borderColor: cardBorder, borderWidth: '1.5px', borderStyle: 'solid', color: textColor }}
             >
               <div className="w-14 h-14 rounded-full bg-slate-500/15 text-slate-500 flex items-center justify-center mx-auto">
                 <EyeOff size={28} />

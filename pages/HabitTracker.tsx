@@ -59,8 +59,14 @@ const ProgressRing = ({ progress, size = 100, strokeWidth = 8, color }: { progre
 };
 
 const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack , onNavigate }) => {
-  const { theme } = useTheme();
-  const isBlackTheme = theme.bgColor === '#000000';
+  const { theme, themeKey } = useTheme();
+  const isBlackTheme = theme.bgColor === '#000000' || theme.name === 'أبيض وأسود' || themeKey === 'deep_black';
+  const isDefaultTheme = themeKey === 'default' || !themeKey || theme.name?.includes('الافتراضي') || theme.name === 'Default';
+  const cardBorderColor = isDefaultTheme 
+    ? '#000000' 
+    : (isBlackTheme 
+        ? '#FFFFFF' 
+        : (theme.palette?.[0] || '#000000'));
   const hexColor = isBlackTheme ? '#FFFFFF' : (theme.palette && theme.palette.length > 0 ? theme.palette[0] : '#059669');
   const todayStr = moment().format('YYYY-MM-DD');
 
@@ -286,7 +292,12 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack , onNavigate }) => {
     const isSunnahCompleted = (currentRecord.prayers as any)?.[sunnahId];
     
     return (
-      <div key={id} id={`prayer-card-${id}`} className="bg-white/80 dark:bg-gray-800/80 rounded-2xl p-3 shadow-sm border border-black/5 dark:border-white/5 mb-0">
+      <div 
+        key={id} 
+        id={`prayer-card-${id}`} 
+        className="bg-white/80 dark:bg-gray-800/80 rounded-2xl p-3 shadow-sm border mb-0"
+        style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+      >
          <span className="font-bold text-sm block mb-2 px-1 text-gray-800 dark:text-gray-200">{label}</span>
          <div className="flex gap-2">
             <motion.button 
@@ -327,9 +338,10 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack , onNavigate }) => {
         onClick={() => handleToggle(category, habitId)}
         className={`w-full flex items-center justify-between p-3 rounded-2xl mb-0 border backdrop-blur-sm transition-all ${
           isCompleted 
-            ? 'bg-white shadow-md border-transparent dark:bg-gray-800' 
-            : 'bg-white/50 border-gray-200 dark:bg-gray-800/50 dark:border-gray-700'
+            ? 'bg-white shadow-md dark:bg-gray-800' 
+            : 'bg-white/50 dark:bg-gray-800/50'
         }`}
+        style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
       >
         <span className={`font-semibold text-xs sm:text-sm px-1 ${isCompleted ? 'text-black dark:text-white' : 'text-gray-600 dark:text-gray-400'}`}>
           {label}
@@ -376,9 +388,10 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack , onNavigate }) => {
         key={habit.id}
         className={`relative flex items-center justify-between p-3 rounded-2xl border backdrop-blur-sm transition-all ${
           isCompleted
-            ? 'bg-white shadow-md border-transparent dark:bg-gray-800'
-            : 'bg-white/60 border-gray-200 dark:bg-gray-800/60 dark:border-gray-700'
+            ? 'bg-white shadow-md dark:bg-gray-800'
+            : 'bg-white/60 dark:bg-gray-800/60'
         }`}
+        style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
       >
         <div className="flex items-center gap-2.5 flex-1 min-w-0 pr-1">
           <span className="text-xl shrink-0 select-none">{habit.icon || '⭐'}</span>
@@ -520,10 +533,16 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack , onNavigate }) => {
       </header>
 
       {/* Content */}
-      <main className="w-full flex-1 min-h-0 overflow-y-auto px-4 pt-2 pb-36 overscroll-contain">
+      <main 
+        className="w-full flex-1 min-h-0 overflow-y-auto px-4 pt-2 overscroll-contain"
+        style={{ paddingBottom: 'calc(65px + 1cm + env(safe-area-inset-bottom, 0px))' }}
+      >
         
         {/* 1. Day Navigation & Date Selector (Now first card) */}
-        <div className="bg-white/85 dark:bg-gray-800/85 backdrop-blur-md rounded-2xl p-3 shadow-sm border border-black/5 dark:border-white/5 mb-3 flex items-center justify-between gap-2">
+        <div 
+          className="bg-white/85 dark:bg-gray-800/85 backdrop-blur-md rounded-2xl p-3 shadow-sm border mb-3 flex items-center justify-between gap-2"
+          style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+        >
           {/* Previous Day Button */}
           <motion.button
             whileTap={{ scale: 0.92 }}
@@ -602,7 +621,8 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack , onNavigate }) => {
           <motion.div
             initial={{ opacity: 0, y: -6 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700/50 text-amber-800 dark:text-amber-200 rounded-2xl p-2.5 px-3.5 mb-3 flex items-center justify-between gap-2 text-xs"
+            className="bg-amber-50 dark:bg-amber-900/20 border text-amber-800 dark:text-amber-200 rounded-2xl p-2.5 px-3.5 mb-3 flex items-center justify-between gap-2 text-xs"
+            style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
           >
             <div className="flex items-center gap-2 min-w-0">
               <span className="text-base shrink-0">🗓️</span>
@@ -620,7 +640,11 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack , onNavigate }) => {
         )}
 
         {/* 2. Daily Achievement Card (Now second card) */}
-        <div id="daily-achievement-card" className="bg-white/80 dark:bg-gray-800/80 rounded-2xl p-3 sm:p-3.5 shadow-sm border border-black/5 dark:border-white/5 mb-3">
+        <div 
+          id="daily-achievement-card" 
+          className="bg-white/80 dark:bg-gray-800/80 rounded-2xl p-3 sm:p-3.5 shadow-sm border mb-3"
+          style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+        >
             {/* Header: Title */}
             <div className="flex items-center justify-between mb-2">
                 <h2 className="text-base sm:text-lg font-bold font-sans dark:text-white flex items-center gap-2">
@@ -791,7 +815,10 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack , onNavigate }) => {
             <BookOpen className="w-4 h-4 opacity-70" style={{ color: hexColor }} />
             الورد القرآني
           </h3>
-          <div className="bg-white/80 dark:bg-gray-800/80 rounded-2xl p-4 shadow-sm border border-black/5 dark:border-white/5">
+          <div 
+            className="bg-white/80 dark:bg-gray-800/80 rounded-2xl p-4 shadow-sm border"
+            style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+          >
             <div className="flex items-center justify-between mb-4">
               <span className="font-semibold text-sm dark:text-gray-200">الصفحات المنجزة</span>
               <div className="flex items-center gap-3 bg-gray-100 dark:bg-gray-700 rounded-xl p-1">
@@ -879,12 +906,11 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack , onNavigate }) => {
         </section>
 
         {/* Footer Sentence */}
-        <div className="text-center pb-8 pt-4 px-6 border-t border-gray-200 dark:border-gray-700">
+        <div className="text-center pb-0 pt-4 px-6 border-t border-gray-200 dark:border-gray-700">
            <p className="text-sm font-semibold opacity-70 leading-relaxed font-amiri text-gray-600 dark:text-gray-400">
             "استمرارك في العبادة هو أعظم هدية لك ولروح أحمد وليلى"
            </p>
         </div>
-
       </main>
 
       <div className="shrink-0 z-30">
@@ -955,7 +981,8 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack , onNavigate }) => {
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
-              className="w-full max-w-xs bg-white dark:bg-gray-800 rounded-3xl p-5 shadow-2xl text-center border border-black/10 dark:border-white/10"
+              className="w-full max-w-xs bg-white dark:bg-gray-800 rounded-3xl p-5 shadow-2xl text-center border"
+              style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
             >
               <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-300 flex items-center justify-center mx-auto mb-3">
                 <Trash2 className="w-6 h-6" />

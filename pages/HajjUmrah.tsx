@@ -21,9 +21,10 @@ interface DuaaSectionProps {
     isOpen: boolean;
     onToggle: () => void;
     onZoom: (item: string) => void;
+    cardBorderColor?: string;
 }
 
-const DuaaSection: FC<DuaaSectionProps> = ({ id, title, items, isOpen, onToggle, onZoom }) => {
+const DuaaSection: FC<DuaaSectionProps> = ({ id, title, items, isOpen, onToggle, onZoom, cardBorderColor }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
 
     useEffect(() => {
@@ -43,7 +44,7 @@ const DuaaSection: FC<DuaaSectionProps> = ({ id, title, items, isOpen, onToggle,
     };
 
     return (
-        <div id={`duaa-section-${id}`} className="themed-card rounded-2xl overflow-hidden mb-3 backdrop-blur-sm">
+        <div id={`duaa-section-${id}`} className="themed-card rounded-2xl overflow-hidden mb-3 backdrop-blur-sm" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
             <button 
                 onClick={onToggle} 
                 className="w-full flex justify-between items-center p-4 bg-white/10 dark:bg-gray-800/50 hover:bg-white/20 dark:hover:bg-gray-800 transition-colors"
@@ -62,7 +63,7 @@ const DuaaSection: FC<DuaaSectionProps> = ({ id, title, items, isOpen, onToggle,
                         className="overflow-hidden"
                     >
                         <div className="p-4 bg-white/10 dark:bg-gray-900/20">
-                            <div className="flex flex-col gap-4 p-5 rounded-xl bg-white/10 dark:bg-gray-800/40 shadow-sm relative min-h-[160px] justify-center items-center text-center">
+                            <div className="flex flex-col gap-4 p-5 rounded-xl bg-white/10 dark:bg-gray-800/40 shadow-sm relative min-h-[160px] justify-center items-center text-center" style={{ borderColor: cardBorderColor, borderWidth: '1px', borderStyle: 'solid' }}>
                                 <span className="absolute top-3 right-4 text-xs font-bold opacity-50" style={{ color: 'var(--text-color)' }}>
                                     {currentIndex + 1} / {items.length}
                                 </span>
@@ -102,7 +103,7 @@ const DuaaSection: FC<DuaaSectionProps> = ({ id, title, items, isOpen, onToggle,
     );
 };
 
-const ChecklistScreen = ({ theme }) => {
+const ChecklistScreen = ({ theme, cardBorderColor }: { theme: any, cardBorderColor?: string }) => {
     const isBlackTheme = theme.bgColor === '#000000';
     const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({});
 
@@ -146,7 +147,7 @@ const ChecklistScreen = ({ theme }) => {
 
     return (
         <section className="space-y-4">
-            <div className="rounded-2xl p-4 text-center backdrop-blur-sm border" style={{ backgroundColor: isBlackTheme ? 'rgba(255,255,255,0.05)' : `${theme.palette[0]}15`, borderColor: isBlackTheme ? 'rgba(255,255,255,0.1)' : `${theme.palette[0]}30` }}>
+            <div className="rounded-2xl p-4 text-center backdrop-blur-sm" style={{ backgroundColor: isBlackTheme ? 'rgba(255,255,255,0.05)' : `${theme.palette[0]}15`, borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                 <div className="w-12 h-12 mx-auto rounded-full flex items-center justify-center mb-2" style={{ backgroundColor: isBlackTheme ? '#FFFFFF' : `${theme.palette[0]}20` }}>
                     <ListChecks className="w-6 h-6" style={{ color: isBlackTheme ? '#000000' : theme.palette[0] }} />
                 </div>
@@ -155,7 +156,7 @@ const ChecklistScreen = ({ theme }) => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {categories.map((cat, i) => (
-                    <div key={i} className="themed-card backdrop-blur-md rounded-xl p-3">
+                    <div key={i} className="themed-card backdrop-blur-md rounded-xl p-3" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                         <h3 className="font-bold text-base mb-2 border-b pb-1" style={{ color: isBlackTheme ? '#FFFFFF' : theme.palette[0], borderColor: isBlackTheme ? 'rgba(255,255,255,0.2)' : `${theme.palette[0]}20` }}>{cat.title}</h3>
                         <div className="space-y-1.5">
                             {cat.items.map(item => (
@@ -182,7 +183,7 @@ const ChecklistScreen = ({ theme }) => {
     );
 };
 
-const CountersScreen = ({ theme }) => {
+const CountersScreen = ({ theme, cardBorderColor }: { theme: any, cardBorderColor?: string }) => {
     const isBlackTheme = theme.bgColor === '#000000';
     const [tawaf, setTawaf] = useState(0);
     const [sai, setSai] = useState(0);
@@ -205,14 +206,14 @@ const CountersScreen = ({ theme }) => {
 
     return (
         <section className="space-y-4">
-            <div className="backdrop-blur-md rounded-2xl p-4 text-center border" style={{ backgroundColor: isBlackTheme ? 'rgba(255,255,255,0.05)' : `${theme.palette[0]}15`, borderColor: isBlackTheme ? 'rgba(255,255,255,0.1)' : `${theme.palette[0]}20` }}>
+            <div className="backdrop-blur-md rounded-2xl p-4 text-center" style={{ backgroundColor: isBlackTheme ? 'rgba(255,255,255,0.05)' : `${theme.palette[0]}15`, borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                 <div className="w-12 h-12 mx-auto rounded-full flex items-center justify-center mb-2" style={{ backgroundColor: isBlackTheme ? '#FFFFFF' : `${theme.palette[0]}20` }}>
                     <RotateCcw className="w-6 h-6" style={{ color: isBlackTheme ? '#000000' : theme.palette[0] }} />
                 </div>
                 <p className="text-sm opacity-70" style={{ color: 'var(--text-color)' }}>أداة مساعدة لعد أشواط الطواف والسعي.</p>
             </div>
 
-            <div className="flex bg-white/10 dark:bg-gray-800/50 backdrop-blur-xl p-1 rounded-2xl border border-white/20">
+            <div className="flex bg-white/10 dark:bg-gray-800/50 backdrop-blur-xl p-1 rounded-2xl" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                 <button 
                     onClick={() => setActiveTab('tawaf')} 
                     className={`flex-1 py-2 rounded-xl font-bold transition-all ${activeTab === 'tawaf' ? (isBlackTheme ? 'text-black shadow-lg' : 'text-white shadow-lg') : 'opacity-60'}`}
@@ -235,7 +236,7 @@ const CountersScreen = ({ theme }) => {
                 </button>
             </div>
 
-            <div className="bg-white/10 dark:bg-gray-800/50 backdrop-blur-xl rounded-2xl p-5 flex flex-col items-center justify-center shadow-xl border border-white/20 min-h-[220px]">
+            <div className="bg-white/10 dark:bg-gray-800/50 backdrop-blur-xl rounded-2xl p-5 flex flex-col items-center justify-center shadow-xl min-h-[220px]" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                 <div className="relative mb-5">
                      <svg className="w-32 h-32 transform -rotate-90">
                         <circle cx="64" cy="64" r="58" stroke="currentColor" strokeWidth="5" fill="none" className="text-white/10 dark:text-gray-700" />
@@ -265,8 +266,13 @@ const CountersScreen = ({ theme }) => {
 
 function HajjUmrah({ onBack, onNavigate }) {
     const { theme, themeKey } = useTheme();
-    const isBlackTheme = theme.bgColor === '#000000';
-    const isDefaultTheme = themeKey === 'default' || theme.name?.includes('الافتراضي') || (!themeKey && theme.palette[0] === '#10b981');
+    const isBlackTheme = theme.bgColor === '#000000' || theme.name === 'أبيض وأسود';
+    const isDefaultTheme = themeKey === 'default' || !themeKey;
+    const cardBorderColor = isDefaultTheme 
+        ? '#000000' 
+        : (isBlackTheme 
+            ? '#FFFFFF' 
+            : (theme.palette?.[0] || '#000000'));
     const [screen, setScreen] = useState('home');
     const [hajjType, setHajjType] = useState('tamattu');
     const [openDuaaId, setOpenDuaaId] = useState<number | null>(null);
@@ -320,12 +326,12 @@ function HajjUmrah({ onBack, onNavigate }) {
 
     const renderScreen = () => {
         switch (screen) {
-            case 'umrah': return <UmrahScreen key="umrah" theme={theme} onSelectDetail={setSelectedDetail} />;
-            case 'hajj': return <HajjScreen key="hajj" hajjType={hajjType} setHajjType={setHajjType} theme={theme} onSelectDetail={setSelectedDetail} />;
-            case 'duaa': return <DuaaScreen key="duaa" theme={theme} openDuaaId={openDuaaId} onToggle={handleDuaaToggle} onZoom={openZoomModal} />;
-            case 'checklist': return <ChecklistScreen key="checklist" theme={theme} />;
-            case 'counters': return <CountersScreen key="counters" theme={theme} />;
-            default: return <HomeScreen key="home" setScreen={setScreen} theme={theme} />;
+            case 'umrah': return <UmrahScreen key="umrah" theme={theme} onSelectDetail={setSelectedDetail} cardBorderColor={cardBorderColor} />;
+            case 'hajj': return <HajjScreen key="hajj" hajjType={hajjType} setHajjType={setHajjType} theme={theme} onSelectDetail={setSelectedDetail} cardBorderColor={cardBorderColor} />;
+            case 'duaa': return <DuaaScreen key="duaa" theme={theme} openDuaaId={openDuaaId} onToggle={handleDuaaToggle} onZoom={openZoomModal} cardBorderColor={cardBorderColor} />;
+            case 'checklist': return <ChecklistScreen key="checklist" theme={theme} cardBorderColor={cardBorderColor} />;
+            case 'counters': return <CountersScreen key="counters" theme={theme} cardBorderColor={cardBorderColor} />;
+            default: return <HomeScreen key="home" setScreen={setScreen} theme={theme} cardBorderColor={cardBorderColor} />;
         }
     };
 
@@ -393,7 +399,8 @@ function HajjUmrah({ onBack, onNavigate }) {
                     <motion.div 
                         initial={{ opacity: 0, scale: 0.9, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
-                        className="themed-card w-full max-w-lg rounded-3xl overflow-hidden flex flex-col max-h-[85vh] shadow-2xl border border-white/20"
+                        className="themed-card w-full max-w-lg rounded-3xl overflow-hidden flex flex-col max-h-[85vh] shadow-2xl"
+                        style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
                         onClick={e => e.stopPropagation()}
                     >
                         <div className="p-6 border-b border-white/10 flex items-center justify-between" style={{ backgroundColor: isDefaultTheme ? 'rgba(0,0,0,0.05)' : `${theme.palette[0]}15` }}>
@@ -445,7 +452,7 @@ function HajjUmrah({ onBack, onNavigate }) {
 
             {zoomedDuaa && (
                 <div className="fixed inset-0 bg-black bg-opacity-80 z-50 flex justify-center items-center p-4" onClick={closeZoomModal}>
-                    <div className="themed-card p-8 rounded-3xl w-full max-w-2xl text-center relative flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
+                    <div className="themed-card p-8 rounded-3xl w-full max-w-2xl text-center relative flex flex-col max-h-[90vh]" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }} onClick={e => e.stopPropagation()}>
                         <div className="overflow-y-auto hide-scrollbar flex-1 py-4">
                             <p className="text-3xl md:text-4xl leading-relaxed font-amiri" dangerouslySetInnerHTML={{ __html: zoomedDuaa.text }}></p>
                         </div>
@@ -460,7 +467,7 @@ function HajjUmrah({ onBack, onNavigate }) {
     );
 }
 
-const HomeScreen = ({ setScreen, theme }) => {
+const HomeScreen = ({ setScreen, theme, cardBorderColor }: { setScreen: any, theme: any, cardBorderColor?: string }) => {
     const { themeKey } = useTheme();
     const isBlackTheme = theme.bgColor === '#000000';
     const isDefaultTheme = themeKey === 'default' || theme.name?.includes('الافتراضي') || (!themeKey && theme.palette[0] === '#10b981');
@@ -476,7 +483,8 @@ const HomeScreen = ({ setScreen, theme }) => {
                 <button 
                     key={item.id}
                     onClick={() => setScreen(item.id)} 
-                    className="group relative flex flex-col items-center justify-center p-4 rounded-xl bg-white/10 dark:bg-white/5 backdrop-blur-xl border border-white/20 dark:border-white/5 shadow-lg hover:bg-white/20 transition-all duration-300"
+                    className="group relative flex flex-col items-center justify-center p-4 rounded-xl bg-white/10 dark:bg-white/5 backdrop-blur-xl shadow-lg hover:bg-white/20 transition-all duration-300"
+                    style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
                 >
                     <div className="relative z-10 w-10 h-10 rounded-xl flex items-center justify-center group-hover:scale-110 transition-all duration-300 shadow-inner border border-black/5" 
                          style={{ 
@@ -491,7 +499,8 @@ const HomeScreen = ({ setScreen, theme }) => {
             
             <button 
                 onClick={() => setScreen('checklist')} 
-                className="group relative flex flex-col items-center justify-center p-4 rounded-xl bg-white/10 dark:bg-white/5 backdrop-blur-xl border border-white/20 dark:border-white/5 shadow-lg hover:bg-white/20 transition-all duration-300 col-span-2"
+                className="group relative flex flex-col items-center justify-center p-4 rounded-xl bg-white/10 dark:bg-white/5 backdrop-blur-xl shadow-lg hover:bg-white/20 transition-all duration-300 col-span-2"
+                style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
             >
                 <div className="relative z-10 w-10 h-10 rounded-xl flex items-center justify-center group-hover:scale-110 transition-all duration-300 shadow-inner border border-black/5" 
                      style={{ 
@@ -513,7 +522,7 @@ const HomeScreen = ({ setScreen, theme }) => {
                 if (item.icon === 'fa-circle-question') IconComponent = HelpCircle;
 
                 return (
-                 <div key={index} className="bg-white/10 dark:bg-white/5 backdrop-blur-md rounded-xl p-4 border border-white/10 dark:border-white/5 shadow-lg">
+                 <div key={index} className="bg-white/10 dark:bg-white/5 backdrop-blur-md rounded-xl p-4 shadow-lg" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                     <h3 className="font-bold text-base mb-2 flex items-center gap-2" style={{color: (isBlackTheme ? '#FFFFFF' : (theme.name === 'أبيض وأسود' ? theme.textColor : theme.palette[index % theme.palette.length]))}}>
                         <IconComponent size={16} />
                         <span>{item.title}</span>
@@ -533,7 +542,7 @@ const HomeScreen = ({ setScreen, theme }) => {
                 </div>
                 );
             })}
-             <div className="col-span-1 md:col-span-2 bg-orange-500/5 dark:bg-orange-900/10 rounded-xl p-4 border border-orange-500/20 backdrop-blur-md">
+             <div className="col-span-1 md:col-span-2 bg-orange-500/5 dark:bg-orange-900/10 rounded-xl p-4 backdrop-blur-md" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                 <h3 className="font-bold text-orange-600 dark:text-orange-400 mb-1 flex items-center gap-2 text-base">
                     <ShieldAlert size={16} />
                     <span>تنبيه هام</span>
@@ -545,20 +554,20 @@ const HomeScreen = ({ setScreen, theme }) => {
     );
 };
 
-const UmrahScreen = ({ theme, onSelectDetail }) => {
+const UmrahScreen = ({ theme, onSelectDetail, cardBorderColor }: { theme: any, onSelectDetail: any, cardBorderColor?: string }) => {
     const { themeKey } = useTheme();
     const isBlackTheme = theme.bgColor === '#000000';
     const isDefaultTheme = themeKey === 'default' || theme.name?.includes('الافتراضي') || (!themeKey && theme.palette[0] === '#10b981');
     
     return (
      <section id="umrah-screen" className="space-y-4">
-        <div className="rounded-xl p-3 text-center border backdrop-blur-sm" 
-             style={{ backgroundColor: isBlackTheme ? 'rgba(255,255,255,0.05)' : (isDefaultTheme ? 'rgba(0,0,0,0.05)' : `${theme.palette[0]}15`), borderColor: isBlackTheme ? 'rgba(255,255,255,0.1)' : (isDefaultTheme ? '#00000020' : `${theme.palette[0]}20`) }}>
+        <div className="rounded-xl p-3 text-center backdrop-blur-sm" 
+             style={{ backgroundColor: isBlackTheme ? 'rgba(255,255,255,0.05)' : (isDefaultTheme ? 'rgba(0,0,0,0.05)' : `${theme.palette[0]}15`), borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
             <p className="text-sm opacity-70">زيارة مخصوصة لبيت الله الحرام بأركان محددة.</p>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            <div className="bg-white/10 dark:bg-gray-800/50 backdrop-blur-md rounded-xl p-3 border border-white/20">
+            <div className="bg-white/10 dark:bg-gray-800/50 backdrop-blur-md rounded-xl p-3" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                 <h3 className="font-bold text-sm flex items-center gap-2 mb-2" style={{ color: isBlackTheme ? '#FFFFFF' : (isDefaultTheme ? '#000000' : theme.palette[0]) }}>
                     <CheckCircle2 size={16} /> الأركان
                 </h3>
@@ -568,7 +577,7 @@ const UmrahScreen = ({ theme, onSelectDetail }) => {
                     <li className="flex gap-1 items-center"><Circle size={3} className="fill-current" /> السعي</li>
                 </ul>
             </div>
-            <div className="bg-white/10 dark:bg-gray-800/50 backdrop-blur-md rounded-xl p-3 border border-white/20">
+            <div className="bg-white/10 dark:bg-gray-800/50 backdrop-blur-md rounded-xl p-3" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                 <h3 className="font-bold text-sm flex items-center gap-2 mb-2" style={{ color: isBlackTheme ? '#FFFFFF' : (isDefaultTheme ? '#000000' : theme.palette[0]) }}>
                     <ListChecks size={16} /> الواجبات
                 </h3>
@@ -577,7 +586,7 @@ const UmrahScreen = ({ theme, onSelectDetail }) => {
                     <li className="flex gap-1 items-center"><Circle size={3} className="fill-current" /> الحلق</li>
                 </ul>
             </div>
-            <div className="bg-orange-500/5 dark:bg-orange-900/20 backdrop-blur-md rounded-xl p-3 border border-orange-500/10 col-span-2 md:col-span-1">
+            <div className="bg-orange-500/5 dark:bg-orange-900/20 backdrop-blur-md rounded-xl p-3 col-span-2 md:col-span-1" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                 <h3 className="font-bold text-sm flex items-center gap-2 mb-2" style={{ color: isBlackTheme ? '#FFFFFF' : (isDefaultTheme ? '#000000' : '#f97316') }}>
                     <ShieldAlert size={16} /> المفسدات
                 </h3>
@@ -594,6 +603,7 @@ const UmrahScreen = ({ theme, onSelectDetail }) => {
                     key={step.title} 
                     onClick={() => onSelectDetail(step)}
                     className="w-full text-right themed-card backdrop-blur-md rounded-2xl p-4 flex items-center gap-4 hover:shadow-lg transition-all active:scale-[0.982] group"
+                    style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
                 >
                     <div className="shrink-0 w-12 h-12 rounded-xl flex items-center justify-center text-2xl shadow-inner" 
                          style={{ 
@@ -615,27 +625,29 @@ const UmrahScreen = ({ theme, onSelectDetail }) => {
     );
 };
 
-const HajjScreen = ({ hajjType, setHajjType, theme, onSelectDetail }) => {
+const HajjScreen = ({ hajjType, setHajjType, theme, onSelectDetail, cardBorderColor }: { hajjType: any, setHajjType: any, theme: any, onSelectDetail: any, cardBorderColor?: string }) => {
     const { themeKey } = useTheme();
     const isBlackTheme = theme.bgColor === '#000000';
     const isDefaultTheme = themeKey === 'default' || theme.name?.includes('الافتراضي') || (!themeKey && theme.palette[0] === '#10b981');
 
     return (
      <section id="hajj-screen" className="space-y-4">
-        <div className="rounded-xl p-3 text-center border backdrop-blur-sm"
-             style={{ backgroundColor: isDefaultTheme ? 'rgba(0,0,0,0.05)' : `${theme.palette[0]}15`, borderColor: isDefaultTheme ? '#00000020' : `${theme.palette[0]}20` }}>
+        <div className="rounded-xl p-3 text-center backdrop-blur-sm"
+             style={{ backgroundColor: isDefaultTheme ? 'rgba(0,0,0,0.05)' : `${theme.palette[0]}15`, borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
             <p className="text-sm opacity-70">المخطط الزمني للأيام المخصصة لأداء المناسك.</p>
         </div>
 
         <div className="grid grid-cols-3 gap-2">
             {Object.keys(hajjTypes).map(key => (
                 <button key={key} onClick={() => setHajjType(key)} 
-                    className={`px-2 py-2 rounded-lg font-bold transition-all border text-xs ${hajjType === key ? 'shadow-md' : 'bg-white/10 text-gray-400 border-white/20'}`}
+                    className={`px-2 py-2 rounded-lg font-bold transition-all text-xs ${hajjType === key ? 'shadow-md' : 'bg-white/10 text-gray-400'}`}
                     style={{ 
                         backgroundColor: hajjType === key ? (isBlackTheme ? '#FFFFFF' : (isDefaultTheme ? '#000000' : theme.palette[0])) : 'transparent',
-                        borderColor: hajjType === key ? (isBlackTheme ? '#FFFFFF' : (isDefaultTheme ? '#000000' : theme.palette[0])) : 'var(--white-20)',
+                        borderColor: hajjType === key ? (isBlackTheme ? '#FFFFFF' : (isDefaultTheme ? '#000000' : theme.palette[0])) : cardBorderColor,
+                        borderWidth: '1.5px',
+                        borderStyle: 'solid',
                         color: hajjType === key ? (isBlackTheme ? '#000000' : '#FFFFFF') : 'var(--text-color)', 
-                        opacity: hajjType === key ? 1 : 0.6 
+                        opacity: hajjType === key ? 1 : 0.7 
                     }}
                 >
                     {hajjTypes[key].name}
@@ -649,7 +661,7 @@ const HajjScreen = ({ hajjType, setHajjType, theme, onSelectDetail }) => {
                 { title: 'الواجبات', items: hajjGeneralInfo.wajibat, color: isDefaultTheme ? '#000000' : theme.palette[0], icon: <ListChecks size={14}/> },
                 { title: 'المفسدات', items: hajjGeneralInfo.mufsidat, color: isDefaultTheme ? '#000000' : '#f97316', icon: <ShieldAlert size={14}/> }
             ].map((section, idx) => (
-                <div key={idx} className="themed-card backdrop-blur-md rounded-xl p-3">
+                <div key={idx} className="themed-card backdrop-blur-md rounded-xl p-3" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                     <h3 className="font-bold text-xs mb-1.5 flex items-center gap-2" style={{ color: section.color }}>
                         {section.icon} {section.title}
                     </h3>
@@ -672,6 +684,7 @@ const HajjScreen = ({ hajjType, setHajjType, theme, onSelectDetail }) => {
                         key={i} 
                         onClick={() => onSelectDetail({ title: day.day, points: day.actions, icon: <div className="text-2xl">{day.icon}</div> })}
                         className="w-full text-right themed-card backdrop-blur-md rounded-2xl p-4 flex items-center gap-4 hover:shadow-lg transition-all active:scale-[0.982] group"
+                        style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
                     >
                         <div className="shrink-0 w-12 h-12 rounded-xl flex items-center justify-center text-2xl shadow-inner" 
                              style={{ 
@@ -694,12 +707,12 @@ const HajjScreen = ({ hajjType, setHajjType, theme, onSelectDetail }) => {
     );
 };
 
-const DuaaScreen = ({ theme, openDuaaId, onToggle, onZoom }) => {
+const DuaaScreen = ({ theme, openDuaaId, onToggle, onZoom, cardBorderColor }: { theme: any, openDuaaId: any, onToggle: any, onZoom: any, cardBorderColor?: string }) => {
     const isBlackTheme = theme.bgColor === '#000000';
     return (
         <section id="duaa-screen" className="space-y-4">
-             <div className="rounded-xl p-3 text-center mb-3 border backdrop-blur-sm"
-                  style={{ backgroundColor: isBlackTheme ? 'rgba(255,255,255,0.05)' : `${theme.palette[0]}15`, borderColor: isBlackTheme ? 'rgba(255,255,255,0.1)' : `${theme.palette[0]}20` }}>
+             <div className="rounded-xl p-3 text-center mb-3 backdrop-blur-sm"
+                  style={{ backgroundColor: isBlackTheme ? 'rgba(255,255,255,0.05)' : `${theme.palette[0]}15`, borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                 <div className="w-10 h-10 mx-auto rounded-full flex items-center justify-center mb-1.5" style={{ backgroundColor: isBlackTheme ? '#FFFFFF' : `${theme.palette[0]}20` }}>
                     <BookOpen className="w-5 h-5" style={{ color: isBlackTheme ? '#000000' : theme.palette[0] }} />
                 </div>
@@ -716,6 +729,7 @@ const DuaaScreen = ({ theme, openDuaaId, onToggle, onZoom }) => {
                         isOpen={openDuaaId === section.id}
                         onToggle={() => onToggle(section.id)}
                         onZoom={onZoom}
+                        cardBorderColor={cardBorderColor}
                     />
                 ))}
             </div>

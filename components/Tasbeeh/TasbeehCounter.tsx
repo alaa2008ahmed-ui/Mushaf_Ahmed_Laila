@@ -14,9 +14,13 @@ interface TasbeehCounterProps {
     skin?: string;
     isDefaultTheme?: boolean;
     theme?: any;
+    cardBorderColor?: string;
 }
 
-const TasbeehCounter: React.FC<TasbeehCounterProps> = ({ isCountingStopped, target, secondaryTextColor, primaryTextColor, counterColor, count, handleIncrement, isBlackAndWhite, skin = 'modern', isDefaultTheme, theme }) => {
+const TasbeehCounter: React.FC<TasbeehCounterProps> = ({ isCountingStopped, target, secondaryTextColor, primaryTextColor, counterColor, count, handleIncrement, isBlackAndWhite, skin = 'modern', isDefaultTheme, theme, cardBorderColor }) => {
+    const isBlackTheme = theme?.bgColor === '#000000';
+    const activeCardBorderColor = cardBorderColor || (isDefaultTheme ? '#000000' : (isBlackTheme ? '#FFFFFF' : (theme?.palette?.[0] || '#000000')));
+
     // Calculate progress percentage
     const progress = target > 0 ? Math.min((count / target) * 100, 100) : 0;
     const strokeDasharray = 283; // 2 * pi * r (approx 45)
@@ -153,7 +157,8 @@ const TasbeehCounter: React.FC<TasbeehCounterProps> = ({ isCountingStopped, targ
             <motion.div 
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="text-center px-6 py-3 rounded-2xl themed-card w-full max-w-xs shadow-sm border border-black/5"
+                className="text-center px-6 py-3 rounded-2xl themed-card w-full max-w-xs shadow-sm transition-all"
+                style={{ borderColor: activeCardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
             >
                 <span className="block text-sm font-bold mb-1" style={{color: secondaryTextColor}}>{isCountingStopped && target > 0 ? 'تم الوصول للهدف! 🎉' : 'الهدف:'}</span>
                 <span className="text-3xl font-extrabold font-amiri" style={{color: primaryTextColor}}>{toArabicNumerals(target > 0 ? target : 'مفتوح')}</span>

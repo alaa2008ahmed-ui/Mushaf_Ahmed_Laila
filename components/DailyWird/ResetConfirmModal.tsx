@@ -12,7 +12,13 @@ interface ResetConfirmModalProps {
 
 const ResetConfirmModal: React.FC<ResetConfirmModalProps> = ({ isOpen, onClose, onConfirm }) => {
     const { theme, themeKey } = useTheme();
-    const isDefaultTheme = themeKey === 'default';
+    const isBlackTheme = theme.bgColor === '#000000' || theme.name === 'أبيض وأسود' || themeKey === 'deep_black';
+    const isDefaultTheme = themeKey === 'default' || theme.name?.includes('الافتراضي') || (!themeKey);
+    const cardBorderColor = isDefaultTheme 
+        ? '#000000' 
+        : (isBlackTheme 
+            ? '#FFFFFF' 
+            : (theme.palette?.[0] || '#000000'));
 
     const isGlass = theme.isGlass;
     const isGolden = theme.name.includes('ذهب') || theme.name.includes('Golden');
@@ -47,7 +53,9 @@ const ResetConfirmModal: React.FC<ResetConfirmModalProps> = ({ isOpen, onClose, 
                         className="relative w-full max-w-sm rounded-[32px] p-8 shadow-2xl border overflow-hidden"
                         style={{ 
                             backgroundColor: modalBg, 
-                            borderColor: isDefaultTheme ? '#f3f4f6' : (theme.cardBorder || theme.palette[0]),
+                            borderColor: cardBorderColor,
+                            borderWidth: '1.5px',
+                            borderStyle: 'solid',
                             fontFamily: theme.font,
                             color: modalTextColor
                         }}
@@ -64,8 +72,8 @@ const ResetConfirmModal: React.FC<ResetConfirmModalProps> = ({ isOpen, onClose, 
 
                             <h3 className="text-2xl font-black mb-3 text-black">إعادة تعيين الختمة</h3>
                             
-                            <div className="flex items-center gap-2 mb-4 px-4 py-1.5 rounded-md text-xs font-bold" 
-                                 style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#ef4444' }}>
+                            <div className="flex items-center gap-2 mb-4 px-4 py-1.5 rounded-md text-xs font-bold border" 
+                                 style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', borderColor: cardBorderColor, borderWidth: '1px', borderStyle: 'solid' }}>
                                 <AlertTriangle size={14} />
                                 <span>إجراء لا يمكن التراجع عنه</span>
                             </div>
@@ -77,10 +85,13 @@ const ResetConfirmModal: React.FC<ResetConfirmModalProps> = ({ isOpen, onClose, 
                             <div className="flex w-full gap-4">
                                 <button 
                                     onClick={onConfirm} 
-                                    className="flex-1 py-4 rounded-2xl font-bold transition-all active:scale-95 shadow-lg flex items-center justify-center gap-2"
+                                    className="flex-1 py-4 rounded-2xl font-bold transition-all active:scale-95 shadow-lg flex items-center justify-center gap-2 border"
                                     style={{
                                         backgroundColor: isDefaultTheme ? '#10b981' : (theme.palette[0] || '#ef4444'),
                                         color: theme.name === 'اسود' ? '#000000' : '#ffffff',
+                                        borderColor: cardBorderColor,
+                                        borderWidth: '1.5px',
+                                        borderStyle: 'solid',
                                         boxShadow: isDefaultTheme ? '0 10px 15px -3px rgba(16, 185, 129, 0.3)' : `0 8px 20px -6px ${theme.palette[0]}60`
                                     }}
                                 >
@@ -89,11 +100,13 @@ const ResetConfirmModal: React.FC<ResetConfirmModalProps> = ({ isOpen, onClose, 
                                 </button>
                                 <button 
                                     onClick={onClose} 
-                                    className="flex-1 py-4 rounded-2xl font-bold transition-all active:scale-95 flex items-center justify-center gap-2"
+                                    className="flex-1 py-4 rounded-2xl font-bold transition-all active:scale-95 flex items-center justify-center gap-2 border"
                                     style={{
                                         backgroundColor: isDefaultTheme ? '#f3f4f6' : (theme.isGlass ? 'rgba(255, 255, 255, 0.1)' : (theme.isOriginal ? '#f3f4f6' : 'rgba(255, 255, 255, 0.05)')),
                                         color: isDefaultTheme ? '#000000' : modalTextColor,
-                                        border: isDefaultTheme ? 'none' : `1px solid ${theme.isGlass ? 'rgba(255, 255, 255, 0.2)' : (theme.cardBorder || '#d1d5db')}`
+                                        borderColor: cardBorderColor,
+                                        borderWidth: '1.5px',
+                                        borderStyle: 'solid'
                                     }}
                                 >
                                     <X size={20} />

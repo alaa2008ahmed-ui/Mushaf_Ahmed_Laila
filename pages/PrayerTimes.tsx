@@ -31,18 +31,50 @@ function PrayerTimes({ onBack, onNavigate }) {
         isPrayerSilentActive, activeSilentPrayerName
     } = usePrayerTimes();
 
-    const isDefaultTheme = themeKey === 'default';
+    const isDefaultTheme = themeKey === 'default' || !themeKey || theme.name?.includes('الافتراضي') || theme.name === 'Default';
     const isBlackAndWhite = themeKey === 'deep_black';
-    const isBlackTheme = theme.bgColor === '#000000';
+    const isBlackTheme = theme.bgColor === '#000000' || theme.name === 'أبيض وأسود' || themeKey === 'deep_black';
     const primaryColor = isBlackTheme ? '#FFFFFF' : (isDefaultTheme ? '#000000' : (isBlackAndWhite ? '#FFFFFF' : theme.palette[0]));
     const secondaryColor = isBlackTheme ? '#FFFFFF' : (isDefaultTheme ? '#000000' : (isBlackAndWhite ? '#FFFFFF' : theme.palette[1]));
     const topBarTextColor = isBlackTheme ? '#FFFFFF' : (isDefaultTheme ? '#000000' : (theme.topBarText || (isBlackAndWhite ? '#FFFFFF' : theme.palette[0])));
+
+    const cardBorderColor = isDefaultTheme 
+      ? '#000000' 
+      : (isBlackTheme 
+          ? '#FFFFFF' 
+          : (theme.palette?.[0] || theme.accent || '#000000'));
+
+    const getNextPrayerBorderColor = () => {
+        if (isDefaultTheme) {
+            return '#059669'; // زمردي إسلامي مميز يختلف دائماً عن الأسود
+        }
+        if (isBlackTheme || isBlackAndWhite) {
+            return '#10b981'; // زمردي مضيء يختلف دائماً عن الأبيض
+        }
+        const pal0 = (theme.palette?.[0] || '').toLowerCase();
+        const isGreenTheme = pal0.includes('059669') || pal0.includes('10b981') || pal0.includes('16a34a') || pal0.includes('22c55e') || theme.name?.includes('أخضر') || theme.name?.includes('زيتوني') || theme.name?.includes('الروضة');
+        if (isGreenTheme) {
+            return '#d97706'; // عنبري ذهبي مختلف تماماً عن الأخضر
+        }
+        const isWarmTheme = pal0.includes('d97706') || pal0.includes('f59e0b') || pal0.includes('eab308') || theme.name?.includes('ذهبي') || theme.name?.includes('برتقالي') || theme.name?.includes('غروب');
+        if (isWarmTheme) {
+            return '#059669'; // زمردي مختلف تماماً عن الذهبي والبرتقالي
+        }
+        return '#059669'; // زمردي مميز وفاخر لسائر الثيمات الملونة
+    };
+
+    const nextPrayerBorderColor = getNextPrayerBorderColor();
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isNotifModalOpen, setIsNotifModalOpen] = useState(false);
     const [currentEditingKey, setCurrentEditingKey] = useState(null);
     const [tempOffset, setTempOffset] = useState(0);
     const [tempIqama, setTempIqama] = useState(0);
+    const [tempIqamaEnabled, setTempIqamaEnabled] = useState(false);
+    const [tempPreReminderEnabled, setTempPreReminderEnabled] = useState(false);
+    const [tempPreReminderMinutes, setTempPreReminderMinutes] = useState(15);
+    const [tempAutoSilentEnabled, setTempAutoSilentEnabled] = useState(false);
+    const [tempAutoSilentDuration, setTempAutoSilentDuration] = useState(30);
     const [searchInput, setSearchInput] = useState("");
     const searchIconRef = useRef(null);
     const [toastMessage, setToastMessage] = useState('');
@@ -151,6 +183,36 @@ function PrayerTimes({ onBack, onNavigate }) {
         setCurrentEditingKey(key);
         setTempOffset(config.prayerOffsets[key] || 0);
         setTempIqama(config.iqamaOffsets[key] || 0);
+        
+        // Load per-prayer or global defaults for Iqama
+        const prayerIqama = config.prayerIqamaReminders?.[key];
+        if (prayerIqama) {
+            setTempIqamaEnabled(!!prayerIqama.enabled);
+            setTempIqama(prayerIqama.minutes ?? config.iqamaOffsets[key] ?? 15);
+        } else {
+            setTempIqamaEnabled(!!config.iqamaReminder?.enabled);
+            setTempIqama(config.iqamaOffsets[key] || 15);
+        }
+
+        // Load per-prayer or global defaults for Pre-Reminder
+        const prayerPre = config.prayerPreReminders?.[key];
+        if (prayerPre) {
+            setTempPreReminderEnabled(!!prayerPre.enabled);
+            setTempPreReminderMinutes(prayerPre.minutes || 15);
+        } else {
+            setTempPreReminderEnabled(!!config.preAthanReminder?.enabled);
+            setTempPreReminderMinutes(config.preAthanReminder?.minutes || 15);
+        }
+
+        const prayerSilent = config.prayerAutoSilent?.[key];
+        if (prayerSilent) {
+            setTempAutoSilentEnabled(prayerSilent.enabled);
+            setTempAutoSilentDuration(prayerSilent.duration || 30);
+        } else {
+            setTempAutoSilentEnabled(!!config.autoSilent);
+            setTempAutoSilentDuration(config.autoSilentDuration || 30);
+        }
+
         setIsModalOpen(true);
     };
 
@@ -158,7 +220,28 @@ function PrayerTimes({ onBack, onNavigate }) {
         stopNotificationSound(); // Stop audio preview on save
         updateConfig({
             prayerOffsets: { ...config.prayerOffsets, [currentEditingKey]: tempOffset },
-            iqamaOffsets: { ...config.iqamaOffsets, [currentEditingKey]: tempIqama }
+            iqamaOffsets: { ...config.iqamaOffsets, [currentEditingKey]: tempIqama },
+            prayerIqamaReminders: {
+                ...(config.prayerIqamaReminders || {}),
+                [currentEditingKey]: {
+                    enabled: tempIqamaEnabled,
+                    minutes: tempIqama
+                }
+            },
+            prayerPreReminders: {
+                ...(config.prayerPreReminders || {}),
+                [currentEditingKey]: {
+                    enabled: tempPreReminderEnabled,
+                    minutes: tempPreReminderMinutes
+                }
+            },
+            prayerAutoSilent: {
+                ...(config.prayerAutoSilent || {}),
+                [currentEditingKey]: {
+                    enabled: tempAutoSilentEnabled,
+                    duration: tempAutoSilentDuration
+                }
+            }
         });
         setIsModalOpen(false);
     };
@@ -246,7 +329,13 @@ function PrayerTimes({ onBack, onNavigate }) {
 
             <main className="flex-1 overflow-y-auto hide-scrollbar px-2 pb-1">
                 <div className="max-w-md mx-auto flex flex-col h-full">
-                    <div className={`themed-card ${isDefaultTheme ? 'bg-white border-gray-200' : 'bg-black/5 dark:bg-white/5 border-black/5 dark:border-white/5'} border rounded-xl p-2 mb-1.5 shadow-sm`}>
+                    <div 
+                        className={`themed-card ${isDefaultTheme ? 'bg-white' : 'bg-black/5 dark:bg-white/5'} rounded-xl p-2 mb-1.5 shadow-sm`}
+                        style={{
+                            border: `1.5px solid ${cardBorderColor}`,
+                            backgroundColor: isDefaultTheme ? '#FFFFFF' : undefined
+                        }}
+                    >
                         <div className="flex gap-2 mb-1.5">
                             <button
                                 onClick={() => {
@@ -259,7 +348,11 @@ function PrayerTimes({ onBack, onNavigate }) {
                                     window.open(url, '_blank');
                                 }}
                                 className={`${isDefaultTheme ? 'bg-white' : 'themed-card'} flex-1 rounded-xl p-3 flex items-center justify-center gap-1.5 shadow-sm font-bold text-[13px] active:scale-95 transition-all hover:bg-black/5 dark:hover:bg-white/5`}
-                                style={{ color: primaryColor, border: isDefaultTheme ? '1px solid #f3f4f6' : undefined }}
+                                style={{ 
+                                    color: primaryColor, 
+                                    border: `1.5px solid ${cardBorderColor}`,
+                                    backgroundColor: isDefaultTheme ? '#FFFFFF' : undefined 
+                                }}
                             >
                                 <MapPin size={18} className="shrink-0" />
                                 <span className="truncate whitespace-nowrap">البحث عن المساجد</span>
@@ -268,7 +361,11 @@ function PrayerTimes({ onBack, onNavigate }) {
                                 onClick={() => onNavigate('monthly-prayer-times')}
                                 id="monthly-times-btn"
                                 className={`${isDefaultTheme ? 'bg-white' : 'themed-card'} flex-1 rounded-xl p-3 flex items-center justify-center gap-1.5 shadow-sm font-bold text-[13px] active:scale-95 transition-all hover:bg-black/5 dark:hover:bg-white/5`}
-                                style={{ color: secondaryColor, border: isDefaultTheme ? '1px solid #f3f4f6' : undefined }}
+                                style={{ 
+                                    color: secondaryColor, 
+                                    border: `1.5px solid ${cardBorderColor}`,
+                                    backgroundColor: isDefaultTheme ? '#FFFFFF' : undefined 
+                                }}
                             >
                                 <Calendar size={18} className="shrink-0" />
                                 <span className="truncate whitespace-nowrap">المواقيت الشهرية</span>
@@ -282,6 +379,8 @@ function PrayerTimes({ onBack, onNavigate }) {
                             searchIconRef={searchIconRef}
                             primaryColor={primaryColor}
                             secondaryColor={secondaryColor}
+                            cardBorderColor={cardBorderColor}
+                            isDefaultTheme={isDefaultTheme}
                         />
                     </div>
                     
@@ -320,6 +419,8 @@ function PrayerTimes({ onBack, onNavigate }) {
                                 isBlackTheme={isBlackTheme}
                                 themePalette0={theme.palette[0]}
                                 themePalette1={theme.palette[1]}
+                                cardBorderColor={cardBorderColor}
+                                nextPrayerBorderColor={nextPrayerBorderColor}
                                 formatTime12={formatTime12}
                                 applyOffset={applyOffset}
                                 prayerOffset={nextPrayer ? (config.prayerOffsets[nextPrayer.key] || 0) + (isSummerTimeActive ? 60 : 0) : 0}
@@ -372,13 +473,15 @@ function PrayerTimes({ onBack, onNavigate }) {
                                         isDefaultTheme={isDefaultTheme}
                                         isBlackTheme={isBlackTheme}
                                         themePalette1={theme.palette[1]}
-                                    togglePrayerSound={togglePrayerSound}
-                                    openSettings={openSettings}
-                                    formatTime12={formatTime12}
-                                    formatTime12_clean={formatTime12_clean}
-                                    isSummerTime={isSummerTimeActive}
-                                    toggleSummerTime={toggleSummerTime}
-                                    supportsDST={supportsDST}
+                                        cardBorderColor={cardBorderColor}
+                                        nextPrayerBorderColor={nextPrayerBorderColor}
+                                        togglePrayerSound={togglePrayerSound}
+                                        openSettings={openSettings}
+                                        formatTime12={formatTime12}
+                                        formatTime12_clean={formatTime12_clean}
+                                        isSummerTime={isSummerTimeActive}
+                                        toggleSummerTime={toggleSummerTime}
+                                        supportsDST={supportsDST}
                                 />
                             )
                         })}
@@ -398,11 +501,15 @@ function PrayerTimes({ onBack, onNavigate }) {
                 primaryColor={primaryColor}
                 secondaryColor={secondaryColor}
                 isBlackAndWhite={isBlackAndWhite}
+                cardBorderColor={cardBorderColor}
+                isDefaultTheme={isDefaultTheme}
                 closeModal={closeModal}
                 tempOffset={tempOffset}
                 setTempOffset={setTempOffset}
                 tempIqama={tempIqama}
                 setTempIqama={setTempIqama}
+                tempIqamaEnabled={tempIqamaEnabled}
+                setTempIqamaEnabled={setTempIqamaEnabled}
                 times={times}
                 formatTime12_EN={formatTime12_EN}
                 applyOffset={applyOffset}
@@ -412,6 +519,18 @@ function PrayerTimes({ onBack, onNavigate }) {
                 handleToneUpload={handleToneUpload}
                 saveUserConfig={saveUserConfig}
                 isSummerTime={isSummerTimeActive}
+                isGlobalPreReminderActive={config.preAthanReminder?.enabled !== false}
+                globalPreReminderMinutes={config.preAthanReminder?.minutes || 15}
+                tempPreReminderEnabled={tempPreReminderEnabled}
+                setTempPreReminderEnabled={setTempPreReminderEnabled}
+                tempPreReminderMinutes={tempPreReminderMinutes}
+                setTempPreReminderMinutes={setTempPreReminderMinutes}
+                isGlobalAutoSilentActive={!!config.autoSilent}
+                globalAutoSilentDuration={config.autoSilentDuration || 30}
+                tempAutoSilentEnabled={tempAutoSilentEnabled}
+                setTempAutoSilentEnabled={setTempAutoSilentEnabled}
+                tempAutoSilentDuration={tempAutoSilentDuration}
+                setTempAutoSilentDuration={setTempAutoSilentDuration}
             />
 
             {isNotifModalOpen && (

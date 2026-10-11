@@ -64,12 +64,19 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
   onCreated,
   availableUsers
 }) => {
-  const { theme } = useTheme();
-  const isBlackTheme = theme.bgColor === '#000000';
+  const { theme, themeKey } = useTheme();
+  const isDefaultTheme = themeKey === 'default' || !themeKey || theme.name?.includes('الافتراضي') || theme.name === 'Default';
+  const isDeepBlack = theme.bgColor === '#000000' || theme.name === 'أبيض وأسود' || themeKey === 'deep_black';
+  const cardBorderColor = isDefaultTheme 
+    ? '#000000' 
+    : (isDeepBlack 
+        ? '#FFFFFF' 
+        : (theme.palette?.[0] || theme.accent || '#000000'));
+  const isBlackTheme = isDeepBlack;
   const primaryColor = isBlackTheme ? '#FFFFFF' : (theme.palette?.[0] || '#10b981');
   const primaryTextColor = isBlackTheme ? '#000000' : (theme.btnText || '#FFFFFF');
   const cardBg = isBlackTheme ? '#111111' : (theme.cardBg || (theme.isDark ? '#1e293b' : '#ffffff'));
-  const cardBorder = isBlackTheme ? '#333333' : (theme.cardBorder || (theme.isDark ? '#334155' : '#e2e8f0'));
+  const cardBorder = cardBorderColor;
   const secondaryBg = isBlackTheme ? '#1a1a1a' : (theme.isDark ? '#0f172a' : '#f8fafc');
   const textColor = theme.textColor || (theme.isDark ? '#ffffff' : '#000000');
   const textMuted = isBlackTheme ? '#9ca3af' : (theme.isDark ? '#94a3b8' : '#64748b');
@@ -193,6 +200,8 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
           style={{
             backgroundColor: cardBg,
             borderColor: cardBorder,
+            borderWidth: '1.5px',
+            borderStyle: 'solid',
             color: textColor
           }}
         >

@@ -13,8 +13,15 @@ const Tooltip = ({ text }: { text: string }) => (
     </div>
 );
 
-const MawarithCalculator: React.FC = () => {
-    const { theme } = useTheme();
+const MawarithCalculator: React.FC<{ cardBorderColor?: string }> = ({ cardBorderColor: propCardBorderColor }) => {
+    const { theme, themeKey } = useTheme();
+    const isBlackTheme = theme.bgColor === '#000000' || theme.name === 'أبيض وأسود';
+    const isDefaultTheme = themeKey === 'default' || !themeKey;
+    const cardBorderColor = propCardBorderColor || (isDefaultTheme 
+        ? '#000000' 
+        : (isBlackTheme 
+            ? '#FFFFFF' 
+            : (theme.palette?.[0] || '#000000')));
     
     const [estateValue, setEstateValue] = useState('');
     const [spouseType, setSpouseType] = useState<'none' | 'husband' | 'wife'>('none');
@@ -164,7 +171,7 @@ const MawarithCalculator: React.FC = () => {
             </div>
 
             {/* Estate Value */}
-            <div className="themed-card p-4 rounded-xl border-l-4 border-primary">
+            <div className="themed-card p-4 rounded-xl" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                 <label className="flex items-center text-sm font-bold mb-2 opacity-80" style={{ color: theme.textColor }}>
                     قيمة التركة الإجمالية <Tooltip text="المبلغ المتبقي بعد تجهيز الميت وسداد ديونه وتنفيذ وصاياه" />
                 </label>
@@ -174,7 +181,7 @@ const MawarithCalculator: React.FC = () => {
             {/* Relatives Inputs */}
             <div className="space-y-4">
                 {/* Parents */}
-                <div className="themed-card p-4 rounded-xl">
+                <div className="themed-card p-4 rounded-xl" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                     <h3 className="font-bold mb-3 text-sm opacity-80" style={{ color: theme.textColor }}>الأصول (الآباء والأجداد)</h3>
                     <div className="grid grid-cols-2 gap-3">
                         {renderCheckbox('الأب', hasFather, setHasFather, 'يحجب الأجداد والإخوة')}
@@ -186,7 +193,7 @@ const MawarithCalculator: React.FC = () => {
                 </div>
 
                 {/* Spouses */}
-                <div className="themed-card p-4 rounded-xl">
+                <div className="themed-card p-4 rounded-xl" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                     <h3 className="font-bold mb-3 text-sm opacity-80" style={{ color: theme.textColor }}>الزوج والزوجة</h3>
                     <div className="flex flex-wrap gap-3">
                         <label className="flex items-center gap-2 cursor-pointer p-2.5 px-4 rounded-lg border text-sm transition-all" style={{ ...inputStyle, borderColor: spouseType === 'none' ? 'var(--color-primary)' : inputStyle.borderColor, backgroundColor: spouseType === 'none' ? 'rgba(16, 185, 129, 0.1)' : inputStyle.backgroundColor }}>
@@ -211,7 +218,7 @@ const MawarithCalculator: React.FC = () => {
                 </div>
 
                 {/* Descendants */}
-                <div className="themed-card p-4 rounded-xl">
+                <div className="themed-card p-4 rounded-xl" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                     <h3 className="font-bold mb-3 text-sm opacity-80" style={{ color: theme.textColor }}>الفروع (الأبناء وبناتهم)</h3>
                     <div className="grid grid-cols-2 gap-3 mb-3">
                         {renderNumberInput('الأبناء (ذكور)', sonsCount, setSonsCount)}
@@ -227,7 +234,7 @@ const MawarithCalculator: React.FC = () => {
 
                 {/* Siblings */}
                 {(showFullSiblings || showPaternalSiblings || showMaternalSiblings) && (
-                    <div className="themed-card p-4 rounded-xl">
+                    <div className="themed-card p-4 rounded-xl" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                         <h3 className="font-bold mb-3 text-sm opacity-80" style={{ color: theme.textColor }}>الحواشي (الإخوة والأخوات)</h3>
                         <div className="space-y-3">
                             {showFullSiblings && (
@@ -253,7 +260,7 @@ const MawarithCalculator: React.FC = () => {
 
                 {/* Extended Heirs */}
                 {(showFullNephews || showPaternalNephews || showFullUncles || showPaternalUncles || showFullCousins || showPaternalCousins) && (
-                    <div className="themed-card p-4 rounded-xl">
+                    <div className="themed-card p-4 rounded-xl" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                         <h3 className="font-bold mb-3 text-sm opacity-80" style={{ color: theme.textColor }}>العصبات الأخرى (أبناء الإخوة والأعمام)</h3>
                         <div className="grid grid-cols-2 gap-3">
                             {showFullNephews && renderNumberInput('أبناء الأخ الشقيق (ذكور)', fullNephewsCount, setFullNephewsCount)}
@@ -269,7 +276,7 @@ const MawarithCalculator: React.FC = () => {
 
             {/* Results */}
             {mawarithResults.length > 0 && (
-                <div className="themed-card p-5 rounded-2xl border-t-4 border-primary shadow-lg animate-fade-in">
+                <div className="themed-card p-5 rounded-2xl shadow-lg animate-fade-in" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                     <h3 className="text-lg font-bold mb-4 flex items-center justify-between" style={{ color: theme.textColor }}>
                         <span>جدول توزيع الميراث</span>
                         <span className="text-xs px-2.5 py-1 rounded-full bg-primary/10 text-primary font-normal">

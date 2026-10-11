@@ -29,7 +29,7 @@ const PrayerTimesHeader: React.FC<PrayerTimesHeaderProps> = ({
                         {cityGov}
                     </h1>
                     <div className="absolute right-0 flex items-center gap-1">
-                         <i onClick={onOpenNotifications} className="text-xl cursor-pointer fa-solid fa-bell p-2 opacity-80 hover:opacity-100"></i>
+                         <i onClick={onOpenNotifications} className="text-xl cursor-pointer fa-solid fa-gear p-2 opacity-80 hover:opacity-100" title="الإعدادات"></i>
                          <i id="location-refresh-btn" onClick={handleRefreshLocation} className="text-xl cursor-pointer active:rotate-180 duration-700 fa-solid fa-location-crosshairs p-2 opacity-80 hover:opacity-100"></i>
                     </div>
                 </div>

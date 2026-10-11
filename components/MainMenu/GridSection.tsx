@@ -150,17 +150,17 @@ const GridSection: React.FC<GridSectionProps> = ({
 
     // Dynamic colors for community and ahl-al-quran icons based on current theme
     const communityBg = isBlackTheme 
-        ? '#000000' 
+        ? '#374151' 
         : (theme.isGlass 
-            ? 'rgba(255, 255, 255, 0.25)' 
+            ? `${theme.palette[1] || '#8B5CF6'}55` 
             : (themeKey === 'default' 
                 ? '#8B5CF6' 
                 : (theme.palette[1] || theme.palette[0] || '#8B5CF6')));
 
     const ahlQuranBg = isBlackTheme 
-        ? '#000000' 
+        ? '#374151' 
         : (theme.isGlass 
-            ? 'rgba(255, 255, 255, 0.25)' 
+            ? `${theme.palette[1] || '#8B5CF6'}55` 
             : (themeKey === 'default' 
                 ? '#8B5CF6' 
                 : (theme.palette[1] || theme.palette[0] || '#8B5CF6')));
@@ -180,15 +180,13 @@ const GridSection: React.FC<GridSectionProps> = ({
             {menuItems.map(item => {
                 const isVisible = visibleItems.includes(item.id);
                 const isGreen = GREEN_ITEMS.includes(item.id);
-                const buttonColor = isBlackTheme 
-                    ? '#000000' 
-                    : (themeKey === 'olive_grove' 
-                        ? (isGreen ? '#4D7C0F' : '#65A30D') 
-                        : (themeKey === 'default'
-                            ? (isGreen ? '#059669' : '#8B5CF6')
-                            : (isGreen ? theme.palette[0] : (theme.palette[1] || theme.palette[0] || '#8B5CF6'))));
-                const textColor = isBlackTheme ? '#FFFFFF' : theme.btnText;
-                const buttonBorder = isBlackTheme ? '1px solid #333333' : theme.btnBorder;
+                const buttonColor = themeKey === 'default'
+                    ? (isGreen ? '#059669' : '#8B5CF6')
+                    : (isBlackTheme 
+                        ? (isGreen ? (theme.palette[0] || '#1E293B') : (theme.palette[1] || '#374151'))
+                        : (isGreen ? theme.palette[0] : (theme.palette[1] || theme.palette[0] || '#8B5CF6')));
+                const textColor = isBlackTheme ? '#FFFFFF' : (theme.btnText || '#FFFFFF');
+                const buttonBorder = isBlackTheme ? '1px solid rgba(255, 255, 255, 0.2)' : theme.btnBorder;
 
                 return (
                     <motion.div
