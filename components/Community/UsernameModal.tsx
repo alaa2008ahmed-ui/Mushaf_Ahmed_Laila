@@ -10,6 +10,7 @@ import { communityService, CommunityUser } from '../../services/communityService
 import { registerBackInterceptor } from '../../hooks/useBackButton';
 import { AvatarCropperModal } from './AvatarCropperModal';
 import BottomBar from '../BottomBar';
+import { useTheme } from '../../context/ThemeContext';
 
 interface UsernameModalProps {
   isOpen: boolean;
@@ -154,6 +155,25 @@ const UsernameModal: React.FC<UsernameModalProps> = ({
   onSaved, 
   onBackToApps 
 }) => {
+  const { theme, themeKey } = useTheme();
+  const isDefaultTheme = themeKey === 'default' || !themeKey || theme.name?.includes('الافتراضي') || theme.name === 'Default';
+  const isDeepBlack = theme.bgColor === '#000000' || theme.name === 'أبيض وأسود' || themeKey === 'deep_black';
+  const cardBorderColor = isDefaultTheme 
+    ? '#000000' 
+    : (isDeepBlack 
+        ? '#FFFFFF' 
+        : (theme.palette?.[0] || theme.accent || '#000000'));
+  const cardBorder = cardBorderColor;
+  const isBlackTheme = isDeepBlack;
+  const primaryColor = isBlackTheme ? '#FFFFFF' : (theme.palette?.[0] || '#10b981');
+  const primaryTextColor = isBlackTheme ? '#000000' : (theme.btnText || '#FFFFFF');
+  const cardBg = isBlackTheme 
+    ? '#111111' 
+    : (theme.isGlass ? 'rgba(255, 255, 255, 0.15)' : (theme.cardBg || (theme.isDark ? '#1e293b' : '#ffffff')));
+  const secondaryBg = isBlackTheme 
+    ? '#1a1a1a' 
+    : (theme.isDark ? '#0f172a' : '#f8fafc');
+
   const [currentUser, setCurrentUser] = useState<CommunityUser>(() => communityService.getCurrentUser());
   const [activeTab, setActiveTab] = useState<'profile' | 'create_new' | 'restore'>('profile');
   
@@ -539,9 +559,12 @@ const UsernameModal: React.FC<UsernameModalProps> = ({
 
   return (
     <div 
-      className="h-screen max-h-screen h-[100dvh] w-full bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white flex flex-col overflow-y-auto overscroll-contain" 
+      className="h-screen max-h-screen h-[100dvh] w-full flex flex-col overflow-y-auto overscroll-contain transition-colors" 
       dir="rtl"
       style={{ 
+        backgroundColor: isBlackTheme ? '#000000' : (theme.bgColor || (theme.isDark ? '#020617' : '#f8fafc')),
+        color: theme.textColor || (theme.isDark || isBlackTheme ? '#ffffff' : '#0f172a'),
+        fontFamily: theme.font,
         paddingTop: 'calc(env(safe-area-inset-top, 0px) + 0.75rem)',
         paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 3.75rem + 1cm)'
       }}
@@ -550,7 +573,15 @@ const UsernameModal: React.FC<UsernameModalProps> = ({
       <div className="flex-1 w-full px-2 sm:px-3 py-3">
 
         {/* Mode Switch Tabs */}
-          <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800/90 rounded-2xl mb-4 border border-slate-200 dark:border-slate-700">
+          <div 
+            className="flex items-center gap-1 p-1 rounded-2xl mb-4"
+            style={{ 
+              backgroundColor: secondaryBg, 
+              borderColor: cardBorder, 
+              borderWidth: '1.5px', 
+              borderStyle: 'solid' 
+            }}
+          >
             {currentUser.username ? (
               <>
                 <button
@@ -560,11 +591,15 @@ const UsernameModal: React.FC<UsernameModalProps> = ({
                     setError('');
                     setSuccessMsg('');
                   }}
-                  className={`flex-1 py-2 px-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 ${
-                    activeTab === 'profile'
-                      ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                  }`}
+                  className="flex-1 py-2 px-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer"
+                  style={activeTab === 'profile' ? {
+                    backgroundColor: primaryColor,
+                    color: primaryTextColor,
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                  } : {
+                    color: theme.textColor,
+                    opacity: 0.75
+                  }}
                 >
                   <span>تعديل حسابي</span>
                 </button>
@@ -576,11 +611,15 @@ const UsernameModal: React.FC<UsernameModalProps> = ({
                     setError('');
                     setSuccessMsg('');
                   }}
-                  className={`flex-1 py-2 px-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 ${
-                    activeTab === 'create_new'
-                      ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                  }`}
+                  className="flex-1 py-2 px-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer"
+                  style={activeTab === 'create_new' ? {
+                    backgroundColor: primaryColor,
+                    color: primaryTextColor,
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                  } : {
+                    color: theme.textColor,
+                    opacity: 0.75
+                  }}
                 >
                   <span>حساب جديد</span>
                 </button>
@@ -593,11 +632,15 @@ const UsernameModal: React.FC<UsernameModalProps> = ({
                   setError('');
                   setSuccessMsg('');
                 }}
-                className={`flex-1 py-2 px-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 ${
-                  activeTab === 'create_new'
-                    ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                }`}
+                className="flex-1 py-2 px-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer"
+                style={activeTab === 'create_new' ? {
+                  backgroundColor: primaryColor,
+                  color: primaryTextColor,
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                } : {
+                  color: theme.textColor,
+                  opacity: 0.75
+                }}
               >
                 <span>إنشاء حساب جديد</span>
               </button>
@@ -610,11 +653,15 @@ const UsernameModal: React.FC<UsernameModalProps> = ({
                 setError('');
                 setSuccessMsg('');
               }}
-              className={`flex-1 py-2 px-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 ${
-                activeTab === 'restore'
-                  ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
+              className="flex-1 py-2 px-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer"
+              style={activeTab === 'restore' ? {
+                backgroundColor: primaryColor,
+                color: primaryTextColor,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+              } : {
+                color: theme.textColor,
+                opacity: 0.75
+              }}
             >
               <span>استعادة حساب</span>
             </button>
@@ -622,13 +669,19 @@ const UsernameModal: React.FC<UsernameModalProps> = ({
 
           {/* Feedback Alerts */}
           {error && (
-            <div className="mb-4 p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 rounded-xl text-rose-600 dark:text-rose-400 text-xs font-bold text-center">
+            <div 
+              className="mb-4 p-3 bg-rose-50 dark:bg-rose-950/40 rounded-xl text-rose-600 dark:text-rose-400 text-xs font-bold text-center"
+              style={{ borderColor: cardBorder, borderWidth: '1.5px', borderStyle: 'solid' }}
+            >
               {error}
             </div>
           )}
 
           {successMsg && (
-            <div className="mb-4 p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/60 rounded-xl text-emerald-600 dark:text-emerald-400 text-xs font-bold text-center flex items-center justify-center gap-1.5">
+            <div 
+              className="mb-4 p-3 bg-emerald-50 dark:bg-emerald-950/40 rounded-xl text-emerald-600 dark:text-emerald-400 text-xs font-bold text-center flex items-center justify-center gap-1.5"
+              style={{ borderColor: cardBorder, borderWidth: '1.5px', borderStyle: 'solid' }}
+            >
               <CheckCircle2 size={16} />
               <span>{successMsg}</span>
             </div>
@@ -638,14 +691,22 @@ const UsernameModal: React.FC<UsernameModalProps> = ({
           {activeTab === 'profile' && currentUser.username && (
             <div>
               {/* Account Code Showcase Card */}
-              <div className="mb-4 p-3.5 bg-gradient-to-r from-emerald-500/10 via-teal-500/5 to-emerald-500/10 border border-emerald-500/30 rounded-2xl">
+              <div 
+                className="mb-4 p-3.5 rounded-2xl shadow-xs"
+                style={{
+                  backgroundColor: cardBg,
+                  borderColor: cardBorder,
+                  borderWidth: '1.5px',
+                  borderStyle: 'solid'
+                }}
+              >
                 <div className="flex items-center justify-between gap-2">
                   <div className="min-w-0">
-                    <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400 block mb-0.5">
+                    <span className="text-[11px] font-bold block mb-0.5" style={{ color: theme.textColor, opacity: 0.8 }}>
                       كود حسابك الدائم (للدخول من أي هاتف آخر):
                     </span>
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-base sm:text-lg font-extrabold text-emerald-600 dark:text-emerald-400 tracking-wider">
+                      <span className="font-mono text-base sm:text-lg font-extrabold tracking-wider" style={{ color: primaryColor }}>
                         {currentUser.accountCode || 'MQ-XXXXX'}
                       </span>
                     </div>
@@ -653,244 +714,356 @@ const UsernameModal: React.FC<UsernameModalProps> = ({
                   <button
                     type="button"
                     onClick={handleCopyCode}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm active:scale-95 transition-all flex-shrink-0"
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold shadow-sm active:scale-95 transition-all flex-shrink-0 cursor-pointer"
+                    style={{
+                      backgroundColor: primaryColor,
+                      color: primaryTextColor
+                    }}
                   >
                     {copiedCode ? <Check size={14} /> : <Copy size={14} />}
                     <span>{copiedCode ? 'تم النسخ!' : 'نسخ الكود'}</span>
                   </button>
                 </div>
-                <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed">
+                <p className="text-[10px] mt-1.5 leading-relaxed" style={{ color: theme.textColor, opacity: 0.7 }}>
                   احفظ هذا الكود. عند فتح التطبيق من أي جهاز آخر، ادخل الكود لاستعادة اسمك ومحادثاتك فوراً.
                 </p>
               </div>
 
-              <form onSubmit={handleSaveProfile} className="space-y-3.5">
-                {/* Avatar Section */}
-                <div className="flex flex-col items-center justify-center mb-1">
-                  <div className="relative group">
-                    <div className="w-20 h-20 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold flex items-center justify-center border-2 border-emerald-500/30 overflow-hidden shadow-md">
-                      {avatarUrl ? (
-                        <img src={avatarUrl} alt="صورة الملف" className="w-full h-full object-cover" />
-                      ) : (
-                        <User size={36} />
-                      )}
+              {/* Profile Details Form Card */}
+              <div 
+                className="p-4 sm:p-5 rounded-3xl shadow-xs mb-4"
+                style={{
+                  backgroundColor: cardBg,
+                  borderColor: cardBorder,
+                  borderWidth: '1.5px',
+                  borderStyle: 'solid'
+                }}
+              >
+                <form onSubmit={handleSaveProfile} className="space-y-3.5">
+                  {/* Avatar Section */}
+                  <div 
+                    className="p-3.5 rounded-2xl flex flex-col items-center justify-center mb-1"
+                    style={{
+                      backgroundColor: secondaryBg,
+                      borderColor: cardBorder,
+                      borderWidth: '1.5px',
+                      borderStyle: 'solid'
+                    }}
+                  >
+                    <div className="relative group">
+                      <div 
+                        className="w-20 h-20 rounded-full font-bold flex items-center justify-center overflow-hidden shadow-md"
+                        style={{
+                          backgroundColor: `${primaryColor}15`,
+                          borderColor: cardBorder,
+                          borderWidth: '2px',
+                          borderStyle: 'solid',
+                          color: primaryColor
+                        }}
+                      >
+                        {avatarUrl ? (
+                          <img src={avatarUrl} alt="صورة الملف" className="w-full h-full object-cover" />
+                        ) : (
+                          <User size={36} />
+                        )}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handlePickImage(false)}
+                        className="absolute bottom-0 left-0 p-1.5 rounded-full shadow-lg transition-transform active:scale-95 cursor-pointer z-10"
+                        style={{
+                          backgroundColor: primaryColor,
+                          color: primaryTextColor
+                        }}
+                        title="رفع صورة جديدة من الهاتف"
+                      >
+                        <CameraIcon size={14} />
+                      </button>
+
+                      <input
+                        id="profile-avatar-upload"
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleFileChange(e, false)}
+                        style={{ display: 'none' }}
+                      />
                     </div>
 
                     <button
                       type="button"
                       onClick={() => handlePickImage(false)}
-                      className="absolute bottom-0 left-0 p-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full shadow-lg transition-transform active:scale-95 cursor-pointer z-10"
-                      title="رفع صورة جديدة من الهاتف"
+                      className="mt-1.5 text-[11px] font-bold hover:underline flex items-center gap-1 cursor-pointer"
+                      style={{ color: primaryColor }}
                     >
-                      <CameraIcon size={14} />
+                      <CameraIcon size={12} />
+                      <span>استيراد صورة من الهاتف</span>
                     </button>
 
+                    {avatarUrl && (
+                      <button
+                        type="button"
+                        onClick={() => setAvatarUrl(PRESET_AVATARS[0])}
+                        className="mt-1 text-[11px] text-rose-500 hover:underline flex items-center gap-1 font-medium cursor-pointer"
+                      >
+                        <span>استعادة الصورة الافتراضية</span>
+                      </button>
+                    )}
+
+                    {/* Preset Avatars */}
+                    <div className="mt-2.5 flex items-center justify-center gap-1.5">
+                      {PRESET_AVATARS.map((url, i) => (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => setAvatarUrl(url)}
+                          className="w-7 h-7 rounded-full overflow-hidden transition-all cursor-pointer"
+                          style={{
+                            borderColor: avatarUrl === url ? primaryColor : cardBorder,
+                            borderWidth: avatarUrl === url ? '2px' : '1px',
+                            borderStyle: 'solid',
+                            opacity: avatarUrl === url ? 1 : 0.75
+                          }}
+                        >
+                          <img src={url} alt={`رمز ${i}`} className="w-full h-full object-cover" />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Username */}
+                  <div>
+                    <label className="block text-xs font-bold mb-1" style={{ color: theme.textColor }}>
+                      اسم المستخدم / اللقب المبارك:
+                    </label>
                     <input
-                      id="profile-avatar-upload"
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => handleFileChange(e, false)}
-                      style={{ display: 'none' }}
+                      type="text"
+                      value={username}
+                      onChange={(e) => {
+                        setUsername(e.target.value);
+                        setError('');
+                      }}
+                      placeholder=""
+                      enterKeyHint="next"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          if (country === 'دولة أخرى / كتابة يدوية ✍️' && customCountryRef.current) {
+                            customCountryRef.current.focus();
+                          } else if (bioRef.current) {
+                            bioRef.current.focus();
+                          }
+                        }
+                      }}
+                      className="w-full px-3.5 py-2.5 rounded-xl text-sm font-medium focus:outline-none transition-all"
+                      style={{
+                        borderColor: cardBorder,
+                        borderWidth: '1.5px',
+                        borderStyle: 'solid',
+                        backgroundColor: secondaryBg,
+                        color: theme.textColor
+                      }}
                     />
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => handlePickImage(false)}
-                    className="mt-1.5 text-[11px] text-emerald-600 dark:text-emerald-400 font-bold hover:underline flex items-center gap-1 cursor-pointer"
-                  >
-                    <CameraIcon size={12} />
-                    <span>استيراد صورة من الهاتف</span>
-                  </button>
+                  {/* Country */}
+                  <div>
+                    <label className="block text-xs font-bold mb-1" style={{ color: theme.textColor }}>
+                      الدولة / البلد:
+                    </label>
+                    <select
+                      value={country}
+                      onChange={(e) => {
+                        setCountry(e.target.value);
+                        if (e.target.value !== 'دولة أخرى / كتابة يدوية ✍️') {
+                          setCustomCountry('');
+                        }
+                      }}
+                      className="w-full px-3.5 py-2.5 rounded-xl text-sm font-medium focus:outline-none transition-all"
+                      style={{
+                        borderColor: cardBorder,
+                        borderWidth: '1.5px',
+                        borderStyle: 'solid',
+                        backgroundColor: secondaryBg,
+                        color: theme.textColor
+                      }}
+                    >
+                      <option value="">-- اختر الدولة أو البلد --</option>
+                      {COUNTRIES.map((c) => (
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
+                      ))}
+                    </select>
+                    {country === 'دولة أخرى / كتابة يدوية ✍️' && (
+                      <div className="mt-2">
+                        <input
+                          ref={customCountryRef}
+                          type="text"
+                          value={customCountry}
+                          onChange={(e) => setCustomCountry(e.target.value)}
+                          placeholder=""
+                          enterKeyHint="next"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              bioRef.current?.focus();
+                            }
+                          }}
+                          className="w-full px-3.5 py-2.5 rounded-xl text-sm font-medium focus:outline-none transition-all"
+                          style={{
+                            borderColor: cardBorder,
+                            borderWidth: '1.5px',
+                            borderStyle: 'solid',
+                            backgroundColor: secondaryBg,
+                            color: theme.textColor
+                          }}
+                          autoFocus
+                        />
+                      </div>
+                    )}
+                  </div>
 
-                  {avatarUrl && (
+                  {/* Bio */}
+                  <div>
+                    <label className="block text-xs font-bold mb-1" style={{ color: theme.textColor }}>
+                      نبذة بسيطة (اختياري):
+                    </label>
+                    <input
+                      ref={bioRef}
+                      type="text"
+                      value={bio}
+                      onChange={(e) => setBio(e.target.value)}
+                      placeholder=""
+                      enterKeyHint="next"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          passcodeRef.current?.focus();
+                        }
+                      }}
+                      className="w-full px-3.5 py-2.5 rounded-xl text-xs font-medium focus:outline-none transition-all"
+                      style={{
+                        borderColor: cardBorder,
+                        borderWidth: '1.5px',
+                        borderStyle: 'solid',
+                        backgroundColor: secondaryBg,
+                        color: theme.textColor
+                      }}
+                    />
+                  </div>
+
+                  {/* Optional Passcode / PIN */}
+                  <div>
+                    <label className="block text-xs font-bold mb-1 flex items-center justify-between" style={{ color: theme.textColor }}>
+                      <span className="flex items-center gap-1">
+                        <span>رمز مرور سري لحماية الحساب (اختياري):</span>
+                      </span>
+                      <span className="text-[10px] opacity-60 font-normal">4-6 أرقام</span>
+                    </label>
+                    <input
+                      ref={passcodeRef}
+                      type="password"
+                      maxLength={8}
+                      value={passcode}
+                      onChange={(e) => setPasscode(e.target.value)}
+                      placeholder=""
+                      enterKeyHint="done"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleSaveProfile(e);
+                        }
+                      }}
+                      className="w-full px-3.5 py-2.5 rounded-xl text-xs font-medium focus:outline-none transition-all font-mono"
+                      style={{
+                        borderColor: cardBorder,
+                        borderWidth: '1.5px',
+                        borderStyle: 'solid',
+                        backgroundColor: secondaryBg,
+                        color: theme.textColor
+                      }}
+                    />
+                  </div>
+
+                  <div className="pt-2 space-y-2">
+                    <button
+                      type="submit"
+                      disabled={isSaving}
+                      className="w-full py-3 rounded-xl font-bold shadow-md active:scale-98 transition-all flex items-center justify-center gap-2 text-sm disabled:opacity-50 cursor-pointer"
+                      style={{
+                        backgroundColor: primaryColor,
+                        color: primaryTextColor
+                      }}
+                    >
+                      {isSaving ? (
+                        <>
+                          <Loader2 size={16} className="animate-spin" />
+                          <span>جارٍ الحفظ والمزامنة...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Check size={16} />
+                          <span>حفظ التعديلات والدخول للدردشة</span>
+                        </>
+                      )}
+                    </button>
+
                     <button
                       type="button"
-                      onClick={() => setAvatarUrl(PRESET_AVATARS[0])}
-                      className="mt-1 text-[11px] text-rose-500 hover:underline flex items-center gap-1 font-medium"
+                      onClick={handleSwitchAccount}
+                      className="w-full py-2 rounded-xl font-bold transition-all text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                      style={{
+                        backgroundColor: secondaryBg,
+                        borderColor: cardBorder,
+                        borderWidth: '1.5px',
+                        borderStyle: 'solid',
+                        color: theme.textColor
+                      }}
                     >
-                      <span>استعادة الصورة الافتراضية</span>
+                      <Trash2 size={13} className="text-rose-500" />
+                      <span>تسجيل الخروج وإنشاء حساب جديد</span>
                     </button>
-                  )}
-
-                  {/* Preset Avatars */}
-                  <div className="mt-2.5 flex items-center justify-center gap-1.5">
-                    {PRESET_AVATARS.map((url, i) => (
-                      <button
-                        key={i}
-                        type="button"
-                        onClick={() => setAvatarUrl(url)}
-                        className={`w-7 h-7 rounded-full overflow-hidden border transition-all ${
-                          avatarUrl === url ? 'ring-2 ring-emerald-500 border-white' : 'border-slate-300 dark:border-slate-700 opacity-80'
-                        }`}
-                      >
-                        <img src={url} alt={`رمز ${i}`} className="w-full h-full object-cover" />
-                      </button>
-                    ))}
                   </div>
-                </div>
-
-                {/* Username */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    اسم المستخدم / اللقب المبارك:
-                  </label>
-                  <input
-                    type="text"
-                    value={username}
-                    onChange={(e) => {
-                      setUsername(e.target.value);
-                      setError('');
-                    }}
-                    placeholder=""
-                    enterKeyHint="next"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        if (country === 'دولة أخرى / كتابة يدوية ✍️' && customCountryRef.current) {
-                          customCountryRef.current.focus();
-                        } else if (bioRef.current) {
-                          bioRef.current.focus();
-                        }
-                      }
-                    }}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-slate-900 dark:text-white"
-                  />
-                </div>
-
-                {/* Country */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    الدولة / البلد:
-                  </label>
-                  <select
-                    value={country}
-                    onChange={(e) => {
-                      setCountry(e.target.value);
-                      if (e.target.value !== 'دولة أخرى / كتابة يدوية ✍️') {
-                        setCustomCountry('');
-                      }
-                    }}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-slate-900 dark:text-white"
-                  >
-                    <option value="">-- اختر الدولة أو البلد --</option>
-                    {COUNTRIES.map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
-                    ))}
-                  </select>
-                  {country === 'دولة أخرى / كتابة يدوية ✍️' && (
-                    <div className="mt-2">
-                      <input
-                        ref={customCountryRef}
-                        type="text"
-                        value={customCountry}
-                        onChange={(e) => setCustomCountry(e.target.value)}
-                        placeholder=""
-                        enterKeyHint="next"
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            bioRef.current?.focus();
-                          }
-                        }}
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-emerald-500/50 dark:border-emerald-500/50 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-slate-900 dark:text-white"
-                        autoFocus
-                      />
-                    </div>
-                  )}
-                </div>
-
-                {/* Bio */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    نبذة بسيطة (اختياري):
-                  </label>
-                  <input
-                    ref={bioRef}
-                    type="text"
-                    value={bio}
-                    onChange={(e) => setBio(e.target.value)}
-                    placeholder=""
-                    enterKeyHint="next"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        passcodeRef.current?.focus();
-                      }
-                    }}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-slate-900 dark:text-white"
-                  />
-                </div>
-
-                {/* Optional Passcode / PIN */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
-                    <span className="flex items-center gap-1">
-                      <span>رمز مرور سري لحماية الحساب (اختياري):</span>
-                    </span>
-                    <span className="text-[10px] text-slate-400 font-normal">4-6 أرقام</span>
-                  </label>
-                  <input
-                    ref={passcodeRef}
-                    type="password"
-                    maxLength={8}
-                    value={passcode}
-                    onChange={(e) => setPasscode(e.target.value)}
-                    placeholder=""
-                    enterKeyHint="done"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleSaveProfile(e);
-                      }
-                    }}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-slate-900 dark:text-white font-mono"
-                  />
-                </div>
-
-                <div className="pt-2 space-y-2">
-                  <button
-                    type="submit"
-                    disabled={isSaving}
-                    className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow-md shadow-emerald-600/20 active:scale-98 transition-all flex items-center justify-center gap-2 text-sm disabled:opacity-50"
-                  >
-                    {isSaving ? (
-                      <>
-                        <Loader2 size={16} className="animate-spin" />
-                        <span>جارٍ الحفظ والمزامنة...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Check size={16} />
-                        <span>حفظ التعديلات والدخول للدردشة</span>
-                      </>
-                    )}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handleSwitchAccount}
-                    className="w-full py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl font-bold transition-all text-xs flex items-center justify-center gap-1.5"
-                  >
-                    <Trash2 size={13} className="text-rose-500" />
-                    <span>تسجيل الخروج وإنشاء حساب جديد</span>
-                  </button>
-                </div>
-              </form>
+                </form>
+              </div>
             </div>
           )}
 
           {/* TAB 2: Create Brand New Account */}
           {(activeTab === 'create_new' || (!currentUser.username && activeTab === 'profile')) && (
-            <div>
+            <div 
+              className="p-4 sm:p-5 rounded-3xl shadow-xs mb-4"
+              style={{
+                backgroundColor: cardBg,
+                borderColor: cardBorder,
+                borderWidth: '1.5px',
+                borderStyle: 'solid'
+              }}
+            >
               <form onSubmit={handleCreateNewAccount} className="space-y-3.5">
                 {/* Avatar Section */}
-                <div className="flex flex-col items-center justify-center mb-1">
+                <div 
+                  className="p-3.5 rounded-2xl flex flex-col items-center justify-center mb-1"
+                  style={{
+                    backgroundColor: secondaryBg,
+                    borderColor: cardBorder,
+                    borderWidth: '1.5px',
+                    borderStyle: 'solid'
+                  }}
+                >
                   <div className="relative group">
-                    <div className="w-20 h-20 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold flex items-center justify-center border-2 border-emerald-500/30 overflow-hidden shadow-md">
+                    <div 
+                      className="w-20 h-20 rounded-full font-bold flex items-center justify-center overflow-hidden shadow-md"
+                      style={{
+                        backgroundColor: `${primaryColor}15`,
+                        borderColor: cardBorder,
+                        borderWidth: '2px',
+                        borderStyle: 'solid',
+                        color: primaryColor
+                      }}
+                    >
                       {newAvatarUrl ? (
                         <img src={newAvatarUrl} alt="صورة الملف" className="w-full h-full object-cover" />
                       ) : (
@@ -901,7 +1074,11 @@ const UsernameModal: React.FC<UsernameModalProps> = ({
                     <button
                       type="button"
                       onClick={() => handlePickImage(true)}
-                      className="absolute bottom-0 left-0 p-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full shadow-lg transition-transform active:scale-95 cursor-pointer z-10"
+                      className="absolute bottom-0 left-0 p-1.5 rounded-full shadow-lg transition-transform active:scale-95 cursor-pointer z-10"
+                      style={{
+                        backgroundColor: primaryColor,
+                        color: primaryTextColor
+                      }}
                       title="اختيار صورة من الهاتف"
                     >
                       <CameraIcon size={14} />
@@ -920,7 +1097,8 @@ const UsernameModal: React.FC<UsernameModalProps> = ({
                   <button
                     type="button"
                     onClick={() => handlePickImage(true)}
-                    className="mt-1.5 text-[11px] text-emerald-600 dark:text-emerald-400 font-bold hover:underline flex items-center gap-1 cursor-pointer"
+                    className="mt-1.5 text-[11px] font-bold hover:underline flex items-center gap-1 cursor-pointer"
+                    style={{ color: primaryColor }}
                   >
                     <CameraIcon size={12} />
                     <span>استيراد صورة من الهاتف</span>
@@ -933,9 +1111,13 @@ const UsernameModal: React.FC<UsernameModalProps> = ({
                         key={i}
                         type="button"
                         onClick={() => setNewAvatarUrl(url)}
-                        className={`w-7 h-7 rounded-full overflow-hidden border transition-all ${
-                          newAvatarUrl === url ? 'ring-2 ring-emerald-500 border-white' : 'border-slate-300 dark:border-slate-700 opacity-80'
-                        }`}
+                        className="w-7 h-7 rounded-full overflow-hidden transition-all cursor-pointer"
+                        style={{
+                          borderColor: newAvatarUrl === url ? primaryColor : cardBorder,
+                          borderWidth: newAvatarUrl === url ? '2px' : '1px',
+                          borderStyle: 'solid',
+                          opacity: newAvatarUrl === url ? 1 : 0.75
+                        }}
                       >
                         <img src={url} alt={`رمز ${i}`} className="w-full h-full object-cover" />
                       </button>
@@ -945,7 +1127,7 @@ const UsernameModal: React.FC<UsernameModalProps> = ({
 
                 {/* Username */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  <label className="block text-xs font-bold mb-1" style={{ color: theme.textColor }}>
                     اسم المستخدم / اللقب الجديد:
                   </label>
                   <input
@@ -967,13 +1149,20 @@ const UsernameModal: React.FC<UsernameModalProps> = ({
                         }
                       }
                     }}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-slate-900 dark:text-white"
+                    className="w-full px-3.5 py-2.5 rounded-xl text-sm font-medium focus:outline-none transition-all"
+                    style={{
+                      borderColor: cardBorder,
+                      borderWidth: '1.5px',
+                      borderStyle: 'solid',
+                      backgroundColor: secondaryBg,
+                      color: theme.textColor
+                    }}
                   />
                 </div>
 
                 {/* Country */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  <label className="block text-xs font-bold mb-1" style={{ color: theme.textColor }}>
                     الدولة / البلد:
                   </label>
                   <select
@@ -984,7 +1173,14 @@ const UsernameModal: React.FC<UsernameModalProps> = ({
                         setNewCustomCountry('');
                       }
                     }}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-slate-900 dark:text-white"
+                    className="w-full px-3.5 py-2.5 rounded-xl text-sm font-medium focus:outline-none transition-all"
+                    style={{
+                      borderColor: cardBorder,
+                      borderWidth: '1.5px',
+                      borderStyle: 'solid',
+                      backgroundColor: secondaryBg,
+                      color: theme.textColor
+                    }}
                   >
                     <option value="">-- اختر الدولة أو البلد --</option>
                     {COUNTRIES.map((c) => (
@@ -1008,7 +1204,14 @@ const UsernameModal: React.FC<UsernameModalProps> = ({
                             newBioRef.current?.focus();
                           }
                         }}
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-emerald-500/50 dark:border-emerald-500/50 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-slate-900 dark:text-white"
+                        className="w-full px-3.5 py-2.5 rounded-xl text-sm font-medium focus:outline-none transition-all"
+                        style={{
+                          borderColor: cardBorder,
+                          borderWidth: '1.5px',
+                          borderStyle: 'solid',
+                          backgroundColor: secondaryBg,
+                          color: theme.textColor
+                        }}
                         autoFocus
                       />
                     </div>
@@ -1017,7 +1220,7 @@ const UsernameModal: React.FC<UsernameModalProps> = ({
 
                 {/* Bio */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  <label className="block text-xs font-bold mb-1" style={{ color: theme.textColor }}>
                     نبذة بسيطة (اختياري):
                   </label>
                   <input
@@ -1033,17 +1236,24 @@ const UsernameModal: React.FC<UsernameModalProps> = ({
                         newPasscodeRef.current?.focus();
                       }
                     }}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-slate-900 dark:text-white"
+                    className="w-full px-3.5 py-2.5 rounded-xl text-xs font-medium focus:outline-none transition-all"
+                    style={{
+                      borderColor: cardBorder,
+                      borderWidth: '1.5px',
+                      borderStyle: 'solid',
+                      backgroundColor: secondaryBg,
+                      color: theme.textColor
+                    }}
                   />
                 </div>
 
                 {/* Optional Passcode / PIN */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
+                  <label className="block text-xs font-bold mb-1 flex items-center justify-between" style={{ color: theme.textColor }}>
                     <span className="flex items-center gap-1">
                       <span>رمز مرور سري لحماية هذا الحساب (اختياري):</span>
                     </span>
-                    <span className="text-[10px] text-slate-400 font-normal">4-6 أرقام</span>
+                    <span className="text-[10px] opacity-60 font-normal">4-6 أرقام</span>
                   </label>
                   <input
                     ref={newPasscodeRef}
@@ -1059,7 +1269,14 @@ const UsernameModal: React.FC<UsernameModalProps> = ({
                         handleCreateNewAccount(e);
                       }
                     }}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-slate-900 dark:text-white font-mono"
+                    className="w-full px-3.5 py-2.5 rounded-xl text-xs font-medium focus:outline-none transition-all font-mono"
+                    style={{
+                      borderColor: cardBorder,
+                      borderWidth: '1.5px',
+                      borderStyle: 'solid',
+                      backgroundColor: secondaryBg,
+                      color: theme.textColor
+                    }}
                   />
                 </div>
 
@@ -1067,7 +1284,11 @@ const UsernameModal: React.FC<UsernameModalProps> = ({
                   <button
                     type="submit"
                     disabled={isCreatingNew}
-                    className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow-md shadow-emerald-600/20 active:scale-98 transition-all flex items-center justify-center gap-2 text-sm disabled:opacity-50"
+                    className="w-full py-3 rounded-xl font-bold shadow-md active:scale-98 transition-all flex items-center justify-center gap-2 text-sm disabled:opacity-50 cursor-pointer"
+                    style={{
+                      backgroundColor: primaryColor,
+                      color: primaryTextColor
+                    }}
                   >
                     {isCreatingNew ? (
                       <>
@@ -1086,87 +1307,127 @@ const UsernameModal: React.FC<UsernameModalProps> = ({
             </div>
           )}
 
-          {/* TAB 2: Restore Existing Account */}
+          {/* TAB 3: Restore Existing Account */}
           {activeTab === 'restore' && (
             <div className="space-y-4">
-              <div className="p-3.5 bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-2xl text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                <p className="font-bold text-slate-800 dark:text-slate-200 mb-1 flex items-center gap-1.5">
+              {/* Info Card */}
+              <div 
+                className="p-3.5 rounded-2xl text-xs leading-relaxed"
+                style={{
+                  backgroundColor: cardBg,
+                  borderColor: cardBorder,
+                  borderWidth: '1.5px',
+                  borderStyle: 'solid',
+                  color: theme.textColor
+                }}
+              >
+                <p className="font-bold mb-1 flex items-center gap-1.5" style={{ color: theme.textColor }}>
                   <span>فتح حسابك من أي جهاز أو نسخة أخرى:</span>
                 </p>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                  إذا كنت قد سجلت حساباً في السابق، قم بإدخال اسم المستخدم بالكامل (أحادي، ثنائي، ثلاثي، مهما كان طوله) أو كود حسابك الفريد (مثل: <span className="font-mono font-bold text-emerald-600">MQ-XXXXX</span>)، وسيتم فتح حسابك ومحادثاتك فوراً!
+                <p className="text-[11px] leading-relaxed" style={{ color: theme.textColor, opacity: 0.75 }}>
+                  إذا كنت قد سجلت حساباً في السابق، قم بإدخال اسم المستخدم بالكامل (أحادي، ثنائي، ثلاثي، مهما كان طوله) أو كود حسابك الفريد (مثل: <span className="font-mono font-bold" style={{ color: primaryColor }}>MQ-XXXXX</span>)، وسيتم فتح حسابك ومحادثاتك فوراً!
                 </p>
               </div>
 
-              <form onSubmit={handleRestoreAccount} className="space-y-3.5">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    اسم المستخدم بالكامل أو كود الحساب الفريد:
-                  </label>
-                  <input
-                    type="text"
-                    value={restoreCode}
-                    onChange={(e) => {
-                      setRestoreCode(e.target.value);
-                      setError('');
-                    }}
-                    placeholder="اكتب اسمك بالكامل (مثل: علاء أحمد) أو كود الحساب"
-                    enterKeyHint="next"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        restorePasscodeRef.current?.focus();
-                      }
-                    }}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-slate-900 dark:text-white"
-                  />
-                </div>
+              {/* Restore Form Card */}
+              <div 
+                className="p-4 sm:p-5 rounded-3xl shadow-xs"
+                style={{
+                  backgroundColor: cardBg,
+                  borderColor: cardBorder,
+                  borderWidth: '1.5px',
+                  borderStyle: 'solid'
+                }}
+              >
+                <form onSubmit={handleRestoreAccount} className="space-y-3.5">
+                  <div>
+                    <label className="block text-xs font-bold mb-1" style={{ color: theme.textColor }}>
+                      اسم المستخدم بالكامل أو كود الحساب الفريد:
+                    </label>
+                    <input
+                      type="text"
+                      value={restoreCode}
+                      onChange={(e) => {
+                        setRestoreCode(e.target.value);
+                        setError('');
+                      }}
+                      placeholder="اكتب اسمك بالكامل (مثل: علاء أحمد) أو كود الحساب"
+                      enterKeyHint="next"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          restorePasscodeRef.current?.focus();
+                        }
+                      }}
+                      className="w-full px-3.5 py-2.5 rounded-xl text-sm font-medium focus:outline-none transition-all"
+                      style={{
+                        borderColor: cardBorder,
+                        borderWidth: '1.5px',
+                        borderStyle: 'solid',
+                        backgroundColor: secondaryBg,
+                        color: theme.textColor
+                      }}
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    رمز الحماية (PIN) - إن كنت قد قمت بتعيينه:
-                  </label>
-                  <input
-                    ref={restorePasscodeRef}
-                    type="password"
-                    maxLength={8}
-                    value={restorePasscode}
-                    onChange={(e) => {
-                      setRestorePasscode(e.target.value);
-                      setError('');
-                    }}
-                    placeholder=""
-                    enterKeyHint="done"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleRestoreAccount(e);
-                      }
-                    }}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-slate-900 dark:text-white font-mono"
-                  />
-                </div>
+                  <div>
+                    <label className="block text-xs font-bold mb-1 flex items-center justify-between" style={{ color: theme.textColor }}>
+                      <span>رمز الحماية (PIN) - إن كنت قد قمت بتعيينه:</span>
+                      <span className="text-[10px] opacity-60 font-normal">4-6 أرقام</span>
+                    </label>
+                    <input
+                      ref={restorePasscodeRef}
+                      type="password"
+                      maxLength={8}
+                      value={restorePasscode}
+                      onChange={(e) => {
+                        setRestorePasscode(e.target.value);
+                        setError('');
+                      }}
+                      placeholder=""
+                      enterKeyHint="done"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleRestoreAccount(e);
+                        }
+                      }}
+                      className="w-full px-3.5 py-2.5 rounded-xl text-xs font-medium focus:outline-none transition-all font-mono"
+                      style={{
+                        borderColor: cardBorder,
+                        borderWidth: '1.5px',
+                        borderStyle: 'solid',
+                        backgroundColor: secondaryBg,
+                        color: theme.textColor
+                      }}
+                    />
+                  </div>
 
-                <div className="pt-2">
-                  <button
-                    type="submit"
-                    disabled={isRestoring}
-                    className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow-md shadow-emerald-600/20 active:scale-98 transition-all flex items-center justify-center gap-2 text-sm disabled:opacity-50"
-                  >
-                    {isRestoring ? (
-                      <>
-                        <Loader2 size={16} className="animate-spin" />
-                        <span>جارٍ البحث واستعادة الحساب...</span>
-                      </>
-                    ) : (
-                      <>
-                        <LogIn size={16} />
-                        <span>استعادة الحساب والدخول</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              </form>
+                  <div className="pt-2">
+                    <button
+                      type="submit"
+                      disabled={isRestoring}
+                      className="w-full py-3 rounded-xl font-bold shadow-md active:scale-98 transition-all flex items-center justify-center gap-2 text-sm disabled:opacity-50 cursor-pointer"
+                      style={{
+                        backgroundColor: primaryColor,
+                        color: primaryTextColor
+                      }}
+                    >
+                      {isRestoring ? (
+                        <>
+                          <Loader2 size={16} className="animate-spin" />
+                          <span>جارٍ البحث واستعادة الحساب...</span>
+                        </>
+                      ) : (
+                        <>
+                          <LogIn size={16} />
+                          <span>استعادة الحساب والدخول</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              </div>
             </div>
           )}
       </div>

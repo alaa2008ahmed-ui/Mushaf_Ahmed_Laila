@@ -26,15 +26,20 @@ interface AhlAlQuranPageProps {
 const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) => {
   const { theme, themeKey } = useTheme();
 
-  const isBlackTheme = theme.bgColor === '#000000';
+  const isDefaultTheme = themeKey === 'default' || !themeKey || theme.name?.includes('الافتراضي') || theme.name === 'Default';
+  const isDeepBlack = theme.bgColor === '#000000' || theme.name === 'أبيض وأسود' || themeKey === 'deep_black';
+  const cardBorderColor = isDefaultTheme 
+    ? '#000000' 
+    : (isDeepBlack 
+        ? '#FFFFFF' 
+        : (theme.palette?.[0] || theme.accent || '#000000'));
+  const cardBorder = cardBorderColor;
+  const isBlackTheme = isDeepBlack;
   const primaryColor = isBlackTheme ? '#FFFFFF' : (theme.palette?.[0] || '#10b981');
   const primaryTextColor = isBlackTheme ? '#000000' : (theme.btnText || '#FFFFFF');
   const cardBg = isBlackTheme 
     ? '#111111' 
     : (theme.isGlass ? 'rgba(255, 255, 255, 0.15)' : (theme.cardBg || (theme.isDark ? '#1e293b' : '#ffffff')));
-  const cardBorder = isBlackTheme 
-    ? '#333333' 
-    : (theme.cardBorder || (theme.isDark ? '#334155' : '#e2e8f0'));
   const secondaryBg = isBlackTheme 
     ? '#1a1a1a' 
     : (theme.isDark ? '#0f172a' : '#f8fafc');
@@ -222,10 +227,12 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
             <button
               type="button"
               onClick={() => onNavigate('quran')}
-              className="w-10 h-10 rounded-2xl border flex items-center justify-center shadow-xs active:scale-95 transition-all cursor-pointer flex-shrink-0"
+              className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-xs active:scale-95 transition-all cursor-pointer flex-shrink-0"
               style={{
                 backgroundColor: cardBg,
                 borderColor: cardBorder,
+                borderWidth: '1.5px',
+                borderStyle: 'solid',
                 color: primaryColor
               }}
               title="الذهاب للمصحف الشريف"
@@ -254,10 +261,12 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
         {/* Unregistered User Warning / Invitation Banner */}
         {!isProfileComplete && (
           <div 
-            className="mb-4 p-4 rounded-3xl border flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs"
+            className="mb-4 p-4 rounded-3xl flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs"
             style={{
               backgroundColor: `${primaryColor}15`,
-              borderColor: `${primaryColor}35`,
+              borderColor: cardBorder,
+              borderWidth: '1.5px',
+              borderStyle: 'solid',
               color: theme.textColor
             }}
           >
@@ -282,8 +291,8 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
 
         {/* Main Tab Switcher: Leaderboard, My Stats, Privacy */}
         <div 
-          className="grid grid-cols-3 gap-1 p-1.5 rounded-2xl border mb-4"
-          style={{ backgroundColor: secondaryBg, borderColor: cardBorder }}
+          className="grid grid-cols-3 gap-1 p-1.5 rounded-2xl mb-4"
+          style={{ backgroundColor: secondaryBg, borderColor: cardBorder, borderWidth: '1.5px', borderStyle: 'solid' }}
         >
           <button
             id="ahl-tab-leaderboard"
@@ -342,8 +351,8 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
           <div>
             {/* Header: Selected Month & Archive Dropdown */}
             <div 
-              className="border rounded-3xl p-3 sm:p-4 mb-4 shadow-xs flex items-center justify-between gap-3"
-              style={{ backgroundColor: cardBg, borderColor: cardBorder }}
+              className="rounded-3xl p-3 sm:p-4 mb-4 shadow-xs flex items-center justify-between gap-3"
+              style={{ backgroundColor: cardBg, borderColor: cardBorder, borderWidth: '1.5px', borderStyle: 'solid' }}
             >
               <div className="flex items-center gap-2 truncate">
                 <Calendar size={18} style={{ color: primaryColor }} className="shrink-0" />
@@ -364,10 +373,12 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
               <div className="relative shrink-0">
                 <button
                   onClick={() => setIsArchiveDropdownOpen(prev => !prev)}
-                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl border text-xs font-bold transition-all cursor-pointer"
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl text-xs font-bold transition-all cursor-pointer"
                   style={{
                     backgroundColor: `${primaryColor}15`,
-                    borderColor: `${primaryColor}30`,
+                    borderColor: cardBorder,
+                    borderWidth: '1.5px',
+                    borderStyle: 'solid',
                     color: theme.textColor
                   }}
                 >
@@ -382,8 +393,8 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
                       initial={{ opacity: 0, y: -6 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -6 }}
-                      className="absolute left-0 mt-1.5 w-60 border rounded-2xl shadow-xl z-50 overflow-hidden max-h-72 overflow-y-auto p-1.5"
-                      style={{ backgroundColor: cardBg, borderColor: cardBorder }}
+                      className="absolute left-0 mt-1.5 w-60 rounded-2xl shadow-xl z-50 overflow-hidden max-h-72 overflow-y-auto p-1.5"
+                      style={{ backgroundColor: cardBg, borderColor: cardBorder, borderWidth: '1.5px', borderStyle: 'solid' }}
                     >
                       {monthOptions.map((opt) => (
                         <button
@@ -439,10 +450,12 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
             {/* Current User Floating Progress Bar if participating */}
             {currentUserEntry && (
               <div 
-                className="mb-4 border rounded-2xl p-3.5 flex items-center justify-between gap-3 shadow-xs"
+                className="mb-4 rounded-2xl p-3.5 flex items-center justify-between gap-3 shadow-xs"
                 style={{
                   backgroundColor: `${primaryColor}12`,
-                  borderColor: `${primaryColor}35`
+                  borderColor: cardBorder,
+                  borderWidth: '2px',
+                  borderStyle: 'solid'
                 }}
               >
                 <div className="flex items-center gap-3">
@@ -484,8 +497,8 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
             {/* Leaderboard Cards List */}
             {leaderboard.length === 0 ? (
               <div 
-                className="text-center py-16 rounded-3xl border p-6"
-                style={{ backgroundColor: cardBg, borderColor: cardBorder }}
+                className="text-center py-16 rounded-3xl p-6"
+                style={{ backgroundColor: cardBg, borderColor: cardBorder, borderWidth: '1.5px', borderStyle: 'solid' }}
               >
                 <Trophy size={48} className="mx-auto mb-3 opacity-60" style={{ color: primaryColor }} />
                 <h3 className="font-bold text-base" style={{ color: theme.textColor }}>
@@ -530,24 +543,24 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
                       key={item.record.userId}
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className={`relative rounded-3xl border p-3 sm:p-4 flex items-center justify-between gap-2.5 sm:gap-3 transition-all ${cardWidthClass} ${
+                      className={`relative rounded-3xl p-3 sm:p-4 flex items-center justify-between gap-2.5 sm:gap-3 transition-all ${cardWidthClass} ${
                         item.isCurrentUser
                           ? 'shadow-sm ring-1 ring-emerald-500/30'
                           : isTop1
-                          ? 'bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border-amber-500/40 shadow-xs'
+                          ? 'bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent shadow-xs'
                           : isTop2
-                          ? 'bg-gradient-to-r from-slate-400/10 via-slate-400/5 to-transparent border-slate-300 dark:border-slate-700 shadow-xs'
+                          ? 'bg-gradient-to-r from-slate-400/10 via-slate-400/5 to-transparent shadow-xs'
                           : isTop3
-                          ? 'bg-gradient-to-r from-amber-700/10 via-amber-700/5 to-transparent border-amber-700/30 shadow-xs'
+                          ? 'bg-gradient-to-r from-amber-700/10 via-amber-700/5 to-transparent shadow-xs'
                           : 'shadow-xs'
                       }`}
                       style={{
                         backgroundColor: item.isCurrentUser 
                           ? `${primaryColor}15` 
                           : (!isTop1 && !isTop2 && !isTop3 ? cardBg : undefined),
-                        borderColor: item.isCurrentUser 
-                          ? `${primaryColor}50` 
-                          : (!isTop1 && !isTop2 && !isTop3 ? cardBorder : undefined)
+                        borderColor: cardBorder,
+                        borderWidth: item.isCurrentUser ? '2px' : '1.5px',
+                        borderStyle: 'solid'
                       }}
                     >
                       {/* Left Side: Rank Badge + User Profile */}
@@ -655,8 +668,8 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
           <div className="space-y-4">
             {/* Quick Profile Overview Card */}
             <div 
-              className="border rounded-3xl p-5 shadow-xs text-center"
-              style={{ backgroundColor: cardBg, borderColor: cardBorder }}
+              className="rounded-3xl p-5 shadow-xs text-center"
+              style={{ backgroundColor: cardBg, borderColor: cardBorder, borderWidth: '1.5px', borderStyle: 'solid' }}
             >
               <div 
                 className="w-16 h-16 rounded-full border-2 mx-auto mb-3 overflow-hidden flex items-center justify-center"
@@ -675,8 +688,8 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
               {/* Progress Counters Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 mt-4">
                 <div 
-                  className="p-3.5 rounded-2xl border text-center"
-                  style={{ backgroundColor: secondaryBg, borderColor: cardBorder }}
+                  className="p-3.5 rounded-2xl text-center"
+                  style={{ backgroundColor: secondaryBg, borderColor: cardBorder, borderWidth: '1.5px', borderStyle: 'solid' }}
                 >
                   <div className="text-xs font-bold" style={{ color: theme.textColor }}>صفحات هذا الشهر</div>
                   <div className="text-xl font-black mt-1" style={{ color: primaryColor }}>
@@ -685,8 +698,8 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
                 </div>
 
                 <div 
-                  className="p-3.5 rounded-2xl border text-center"
-                  style={{ backgroundColor: secondaryBg, borderColor: cardBorder }}
+                  className="p-3.5 rounded-2xl text-center"
+                  style={{ backgroundColor: secondaryBg, borderColor: cardBorder, borderWidth: '1.5px', borderStyle: 'solid' }}
                 >
                   <div className="text-xs font-bold" style={{ color: theme.textColor }}>ختمات هذا الشهر</div>
                   <div className="text-xl font-black mt-1 text-amber-500">
@@ -695,8 +708,8 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
                 </div>
 
                 <div 
-                  className="col-span-2 sm:col-span-1 p-3.5 rounded-2xl border text-center"
-                  style={{ backgroundColor: secondaryBg, borderColor: cardBorder }}
+                  className="col-span-2 sm:col-span-1 p-3.5 rounded-2xl text-center"
+                  style={{ backgroundColor: secondaryBg, borderColor: cardBorder, borderWidth: '1.5px', borderStyle: 'solid' }}
                 >
                   <div className="text-xs font-bold" style={{ color: theme.textColor }}>الترتيب الحالي</div>
                   <div className="text-xl font-black mt-1" style={{ color: primaryColor }}>
@@ -710,8 +723,8 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => onNavigate('quran')}
-                className="p-4 rounded-3xl border shadow-xs flex items-center justify-center gap-3 transition-all cursor-pointer"
-                style={{ backgroundColor: cardBg, borderColor: cardBorder }}
+                className="p-4 rounded-3xl shadow-xs flex items-center justify-center gap-3 transition-all cursor-pointer"
+                style={{ backgroundColor: cardBg, borderColor: cardBorder, borderWidth: '1.5px', borderStyle: 'solid' }}
               >
                 <div 
                   className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0"
@@ -724,8 +737,8 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
 
               <button
                 onClick={() => onNavigate('community')}
-                className="p-4 rounded-3xl border shadow-xs flex items-center justify-center gap-3 transition-all cursor-pointer"
-                style={{ backgroundColor: cardBg, borderColor: cardBorder }}
+                className="p-4 rounded-3xl shadow-xs flex items-center justify-center gap-3 transition-all cursor-pointer"
+                style={{ backgroundColor: cardBg, borderColor: cardBorder, borderWidth: '1.5px', borderStyle: 'solid' }}
               >
                 <div 
                   className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0"
@@ -744,8 +757,8 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
           <div className="space-y-4">
             {/* Calendar Selection Card (Moved here from leaderboard tab) */}
             <div 
-              className="border rounded-3xl p-5 shadow-xs"
-              style={{ backgroundColor: cardBg, borderColor: cardBorder }}
+              className="rounded-3xl p-5 shadow-xs"
+              style={{ backgroundColor: cardBg, borderColor: cardBorder, borderWidth: '1.5px', borderStyle: 'solid' }}
             >
               <h3 className="font-extrabold text-base flex items-center gap-2 mb-3" style={{ color: theme.textColor }}>
                 <Calendar size={20} style={{ color: primaryColor }} />
@@ -753,8 +766,8 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
               </h3>
 
               <div 
-                className="grid grid-cols-2 gap-2 p-1.5 rounded-2xl border"
-                style={{ backgroundColor: secondaryBg, borderColor: cardBorder }}
+                className="grid grid-cols-2 gap-2 p-1.5 rounded-2xl"
+                style={{ backgroundColor: secondaryBg, borderColor: cardBorder, borderWidth: '1.5px', borderStyle: 'solid' }}
               >
                 <button
                   onClick={() => handleCalendarTypeChange('hijri')}
@@ -792,8 +805,8 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
 
             {/* Visibility Mode Options Card */}
             <div 
-              className="border rounded-3xl p-5 shadow-xs space-y-3"
-              style={{ backgroundColor: cardBg, borderColor: cardBorder }}
+              className="rounded-3xl p-5 shadow-xs space-y-3"
+              style={{ backgroundColor: cardBg, borderColor: cardBorder, borderWidth: '1.5px', borderStyle: 'solid' }}
             >
               <h3 className="font-extrabold text-base flex items-center gap-2 mb-2" style={{ color: theme.textColor }}>
                 <Shield size={20} style={{ color: primaryColor }} />
@@ -803,10 +816,12 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
               {/* Option 1: Public with Name & Avatar */}
               <div
                 onClick={() => handlePrivacyChange('public')}
-                className="p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between gap-3 shadow-xs"
+                className="p-4 rounded-2xl transition-all cursor-pointer flex items-center justify-between gap-3 shadow-xs"
                 style={{
                   backgroundColor: userPrivacy === 'public' ? `${primaryColor}10` : secondaryBg,
-                  borderColor: userPrivacy === 'public' ? primaryColor : cardBorder
+                  borderColor: cardBorder,
+                  borderWidth: userPrivacy === 'public' ? '2px' : '1.5px',
+                  borderStyle: 'solid'
                 }}
               >
                 <div className="flex items-center gap-3">
@@ -828,10 +843,12 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
               {/* Option 2: Anonymous (فاعل خير) */}
               <div
                 onClick={() => handlePrivacyChange('anonymous')}
-                className="p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between gap-3 shadow-xs"
+                className="p-4 rounded-2xl transition-all cursor-pointer flex items-center justify-between gap-3 shadow-xs"
                 style={{
                   backgroundColor: userPrivacy === 'anonymous' ? `${primaryColor}10` : secondaryBg,
-                  borderColor: userPrivacy === 'anonymous' ? primaryColor : cardBorder
+                  borderColor: cardBorder,
+                  borderWidth: userPrivacy === 'anonymous' ? '2px' : '1.5px',
+                  borderStyle: 'solid'
                 }}
               >
                 <div className="flex items-center gap-3">
@@ -850,10 +867,12 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
               {/* Option 3: Completely Hidden */}
               <div
                 onClick={() => handlePrivacyChange('hidden')}
-                className="p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between gap-3 shadow-xs"
+                className="p-4 rounded-2xl transition-all cursor-pointer flex items-center justify-between gap-3 shadow-xs"
                 style={{
                   backgroundColor: userPrivacy === 'hidden' ? `${primaryColor}10` : secondaryBg,
-                  borderColor: userPrivacy === 'hidden' ? primaryColor : cardBorder
+                  borderColor: cardBorder,
+                  borderWidth: userPrivacy === 'hidden' ? '2px' : '1.5px',
+                  borderStyle: 'solid'
                 }}
               >
                 <div className="flex items-center gap-3">
@@ -876,7 +895,8 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
             {/* Admin Reset Rankings Option */}
             {isAdmin && (
               <div 
-                className="border border-rose-500/20 rounded-3xl p-5 shadow-xs space-y-3 bg-rose-500/5 text-right"
+                className="rounded-3xl p-5 shadow-xs space-y-3 bg-rose-500/5 text-right"
+                style={{ borderColor: cardBorder, borderWidth: '1.5px', borderStyle: 'solid' }}
               >
                 <h4 className="font-extrabold text-sm text-rose-500 flex items-center gap-2">
                   <AlertTriangle size={18} />
@@ -919,8 +939,8 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="w-full max-w-sm rounded-3xl p-5 border text-center shadow-2xl space-y-4"
-              style={{ backgroundColor: cardBg, borderColor: cardBorder }}
+              className="w-full max-w-sm rounded-3xl p-5 text-center shadow-2xl space-y-4"
+              style={{ backgroundColor: cardBg, borderColor: cardBorder, borderWidth: '1.5px', borderStyle: 'solid' }}
             >
               <div className="w-12 h-12 mx-auto rounded-2xl bg-rose-500/15 text-rose-500 flex items-center justify-center">
                 <AlertTriangle size={26} />
@@ -938,8 +958,8 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
                   type="button"
                   onClick={() => setShowResetConfirm(false)}
                   disabled={isResetting}
-                  className="flex-1 py-2.5 rounded-xl text-xs font-bold border transition-all active:scale-95 cursor-pointer opacity-80 hover:opacity-100"
-                  style={{ borderColor: cardBorder, color: theme.textColor }}
+                  className="flex-1 py-2.5 rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer opacity-80 hover:opacity-100"
+                  style={{ borderColor: cardBorder, borderWidth: '1.5px', borderStyle: 'solid', color: theme.textColor }}
                 >
                   إلغاء
                 </button>
