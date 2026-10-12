@@ -58,17 +58,14 @@ function ThemeSelector({ onClose, isLandscape }: { onClose: () => void, isLandsc
             <div className={`themed-card p-4 ${isLandscape ? 'w-full max-w-4xl h-full rounded-none' : 'rounded-3xl'} shadow-2xl !backdrop-blur-md !bg-opacity-95 flex flex-col justify-center border-2`} style={{ backgroundColor: theme.bgColor || '#fff', borderColor: theme.palette[0] + '40' }}>
                 <div className={isLandscape ? 'max-w-lg mx-auto w-full' : 'w-full'}>
                     <div className="grid grid-cols-3 gap-1.5 mb-4">
-                        <button onClick={() => fileInputRef.current?.click()} className="p-2 rounded-xl font-bold text-[10px] flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 shadow-sm" style={{backgroundColor: theme.palette[0] + '20', color: theme.textColor, borderWidth: '1px', borderStyle: 'solid', borderColor: theme.palette[0] + '40'}}>
-                            <span className="text-lg">🖼️</span>
-                            <span>خلفية</span>
+                        <button onClick={() => fileInputRef.current?.click()} className="p-2.5 rounded-xl font-bold flex flex-col items-center justify-center transition-all active:scale-95 shadow-sm" style={{backgroundColor: theme.palette[0] + '20', color: theme.textColor, borderWidth: '1px', borderStyle: 'solid', borderColor: theme.palette[0] + '40'}} title="خلفية">
+                            <span className="text-xl">🖼️</span>
                         </button>
-                        <button onClick={resetBackground} className="p-2 rounded-xl font-bold text-[10px] flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 shadow-sm" style={{backgroundColor: theme.palette[1] + '20', color: theme.textColor, borderWidth: '1px', borderStyle: 'solid', borderColor: theme.palette[1] + '40'}}>
-                            <span className="text-lg">🔄</span>
-                            <span>استعادة</span>
+                        <button onClick={resetBackground} className="p-2.5 rounded-xl font-bold flex flex-col items-center justify-center transition-all active:scale-95 shadow-sm" style={{backgroundColor: theme.palette[1] + '20', color: theme.textColor, borderWidth: '1px', borderStyle: 'solid', borderColor: theme.palette[1] + '40'}} title="استعادة">
+                            <span className="text-xl">🔄</span>
                         </button>
-                        <button data-theme-key="default" onClick={() => { applyPresetTheme('default'); onClose(); }} className="p-2 rounded-xl font-bold text-[10px] flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 shadow-sm" style={{backgroundColor: theme.palette[2] + '20', color: theme.textColor, borderWidth: '1px', borderStyle: 'solid', borderColor: theme.palette[2] + '40'}}>
-                            <span className="text-lg">🎨</span>
-                            <span>الافتراضي</span>
+                        <button data-theme-key="default" onClick={() => { applyPresetTheme('default'); onClose(); }} className="p-2.5 rounded-xl font-bold flex flex-col items-center justify-center transition-all active:scale-95 shadow-sm" style={{backgroundColor: theme.palette[2] + '20', color: theme.textColor, borderWidth: '1px', borderStyle: 'solid', borderColor: theme.palette[2] + '40'}} title="الافتراضي">
+                            <span className="text-xl">🎨</span>
                         </button>
                     </div>
 

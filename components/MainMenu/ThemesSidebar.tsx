@@ -69,7 +69,7 @@ export const ThemesSidebar: React.FC<ThemesSidebarProps> = ({ isOpen, onClose })
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 z-[1200] bg-black/45 backdrop-blur-[2px]"
+            className="fixed inset-0 z-[1200] bg-transparent"
           />
 
           {/* Narrow Full-Height Sidebar Drawer */}
@@ -87,25 +87,6 @@ export const ThemesSidebar: React.FC<ThemesSidebarProps> = ({ isOpen, onClose })
               fontFamily: theme.font
             }}
           >
-            {/* Header */}
-            <div 
-              className="p-3 border-b flex items-center justify-between shrink-0"
-              style={{ borderColor: (theme.palette?.[0] || '#10b981') + '25' }}
-            >
-              <div className="flex items-center gap-2 font-bold text-xs">
-                <Palette className="w-4 h-4 text-amber-500" />
-                <span className="font-kufi">ثيمات التطبيق</span>
-              </div>
-              <button
-                type="button"
-                onClick={onClose}
-                className="p-1 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-colors opacity-70 hover:opacity-100"
-                aria-label="إغلاق"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
             {/* Quick Actions Row */}
             <div 
               className="p-2 border-b grid grid-cols-3 gap-1 shrink-0 bg-black/5 dark:bg-white/5"
@@ -114,31 +95,28 @@ export const ThemesSidebar: React.FC<ThemesSidebarProps> = ({ isOpen, onClose })
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="py-1 px-1.5 rounded-lg text-[9px] font-bold flex flex-col items-center justify-center gap-0.5 transition-all active:scale-95 hover:bg-black/5 dark:hover:bg-white/10"
+                className="py-2 px-1.5 rounded-lg flex flex-col items-center justify-center transition-all active:scale-95 hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer"
                 title="تخصيص خلفية مخصصة"
               >
-                <Image className="w-3.5 h-3.5 text-blue-500" />
-                <span>خلفية</span>
+                <Image className="w-4 h-4 text-blue-500" />
               </button>
 
               <button
                 type="button"
                 onClick={() => resetBackground()}
-                className="py-1 px-1.5 rounded-lg text-[9px] font-bold flex flex-col items-center justify-center gap-0.5 transition-all active:scale-95 hover:bg-black/5 dark:hover:bg-white/10"
+                className="py-2 px-1.5 rounded-lg flex flex-col items-center justify-center transition-all active:scale-95 hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer"
                 title="استعادة الخلفية"
               >
-                <RotateCcw className="w-3.5 h-3.5 text-amber-500" />
-                <span>استعادة</span>
+                <RotateCcw className="w-4 h-4 text-amber-500" />
               </button>
 
               <button
                 type="button"
                 onClick={() => applyPresetTheme('default')}
-                className="py-1 px-1.5 rounded-lg text-[9px] font-bold flex flex-col items-center justify-center gap-0.5 transition-all active:scale-95 hover:bg-black/5 dark:hover:bg-white/10"
+                className="py-2 px-1.5 rounded-lg flex flex-col items-center justify-center transition-all active:scale-95 hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer"
                 title="الثيم الافتراضي"
               >
-                <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
-                <span>الافتراضي</span>
+                <Sparkles className="w-4 h-4 text-emerald-500" />
               </button>
             </div>
 
