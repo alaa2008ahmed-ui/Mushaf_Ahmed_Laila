@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, Check, X, Smartphone, AppWindow, VolumeX, Clock, Shuffle, BellRing } from 'lucide-react';
+import { Bell, Check, X, Smartphone, AppWindow, VolumeX, Clock, Shuffle, BellRing, ShieldAlert } from 'lucide-react';
 import { toArabic } from './constants';
 import { usePrayerTimes } from '../../context/PrayerTimesContext';
 import { setupNotifications } from '../../utils/notifications';
 import { useNotificationSettings, PhoneNotificationSettings } from '../../hooks/useNotificationSettings';
+import { Capacitor } from '@capacitor/core';
+import { LocalNotifications } from '@capacitor/local-notifications';
+import { isDndPermissionGranted, requestDndPermission } from '../../utils/silentMode';
 
 interface NotificationSettingsModalProps {
     onClose: () => void;
@@ -17,6 +20,13 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({ o
     const { config, updateConfig } = usePrayerTimes();
     const { phoneSettings, updateSpecificSetting, updateRandomSettings } = useNotificationSettings();
     const [activeTab, setActiveTab] = useState<'app' | 'phone'>(initialTab || 'app');
+    const [hasDndPermission, setHasDndPermission] = useState(true);
+
+    useEffect(() => {
+        if (Capacitor.getPlatform() === 'android') {
+            isDndPermissionGranted().then(setHasDndPermission);
+        }
+    }, []);
 
     const [appSettings, setAppSettings] = useState(() => {
         const saved = localStorage.getItem('notification_settings' + modeSuffix);
@@ -328,9 +338,16 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({ o
                                         {/* Toggle Switch */}
                                         <button
                                             type="button"
-                                            onClick={() => {
+                                            onClick={async () => {
                                                 const nextState = !config.autoSilent;
                                                 updateConfig({ autoSilent: nextState });
+                                                if (nextState && Capacitor.getPlatform() === 'android') {
+                                                    const granted = await isDndPermissionGranted();
+                                                    setHasDndPermission(granted);
+                                                    if (!granted) {
+                                                        await requestDndPermission();
+                                                    }
+                                                }
                                                 showToast(nextState ? 'تم تفعيل الصامت التلقائي 🔕' : 'تم التعطيل العام (تحكم فردي لكل صلاة)');
                                             }}
                                             className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors shrink-0 ${
@@ -407,6 +424,145 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({ o
                                                     } : undefined}
                                                 >
                                                     {duration}د
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+
+                                    {/* Android DND Permission Notice if not granted */}
+                                    {config.autoSilent && !hasDndPermission && Capacitor.getPlatform() === 'android' && (
+                                        <div className="mt-2 p-2 rounded-xl bg-amber-500/15 border border-amber-500/30 text-right flex items-center justify-between gap-2" dir="rtl">
+                                            <div className="flex items-center gap-1.5 text-[11px] text-amber-700 dark:text-amber-300 font-medium">
+                                                <ShieldAlert className="w-3.5 h-3.5 shrink-0 text-amber-500" />
+                                                <span>يلزم إذن (عدم الإزعاج) لكتم الهاتف</span>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={async () => {
+                                                    await requestDndPermission();
+                                                    setTimeout(async () => {
+                                                        const granted = await isDndPermissionGranted();
+                                                        setHasDndPermission(granted);
+                                                    }, 1500);
+                                                }}
+                                                className="text-[10px] font-bold px-2 py-1 rounded-lg text-white shrink-0 cursor-pointer shadow-xs active:scale-95"
+                                                style={{ backgroundColor: 'var(--qr-accent)' }}
+                                            >
+                                                منح الإذن
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* 3. تنبيه الإقامة - أسفل بطاقة الصامت التلقائي */}
+                                <div 
+                                    className="p-3.5 rounded-2xl border-2 border-black dark:border-white transition-all space-y-2.5 themed-card-bg shadow-xs"
+                                >
+                                    <div className="flex items-center justify-between gap-3">
+                                        {/* Toggle Switch */}
+                                        <button
+                                            type="button"
+                                            onClick={async () => {
+                                                const iqamaReminder = config.iqamaReminder || { enabled: false, minutes: 15 };
+                                                const nextState = !iqamaReminder.enabled;
+                                                const currentMins = iqamaReminder.minutes || 15;
+                                                updateConfig({
+                                                    iqamaReminder: {
+                                                        enabled: nextState,
+                                                        minutes: currentMins
+                                                    }
+                                                });
+                                                if (nextState && Capacitor.isNativePlatform()) {
+                                                    try {
+                                                        const status = await LocalNotifications.checkPermissions();
+                                                        if (status.display !== 'granted') {
+                                                            await LocalNotifications.requestPermissions();
+                                                        }
+                                                    } catch (e) {
+                                                        console.warn('Notification permission error', e);
+                                                    }
+                                                }
+                                                showToast(nextState ? `تم تفعيل تنبيه الإقامة بعد ${currentMins} د 🕌` : 'تم تعطيل تنبيه الإقامة عاماً');
+                                            }}
+                                            className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors shrink-0 ${
+                                                config.iqamaReminder?.enabled ? '' : 'bg-gray-300 dark:bg-gray-600'
+                                            }`}
+                                            style={{ backgroundColor: config.iqamaReminder?.enabled ? 'var(--qr-accent)' : undefined }}
+                                            title="تنبيه الإقامة"
+                                        >
+                                            <div
+                                                className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                                                    config.iqamaReminder?.enabled ? '-translate-x-5' : 'translate-x-0'
+                                                }`}
+                                            />
+                                        </button>
+
+                                        {/* Info */}
+                                        <div className="min-w-0 flex-1 text-right" dir="rtl">
+                                            <div className="flex items-center justify-start gap-1.5 flex-wrap">
+                                                <span className="font-bold text-xs sm:text-sm">تنبيه الإقامة</span>
+                                                <span 
+                                                    className="text-[10px] font-bold px-1.5 py-0.5 rounded-full transition-colors"
+                                                    style={{
+                                                        backgroundColor: 'color-mix(in srgb, var(--qr-accent) 15%, transparent)',
+                                                        color: 'var(--qr-accent)'
+                                                    }}
+                                                >
+                                                    بعد {config.iqamaReminder?.minutes || 15}د
+                                                </span>
+                                            </div>
+                                            <p className="text-[11px] opacity-75 mt-0.5 leading-snug">
+                                                {config.iqamaReminder?.enabled 
+                                                    ? 'التنبيه عند حلول موعد الإقامة (شامل لكل الصلوات)' 
+                                                    : 'معطّل عاماً (يمكن تفعيله لكل صلاة على حدة من بطاقتها)'}
+                                            </p>
+                                        </div>
+
+                                        {/* Icon */}
+                                        <div 
+                                            className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors"
+                                            style={{
+                                                backgroundColor: config.iqamaReminder?.enabled 
+                                                    ? 'color-mix(in srgb, var(--qr-accent) 15%, transparent)' 
+                                                    : 'rgba(0,0,0,0.05)',
+                                                color: config.iqamaReminder?.enabled 
+                                                    ? 'var(--qr-accent)' 
+                                                    : 'inherit'
+                                            }}
+                                        >
+                                            <Clock className="w-4 h-4" />
+                                        </div>
+                                    </div>
+
+                                    {/* Duration selector - ALWAYS VISIBLE whether enabled or disabled */}
+                                    <div className="flex items-center justify-start gap-1.5 pt-1.5 border-t border-black/10 dark:border-white/10" dir="rtl">
+                                        <span className="text-[10px] opacity-60">المدة:</span>
+                                        {[10, 15, 20, 25].map((mins) => {
+                                            const isSelected = (config.iqamaReminder?.minutes || 15) === mins;
+                                            return (
+                                                <button
+                                                    key={mins}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        updateConfig({
+                                                            iqamaReminder: { 
+                                                                enabled: config.iqamaReminder?.enabled !== false, 
+                                                                minutes: mins 
+                                                            }
+                                                        });
+                                                        showToast(`بعد ${mins}د`);
+                                                    }}
+                                                    className={`px-2.5 py-0.5 rounded-md text-[10px] font-bold transition-all cursor-pointer ${
+                                                        isSelected
+                                                            ? 'shadow-xs'
+                                                            : 'bg-black/5 dark:bg-white/10 opacity-80 hover:opacity-100'
+                                                    }`}
+                                                    style={isSelected ? {
+                                                        backgroundColor: 'var(--qr-accent)',
+                                                        color: 'var(--qr-accent-text, #ffffff)'
+                                                    } : undefined}
+                                                >
+                                                    {mins}د
                                                 </button>
                                             );
                                         })}

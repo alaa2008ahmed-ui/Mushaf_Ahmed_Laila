@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import {
   Monitor,
   Smartphone,
@@ -53,7 +53,15 @@ import {
 import { quranData } from "../../utils/quranData";
 import { usePrayerTimes } from "../../context/PrayerTimesContext";
 import { useTheme } from "../../context/ThemeContext";
+import { useLanguage } from "../../context/LanguageContext";
 import { RECITERS as LISTEN_RECITERS } from "../../data/listenQuranData";
+import { 
+  getAvailableSurahsForReader, 
+  getSurahsForJuz, 
+  normalizeUrl, 
+  simplifyName 
+} from "../../utils/listenQuranUtils";
+import { normalizeArabic } from "../../utils/voiceParser";
 import { setupNotifications } from "../../utils/notifications";
 import TutorialOverlay, { TutorialStep } from "../Tutorial/TutorialOverlay";
 
@@ -157,12 +165,14 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
   initialView = "main",
 }) => {
   const { applyPresetTheme: applyGlobalTheme } = useTheme();
+  const { t, translateMenuItem, language } = useLanguage();
   const [selectedShortcuts, setSelectedShortcuts] = useState<string[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [tempShortcuts, setTempShortcuts] = useState<string[]>([]);
 
   //Selection State for Downloads
   const [selectedReader, setSelectedReader] = useState("");
+  const [readerSearch, setReaderSearch] = useState("");
   const [selectedTafsir, setSelectedTafsir] = useState(
     settings.tafseer || TAFSEERS[0].id,
   );
@@ -171,6 +181,65 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
   const [downloadedSurahs, setDownloadedSurahs] = useState<string[]>([]);
   const [downloadedJuzs, setDownloadedJuzs] = useState<string[]>([]);
   const [downloadedTafseers, setDownloadedTafseers] = useState<string[]>([]);
+  const [dynamicMapping, setDynamicMapping] = useState<Record<string, number[]> | null>(null);
+
+  // Background fetch of reciter surahs availability if not cached
+  useEffect(() => {
+    try {
+      const CACHE_KEY = "mp3quran_surahs_cache_v6";
+      const cached = localStorage.getItem(CACHE_KEY);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed.data) setDynamicMapping(parsed.data);
+      } else {
+        fetch("https://mp3quran.net/api/v3/reciters?language=ar")
+          .then((res) => res.json())
+          .then((data) => {
+            const mapping: Record<string, number[]> = {};
+            if (data.reciters && Array.isArray(data.reciters)) {
+              data.reciters.forEach((r: any) => {
+                const nameKey = `name:${simplifyName(r.name)}`;
+                if (r.moshaf && Array.isArray(r.moshaf)) {
+                  r.moshaf.forEach((m: any) => {
+                    const rawSuras = m.suras || m.surah_list;
+                    if (m.server && rawSuras) {
+                      const surasArray =
+                        typeof rawSuras === "string"
+                          ? rawSuras.split(",").map(Number)
+                          : Array.isArray(rawSuras)
+                            ? rawSuras
+                            : [];
+                      const urlKey = normalizeUrl(m.server);
+                      if (urlKey) mapping[urlKey] = surasArray;
+                      if (!mapping[nameKey]) {
+                        mapping[nameKey] = surasArray;
+                      } else {
+                        mapping[nameKey] = Array.from(
+                          new Set([...mapping[nameKey], ...surasArray]),
+                        );
+                      }
+                    }
+                  });
+                }
+              });
+              localStorage.setItem(
+                CACHE_KEY,
+                JSON.stringify({
+                  data: mapping,
+                  timestamp: Date.now(),
+                }),
+              );
+              setDynamicMapping(mapping);
+            }
+          })
+          .catch((e) =>
+            console.warn("Could not fetch reciter surahs in background:", e),
+          );
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, []);
 
   // Download Status State
   const [isDownloading, setIsDownloading] = useState(false);
@@ -328,6 +397,8 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
     if (currentView === "download_quran") {
       if (selectedReader && !READERS.some((r) => r.id === selectedReader)) {
         setSelectedReader(READERS[0].id);
+        setSelectedSurahs([]);
+        setSelectedJuzs([]);
       }
     } else if (currentView === "download_memorization") {
       if (
@@ -335,13 +406,72 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
         !MEMORIZATION_READERS.some((r) => r.id === selectedReader)
       ) {
         setSelectedReader(MEMORIZATION_READERS[0].id);
+        setSelectedSurahs([]);
+        setSelectedJuzs([]);
       }
     } else if (currentView === "download_listening") {
       if (selectedReader && !LISTEN_RECITERS.some((r) => r.id === selectedReader)) {
         setSelectedReader(LISTEN_RECITERS[0].id);
+        setSelectedSurahs([]);
+        setSelectedJuzs([]);
       }
     }
   }, [currentView, selectedReader]);
+
+  const currentReadersList = useMemo(() => {
+    if (currentView === "download_memorization") return MEMORIZATION_READERS;
+    if (currentView === "download_listening") return LISTEN_RECITERS;
+    return READERS;
+  }, [currentView]);
+
+  const filteredCurrentReaders = useMemo(() => {
+    if (!readerSearch.trim()) return currentReadersList;
+    const norm = normalizeArabic(readerSearch.trim().toLowerCase());
+    return currentReadersList.filter((r) =>
+      normalizeArabic(r.name.toLowerCase()).includes(norm),
+    );
+  }, [currentReadersList, readerSearch]);
+
+  const selectedReaderObj = useMemo(() => {
+    return currentReadersList.find((r) => r.id === selectedReader);
+  }, [currentReadersList, selectedReader]);
+
+  // Available surahs for current reader when in download_listening mode
+  const availableSurahNumbers = useMemo(() => {
+    if (currentView !== "download_listening") {
+      return Array.from({ length: 114 }, (_, i) => i + 1);
+    }
+    if (!selectedReader) return Array.from({ length: 114 }, (_, i) => i + 1);
+    const rObj = LISTEN_RECITERS.find((r) => r.id === selectedReader);
+    return getAvailableSurahsForReader(selectedReader, rObj?.name, dynamicMapping || undefined);
+  }, [currentView, selectedReader, dynamicMapping]);
+
+  // List of surahs filtered for current reader
+  const availableSurahsList = useMemo(() => {
+    const fullSurahs = Array.from({ length: 114 }, (_, i) => ({
+      number: i + 1,
+      name: SURAH_NAMES_AR[i] || `سورة ${i + 1}`,
+    }));
+    if (currentView !== "download_listening") {
+      return fullSurahs;
+    }
+    return fullSurahs.filter((s) => availableSurahNumbers.includes(s.number));
+  }, [currentView, availableSurahNumbers]);
+
+  // --- Download Logic Helpers ---
+  const getSanitizedReaderId = useCallback((readerId: string) => {
+    return readerId.replace(/[^a-zA-Z0-9_-]/g, "_");
+  }, []);
+
+  const getLegacySanitizedReaderId = useCallback((readerId: string) => {
+    if (readerId.startsWith("http")) {
+      return readerId
+        .replace(/https?:\/\//, "")
+        .replace(/\//g, "_")
+        .replace(/\./g, "_");
+    }
+    return readerId;
+  }, []);
 
   // Check downloaded items for current selection
   const checkDownloads = useCallback(() => {
@@ -391,21 +521,33 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
       const downloadedFiles = JSON.parse(localStorage.getItem('downloaded_audio_files') || '[]');
       const downloadedSet = new Set(downloadedFiles.filter((f: any) => (f.size || 0) > 1000).map((f: any) => f.fileName));
       const sanitizedId = getSanitizedReaderId(selectedReader);
+      const legacySanitizedId = getLegacySanitizedReaderId(selectedReader);
       const isSurahMode = currentView === "download_listening";
 
+      const isAudioFileDownloaded = (suffix: string) => {
+        return (
+          downloadedSet.has(`${sanitizedId}_${suffix}`) ||
+          downloadedSet.has(`${legacySanitizedId}_${suffix}`)
+        );
+      };
+
       const dSurahs: string[] = [];
-      for (let s = 1; s <= 114; s++) {
+      const surahsToCheck = currentView === "download_listening"
+        ? availableSurahNumbers
+        : Array.from({ length: 114 }, (_, i) => i + 1);
+
+      for (const s of surahsToCheck) {
         let allItemsDownloaded = true;
         if (isSurahMode) {
-          const fileName = `${sanitizedId}_${String(s).padStart(3, "0")}.mp3`;
-          if (!downloadedSet.has(fileName)) allItemsDownloaded = false;
+          const sNumStr = String(s).padStart(3, "0");
+          if (!isAudioFileDownloaded(`${sNumStr}.mp3`)) allItemsDownloaded = false;
         } else {
           const surahData = quranData.surahs.find((sd: any) => sd.number === s);
           if (!surahData) {
             allItemsDownloaded = false;
           } else {
             for (let i = 1; i <= surahData.ayahs.length; i++) {
-              if (!downloadedSet.has(`${sanitizedId}_${s}_${i}.mp3`)) {
+              if (!isAudioFileDownloaded(`${s}_${i}.mp3`)) {
                 allItemsDownloaded = false;
                 break;
               }
@@ -417,33 +559,37 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
 
       const dJuzs: string[] = [];
       for (let j = 1; j <= 30; j++) {
-        const ayahs = getAyahsForJuz(j);
-        let allItemsDownloaded = true;
         if (isSurahMode) {
-          const surahsInJuz = Array.from(new Set(ayahs.map(a => a.surah)));
-          for (const sNum of surahsInJuz) {
-            const fileName = `${sanitizedId}_${String(sNum).padStart(3, "0")}.mp3`;
-            if (!downloadedSet.has(fileName)) {
-              allItemsDownloaded = false;
-              break;
+          const surahsInJuz = getSurahsForJuz(j).filter((sNum) => availableSurahNumbers.includes(sNum));
+          if (surahsInJuz.length > 0) {
+            let allItemsDownloaded = true;
+            for (const sNum of surahsInJuz) {
+              const sNumStr = String(sNum).padStart(3, "0");
+              if (!isAudioFileDownloaded(`${sNumStr}.mp3`)) {
+                allItemsDownloaded = false;
+                break;
+              }
             }
+            if (allItemsDownloaded) dJuzs.push(j.toString());
           }
         } else {
+          const ayahs = getAyahsForJuz(j);
+          let allItemsDownloaded = true;
           for (const a of ayahs) {
-            if (!downloadedSet.has(`${sanitizedId}_${a.surah}_${a.ayah}.mp3`)) {
+            if (!isAudioFileDownloaded(`${a.surah}_${a.ayah}.mp3`)) {
               allItemsDownloaded = false;
               break;
             }
           }
+          if (allItemsDownloaded) dJuzs.push(j.toString());
         }
-        if (allItemsDownloaded) dJuzs.push(j.toString());
       }
       setDownloadedSurahs(dSurahs);
       setDownloadedJuzs(dJuzs);
     } catch (e) {
       console.error('Error checking downloads:', e);
     }
-  }, [selectedReader, selectedTafsir, currentView]);
+  }, [selectedReader, selectedTafsir, currentView, availableSurahNumbers, getSanitizedReaderId, getLegacySanitizedReaderId]);
 
   useEffect(() => {
     checkDownloads();
@@ -471,7 +617,12 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
       }
       return true;
     } else {
-      if (selectedSurahs.includes("all")) return downloadedSurahs.length === 114;
+      if (selectedSurahs.includes("all")) {
+        return (
+          availableSurahsList.length > 0 &&
+          availableSurahsList.every((s) => downloadedSurahs.includes(s.number.toString()))
+        );
+      }
       for (const s of selectedSurahs) {
         if (!downloadedSurahs.includes(s)) return false;
       }
@@ -523,17 +674,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
     setIsAddModalOpen(false);
   };
 
-  // --- Download Logic ---
-  const getSanitizedReaderId = (readerId: string) => {
-    if (readerId.startsWith("http")) {
-      return readerId
-        .replace(/https?:\/\//, "")
-        .replace(/\//g, "_")
-        .replace(/\./g, "_");
-    }
-    return readerId;
-  };
-
+  // --- Download Storage and Execution ---
   const storeAudioOffline = (fileName: string, blob: Blob) => {
     try {
       const downloadedFiles = JSON.parse(
@@ -599,7 +740,6 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
         if (match) {
           const blob = await match.blob();
           storeAudioOffline(fileName, blob);
-          checkDownloads(); // Refresh status
           return;
         }
 
@@ -619,7 +759,6 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
           }),
         );
         storeAudioOffline(fileName, blob);
-        checkDownloads(); // Refresh status
       }
     } catch (e) {
       if ((e as Error).name !== "AbortError") {
@@ -649,14 +788,13 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
         if (match) {
           const blob = await match.blob();
           storeAudioOffline(fileName, blob);
-          checkDownloads(); // Refresh status
           return;
         }
 
         const response = await fetch(url, {
           signal: abortControllerRef.current?.signal,
         });
-        if (!response.ok) throw new Error(`فشل التحميل: ${response.status}`);
+        if (!response.ok) throw new Error(`فشل التحميل: ${response.status} ${response.statusText}`);
 
         const blob = await response.blob();
         if (blob.size < 1000) return;
@@ -668,7 +806,6 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
           }),
         );
         storeAudioOffline(fileName, blob);
-        checkDownloads(); // Refresh status
       }
     } catch (e) {
       if ((e as Error).name !== "AbortError") {
@@ -749,19 +886,21 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
 
     try {
       if (type === "quran") {
-        const itemsToDownload: { s: number; a: number }[] = [];
+        const itemsToDownload = new Set<string>();
 
         if (selectedSurahs.includes("all")) {
-          for (let s = 1; s <= 114; s++) {
-            const surahData = quranData.surahs.find(
-              (sd: any) => sd.number === s,
-            );
-            if (surahData) {
-              if (mode === "surah") {
-                itemsToDownload.push({ s, a: 0 });
-              } else {
+          const surahsToAdd = currentView === "download_listening"
+            ? availableSurahNumbers
+            : Array.from({ length: 114 }, (_, i) => i + 1);
+
+          for (const s of surahsToAdd) {
+            if (mode === "surah") {
+              itemsToDownload.add(`${s}_0`);
+            } else {
+              const surahData = quranData.surahs.find((sd: any) => sd.number === s);
+              if (surahData) {
                 for (let a = 1; a <= surahData.ayahs.length; a++) {
-                  itemsToDownload.push({ s, a });
+                  itemsToDownload.add(`${s}_${a}`);
                 }
               }
             }
@@ -770,43 +909,34 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
           // Add selected surahs
           for (const sStr of selectedSurahs) {
             const s = parseInt(sStr);
-            const surahData = quranData.surahs.find(
-              (sd: any) => sd.number === s,
-            );
-            if (surahData) {
-              if (mode === "surah") {
-                itemsToDownload.push({ s, a: 0 });
-              } else {
+            if (currentView === "download_listening" && !availableSurahNumbers.includes(s)) {
+              continue;
+            }
+            if (mode === "surah") {
+              itemsToDownload.add(`${s}_0`);
+            } else {
+              const surahData = quranData.surahs.find((sd: any) => sd.number === s);
+              if (surahData) {
                 for (let a = 1; a <= surahData.ayahs.length; a++) {
-                  itemsToDownload.push({ s, a });
+                  itemsToDownload.add(`${s}_${a}`);
                 }
               }
             }
           }
           // Add selected juzs
           for (const jStr of selectedJuzs) {
-            const juzAyahs = getAyahsForJuz(parseInt(jStr));
+            const jNum = parseInt(jStr);
             if (mode === "surah") {
-              const surahsInJuz = Array.from(
-                new Set(juzAyahs.map((a) => a.surah)),
+              const surahsInJuz = getSurahsForJuz(jNum).filter((sNum) =>
+                currentView === "download_listening" ? availableSurahNumbers.includes(sNum) : true
               );
               for (const s of surahsInJuz) {
-                if (
-                  !itemsToDownload.some((item) => item.s === s && item.a === 0)
-                ) {
-                  itemsToDownload.push({ s, a: 0 });
-                }
+                itemsToDownload.add(`${s}_0`);
               }
             } else {
+              const juzAyahs = getAyahsForJuz(jNum);
               for (const item of juzAyahs) {
-                if (
-                  !itemsToDownload.some(
-                    (existing) =>
-                      existing.s === item.surah && existing.a === item.ayah,
-                  )
-                ) {
-                  itemsToDownload.push({ s: item.surah, a: item.ayah });
-                }
+                itemsToDownload.add(`${item.surah}_${item.ayah}`);
               }
             }
           }
@@ -820,45 +950,104 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
           downloadedAudio.map((f: any) => f.fileName),
         );
         const sanitizedId = getSanitizedReaderId(selectedReader);
+        const legacySanitizedId = getLegacySanitizedReaderId(selectedReader);
 
-        const finalItemsToDownload = itemsToDownload.filter((item) => {
-          let fileName = "";
-          if (item.a === 0) {
-            fileName = `${sanitizedId}_${String(item.s).padStart(3, "0")}.mp3`;
+        const parsedItems: { s: number; a: number }[] = [];
+        let alreadyDownloadedCount = 0;
+
+        itemsToDownload.forEach((key) => {
+          const [s, a] = key.split("_").map(Number);
+          let isAlreadyDownloaded = false;
+          if (a === 0) {
+            const sStr = String(s).padStart(3, "0");
+            const file1 = `${sanitizedId}_${sStr}.mp3`;
+            const file2 = `${legacySanitizedId}_${sStr}.mp3`;
+            if (downloadedAudioSet.has(file1) || downloadedAudioSet.has(file2)) {
+              isAlreadyDownloaded = true;
+            }
           } else {
-            fileName = `${sanitizedId}_${item.s}_${item.a}.mp3`;
+            const file1 = `${sanitizedId}_${s}_${a}.mp3`;
+            const file2 = `${legacySanitizedId}_${s}_${a}.mp3`;
+            if (downloadedAudioSet.has(file1) || downloadedAudioSet.has(file2)) {
+              isAlreadyDownloaded = true;
+            }
           }
-          return !downloadedAudioSet.has(fileName);
+
+          if (isAlreadyDownloaded) {
+            alreadyDownloadedCount++;
+          } else {
+            parsedItems.push({ s, a });
+          }
         });
 
-        const total = finalItemsToDownload.length;
-        if (total === 0 && itemsToDownload.length > 0) {
+        if (parsedItems.length === 0 && itemsToDownload.size > 0) {
           setStatus("جميع العناصر المحددة محملة مسبقاً");
           showToast("جميع العناصر المحددة محملة مسبقاً");
           setIsDownloading(false);
           return;
         }
 
-        const skippedCount = itemsToDownload.length - total;
-        if (skippedCount > 0) {
-          showToast(`تم تخطي ${skippedCount} عنصر محمل مسبقاً`);
+        if (alreadyDownloadedCount > 0) {
+          showToast(`تم تخطي ${alreadyDownloadedCount} ${mode === "surah" ? "سورة" : "آية"} محملة مسبقاً`);
         }
+
+        parsedItems.sort((a, b) => {
+          if (a.s !== b.s) return a.s - b.s;
+          return a.a - b.a;
+        });
+
+        const total = parsedItems.length;
+        let downloaded = 0;
+        let failedCount = 0;
 
         for (let i = 0; i < total; i++) {
           if (abortControllerRef.current?.signal.aborted) break;
-          const item = finalItemsToDownload[i];
+          const item = parsedItems[i];
+          const surahName = SURAH_NAMES_AR[item.s - 1] || `سورة ${item.s}`;
 
           if (item.a === 0) {
-            setStatus(`جاري تحميل سورة ${SURAH_NAMES_AR[item.s - 1]}...`);
-            await downloadSurahFile(selectedReader, item.s);
+            setStatus(
+              `جاري تحميل ${surahName} (${downloaded + 1}/${total}) - ${Math.round(((downloaded + failedCount) / total) * 100)}%`
+            );
+            try {
+              await downloadSurahFile(selectedReader, item.s);
+              downloaded++;
+            } catch (err: any) {
+              if (err.name === "AbortError" || err.message === "Aborted") throw err;
+              console.warn(`Surah download error ${item.s}:`, err);
+              failedCount++;
+            }
           } else {
             setStatus(
-              `جاري تحميل سورة ${SURAH_NAMES_AR[item.s - 1]} آية ${item.a}...`,
+              `جاري تحميل آية ${item.a} من ${surahName} (${downloaded + 1}/${total}) - ${Math.round(((downloaded + failedCount) / total) * 100)}%`
             );
-            await downloadAyah(selectedReader, item.s, item.a);
+            try {
+              await downloadAyah(selectedReader, item.s, item.a);
+              downloaded++;
+            } catch (err: any) {
+              if (err.name === "AbortError" || err.message === "Aborted") throw err;
+              console.warn(`Ayah download error ${item.s}:${item.a}:`, err);
+              failedCount++;
+            }
           }
 
-          setProgress(((i + 1) / total) * 100);
+          setProgress(((downloaded + failedCount) / total) * 100);
+        }
+
+        checkDownloads();
+
+        if (!abortControllerRef.current?.signal.aborted) {
+          setProgress(100);
+          if (failedCount === 0) {
+            setStatus("تم التحميل بنجاح!");
+            showToast("تم التحميل بنجاح!");
+          } else if (downloaded > 0) {
+            setStatus(`تم تحميل ${downloaded} عنصر (تعذر ${failedCount})`);
+            showToast(`تم تحميل ${downloaded} عنصر (تعذر ${failedCount})`);
+          } else {
+            setStatus("تعذر تحميل العناصر");
+            showToast("تعذر تحميل العناصر");
+          }
         }
       } else {
         // Tafseer download
@@ -908,11 +1097,13 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
           await downloadSpecificTafsir(selectedTafsir, s);
           setProgress(((i + 1) / total) * 100);
         }
-      }
 
-      if (!abortControllerRef.current?.signal.aborted) {
-        setStatus("تم التحميل بنجاح");
-        showToast("تم التحميل بنجاح");
+        checkDownloads();
+
+        if (!abortControllerRef.current?.signal.aborted) {
+          setStatus("تم التحميل بنجاح");
+          showToast("تم التحميل بنجاح");
+        }
       }
     } catch (e: any) {
       console.error("Download Error:", e);
@@ -938,6 +1129,15 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
         });
       }
     } else {
+      const jNum = parseInt(id);
+      if (currentView === "download_listening") {
+        const surahsInJuz = getSurahsForJuz(jNum).filter((s) => availableSurahNumbers.includes(s));
+        if (surahsInJuz.length === 0) {
+          showToast("لا توجد سور مسجلة لهذا القارئ في هذا الجزء");
+          return;
+        }
+      }
+
       setSelectedJuzs((prev) => {
         const filteredSurahs = selectedSurahs.filter((s) => s !== "all");
         if (filteredSurahs.length !== selectedSurahs.length)
@@ -1148,7 +1348,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                         <span
                           className={`text-sm flex-1 transition-all ${isSelected ? "text-gray-900 font-bold" : "text-gray-500"}`}
                         >
-                          {shortcut.label}
+                          {translateMenuItem(shortcut.id, shortcut.label)}
                         </span>
                         <div
                           className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${isSelected ? "bg-black border-black text-white" : "border-gray-300 group-hover:border-gray-400"}`}
@@ -1916,22 +2116,66 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                 <div className="space-y-6">
                   {/* Reciter Selection */}
                   <div className="space-y-2">
-                    <label
-                      className="text-xs font-bold opacity-50 block"
-                      style={{ color: currentTheme.text }}
-                    >
-                      اختر القارئ
-                    </label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {(currentView === "download_memorization"
-                        ? MEMORIZATION_READERS
-                        : currentView === "download_quran"
-                          ? READERS
-                          : LISTEN_RECITERS
-                      ).map((r) => (
+                    <div className="flex justify-between items-center" dir="rtl">
+                      <label
+                        className="text-xs font-bold opacity-50 block"
+                        style={{ color: currentTheme.text }}
+                      >
+                        اختر القارئ
+                      </label>
+                      {currentView === "download_listening" && selectedReaderObj && (
+                        <span className="text-[10px] font-bold text-emerald-500">
+                          {availableSurahsList.length < 114
+                            ? `(متوفر: ${availableSurahsList.length} سورة)`
+                            : "(المصحف كامل)"}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Search box if in download_listening */}
+                    {currentView === "download_listening" && (
+                      <div className="relative mb-2">
+                        <input
+                          type="text"
+                          value={readerSearch}
+                          onChange={(e) => setReaderSearch(e.target.value)}
+                          placeholder="ابحث عن قارئ..."
+                          className="w-full py-1.5 pr-7 pl-3 text-xs rounded-lg border outline-none"
+                          style={{
+                            backgroundColor: `${currentTheme.text}05`,
+                            borderColor: `${currentTheme.text}15`,
+                            color: currentTheme.text,
+                          }}
+                          dir="rtl"
+                        />
+                        <Search
+                          size={12}
+                          className="absolute right-2.5 top-2.5 opacity-40"
+                          style={{ color: currentTheme.text }}
+                        />
+                        {readerSearch && (
+                          <button
+                            onClick={() => setReaderSearch("")}
+                            className="absolute left-2.5 top-2 text-xs opacity-40 hover:opacity-100"
+                            style={{ color: currentTheme.text }}
+                          >
+                            <X size={12} />
+                          </button>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-1 custom-scrollbar" dir="rtl">
+                      {filteredCurrentReaders.map((r) => (
                         <button
                           key={r.id}
-                          onClick={() => setSelectedReader(r.id)}
+                          onClick={() => {
+                            if (selectedReader !== r.id) {
+                              setSelectedReader(r.id);
+                              setSelectedSurahs([]);
+                              setSelectedJuzs([]);
+                            }
+                          }}
                           className={`p-2 text-[10px] font-bold rounded-lg border transition-all ${selectedReader === r.id ? "border-emerald-500" : ""}`}
                           style={{
                             backgroundColor:
@@ -1952,17 +2196,43 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                         </button>
                       ))}
                     </div>
+
+                    {/* Warning banner when reader has partial Quran */}
+                    {currentView === "download_listening" && selectedReaderObj && availableSurahsList.length < 114 && (
+                      <div
+                        className="flex items-start gap-2 p-2 rounded-lg border text-[11px] text-right mt-1 animate-fadeIn"
+                        style={{
+                          backgroundColor: `${currentTheme.accent}10`,
+                          borderColor: `${currentTheme.accent}30`,
+                          color: currentTheme.text,
+                        }}
+                        dir="rtl"
+                      >
+                        <Info size={14} className="shrink-0 text-amber-500 mt-0.5" />
+                        <div>
+                          <span className="font-bold">تنبيه للقارئ ({selectedReaderObj.name}): </span>
+                          <span>مسجل له {availableSurahsList.length} سورة فقط من أصل 114 سورة. تم ضبط قائمة السور والأجزاء لتشمل فقط ما هو متوفر له تفادياً لتوقف التحميل.</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Surah Selection */}
                   <div className="space-y-2">
-                    <label
-                      className="text-xs font-bold opacity-50 block"
-                      style={{ color: currentTheme.text }}
-                    >
-                      اختر السور
-                    </label>
-                    <div className="grid grid-cols-3 gap-2 max-h-40 overflow-y-auto p-1 custom-scrollbar">
+                    <div className="flex justify-between items-center" dir="rtl">
+                      <label
+                        className="text-xs font-bold opacity-50 block"
+                        style={{ color: currentTheme.text }}
+                      >
+                        {currentView === "download_listening" && availableSurahsList.length < 114
+                          ? `اختر السور (المتاح للقارئ: ${availableSurahsList.length} سورة فقط)`
+                          : "اختر السور"}
+                      </label>
+                      {selectedSurahs.length > 0 && !selectedSurahs.includes("all") && (
+                        <span className="text-[10px] opacity-60 font-medium">محدد: {selectedSurahs.length} سورة</span>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 max-h-40 overflow-y-auto p-1 custom-scrollbar" dir="rtl">
                       <button
                         onClick={() => toggleSelection("all", "surah")}
                         className={`p-2 text-[10px] font-bold rounded-lg border transition-all ${selectedSurahs.includes("all") ? "bg-emerald-500 border-emerald-500 text-white" : ""}`}
@@ -1976,16 +2246,18 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                             : {}
                         }
                       >
-                        الكل
+                        {currentView === "download_listening" && availableSurahsList.length < 114
+                          ? `المتاح (${availableSurahsList.length})`
+                          : "الكل"}
                       </button>
-                      {SURAH_NAMES_AR.map((name, i) => {
-                        const isDownloaded = downloadedSurahs.includes((i + 1).toString());
-                        const isSelected = selectedSurahs.includes((i + 1).toString());
+                      {availableSurahsList.map((surah) => {
+                        const isDownloaded = downloadedSurahs.includes(surah.number.toString());
+                        const isSelected = selectedSurahs.includes(surah.number.toString());
                         return (
                           <button
-                            key={i}
+                            key={surah.number}
                             onClick={() =>
-                              toggleSelection((i + 1).toString(), "surah")
+                              toggleSelection(surah.number.toString(), "surah")
                             }
                             className={`p-2 text-[10px] font-bold rounded-lg border transition-all ${isSelected ? "border-emerald-500" : isDownloaded ? "bg-emerald-50 dark:bg-emerald-900/30 border-emerald-400 text-emerald-700 dark:text-emerald-400" : ""}`}
                             style={{
@@ -2002,7 +2274,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                           >
                             <div className="flex items-center justify-center gap-1">
                               {isDownloaded && <Check size={10} />}
-                              <span>{name}</span>
+                              <span>{surah.name}</span>
                             </div>
                           </button>
                         );
@@ -2012,21 +2284,48 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
 
                   {/* Juz Selection */}
                   <div className="space-y-2">
-                    <label
-                      className="text-xs font-bold opacity-50 block"
-                      style={{ color: currentTheme.text }}
-                    >
-                      اختر الأجزاء
-                    </label>
-                    <div className="grid grid-cols-4 gap-2 max-h-32 overflow-y-auto p-1 custom-scrollbar">
+                    <div className="flex justify-between items-center" dir="rtl">
+                      <label
+                        className="text-xs font-bold opacity-50 block"
+                        style={{ color: currentTheme.text }}
+                      >
+                        {currentView === "download_listening" && availableSurahsList.length < 114
+                          ? "اختر الأجزاء (تعديل تلقائي للمتوفر فقط)"
+                          : "اختر الأجزاء"}
+                      </label>
+                      {selectedJuzs.length > 0 && (
+                        <span className="text-[10px] opacity-60 font-medium">محدد: {selectedJuzs.length} جزء</span>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-4 gap-2 max-h-32 overflow-y-auto p-1 custom-scrollbar" dir="rtl">
                       {Array.from({ length: 30 }, (_, i) => i + 1).map((j) => {
                         const isDownloaded = downloadedJuzs.includes(j.toString());
                         const isSelected = selectedJuzs.includes(j.toString());
+                        const allSurahsInThisJuz = getSurahsForJuz(j);
+                        const availableInThisJuz = allSurahsInThisJuz.filter((s) =>
+                          availableSurahNumbers.includes(s)
+                        );
+                        const isUnavailable =
+                          currentView === "download_listening" && availableInThisJuz.length === 0;
+                        const isPartialJuz =
+                          currentView === "download_listening" &&
+                          availableInThisJuz.length > 0 &&
+                          availableInThisJuz.length < allSurahsInThisJuz.length;
+
                         return (
                           <button
                             key={j}
-                            onClick={() => toggleSelection(j.toString(), "juz")}
-                            className={`p-2 text-[10px] font-bold rounded-lg border transition-all ${isSelected ? "border-emerald-500" : isDownloaded ? "bg-emerald-50 dark:bg-emerald-900/30 border-emerald-400 text-emerald-700 dark:text-emerald-400" : ""}`}
+                            disabled={isUnavailable}
+                            onClick={() => {
+                              if (isUnavailable) return;
+                              toggleSelection(j.toString(), "juz");
+                              if (isPartialJuz && !isSelected) {
+                                showToast(
+                                  `تم تعديل الجزء ${j} ليشمل ${availableInThisJuz.length} سورة متوفرة فقط لهذا القارئ`,
+                                );
+                              }
+                            }}
+                            className={`p-2 text-[10px] font-bold rounded-lg border transition-all flex flex-col items-center justify-center gap-0.5 ${isSelected ? "border-emerald-500" : isDownloaded ? "bg-emerald-50 dark:bg-emerald-900/30 border-emerald-400 text-emerald-700 dark:text-emerald-400" : isUnavailable ? "opacity-40 cursor-not-allowed" : ""}`}
                             style={{
                               backgroundColor: isSelected
                                 ? `${currentTheme.accent}15`
@@ -2043,6 +2342,11 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                               {isDownloaded && <Check size={10} />}
                               <span>ج {j}</span>
                             </div>
+                            {isUnavailable ? (
+                              <span className="text-[8px] text-red-500 opacity-80">غير متوفر</span>
+                            ) : isPartialJuz ? (
+                              <span className="text-[8px] text-amber-500">({availableInThisJuz.length} سورة)</span>
+                            ) : null}
                           </button>
                         );
                       })}
@@ -2063,7 +2367,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                       className="flex justify-between text-[10px] font-bold opacity-60"
                       style={{ color: currentTheme.text }}
                     >
-                      <span>{status}</span>
+                      <span className="truncate max-w-[200px]">{status}</span>
                       <span>{Math.round(progress)}%</span>
                     </div>
                     <div
@@ -2075,6 +2379,11 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                         style={{ width: `${progress}%` }}
                       ></div>
                     </div>
+                    {currentView === "download_listening" && availableSurahsList.length < 114 && (
+                      <p className="text-[10px] text-emerald-600 dark:text-emerald-400 text-center font-bold">
+                        جاري تحميل السور المتوفرة للقارئ فقط
+                      </p>
+                    )}
                   </div>
                 )}
                 <div className="flex gap-2">
@@ -2405,7 +2714,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                         shortcut.icon as React.ReactElement<any>,
                         { size: 18 },
                       )}
-                      label={shortcut.label}
+                      label={translateMenuItem(shortcut.id, shortcut.label)}
                       onClick={() => {
                         if (shortcut.id === "quran-download-parent") {
                           setCurrentView("download_quran_menu");

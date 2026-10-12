@@ -147,14 +147,28 @@ function PrayerTimes({ onBack, onNavigate }) {
     useEffect(() => {
         const interceptor = () => {
             if (isModalOpen) {
-                setIsModalOpen(false);
+                closeModal();
+                return true;
+            }
+            if (isNotifModalOpen) {
+                setIsNotifModalOpen(false);
                 return true;
             }
             return false;
         };
         const unregister = registerBackInterceptor(interceptor);
         return unregister;
-    }, [isModalOpen]);
+    }, [isModalOpen, isNotifModalOpen]);
+
+    const handleHomeClick = () => {
+        if (isModalOpen) {
+            closeModal();
+        } else if (isNotifModalOpen) {
+            setIsNotifModalOpen(false);
+        } else {
+            onBack();
+        }
+    };
 
     const handleRefreshLocation = async () => {
         showToast("جاري تحديد الموقع الحالي...");
@@ -548,7 +562,7 @@ function PrayerTimes({ onBack, onNavigate }) {
                     {toastMessage}
                 </div>
             )}
-            <BottomBar onHomeClick={() => onNavigate('home')} onThemesClick={() => {}} showThemes={false} />
+            <BottomBar onHomeClick={handleHomeClick} onThemesClick={() => {}} showThemes={false} />
             <TutorialOverlay tutorialId="prayer-times-tutorial" steps={prayerTutorialSteps} />
         </div>
     );

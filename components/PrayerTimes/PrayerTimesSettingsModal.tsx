@@ -1,6 +1,9 @@
-import React from 'react';
-import { BellRing, VolumeX, Clock } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { BellRing, VolumeX, Clock, ShieldAlert } from 'lucide-react';
 import ToneSelector from './ToneSelector';
+import { Capacitor } from '@capacitor/core';
+import { isDndPermissionGranted, requestDndPermission } from '../../utils/silentMode';
+import { LocalNotifications } from '@capacitor/local-notifications';
 
 interface PrayerTimesSettingsModalProps {
     isOpen: boolean;
@@ -80,7 +83,39 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
     tempAutoSilentDuration,
     setTempAutoSilentDuration
 }) => {
+    const [hasDndPermission, setHasDndPermission] = useState(true);
+
+    useEffect(() => {
+        if (isOpen && Capacitor.getPlatform() === 'android') {
+            isDndPermissionGranted().then(setHasDndPermission);
+        }
+    }, [isOpen]);
+
     if (!isOpen || !currentEditingKey) return null;
+
+    const handleToggleIqama = async () => {
+        const nextState = !tempIqamaEnabled;
+        setTempIqamaEnabled(nextState);
+        if (nextState && Capacitor.isNativePlatform()) {
+            try {
+                const status = await LocalNotifications.checkPermissions();
+                if (status.display !== 'granted') {
+                    await LocalNotifications.requestPermissions();
+                }
+            } catch (e) {
+                console.warn('Notification permission check error', e);
+            }
+        }
+    };
+
+    const handleToggleAutoSilent = async () => {
+        const nextState = !tempAutoSilentEnabled;
+        setTempAutoSilentEnabled(nextState);
+        if (nextState && Capacitor.getPlatform() === 'android') {
+            const granted = await isDndPermissionGranted();
+            setHasDndPermission(granted);
+        }
+    };
 
     const modalBorderColor = cardBorderColor || (isDefaultTheme ? '#000000' : (isBlackAndWhite ? '#FFFFFF' : primaryColor));
     const totalPreviewOffset = tempOffset + (isSummerTime ? 60 : 0);
@@ -119,7 +154,7 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
                         </div>
                     </div>
 
-                    {/* نغمة التنبيه - تم نقلها لتكون تحت بطاقة تعديل وقت الأذان مباشرة */}
+                    {/* نغمة التنبيه */}
                     <ToneSelector 
                         currentEditingKey={currentEditingKey}
                         configTones={configTones}
@@ -130,14 +165,202 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
                         primaryColor={primaryColor}
                     />
 
-                    {/* تنبيه الإقامة - بنفس حجم بطاقتي الاستعداد والصامت التلقائي */}
+                    {/* 1. تنبيه الاستعداد للصلاة */}
+                    {!isSunrise && (
+                        <div 
+                            className="themed-bg-alt p-3 rounded-2xl border-2 border-black dark:border-white shadow-xs space-y-2.5 transition-all"
+                        >
+                            <div className="flex items-center justify-between gap-3">
+                                {/* Toggle Switch */}
+                                <button
+                                    type="button"
+                                    onClick={() => setTempPreReminderEnabled(p => !p)}
+                                    className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors shrink-0 ${
+                                        tempPreReminderEnabled ? '' : 'bg-gray-300 dark:bg-gray-600'
+                                    }`}
+                                    style={{ backgroundColor: tempPreReminderEnabled ? primaryColor : undefined }}
+                                    title="تنبيه الاستعداد"
+                                >
+                                    <div
+                                        className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                                            tempPreReminderEnabled ? '-translate-x-5' : 'translate-x-0'
+                                        }`}
+                                    />
+                                </button>
+
+                                {/* Info */}
+                                <div className="min-w-0 flex-1 text-right" dir="rtl">
+                                    <div className="flex items-center justify-start gap-1.5 flex-wrap">
+                                        <span className="font-bold text-xs">تنبيه الاستعداد</span>
+                                        <span 
+                                            className="text-[10px] font-bold px-1.5 py-0.5 rounded-full transition-colors"
+                                            style={{
+                                                backgroundColor: `${primaryColor}18`,
+                                                color: primaryColor
+                                            }}
+                                        >
+                                            قبل {tempPreReminderMinutes}د
+                                        </span>
+                                    </div>
+                                    <p className="text-[11px] opacity-75 mt-0.5 leading-snug">
+                                        للوضوء والمسجد
+                                    </p>
+                                </div>
+
+                                {/* Icon */}
+                                <div 
+                                    className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors"
+                                    style={{
+                                        backgroundColor: tempPreReminderEnabled ? `${primaryColor}18` : 'rgba(0,0,0,0.05)',
+                                        color: tempPreReminderEnabled ? primaryColor : secondaryColor
+                                    }}
+                                >
+                                    <BellRing className="w-4 h-4" />
+                                </div>
+                            </div>
+
+                            {/* Duration options - ALWAYS VISIBLE whether enabled or disabled */}
+                            <div className="flex items-center justify-start gap-1.5 pt-1.5 border-t border-black/10 dark:border-white/10" dir="rtl">
+                                <span className="text-[10px] opacity-60">الوقت:</span>
+                                {[10, 15, 20].map((mins) => {
+                                    const isSelected = tempPreReminderMinutes === mins;
+                                    return (
+                                        <button
+                                            key={mins}
+                                            type="button"
+                                            onClick={() => setTempPreReminderMinutes(mins)}
+                                            className={`px-2.5 py-0.5 rounded-md text-[10px] font-bold transition-all cursor-pointer ${
+                                                isSelected
+                                                    ? 'shadow-xs'
+                                                    : 'bg-black/5 dark:bg-white/10 opacity-80 hover:opacity-100'
+                                            }`}
+                                            style={isSelected ? {
+                                                backgroundColor: primaryColor,
+                                                color: isBlackAndWhite ? '#000000' : '#ffffff'
+                                            } : undefined}
+                                        >
+                                            {mins}د
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 2. الصامت التلقائي */}
+                    {!isSunrise && (
+                        <div 
+                            className="themed-bg-alt p-3 rounded-2xl border-2 border-black dark:border-white shadow-xs space-y-2.5 transition-all"
+                        >
+                            <div className="flex items-center justify-between gap-3">
+                                {/* Toggle Switch */}
+                                <button
+                                    type="button"
+                                    onClick={handleToggleAutoSilent}
+                                    className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors shrink-0 ${
+                                        tempAutoSilentEnabled ? '' : 'bg-gray-300 dark:bg-gray-600'
+                                    }`}
+                                    style={{ backgroundColor: tempAutoSilentEnabled ? primaryColor : undefined }}
+                                    title="الصامت التلقائي"
+                                >
+                                    <div
+                                        className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                                            tempAutoSilentEnabled ? '-translate-x-5' : 'translate-x-0'
+                                        }`}
+                                    />
+                                </button>
+
+                                {/* Info */}
+                                <div className="min-w-0 flex-1 text-right" dir="rtl">
+                                    <div className="flex items-center justify-start gap-1.5 flex-wrap">
+                                        <span className="font-bold text-xs">الصامت التلقائي</span>
+                                        <span 
+                                            className="text-[10px] font-bold px-1.5 py-0.5 rounded-full transition-colors"
+                                            style={{
+                                                backgroundColor: `${primaryColor}18`,
+                                                color: primaryColor
+                                            }}
+                                        >
+                                            {tempAutoSilentDuration}د
+                                        </span>
+                                    </div>
+                                    <p className="text-[11px] opacity-75 mt-0.5 leading-snug">
+                                        كتم الهاتف وقت الصلاة
+                                    </p>
+                                </div>
+
+                                {/* Icon */}
+                                <div 
+                                    className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors"
+                                    style={{
+                                        backgroundColor: tempAutoSilentEnabled ? `${primaryColor}18` : 'rgba(0,0,0,0.05)',
+                                        color: tempAutoSilentEnabled ? primaryColor : secondaryColor
+                                    }}
+                                >
+                                    <VolumeX className="w-4 h-4" />
+                                </div>
+                            </div>
+
+                            {/* Duration options - ALWAYS VISIBLE whether enabled or disabled */}
+                            <div className="flex items-center justify-start gap-1.5 pt-1.5 border-t border-black/10 dark:border-white/10" dir="rtl">
+                                <span className="text-[10px] opacity-60">المدة:</span>
+                                {[20, 30, 45].map((duration) => {
+                                    const isSelected = tempAutoSilentDuration === duration;
+                                    return (
+                                        <button
+                                            key={duration}
+                                            type="button"
+                                            onClick={() => setTempAutoSilentDuration(duration)}
+                                            className={`px-2.5 py-0.5 rounded-md text-[10px] font-bold transition-all cursor-pointer ${
+                                                isSelected
+                                                    ? 'shadow-xs'
+                                                    : 'bg-black/5 dark:bg-white/10 opacity-80 hover:opacity-100'
+                                            }`}
+                                            style={isSelected ? {
+                                                backgroundColor: primaryColor,
+                                                color: isBlackAndWhite ? '#000000' : '#ffffff'
+                                            } : undefined}
+                                        >
+                                            {duration}د
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Android DND Permission Notice if not granted */}
+                            {tempAutoSilentEnabled && !hasDndPermission && Capacitor.getPlatform() === 'android' && (
+                                <div className="mt-2 p-2 rounded-xl bg-amber-500/15 border border-amber-500/30 text-right flex items-center justify-between gap-2" dir="rtl">
+                                    <div className="flex items-center gap-1.5 text-[11px] text-amber-700 dark:text-amber-300 font-medium">
+                                        <ShieldAlert className="w-3.5 h-3.5 shrink-0 text-amber-500" />
+                                        <span>يلزم إذن (عدم الإزعاج) لكتم الهاتف تلقائياً</span>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={async () => {
+                                            await requestDndPermission();
+                                            setTimeout(async () => {
+                                                const granted = await isDndPermissionGranted();
+                                                setHasDndPermission(granted);
+                                            }, 1500);
+                                        }}
+                                        className="text-[10px] font-bold px-2 py-1 rounded-lg text-white shrink-0 cursor-pointer shadow-xs active:scale-95"
+                                        style={{ backgroundColor: primaryColor }}
+                                    >
+                                        منح الإذن
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* 3. تنبيه الإقامة - تم نقله أسفل بطاقة الصامت التلقائي */}
                     {!isSunrise && (
                         <div className="themed-bg-alt p-3 rounded-2xl border-2 border-black dark:border-white shadow-xs space-y-2.5 transition-all">
                             <div className="flex items-center justify-between gap-3">
                                 {/* Toggle Switch */}
                                 <button
                                     type="button"
-                                    onClick={() => setTempIqamaEnabled(p => !p)}
+                                    onClick={handleToggleIqama}
                                     className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors shrink-0 ${
                                         tempIqamaEnabled ? '' : 'bg-gray-300 dark:bg-gray-600'
                                     }`}
@@ -229,170 +452,6 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
                                         <i className="fa-solid fa-plus"></i>
                                     </button>
                                 </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* تنبيه الاستعداد للصلاة */}
-                    {!isSunrise && (
-                        <div 
-                            className="themed-bg-alt p-3 rounded-2xl border-2 border-black dark:border-white shadow-xs space-y-2.5 transition-all"
-                        >
-                            <div className="flex items-center justify-between gap-3">
-                                {/* Toggle Switch */}
-                                <button
-                                    type="button"
-                                    onClick={() => setTempPreReminderEnabled(p => !p)}
-                                    className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors shrink-0 ${
-                                        tempPreReminderEnabled ? '' : 'bg-gray-300 dark:bg-gray-600'
-                                    }`}
-                                    style={{ backgroundColor: tempPreReminderEnabled ? primaryColor : undefined }}
-                                    title="تنبيه الاستعداد"
-                                >
-                                    <div
-                                        className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
-                                            tempPreReminderEnabled ? '-translate-x-5' : 'translate-x-0'
-                                        }`}
-                                    />
-                                </button>
-
-                                {/* Info */}
-                                <div className="min-w-0 flex-1 text-right" dir="rtl">
-                                    <div className="flex items-center justify-start gap-1.5 flex-wrap">
-                                        <span className="font-bold text-xs">تنبيه الاستعداد</span>
-                                        <span 
-                                            className="text-[10px] font-bold px-1.5 py-0.5 rounded-full transition-colors"
-                                            style={{
-                                                backgroundColor: `${primaryColor}18`,
-                                                color: primaryColor
-                                            }}
-                                        >
-                                            قبل {tempPreReminderMinutes}د
-                                        </span>
-                                    </div>
-                                    <p className="text-[11px] opacity-75 mt-0.5 leading-snug">
-                                        للوضوء والمسجد
-                                    </p>
-                                </div>
-
-                                {/* Icon */}
-                                <div 
-                                    className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors"
-                                    style={{
-                                        backgroundColor: tempPreReminderEnabled ? `${primaryColor}18` : 'rgba(0,0,0,0.05)',
-                                        color: tempPreReminderEnabled ? primaryColor : secondaryColor
-                                    }}
-                                >
-                                    <BellRing className="w-4 h-4" />
-                                </div>
-                            </div>
-
-                            {/* Duration options - ALWAYS VISIBLE whether enabled or disabled */}
-                            <div className="flex items-center justify-start gap-1.5 pt-1.5 border-t border-black/10 dark:border-white/10" dir="rtl">
-                                <span className="text-[10px] opacity-60">الوقت:</span>
-                                {[10, 15, 20].map((mins) => {
-                                    const isSelected = tempPreReminderMinutes === mins;
-                                    return (
-                                        <button
-                                            key={mins}
-                                            type="button"
-                                            onClick={() => setTempPreReminderMinutes(mins)}
-                                            className={`px-2.5 py-0.5 rounded-md text-[10px] font-bold transition-all cursor-pointer ${
-                                                isSelected
-                                                    ? 'shadow-xs'
-                                                    : 'bg-black/5 dark:bg-white/10 opacity-80 hover:opacity-100'
-                                            }`}
-                                            style={isSelected ? {
-                                                backgroundColor: primaryColor,
-                                                color: isBlackAndWhite ? '#000000' : '#ffffff'
-                                            } : undefined}
-                                        >
-                                            {mins}د
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* الصامت التلقائي */}
-                    {!isSunrise && (
-                        <div 
-                            className="themed-bg-alt p-3 rounded-2xl border-2 border-black dark:border-white shadow-xs space-y-2.5 transition-all"
-                        >
-                            <div className="flex items-center justify-between gap-3">
-                                {/* Toggle Switch */}
-                                <button
-                                    type="button"
-                                    onClick={() => setTempAutoSilentEnabled(p => !p)}
-                                    className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors shrink-0 ${
-                                        tempAutoSilentEnabled ? '' : 'bg-gray-300 dark:bg-gray-600'
-                                    }`}
-                                    style={{ backgroundColor: tempAutoSilentEnabled ? primaryColor : undefined }}
-                                    title="الصامت التلقائي"
-                                >
-                                    <div
-                                        className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
-                                            tempAutoSilentEnabled ? '-translate-x-5' : 'translate-x-0'
-                                        }`}
-                                    />
-                                </button>
-
-                                {/* Info */}
-                                <div className="min-w-0 flex-1 text-right" dir="rtl">
-                                    <div className="flex items-center justify-start gap-1.5 flex-wrap">
-                                        <span className="font-bold text-xs">الصامت التلقائي</span>
-                                        <span 
-                                            className="text-[10px] font-bold px-1.5 py-0.5 rounded-full transition-colors"
-                                            style={{
-                                                backgroundColor: `${primaryColor}18`,
-                                                color: primaryColor
-                                            }}
-                                        >
-                                            {tempAutoSilentDuration}د
-                                        </span>
-                                    </div>
-                                    <p className="text-[11px] opacity-75 mt-0.5 leading-snug">
-                                        كتم الهاتف وقت الصلاة
-                                    </p>
-                                </div>
-
-                                {/* Icon */}
-                                <div 
-                                    className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors"
-                                    style={{
-                                        backgroundColor: tempAutoSilentEnabled ? `${primaryColor}18` : 'rgba(0,0,0,0.05)',
-                                        color: tempAutoSilentEnabled ? primaryColor : secondaryColor
-                                    }}
-                                >
-                                    <VolumeX className="w-4 h-4" />
-                                </div>
-                            </div>
-
-                            {/* Duration options - ALWAYS VISIBLE whether enabled or disabled */}
-                            <div className="flex items-center justify-start gap-1.5 pt-1.5 border-t border-black/10 dark:border-white/10" dir="rtl">
-                                <span className="text-[10px] opacity-60">المدة:</span>
-                                {[20, 30, 45].map((duration) => {
-                                    const isSelected = tempAutoSilentDuration === duration;
-                                    return (
-                                        <button
-                                            key={duration}
-                                            type="button"
-                                            onClick={() => setTempAutoSilentDuration(duration)}
-                                            className={`px-2.5 py-0.5 rounded-md text-[10px] font-bold transition-all cursor-pointer ${
-                                                isSelected
-                                                    ? 'shadow-xs'
-                                                    : 'bg-black/5 dark:bg-white/10 opacity-80 hover:opacity-100'
-                                            }`}
-                                            style={isSelected ? {
-                                                backgroundColor: primaryColor,
-                                                color: isBlackAndWhite ? '#000000' : '#ffffff'
-                                            } : undefined}
-                                        >
-                                            {duration}د
-                                        </button>
-                                    );
-                                })}
                             </div>
                         </div>
                     )}

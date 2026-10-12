@@ -8,6 +8,7 @@ import { useVoiceControl } from '../../context/VoiceControlContext';
 import { useShowNewBadge } from '../../utils/badgeManager';
 import { communityService } from '../../services/communityService';
 import { ahlAlQuranService, getAhlAlQuranRankColor } from '../../services/ahlAlQuranService';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface GridSectionProps {
     menuItems: any[];
@@ -32,6 +33,7 @@ const GridSection: React.FC<GridSectionProps> = ({
 }) => {
     const { showVoiceIcon } = useVoiceControl();
     const showNewBadges = useShowNewBadge();
+    const { t, translateMenuItem } = useLanguage();
     const [unreadCommunityCount, setUnreadCommunityCount] = useState<number>(() => {
         return communityService.getTotalUnreadCount();
     });
@@ -287,7 +289,7 @@ const GridSection: React.FC<GridSectionProps> = ({
                             </div>
                         ) : (
                             <NavButton 
-                                label={item.label} 
+                                label={translateMenuItem(item.id, item.label)} 
                                 onClick={() => !isEditMode && onNavigate(item.id)} 
                                 className="w-full h-full"
                                 color={buttonColor} 
@@ -297,7 +299,7 @@ const GridSection: React.FC<GridSectionProps> = ({
                                 isGlass={theme.isGlass}
                                 btnText={textColor}
                                 showNewBadge={showNewBadges && ['memorization', 'ahl-al-quran', 'others', 'islamic-sites'].includes(item.id)}
-                                badgeText="جديد"
+                                badgeText={t('common.new', 'جديد')}
                                 unreadBadgeCount={item.id === 'community' ? unreadCommunityCount : undefined}
                             />
                         )}
@@ -314,7 +316,7 @@ const GridSection: React.FC<GridSectionProps> = ({
                                     backdropFilter: theme.isGlass ? 'blur(4px)' : 'none',
                                     WebkitBackdropFilter: theme.isGlass ? 'blur(4px)' : 'none'
                                 }}
-                                title="وضع العرض"
+                                title={t('common.landscape_mode', 'وضع العرض')}
                             >
                                 <i className="fa-solid fa-arrows-rotate text-sm"></i>
                             </button>

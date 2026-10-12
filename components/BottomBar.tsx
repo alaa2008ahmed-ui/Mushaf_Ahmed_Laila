@@ -2,6 +2,7 @@
 import React, { useEffect, useRef } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { Lock, Unlock } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 interface BottomBarProps {
     onHomeClick: () => void;
@@ -13,8 +14,10 @@ interface BottomBarProps {
     rightButton?: React.ReactNode;
 }
 
-function BottomBar({ onHomeClick, onThemesClick, showHome = true, showThemes = true, homeLabel = "الرئيسية", leftButton, rightButton }: BottomBarProps) {
+function BottomBar({ onHomeClick, onThemesClick, showHome = true, showThemes = true, homeLabel, leftButton, rightButton }: BottomBarProps) {
     const { theme, themeKey, isPageLocked, togglePageLock, isQuranPage, currentPage } = useTheme();
+    const { t } = useLanguage();
+    const effectiveHomeLabel = homeLabel || t('bottombar.home', 'الرئيسية');
 
     const isSingleButton = !showHome || !showThemes;
     const homeButtonClass = `bar-button btn-3d-effect ${isSingleButton ? 'w-full max-w-[160px] mx-auto py-2.5 px-4 rounded-xl shadow-lg' : 'max-w-[120px]'}`;
@@ -96,7 +99,7 @@ function BottomBar({ onHomeClick, onThemesClick, showHome = true, showThemes = t
                         style={getBtnStyle(0)}
                     >
                         <span className="text-xl">🏠</span>
-                        <span>{homeLabel}</span>
+                        <span>{effectiveHomeLabel}</span>
                     </button>
                 )}
                 
@@ -109,7 +112,7 @@ function BottomBar({ onHomeClick, onThemesClick, showHome = true, showThemes = t
                         data-id="theme-toggle-button"
                     >
                          <span className="text-xl">🎨</span>
-                        <span>الثيمات</span>
+                        <span>{t('bottombar.themes', 'الثيمات')}</span>
                     </button>
                 )}
                 

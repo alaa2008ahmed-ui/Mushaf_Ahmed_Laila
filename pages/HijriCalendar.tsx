@@ -584,6 +584,9 @@ const CalendarGrid = ({ viewDate, onSelectDay, selectedDay, theme, primaryColor,
                 const event = islamicEvents.find(e => e.day === hijri.day && e.month === hijri.month);
                 const isRamadan = hijri.month === 9;
 
+                // Color definition for the border
+                const borderColor = isDefaultTheme ? '#000000' : (theme.palette?.[0] || '#000000');
+
                 let dynamicBgClass = 'bg-white/50 dark:bg-white/5 border border-black/5 dark:border-white/5 shadow-sm';
                 let dynamicTextClass = '';
                 let dynamicDotClass = '';
@@ -643,7 +646,7 @@ const CalendarGrid = ({ viewDate, onSelectDay, selectedDay, theme, primaryColor,
                             ${cell.isCurrentMonth ? dynamicBgClass : 'opacity-30 ' + dynamicBgClass}
                             ${isSelected ? 'scale-110 z-10 shadow-xl' : 'hover:scale-[1.02] hover:bg-white/80 dark:hover:bg-white/10'}
                         `}
-                        style={cellStyle}
+                        style={{ ...cellStyle, border: `1px solid ${borderColor}` }}
                     >
                         <span className={`text-sm sm:text-lg font-black leading-none ${!isSelected ? dynamicTextClass : ''}`}>
                             {toArabicNumerals(cell.day)}

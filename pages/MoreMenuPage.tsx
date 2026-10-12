@@ -5,6 +5,7 @@ import InteractiveBackground from '../components/InteractiveBackground';
 import NavButton from '../components/MainMenu/NavButton';
 import { motion } from 'motion/react';
 import { useShowNewBadge } from '../utils/badgeManager';
+import { useLanguage } from '../context/LanguageContext';
 
 const ALL_MENU_ITEMS = [
     { id: 'quran', label: "📖 القرآن الكريم", className: "col-span-2 h-14", colorIndex: 0 },
@@ -41,6 +42,7 @@ import ThemePageLock from '../components/ThemePageLock';
 const MoreMenuPage: React.FC<MoreMenuPageProps> = ({ onNavigate, onBack }) => {
     const { theme, themeKey, togglePageLock, isPageLocked } = useTheme();
     const showNewBadges = useShowNewBadge();
+    const { t, translateMenuItem } = useLanguage();
 
     const [visibleItems, setVisibleItems] = useState<string[]>(() => {
         const savedVisible = localStorage.getItem('visibleMenuItems');
@@ -61,9 +63,9 @@ const MoreMenuPage: React.FC<MoreMenuPageProps> = ({ onNavigate, onBack }) => {
                             <div className="absolute left-0">
                                 <ThemePageLock />
                             </div>
-                            <h1 className="app-top-bar__title text-2xl font-kufi">قائمة التطبيقات</h1>
+                            <h1 className="app-top-bar__title text-2xl font-kufi">{t('page.more_menu_title', 'قائمة التطبيقات')}</h1>
                         </div>
-                        <p className="app-top-bar__subtitle">تصفح جميع أقسام التطبيق</p>
+                        <p className="app-top-bar__subtitle">{t('page.more_menu_subtitle', 'تصفح جميع أقسام التطبيق')}</p>
                     </div>
                 </header>
                 <div className="flex-1 overflow-y-auto pb-32 hide-scrollbar">
@@ -91,12 +93,12 @@ const MoreMenuPage: React.FC<MoreMenuPageProps> = ({ onNavigate, onBack }) => {
                                         style={{ visibility: isVisible ? 'visible' : 'hidden' }}
                                     >
                                         <NavButton
-                                            label={item.label}
+                                            label={translateMenuItem(item.id, item.label)}
                                             onClick={() => onNavigate(item.id, { from: 'more-menu' })}
                                             className="w-full h-full"
                                             color={primaryColor}
                                             showNewBadge={isNew}
-                                            badgeText="جديد"
+                                            badgeText={t('common.new', 'جديد')}
                                             isGlass={isBlackTheme ? false : (isDefault ? false : theme.isGlass)}
                                             btnText={textColor}
                                             border={buttonBorder}
@@ -116,7 +118,7 @@ const MoreMenuPage: React.FC<MoreMenuPageProps> = ({ onNavigate, onBack }) => {
                                                     WebkitBackdropFilter: theme.isGlass ? 'blur(4px)' : 'none',
                                                     borderWidth: (isBlackTheme || themeKey === 'default') ? '2px' : '1px'
                                                 }}
-                                                title="وضع العرض"
+                                                title={t('common.landscape_mode', 'وضع العرض')}
                                             >
                                                 <i className="fa-solid fa-arrows-rotate text-lg"></i>
                                             </button>

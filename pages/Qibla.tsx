@@ -7,6 +7,7 @@ import { usePrayerTimes } from '../context/PrayerTimesContext';
 import { VisualQibla, ARQibla, SunMoonQibla, ShadowQibla } from '../components/QiblaModes';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { Capacitor } from '@capacitor/core';
+import { useLanguage } from '../context/LanguageContext';
 
 // --- Helper Functions ---
 const toRad = (deg) => deg * Math.PI / 180;
@@ -14,6 +15,7 @@ const toDeg = (rad) => rad * 180 / Math.PI;
 
 function Qibla({ onBack, onNavigate }) {
     const { theme, themeKey } = useTheme();
+    const { t, language } = useLanguage();
     const isBlackTheme = theme.bgColor === '#000000' || theme.name === 'أبيض وأسود';
     const isDefaultTheme = themeKey === 'default' || !themeKey;
     const cardBorderColor = isDefaultTheme 
@@ -172,10 +174,14 @@ function Qibla({ onBack, onNavigate }) {
                              <ThemePageLock />
                              <i onClick={handleRefreshLocation} className={`text-xl cursor-pointer ${isRefreshing ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-location-crosshairs active:rotate-180 duration-700'}`} style={{ color: theme.name === 'أبيض وأسود' ? '#ffffff' : theme.palette[0] }}></i>
                         </div>
-                        <h1 className="app-top-bar__title text-2xl font-kufi">اتجاه القبلة</h1>
+                        <h1 className="app-top-bar__title text-2xl font-kufi">
+                            {t('page.qibla_title', 'اتجاه القبلة')}
+                        </h1>
                     </div>
                     <p className="app-top-bar__subtitle text-center">
-                        {config?.location?.cityGov ? `حسب موقعك في: ${config.location.cityGov}` : 'تحديد اتجاه القبلة بدقة'}
+                        {config?.location?.cityGov 
+                            ? (language === 'en' ? `Based on your location: ${config.location.cityGov}` : `حسب موقعك في: ${config.location.cityGov}`)
+                            : t('page.qibla_subtitle', 'تحديد اتجاه القبلة بدقة')}
                     </p>
                 </div>
             </header>
@@ -184,11 +190,11 @@ function Qibla({ onBack, onNavigate }) {
             <div className="w-full overflow-x-auto no-scrollbar scroll-smooth z-30 relative bg-transparent mt-2">
                 <div className="flex items-center gap-3 px-6 min-w-max py-4 bg-transparent pt-4">
                     {[
-                        { id: 'compass', label: 'البوصلة', icon: 'fa-compass' },
-                        { id: 'visual', label: 'المرئية', icon: 'fa-map-location-dot' },
-                        { id: 'ar', label: 'الواقع معزز', icon: 'fa-vr-cardboard' },
-                        { id: 'sun_moon', label: 'الشمس والقمر', icon: 'fa-cloud-sun' },
-                        { id: 'shadow', label: 'الظل', icon: 'fa-person-rays' }
+                        { id: 'compass', label: language === 'en' ? 'Compass' : 'البوصلة', icon: 'fa-compass' },
+                        { id: 'visual', label: language === 'en' ? 'Visual Map' : 'المرئية', icon: 'fa-map-location-dot' },
+                        { id: 'ar', label: language === 'en' ? 'AR View' : 'الواقع معزز', icon: 'fa-vr-cardboard' },
+                        { id: 'sun_moon', label: language === 'en' ? 'Sun & Moon' : 'الشمس والقمر', icon: 'fa-cloud-sun' },
+                        { id: 'shadow', label: language === 'en' ? 'Shadow' : 'الظل', icon: 'fa-person-rays' }
                     ].map(mode => (
                         <button
                             key={mode.id}

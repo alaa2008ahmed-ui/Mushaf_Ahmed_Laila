@@ -20,6 +20,7 @@ import BottomBar from '../BottomBar';
 import { registerBackInterceptor } from '../../hooks/useBackButton';
 import CreateGroupModal from './CreateGroupModal';
 import { EditGroupModal } from './EditGroupModal';
+import { useTheme } from '../../context/ThemeContext';
 
 interface AdminDashboardModalProps {
     isOpen: boolean;
@@ -51,6 +52,16 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     currentTheme,
     onNavigate
 }) => {
+    const { theme, themeKey } = useTheme();
+    const isDefaultTheme = themeKey === 'default' || !themeKey || theme.name?.includes('الافتراضي') || theme.name === 'Default';
+    const isDeepBlack = theme.bgColor === '#000000' || theme.name === 'أبيض وأسود' || themeKey === 'deep_black';
+    const rawCardBorder = theme.cardBorder?.replace(/^[0-9.]+\s*px\s+solid\s+/i, '') || theme.palette?.[0] || theme.accent || '#000000';
+    const cardBorderColor = isDefaultTheme 
+        ? '#000000' 
+        : (isDeepBlack 
+            ? '#FFFFFF' 
+            : rawCardBorder);
+
     const [users, setUsers] = useState<CommunityUser[]>([]);
     const [contacts, setContacts] = useState<ServerContact[]>([]);
     const [serverMessages, setServerMessages] = useState<ChatMessage[]>([]);
@@ -64,7 +75,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
         setSelectedGroup(null);
         if (tab === activeTab) return;
         setActiveTab(tab);
-        setAdminTabHistory(prev => [...prev, tab]);
+        setAdminTabHistory(['users', tab]);
     };
     
     // Detailed User Inspector State & Return Navigation
@@ -440,44 +451,39 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
         }
     };
 
-    // Navigation: Home click handles smart step-by-step back action
+    // Navigation: Home click returns directly to the users tab immediately without stepping through tab history
     const handleHomeClick = () => {
-        // 1. If inside a group inspector, return to groups list
-        if (selectedGroup) {
-            setSelectedGroup(null);
-            return;
-        }
-        // 2. If inside user inspector, return to previous inspector source
-        if (selectedInspectorUser) {
-            handleCloseInspector();
-            return;
-        }
-        // 3. If inside user support chat, return to support list
-        if (selectedUserForSupport) {
-            setSelectedUserForSupport(null);
-            return;
-        }
-        // 4. If inside violator reports, return to violations list
-        if (selectedViolatorUserId) {
-            setSelectedViolatorUserId(null);
-            return;
-        }
-        // 5. If there is a tab history to step back through
-        if (adminTabHistory.length > 1) {
-            const nextHistory = [...adminTabHistory];
-            nextHistory.pop();
-            const prevTab = nextHistory[nextHistory.length - 1];
-            setAdminTabHistory(nextHistory);
-            setActiveTab(prevTab);
-            return;
-        }
-        // 6. If currently on another tab than 'users', go to 'users' tab
-        if (activeTab !== 'users') {
+        // 1. Close all sub-modals, dropdowns, and confirmations
+        setShowGroupOptionsDropdown(false);
+        setShowManageMembersModal(false);
+        setShowAddMembersModal(false);
+        setShowGroupInfoModal(false);
+        setShowEditGroupModal(false);
+        setShowCreateGroupModal(false);
+        setSelectedMessageForDetails(null);
+        setUserToDeleteConfirm(null);
+        setGroupToDeleteConfirm(null);
+        setMsgToDeleteConfirm(null);
+        setShowClearGroupMsgsConfirm(false);
+        setMemberToRemoveConfirm(null);
+        setMessagingUser(null);
+
+        // 2. Reset drill-downs and inspector views
+        const hadSubView = !!(selectedGroup || selectedInspectorUser || selectedUserForSupport || selectedViolatorUserId);
+        setSelectedGroup(null);
+        setSelectedInspectorUser(null);
+        setSelectedUserForSupport(null);
+        setSelectedViolatorUserId(null);
+        setInspectorReturnSource(null);
+
+        // 3. If currently on another tab than 'users' OR if a sub-view was open, directly return to 'users' tab immediately
+        if (activeTab !== 'users' || hadSubView) {
             setActiveTab('users');
             setAdminTabHistory(['users']);
             return;
         }
-        // 7. At root of admin modal, close the modal
+
+        // 4. If already on root of 'users' tab, close the admin modal
         onClose();
     };
 
@@ -541,7 +547,24 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                 setSelectedGroup(null);
                 return true;
             }
-            handleHomeClick();
+            if (selectedInspectorUser) {
+                handleCloseInspector();
+                return true;
+            }
+            if (selectedUserForSupport) {
+                setSelectedUserForSupport(null);
+                return true;
+            }
+            if (selectedViolatorUserId) {
+                setSelectedViolatorUserId(null);
+                return true;
+            }
+            if (activeTab !== 'users') {
+                setActiveTab('users');
+                setAdminTabHistory(['users']);
+                return true;
+            }
+            onClose();
             return true;
         });
         return unregister;
@@ -895,7 +918,10 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
             {/* In-App Delete Confirmation Modal (Native UI - No Window.confirm) */}
             {userToDeleteConfirm && (
                 <div className="fixed inset-0 z-[1400] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
-                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 text-center animate-scaleUp">
+                    <div 
+                        className="bg-white dark:bg-slate-900 border rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 text-center animate-scaleUp"
+                        style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                    >
                         <div className="w-16 h-16 rounded-full bg-rose-500/15 text-rose-600 dark:text-rose-400 mx-auto flex items-center justify-center">
                             <AlertTriangle size={34} />
                         </div>
@@ -949,7 +975,11 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
             {/* Direct Technical Support Message Modal */}
             {messagingUser && (
                 <div className="fixed inset-0 z-[1400] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
-                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-6 max-w-lg w-full shadow-2xl space-y-4 animate-scaleUp text-right" dir="rtl">
+                    <div 
+                        className="bg-white dark:bg-slate-900 border rounded-3xl p-5 sm:p-6 max-w-lg w-full shadow-2xl space-y-4 animate-scaleUp text-right" 
+                        dir="rtl"
+                        style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                    >
                         <div className="flex items-center justify-between border-b dark:border-slate-800 pb-3">
                             <div className="flex items-center gap-2.5">
                                 <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
@@ -973,7 +1003,10 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                         </div>
 
                         {/* User Info Card */}
-                        <div className="p-3 bg-slate-50 dark:bg-slate-950/60 rounded-2xl border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                        <div 
+                            className="p-3 bg-slate-50 dark:bg-slate-950/60 rounded-2xl border flex items-center justify-between"
+                            style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                        >
                             <div className="flex items-center gap-2.5">
                                 <div className="w-9 h-9 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-bold text-xs overflow-hidden">
                                     {messagingUser.avatarUrl ? (
@@ -1065,7 +1098,11 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
             {/* In-App Delete Group Confirmation Modal */}
             {groupToDeleteConfirm && (
                 <div className="fixed inset-0 z-[1400] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
-                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 text-center animate-scaleUp text-right" dir="rtl">
+                    <div 
+                        className="bg-white dark:bg-slate-900 border rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 text-center animate-scaleUp text-right" 
+                        dir="rtl"
+                        style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                    >
                         <div className="w-16 h-16 rounded-full bg-rose-500/15 text-rose-600 dark:text-rose-400 mx-auto flex items-center justify-center">
                             <Trash2 size={34} />
                         </div>
@@ -1119,7 +1156,11 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
             {/* In-App Delete Single Group Message Modal */}
             {msgToDeleteConfirm && (
                 <div className="fixed inset-0 z-[1400] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
-                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-6 max-w-sm w-full shadow-2xl space-y-4 animate-scaleUp text-right" dir="rtl">
+                    <div 
+                        className="bg-white dark:bg-slate-900 border rounded-3xl p-5 sm:p-6 max-w-sm w-full shadow-2xl space-y-4 animate-scaleUp text-right" 
+                        dir="rtl"
+                        style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                    >
                         <div className="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-600 mx-auto flex items-center justify-center">
                             <Trash2 size={24} />
                         </div>
@@ -1157,7 +1198,11 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
             {/* In-App Clear All Group Messages Modal */}
             {showClearGroupMsgsConfirm && selectedGroup && (
                 <div className="fixed inset-0 z-[1400] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
-                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-6 max-w-sm w-full shadow-2xl space-y-4 animate-scaleUp text-right" dir="rtl">
+                    <div 
+                        className="bg-white dark:bg-slate-900 border rounded-3xl p-5 sm:p-6 max-w-sm w-full shadow-2xl space-y-4 animate-scaleUp text-right" 
+                        dir="rtl"
+                        style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                    >
                         <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-600 mx-auto flex items-center justify-center">
                             <AlertTriangle size={24} />
                         </div>
@@ -1192,7 +1237,11 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
             {/* In-App Remove Member Modal */}
             {memberToRemoveConfirm && selectedGroup && (
                 <div className="fixed inset-0 z-[1400] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
-                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-6 max-w-sm w-full shadow-2xl space-y-4 animate-scaleUp text-right" dir="rtl">
+                    <div 
+                        className="bg-white dark:bg-slate-900 border rounded-3xl p-5 sm:p-6 max-w-sm w-full shadow-2xl space-y-4 animate-scaleUp text-right" 
+                        dir="rtl"
+                        style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                    >
                         <div className="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-600 mx-auto flex items-center justify-center">
                             <UserMinus size={24} />
                         </div>
@@ -1232,15 +1281,16 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                     paddingTop: 'calc(env(safe-area-inset-top, 0px) + 0.5rem)'
                 }}
             >
-                <div className="flex flex-1 items-center gap-1 bg-slate-100 dark:bg-slate-800/80 p-1 rounded-2xl overflow-x-auto no-scrollbar">
+                <div className="flex flex-1 items-center gap-1 bg-slate-100 dark:bg-slate-800/80 p-1 rounded-2xl overflow-x-auto no-scrollbar border" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                     {/* 1. Users Tab */}
                     <button 
                         onClick={() => switchAdminTab('users')}
-                        className={`flex-1 py-2 px-2 text-center transition-all rounded-xl flex items-center justify-center gap-1.5 text-xs sm:text-sm font-bold whitespace-nowrap cursor-pointer ${
+                        className={`flex-1 py-2 px-2 text-center transition-all rounded-xl flex items-center justify-center gap-1.5 text-xs sm:text-sm font-bold whitespace-nowrap cursor-pointer border ${
                             activeTab === 'users' 
                                 ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm' 
-                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border-transparent'
                         }`}
+                        style={{ borderColor: activeTab === 'users' ? cardBorderColor : 'transparent', borderWidth: '1.5px', borderStyle: 'solid' }}
                     >
                         <span>إدارة المستخدمين</span>
                     </button>
@@ -1248,11 +1298,12 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                     {/* 2. Community / Groups Tab (المجتمع) */}
                     <button 
                         onClick={() => switchAdminTab('community')}
-                        className={`flex-1 py-2 px-2 text-center transition-all rounded-xl flex items-center justify-center gap-1.5 text-xs sm:text-sm font-bold whitespace-nowrap cursor-pointer ${
+                        className={`flex-1 py-2 px-2 text-center transition-all rounded-xl flex items-center justify-center gap-1.5 text-xs sm:text-sm font-bold whitespace-nowrap cursor-pointer border ${
                             activeTab === 'community' 
                                 ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' 
-                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border-transparent'
                         }`}
+                        style={{ borderColor: activeTab === 'community' ? cardBorderColor : 'transparent', borderWidth: '1.5px', borderStyle: 'solid' }}
                     >
                         <Users size={14} className="opacity-80" />
                         <span>المجتمع</span>
@@ -1268,11 +1319,12 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                     {/* 3. Support Inbox Tab */}
                     <button 
                         onClick={() => switchAdminTab('support')}
-                        className={`flex-1 py-2 px-2 text-center transition-all rounded-xl flex items-center justify-center gap-1.5 relative text-xs sm:text-sm font-bold whitespace-nowrap cursor-pointer ${
+                        className={`flex-1 py-2 px-2 text-center transition-all rounded-xl flex items-center justify-center gap-1.5 relative text-xs sm:text-sm font-bold whitespace-nowrap cursor-pointer border ${
                             activeTab === 'support' 
                                 ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm' 
-                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border-transparent'
                         }`}
+                        style={{ borderColor: activeTab === 'support' ? cardBorderColor : 'transparent', borderWidth: '1.5px', borderStyle: 'solid' }}
                     >
                         <span>وارد الدعم الفني</span>
                         {supportUserIds.length > 0 && (
@@ -1285,11 +1337,12 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                     {/* 4. Dedicated Violations / Flagged Offensive Messages Tab */}
                     <button 
                         onClick={() => switchAdminTab('violations')}
-                        className={`flex-1 py-2 px-2 text-center transition-all rounded-xl flex items-center justify-center gap-1.5 relative text-xs sm:text-sm font-bold whitespace-nowrap cursor-pointer ${
+                        className={`flex-1 py-2 px-2 text-center transition-all rounded-xl flex items-center justify-center gap-1.5 relative text-xs sm:text-sm font-bold whitespace-nowrap cursor-pointer border ${
                             activeTab === 'violations' 
                                 ? 'bg-rose-500 text-white shadow-sm' 
-                                : 'text-rose-600 dark:text-rose-400 hover:bg-rose-500/10'
+                                : 'text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 border-transparent'
                         }`}
+                        style={{ borderColor: activeTab === 'violations' ? cardBorderColor : 'transparent', borderWidth: '1.5px', borderStyle: 'solid' }}
                     >
                         <span>الرسائل المسيئة والبلاغات</span>
                         {violationReports.length > 0 && (
@@ -1304,11 +1357,12 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                     {/* 5. Broadcast Tab */}
                     <button 
                         onClick={() => switchAdminTab('broadcast')}
-                        className={`flex-1 py-2 px-2 text-center transition-all rounded-xl flex items-center justify-center gap-1.5 text-xs sm:text-sm font-bold whitespace-nowrap cursor-pointer ${
+                        className={`flex-1 py-2 px-2 text-center transition-all rounded-xl flex items-center justify-center gap-1.5 text-xs sm:text-sm font-bold whitespace-nowrap cursor-pointer border ${
                             activeTab === 'broadcast' 
                                 ? 'bg-white dark:bg-slate-700 text-amber-600 dark:text-amber-400 shadow-sm' 
-                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border-transparent'
                         }`}
+                        style={{ borderColor: activeTab === 'broadcast' ? cardBorderColor : 'transparent', borderWidth: '1.5px', borderStyle: 'solid' }}
                     >
                         <span>إرسال جماعي 📢</span>
                     </button>
@@ -1347,7 +1401,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                                                     onClick={() => openInspectorForUser(u, { tab: 'users' })}
                                                     className={`${
                                                         isDense ? 'p-2.5 gap-2' : 'p-3.5 gap-3'
-                                                    } rounded-2xl transition-all text-right flex items-center justify-between border bg-white dark:bg-slate-900 hover:bg-emerald-500/5 border-slate-200 dark:border-slate-800/60 shadow-xs cursor-pointer`}
+                                                    } rounded-2xl transition-all text-right flex items-center justify-between border bg-white dark:bg-slate-900 hover:bg-emerald-500/5 shadow-xs cursor-pointer`}
+                                                    style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
                                                 >
                                                     <div className={`flex items-center ${isDense ? 'gap-2' : 'gap-2.5'} min-w-0`}>
                                                         <div className={`${
@@ -1394,7 +1449,10 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                                 <div className="max-w-xl mx-auto w-full space-y-3">
                                     
                                     {/* Minimized Compact Avatar Card */}
-                                    <div className="flex flex-col items-center text-center p-3 sm:p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl border dark:border-slate-800 relative shadow-sm">
+                                    <div 
+                                        className="flex flex-col items-center text-center p-3 sm:p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl border relative shadow-sm"
+                                        style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                                    >
                                         <div className="w-14 h-14 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-bold text-xl overflow-hidden border-2 border-white dark:border-slate-800 shadow-md mb-2">
                                             {selectedInspectorUser.avatarUrl ? (
                                                 <img src={selectedInspectorUser.avatarUrl} alt={selectedInspectorUser.username} className="w-full h-full object-cover" />
@@ -1411,28 +1469,28 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
                                     {/* Info Grid Cards - Compact List Style */}
                                     <div className="grid grid-cols-2 gap-2">
-                                        <div className="p-2.5 bg-slate-50 dark:bg-slate-950 rounded-xl border dark:border-slate-800 flex items-center gap-2">
+                                        <div className="p-2.5 bg-slate-50 dark:bg-slate-950 rounded-xl border flex items-center gap-2" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                                             <Globe size={15} className="text-emerald-500 shrink-0" />
                                             <div className="text-right overflow-hidden">
                                                 <div className="text-[10px] opacity-60">الدولة</div>
                                                 <div className="font-bold text-xs truncate">{selectedInspectorUser.country || 'غير محدد'}</div>
                                             </div>
                                         </div>
-                                        <div className="p-2.5 bg-slate-50 dark:bg-slate-950 rounded-xl border dark:border-slate-800 flex items-center gap-2">
+                                        <div className="p-2.5 bg-slate-50 dark:bg-slate-950 rounded-xl border flex items-center gap-2" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                                             <Activity size={15} className="text-emerald-500 shrink-0" />
                                             <div className="text-right overflow-hidden">
                                                 <div className="text-[10px] opacity-60">حالة الاتصال</div>
                                                 <div className="font-bold text-xs truncate">{selectedInspectorUser.isOnline ? 'متصل الآن 🟢' : 'غير متصل'}</div>
                                             </div>
                                         </div>
-                                        <div className="p-2.5 bg-slate-50 dark:bg-slate-950 rounded-xl border dark:border-slate-800 flex items-center gap-2">
+                                        <div className="p-2.5 bg-slate-50 dark:bg-slate-950 rounded-xl border flex items-center gap-2" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                                             <Calendar size={15} className="text-emerald-500 shrink-0" />
                                             <div className="text-right overflow-hidden">
                                                 <div className="text-[10px] opacity-60">تاريخ الانضمام</div>
                                                 <div className="font-bold text-xs truncate">{new Date(selectedInspectorUser.createdAt).toLocaleDateString('ar-EG')}</div>
                                             </div>
                                         </div>
-                                        <div className="p-2.5 bg-slate-50 dark:bg-slate-950 rounded-xl border dark:border-slate-800 flex items-center gap-2">
+                                        <div className="p-2.5 bg-slate-50 dark:bg-slate-950 rounded-xl border flex items-center gap-2" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                                             <UserCheck size={15} className="text-emerald-500 shrink-0" />
                                             <div className="text-right overflow-hidden">
                                                 <div className="text-[10px] opacity-60">نوع الحساب</div>
@@ -1507,7 +1565,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                                                         setSelectedUserForSupport(uid);
                                                         communityService.markMessagesAsRead(uid);
                                                     }}
-                                                    className="p-3.5 rounded-2xl transition-all text-right flex items-center justify-between gap-3 border bg-white dark:bg-slate-900 hover:bg-emerald-500/5 border-slate-200 dark:border-slate-800/60 shadow-xs cursor-pointer group"
+                                                    className="p-3.5 rounded-2xl transition-all text-right flex items-center justify-between gap-3 border bg-white dark:bg-slate-900 hover:bg-emerald-500/5 shadow-xs cursor-pointer group"
+                                                    style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
                                                 >
                                                     <div className="flex items-center gap-2.5 min-w-0">
                                                         <div className="w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-bold flex-shrink-0 overflow-hidden border border-emerald-500/15 shadow-xs">
@@ -1592,7 +1651,10 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                                 </div>
 
                                 <div className="flex-1 flex flex-col justify-between overflow-hidden">
-                                    <div className="flex-1 overflow-y-auto space-y-3 p-3 border rounded-2xl bg-slate-50 dark:bg-slate-950/40 mb-3 max-w-3xl mx-auto w-full">
+                                    <div 
+                                        className="flex-1 overflow-y-auto space-y-3 p-3 border rounded-2xl bg-slate-50 dark:bg-slate-950/40 mb-3 max-w-3xl mx-auto w-full"
+                                        style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                                    >
                                         {supportMessages
                                             .filter(m => m.senderId === selectedUserForSupport || m.recipientId === selectedUserForSupport)
                                             .map((m) => {
@@ -1601,11 +1663,12 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                                                 return (
                                                     <div 
                                                         key={m.messageId}
-                                                        className={`flex flex-col max-w-[85%] p-3.5 rounded-2xl text-xs group relative ${
+                                                        className={`flex flex-col max-w-[85%] p-3.5 rounded-2xl text-xs group relative border ${
                                                             isAdmin 
-                                                                ? 'bg-emerald-600 text-white mr-auto rounded-tl-none' 
-                                                                : 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 ml-auto rounded-tr-none border dark:border-slate-800 shadow-xs'
+                                                                ? 'bg-emerald-600 text-white mr-auto rounded-tl-none border-transparent' 
+                                                                : 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 ml-auto rounded-tr-none shadow-xs'
                                                         }`}
+                                                        style={!isAdmin ? { borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' } : undefined}
                                                     >
                                                         <div className="flex items-center justify-between gap-2 mb-1">
                                                             <div className="font-extrabold">
@@ -1636,7 +1699,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                                             onChange={(e) => setReplyText(e.target.value)}
                                             onKeyDown={(e) => { if (e.key === 'Enter') handleSendReply(); }}
                                             placeholder="اكتب رد كـ Admin وإدارة التطبيق..."
-                                            className="flex-1 px-4 py-3.5 text-xs rounded-xl bg-slate-100 dark:bg-slate-900 border border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent focus:bg-white text-slate-900 dark:text-white"
+                                            className="flex-1 px-4 py-3.5 text-xs rounded-xl bg-slate-100 dark:bg-slate-900 border focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent focus:bg-white text-slate-900 dark:text-white"
+                                            style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
                                         />
                                         <button
                                             onClick={handleSendReply}
@@ -1674,7 +1738,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                                     </div>
 
                                     {/* Filter Pills */}
-                                    <div className="flex items-center gap-1.5 bg-white dark:bg-slate-900 p-1 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs self-stretch sm:self-auto">
+                                    <div className="flex items-center gap-1.5 bg-white dark:bg-slate-900 p-1 rounded-xl border shadow-xs self-stretch sm:self-auto" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                                         <button
                                             onClick={() => setViolationFilter('all')}
                                             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
@@ -1716,7 +1780,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                                             value={violationSearchQuery}
                                             onChange={(e) => setViolationSearchQuery(e.target.value)}
                                             placeholder="بحث باسم المستخدم المخالف، المستلم، كود الحساب، أو نص الرسالة..."
-                                            className="w-full pl-4 pr-10 py-2.5 text-xs rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-500 text-slate-900 dark:text-white"
+                                            className="w-full pl-4 pr-10 py-2.5 text-xs rounded-xl bg-white dark:bg-slate-900 border focus:outline-none focus:ring-2 focus:ring-rose-500 text-slate-900 dark:text-white"
+                                            style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
                                         />
                                         <Search size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                                     </div>
@@ -1725,7 +1790,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                                 {/* Grouped Violators Grid */}
                                 <div className="flex-1 overflow-y-auto space-y-2.5 pr-1">
                                     {filteredViolatingUserIds.length === 0 ? (
-                                        <div className="text-center py-24 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800/80 p-8 space-y-3">
+                                        <div className="text-center py-24 bg-white dark:bg-slate-900 rounded-3xl border p-8 space-y-3" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                                             <div className="w-16 h-16 rounded-full bg-emerald-500/10 text-emerald-500 mx-auto flex items-center justify-center">
                                                 <CheckCircle2 size={36} />
                                             </div>
@@ -1749,7 +1814,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                                                     <button
                                                         key={uid}
                                                         onClick={() => setSelectedViolatorUserId(uid)}
-                                                        className="p-3.5 rounded-2xl transition-all text-right flex items-center justify-between gap-3 border bg-white dark:bg-slate-900 hover:bg-rose-500/5 border-rose-200/80 dark:border-rose-950 shadow-xs cursor-pointer group"
+                                                        className="p-3.5 rounded-2xl transition-all text-right flex items-center justify-between gap-3 border bg-white dark:bg-slate-900 hover:bg-rose-500/5 shadow-xs cursor-pointer group"
+                                                        style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
                                                     >
                                                         <div className="flex items-center gap-2.5 min-w-0">
                                                             <div className="w-10 h-10 rounded-full bg-rose-500/10 text-rose-600 flex items-center justify-center font-bold flex-shrink-0 overflow-hidden border border-rose-500/20 shadow-xs">
@@ -1875,7 +1941,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                                                         return (
                                                             <div 
                                                                 key={report.messageId}
-                                                                className="bg-white dark:bg-slate-900 border border-rose-200/80 dark:border-rose-950/80 rounded-2xl p-3 sm:p-3.5 shadow-xs space-y-2.5 transition-all hover:border-rose-400 dark:hover:border-rose-800 animate-fadeIn text-xs"
+                                                                className="bg-white dark:bg-slate-900 border rounded-2xl p-3 sm:p-3.5 shadow-xs space-y-2.5 transition-all animate-fadeIn text-xs"
+                                                                style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
                                                             >
                                                                 {/* Top Info Row: Type, Country, Time, and Delete Button */}
                                                                 <div className="flex items-center justify-between gap-2 border-b dark:border-slate-800/80 pb-2">
@@ -1996,7 +2063,10 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                                                                 </div>
 
                                                                 {/* Blocked message */}
-                                                                <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200/80 dark:border-slate-800/80 flex items-start gap-2">
+                                                                <div 
+                                                                    className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/70 border flex items-start gap-2"
+                                                                    style={{ borderColor: cardBorderColor, borderWidth: '1px', borderStyle: 'solid' }}
+                                                                >
                                                                     <span className="text-[10px] font-bold text-slate-400 flex-shrink-0 mt-0.5">نص الرسالة:</span>
                                                                     <p className="font-semibold text-xs sm:text-sm text-slate-900 dark:text-white break-words flex-1 leading-snug">
                                                                         "{parsed.blockedText}"
@@ -2020,7 +2090,10 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                     <div className="flex-1 flex flex-col overflow-y-auto p-4 sm:p-6 w-full max-w-3xl mx-auto animate-fadeIn space-y-6">
                         
                         {/* New Broadcast Card */}
-                        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-6 shadow-sm space-y-5">
+                        <div 
+                            className="bg-white dark:bg-slate-900 border rounded-3xl p-5 sm:p-6 shadow-sm space-y-5"
+                            style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                        >
                             
                             {/* Header Title */}
                             <div className="flex items-center gap-3 pb-3 border-b border-slate-200 dark:border-slate-800">
@@ -2047,7 +2120,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                                     value={broadcastText}
                                     onChange={(e) => setBroadcastText(e.target.value)}
                                     placeholder="اكتب التنبيه، أو التهنئة، أو الرسالة الجماعية التي ترغب في إرسالها لجميع المستخدمين دفعة واحدة..."
-                                    className="w-full p-4 text-xs sm:text-sm rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-slate-900 dark:text-white leading-relaxed resize-y"
+                                    className="w-full p-4 text-xs sm:text-sm rounded-2xl bg-slate-50 dark:bg-slate-950 border focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-slate-900 dark:text-white leading-relaxed resize-y"
+                                    style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
                                 />
                             </div>
 
@@ -2077,7 +2151,10 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
                         {/* Broadcast History & Server Deletion Section */}
                         {broadcastBatches.length > 0 && (
-                            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-6 shadow-sm space-y-4">
+                            <div 
+                                className="bg-white dark:bg-slate-900 border rounded-3xl p-5 sm:p-6 shadow-sm space-y-4"
+                                style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                            >
                                 <div className="flex items-center justify-between pb-3 border-b dark:border-slate-800">
                                     <h4 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white flex items-center gap-2">
                                         <span>سجل الرسائل الجماعية ({broadcastBatches.length})</span>
@@ -2091,7 +2168,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                                     {broadcastBatches.map((batch) => (
                                         <div 
                                             key={batch.key}
-                                            className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800/80 flex items-start justify-between gap-3 text-xs"
+                                            className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950/70 border flex items-start justify-between gap-3 text-xs"
+                                            style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
                                         >
                                             <div className="space-y-1.5 flex-1 min-w-0">
                                                 <div className="flex items-center gap-2 text-[10px] text-slate-400 font-mono">
@@ -2161,7 +2239,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                                             value={groupSearchQuery}
                                             onChange={(e) => setGroupSearchQuery(e.target.value)}
                                             placeholder="ابحث في المحادثات الجماعية والمجموعات..."
-                                            className="w-full pr-10 pl-10 py-2.5 rounded-2xl border text-xs sm:text-sm font-medium focus:outline-none transition-all shadow-2xs bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
+                                            className="w-full pr-10 pl-10 py-2.5 rounded-2xl border text-xs sm:text-sm font-medium focus:outline-none transition-all shadow-2xs bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
+                                            style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
                                         />
                                         {groupSearchQuery && (
                                             <button
@@ -2177,7 +2256,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                                     <button
                                         type="button"
                                         onClick={() => loadData(true)}
-                                        className="p-2.5 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-2xl border border-slate-200 dark:border-slate-800 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs shrink-0"
+                                        className="p-2.5 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-2xl border text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs shrink-0"
+                                        style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
                                         title="تحديث قائمة المجموعات"
                                     >
                                         <RefreshCw size={15} />
@@ -2186,7 +2266,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
                                 {/* Groups Grid - Identical to User Community Tab */}
                                 {filteredGroups.length === 0 ? (
-                                    <div className="text-center py-12 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 space-y-2">
+                                    <div className="text-center py-12 rounded-3xl border bg-white dark:bg-slate-900 p-6 space-y-2" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                                         <Users size={36} className="mx-auto text-slate-400 opacity-40" />
                                         <p className="text-sm font-bold text-slate-800 dark:text-slate-200">
                                             {groupSearchQuery ? 'لا توجد مجموعات مطابقة للبحث' : 'لا توجد محادثات جماعية حالياً'}
@@ -2206,7 +2286,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                                             <div
                                                 key={grp.groupId}
                                                 onClick={() => handleSelectGroup(grp)}
-                                                className="border rounded-2xl p-3 sm:p-3.5 flex items-center justify-between gap-3 cursor-pointer transition-all shadow-2xs hover:shadow-md active:scale-[0.99] group text-right bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-indigo-500/50"
+                                                className="border rounded-2xl p-3 sm:p-3.5 flex items-center justify-between gap-3 cursor-pointer transition-all shadow-2xs hover:shadow-md active:scale-[0.99] group text-right bg-white dark:bg-slate-900"
+                                                style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
                                                 title={cleanGroupName(grp.name)}
                                             >
                                                 <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -2298,7 +2379,11 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                                                     className="fixed inset-0 z-40 bg-transparent"
                                                     onClick={() => setShowGroupOptionsDropdown(false)}
                                                 />
-                                                <div className="absolute left-0 top-11 w-52 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xl p-1.5 z-50 text-xs font-bold space-y-0.5 animate-scaleUp text-right" dir="rtl">
+                                                <div 
+                                                    className="absolute left-0 top-11 w-52 rounded-2xl border bg-white dark:bg-slate-900 shadow-2xl p-1.5 z-50 text-xs font-bold space-y-0.5 animate-scaleUp text-right" 
+                                                    dir="rtl"
+                                                    style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                                                >
                                                     <button
                                                         type="button"
                                                         onClick={() => {
@@ -2476,11 +2561,12 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                                                         {/* Interactive message card - clicking it opens sender details + delete button */}
                                                         <div
                                                             onClick={() => setSelectedMessageForDetails(msg)}
-                                                            className={`p-3 rounded-2xl text-xs sm:text-sm leading-relaxed shadow-xs relative group cursor-pointer transition-all hover:opacity-95 active:scale-[0.99] ${
+                                                            className={`p-3 rounded-2xl text-xs sm:text-sm leading-relaxed shadow-xs relative group cursor-pointer transition-all hover:opacity-95 active:scale-[0.99] border ${
                                                                 isAdminMsg
-                                                                    ? 'bg-indigo-600 text-white rounded-br-none'
-                                                                    : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-bl-none'
+                                                                    ? 'bg-indigo-600 text-white rounded-br-none border-transparent'
+                                                                    : 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-bl-none'
                                                             }`}
+                                                            style={!isAdminMsg ? { borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' } : undefined}
                                                         >
                                                             {/* Quran Verse */}
                                                             {msg.verseData && (
@@ -2551,7 +2637,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                                             if (e.key === 'Enter') handleSendAdminGroupMessage();
                                         }}
                                         placeholder="اكتب رسالة أو توجيهاً رسمياً في هذه المجموعة..."
-                                        className="flex-1 p-2.5 text-xs sm:text-sm rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-900 dark:text-white"
+                                        className="flex-1 p-2.5 text-xs sm:text-sm rounded-xl bg-slate-50 dark:bg-slate-950 border focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-900 dark:text-white"
+                                        style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
                                     />
                                     <button
                                         type="button"
@@ -2575,7 +2662,11 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
                             return (
                                 <div className="fixed inset-0 z-[1400] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
-                                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 max-w-sm w-full shadow-2xl space-y-4 animate-scaleUp text-right" dir="rtl">
+                                    <div 
+                                        className="bg-white dark:bg-slate-900 border rounded-3xl p-5 max-w-sm w-full shadow-2xl space-y-4 animate-scaleUp text-right" 
+                                        dir="rtl"
+                                        style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                                    >
                                         {/* Header */}
                                         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2.5">
                                             <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-slate-200">
@@ -2621,7 +2712,10 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                                         </div>
 
                                         {/* Details list */}
-                                        <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800 text-xs space-y-2">
+                                        <div 
+                                            className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/70 border text-xs space-y-2"
+                                            style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                                        >
                                             <div className="flex items-center justify-between">
                                                 <span className="text-slate-400 font-medium">كود الحساب:</span>
                                                 <span className="font-mono font-bold text-slate-800 dark:text-slate-200">
@@ -2645,7 +2739,10 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                                         </div>
 
                                         {/* Message preview snippet */}
-                                        <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800 text-xs space-y-1">
+                                        <div 
+                                            className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/70 border text-xs space-y-1"
+                                            style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                                        >
                                             <div className="flex items-center justify-between text-[10px] text-slate-400">
                                                 <span>محتوى الرسالة:</span>
                                                 <span className="font-mono">{msgTime}</span>
@@ -2727,7 +2824,11 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
                             return (
                                 <div className="fixed inset-0 z-[1400] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
-                                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 max-w-md w-full shadow-2xl space-y-4 max-h-[85vh] flex flex-col text-right animate-scaleUp" dir="rtl">
+                                    <div 
+                                        className="bg-white dark:bg-slate-900 border rounded-3xl p-5 max-w-md w-full shadow-2xl space-y-4 max-h-[85vh] flex flex-col text-right animate-scaleUp" 
+                                        dir="rtl"
+                                        style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                                    >
                                         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2.5">
                                             <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900 dark:text-white">
                                                 <Users size={16} className="text-indigo-600 dark:text-indigo-400" />
@@ -2749,7 +2850,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                                                 value={manageMemberSearch}
                                                 onChange={(e) => setManageMemberSearch(e.target.value)}
                                                 placeholder="ابحث بالاسم أو كود الحساب أو الدولة..."
-                                                className="w-full pr-9 pl-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                                className="w-full pr-9 pl-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-950 border text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                                style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
                                             />
                                         </div>
 
@@ -2764,7 +2866,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                                                     return (
                                                         <div
                                                             key={member.userId}
-                                                            className="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2"
+                                                            className="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-950/70 border flex items-center justify-between gap-2"
+                                                            style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
                                                         >
                                                             <div className="flex items-center gap-2.5 min-w-0">
                                                                 <div className="w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center font-bold text-xs overflow-hidden shrink-0">
@@ -2835,7 +2938,11 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
                             return (
                                 <div className="fixed inset-0 z-[1400] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
-                                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 max-w-md w-full shadow-2xl space-y-4 max-h-[85vh] flex flex-col text-right animate-scaleUp" dir="rtl">
+                                    <div 
+                                        className="bg-white dark:bg-slate-900 border rounded-3xl p-5 max-w-md w-full shadow-2xl space-y-4 max-h-[85vh] flex flex-col text-right animate-scaleUp" 
+                                        dir="rtl"
+                                        style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                                    >
                                         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2.5">
                                             <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900 dark:text-white">
                                                 <UserPlus size={16} className="text-indigo-600 dark:text-indigo-400" />
@@ -2857,7 +2964,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                                                 value={addMemberSearch}
                                                 onChange={(e) => setAddMemberSearch(e.target.value)}
                                                 placeholder="ابحث عن مستخدمين لإضافتهم..."
-                                                className="w-full pr-9 pl-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                                className="w-full pr-9 pl-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-950 border text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                                style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
                                             />
                                         </div>
 
@@ -2870,7 +2978,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                                                 availableToAdd.map(candidate => (
                                                     <div
                                                         key={candidate.userId}
-                                                        className="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2"
+                                                        className="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-950/70 border flex items-center justify-between gap-2"
+                                                        style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
                                                     >
                                                         <div className="flex items-center gap-2.5 min-w-0">
                                                             <div className="w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center font-bold text-xs overflow-hidden shrink-0">
@@ -2915,7 +3024,11 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
                             return (
                                 <div className="fixed inset-0 z-[1400] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
-                                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-6 max-w-sm w-full shadow-2xl space-y-4 animate-scaleUp text-right" dir="rtl">
+                                    <div 
+                                        className="bg-white dark:bg-slate-900 border rounded-3xl p-5 sm:p-6 max-w-sm w-full shadow-2xl space-y-4 animate-scaleUp text-right" 
+                                        dir="rtl"
+                                        style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                                    >
                                         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2.5">
                                             <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900 dark:text-white">
                                                 <Info size={16} className="text-indigo-600 dark:text-indigo-400" />
@@ -2946,21 +3059,24 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
                                         {/* Statistics Grid */}
                                         <div className="grid grid-cols-3 gap-2 text-center">
-                                            <div className="p-2.5 rounded-xl bg-indigo-50/60 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-900/50">
+                                            <div className="p-2.5 rounded-xl bg-indigo-50/60 dark:bg-indigo-950/30 border" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                                                 <div className="font-black text-sm text-indigo-950 dark:text-indigo-100">{selectedGroup.members?.length || 1}</div>
                                                 <div className="text-[10px] text-indigo-600 dark:text-indigo-300 font-bold">الأعضاء</div>
                                             </div>
-                                            <div className="p-2.5 rounded-xl bg-emerald-50/60 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/50">
+                                            <div className="p-2.5 rounded-xl bg-emerald-50/60 dark:bg-emerald-950/30 border" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                                                 <div className="font-black text-sm text-emerald-950 dark:text-emerald-100">{groupMessages.length}</div>
                                                 <div className="text-[10px] text-emerald-600 dark:text-emerald-300 font-bold">الرسائل</div>
                                             </div>
-                                            <div className="p-2.5 rounded-xl bg-amber-50/60 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50">
+                                            <div className="p-2.5 rounded-xl bg-amber-50/60 dark:bg-amber-950/30 border" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                                                 <div className="font-black text-sm text-amber-950 dark:text-amber-100">{audioCount}</div>
                                                 <div className="text-[10px] text-amber-600 dark:text-amber-300 font-bold">صوتيات</div>
                                             </div>
                                         </div>
 
-                                        <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800 text-xs space-y-2">
+                                        <div 
+                                            className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/70 border text-xs space-y-2"
+                                            style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                                        >
                                             <div className="flex items-center justify-between">
                                                 <span className="text-slate-400 font-medium">المنشئ:</span>
                                                 <span className="font-bold text-slate-800 dark:text-slate-200">

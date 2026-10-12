@@ -315,7 +315,6 @@ function Tasbeeh({ onBack, onNavigate }) {
             <TasbeehHeader 
                 title="السبحة الإلكترونية" 
                 subtitle="أضف أذكارك الخاصة وتتبع تسبيحك بدقة" 
-                onOpenStats={() => setModals(p => ({...p, stats: true}))}
             />
             
             <main 

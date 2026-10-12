@@ -1,5 +1,6 @@
 import React from 'react';
 import ThemePageLock from '../ThemePageLock';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface AdkarHeaderProps {
     title: string;
@@ -7,6 +8,10 @@ interface AdkarHeaderProps {
 }
 
 const AdkarHeader: React.FC<AdkarHeaderProps> = ({ title, subtitle }) => {
+    const { t } = useLanguage();
+    const localizedTitle = (title.includes('الصباح والمساء') || title.includes('الأذكار')) ? t('page.sabah_masaa_title', title) : title;
+    const localizedSubtitle = subtitle.includes('حصنك اليومي') ? t('page.sabah_masaa_subtitle', subtitle) : subtitle;
+
     return (
         <header className="app-top-bar">
             <div className="app-top-bar__inner">
@@ -15,10 +20,10 @@ const AdkarHeader: React.FC<AdkarHeaderProps> = ({ title, subtitle }) => {
                         <ThemePageLock />
                     </div>
                     <h1 className="app-top-bar__title text-2xl font-kufi">
-                        {title}
+                        {localizedTitle}
                     </h1>
                 </div>
-                <p className="app-top-bar__subtitle">{subtitle}</p>
+                <p className="app-top-bar__subtitle">{localizedSubtitle}</p>
             </div>
         </header>
     );

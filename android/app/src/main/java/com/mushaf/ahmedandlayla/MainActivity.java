@@ -8,6 +8,7 @@ import com.getcapacitor.BridgeWebChromeClient;
 public class MainActivity extends BridgeActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        registerPlugin(AutoSilentPlugin.class);
         super.onCreate(savedInstanceState);
         
         // Preserve all Capacitor BridgeWebChromeClient capabilities (file chooser, camera, photo gallery)

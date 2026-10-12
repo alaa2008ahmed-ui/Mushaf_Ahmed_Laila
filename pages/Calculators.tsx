@@ -5,6 +5,7 @@ import ThemePageLock from '../components/ThemePageLock';
 import ZakatCalculator from '../components/Calculators/ZakatCalculator';
 import MawarithCalculator from '../components/Calculators/MawarithCalculator';
 import KaffaratCalculator from '../components/Calculators/KaffaratCalculator';
+import { useLanguage } from '../context/LanguageContext';
 
 interface CalculatorsProps {
     onBack: () => void; onNavigate: (id: string, params?: any) => void; 
@@ -12,6 +13,7 @@ interface CalculatorsProps {
 
 const Calculators: React.FC<CalculatorsProps> = ({ onBack , onNavigate }) => {
     const { theme, themeKey } = useTheme();
+    const { t, language } = useLanguage();
     const isBlackTheme = theme.bgColor === '#000000' || theme.name === 'أبيض وأسود';
     const isDefaultTheme = themeKey === 'default' || !themeKey;
     const cardBorderColor = isDefaultTheme 
@@ -30,18 +32,22 @@ const Calculators: React.FC<CalculatorsProps> = ({ onBack , onNavigate }) => {
                         <div className="absolute left-0">
                             <ThemePageLock />
                         </div>
-                        <h1 className="app-top-bar__title text-2xl font-kufi">الحاسبة الشاملة</h1>
+                        <h1 className="app-top-bar__title text-2xl font-kufi">
+                            {t('page.calculators_title', 'الحاسبة الشاملة')}
+                        </h1>
                     </div>
-                    <p className="app-top-bar__subtitle">زكاة، مواريث، كفارات</p>
+                    <p className="app-top-bar__subtitle">
+                        {t('page.calculators_subtitle', 'زكاة، مواريث، كفارات')}
+                    </p>
                 </div>
             </header>
 
             {/* Tabs */}
             <div className="flex px-4 pt-4 gap-2 font-cairo z-10">
                 {[
-                    { id: 'zakat', label: 'الزكاة', icon: 'fa-coins' },
-                    { id: 'mawarith', label: 'المواريث', icon: 'fa-scale-balanced' },
-                    { id: 'kaffarat', label: 'الكفارات', icon: 'fa-hand-holding-heart' }
+                    { id: 'zakat', label: language === 'en' ? 'Zakat' : 'الزكاة', icon: 'fa-coins' },
+                    { id: 'mawarith', label: language === 'en' ? 'Inheritance (Mawarith)' : 'المواريث', icon: 'fa-scale-balanced' },
+                    { id: 'kaffarat', label: language === 'en' ? 'Expiations (Kaffarat)' : 'الكفارات', icon: 'fa-hand-holding-heart' }
                 ].map(tab => (
                     <button 
                         key={tab.id}

@@ -9,6 +9,7 @@ import { QuranDownloadModal } from '../components/QuranReader/DownloadModals';
 import Toast from '../components/QuranReader/Toast';
 import { SURAH_INFO } from '../components/QuranReader/constants';
 import { registerBackInterceptor } from '../hooks/useBackButton';
+import { getAvailableSurahsForReader } from '../utils/listenQuranUtils';
 import './QuranReader.css';
 
 const STORAGE_KEY = 'listen_quran_state_v7';
@@ -84,41 +85,20 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
     const [reciterSurahs, setReciterSurahs] = useState<Record<string, number[]>>({});
 
     const getAvailableSurahs = useCallback((id: string) => {
-        const fullList = Array.from({ length: 114 }, (_, i) => i + 1);
-        if (!Object.keys(reciterSurahs).length) {
-            return fullList;
-        }
-
-        // 1. Try URL exact match
-        const currentUrlKey = normalizeUrl(id);
-        if (reciterSurahs[currentUrlKey]) return reciterSurahs[currentUrlKey];
-
-        // 2. Try Name match
         const rName = RECITERS.find(r => r.id === id)?.name;
-        if (rName) {
-            const currentNameKey = `name:${simplifyName(rName)}`;
-            if (reciterSurahs[currentNameKey]) return reciterSurahs[currentNameKey];
-            
-            // Loose name match
-            const simplifiedNameCurrent = simplifyName(rName);
-            const matchedNameKey = Object.keys(reciterSurahs).find(key => 
-                key.startsWith('name:') && (key.includes(simplifiedNameCurrent) || simplifiedNameCurrent.includes(key.replace('name:', '')))
-            );
-            if (matchedNameKey) return reciterSurahs[matchedNameKey];
-        }
-
-        // 3. Try URL loose match
-        const matchedUrlKey = Object.keys(reciterSurahs).find(key => 
-            !key.startsWith('name:') && (currentUrlKey.includes(key) || key.includes(currentUrlKey))
-        );
-        if (matchedUrlKey) return reciterSurahs[matchedUrlKey];
-        
-        return fullList;
+        return getAvailableSurahsForReader(id, rName, reciterSurahs);
     }, [reciterSurahs]);
 
     const availableSurahIds = useMemo(() => {
         return getAvailableSurahs(reciterId);
     }, [reciterId, getAvailableSurahs]);
+
+    // Ensure selected surahNumber is valid for current reciter
+    useEffect(() => {
+        if (availableSurahIds.length > 0 && !availableSurahIds.includes(surahNumber)) {
+            setSurahNumber(availableSurahIds[0]);
+        }
+    }, [availableSurahIds, surahNumber]);
 
     const filteredQuranData = useMemo(() => {
         return {
@@ -595,7 +575,9 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
             {showDownloadModal && (
                 <QuranDownloadModal
                     onClose={() => setShowDownloadModal(false)}
-                    quranData={filteredQuranData}
+                    quranData={mockQuranData}
+                    initialReaderId={reciterId}
+                    getAvailableSurahs={getAvailableSurahs}
                     showToast={showToast}
                     mode="surah"
                     readersList={RECITERS}

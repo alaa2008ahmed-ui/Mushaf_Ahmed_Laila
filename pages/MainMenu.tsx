@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import BottomBar from '../components/BottomBar';
+import ThemesSidebar from '../components/MainMenu/ThemesSidebar';
 import { useTheme } from '../context/ThemeContext';
 import WhatsAppButton from '../components/WhatsAppButton';
 import InteractiveBackground from '../components/InteractiveBackground';
@@ -138,6 +138,7 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
   const [isCustomizationOpen, setIsCustomizationOpen] = useState(false);
   const [isPasscodeOpen, setIsPasscodeOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [isThemesSidebarOpen, setIsThemesSidebarOpen] = useState(false);
   const [verseFontSize, setVerseFontSize] = useState(() => {
       const saved = localStorage.getItem('mainMenuVerseFontSize');
       return saved ? parseFloat(saved) : 1.25;
@@ -559,6 +560,10 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
 
   useEffect(() => {
       const interceptor = () => {
+          if (isThemesSidebarOpen) {
+              setIsThemesSidebarOpen(false);
+              return true;
+          }
           if (showExpandedEventsModal) {
               setShowExpandedEventsModal(false);
               return true;
@@ -587,7 +592,7 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
       };
       const unregister = registerBackInterceptor(interceptor);
       return unregister;
-  }, [isCustomizationOpen, isEditMode, showExpandedEventsModal, showExpandedUpcomingEventModal, isPasscodeOpen, isVerseMenuOpen]);
+  }, [isThemesSidebarOpen, isCustomizationOpen, isEditMode, showExpandedEventsModal, showExpandedUpcomingEventModal, isPasscodeOpen, isVerseMenuOpen]);
 
   const handleSaveCustomization = (selectedIds: string[]) => {
       setVisibleItems(selectedIds);
@@ -609,12 +614,32 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
   };
 
   return (
-    <div>
+    <div className="relative">
       <InteractiveBackground />
+
+      {/* زر الثيمات العائم الصغير بأعلى الصفحة على اليمين */}
+      <button 
+        id="themes-btn"
+        data-id="theme-toggle-button"
+        type="button"
+        onClick={() => setIsThemesSidebarOpen(true)}
+        className="fixed top-[calc(env(safe-area-inset-top,20px)+12px)] right-3 z-40 w-9 h-9 rounded-full flex items-center justify-center shadow-lg transition-all active:scale-90 hover:scale-105 border backdrop-blur-md cursor-pointer"
+        style={{
+          backgroundColor: theme.bgColor === '#000000' ? 'rgba(30, 41, 59, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+          borderColor: (theme.palette?.[0] || '#10b981') + '60',
+          color: theme.palette?.[0] || '#10b981',
+          boxShadow: `0 4px 14px ${(theme.palette?.[0] || '#10b981')}35`
+        }}
+        title="الثيمات"
+        aria-label="الثيمات"
+      >
+        <Palette className="w-4 h-4" />
+      </button>
+
       <div className="h-screen w-full flex flex-col overflow-hidden">
         <div 
           ref={scrollContainerRef}
-          className="flex-1 overflow-y-auto pb-24 no-scrollbar"
+          className="flex-1 overflow-y-auto pb-6 no-scrollbar"
         >
           <div className="main-layout px-4 flex flex-col" style={{ fontFamily: theme.font }}>
               
@@ -1111,11 +1136,9 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
         </div>
       )}
 
-      <BottomBar 
-        onHomeClick={() => {}} 
-        onThemesClick={onOpenThemes} 
-        showHome={false} 
-        showThemes={true} 
+      <ThemesSidebar 
+        isOpen={isThemesSidebarOpen}
+        onClose={() => setIsThemesSidebarOpen(false)}
       />
       
       <PasscodeModal 

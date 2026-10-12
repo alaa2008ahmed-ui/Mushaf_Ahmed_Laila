@@ -9,6 +9,7 @@ import {
 import TutorialOverlay, { TutorialStep } from './Tutorial/TutorialOverlay';
 import { THEMES } from './QuranReader/constants';
 import { useShowNewBadge } from '../utils/badgeManager';
+import { useLanguage } from '../context/LanguageContext';
 
 interface SideMenuProps {
     isOpen: boolean;
@@ -21,6 +22,7 @@ interface SideMenuProps {
 
 const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onNavigate, onOpenThemes, currentTheme: _appTheme, currentPage }) => {
     const showNewBadges = useShowNewBadge();
+    const { t, translateMenuItem, isRTL } = useLanguage();
     const [readerTheme, setReaderTheme] = React.useState(() => {
         try {
             const themeId = localStorage.getItem('current_theme_id_v') || 'black';
@@ -50,24 +52,24 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onNavigate, onOpen
     };
 
     const menuItems = [
-        { id: 'community', label: 'مجتمع التواصل', icon: MessageCircle, color: '#10b981', description: 'التواصل والمحادثات مع القراء والحفاظ من جميع أنحاء العالم.' },
-        { id: 'ahl-al-quran', label: 'أهل القرآن (لوحة الشرف)', icon: Trophy, color: '#f59e0b', description: 'لوحة صدارة وتنافس محمود لقراء القرآن الكريم مع تحديث شهري للأجزاء والختمات.' },
-        { id: 'search', label: 'البحث المتقدم', icon: Search, color: '#14b8a6', description: 'البحث عن آية، أو دعاء، أو أذكار.' },
-        { id: 'habit-tracker', label: 'مربّي العبادات', icon: Calendar, color: '#ec4899', description: 'متابعة الصلاة وتلاوة القرآن والأذكار والأهداف اليومية.' },
-        { id: 'home', label: 'الرئيسية', icon: Home, color: '#3b82f6', description: 'العودة إلى الشاشة الرئيسية للتطبيق.' },
-        { id: 'quran', label: 'القرآن الكريم', icon: BookOpen, color: '#10b981', description: 'يقوم بعرض النص القرانى والترجمه باللغه الانجليزيه' },
-        { id: 'listen', label: 'الاستماع', icon: Headphones, color: '#8b5cf6', description: 'الاستماع إلى تلاوات كبار القراء بمختلف الروايات.' },
-        { id: 'prayer-times', label: 'مواقيت الصلاة', icon: Clock, color: '#f59e0b', description: 'عرض مواقيت الصلاة واتجاه القبلة لموقعك الحالي.' },
-        { id: 'daily-wird', label: 'الورد اليومي', icon: Calendar, color: '#ec4899', description: 'متابعة وردك اليومي من القرآن والأذكار.' },
-        { id: 'memorization', label: 'التحفيظ', icon: Brain, color: '#06b6d4', description: 'أدوات مساعدة لحفظ ومراجعة القرآن الكريم.' },
-        { id: 'voice-control', label: 'التحكم الصوتي', icon: Mic, color: '#ef4444', description: 'التحكم في التطبيق من خلال الأوامر الصوتية.' },
-        { id: 'readers', label: 'القراء', icon: Headphones, color: '#8b5cf6', description: 'اختر قارئك المفضل للاستماع إلى التلاوة العطرة.' },
-        { id: 'font-type', label: 'نوع الخط', icon: Type, color: '#10b981', description: 'تغيير نوع الخط بما يناسب راحتك في القراءة.' },
-        { id: 'notifications', label: 'الإشعارات', icon: Bell, color: '#f59e0b', description: 'يمكنك الوصول الى اشعارات التطبيق واشعارات الهاتف والتعديل عليها بما يناسبك' },
-        { id: 'sajdah', label: 'آيات السجدة', icon: Compass, color: '#ec4899', description: 'قائمة بجميع مواضع السجدات في القرآن الكريم للوصول السريع.' },
-        { id: 'settings', label: 'الإعدادات', icon: Settings, color: '#6366f1', description: 'التحكم الكامل بالتطبيق من داخل هذا الزر' },
-        { id: 'themes', label: 'الثيمات', icon: Palette, color: '#f43f5e', description: 'تغيير ألوان ومظهر التطبيق بالكامل.' },
-        { id: 'whatsapp', label: 'تواصل معنا', icon: MessageCircle, color: '#22c55e', description: 'تواصل مباشر معنا للاقتراحات أو الدعم الفني.' },
+        { id: 'community', label: t('menu.community', 'مجتمع التواصل'), icon: MessageCircle, color: '#10b981', description: t('sidemenu.community_desc', 'التواصل والمحادثات مع القراء والحفاظ من جميع أنحاء العالم.') },
+        { id: 'ahl-al-quran', label: t('menu.ahl_al_quran', 'أهل القرآن (لوحة الشرف)'), icon: Trophy, color: '#f59e0b', description: t('sidemenu.ahl_al_quran_desc', 'لوحة صدارة وتنافس محمود لقراء القرآن الكريم مع تحديث شهري للأجزاء والختمات.') },
+        { id: 'search', label: t('sidemenu.search', 'البحث المتقدم'), icon: Search, color: '#14b8a6', description: t('sidemenu.search_desc', 'البحث عن آية، أو دعاء، أو أذكار.') },
+        { id: 'habit-tracker', label: t('menu.habit_tracker', 'مربّي العبادات'), icon: Calendar, color: '#ec4899', description: t('sidemenu.habit_tracker_desc', 'متابعة الصلاة وتلاوة القرآن والأذكار والأهداف اليومية.') },
+        { id: 'home', label: t('sidemenu.home', 'الرئيسية'), icon: Home, color: '#3b82f6', description: t('sidemenu.home_desc', 'العودة إلى الشاشة الرئيسية للتطبيق.') },
+        { id: 'quran', label: t('menu.quran', 'القرآن الكريم'), icon: BookOpen, color: '#10b981', description: t('sidemenu.quran_desc', 'يقوم بعرض النص القرآني والتلاوة والتفسير والترجمة.') },
+        { id: 'listen', label: t('sidemenu.listen', 'الاستماع'), icon: Headphones, color: '#8b5cf6', description: t('sidemenu.listen_desc', 'الاستماع إلى تلاوات كبار القراء بمختلف الروايات.') },
+        { id: 'prayer-times', label: t('menu.prayer_times', 'مواقيت الصلاة'), icon: Clock, color: '#f59e0b', description: t('sidemenu.prayer_times_desc', 'عرض مواقيت الصلاة واتجاه القبلة لموقعك الحالي.') },
+        { id: 'daily-wird', label: t('menu.daily_wird', 'الورد اليومي'), icon: Calendar, color: '#ec4899', description: t('sidemenu.daily_wird_desc', 'متابعة وردك اليومي من القرآن والأذكار.') },
+        { id: 'memorization', label: t('menu.memorization', 'التحفيظ'), icon: Brain, color: '#06b6d4', description: t('sidemenu.memorization_desc', 'أدوات مساعدة لحفظ ومراجعة القرآن الكريم.') },
+        { id: 'voice-control', label: t('menu.voice_control', 'التحكم الصوتي'), icon: Mic, color: '#ef4444', description: t('sidemenu.voice_control_desc', 'التحكم في التطبيق من خلال الأوامر الصوتية.') },
+        { id: 'readers', label: t('sidemenu.readers', 'القراء'), icon: Headphones, color: '#8b5cf6', description: t('sidemenu.readers_desc', 'اختر قارئك المفضل للاستماع إلى التلاوة العطرة.') },
+        { id: 'font-type', label: t('sidemenu.font_type', 'نوع الخط'), icon: Type, color: '#10b981', description: t('sidemenu.font_type_desc', 'تغيير نوع الخط بما يناسب راحتك في القراءة.') },
+        { id: 'notifications', label: t('sidemenu.notifications', 'الإشعارات'), icon: Bell, color: '#f59e0b', description: t('sidemenu.notifications_desc', 'يمكنك الوصول الى اشعارات التطبيق واشعارات الهاتف والتعديل عليها بما يناسبك') },
+        { id: 'sajdah', label: t('sidemenu.sajdah', 'آيات السجدة'), icon: Compass, color: '#ec4899', description: t('sidemenu.sajdah_desc', 'قائمة بجميع مواضع السجدات في القرآن الكريم للوصول السريع.') },
+        { id: 'settings', label: t('sidemenu.settings', 'الإعدادات'), icon: Settings, color: '#6366f1', description: t('sidemenu.settings_desc', 'التحكم الكامل بالتطبيق من داخل هذا الزر') },
+        { id: 'themes', label: t('sidemenu.themes', 'الثيمات'), icon: Palette, color: '#f43f5e', description: t('sidemenu.themes_desc', 'تغيير ألوان ومظهر التطبيق بالكامل.') },
+        { id: 'whatsapp', label: t('sidemenu.whatsapp', 'تواصل معنا'), icon: MessageCircle, color: '#22c55e', description: t('sidemenu.whatsapp_desc', 'تواصل مباشر معنا للاقتراحات أو الدعم الفني.') },
     ];
 
     const sideMenuTutorialSteps: TutorialStep[] = [
@@ -137,8 +139,8 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onNavigate, onOpen
                                         <BookOpen size={24} color="#fff" />
                                     </div>
                                     <div>
-                                        <h2 className="font-bold text-lg leading-tight">مصحف أحمد وليلى</h2>
-                                        <p className="text-xs opacity-60">الإصدار 1.13</p>
+                                        <h2 className="font-bold text-lg leading-tight">{t('app.name', 'مصحف أحمد وليلى')}</h2>
+                                        <p className="text-xs opacity-60">{t('app.version', 'الإصدار 1.13')}</p>
                                     </div>
                                 </div>
                                 <button onClick={onClose} className="p-2 rounded-full hover:bg-black/5 transition-colors">
@@ -173,11 +175,11 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onNavigate, onOpen
                                             <span className="font-bold text-[15px]">{item.label}</span>
                                             {showNewBadges && (item.id === 'community' || item.id === 'ahl-al-quran') && (
                                                 <span className="bg-yellow-400 text-black text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-xs border border-white dark:border-slate-800">
-                                                    جديد
+                                                    {t('common.new', 'جديد')}
                                                 </span>
                                             )}
                                         </div>
-                                        <ChevronLeft size={16} className="mr-auto opacity-30 group-hover:opacity-100 transition-opacity" />
+                                        <ChevronLeft size={16} className={`${isRTL ? 'mr-auto' : 'ml-auto'} opacity-30 group-hover:opacity-100 transition-opacity`} />
                                     </button>
                                 ))}
                             </div>
@@ -187,15 +189,15 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onNavigate, onOpen
                                 <div className="flex items-center justify-around">
                                     <button data-id="side-menu-about" className="flex flex-col items-center gap-1 opacity-60 hover:opacity-100 transition-opacity">
                                         <Info size={20} />
-                                        <span className="text-[10px] font-bold">عن التطبيق</span>
+                                        <span className="text-[10px] font-bold">{t('sidemenu.about', 'عن التطبيق')}</span>
                                     </button>
                                     <button data-id="side-menu-help" className="flex flex-col items-center gap-1 opacity-60 hover:opacity-100 transition-opacity">
                                         <HelpCircle size={20} />
-                                        <span className="text-[10px] font-bold">المساعدة</span>
+                                        <span className="text-[10px] font-bold">{t('sidemenu.help', 'المساعدة')}</span>
                                     </button>
                                     <button data-id="side-menu-rate" className="flex flex-col items-center gap-1 opacity-60 hover:opacity-100 transition-opacity">
                                         <Star size={20} />
-                                        <span className="text-[10px] font-bold">تقييمنا</span>
+                                        <span className="text-[10px] font-bold">{t('sidemenu.rate', 'تقييمنا')}</span>
                                     </button>
                                 </div>
                             </div>
