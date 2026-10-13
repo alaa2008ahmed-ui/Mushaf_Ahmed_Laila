@@ -125,6 +125,13 @@ public class PrayerSilentReceiver extends BroadcastReceiver {
                 .setContentIntent(pendingIntent)
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT);
 
+            try {
+                android.graphics.Bitmap largeIcon = android.graphics.BitmapFactory.decodeResource(context.getResources(), R.drawable.app_logo_large);
+                if (largeIcon != null) {
+                    builder.setLargeIcon(largeIcon);
+                }
+            } catch (Exception ignored) {}
+
             nm.notify(notifId, builder.build());
         } catch (Exception ignored) {}
     }

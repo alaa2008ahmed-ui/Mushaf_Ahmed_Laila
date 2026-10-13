@@ -178,7 +178,7 @@ const GridSection: React.FC<GridSectionProps> = ({
     const GREEN_ITEMS = ['quran', 'listen', 'prayer-times', 'more'];
 
     return (
-        <div className="grid grid-cols-2 gap-x-4 gap-y-3 w-full max-w-sm mx-auto flex-grow content-center relative mt-6 pb-4">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-3 w-full max-w-sm mx-auto flex-grow content-center relative mt-0 pb-4">
             {menuItems.map(item => {
                 const isVisible = visibleItems.includes(item.id);
                 const isGreen = GREEN_ITEMS.includes(item.id);

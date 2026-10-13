@@ -12,6 +12,8 @@ import NextPrayerCard from '../components/PrayerTimes/NextPrayerCard';
 import NotificationSettingsModal from '../components/QuranReader/NotificationSettingsModal';
 import TutorialOverlay, { TutorialStep } from '../components/Tutorial/TutorialOverlay';
 import { MapPin, Search, Clock, Bell, Calendar, Palette } from 'lucide-react';
+import { Browser } from '@capacitor/browser';
+import { Capacitor } from '@capacitor/core';
 import {
     applyOffset,
     formatTime12,
@@ -352,14 +354,23 @@ function PrayerTimes({ onBack, onNavigate }) {
                     >
                         <div className="flex gap-2 mb-1.5">
                             <button
-                                onClick={() => {
+                                onClick={async () => {
                                     const lat = config.location?.lat;
                                     const lng = config.location?.lng;
                                     let url = 'https://www.google.com/maps/search/?api=1&query=مسجد';
                                     if (lat && lng) {
                                         url = `https://www.google.com/maps/search/مسجد/@${lat},${lng},15z`;
                                     }
-                                    window.open(url, '_blank');
+                                    if (Capacitor.isNativePlatform()) {
+                                        try {
+                                            await Browser.open({ url });
+                                        } catch (e) {
+                                            console.error("Browser open error:", e);
+                                            window.open(url, '_system');
+                                        }
+                                    } else {
+                                        window.open(url, '_blank');
+                                    }
                                 }}
                                 className={`${isDefaultTheme ? 'bg-white' : 'themed-card'} flex-1 rounded-xl p-3 flex items-center justify-center gap-1.5 shadow-sm font-bold text-[13px] active:scale-95 transition-all hover:bg-black/5 dark:hover:bg-white/5`}
                                 style={{ 
@@ -369,7 +380,7 @@ function PrayerTimes({ onBack, onNavigate }) {
                                 }}
                             >
                                 <MapPin size={18} className="shrink-0" />
-                                <span className="truncate whitespace-nowrap">البحث عن المساجد</span>
+                                <span className="truncate whitespace-nowrap">المساجد القريبة</span>
                             </button>
                              <button
                                 onClick={() => onNavigate('monthly-prayer-times')}

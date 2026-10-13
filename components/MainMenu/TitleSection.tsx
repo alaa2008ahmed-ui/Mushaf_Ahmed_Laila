@@ -11,6 +11,8 @@ interface TitleSectionProps {
     theme: any;
     themeKey: string;
     onOpenSideMenu: () => void;
+    hideTitle?: boolean;
+    isSticky?: boolean;
 }
 
 const TitleSection: React.FC<TitleSectionProps> = ({
@@ -21,21 +23,44 @@ const TitleSection: React.FC<TitleSectionProps> = ({
     handleCancelEdit,
     theme,
     themeKey,
-    onOpenSideMenu
+    onOpenSideMenu,
+    hideTitle = false,
+    isSticky = false
 }) => {
     const isBlackTheme = theme.bgColor === '#000000';
     const { t } = useLanguage();
 
+    const stickyBgColor = isSticky 
+        ? (theme.bgColor || (theme.isDark ? '#000000' : '#ffffff')) 
+        : 'transparent';
+
     return (
-        <div className="relative">
-            <div className="text-center mt-2 select-none relative">
-                <h1 id="app-title" className={`text-4xl font-black tracking-tight transition-transform ${isEditMode ? 'scale-110 text-yellow-400' : ''}`} style={{ color: isEditMode ? undefined : (isBlackTheme ? '#FFFFFF' : theme.textColor) }}>
-                    {t('app.name', 'مُصْحَفُ أَحْمَدَ وَلَيْلَى')}
-                </h1>
-                
-                {/* الحاوية التي يظهر عليها نص الدعاء أو الشريط الإعلاني المتحرك مباشرة في نفس المكان */}
-                <div className="relative mt-2 min-h-[40px] max-w-sm mx-auto flex items-center justify-center px-4">
-                    <p className="text-[16px] font-black" style={{ color: isBlackTheme ? '#FFFFFF' : (themeKey === 'default' ? '#a855f7' : (themeKey === 'olive_grove' ? '#4D7C0F' : theme.textColor)) }}>
+        <>
+            {/* عنوان التطبيق: يثبت بأول الصفحة عند وصوله لمكان الآية، وتمر باقي الصفحة من تحته */}
+            <div 
+                id="sticky-title-wrapper"
+                className={`sticky top-0 z-30 -mx-4 px-4 text-center select-none pt-1 pb-1 transition-colors duration-150 ${
+                    isSticky ? 'shadow-sm backdrop-blur-md' : ''
+                }`}
+                style={{
+                    backgroundColor: stickyBgColor,
+                }}
+            >
+                {!hideTitle && (
+                    <h1 
+                        id="app-title" 
+                        className={`text-3xl sm:text-4xl font-black tracking-tight transition-transform ${isEditMode ? 'scale-110 text-yellow-400' : ''}`} 
+                        style={{ color: isEditMode ? undefined : (isBlackTheme ? '#FFFFFF' : theme.textColor) }}
+                    >
+                        {t('app.name', 'مُصْحَفُ أَحْمَدَ وَلَيْلَى')}
+                    </h1>
+                )}
+            </div>
+            
+            {/* الحاوية التي يظهر عليها نص الدعاء أو الشريط الإعلاني المتحرك (تختفي وتمر تحت اسم التطبيق عند التمرير) */}
+            <div className="relative z-10 text-center select-none">
+                <div className="relative mt-1 min-h-[32px] max-w-sm mx-auto flex items-center justify-center px-4">
+                    <p className="text-[15px] font-black" style={{ color: isBlackTheme ? '#FFFFFF' : (themeKey === 'default' ? '#a855f7' : (themeKey === 'olive_grove' ? '#4D7C0F' : theme.textColor)) }}>
                         {isEditMode ? t('common.drag_to_reorder', 'اسحب الأزرار لترتيبها') : t('app.subtitle', 'نرجوا الدعاء لهم بالرحمة والمغفرة')}
                     </p>
 
@@ -66,7 +91,7 @@ const TitleSection: React.FC<TitleSectionProps> = ({
                     </div>
                 )}
             </div>
-        </div>
+        </>
     );
 };
 

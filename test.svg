@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="goldRing" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E5C158" />
+      <stop offset="50%" stop-color="#D4AF37" />
+      <stop offset="100%" stop-color="#AA771C" />
+    </linearGradient>
+    <linearGradient id="woodGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#9E5D2A" />
+      <stop offset="50%" stop-color="#733A14" />
+      <stop offset="100%" stop-color="#4E2307" />
+    </linearGradient>
+    <linearGradient id="goldPage" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FFF9E6" />
+      <stop offset="50%" stop-color="#FDF4D1" />
+      <stop offset="100%" stop-color="#EED58D" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background Circle (White with Golden Border) -->
+  <circle cx="256" cy="256" r="248" fill="#FFFFFF" stroke="url(#goldRing)" stroke-width="14" />
+  <circle cx="256" cy="256" r="240" fill="none" stroke="#C29828" stroke-width="2" />
+
+  <!-- Arabic Calligraphy: مصحف أحمد وليلى -->
+  <g fill="#4A2800" stroke="#4A2800" stroke-width="0.5">
+    <!-- Top Arc Text (Simplified Calligraphic Representation) -->
+    <path d="M 180 115 Q 256 85 332 115" fill="none" stroke="url(#goldRing)" stroke-width="3" stroke-linecap="round"/>
+  </g>
+
+  <!-- Rihal (Wooden Quran Stand) -->
+  <g fill="url(#woodGrad)" stroke="#381903" stroke-width="3">
+    <!-- Left Leg -->
+    <path d="M 210 320 L 175 420 Q 185 430 205 410 L 256 350 L 307 410 Q 327 430 337 420 L 302 320 Z" />
+    <!-- Detailed stand cross -->
+    <path d="M 190 395 C 195 365 235 340 256 340 C 277 340 317 365 322 395 C 300 375 270 365 256 365 C 242 365 212 375 190 395 Z" fill="#582C0E" />
+  </g>
+
+  <!-- Open Quran Book -->
+  <g>
+    <!-- Book Cover edges -->
+    <path d="M 155 305 Q 256 335 357 305 L 362 312 Q 256 343 150 312 Z" fill="#6B3710" />
+    
+    <!-- Open Pages (Left Page) -->
+    <path d="M 256 325 C 230 322 180 305 160 295 L 170 180 C 190 190 235 205 256 210 Z" fill="url(#goldPage)" stroke="#B8860B" stroke-width="3" />
+    
+    <!-- Open Pages (Right Page) -->
+    <path d="M 256 325 C 282 322 332 305 352 295 L 342 180 C 322 190 277 205 256 210 Z" fill="url(#goldPage)" stroke="#B8860B" stroke-width="3" />
+    
+    <!-- Spine binding crease -->
+    <line x1="256" y1="210" x2="256" y2="325" stroke="#8B5A2B" stroke-width="4" />
+
+    <!-- Left Page Ornate Frame (Quranic illumination style) -->
+    <path d="M 248 220 C 230 216 195 204 182 196 L 174 282 C 190 290 225 304 248 312 Z" fill="#F8E5A7" stroke="#A67C1E" stroke-width="2" />
+    <path d="M 242 228 C 228 224 200 214 188 208 L 182 274 C 195 280 222 292 242 298 Z" fill="#FFFBF0" stroke="#C59B27" stroke-width="1.5" />
+
+    <!-- Right Page Ornate Frame -->
+    <path d="M 264 220 C 282 216 317 204 330 196 L 338 282 C 322 290 287 304 264 312 Z" fill="#F8E5A7" stroke="#A67C1E" stroke-width="2" />
+    <path d="M 270 228 C 284 224 312 214 324 208 L 330 274 C 317 280 290 292 270 298 Z" fill="#FFFBF0" stroke="#C59B27" stroke-width="1.5" />
+    
+    <!-- Inner Quran Surah Heading & Decorative Text Lines -->
+    <ellipse cx="212" cy="240" rx="14" ry="14" fill="#E8C86A" stroke="#8F6314" stroke-width="1.5"/>
+    <ellipse cx="300" cy="240" rx="14" ry="14" fill="#E8C86A" stroke="#8F6314" stroke-width="1.5"/>
+  </g>
+</svg>

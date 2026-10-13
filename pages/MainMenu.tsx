@@ -141,7 +141,7 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
   const [isThemesSidebarOpen, setIsThemesSidebarOpen] = useState(false);
   const [verseFontSize, setVerseFontSize] = useState(() => {
       const saved = localStorage.getItem('mainMenuVerseFontSize');
-      return saved ? parseFloat(saved) : 1.25;
+      return saved ? parseFloat(saved) : 1.15;
   });
   const [verseSettings, setVerseSettings] = useState(() => {
       const saved = localStorage.getItem('mainMenuVerseSettings');
@@ -153,6 +153,8 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
   });
   const [isVerseMenuOpen, setIsVerseMenuOpen] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [isTitleSticky, setIsTitleSticky] = useState(false);
+  const verseSectionRef = useRef<HTMLDivElement>(null);
 
   const PREDEFINED_COLORS = [
       '#ffffff', '#f3f4f6', '#9ca3af', '#4b5563', '#000000',
@@ -617,33 +619,43 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
     <div className="relative">
       <InteractiveBackground />
 
-      {/* زر الثيمات العائم الصغير بأعلى الصفحة على اليمين */}
+      {/* زر الثيمات العائم الدائري بوضع التباين العالي (mix-blend-mode) لضمان ظهوره دائماً */}
+      {/* زر الثيمات العائم الدائري الشفاف */}
       <button 
         id="themes-btn"
         data-id="theme-toggle-button"
         type="button"
         onClick={() => setIsThemesSidebarOpen(true)}
-        className="fixed top-[calc(env(safe-area-inset-top,20px)+12px)] right-3 z-40 w-9 h-9 rounded-full flex items-center justify-center shadow-lg transition-all active:scale-90 hover:scale-105 border backdrop-blur-md cursor-pointer"
+        className="fixed top-[calc(env(safe-area-inset-top,20px)+44px)] right-3 z-40 w-[35px] h-[35px] rounded-full flex items-center justify-center transition-all duration-300 active:scale-90 hover:scale-110 border-2 border-current bg-transparent cursor-pointer group"
         style={{
-          backgroundColor: theme.bgColor === '#000000' ? 'rgba(30, 41, 59, 0.9)' : 'rgba(255, 255, 255, 0.9)',
-          borderColor: (theme.palette?.[0] || '#10b981') + '60',
-          color: theme.palette?.[0] || '#10b981',
-          boxShadow: `0 4px 14px ${(theme.palette?.[0] || '#10b981')}35`
+          color: (theme.palette?.[2] && theme.palette[2] !== theme.palette[0] && theme.palette[2] !== theme.palette[1]) 
+            ? theme.palette[2] 
+            : (theme.accent && theme.accent !== theme.palette[0] && theme.accent !== theme.palette[1]) 
+              ? theme.accent 
+              : (theme.isDark ? '#FFFFFF' : '#000000')
         }}
-        title="الثيمات"
-        aria-label="الثيمات"
+        title="الثيمات والمظهر"
+        aria-label="الثيمات والمظهر"
       >
-        <Palette className="w-4 h-4" />
+        <Palette className="w-4 h-4 transition-transform group-hover:rotate-12" />
       </button>
 
       <div className="h-screen w-full flex flex-col overflow-hidden">
         <div 
           ref={scrollContainerRef}
+          onScroll={(e) => {
+            const scrollTop = e.currentTarget.scrollTop;
+            const verseHeight = verseSectionRef.current ? verseSectionRef.current.offsetHeight : 65;
+            const sticky = scrollTop >= (verseHeight - 2);
+            if (sticky !== isTitleSticky) {
+              setIsTitleSticky(sticky);
+            }
+          }}
           className="flex-1 overflow-y-auto pb-6 no-scrollbar"
         >
           <div className="main-layout px-4 flex flex-col" style={{ fontFamily: theme.font }}>
               
-              <div id="verse-section">
+              <div id="verse-section" ref={verseSectionRef}>
                 <VerseSection 
                     currentVerse={currentVerse}
                     verseFontSize={verseFontSize}
@@ -661,6 +673,7 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
                   theme={theme}
                   themeKey={themeKey}
                   onOpenSideMenu={onOpenSideMenu}
+                  isSticky={isTitleSticky}
               />
 
               <div id="grid-section">

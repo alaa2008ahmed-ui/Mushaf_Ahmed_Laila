@@ -88,6 +88,7 @@ export const setupNotifications = async (settings?: PhoneNotificationSettings) =
                 schedule: { on: { hour, minute }, allowWhileIdle: true, repeats: true },
                 extra: { page: conf.page },
                 smallIcon: 'ic_stat_name',
+                largeIcon: 'app_logo_large',
             });
         }
     });
@@ -102,6 +103,7 @@ export const setupNotifications = async (settings?: PhoneNotificationSettings) =
         schedule: { on: { weekday: 6, hour, minute }, allowWhileIdle: true, repeats: true }, // Friday is 6
         extra: { page: 'quran', params: { surah: 18 } },
         smallIcon: 'ic_stat_name',
+        largeIcon: 'app_logo_large',
       });
     }
 
@@ -136,6 +138,7 @@ export const setupNotifications = async (settings?: PhoneNotificationSettings) =
                             schedule: { at: scheduleDate, allowWhileIdle: true },
                             extra: { page: 'sabah-masaa' },
                             smallIcon: 'ic_stat_name',
+                            largeIcon: 'app_logo_large',
                         });
                     }
                 }

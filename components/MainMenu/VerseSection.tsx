@@ -28,9 +28,13 @@ const VerseSection: React.FC<VerseSectionProps> = ({
         finalTextColor = theme.palette?.[0] || theme.textColor;
     }
 
+    const surahTextColor = isBlackTheme 
+        ? '#9ca3af' 
+        : (theme.palette?.[1] || theme.palette?.[0] || '#8b5cf6');
+
     return (
         <div 
-            className="text-center select-none touch-manipulation mx-4 p-2 pt-2 rounded-3xl"
+            className="w-full flex flex-col items-center justify-center select-none touch-manipulation px-0 pt-1"
             dir="rtl"
             style={{ 
                 userSelect: 'none', 
@@ -39,12 +43,14 @@ const VerseSection: React.FC<VerseSectionProps> = ({
                 fontFamily: verseSettings.fontFamily
             }}
         >
-            <p className="font-bold leading-tight mb-1 pointer-events-none transition-all duration-75" style={{ color: finalTextColor, fontSize: `${verseFontSize}rem` }}>
+            <p className="font-bold leading-normal mb-1 pointer-events-none transition-all duration-75 px-1 text-center" style={{ color: finalTextColor, fontSize: `${verseFontSize}rem` }}>
                 {currentVerse.text}
             </p>
-            <p className="text-[12px] font-bold text-left pl-8 pointer-events-none transition-all duration-75 opacity-70" style={{ color: finalTextColor, fontSize: `${Math.max(0.75, verseFontSize * 0.6)}rem` }}>
-                {`(${currentVerse.surah}: ${currentVerse.number})`}
-            </p>
+            <div className="w-full flex justify-end px-4">
+                <p className="font-bold pointer-events-none transition-all duration-75" style={{ color: surahTextColor, fontSize: `${Math.max(0.65, verseFontSize * 0.42)}rem` }}>
+                    {`(${currentVerse.surah}: ${currentVerse.number})`}
+                </p>
+            </div>
         </div>
     );
 };

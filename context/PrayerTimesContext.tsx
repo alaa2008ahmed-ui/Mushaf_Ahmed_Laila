@@ -651,6 +651,9 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                             channelId: 'adhan_general_channel',
                             sound: playSound ? soundFileName : undefined,
                             smallIcon: 'ic_stat_name',
+                            largeIcon: 'app_logo_large',
+                            group: `adhan_${notifId}`,
+                            groupSummary: false,
                             extra: { type: 'adhan', prayer: key }
                         });
                     }
@@ -671,13 +674,17 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                 if (isPreReminderEnabled && key !== 'Sunrise') {
                     const prePrayerDate = new Date(prayerDate.getTime() - reminderMinutes * 60000);
                     if (prePrayerDate > new Date()) {
+                        const preNotifId = 5000 + (day * 10) + prayerKeys.indexOf(key) + 1;
                         notificationsToSchedule.push({
-                            id: 5000 + (day * 10) + prayerKeys.indexOf(key) + 1,
+                            id: preNotifId,
                             title: `⏰ اقترب موعد أذان ${prayerNamesAr[key]} (بقي ${reminderMinutes} دقيقة)`,
                             body: `حان وقت الوضوء والاستعداد والذهاب إلى المسجد لأداء صلاة ${prayerNamesAr[key]} 🕌`,
                             schedule: { at: prePrayerDate, allowWhileIdle: true },
                             channelId: 'pre_adhan_reminder_channel',
                             smallIcon: 'ic_stat_name',
+                            largeIcon: 'app_logo_large',
+                            group: `pre_adhan_${preNotifId}`,
+                            groupSummary: false,
                             extra: { type: 'pre_adhan', prayer: key }
                         });
                     }
@@ -698,14 +705,18 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                 if (isIqamaReminderEnabled && key !== 'Sunrise') {
                     const iqamaPrayerDate = new Date(prayerDate.getTime() + iqamaMinutes * 60000);
                     if (iqamaPrayerDate > new Date()) {
+                        const iqamaNotifId = 6000 + (day * 10) + prayerKeys.indexOf(key) + 1;
                         notificationsToSchedule.push({
-                            id: 6000 + (day * 10) + prayerKeys.indexOf(key) + 1,
+                            id: iqamaNotifId,
                             title: `🕌 حان الآن موعد إقامة صلاة ${prayerNamesAr[key]}`,
                             body: `أقيمت الصلاة.. استووا وتراصوا واعتدلوا أثابكم الله 🤲`,
                             schedule: { at: iqamaPrayerDate, allowWhileIdle: true },
                             channelId: 'iqama_reminder_channel',
                             sound: 'takbeer1.mp3',
                             smallIcon: 'ic_stat_name',
+                            largeIcon: 'app_logo_large',
+                            group: `iqama_${iqamaNotifId}`,
+                            groupSummary: false,
                             extra: { type: 'iqama', prayer: key }
                         });
                     }
@@ -770,6 +781,7 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                     schedule: { at: firstThirdDate, allowWhileIdle: true },
                     channelId: 'night_times_channel',
                     smallIcon: 'ic_stat_name',
+                    largeIcon: 'app_logo_large',
                     extra: { type: 'night', period: 'firstThird' }
                 });
             }
@@ -782,6 +794,7 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                     schedule: { at: midnightDate, allowWhileIdle: true },
                     channelId: 'night_times_channel',
                     smallIcon: 'ic_stat_name',
+                    largeIcon: 'app_logo_large',
                     extra: { type: 'night', period: 'midnight' }
                 });
             }
@@ -794,6 +807,7 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                     schedule: { at: lastThirdDate, allowWhileIdle: true },
                     channelId: 'night_times_channel',
                     smallIcon: 'ic_stat_name',
+                    largeIcon: 'app_logo_large',
                     extra: { type: 'night', period: 'lastThird' }
                 });
             }

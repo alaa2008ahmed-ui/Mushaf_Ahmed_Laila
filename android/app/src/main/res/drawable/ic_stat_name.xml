@@ -3,7 +3,35 @@
     android:height="24dp"
     android:viewportWidth="24.0"
     android:viewportHeight="24.0">
+    <!-- Outer Ring -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.2"
+        android:pathData="M12,1.5 C6.2,1.5 1.5,6.2 1.5,12 C1.5,17.8 6.2,22.5 12,22.5 C17.8,22.5 22.5,17.8 22.5,12 C22.5,6.2 17.8,1.5 12,1.5 Z"/>
+    
+    <!-- Open Quran Book Pages -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M12,22c1.1,0 2,-0.9 2,-2h-4c0,1.1 0.9,2 2,2zM18,16v-5c0,-3.07 -1.63,-5.64 -4.5,-6.32V4c0,-0.83 -0.67,-1.5 -1.5,-1.5s-1.5,0.67 -1.5,1.5v0.68C7.64,5.36 6,7.92 6,11v5l-2,2v1h16v-1l-2,-2z"/>
+        android:pathData="M12,9.8 C10.8,9.5 8.5,8.8 7.2,8.4 L7.8,14.8 C9.2,15.2 11.2,16 12,16.2 C12.8,16 14.8,15.2 16.2,14.8 L16.8,8.4 C15.5,8.8 13.2,9.5 12,9.8 Z"/>
+    
+    <!-- Book Center Spine Crease -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#000000"
+        android:strokeWidth="0.8"
+        android:pathData="M12,9.8 L12,16.2"/>
+
+    <!-- Wooden Stand (Rihal) Underneath -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M9.5,16.5 L7.8,20 C8.2,20.3 9,20.3 9.6,19.8 L12,17.5 L14.4,19.8 C15,20.3 15.8,20.3 16.2,20 L14.5,16.5 C13.5,16.8 12.5,17 12,17 C11.5,17 10.5,16.8 9.5,16.5 Z"/>
+    
+    <!-- Subtle Calligraphy Crescent / Crown at Top -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M9,5.5 C10.2,4.8 13.8,4.8 15,5.5 C14,5.9 12.8,6.1 12,6.1 C11.2,6.1 10,5.9 9,5.5 Z"/>
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M11.5,3.8 C11.8,3.5 12.2,3.5 12.5,3.8 C12.8,4.1 12.5,4.5 12,4.8 C11.5,4.5 11.2,4.1 11.5,3.8 Z"/>
 </vector>

@@ -1322,10 +1322,10 @@ const UsernameModal: React.FC<UsernameModalProps> = ({
                 }}
               >
                 <p className="font-bold mb-1 flex items-center gap-1.5" style={{ color: theme.textColor }}>
-                  <span>فتح حسابك من أي جهاز أو نسخة أخرى:</span>
+                  <span>فتح حسابك من أي جهاز:</span>
                 </p>
                 <p className="text-[11px] leading-relaxed" style={{ color: theme.textColor, opacity: 0.75 }}>
-                  إذا كنت قد سجلت حساباً في السابق، قم بإدخال اسم المستخدم بالكامل (أحادي، ثنائي، ثلاثي، مهما كان طوله) أو كود حسابك الفريد (مثل: <span className="font-mono font-bold" style={{ color: primaryColor }}>MQ-XXXXX</span>)، وسيتم فتح حسابك ومحادثاتك فوراً!
+                  أدخل اسمك بالكامل أو كود الحساب (مثل: <span className="font-mono font-bold" style={{ color: primaryColor }}>MQ-XXXXX</span>)، وسيتم استعادة حسابك ومحادثاتك فوراً!
                 </p>
               </div>
 
