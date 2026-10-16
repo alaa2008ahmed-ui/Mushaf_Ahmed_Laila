@@ -3,13 +3,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Plus, Sparkles, Check, ChevronRight } from 'lucide-react';
 import { useHabitTracker } from '../hooks/useHabitTracker';
 import { useTheme } from '../context/ThemeContext';
-import BottomBar from './BottomBar';
 
 interface CustomHabitModalProps {
   hexColor: string;
   isBlackTheme: boolean;
   onClose: () => void;
   onAdded?: (habitTitle: string) => void;
+  onNavigate?: (pageId: string, params?: any) => void;
 }
 
 const ICONS_LIST = ['🌙', '☀️', '📖', '🤲', '📿', '💧', '🕌', '🤍', '⭐', '🤝', '🌿', '🕊️'];
@@ -24,22 +24,12 @@ const DAYS_LIST = [
   { id: 5, label: 'الجمعة' },
 ];
 
-const PRESETS = [
-  { title: 'صيام الاثنين والخميس', icon: '🌙', days: [1, 4], desc: 'سنة نبوية مباركة' },
-  { title: 'ركعتا الضحى', icon: '☀️', days: [], desc: 'صلاة الأوابين' },
-  { title: 'قراءة سورة الملك', icon: '📖', days: [], desc: 'المانعة من عذاب القبر' },
-  { title: 'بر الوالدين والاتصال بهما', icon: '🤍', days: [], desc: 'أعظم القربات إلى الله' },
-  { title: 'صلة الرحم والسؤال عن الأهل', icon: '🤝', days: [5], desc: 'بركة في الرزق والعمر' },
-  { title: 'صدقة يومية / إطعام', icon: '💧', days: [], desc: 'الصدقة تطفئ غضب الرب' },
-  { title: 'الاستغفار ١٠٠ مرة', icon: '📿', days: [], desc: 'مغفرة للذنوب وتفريج للكرب' },
-  { title: 'ركعتا قيام الليل', icon: '🤲', days: [], desc: 'شرف المؤمن قيام الليل' },
-];
-
 export const CustomHabitModal: React.FC<CustomHabitModalProps> = ({
   hexColor,
   isBlackTheme,
   onClose,
-  onAdded
+  onAdded,
+  onNavigate
 }) => {
   const { theme, themeKey } = useTheme();
   const isDarkBlack = theme.bgColor === '#000000' || theme.name === 'أبيض وأسود' || themeKey === 'deep_black' || isBlackTheme;
@@ -54,23 +44,9 @@ export const CustomHabitModal: React.FC<CustomHabitModalProps> = ({
 
   const [title, setTitle] = useState('');
   const [selectedIcon, setSelectedIcon] = useState('🌙');
-  const [description, setDescription] = useState('');
   const [isSpecificDays, setIsSpecificDays] = useState(false);
   const [selectedDays, setSelectedDays] = useState<number[]>([1, 4]); // default Mon & Thu if toggled
   const [errorMsg, setErrorMsg] = useState('');
-
-  const handleSelectPreset = (preset: typeof PRESETS[0]) => {
-    setTitle(preset.title);
-    setSelectedIcon(preset.icon);
-    setDescription(preset.desc);
-    if (preset.days && preset.days.length > 0) {
-      setIsSpecificDays(true);
-      setSelectedDays(preset.days);
-    } else {
-      setIsSpecificDays(false);
-      setSelectedDays([]);
-    }
-  };
 
   const handleToggleDay = (dayId: number) => {
     if (selectedDays.includes(dayId)) {
@@ -94,7 +70,7 @@ export const CustomHabitModal: React.FC<CustomHabitModalProps> = ({
     addCustomHabit({
       title: title.trim(),
       icon: selectedIcon,
-      description: description.trim(),
+      description: '',
       days: isSpecificDays ? selectedDays : []
     });
 
@@ -114,11 +90,41 @@ export const CustomHabitModal: React.FC<CustomHabitModalProps> = ({
         {/* Full Screen Top Header */}
         <header className="app-top-bar shrink-0">
           <div className="app-top-bar__inner">
-            <div className="relative flex items-center justify-center w-full px-2">
-              <div className="text-center w-full">
-                <h1 className="app-top-bar__title text-xl font-kufi">
+            <div className="relative flex items-center justify-center w-full min-h-[44px]">
+              {/* سهم الرجوع للخلف على يمين النص */}
+              <div className="absolute right-0 flex items-center">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                  title="رجوع للخلف"
+                  aria-label="رجوع للخلف"
+                >
+                  <i className="fa-solid fa-arrow-right text-xl"></i>
+                </button>
+              </div>
+
+              {/* عنوان الصفحة في الوسط */}
+              <div className="text-center px-12 min-w-0">
+                <h1 className="app-top-bar__title text-lg sm:text-xl font-kufi truncate">
                   إضافة عبادة
                 </h1>
+              </div>
+
+              {/* أيقونة المنزل على يسار النص للعودة إلى الصفحة الرئيسية */}
+              <div className="absolute left-0 flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    if (onNavigate) onNavigate('home');
+                  }}
+                  className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                  title="الصفحة الرئيسية"
+                  aria-label="الصفحة الرئيسية"
+                >
+                  <i className="fa-solid fa-house text-xl"></i>
+                </button>
               </div>
             </div>
           </div>
@@ -127,37 +133,10 @@ export const CustomHabitModal: React.FC<CustomHabitModalProps> = ({
         {/* Scrollable Form Body */}
         <main 
           className="flex-1 overflow-y-auto px-4 pt-3 max-w-lg mx-auto w-full overscroll-contain"
-          style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 5rem)' }}
+          style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 2rem)' }}
         >
           <form onSubmit={handleSave} className="space-y-4">
             
-            {/* Quick Preset Badges */}
-            <div 
-              className="bg-white dark:bg-gray-800/80 p-3.5 rounded-2xl shadow-xs border"
-              style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
-            >
-              <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-2">
-                اقتراحات سريعة بنقرة واحدة:
-              </label>
-              <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto pb-1">
-                {PRESETS.map((p, idx) => (
-                  <button
-                    type="button"
-                    key={idx}
-                    onClick={() => handleSelectPreset(p)}
-                    className={`text-xs py-1.5 px-3 rounded-xl border flex items-center gap-1.5 transition-all ${
-                      title === p.title
-                        ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900 font-bold border-transparent shadow-sm'
-                        : 'bg-gray-50 dark:bg-gray-700/60 text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'
-                    }`}
-                  >
-                    <span>{p.icon}</span>
-                    <span>{p.title}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
             {/* Title Input */}
             <div 
               className="bg-white dark:bg-gray-800/80 p-3.5 rounded-2xl shadow-xs border"
@@ -298,29 +277,12 @@ export const CustomHabitModal: React.FC<CustomHabitModalProps> = ({
               )}
             </div>
 
-            {/* Description (Optional) */}
-            <div 
-              className="bg-white dark:bg-gray-800/80 p-3.5 rounded-2xl shadow-xs border"
-              style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
-            >
-              <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
-                ملاحظة أو وصف مختصر (اختياري):
-              </label>
-              <input
-                type="text"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="مثال: ركعتان بعد الشروق، أو قبل النوم..."
-                className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-xs font-medium text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              />
-            </div>
-
             {/* Action Buttons */}
             <div className="pt-2 flex gap-2">
               <motion.button
                 whileTap={{ scale: 0.98 }}
                 type="submit"
-                className="flex-1 py-3 px-4 rounded-xl font-bold text-sm text-white shadow-md flex items-center justify-center gap-2"
+                className={`flex-1 py-3 px-4 rounded-xl font-bold text-sm shadow-md flex items-center justify-center gap-2 ${isDarkBlack ? 'text-black' : 'text-white'}`}
                 style={{ backgroundColor: hexColor }}
               >
                 <Plus className="w-4 h-4" />
@@ -336,9 +298,6 @@ export const CustomHabitModal: React.FC<CustomHabitModalProps> = ({
             </div>
           </form>
         </main>
-
-        {/* Bottom Bar with Home button */}
-        <BottomBar onHomeClick={onClose} onThemesClick={() => {}} showThemes={false} />
       </motion.div>
     </AnimatePresence>
   );

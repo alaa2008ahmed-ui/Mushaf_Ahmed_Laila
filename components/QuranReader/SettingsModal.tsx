@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { READERS, TAFSEERS, THEMES, DEFAULT_SETTINGS, toArabic } from './constants';
-import TutorialOverlay, { TutorialStep } from '../Tutorial/TutorialOverlay';
-import { ZoomIn, Palette, Mic, Type, Repeat, Book, MousePointer2, Settings2, Download, ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 
 import SurahHeader from './SurahHeader';
 
@@ -63,100 +62,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, sho
     }, [isDesignDropdownOpen]);
 
     const [activeColorField, setActiveColorField] = useState<'textColor' | 'bgColor' | 'highlightTextColor' | null>(null);
-
-    const settingsTutorialSteps: TutorialStep[] = [
-        {
-            id: 'font-size',
-            title: 'حجم الخط',
-            text: 'استخدم هذا الشريط لتكبير أو تصغير حجم خط الآيات القرآنية بما يتناسب مع مستوى نظرك وراحتك أثناء القراءة لفترات طويلة.',
-            selector: '#font-size-section',
-            icon: <ZoomIn className="w-8 h-8 text-white" />
-        },
-        {
-            id: 'colors',
-            title: 'الألوان المخصصة',
-            text: 'يتيح لك هذا القسم تخصيص ألوان النص، لون الخلفية، ولون تحديد الآيات بشكل دقيق لتوفير تجربة قراءة مريحة لعينيك، خاصة في ظروف الإضاءة المختلفة.',
-            selector: '#colors-section',
-            icon: <Palette className="w-8 h-8 text-white" />
-        },
-        {
-            id: 'font-weight',
-            title: 'سماكة الخط',
-            text: 'تمكنك هذه الميزة من زيادة سماكة الخط (Bold) لتوضيح النص القرآني بشكل أكبر، مما يساعد على قراءة أسهل وأكثر راحة للعين.',
-            selector: '#font-weight-btn',
-            icon: <Type className="w-8 h-8 text-white" />
-        },
-        {
-            id: 'font-family',
-            title: 'نوع الخط',
-            text: 'اختر من بين مجموعة متنوعة من الخطوط العربية الأصيلة (مثل خط عثمان، خط النسخ، وغيرها) الخط الذي تفضل قراءة القرآن به.',
-            selector: '#font-family-btn',
-            icon: <Type className="w-8 h-8 text-white" />
-        },
-        {
-            id: 'reciter',
-            title: 'القارئ المفضل',
-            text: 'اختر قارئك المفضل من هذه القائمة للاستماع إلى التلاوة العطرة. سيتم استخدام هذا القارئ كخيار افتراضي عند تشغيل الصوت.',
-            selector: '#reciter-section',
-            icon: <Mic className="w-8 h-8 text-white" />
-        },
-        {
-            id: 'ayah-repeat',
-            title: 'تكرار الآيات',
-            text: 'هذه الميزة مفيدة جداً للحفظ والمراجعة. حدد عدد مرات تكرار الآية الواحدة أثناء الاستماع لتسهيل عملية الحفظ.',
-            selector: '#ayah-repeat-section',
-            icon: <Repeat className="w-8 h-8 text-white" />
-        },
-        {
-            id: 'tafseer',
-            title: 'اختيار التفسير',
-            text: 'حدد كتاب التفسير المفضل لديك (مثل التفسير الميسر، ابن كثير، الجلالين) الذي تود الرجوع إليه عند عرض تفسير الآيات.',
-            selector: '#tafseer-section',
-            icon: <Book className="w-8 h-8 text-white" />
-        },
-        {
-            id: 'surah-header-design',
-            title: 'تصميم رأس السورة',
-            text: 'اختر التصميم والشكل المفضل لك لعرض رأس السورة أعلى الآيات ليتناسب مع ذوقك الشخصي وتجربة القراءة.',
-            selector: '#surah-header-design-section',
-            icon: <Palette className="w-8 h-8 text-white" />
-        },
-        {
-            id: 'scroll-speed',
-            title: 'سرعة التمرير',
-            text: 'اضبط سرعة التمرير التلقائي للصفحة هنا. اختر السرعة التي تتناسب تماماً مع سرعة قراءتك لتجربة قراءة سلسة دون انقطاع.',
-            selector: '#scroll-speed-section',
-            icon: <MousePointer2 className="w-8 h-8 text-white" />
-        },
-        {
-            id: 'toggles',
-            title: 'خيارات إضافية',
-            text: 'تحكم في إعدادات إضافية مثل إظهار بطاقة السجدة عند المرور بآية سجدة، وإخفاء أشرطة الأدوات العلوية والسفلية تلقائياً أثناء القراءة لتوسيع مساحة العرض، وتفعيل إضافة إطار خارجي لصفحة القراءة.',
-            selector: '#toggles-section',
-            icon: <Settings2 className="w-8 h-8 text-white" />
-        },
-        {
-            id: 'notifications',
-            title: 'الإشعارات والتنبيهات',
-            text: 'تحكم في كيفية وصول التنبيهات إليك، مثل تنبيهات أذكار الصباح والمساء، ومواقيت الصلاة.',
-            selector: '#notifications-section',
-            icon: <Settings2 className="w-8 h-8 text-white" />
-        },
-        {
-            id: 'interface-customization',
-            title: 'تخصيص الواجهة',
-            text: 'اضغط هنا لفتح نافذة تخصيص متقدمة تتيح لك تغيير ألوان شريط الأدوات، الأزرار، والخلفيات بالكامل لتصميم واجهة التطبيق بأسلوبك الخاص.',
-            selector: '#interface-customization-btn',
-            icon: <Palette className="w-8 h-8 text-white" />
-        },
-        {
-            id: 'downloads',
-            title: 'التحميل للاستخدام أوفلاين',
-            text: 'من هنا يمكنك تحميل ملفات المصحف والتفسير بالكامل إلى جهازك، مما يتيح لك استخدام التطبيق وقراءة القرآن والتفاسير حتى بدون اتصال بالإنترنت.',
-            selector: '#downloads-only-section',
-            icon: <Download className="w-8 h-8 text-white" />
-        }
-    ];
 
     const PREDEFINED_COLORS = [
         '#ffffff', '#f3f4f6', '#9ca3af', '#4b5563', '#000000',
@@ -510,7 +415,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, sho
                     </button>
                 </div>
             </div>
-            {!isLandscape && <TutorialOverlay tutorialId="settings-tutorial" steps={settingsTutorialSteps} />}
         </div>
     );
 };

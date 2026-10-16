@@ -27,8 +27,8 @@ export const InAppChatNotification: React.FC<InAppChatNotificationProps> = ({
       const { message, sender } = e.detail || {};
       if (!message || !sender) return;
 
-      // If user is currently looking at the direct chat with this exact partner, don't show the popup banner
-      if (currentPage === 'direct-chat' && navParams?.partnerUserId === sender.userId) {
+      // Do not show notifications on listen page or direct chat with partner
+      if (currentPage === 'listen' || (currentPage === 'direct-chat' && navParams?.partnerUserId === sender.userId)) {
         return;
       }
 
@@ -87,7 +87,7 @@ export const InAppChatNotification: React.FC<InAppChatNotificationProps> = ({
 
   return (
     <AnimatePresence>
-      {currentNotification && (
+      {currentNotification && currentPage !== 'listen' && (
         <div className="fixed top-4 inset-x-0 z-[9999] flex justify-center px-4 pointer-events-none">
           <motion.div
             initial={{ opacity: 0, y: -40, scale: 0.95 }}

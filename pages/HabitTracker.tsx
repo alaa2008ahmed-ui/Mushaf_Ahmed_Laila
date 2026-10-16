@@ -5,9 +5,7 @@ import moment from 'moment-hijri';
 import { useHabitTracker, DailyRecord, HabitCategory, defaultRecord, CustomHabit } from '../hooks/useHabitTracker';
 import { useTheme } from '../context/ThemeContext';
 import ThemePageLock from '../components/ThemePageLock';
-import BottomBar from '../components/BottomBar';
 import { registerBackInterceptor } from '../hooks/useBackButton';
-import TutorialOverlay, { TutorialStep } from '../components/Tutorial/TutorialOverlay';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { Capacitor } from '@capacitor/core';
 import Confetti from 'react-dom-confetti';
@@ -81,7 +79,10 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack , onNavigate }) => {
   const removeCustomHabit = useHabitTracker((state) => state.removeCustomHabit);
   const toggleHabit = useHabitTracker((state) => state.toggleHabit);
   const setQuranPages = useHabitTracker((state) => state.setQuranPages);
+  const autoSyncEnabled = useHabitTracker((state) => state.autoSyncEnabled);
+  const setAutoSyncEnabled = useHabitTracker((state) => state.setAutoSyncEnabled);
   const getDailyProgress = useHabitTracker((state) => state.getDailyProgress);
+  const getDailyScoreBreakdown = useHabitTracker((state) => state.getDailyScoreBreakdown);
   const getStreak = useHabitTracker((state) => state.getStreak);
   const getHeatmapData = useHabitTracker((state) => state.getHeatmapData);
 
@@ -99,9 +100,10 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack , onNavigate }) => {
     setTimeout(() => setTrackerToast(''), 3000);
   };
 
-  // Get record and progress for the selected date
+  // Get record and detailed score breakdown for the selected date
   const currentRecord = records[selectedDate] || defaultRecord;
-  const progress = getDailyProgress(selectedDate);
+  const scoreBreakdown = getDailyScoreBreakdown(selectedDate);
+  const progress = scoreBreakdown.percentage;
 
   const prevDayStr = moment(selectedDate).subtract(1, 'days').format('YYYY-MM-DD');
   const prevDayProgress = getDailyProgress(prevDayStr);
@@ -191,28 +193,56 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack , onNavigate }) => {
 
   const heatmapData = useMemo(() => getHeatmapData(), [records, todayStr, selectedDate]);
 
+  const filteredCustomHabits = useMemo(() => {
+    const dayOfWeek = moment(selectedDate).day();
+    return customHabits.filter((habit) => {
+      if (!habit.days || habit.days.length === 0) return true;
+      return habit.days.includes(dayOfWeek);
+    });
+  }, [customHabits, selectedDate]);
+
   useEffect(() => {
     // Schedule Notifications on Mount
     const schedule = async () => {
       if (Capacitor.isNativePlatform()) {
         const perms = await LocalNotifications.checkPermissions();
         if (perms.display === 'granted') {
+          try {
+            await LocalNotifications.deleteChannel({ id: 'athkar_reminders_channel' });
+            await LocalNotifications.deleteChannel({ id: 'athkar_reminders_alarm_channel' });
+            await LocalNotifications.createChannel({
+              id: 'athkar_reminders_chime_channel',
+              name: 'أذكار وتنبيهات عامة',
+              description: 'قناة تنبيهات أذكار الصباح والمساء والسنن والأدعية بنغمة قصيرة وخفيفة',
+              importance: 5,
+              sound: 'chime.mp3',
+              vibration: true,
+              visibility: 1
+            });
+          } catch (e) {}
+
           await LocalNotifications.schedule({
             notifications: [
               {
-                id: 1111,
+                id: 9501,
                 title: 'مربّي العبادات',
                 body: 'صلاة الضحى غنيمة.. هل صليتها اليوم؟',
                 schedule: { allowWhileIdle: true, on: { hour: 9, minute: 30 } },
-                extra: { page: 'habit-tracker' }
+                channelId: 'athkar_reminders_chime_channel',
+                sound: 'chime.mp3',
+                smallIcon: 'ic_stat_name',
+                extra: { page: 'habit-tracker', playSound: true, soundFile: 'chime.mp3' }
               },
               {
-                id: 1112,
+                id: 9502,
                 title: 'يوم الجمعة',
                 body: 'لا تنسَ الاتصال بوالديك والدعاء لأحمد وليلى',
                 // Capacitor Weekdays: 1=Sun, 2=Mon, 3=Tue, 4=Wed, 5=Thu, 6=Fri, 7=Sat
                 schedule: { allowWhileIdle: true, on: { weekday: 6, hour: 10, minute: 0 } },
-                extra: { page: 'habit-tracker' }
+                channelId: 'athkar_reminders_chime_channel',
+                sound: 'chime.mp3',
+                smallIcon: 'ic_stat_name',
+                extra: { page: 'habit-tracker', playSound: true, soundFile: 'chime.mp3' }
               }
             ]
           });
@@ -252,28 +282,29 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack , onNavigate }) => {
   ];
 
   const additionalPrayersList = [
-    { id: 'duha', label: 'صلاة الضحى' },
-    { id: 'qiyam', label: 'قيام الليل' },
-    { id: 'witr', label: 'صلاة الوتر' },
-    { id: 'masjid', label: 'تحية المسجد' },
-    { id: 'tasbih', label: 'صلاة التسابيح' },
-    { id: 'hajah', label: 'صلاة الحاجة' },
-    { id: 'tawbah', label: 'صلاة التوبة' },
-    { id: 'istikharah', label: 'صلاة الاستخارة' },
+    { id: 'witr', label: 'صلاة الوتر', points: 3 },
+    { id: 'qiyam', label: 'قيام الليل', points: 3 },
+    { id: 'duha', label: 'صلاة الضحى', points: 2 },
+    { id: 'masjid', label: 'تحية المسجد', points: 1 },
+    { id: 'tasbih', label: 'صلاة التسابيح', points: 1 },
+    { id: 'hajah', label: 'صلاة الحاجة', points: 1 },
+    { id: 'tawbah', label: 'صلاة التوبة', points: 1 },
+    { id: 'istikharah', label: 'صلاة الاستخارة', points: 1 },
   ];
 
   const adhkarList = [
-    { id: 'sabah', label: 'أذكار الصباح' },
-    { id: 'masaa', label: 'أذكار المساء' },
-    { id: 'istighfar', label: 'الاستغفار' },
-    { id: 'adia', label: 'الأدعية' },
+    { id: 'sabah', label: 'أذكار الصباح', points: 4 },
+    { id: 'masaa', label: 'أذكار المساء', points: 4 },
+    { id: 'salah', label: 'أذكار الصلاة', points: 3 },
+    { id: 'istighfar', label: 'الاستغفار', points: 2 },
+    { id: 'adia', label: 'الأدعية', points: 2 },
   ];
 
   const ethicsList = [
-    { id: 'parents', label: 'الدعاء للوالدين' },
-    { id: 'charity', label: 'صدقة' },
-    { id: 'visitFamily', label: 'زيارة الأهل والأقارب' },
-    { id: 'visitSick', label: 'زيارة مريض' },
+    { id: 'parents', label: 'بر الوالدين والدعاء لهما', points: 5 },
+    { id: 'charity', label: 'الصدقة', points: 5 },
+    { id: 'visitFamily', label: 'زيارة الأهل والأقارب', points: 3 },
+    { id: 'visitSick', label: 'زيارة مريض', points: 2 },
   ];
 
   const handleConfirmDelete = () => {
@@ -327,7 +358,7 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack , onNavigate }) => {
     );
   };
 
-  const renderCard = (category: HabitCategory, habitId: string, label: string) => {
+  const renderCard = (category: HabitCategory, habitId: string, label: string, _points?: number) => {
     const isCompleted = (currentRecord[category] as any)?.[habitId];
     const streak = getStreak(category, habitId);
     
@@ -343,10 +374,12 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack , onNavigate }) => {
         }`}
         style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
       >
-        <span className={`font-semibold text-xs sm:text-sm px-1 ${isCompleted ? 'text-black dark:text-white' : 'text-gray-600 dark:text-gray-400'}`}>
-          {label}
-        </span>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <span className={`font-semibold text-xs sm:text-sm px-1 truncate ${isCompleted ? 'text-black dark:text-white' : 'text-gray-600 dark:text-gray-400'}`}>
+            {label}
+          </span>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
           {streak > 1 && (
             <div className="flex items-center gap-0.5 opacity-70 px-1 py-[1px] rounded-full bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-200 text-[10px] font-bold">
               <span>🔥</span> {streak}
@@ -402,7 +435,7 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack , onNavigate }) => {
               </span>
               {isScheduledToday ? (
                 <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 font-bold shrink-0">
-                  {isSelectedToday ? 'اليوم 🌟' : 'مجدول لهذا اليوم 🌟'}
+                  {isSelectedToday ? 'اليوم 🌟' : 'مجدول 🌟'}
                 </span>
               ) : (
                 <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400 font-medium shrink-0">
@@ -462,160 +495,52 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack , onNavigate }) => {
     );
   }
 
-  const habitTrackerTutorialSteps: TutorialStep[] = [
-    {
-        id: 'habit-welcome',
-        title: 'مرحباً بك في مربّي العبادات',
-        text: 'هذا القسم مصمم خصيصاً ليساعدك على بناء عادات إيمانية قوية والمحافظة على طاعاتك اليومية بكل سهولة ويسر.',
-        position: { top: '60%' },
-        icon: <Heart className="w-8 h-8 text-white" />
-    },
-    {
-        id: 'habit-progress',
-        title: 'إنجازك اليومي والسنوي',
-        text: 'هنا ترى ملخص إنجازك اليومي، ومخطط الحرارة الذي يوضح استمراريتك طوال الشهر. كل مربع ملون يمثل يوماً مليئاً بالطاعات.',
-        selector: '#daily-achievement-card',
-        icon: <CheckCircle className="w-8 h-8 text-white" />
-    },
-    {
-        id: 'habit-weekly',
-        title: 'بطاقة الإنجاز الأسبوعية',
-        text: 'صدر بطاقة حصاد أسبوعك الإيماني كصورة جميلة بجودة عالية أو انسخ ملخصها وشاركها مع الأهل والأصدقاء للتشجيع والتنافس في الخير.',
-        selector: '#weekly-card-btn',
-        icon: <Award className="w-8 h-8 text-white" />
-    },
-    {
-        id: 'habit-fajr',
-        title: 'الفرائض والسنن',
-        text: 'يمكنك هنا تسجيل صلواتك الخمس، مع إمكانية متابعة السنن الرواتب لكل صلاة بشكل منفصل لزيادة الأجر.',
-        selector: '#prayer-card-fajr',
-        icon: <Clock className="w-8 h-8 text-white" />
-    },
-    {
-        id: 'habit-quran',
-        title: 'الورد القرآني',
-        text: 'لا تنسَ نصيبك من كتاب الله؛ سجل عدد الصفحات التي قرأتها اليوم وتابع تقدمك في الورد اليومي.',
-        selector: '#quran-habit-section',
-        icon: <BookOpen className="w-8 h-8 text-white" />
-    },
-    {
-        id: 'habit-custom',
-        title: 'العبادات المخصصة',
-        text: 'يمكنك إضافة عباداتك الخاصة (كصيام الاثنين والخميس أو ركعتي الضحى وبر الوالدين) لتتابع استمراريتك وتدخل في حساب إنجازك اليومي والأسبوعي.',
-        selector: '#custom-habits-section',
-        icon: <Star className="w-8 h-8 text-white" />
-    },
-    {
-        id: 'habit-streaks',
-        title: 'أوسمة الاستمرارية',
-        text: 'عندما تحافظ على عبادة معينة لـ 7 أيام متتالية، ستحصل على وسام تقديري تشجيعاً لك على المداومة. "أحب الأعمال إلى الله أدومها وإن قل".',
-        position: { top: '70%' },
-        icon: <Medal className="w-8 h-8 text-white" />
-    }
-  ];
-
   return (
     <div className={`h-screen h-[100dvh] max-h-screen max-h-[100dvh] flex flex-col bg-transparent relative overflow-hidden`} dir="rtl">
       <header className="app-top-bar shrink-0">
           <div className="app-top-bar__inner">
-              <div className="relative flex items-center justify-center w-full">
-                  <div className="absolute left-0">
-                    <ThemePageLock />
+              <div className="relative flex items-center justify-center w-full min-h-[44px]">
+                  {/* سهم الرجوع للخلف على يمين النص */}
+                  <div className="absolute right-0 flex items-center">
+                      <button
+                          onClick={handleHomeClick}
+                          className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                          title="رجوع للخلف"
+                          aria-label="رجوع للخلف"
+                      >
+                          <i className="fa-solid fa-arrow-right text-xl"></i>
+                      </button>
                   </div>
-                  <h1 className="app-top-bar__title text-2xl font-kufi">
-                      مربّي العبادات
-                  </h1>
+
+                  {/* عنوان الصفحة في الوسط */}
+                  <div className="text-center px-12 min-w-0">
+                      <h1 className="app-top-bar__title text-lg sm:text-xl font-kufi truncate">
+                          مربّي العبادات
+                      </h1>
+                  </div>
+
+                  {/* أيقونة المنزل على يسار النص للعودة إلى الصفحة الرئيسية */}
+                  <div className="absolute left-0 flex items-center gap-1">
+                      <ThemePageLock />
+                      <button
+                          onClick={() => onNavigate('home')}
+                          className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                          title="الصفحة الرئيسية"
+                          aria-label="الصفحة الرئيسية"
+                      >
+                          <i className="fa-solid fa-house text-xl"></i>
+                      </button>
+                  </div>
               </div>
-              <p className="app-top-bar__subtitle">
-                  متابعة الطاعات والسنن اليومية
-              </p>
           </div>
       </header>
 
       {/* Content */}
       <main 
         className="w-full flex-1 min-h-0 overflow-y-auto px-4 pt-2 overscroll-contain"
-        style={{ paddingBottom: 'calc(65px + 1cm + env(safe-area-inset-bottom, 0px))' }}
+        style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }}
       >
         
-        {/* 1. Day Navigation & Date Selector (Now first card) */}
-        <div 
-          className="bg-white/85 dark:bg-gray-800/85 backdrop-blur-md rounded-2xl p-3 shadow-sm border mb-3 flex items-center justify-between gap-2"
-          style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
-        >
-          {/* Previous Day Button */}
-          <motion.button
-            whileTap={{ scale: 0.92 }}
-            onClick={() => setSelectedDate(prev => moment(prev).subtract(1, 'day').format('YYYY-MM-DD'))}
-            className="py-1.5 px-2.5 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center gap-1 text-xs font-bold shrink-0"
-            title="اليوم السابق"
-          >
-            <ChevronRight className="w-4 h-4" />
-            <span>السابق</span>
-          </motion.button>
-
-          {/* Current Date Display & Picker */}
-          <div className="flex-1 flex flex-col items-center justify-center min-w-0">
-            <div className="flex items-center gap-1.5 flex-wrap justify-center">
-              <button
-                type="button"
-                onClick={() => dateInputRef.current?.showPicker ? dateInputRef.current.showPicker() : dateInputRef.current?.click()}
-                className="flex items-center gap-1.5 font-bold text-xs sm:text-sm text-gray-900 dark:text-white hover:opacity-80 transition-opacity"
-                title="انقر لاختيار أي يوم لتسجيله"
-              >
-                <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" style={{ color: hexColor }} />
-                <span>{selectedDayName}، {selectedFormattedDate}</span>
-              </button>
-              {isSelectedToday ? (
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 shrink-0">
-                  اليوم
-                </span>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setSelectedDate(todayStr)}
-                  className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 hover:bg-amber-200 shrink-0 transition-colors flex items-center gap-1"
-                  title="العودة إلى اليوم الحالي"
-                >
-                  <RotateCcw className="w-2.5 h-2.5" />
-                  <span>العودة لليوم</span>
-                </button>
-              )}
-            </div>
-            <span className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">
-              {selectedHijriDate}
-            </span>
-            <input
-              type="date"
-              ref={dateInputRef}
-              max={todayStr}
-              value={selectedDate}
-              onChange={(e) => {
-                if (e.target.value && e.target.value <= todayStr) {
-                  setSelectedDate(e.target.value);
-                }
-              }}
-              className="sr-only"
-            />
-          </div>
-
-          {/* Next Day Button */}
-          <motion.button
-            whileTap={isSelectedToday ? undefined : { scale: 0.92 }}
-            disabled={isSelectedToday}
-            onClick={() => setSelectedDate(prev => moment(prev).add(1, 'day').format('YYYY-MM-DD'))}
-            className={`py-1.5 px-2.5 rounded-xl transition-colors flex items-center gap-1 text-xs font-bold shrink-0 ${
-              isSelectedToday
-                ? 'opacity-40 bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-not-allowed'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
-            }`}
-            title={isSelectedToday ? 'لا يمكن تسجيل أيام مستقبلية' : 'اليوم التالي'}
-          >
-            <span>التالي</span>
-            <ChevronLeft className="w-4 h-4" />
-          </motion.button>
-        </div>
-
         {/* Past Day Notice Banner */}
         {!isSelectedToday && (
           <motion.div
@@ -639,13 +564,13 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack , onNavigate }) => {
           </motion.div>
         )}
 
-        {/* 2. Daily Achievement Card (Now second card) */}
+        {/* Daily Achievement Card (Kept at the top) */}
         <div 
           id="daily-achievement-card" 
           className="bg-white/80 dark:bg-gray-800/80 rounded-2xl p-3 sm:p-3.5 shadow-sm border mb-3"
           style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
         >
-            {/* Header: Title */}
+            {/* Header: Title & Total Points Badge */}
             <div className="flex items-center justify-between mb-2">
                 <h2 className="text-base sm:text-lg font-bold font-sans dark:text-white flex items-center gap-2">
                     <span>إنجاز {isSelectedToday ? 'اليوم' : selectedDayName}</span>
@@ -653,6 +578,9 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack , onNavigate }) => {
                         ({new Intl.DateTimeFormat('ar-EG', { month: 'long', day: 'numeric' }).format(new Date(selectedDate))})
                     </span>
                 </h2>
+                <span className="text-xs font-bold px-2.5 py-1 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-600">
+                    {scoreBreakdown.totalEarned} / {scoreBreakdown.totalAvailable} نقطة
+                </span>
             </div>
 
             <div className="flex items-end justify-between gap-3">
@@ -805,51 +733,76 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack , onNavigate }) => {
             صلوات النوافل
           </h3>
           <div className="grid grid-cols-2 gap-2">
-            {additionalPrayersList.map(habit => renderCard('prayers', habit.id, habit.label))}
+            {additionalPrayersList.map(habit => renderCard('prayers', habit.id, habit.label, habit.points))}
           </div>
         </section>
 
         {/* Quran */}
         <section id="quran-habit-section" className="mb-6">
-          <h3 className="text-sm font-bold mb-3 flex items-center gap-2 dark:text-white">
-            <BookOpen className="w-4 h-4 opacity-70" style={{ color: hexColor }} />
-            الورد القرآني
-          </h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-bold flex items-center gap-2 dark:text-white">
+              <BookOpen className="w-4 h-4 opacity-70" style={{ color: hexColor }} />
+              الورد القرآني
+            </h3>
+            <div className="flex items-center gap-1.5">
+              {autoSyncEnabled && isSelectedToday && (
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300 flex items-center gap-1">
+                  <Sparkles className="w-2.5 h-2.5" />
+                  <span>تلقائي ⚡</span>
+                </span>
+              )}
+              {(currentRecord.quran?.pages || 0) > 0 && (
+                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300">
+                  مكتمل ✓
+                </span>
+              )}
+            </div>
+          </div>
           <div 
             className="bg-white/80 dark:bg-gray-800/80 rounded-2xl p-4 shadow-sm border"
             style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
           >
-            <div className="flex items-center justify-between mb-4">
-              <span className="font-semibold text-sm dark:text-gray-200">الصفحات المنجزة</span>
-              <div className="flex items-center gap-3 bg-gray-100 dark:bg-gray-700 rounded-xl p-1">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="font-semibold text-sm dark:text-gray-200 block">الصفحات المقروءة</span>
+                <span className="text-[11px] text-gray-500 dark:text-gray-400">
+                  {(currentRecord.quran?.pages || 0) >= 20 ? 'جزء كامل فأكثر 🌟' : 
+                   (currentRecord.quran?.pages || 0) >= 15 ? '15 صفحة ✨' :
+                   (currentRecord.quran?.pages || 0) >= 10 ? 'نصف جزء تقريباً 📖' :
+                   (currentRecord.quran?.pages || 0) >= 5 ? '5 صفحات 🌿' :
+                   (currentRecord.quran?.pages || 0) >= 3 ? '3 صفحات' :
+                   (currentRecord.quran?.pages || 0) >= 1 ? `${currentRecord.quran?.pages} صفحات` :
+                   autoSyncEnabled ? 'يتم الاحتساب تلقائياً عند القراءة، مع إمكانية التعديل يدوياً' : 'اكتب عدد صفحات القرآن المقروءة يدوياً'}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 rounded-xl p-1.5">
                  <button 
+                    type="button"
                     onClick={() => setQuranPages(selectedDate, Math.max(0, (currentRecord.quran?.pages || 0) - 1))}
-                    className="p-1.5 rounded-lg bg-white dark:bg-gray-600 shadow-sm"
+                    className="p-1.5 rounded-lg bg-white dark:bg-gray-600 shadow-sm hover:bg-gray-50 transition-colors"
                  >
                     <Minus className="w-4 h-4 dark:text-white" />
                  </button>
-                 <span className="font-bold w-6 text-center text-base dark:text-white">{currentRecord.quran?.pages || 0}</span>
+                 <input
+                    type="number"
+                    min="0"
+                    max="604"
+                    value={currentRecord.quran?.pages ?? 0}
+                    onChange={(e) => {
+                       const val = parseInt(e.target.value, 10);
+                       setQuranPages(selectedDate, isNaN(val) ? 0 : Math.max(0, val));
+                    }}
+                    className="font-bold w-12 text-center text-base bg-transparent dark:text-white focus:outline-none focus:ring-1 focus:ring-emerald-500 rounded"
+                 />
                  <button 
+                    type="button"
                     onClick={() => setQuranPages(selectedDate, (currentRecord.quran?.pages || 0) + 1)}
-                    className="p-1.5 rounded-lg bg-white dark:bg-gray-600 shadow-sm"
+                    className="p-1.5 rounded-lg bg-white dark:bg-gray-600 shadow-sm hover:bg-gray-50 transition-colors"
                  >
                     <Plus className="w-4 h-4 dark:text-white" />
                  </button>
               </div>
             </div>
-            
-            <motion.button
-              whileTap={{ scale: 0.98 }}
-              onClick={() => handleToggle('quran', 'completed', () => currentRecord.quran?.completed)}
-              className={`w-full py-2.5 rounded-xl font-bold text-sm transition-colors ${
-                  currentRecord.quran?.completed
-                    ? (isBlackTheme ? 'text-black' : 'text-white')
-                    : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
-              }`}
-              style={currentRecord.quran?.completed ? { backgroundColor: hexColor } : {}}
-            >
-              {currentRecord.quran?.completed ? 'تم الإنجاز' : 'تأكيد الورد'}
-            </motion.button>
           </div>
         </section>
 
@@ -860,7 +813,7 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack , onNavigate }) => {
             الأذكار
           </h3>
           <div className="grid grid-cols-2 gap-2">
-             {adhkarList.map(habit => renderCard('adhkar', habit.id, habit.label))}
+             {adhkarList.map(habit => renderCard('adhkar', habit.id, habit.label, habit.points))}
           </div>
         </section>
 
@@ -871,7 +824,7 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack , onNavigate }) => {
             بر الوالدين والأخلاق
           </h3>
           <div className="grid grid-cols-2 gap-2">
-              {ethicsList.map(habit => renderCard('ethics', habit.id, habit.label))}
+              {ethicsList.map(habit => renderCard('ethics', habit.id, habit.label, habit.points))}
           </div>
         </section>
 
@@ -881,29 +834,168 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack , onNavigate }) => {
             <h3 className="text-sm font-bold flex items-center gap-2 dark:text-white">
               <Star className="w-4 h-4 opacity-80 text-amber-500" />
               العبادات والعادات المخصصة
-              {customHabits.length > 0 && (
-                <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">
-                  {customHabits.length}
+          {filteredCustomHabits.length > 0 && (
+            <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">
+              {filteredCustomHabits.length}
+            </span>
+          )}
+        </h3>
+        <motion.button
+          whileTap={{ scale: 0.95 }}
+          onClick={() => setShowCustomHabitModal(true)}
+          className={`flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-xl shadow-sm transition-opacity hover:opacity-90 ${isBlackTheme ? 'text-black' : 'text-white'}`}
+          style={{ backgroundColor: hexColor }}
+        >
+          <Plus className="w-3.5 h-3.5" />
+          <span>إضافة عبادة</span>
+        </motion.button>
+      </div>
+
+      {filteredCustomHabits.length > 0 && (
+        <div className="space-y-2">
+          {filteredCustomHabits.map((habit) => renderCustomHabitCard(habit))}
+        </div>
+      )}
+    </section>
+
+        {/* 1. Day Navigation & Date Selector (Moved to bottom) */}
+        <div 
+          className="bg-white/85 dark:bg-gray-800/85 backdrop-blur-md rounded-2xl p-3 shadow-sm border mb-3 flex items-center justify-between gap-2"
+          style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+        >
+          {/* Previous Day Button */}
+          <motion.button
+            whileTap={{ scale: 0.92 }}
+            onClick={() => setSelectedDate(prev => moment(prev).subtract(1, 'day').format('YYYY-MM-DD'))}
+            className="py-1.5 px-2.5 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center gap-1 text-xs font-bold shrink-0"
+            title="اليوم السابق"
+          >
+            <ChevronRight className="w-4 h-4" />
+            <span>السابق</span>
+          </motion.button>
+
+          {/* Current Date Display & Picker */}
+          <div className="flex-1 flex flex-col items-center justify-center min-w-0">
+            <div className="flex items-center gap-1.5 flex-wrap justify-center">
+              <button
+                type="button"
+                onClick={() => dateInputRef.current?.showPicker ? dateInputRef.current.showPicker() : dateInputRef.current?.click()}
+                className="flex items-center gap-1.5 font-bold text-xs sm:text-sm text-gray-900 dark:text-white hover:opacity-80 transition-opacity"
+                title="انقر لاختيار أي يوم لتسجيله"
+              >
+                <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" style={{ color: hexColor }} />
+                <span>{selectedDayName}، {selectedFormattedDate}</span>
+              </button>
+              {isSelectedToday ? (
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 shrink-0">
+                  اليوم
                 </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setSelectedDate(todayStr)}
+                  className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 hover:bg-amber-200 shrink-0 transition-colors flex items-center gap-1"
+                  title="العودة إلى اليوم الحالي"
+                >
+                  <RotateCcw className="w-2.5 h-2.5" />
+                  <span>العودة لليوم</span>
+                </button>
               )}
-            </h3>
-            <motion.button
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setShowCustomHabitModal(true)}
-              className="flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-xl shadow-sm text-white transition-opacity hover:opacity-90"
-              style={{ backgroundColor: hexColor }}
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>إضافة عبادة</span>
-            </motion.button>
+            </div>
+            <span className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">
+              {selectedHijriDate}
+            </span>
+            <input
+              type="date"
+              ref={dateInputRef}
+              max={todayStr}
+              value={selectedDate}
+              onChange={(e) => {
+                if (e.target.value && e.target.value <= todayStr) {
+                  setSelectedDate(e.target.value);
+                }
+              }}
+              className="sr-only"
+            />
           </div>
 
-          {customHabits.length > 0 && (
-            <div className="space-y-2">
-              {customHabits.map((habit) => renderCustomHabitCard(habit))}
+          {/* Next Day Button */}
+          <motion.button
+            whileTap={isSelectedToday ? undefined : { scale: 0.92 }}
+            disabled={isSelectedToday}
+            onClick={() => setSelectedDate(prev => moment(prev).add(1, 'day').format('YYYY-MM-DD'))}
+            className={`py-1.5 px-2.5 rounded-xl transition-colors flex items-center gap-1 text-xs font-bold shrink-0 ${
+              isSelectedToday
+                ? 'opacity-40 bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-not-allowed'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
+            }`}
+            title={isSelectedToday ? 'لا يمكن تسجيل أيام مستقبلية' : 'اليوم التالي'}
+          >
+            <span>التالي</span>
+            <ChevronLeft className="w-4 h-4" />
+          </motion.button>
+        </div>
+
+        {/* 2. Auto-Sync Enable/Disable Switch Card (Moved to bottom) */}
+        <div 
+          className="bg-white/85 dark:bg-gray-800/85 backdrop-blur-md rounded-2xl p-2.5 px-3.5 shadow-sm border mb-4 flex items-center justify-between gap-3"
+          style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+        >
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div 
+              className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors shadow-sm ${
+                autoSyncEnabled 
+                  ? 'bg-emerald-500 text-white dark:bg-emerald-600' 
+                  : 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-400'
+              }`}
+            >
+              <Sparkles className="w-4 h-4" />
             </div>
-          )}
-        </section>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-bold text-xs sm:text-sm text-gray-900 dark:text-white">
+                  الربط التلقائي للعبادات
+                </span>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                  autoSyncEnabled 
+                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300' 
+                    : 'bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
+                }`}>
+                  {autoSyncEnabled ? 'مفعّل ⚡' : 'معطّل 🔒'}
+                </span>
+              </div>
+              <p className="text-[10px] text-gray-500 dark:text-gray-400 truncate mt-0.5">
+                {autoSyncEnabled 
+                  ? 'يربط صفحات المصحف والأذكار والأدعية تلقائياً' 
+                  : 'تم فك الربط (التسجيل والتعديل يدوي فقط)'}
+              </p>
+            </div>
+          </div>
+
+          {/* Small Toggle Switch */}
+          <button
+            type="button"
+            role="switch"
+            aria-checked={autoSyncEnabled}
+            onClick={() => {
+              const next = !autoSyncEnabled;
+              setAutoSyncEnabled(next);
+              showTrackerToast(next ? 'تم تفعيل الربط التلقائي مع القرآن والأذكار والأدعية ⚡' : 'تم تعطيل وفك الربط بين الصفحات 🔒');
+            }}
+            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+              autoSyncEnabled ? (isBlackTheme ? 'bg-white' : 'bg-emerald-600') : 'bg-gray-300 dark:bg-gray-600'
+            }`}
+            title={autoSyncEnabled ? 'انقر لتعطيل الربط التلقائي' : 'انقر لتفعيل الربط التلقائي'}
+          >
+            <span
+              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full shadow-md ring-0 transition duration-200 ease-in-out ${
+                autoSyncEnabled 
+                  ? 'translate-x-0 bg-white dark:bg-gray-900' 
+                  : '-translate-x-5 bg-white dark:bg-gray-200'
+              } ${isBlackTheme && autoSyncEnabled ? '!bg-black' : ''}`}
+            />
+          </button>
+        </div>
 
         {/* Footer Sentence */}
         <div className="text-center pb-0 pt-4 px-6 border-t border-gray-200 dark:border-gray-700">
@@ -912,12 +1004,6 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack , onNavigate }) => {
            </p>
         </div>
       </main>
-
-      <div className="shrink-0 z-30">
-        <BottomBar onHomeClick={handleHomeClick} onThemesClick={() => {}} showThemes={false} />
-      </div>
-
-      <TutorialOverlay tutorialId="habit-tracker-tutorial" steps={habitTrackerTutorialSteps} />
 
       {/* Streak Achievement Modal */}
       <AnimatePresence>
@@ -969,6 +1055,7 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack , onNavigate }) => {
             isBlackTheme={isBlackTheme}
             onClose={() => setShowCustomHabitModal(false)}
             onAdded={(title) => showTrackerToast(`تمت إضافة "${title}" بنجاح 🌿`)}
+            onNavigate={onNavigate}
           />
         )}
       </AnimatePresence>

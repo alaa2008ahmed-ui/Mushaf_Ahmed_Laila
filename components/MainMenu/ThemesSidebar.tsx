@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Palette, X, RotateCcw, Image, Sparkles } from 'lucide-react';
+import { RotateCcw, Image, Sparkles } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { presetThemes } from '../../context/themes';
 
@@ -39,12 +39,14 @@ const getThemeCircleColor = (key: string, t: any) => {
   if (key === 'crystal_glass') return '#38BDF8';
   if (key === 'frosted_emerald') return '#059669';
   if (key === 'midnight_glass') return '#1E1B4B';
-  return t.palette?.[0] || t.accent || t.bgColor || '#10B981';
+  return (t?.palette && t.palette[0]) || t?.accent || t?.bgColor || '#10B981';
 };
+
 
 export const ThemesSidebar: React.FC<ThemesSidebarProps> = ({ isOpen, onClose }) => {
   const { theme, themeKey, applyPresetTheme, setCustomBackground, resetBackground } = useTheme();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const asideRef = useRef<HTMLElement>(null);
 
   const handleBgUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
@@ -59,64 +61,73 @@ export const ThemesSidebar: React.FC<ThemesSidebarProps> = ({ isOpen, onClose })
     }
   };
 
+  const themeBorderColor = (theme.palette && theme.palette[0]) || theme.accent || '#10b981';
+
   return (
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+          {/* Transparent clickaway backdrop without any dimming/tint */}
+          <div
             onClick={onClose}
-            className="fixed inset-0 z-[1200] bg-transparent"
+            className="fixed inset-0 z-[1200] bg-transparent cursor-pointer"
+            style={{ position: 'fixed' }}
           />
 
-          {/* Narrow Full-Height Sidebar Drawer */}
+          {/* Narrow Sidebar Drawer stuck to the right edge with permanent white background */}
           <motion.aside
+            ref={asideRef}
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
-            transition={{ type: 'spring', damping: 26, stiffness: 300 }}
-            className="fixed top-[env(safe-area-inset-top,20px)] bottom-0 right-0 z-[1250] h-[calc(100%-env(safe-area-inset-top,20px))] w-[30vw] max-w-[85vw] shadow-2xl flex flex-col border-l overflow-hidden"
+            transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+            className="w-[88px] sm:w-[98px] shadow-2xl flex flex-col rounded-l-2xl rounded-r-none border-y-2 border-l-2 border-r-0 overflow-hidden"
             dir="rtl"
             style={{
-              backgroundColor: theme.cardBg || (theme.bgColor === '#000000' ? '#09090b' : '#ffffff'),
-              color: theme.textColor || '#000000',
-              borderColor: (theme.palette?.[0] || '#10b981') + '40',
-              fontFamily: theme.font
+              position: 'fixed',
+              top: 'calc(env(safe-area-inset-top, 0px) + 1cm)',
+              bottom: 'calc(env(safe-area-inset-bottom, 0px) + 1cm)',
+              right: 0,
+              zIndex: 1250,
+              backgroundColor: '#FFFFFF',
+              color: '#1e293b',
+              borderColor: themeBorderColor,
+              fontFamily: theme.font,
             }}
           >
             {/* Quick Actions Row */}
             <div 
-              className="p-2 border-b grid grid-cols-3 gap-1 shrink-0 bg-black/5 dark:bg-white/5"
-              style={{ borderColor: (theme.palette?.[0] || '#10b981') + '20' }}
+              className="p-1.5 border-b grid grid-cols-3 gap-1 shrink-0 bg-slate-50 relative z-10"
+              style={{ borderBottomColor: `${themeBorderColor}25` }}
             >
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="py-2 px-1.5 rounded-lg flex flex-col items-center justify-center transition-all active:scale-95 hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer"
+                className="py-2 px-1 rounded-lg flex items-center justify-center transition-all active:scale-90 hover:bg-slate-200/60 cursor-pointer"
                 title="تخصيص خلفية مخصصة"
+                aria-label="تخصيص خلفية مخصصة"
               >
-                <Image className="w-4 h-4 text-blue-500" />
+                <Image className="w-4 h-4 text-blue-600 font-bold" />
               </button>
 
               <button
                 type="button"
                 onClick={() => resetBackground()}
-                className="py-2 px-1.5 rounded-lg flex flex-col items-center justify-center transition-all active:scale-95 hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer"
+                className="py-2 px-1 rounded-lg flex items-center justify-center transition-all active:scale-90 hover:bg-slate-200/60 cursor-pointer"
                 title="استعادة الخلفية"
+                aria-label="استعادة الخلفية"
               >
-                <RotateCcw className="w-4 h-4 text-amber-500" />
+                <RotateCcw className="w-4 h-4 text-amber-600 font-bold" />
               </button>
 
               <button
                 type="button"
                 onClick={() => applyPresetTheme('default')}
-                className="py-2 px-1.5 rounded-lg flex flex-col items-center justify-center transition-all active:scale-95 hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer"
+                className="py-2 px-1 rounded-lg flex items-center justify-center transition-all active:scale-90 hover:bg-slate-200/60 cursor-pointer"
                 title="الثيم الافتراضي"
+                aria-label="الثيم الافتراضي"
               >
-                <Sparkles className="w-4 h-4 text-emerald-500" />
+                <Sparkles className="w-4 h-4 text-emerald-600 font-bold" />
               </button>
             </div>
 
@@ -129,9 +140,12 @@ export const ThemesSidebar: React.FC<ThemesSidebarProps> = ({ isOpen, onClose })
               onChange={handleBgUpload} 
             />
 
-            {/* Scrollable Theme Circles (فقط ثيمات الصفحة الرئيسية) */}
-            <div className="flex-1 overflow-y-auto p-3 scrollbar-hide">
-              <div className="grid grid-cols-2 gap-y-4 gap-x-2 pb-4">
+            {/* Scrollable Theme Circles */}
+            <div className="flex-1 overflow-y-auto p-2 pb-2.5 scrollbar-hide relative z-10 bg-white">
+              <div 
+                className="grid grid-cols-2 gap-y-[10.7px] gap-x-2 place-items-center py-2"
+                style={{ rowGap: '10.7px' }}
+              >
                 {Object.entries(presetThemes).map(([key, t]: [string, any]) => {
                   const isSelected = themeKey === key;
                   const circleBg = getThemeCircleColor(key, t);
@@ -141,31 +155,35 @@ export const ThemesSidebar: React.FC<ThemesSidebarProps> = ({ isOpen, onClose })
                       key={key}
                       type="button"
                       onClick={() => applyPresetTheme(key)}
-                      className="flex flex-col items-center gap-1.5 group transition-transform active:scale-90"
+                      className="flex items-center justify-center p-1 group transition-transform active:scale-90 cursor-pointer rounded-full"
                       title={t.name}
+                      aria-label={t.name}
                     >
                       <div
-                        className={`w-5 h-5 rounded-full border-2 transition-all flex items-center justify-center relative shadow-sm ${
+                        className={`w-[26px] h-[26px] rounded-full border-0 transition-all flex items-center justify-center relative ${
                           isSelected
-                            ? 'scale-110 border-white shadow-md ring-2 ring-emerald-500 ring-offset-1'
-                            : 'border-black/15 dark:border-white/20 hover:scale-105'
+                            ? 'scale-110 shadow-lg'
+                            : 'hover:scale-110 shadow-md'
                         }`}
-                        style={{ backgroundColor: circleBg }}
+                        style={{
+                          backgroundColor: circleBg,
+                          boxShadow: isSelected
+                            ? '0 4px 8px rgba(0,0,0,0.25)'
+                            : '0 2px 4px rgba(0,0,0,0.12)'
+                        }}
                       >
                         {isSelected && (
                           <div
-                            className={`w-1.5 h-1.5 rounded-full shadow-sm ${
-                              key === 'deep_black' || key === 'kaaba_kiswa' ? 'bg-emerald-500' : 'bg-white'
-                            }`}
+                            className="w-2 h-2 rounded-full shadow-sm"
+                            style={{
+                              backgroundColor:
+                                key === 'deep_black' || key === 'kaaba_kiswa'
+                                  ? themeBorderColor
+                                  : '#ffffff'
+                            }}
                           />
                         )}
                       </div>
-                      <span
-                        className="text-[7px] font-bold opacity-85 truncate w-full text-center leading-tight"
-                        style={{ color: theme.textColor }}
-                      >
-                        {t.name}
-                      </span>
                     </button>
                   );
                 })}

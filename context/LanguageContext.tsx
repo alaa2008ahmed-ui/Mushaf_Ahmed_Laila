@@ -93,14 +93,6 @@ export const ISLAMIC_TRANSLATIONS: Translations = {
     ar: '💬 مجتمع التواصل',
     en: '💬 Faith Community'
   },
-  'menu.more': {
-    ar: 'قائمة التطبيقات',
-    en: 'Apps & Features'
-  },
-  'menu.more_menu': {
-    ar: 'قائمة التطبيقات',
-    en: 'Apps & Features'
-  },
   'menu.daily_wird': {
     ar: '📅 الورد اليومي',
     en: '📅 Daily Wird & Khatmah'
@@ -433,14 +425,6 @@ export const ISLAMIC_TRANSLATIONS: Translations = {
     ar: 'آيات الشفاء والتحصين من القرآن الكريم والسنة النبوية',
     en: 'Healing and protection verses from Qur\'an & Sunnah'
   },
-  'page.more_menu_title': {
-    ar: 'قائمة التطبيقات',
-    en: 'All Features & Applications'
-  },
-  'page.more_menu_subtitle': {
-    ar: 'تصفح جميع أقسام التطبيق',
-    en: 'Explore all spiritual sections and tools'
-  },
   'page.voice_control_title': {
     ar: 'التحكم الصوتي',
     en: 'Voice Control'
@@ -719,8 +703,6 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
       'asmaul-husna': '✨ The 99 Beautiful Names',
       'ahl-al-quran': '🏆 Ahl Al-Qur\'an',
       'community': '💬 Faith Community',
-      'more': 'Apps & Features',
-      'more-menu': 'Apps & Features',
       'daily-wird': '📅 Daily Wird & Khatmah',
       'habit-tracker': '🎯 Worship Habit Tracker',
       'memorization': '🧠 Qur\'an Memorization',

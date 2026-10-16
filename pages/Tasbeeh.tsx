@@ -1,6 +1,5 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import BottomBar from '../components/BottomBar';
 import { useTheme } from '../context/ThemeContext';
 import { DEFAULT_PHRASES } from '../data/tasbeehData';
 import { registerBackInterceptor } from '../hooks/useBackButton';
@@ -302,7 +301,7 @@ function Tasbeeh({ onBack, onNavigate }) {
         '#ec4899', // pink
     ].filter((v, i, a) => a.indexOf(v) === i).slice(0, 8);
 
-    const handleHomeClick = () => {
+    const handleBack = () => {
         if (Object.values(modals).some(Boolean)) {
             setModals({ target: false, phrase: false, add: false, delete: false, color: false, stats: false, skins: false });
         } else {
@@ -310,16 +309,24 @@ function Tasbeeh({ onBack, onNavigate }) {
         }
     };
 
+    const handleGoHome = () => {
+        if (Object.values(modals).some(Boolean)) {
+            setModals({ target: false, phrase: false, add: false, delete: false, color: false, stats: false, skins: false });
+        }
+        onNavigate('home');
+    };
+
     return (
         <div className="h-screen h-[100dvh] max-h-screen max-h-[100dvh] flex flex-col bg-transparent overflow-hidden">
             <TasbeehHeader 
                 title="السبحة الإلكترونية" 
                 subtitle="أضف أذكارك الخاصة وتتبع تسبيحك بدقة" 
+                onBack={handleBack}
+                onHome={handleGoHome}
             />
             
             <main 
-                className="px-4 flex-1 min-h-0 relative flex flex-col items-center overflow-y-auto overscroll-contain fade-in"
-                style={{ paddingBottom: 'calc(65px + 1cm + env(safe-area-inset-bottom, 0px))' }}
+                className="px-4 flex-1 min-h-0 relative flex flex-col items-center overflow-y-auto overscroll-contain fade-in pb-6"
             >
                  <TasbeehControls 
                     isBlackAndWhite={isBlackAndWhite}
@@ -399,6 +406,7 @@ function Tasbeeh({ onBack, onNavigate }) {
                 handleSetSkin={handleSetSkin}
                 themeKey={themeKey}
                 cardBorderColor={cardBorderColor}
+                onNavigate={onNavigate}
             />
 
             <AnimatePresence>
@@ -407,14 +415,12 @@ function Tasbeeh({ onBack, onNavigate }) {
                         initial={{ opacity: 0, y: 20, x: '-50%' }}
                         animate={{ opacity: 1, y: 0, x: '-50%' }}
                         exit={{ opacity: 0, y: 10, x: '-50%' }}
-                        className={`fixed bottom-24 left-1/2 p-3 text-white rounded-lg shadow-xl z-[200] font-bold ${message.type === 'green' ? (isBlackTheme ? 'bg-white text-black' : 'bg-emerald-500') : 'bg-red-500'}`}
+                        className={`fixed bottom-8 left-1/2 p-3 text-white rounded-lg shadow-xl z-[200] font-bold ${message.type === 'green' ? (isBlackTheme ? 'bg-white text-black' : 'bg-emerald-500') : 'bg-red-500'}`}
                     >
                         {message.text}
                     </motion.div>
                 )}
             </AnimatePresence>
-
-            <BottomBar onHomeClick={handleHomeClick} onThemesClick={() => {}} showThemes={false} />
         </div>
     );
 }

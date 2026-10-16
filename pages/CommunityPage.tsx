@@ -11,8 +11,7 @@ import UsernameModal from '../components/Community/UsernameModal';
 import { AdminDashboardModal } from '../components/Community/AdminDashboardModal';
 import CreateGroupModal from '../components/Community/CreateGroupModal';
 import EditGroupModal from '../components/Community/EditGroupModal';
-import BottomBar from '../components/BottomBar';
-import TutorialOverlay, { TutorialStep } from '../components/Tutorial/TutorialOverlay';
+import ThemePageLock from '../components/ThemePageLock';
 import { useTheme } from '../context/ThemeContext';
 import { registerBackInterceptor } from '../hooks/useBackButton';
 import { useShowNewBadge } from '../utils/badgeManager';
@@ -264,6 +263,51 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
     onNavigate('group-chat', { groupId, returnTab: 'community', initialTab: 'community' });
   };
 
+  const handleGoHome = () => {
+    onNavigate('home');
+  };
+
+  const handleBack = () => {
+    if (communityService.isImpersonating()) {
+      communityService.exitImpersonate();
+      loadData();
+      setShowAdminModal(true);
+      showToast('تمت العودة لقائمة المستخدمين بنجاح');
+      return;
+    }
+    if (showCreateGroupModal) {
+      setShowCreateGroupModal(false);
+      return;
+    }
+    if (showAdminModal) {
+      setShowAdminModal(false);
+      return;
+    }
+    if (userToBlock) {
+      setUserToBlock(null);
+      return;
+    }
+    if (groupToDelete) {
+      setGroupToDelete(null);
+      return;
+    }
+    if (groupToHide) {
+      setGroupToHide(null);
+      return;
+    }
+    if (searchQuery.trim()) {
+      setSearchQuery('');
+      return;
+    }
+    if (activeTab !== 'users') {
+      setActiveTabState('users');
+      communityService.setActiveTab('users');
+      setTabHistory(['users']);
+      return;
+    }
+    onBack();
+  };
+
   const confirmBlockUser = async () => {
     if (!userToBlock) return;
     const targetName = userToBlock.username;
@@ -395,7 +439,7 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
         setTabHistory(['users']);
         return true;
       }
-      return false; // Let global handler navigate back to origin (home or more-menu)
+      return false; // Let global handler navigate back to origin (home)
     };
 
     const unregister = registerBackInterceptor(interceptor);
@@ -414,6 +458,7 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
           }
         }}
         onBackToApps={onBack}
+        onNavigate={onNavigate}
         onSaved={() => {
           setShowProfileModal(false);
           const u = communityService.getCurrentUser();
@@ -456,146 +501,140 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
     return <Users size={22} />;
   };
 
-  const communityTutorialSteps: TutorialStep[] = [
-    {
-      id: 'community-chats',
-      title: 'الأصدقاء',
-      text: 'مراسلة إخوانك والتواصل بالرسائل النصية والتسجيلات الصوتية ومشاركة الآيات الكريمة.',
-      selector: '#community-tab-chats',
-      icon: <MessageSquare className="w-8 h-8 text-teal-400" />
-    },
-    {
-      id: 'community-groups',
-      title: 'حلقات القرآن والمجموعات',
-      text: 'الانضمام إلى مجموعات تدارس القرآن الكريم أو إنشاء مجموعة جديدة وإدارتها كمنشئ.',
-      selector: '#community-tab-groups',
-      icon: <BookOpen className="w-8 h-8 text-amber-400" />
-    },
-    {
-      id: 'community-members',
-      title: 'قائمة الأعضاء',
-      text: 'استعراض قراء القرآن، والبحث بالاسم، وإرسال طلبات الإضافة والتواصل بكل سهولة.',
-      selector: '#community-tab-users',
-      icon: <UserPlus className="w-8 h-8 text-sky-400" />
-    },
-    {
-      id: 'community-profile',
-      title: 'الملف الشخصي',
-      text: 'الضغط هنا لتعديل اسمك وصورتك ودولتك المعروضة في مجتمع التواصل متى شئت.',
-      selector: '#community-profile-pill',
-      icon: <ShieldCheck className="w-8 h-8 text-indigo-400" />
-    }
-  ];
-
   return (
     <div 
-      className="h-screen max-h-screen h-[100dvh] w-full flex flex-col overflow-y-auto overscroll-contain transition-colors bg-transparent" 
+      className="h-screen max-h-screen h-[100dvh] w-full flex flex-col overflow-y-auto overscroll-contain transition-colors bg-transparent relative" 
       dir="rtl"
       style={{ 
         fontFamily: theme.font,
         color: textColor,
-        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 0.75rem)',
-        paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 3.75rem + 1cm)'
+        paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 2rem)'
       }}
     >
-      <div className="w-full px-2 sm:px-3">
-        {/* Top Navigation Bar: Back & Quran Shortcut (Right), Profile Pill (Center), Ahl-al-Quran Shortcut (Left) */}
-        <div className="flex items-center justify-between mb-3 px-1">
-          <div className="flex items-center gap-1.5 flex-shrink-0">
-            {/* Right Icon: Go directly to Holy Quran Page */}
-            <button
-              type="button"
-              onClick={() => onNavigate('quran')}
-              className="w-10 h-10 rounded-2xl border flex items-center justify-center shadow-xs active:scale-95 transition-all cursor-pointer"
-              style={{
-                backgroundColor: cardBg,
-                borderColor: cardBorder,
-                borderWidth: '1.5px',
-                borderStyle: 'solid',
-                color: primaryColor
-              }}
-              title="صفحة القرآن الكريم"
-              aria-label="صفحة القرآن الكريم"
-            >
-              <BookOpen size={18} />
-            </button>
+      {/* الشريط العلوي */}
+      <header className="app-top-bar">
+        <div className="app-top-bar__inner">
+          <div className="flex items-center justify-between w-full min-h-[44px] gap-2">
+            {/* جهة اليمين: سهم الرجوع للخلف + اختصار القرآن الكريم */}
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              <button
+                type="button"
+                onClick={handleBack}
+                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                title="رجوع للخلف"
+                aria-label="رجوع للخلف"
+              >
+                <i className="fa-solid fa-arrow-right text-xl"></i>
+              </button>
+              <button
+                type="button"
+                onClick={() => onNavigate('quran')}
+                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                style={{
+                  color: primaryColor
+                }}
+                title="صفحة القرآن الكريم"
+                aria-label="صفحة القرآن الكريم"
+              >
+                <BookOpen size={20} />
+              </button>
+            </div>
+
+            {/* الوسط: شريط الملف الشخصي للمستخدم */}
+            <div className="flex-1 flex items-center justify-center min-w-0">
+              {currentUser.username ? (
+                <div 
+                  id="community-profile-pill"
+                  onClick={() => setShowProfileModal(true)}
+                  className="flex items-center justify-center gap-2 px-3 py-1.5 rounded-xl border font-bold cursor-pointer transition-all active:scale-95 shadow-sm overflow-hidden max-w-[200px] sm:max-w-[260px]"
+                  style={{
+                    backgroundColor: `${primaryColor}15`,
+                    borderColor: cardBorder,
+                    borderWidth: '1.5px',
+                    borderStyle: 'solid',
+                    color: primaryColor
+                  }}
+                  title="تعديل الملف الشخصي"
+                >
+                  <div 
+                    className="w-6 h-6 rounded-full font-bold flex items-center justify-center overflow-hidden flex-shrink-0"
+                    style={{ backgroundColor: primaryColor, color: primaryTextColor }}
+                  >
+                    {currentUser.avatarUrl ? (
+                      <img src={currentUser.avatarUrl} alt={currentUser.username} className="w-full h-full object-cover" />
+                    ) : (
+                      <User size={13} />
+                    )}
+                  </div>
+                  <span 
+                    className="whitespace-nowrap font-bold text-center select-none"
+                    style={{ 
+                      color: textColor,
+                      fontSize: (() => {
+                        const len = (currentUser.username || '').trim().length;
+                        if (len <= 7) return '13px';
+                        if (len <= 11) return '12px';
+                        if (len <= 15) return '11px';
+                        if (len <= 20) return '10px';
+                        if (len <= 26) return '9px';
+                        return '8px';
+                      })(),
+                      lineHeight: 1.2
+                    }}
+                  >
+                    {currentUser.username}
+                  </span>
+                </div>
+              ) : (
+                <div 
+                  id="community-profile-pill"
+                  onClick={() => setShowProfileModal(true)}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-bold cursor-pointer transition-all active:scale-95 shadow-sm"
+                  style={{
+                    backgroundColor: `${primaryColor}15`,
+                    borderColor: cardBorder,
+                    borderWidth: '1.5px',
+                    borderStyle: 'solid',
+                    color: primaryColor
+                  }}
+                  title="تسجيل الملف الشخصي"
+                >
+                  <User size={14} />
+                  <span>تسجيل حسابي</span>
+                </div>
+              )}
+            </div>
+
+            {/* جهة اليسار: اختصار أهل القرآن الكريم + زر الصفحة الرئيسية */}
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              <button
+                type="button"
+                onClick={() => onNavigate('ahl-al-quran')}
+                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer relative"
+                style={{
+                  color: '#f59e0b'
+                }}
+                title="صفحة أهل القرآن الكريم"
+                aria-label="صفحة أهل القرآن الكريم"
+              >
+                <Trophy size={20} />
+              </button>
+              <ThemePageLock />
+              <button
+                type="button"
+                onClick={handleGoHome}
+                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                title="الصفحة الرئيسية"
+                aria-label="الصفحة الرئيسية"
+              >
+                <i className="fa-solid fa-house text-xl"></i>
+              </button>
+            </div>
           </div>
-
-          {/* Center: Current User Profile Pill (Click to edit) */}
-          {currentUser.username ? (
-            <div 
-              id="community-profile-pill"
-              onClick={() => setShowProfileModal(true)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-bold cursor-pointer transition-all active:scale-95 shadow-sm overflow-hidden"
-              style={{
-                backgroundColor: `${primaryColor}15`,
-                borderColor: cardBorder,
-                borderWidth: '1.5px',
-                borderStyle: 'solid',
-                color: primaryColor
-              }}
-              title="تعديل الملف الشخصي"
-            >
-              <div 
-                className="w-6 h-6 rounded-full font-bold flex items-center justify-center overflow-hidden flex-shrink-0"
-                style={{ backgroundColor: primaryColor, color: primaryTextColor }}
-              >
-                {currentUser.avatarUrl ? (
-                  <img src={currentUser.avatarUrl} alt={currentUser.username} className="w-full h-full object-cover" />
-                ) : (
-                  <User size={13} />
-                )}
-              </div>
-              <span className="truncate max-w-[140px]" style={{ color: textColor }}>{currentUser.username}</span>
-              <span 
-                className="text-[10px] px-1.5 py-0.5 rounded-full font-bold"
-                style={{ backgroundColor: `${primaryColor}25`, color: primaryColor }}
-              >
-                {currentUser.country || '🌍'}
-              </span>
-            </div>
-          ) : (
-            <div 
-              id="community-profile-pill"
-              onClick={() => setShowProfileModal(true)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-bold cursor-pointer transition-all active:scale-95 shadow-sm"
-              style={{
-                backgroundColor: `${primaryColor}15`,
-                borderColor: cardBorder,
-                borderWidth: '1.5px',
-                borderStyle: 'solid',
-                color: primaryColor
-              }}
-              title="تسجيل الملف الشخصي"
-            >
-              <User size={14} />
-              <span>تسجيل حسابي</span>
-            </div>
-          )}
-
-          {/* Left Icon: Go directly to Ahl Al-Quran Page */}
-          <button
-            type="button"
-            onClick={() => onNavigate('ahl-al-quran')}
-            className="w-10 h-10 rounded-2xl border flex items-center justify-center shadow-xs active:scale-95 transition-all cursor-pointer flex-shrink-0 relative"
-            style={{
-              backgroundColor: cardBg,
-              borderColor: cardBorder,
-              borderWidth: '1.5px',
-              borderStyle: 'solid',
-              color: '#f59e0b'
-            }}
-            title="صفحة أهل القرآن الكريم"
-            aria-label="صفحة أهل القرآن الكريم"
-          >
-            <Trophy size={18} />
-            {showNewBadge && (
-              <span className="absolute -top-1.5 -right-1 bg-yellow-400 text-black text-[9px] font-bold px-1 rounded-full shadow-xs border border-white dark:border-slate-800 animate-bounce pointer-events-none">
-                جديد
-              </span>
-            )}
-          </button>
         </div>
+      </header>
+
+      <div className="w-full px-2 sm:px-3 pt-2">
 
         {/* Navigation Tabs (Equally divided 4 tabs: Chats, Community, Members, Blocked) */}
         <div 
@@ -1561,28 +1600,7 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
         )}
       </AnimatePresence>
 
-      {/* Standard App Bottom Bar */}
-      <BottomBar 
-        onHomeClick={() => {
-          if (communityService.isImpersonating()) {
-            communityService.exitImpersonate();
-            loadData();
-            setShowAdminModal(true);
-            showToast('تمت العودة لقائمة المستخدمين بنجاح');
-          } else if (activeTab !== 'users') {
-            setActiveTabState('users');
-            communityService.setActiveTab('users');
-            setTabHistory(['users']);
-            setSearchQuery('');
-          } else {
-            onBack();
-          }
-        }} 
-        onThemesClick={() => {}} 
-        showThemes={false} 
-      />
-
-      {/* Create Group Modal (rendered after BottomBar with high z-index) */}
+      {/* Create Group Modal */}
       <CreateGroupModal
         isOpen={showCreateGroupModal}
         onClose={() => setShowCreateGroupModal(false)}
@@ -1620,17 +1638,6 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
         onClose={() => setShowAdminModal(false)}
         currentTheme={{ bg: theme.bgColor || '#0D1B2A', text: textColor }}
         onNavigate={onNavigate}
-      />
-
-      {/* Tutorial Overlay */}
-      <TutorialOverlay 
-        tutorialId="community-page-tutorial" 
-        steps={communityTutorialSteps} 
-        onStepChange={(stepId) => {
-          if (stepId === 'community-members') setActiveTab('users');
-          else if (stepId === 'community-chats') setActiveTab('chats');
-          else if (stepId === 'community-groups') setActiveTab('community');
-        }}
       />
     </div>
   );

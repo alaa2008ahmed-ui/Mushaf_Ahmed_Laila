@@ -15,7 +15,6 @@ import QuranReader from '../pages/QuranReader';
 import QuranDownload from '../pages/QuranDownload';
 import Calculators from '../pages/Calculators';
 import VoiceControlPage from '../pages/VoiceControlPage';
-import MoreMenuPage from '../pages/MoreMenuPage';
 import MonthlyPrayerTimes from '../pages/MonthlyPrayerTimes';
 import DailyWird from '../pages/DailyWird';
 import Memorization from '../pages/Memorization';
@@ -28,6 +27,8 @@ import GroupChatPage from '../pages/GroupChatPage';
 import AhlAlQuranPage from '../pages/AhlAlQuranPage';
 import OthersPage from '../pages/OthersPage';
 import IslamicSitesPage from '../pages/IslamicSitesPage';
+import PropheticSeerahPage from '../pages/PropheticSeerahPage';
+import PageGuide from '../pages/PageGuide';
 
 interface AppRouterProps {
     page: string;
@@ -74,8 +75,6 @@ const AppRouter: React.FC<AppRouterProps> = ({ page, onBack, onNavigate, onOpenT
         return <Calculators onBack={onBack} onNavigate={onNavigate} />;
       case 'voice-control':
         return <VoiceControlPage onBack={onBack} onNavigate={onNavigate} />;
-      case 'more-menu':
-        return <MoreMenuPage onBack={onBack} onNavigate={onNavigate} />;
       case 'daily-wird':
         return <DailyWird onBack={onBack} onNavigate={onNavigate} />;
       case 'memorization':
@@ -98,6 +97,10 @@ const AppRouter: React.FC<AppRouterProps> = ({ page, onBack, onNavigate, onOpenT
         return <OthersPage onBack={onBack} onNavigate={onNavigate} onOpenThemes={onOpenThemes} />;
       case 'islamic-sites':
         return <IslamicSitesPage onBack={onBack} onNavigate={onNavigate} />;
+      case 'prophetic-seerah':
+        return <PropheticSeerahPage onBack={onBack} onNavigate={onNavigate} navParams={navParams} />;
+      case 'page-guide':
+        return <PageGuide onBack={onBack} onNavigate={onNavigate} initialPageKey={navParams?.initialPageKey} />;
       case 'home':
       default:
         return <MainMenu onNavigate={onNavigate} onOpenThemes={onOpenThemes} onOpenSideMenu={onOpenSideMenu} />;

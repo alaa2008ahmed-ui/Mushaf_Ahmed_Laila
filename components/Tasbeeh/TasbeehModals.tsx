@@ -26,6 +26,7 @@ interface TasbeehModalsProps {
     handleSetSkin: (skin: 'modern' | 'classic' | 'beads') => void;
     themeKey?: string;
     cardBorderColor?: string;
+    onNavigate?: (pageId: string, params?: any) => void;
 }
 
 const TasbeehModals: React.FC<TasbeehModalsProps> = ({
@@ -34,7 +35,8 @@ const TasbeehModals: React.FC<TasbeehModalsProps> = ({
     activePhrase, setActivePhrase, handleReset, colorOptions,
     handleSetCounterColor, counterColor, theme, dailyStats, skin, handleSetSkin,
     themeKey = 'default',
-    cardBorderColor
+    cardBorderColor,
+    onNavigate
 }) => {
     const isBlackTheme = theme.bgColor === '#000000';
     const isDefaultTheme = themeKey === 'default' || !themeKey;
@@ -50,7 +52,7 @@ const TasbeehModals: React.FC<TasbeehModalsProps> = ({
                     className="w-full p-3 rounded-xl text-center text-2xl font-bold focus:outline-none focus:ring-2 bg-card-bg-hover text-modal-text border border-modal-border"/>
                 <div className="flex gap-3 pt-2">
                     <button onClick={() => setModals((p: any) => ({...p, target: false}))} className="flex-1 py-2 rounded-lg bg-gray-500/20 text-modal-text font-bold hover:bg-gray-500/30 transition-colors">إلغاء</button>
-                    <button onClick={handleSetTarget} className="flex-1 py-2 rounded-lg font-bold" style={{backgroundColor: theme.palette[0], color: theme.name === 'اسود' ? '#000000' : '#ffffff'}}>حفظ</button>
+                    <button onClick={handleSetTarget} className="flex-1 py-2 rounded-lg font-bold" style={{backgroundColor: isBlackTheme ? '#FFFFFF' : theme.palette[0], color: isBlackTheme ? '#000000' : '#ffffff'}}>حفظ</button>
                 </div>
             </ModalWrapper>
 
@@ -59,7 +61,7 @@ const TasbeehModals: React.FC<TasbeehModalsProps> = ({
                  <input ref={newPhraseInputRef} id="new-phrase-input" type="text" placeholder="اكتب الذكر هنا..." dir="rtl" className="w-full p-3 rounded-xl text-right text-lg focus:outline-none focus:ring-2 bg-card-bg-hover text-modal-text border border-modal-border"/>
                 <div className="flex gap-3 pt-2">
                     <button onClick={() => setModals((p: any) => ({...p, add: false}))} className="flex-1 py-2 rounded-lg bg-gray-500/20 text-modal-text font-bold hover:bg-gray-500/30 transition-colors">إلغاء</button>
-                    <button onClick={() => handleAddPhrase(newPhraseInputRef.current?.value || '')} className="flex-1 py-2 rounded-lg font-bold" style={{backgroundColor: theme.palette[0], color: theme.name === 'اسود' ? '#000000' : '#ffffff'}}>إضافة</button>
+                    <button onClick={() => handleAddPhrase(newPhraseInputRef.current?.value || '')} className="flex-1 py-2 rounded-lg font-bold" style={{backgroundColor: isBlackTheme ? '#FFFFFF' : theme.palette[0], color: isBlackTheme ? '#000000' : '#ffffff'}}>إضافة</button>
                 </div>
             </ModalWrapper>
             
@@ -164,6 +166,7 @@ const TasbeehModals: React.FC<TasbeehModalsProps> = ({
                 dailyStats={dailyStats}
                 theme={theme}
                 themeKey={themeKey}
+                onNavigate={onNavigate}
             />
         </>
     );

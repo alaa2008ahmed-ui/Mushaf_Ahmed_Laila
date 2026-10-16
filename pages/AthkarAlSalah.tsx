@@ -1,6 +1,4 @@
-
 import React, { useState, useEffect, useRef } from 'react';
-import BottomBar from '../components/BottomBar';
 import { useTheme } from '../context/ThemeContext';
 import ThemePageLock from '../components/ThemePageLock';
 import { baseAthkar, specialZikr, prayerOptions, fajrDhikr, fajrMaghribDhikr } from '../data/athkarAlSalahData';
@@ -8,6 +6,7 @@ import { registerBackInterceptor } from '../hooks/useBackButton';
 import { motion, AnimatePresence } from 'motion/react';
 import { shareAsImage } from '../utils/shareAsImage';
 import { playTTS, stopTTS, subscribeTTS } from '../utils/ttsEngine';
+import { useHabitTracker } from '../hooks/useHabitTracker';
 
 const SalahZikrCard = ({ zikr, theme, themeKey, onDecrement, onZoom, setToastMessage }: { zikr: any; theme: any; themeKey?: string; onDecrement: () => void; onZoom: () => void; setToastMessage: (msg: string) => void }) => {
     const isBlackTheme = theme.bgColor === '#000000';
@@ -118,7 +117,12 @@ const SalahZikrCard = ({ zikr, theme, themeKey, onDecrement, onZoom, setToastMes
     );
 };
 
-function AthkarAlSalah({ onBack, onNavigate }) {
+interface AthkarAlSalahProps {
+    onBack: () => void;
+    onNavigate: (page: string, params?: any) => void;
+}
+
+function AthkarAlSalah({ onBack, onNavigate }: AthkarAlSalahProps) {
     const { theme, themeKey } = useTheme();
     const isBlackTheme = theme.bgColor === '#000000';
     const isDefaultTheme = themeKey === 'default';
@@ -216,9 +220,11 @@ function AthkarAlSalah({ onBack, onNavigate }) {
         const listWithCounts = currentAthkarData.map(z => ({ ...z, currentCount: z.count }));
         setAthkarList(listWithCounts);
         setCurrentPrayer({ id: prayerId, title: titleText });
+        useHabitTracker.getState().recordAdhkarRead('salah');
     };
 
     const handleDecrement = (zikrId) => {
+        useHabitTracker.getState().recordAdhkarRead('salah');
         setAthkarList(prevList =>
             prevList.map(zikr =>
                 zikr.id === zikrId && zikr.currentCount > 0
@@ -228,7 +234,7 @@ function AthkarAlSalah({ onBack, onNavigate }) {
         );
     };
 
-    const handleHomeClick = () => {
+    const handleBack = () => {
         if (zoomedZikr) {
             setZoomedZikr(null);
         } else if (isFavoritesView) {
@@ -238,6 +244,13 @@ function AthkarAlSalah({ onBack, onNavigate }) {
         } else {
             onBack();
         }
+    };
+
+    const handleGoHome = () => {
+        if (zoomedZikr) setZoomedZikr(null);
+        if (isFavoritesView) setIsFavoritesView(false);
+        if (currentPrayer) setCurrentPrayer(null);
+        onNavigate('home');
     };
 
     const allPossibleAthkar = [
@@ -252,19 +265,39 @@ function AthkarAlSalah({ onBack, onNavigate }) {
         <div className="h-screen flex flex-col overflow-hidden bg-transparent">
             <header className="app-top-bar">
                 <div className="app-top-bar__inner">
-                    <div className="relative flex items-center justify-center w-full">
-                        <div className="absolute left-0">
-                            <ThemePageLock />
+                    <div className="relative flex items-center justify-center w-full min-h-[44px]">
+                        {/* زر الرجوع للخلف على يمين النص بالشريط العلوي */}
+                        <div className="absolute right-0 flex items-center">
+                            <button
+                                onClick={handleBack}
+                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                title="رجوع للخلف"
+                                aria-label="رجوع للخلف"
+                            >
+                                <i className="fa-solid fa-arrow-right text-xl"></i>
+                            </button>
                         </div>
-                        <h1 className="app-top-bar__title text-2xl font-kufi">
-                            {currentPrayer ? currentPrayer.title : (isFavoritesView ? "الأذكار المفضلة" : "أذكار الصلوات")}
-                        </h1>
+
+                        {/* عنوان الصفحة في الوسط */}
+                        <div className="text-center px-12 min-w-0">
+                            <h1 className="app-top-bar__title text-lg sm:text-xl font-kufi truncate">
+                                {currentPrayer ? currentPrayer.title : (isFavoritesView ? "الأذكار المفضلة" : "أذكار الصلوات")}
+                            </h1>
+                        </div>
+
+                        {/* زر الهوم على يسار النص بالشريط العلوي */}
+                        <div className="absolute left-0 flex items-center gap-1">
+                            <ThemePageLock />
+                            <button
+                                onClick={handleGoHome}
+                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                title="الصفحة الرئيسية"
+                                aria-label="الصفحة الرئيسية"
+                            >
+                                <i className="fa-solid fa-house text-xl"></i>
+                            </button>
+                        </div>
                     </div>
-                    <p className="app-top-bar__subtitle px-4">
-                        {currentPrayer 
-                            ? `أذكار ما بعد صلاة ${currentPrayer.title.split(' ')[2] || currentPrayer.title}` 
-                            : (isFavoritesView ? "أذكارك التي اخترتها للوصول السريع" : "أذكار ما بعد الصلاة مع عدّاد تفاعلي وتنقل سهل بين الصلوات")}
-                    </p>
                 </div>
             </header>
 
@@ -279,7 +312,9 @@ function AthkarAlSalah({ onBack, onNavigate }) {
                                         zikr={zikr} 
                                         theme={theme} 
                                         themeKey={themeKey}
-                                        onDecrement={() => {}} 
+                                        onDecrement={() => {
+                                            useHabitTracker.getState().recordAdhkarRead('salah');
+                                        }} 
                                         onZoom={() => setZoomedZikr(zikr)} 
                                         setToastMessage={setToastMessage}
                                     />
@@ -476,10 +511,8 @@ function AthkarAlSalah({ onBack, onNavigate }) {
                 <div className="shrink-0 w-full h-32"></div>
             </main>
 
-            <BottomBar onHomeClick={handleHomeClick} onThemesClick={() => {}} showThemes={false} />
-
             {/* Floating Menu & FAB */}
-            <div className="fixed bottom-20 right-4 z-[90] flex flex-col items-end">
+            <div className="fixed bottom-6 right-4 z-[90] flex flex-col items-end">
                 <AnimatePresence>
                     {isMenuOpen && (
                         <motion.div
@@ -498,7 +531,7 @@ function AthkarAlSalah({ onBack, onNavigate }) {
                                 المفضلة
                                 <i className="fa-solid fa-heart text-xs opacity-70"></i>
                             </button>
-                            <div className="h-px bg-black/5 dark:bg-white/5 my-1 mx-2" />
+                            <div className="h-px bg-black/5 dark:bg-white/10 my-1 mx-2" />
                             {prayerOptions.map(prayer => (
                                 <button 
                                     key={prayer.id}
@@ -556,7 +589,7 @@ function AthkarAlSalah({ onBack, onNavigate }) {
                         initial={{ opacity: 0, y: 50 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 50 }}
-                        className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[101] bg-gray-800 text-white px-6 py-3 rounded-full shadow-2xl font-bold flex items-center gap-2 whitespace-nowrap border border-white/10"
+                        className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[101] bg-gray-800 text-white px-6 py-3 rounded-full shadow-2xl font-bold flex items-center gap-2 whitespace-nowrap border border-white/10"
                     >
                         <i className="fa-solid fa-spinner fa-spin text-primary" style={{ color: theme.palette[0] }}></i>
                         {toastMessage}

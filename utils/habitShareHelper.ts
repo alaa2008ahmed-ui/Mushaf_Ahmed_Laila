@@ -79,6 +79,7 @@ export const shareDailyHabitCard = async ({
     const adhkarNames: { key: string; label: string }[] = [
       { key: 'sabah', label: 'أذكار الصباح' },
       { key: 'masaa', label: 'أذكار المساء' },
+      { key: 'salah', label: 'أذكار الصلاة' },
       { key: 'istighfar', label: 'الاستغفار' },
       { key: 'adia', label: 'الأدعية' }
     ];

@@ -63,7 +63,6 @@ import {
 } from "../../utils/listenQuranUtils";
 import { normalizeArabic } from "../../utils/voiceParser";
 import { setupNotifications } from "../../utils/notifications";
-import TutorialOverlay, { TutorialStep } from "../Tutorial/TutorialOverlay";
 
 interface FloatingMenuProps {
   page: string;
@@ -102,11 +101,6 @@ interface FloatingMenuProps {
 
 const ALL_SHORTCUTS = [
   {
-    id: "more-menu",
-    label: "قائمة التطبيقات",
-    icon: <Grid size={18} />,
-  },
-  {
     id: "quran-download-parent",
     label: "تحميل القرآن",
     icon: <Download size={18} />,
@@ -128,7 +122,6 @@ const ALL_SHORTCUTS = [
 ];
 
 const DEFAULT_SHORTCUTS = [
-  "more-menu",
   "quran-download-parent",
   "tafseer-download",
   "interface-customization",
@@ -263,121 +256,6 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
     | "sajdah_list"
     | "sajdah_info";
   const [currentView, setCurrentView] = useState<MenuView>("main");
-
-  const floatingMenuTutorialSteps: TutorialStep[] = [
-    {
-      id: "floating-menu-mushaf",
-      title: "المصحف",
-      text: "عرض صفحات المصحف الشريف بالرسم العثماني.",
-      selector: '[data-id="menu-item-mushaf"]',
-      icon: <BookText className="w-8 h-8 text-white" />,
-    },
-    {
-      id: "floating-menu-tafseer",
-      title: "التفسير",
-      text: "قراءة تفسير الآيات مع إمكانية اختيار كتاب التفسير المفضل.",
-      selector: '[data-id="menu-item-tafseer"]',
-      icon: <Book className="w-8 h-8 text-white" />,
-    },
-    {
-      id: "floating-menu-meanings",
-      title: "المعاني",
-      text: "التعرف على معاني مفردات القرآن الكريم.",
-      selector: '[data-id="menu-item-meanings"]',
-      icon: <FileText className="w-8 h-8 text-white" />,
-    },
-    {
-      id: "floating-menu-translation",
-      title: "الترجمة",
-      text: "يقوم بعرض النص القرانى والترجمه باللغه الانجليزيه",
-      selector: '[data-id="menu-item-translation"]',
-      icon: <Languages className="w-8 h-8 text-white" />,
-    },
-    {
-      id: "floating-menu-themes",
-      title: "المظهر",
-      text: "تخصيص ألوان التطبيق واختيار الثيم المناسب لك.",
-      selector: '[data-id="menu-item-themes"]',
-      icon: <Palette className="w-8 h-8 text-white" />,
-    },
-    {
-      id: "floating-menu-global-search",
-      title: "البحث المتقدم",
-      text: "البحث الشامل في القرآن الكريم والأدعية والأذكار.",
-      selector: '[data-id="menu-item-global-search"]',
-      icon: <Search className="w-8 h-8 text-white" />,
-    },
-    {
-      id: "floating-menu-settings",
-      title: "الإعدادات",
-      text: "التحكم الكامل بالتطبيق من داخل هذا الزر",
-      selector: '[data-id="menu-item-settings"]',
-      icon: <Settings className="w-8 h-8 text-white" />,
-    },
-    {
-      id: "floating-menu-bookmarks",
-      title: "العلامات المرجعية",
-      text: "الوصول السريع للآيات التي قمت بحفظها.",
-      selector: '[data-id="menu-item-bookmarks"]',
-      icon: <Bookmark className="w-8 h-8 text-white" />,
-    },
-    {
-      id: "floating-menu-more-menu",
-      title: "قائمة التطبيقات",
-      text: "يمكنك الانتقال مباشرة الى قائمة التطبيقات والاختيار منها",
-      selector: '[data-id="menu-item-more-menu"]',
-      icon: <Grid className="w-8 h-8 text-white" />,
-    },
-    {
-      id: "floating-menu-quran-download",
-      title: "تحميل القرآن",
-      text: "تحميل صفحات المصحف والتلاوات للاستخدام بدون إنترنت.",
-      selector: '[data-id="menu-item-quran-download-parent"]',
-      icon: <Download className="w-8 h-8 text-white" />,
-    },
-    {
-      id: "floating-menu-tafseer-download",
-      title: "تحميل التفسير",
-      text: "تحميل كتب التفسير للقراءة في أي وقت بدون إنترنت.",
-      selector: '[data-id="menu-item-tafseer-download"]',
-      icon: <Download className="w-8 h-8 text-white" />,
-    },
-    {
-      id: "floating-menu-interface-customization",
-      title: "تخصيص الواجهة",
-      text: "تخصيص أزرار الاختصارات التي تظهر في القائمة الجانبية.",
-      selector: '[data-id="menu-item-interface-customization"]',
-      icon: <Palette className="w-8 h-8 text-white" />,
-    },
-    {
-      id: "floating-menu-readers",
-      title: "القراء",
-      text: "اختر قارئك المفضل للاستماع إلى التلاوة العطرة.",
-      selector: '[data-id="menu-item-audio"]',
-      icon: <Headphones className="w-8 h-8 text-white" />,
-    },
-    {
-      id: "floating-menu-font",
-      title: "نوع الخط",
-      text: "تغيير نوع الخط بما يناسب راحتك في القراءة.",
-      selector: '[data-id="menu-item-font-type"]',
-      icon: <Type className="w-8 h-8 text-white" />,
-    },
-    {
-      id: "floating-menu-notifications",
-      title: "الإشعارات",
-      text: "يمكنك الوصول الى اشعارات التطبيق واشعارات الهاتف والتعديل عليها بما يناسبك",
-      selector: '[data-id="menu-item-notification-settings"]',
-      icon: <Bell className="w-8 h-8 text-white" />,
-    },
-    {
-      id: "floating-menu-sajdah",
-      title: "آيات السجدة",
-      text: "قائمة بجميع مواضع السجدات في القرآن الكريم للوصول السريع.",
-      selector: '[data-id="menu-item-sajdah-list"]',
-      icon: <Compass className="w-8 h-8 text-white" />,
-    },
-  ];
 
   // Initialize selectedReader based on view
   useEffect(() => {
@@ -2746,12 +2624,6 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
           )}
         </div>
       </div>
-      {isFloatingMenuOpen && !isLandscape && (
-        <TutorialOverlay
-          tutorialId="floating-menu-tutorial"
-          steps={floatingMenuTutorialSteps}
-        />
-      )}
     </>
   );
 };

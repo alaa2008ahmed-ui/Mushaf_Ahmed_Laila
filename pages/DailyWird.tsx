@@ -2,10 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { motion } from 'motion/react';
 import { CheckCircle, BookOpen, RotateCcw, Play, Settings, X, User, Plus, Trash2, ChevronDown, Edit2, Home } from 'lucide-react';
-import BottomBar from '../components/BottomBar';
 import ThemePageLock from '../components/ThemePageLock';
 import ResetConfirmModal from '../components/DailyWird/ResetConfirmModal';
-import TutorialOverlay, { TutorialStep } from '../components/Tutorial/TutorialOverlay';
 
 interface WirdSettings {
   id: string;
@@ -277,80 +275,6 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
       setShowSettings(true);
     }
   };
-
-  const setupTutorialSteps: TutorialStep[] = [
-    {
-      id: 'wird-setup-welcome',
-      title: 'إعداد الختمة الجديدة',
-      text: 'مرحباً بك! هنا يمكنك البدء بتنظيم وردك القرآني. سنقوم بإنشاء خطة مخصصة تناسب وقتك وقدرتك.',
-      icon: <Settings className="w-8 h-8 text-white" />
-    },
-    {
-      id: 'wird-setup-mode',
-      title: 'طريقة الختم',
-      text: 'اختر ما إذا كنت تفضل الختم خلال عدد معين من الأيام، أو قراءة عدد محدد من الصفحات يومياً.',
-      selector: '#wird-mode-container',
-      icon: <BookOpen className="w-8 h-8 text-white" />
-    },
-    {
-      id: 'wird-setup-value',
-      title: 'تحديد المقدار',
-      text: 'أدخل عدد الأيام الإجمالي للختمة، أو عدد الصفحات التي تلتزم بقراءتها كل يوم.',
-      selector: '#wird-value-container',
-      icon: <Edit2 className="w-8 h-8 text-white" />
-    },
-    {
-      id: 'wird-setup-start',
-      title: 'ابدأ رحلتك',
-      text: 'بعد الانتهاء من الإعدادات، اضغط هنا لتبدأ رحلتك المباركة مع القرآن الكريم.',
-      selector: '#wird-start-container',
-      icon: <Play className="w-8 h-8 text-white" />
-    }
-  ];
-
-  const progressTutorialSteps: TutorialStep[] = [
-    {
-      id: 'wird-progress-welcome',
-      title: 'متابعة إنجازك',
-      text: 'رائع! لقد بدأت ختمتك. هنا ستجد كل ما تحتاجه لمتابعة تقدمك اليومي والالتزام بوردك.',
-      icon: <CheckCircle className="w-8 h-8 text-white" />
-    },
-    {
-      id: 'wird-progress-bar',
-      title: 'مؤشر الإنجاز',
-      text: 'هذا الشريط يوضح لك النسبة المئوية لما أنجزته من الختمة حتى الآن. كلما قرأت أكثر، اقتربت من الهدف!',
-      selector: '#wird-progress-container',
-      icon: <CheckCircle className="w-8 h-8 text-white" />
-    },
-    {
-      id: 'wird-progress-today',
-      title: 'ورد اليوم',
-      text: 'هنا يظهر لك بالضبط الصفحات المطلوب قراءتها اليوم. اضغط على "افتح المصحف" لتبدأ القراءة مباشرة.',
-      selector: '#wird-today-container',
-      icon: <BookOpen className="w-8 h-8 text-white" />
-    },
-    {
-      id: 'wird-progress-actions',
-      title: 'إدارة الورد',
-      text: 'بعد الانتهاء من القراءة، لا تنسَ الضغط على "تمت القراءة" لتحديث تقدمك.',
-      selector: '#wird-actions-container',
-      icon: <Settings className="w-8 h-8 text-white" />
-    },
-    {
-      id: 'wird-edit-highlight',
-      title: 'تعديل الختمة',
-      text: 'إذا شعرت أن الخطة الحالية سريعة جداً أو بطيئة، يمكنك الضغط هنا لتعديل عدد الأيام أو الصفحات في أي وقت.',
-      selector: '#wird-edit-btn',
-      icon: <Settings className="w-8 h-8 text-white" />
-    },
-    {
-      id: 'wird-reset-highlight',
-      title: 'إعادة تعيين الختمة',
-      text: 'في حال أردت البدء من جديد تماماً أو تغيير نقطة البداية، استخدم هذا الزر لتصفير التقدم الحالي وإعادة ضبط الإعدادات.',
-      selector: '#wird-reset-btn',
-      icon: <RotateCcw className="w-8 h-8 text-white" />
-    }
-  ];
 
   const markDayCompleted = () => {
     if (!settings) return;
@@ -948,16 +872,40 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
     <div className="h-screen flex flex-col bg-transparent" style={{ fontFamily: theme.font, backgroundColor: isDefaultTheme ? '#FFFFFF' : 'transparent', color: isDefaultTheme ? '#000000' : 'var(--text-color)' }}>
       <header className="app-top-bar">
         <div className="app-top-bar__inner">
-          <div className="relative flex items-center justify-center w-full">
-            <div className="absolute left-0">
-              <ThemePageLock />
+          <div className="relative flex items-center justify-center w-full min-h-[44px]">
+            {/* سهم الرجوع للخلف على يمين النص */}
+            <div className="absolute right-0 flex items-center">
+              <button
+                onClick={handleHomeClick}
+                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                title="رجوع للخلف"
+                aria-label="رجوع للخلف"
+              >
+                <i className="fa-solid fa-arrow-right text-xl"></i>
+              </button>
             </div>
-            <h1 className="app-top-bar__title text-2xl font-kufi flex items-center justify-center gap-2">
-              <span>📅</span>
-              الورد اليومي
-            </h1>
+
+            {/* عنوان الصفحة في الوسط */}
+            <div className="text-center px-12 min-w-0">
+              <h1 className="app-top-bar__title text-lg sm:text-xl font-kufi flex items-center justify-center gap-2 truncate">
+                <span>📅</span>
+                الورد اليومي
+              </h1>
+            </div>
+
+            {/* أيقونة المنزل على يسار النص للعودة إلى الصفحة الرئيسية */}
+            <div className="absolute left-0 flex items-center gap-1">
+              <ThemePageLock />
+              <button
+                onClick={() => onNavigate('home')}
+                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                title="الصفحة الرئيسية"
+                aria-label="الصفحة الرئيسية"
+              >
+                <i className="fa-solid fa-house text-xl"></i>
+              </button>
+            </div>
           </div>
-          <p className="app-top-bar__subtitle text-center">تابع ختمتك للقرآن الكريم</p>
         </div>
       </header>
 
@@ -966,10 +914,8 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
           {!showSettings && renderProfileSelector()}
           {showSettings || !settings ? renderSettings() : renderProgress()}
         </div>
-        <div className="shrink-0 w-full h-32"></div>
+        <div className="shrink-0 w-full h-6"></div>
       </main>
-
-      {!isInputFocused && <BottomBar onHomeClick={handleHomeClick} onThemesClick={() => {}} showThemes={false} />}
 
       {renderDeleteConfirmModal()}
 
@@ -978,12 +924,6 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
         onClose={() => setShowResetConfirm(false)}
         onConfirm={confirmReset}
       />
-
-      {showSettings || !settings ? (
-        <TutorialOverlay tutorialId="daily-wird-setup-tutorial" steps={setupTutorialSteps} />
-      ) : (
-        <TutorialOverlay tutorialId="daily-wird-progress-tutorial" steps={progressTutorialSteps} />
-      )}
     </div>
   );
 };

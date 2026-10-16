@@ -38,9 +38,8 @@ function BottomBar({ onHomeClick, onThemesClick, showHome = true, showThemes = t
     const homeBtnBorder = parseBorder(theme.btnBorder);
     const themesBtnBorder = parseBorder(theme.btnBorder);
 
-    const isMainOrMoreMenu = currentPage === 'home' || currentPage === 'more-menu';
-    const isDefaultMoreMenu = themeKey === 'default' && currentPage === 'more-menu';
-    const isDefaultNonQuran = themeKey === 'default' && !isQuranPage && !isMainOrMoreMenu;
+    const isMainPage = currentPage === 'home';
+    const isDefaultNonQuran = themeKey === 'default' && !isQuranPage && !isMainPage;
 
     const isBlackTheme = theme.bgColor === '#000000';
 

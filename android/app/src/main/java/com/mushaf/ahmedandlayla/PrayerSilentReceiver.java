@@ -1,14 +1,20 @@
 package com.mushaf.ahmedandlayla;
 
+import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.media.AudioAttributes;
 import android.media.AudioManager;
+import android.media.MediaPlayer;
+import android.net.Uri;
 import android.os.Build;
+import android.os.PowerManager;
 import androidx.core.app.NotificationCompat;
 
 public class PrayerSilentReceiver extends BroadcastReceiver {
@@ -20,13 +26,22 @@ public class PrayerSilentReceiver extends BroadcastReceiver {
 
     private static final String PREFS_NAME = "PrayerSilentPrefs";
     private static final String KEY_ORIGINAL_RINGER_MODE = "original_ringer_mode";
-    private static final String CHANNEL_ID = "prayer_silent_channel";
+    private static final String CHANNEL_ID = "prayer_silent_v3_chime_channel";
 
     @Override
     public void onReceive(Context context, Intent intent) {
         if (intent == null) return;
         String action = intent.getAction();
         if (action == null) return;
+
+        PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
+        PowerManager.WakeLock wakeLock = null;
+        if (pm != null) {
+            try {
+                wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Mushaf:AutoSilentWakeLock");
+                wakeLock.acquire(8000);
+            } catch (Exception ignored) {}
+        }
 
         AudioManager audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
         if (audioManager == null) return;
@@ -46,14 +61,35 @@ public class PrayerSilentReceiver extends BroadcastReceiver {
 
             // Apply Silent Mode
             applySilentMode(context, audioManager);
-            showNotification(context, 9901, "🔕 تم تفعيل وضع الصامت", "تم كتم صوت الهاتف تلقائياً لأداء صلاة " + prayerName);
 
         } else if (ACTION_END_SILENT.equals(action)) {
             // Restore original ringer mode
             int originalMode = prefs.getInt(KEY_ORIGINAL_RINGER_MODE, AudioManager.RINGER_MODE_NORMAL);
             restoreRingerMode(context, audioManager, originalMode);
-            showNotification(context, 9902, "🔔 تم إنهاء وضع الصامت", "تم إعادة تفعيل صوت الهاتف بعد انتهاء صلاة " + prayerName);
         }
+    }
+
+    private void playChime(Context context) {
+        try {
+            int resId = context.getResources().getIdentifier("chime", "raw", context.getPackageName());
+            if (resId != 0) {
+                MediaPlayer mp = MediaPlayer.create(context, resId);
+                if (mp != null) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                        AudioAttributes aa = new AudioAttributes.Builder()
+                            .setUsage(AudioAttributes.USAGE_ALARM)
+                            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                            .setFlags(AudioAttributes.FLAG_AUDIBILITY_ENFORCED)
+                            .build();
+                        mp.setAudioAttributes(aa);
+                    } else {
+                        mp.setAudioStreamType(AudioManager.STREAM_ALARM);
+                    }
+                    mp.setOnCompletionListener(MediaPlayer::release);
+                    mp.start();
+                }
+            }
+        } catch (Exception ignored) {}
     }
 
     private void applySilentMode(Context context, AudioManager audioManager) {
@@ -100,13 +136,39 @@ public class PrayerSilentReceiver extends BroadcastReceiver {
             NotificationManager nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
             if (nm == null) return;
 
+            // Delete legacy channel
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    nm.deleteNotificationChannel("prayer_silent_channel");
+                }
+            } catch (Exception ignored) {}
+
+            int resId = context.getResources().getIdentifier("chime", "raw", context.getPackageName());
+            Uri soundUri = null;
+            if (resId != 0) {
+                soundUri = Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + context.getPackageName() + "/" + resId);
+            }
+
+            AudioAttributes alarmAudioAttributes = new AudioAttributes.Builder()
+                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .setUsage(AudioAttributes.USAGE_ALARM)
+                .setFlags(AudioAttributes.FLAG_AUDIBILITY_ENFORCED)
+                .build();
+
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 NotificationChannel channel = new NotificationChannel(
                     CHANNEL_ID,
                     "الصامت التلقائي للصلاة",
-                    NotificationManager.IMPORTANCE_DEFAULT
+                    NotificationManager.IMPORTANCE_HIGH
                 );
                 channel.setDescription("إشعارات تفعيل وإلغاء وضع الصامت التلقائي أثناء الصلاة");
+                channel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
+                channel.setBypassDnd(true);
+                channel.enableVibration(true);
+                channel.enableLights(true);
+                if (soundUri != null) {
+                    channel.setSound(soundUri, alarmAudioAttributes);
+                }
                 nm.createNotificationChannel(channel);
             }
 
@@ -123,7 +185,13 @@ public class PrayerSilentReceiver extends BroadcastReceiver {
                 .setContentText(message)
                 .setAutoCancel(true)
                 .setContentIntent(pendingIntent)
-                .setPriority(NotificationCompat.PRIORITY_DEFAULT);
+                .setPriority(NotificationCompat.PRIORITY_MAX)
+                .setCategory(NotificationCompat.CATEGORY_ALARM)
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC);
+
+            if (soundUri != null) {
+                builder.setSound(soundUri);
+            }
 
             try {
                 android.graphics.Bitmap largeIcon = android.graphics.BitmapFactory.decodeResource(context.getResources(), R.drawable.app_logo_large);

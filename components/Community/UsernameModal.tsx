@@ -2,14 +2,16 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   User, Check, Sparkles, ArrowRight, Camera as CameraIcon, Trash2, 
-  Loader2, KeyRound, Copy, LogIn, Lock, CheckCircle2, Shield
+  Loader2, KeyRound, Copy, LogIn, Lock, CheckCircle2, Shield,
+  BookOpen, Trophy
 } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { communityService, CommunityUser } from '../../services/communityService';
 import { registerBackInterceptor } from '../../hooks/useBackButton';
 import { AvatarCropperModal } from './AvatarCropperModal';
-import BottomBar from '../BottomBar';
+import ThemePageLock from '../ThemePageLock';
+import { useShowNewBadge } from '../../utils/badgeManager';
 import { useTheme } from '../../context/ThemeContext';
 
 interface UsernameModalProps {
@@ -18,6 +20,7 @@ interface UsernameModalProps {
   onSaved?: () => void;
   isInitialPrompt?: boolean;
   onBackToApps?: () => void;
+  onNavigate?: (pageId: string, params?: any) => void;
 }
 
 const COUNTRIES = [
@@ -153,9 +156,11 @@ const UsernameModal: React.FC<UsernameModalProps> = ({
   isOpen, 
   onClose, 
   onSaved, 
-  onBackToApps 
+  onBackToApps,
+  onNavigate
 }) => {
   const { theme, themeKey } = useTheme();
+  const showNewBadge = useShowNewBadge();
   const isDefaultTheme = themeKey === 'default' || !themeKey || theme.name?.includes('الافتراضي') || theme.name === 'Default';
   const isDeepBlack = theme.bgColor === '#000000' || theme.name === 'أبيض وأسود' || themeKey === 'deep_black';
   const cardBorderColor = isDefaultTheme 
@@ -565,10 +570,93 @@ const UsernameModal: React.FC<UsernameModalProps> = ({
         backgroundColor: isBlackTheme ? '#000000' : (theme.bgColor || (theme.isDark ? '#020617' : '#f8fafc')),
         color: theme.textColor || (theme.isDark || isBlackTheme ? '#ffffff' : '#0f172a'),
         fontFamily: theme.font,
-        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 0.75rem)',
-        paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 3.75rem + 1cm)'
+        paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 2rem)'
       }}
     >
+      {/* الشريط العلوي المدمج */}
+      <header className="app-top-bar !min-h-0 py-1.5 shadow-sm shrink-0">
+        <div className="app-top-bar__inner !min-h-0 !py-1 !max-w-4xl">
+          <div className="flex items-center justify-between w-full min-h-[44px] gap-2">
+            {/* جهة اليمين: سهم الرجوع للخلف + اختصار القرآن الكريم */}
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              <button
+                type="button"
+                onClick={handleBackAction}
+                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                title="رجوع للخلف"
+                aria-label="رجوع للخلف"
+              >
+                <i className="fa-solid fa-arrow-right text-xl"></i>
+              </button>
+              <button
+                type="button"
+                onClick={() => onNavigate ? onNavigate('quran') : null}
+                className="w-10 h-10 rounded-2xl border flex items-center justify-center shadow-xs active:scale-95 transition-all cursor-pointer"
+                style={{
+                  backgroundColor: cardBg,
+                  borderColor: cardBorder,
+                  borderWidth: '1.5px',
+                  borderStyle: 'solid',
+                  color: primaryColor
+                }}
+                title="صفحة القرآن الكريم"
+                aria-label="صفحة القرآن الكريم"
+              >
+                <BookOpen size={18} />
+              </button>
+            </div>
+
+            {/* الوسط: نص مجتمع أحمد وليلى */}
+            <div className="flex-1 flex items-center justify-center min-w-0">
+              <h1 
+                className="text-base sm:text-lg font-extrabold truncate text-center select-none"
+                style={{ 
+                  color: theme.textColor || (theme.isDark || isBlackTheme ? '#ffffff' : '#0f172a'),
+                  fontFamily: theme.font
+                }}
+              >
+                مجتمع أحمد وليلى
+              </h1>
+            </div>
+
+            {/* جهة اليسار: اختصار أهل القرآن الكريم + قفل السمة + زر الصفحة الرئيسية */}
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              <button
+                type="button"
+                onClick={() => onNavigate ? onNavigate('ahl-al-quran') : null}
+                className="w-10 h-10 rounded-2xl border flex items-center justify-center shadow-xs active:scale-95 transition-all cursor-pointer relative"
+                style={{
+                  backgroundColor: cardBg,
+                  borderColor: cardBorder,
+                  borderWidth: '1.5px',
+                  borderStyle: 'solid',
+                  color: '#f59e0b'
+                }}
+                title="صفحة أهل القرآن الكريم"
+                aria-label="صفحة أهل القرآن الكريم"
+              >
+                <Trophy size={18} />
+                {showNewBadge && (
+                  <span className="absolute -top-1.5 -right-1 bg-yellow-400 text-black text-[9px] font-bold px-1 rounded-full shadow-xs border border-white dark:border-slate-800 animate-bounce pointer-events-none">
+                    جديد
+                  </span>
+                )}
+              </button>
+              <ThemePageLock />
+              <button
+                type="button"
+                onClick={() => onNavigate ? onNavigate('home') : handleBackAction()}
+                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                title="الصفحة الرئيسية"
+                aria-label="الصفحة الرئيسية"
+              >
+                <i className="fa-solid fa-house text-xl"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
       {/* Full Screen Scrollable Page Body */}
       <div className="flex-1 w-full px-2 sm:px-3 py-3">
 
@@ -1442,9 +1530,6 @@ const UsernameModal: React.FC<UsernameModalProps> = ({
           setCropperImgSrc('');
         }}
       />
-
-      {/* Standard App Bottom Bar */}
-      <BottomBar onHomeClick={handleBackAction} onThemesClick={() => {}} showThemes={false} />
     </div>
   );
 };

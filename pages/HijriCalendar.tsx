@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import BottomBar from '../components/BottomBar';
 import { registerBackInterceptor } from '../hooks/useBackButton';
 import { useTheme } from '../context/ThemeContext';
 import ThemePageLock from '../components/ThemePageLock';
@@ -727,7 +726,7 @@ function HijriCalendar({ onBack , onNavigate }: { onBack: () => void, onNavigate
     };
     const selectedEvent = useMemo(() => islamicEvents.find(e => e.day === selectedHijri.day && e.month === selectedHijri.month), [selectedHijri]);
 
-    const handleHomeClick = () => {
+    const handleBack = () => {
         if (showZoomModal) {
             setShowZoomModal(false);
         } else if (pickerConfig.isOpen) {
@@ -735,6 +734,16 @@ function HijriCalendar({ onBack , onNavigate }: { onBack: () => void, onNavigate
         } else {
             onBack();
         }
+    };
+
+    const handleGoHome = () => {
+        if (showZoomModal) {
+            setShowZoomModal(false);
+        }
+        if (pickerConfig.isOpen) {
+            setPickerConfig({ ...pickerConfig, isOpen: false });
+        }
+        onNavigate('home');
     };
 
     useEffect(() => {
@@ -891,17 +900,41 @@ function HijriCalendar({ onBack , onNavigate }: { onBack: () => void, onNavigate
         <div className="h-screen flex flex-col bg-transparent font-sans overflow-hidden">
             <header className="app-top-bar shrink-0">
                 <div className="app-top-bar__inner">
-                    <div className="relative flex items-center justify-center w-full">
-                        <div className="absolute left-0">
-                            <ThemePageLock />
+                    <div className="relative flex items-center justify-center w-full min-h-[44px]">
+                        {/* سهم الرجوع للخلف على يمين النص */}
+                        <div className="absolute right-0 flex items-center">
+                            <button
+                                onClick={handleBack}
+                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                title="رجوع للخلف"
+                                aria-label="رجوع للخلف"
+                            >
+                                <i className="fa-solid fa-arrow-right text-xl"></i>
+                            </button>
                         </div>
-                        <h1 className="app-top-bar__title text-2xl font-kufi">التقويم</h1>
+
+                        {/* عنوان الصفحة في الوسط */}
+                        <div className="text-center px-12 min-w-0">
+                            <h1 className="app-top-bar__title text-lg sm:text-xl font-kufi truncate">التقويم</h1>
+                        </div>
+
+                        {/* أيقونة المنزل على يسار النص للعودة إلى الصفحة الرئيسية */}
+                        <div className="absolute left-0 flex items-center gap-1">
+                            <ThemePageLock />
+                            <button
+                                onClick={handleGoHome}
+                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                title="الصفحة الرئيسية"
+                                aria-label="الصفحة الرئيسية"
+                            >
+                                <i className="fa-solid fa-house text-xl"></i>
+                            </button>
+                        </div>
                     </div>
-                    <p className="app-top-bar__subtitle shrink-0">الميلادي والهجري في مكان واحد</p>
                 </div>
             </header>
 
-            <main className="flex-1 overflow-y-auto px-3 pb-24 shadow-inner">
+            <main className="flex-1 overflow-y-auto px-3 pb-6 shadow-inner">
                 <div className="w-full max-w-lg mx-auto space-y-3">
                     
                     {/* Mode Toggles */}
@@ -1160,12 +1193,10 @@ function HijriCalendar({ onBack , onNavigate }: { onBack: () => void, onNavigate
                         </div>
                     )}
 
-                    {/* Final Spacer to ensure bottom content clears the nav bar */}
-                    <div className="h-24" />
+                    {/* Final Spacer */}
+                    <div className="h-6" />
                 </div>
             </main>
-
-            <BottomBar onHomeClick={handleHomeClick} onThemesClick={() => {}} showThemes={false} />
 
             {/* Toast Notification */}
             <AnimatePresence>
@@ -1174,7 +1205,7 @@ function HijriCalendar({ onBack , onNavigate }: { onBack: () => void, onNavigate
                         initial={{ opacity: 0, y: 50, x: '-50%' }}
                         animate={{ opacity: 1, y: 0, x: '-50%' }}
                         exit={{ opacity: 0, y: 50, x: '-50%' }}
-                        className="fixed bottom-24 left-1/2 z-[200] bg-gray-800 text-white px-6 py-3 rounded-full shadow-lg font-bold text-sm text-center whitespace-nowrap"
+                        className="fixed bottom-8 left-1/2 z-[200] bg-gray-800 text-white px-6 py-3 rounded-full shadow-lg font-bold text-sm text-center whitespace-nowrap"
                     >
                         {toastMessage}
                     </motion.div>

@@ -1,17 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { calculateMawarith, HeirResult, MawarithInput } from '../../utils/mawarithCalculator';
 import { useTheme } from '../../context/ThemeContext';
-import { Info, RefreshCw } from 'lucide-react';
-
-const Tooltip = ({ text }: { text: string }) => (
-    <div className="group relative inline-block ml-1">
-        <Info size={14} className="text-primary opacity-70 cursor-help" />
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-48 p-2 bg-gray-800 text-white text-xs rounded shadow-lg z-50 text-center">
-            {text}
-            <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
-        </div>
-    </div>
-);
+import { RefreshCw } from 'lucide-react';
 
 const MawarithCalculator: React.FC<{ cardBorderColor?: string }> = ({ cardBorderColor: propCardBorderColor }) => {
     const { theme, themeKey } = useTheme();
@@ -47,9 +37,11 @@ const MawarithCalculator: React.FC<{ cardBorderColor?: string }> = ({ cardBorder
     const [fullCousinsCount, setFullCousinsCount] = useState(0);
     const [paternalCousinsCount, setPaternalCousinsCount] = useState(0);
 
-    const inputStyle = {
+    const inputStyle: React.CSSProperties = {
         backgroundColor: theme.isOriginal ? '#fff' : 'rgba(255,255,255,0.05)',
-        borderColor: theme.isOriginal ? '#e5e7eb' : 'rgba(255,255,255,0.2)',
+        borderColor: cardBorderColor,
+        borderWidth: '1.5px',
+        borderStyle: 'solid',
         color: theme.textColor,
     };
 
@@ -140,21 +132,52 @@ const MawarithCalculator: React.FC<{ cardBorderColor?: string }> = ({ cardBorder
 
     const mawarithResults: HeirResult[] = useMemo(() => calculateMawarith(mawarithInput), [mawarithInput]);
 
-    const renderNumberInput = (label: string, value: number, setter: (val: number) => void, tooltip?: string) => (
+    const renderNumberInput = (label: string, value: number, setter: (val: number) => void, hint?: string) => (
         <div className="flex flex-col">
-            <label className="flex items-center text-xs font-bold mb-1 opacity-80" style={{ color: theme.textColor }}>
-                {label} {tooltip && <Tooltip text={tooltip} />}
-            </label>
-            <input type="text" inputMode="numeric" pattern="[0-9]*" min="0" value={value || ''} placeholder="0" onChange={e => setter(parseInt(e.target.value) || 0)} className="w-full p-2.5 rounded-lg border focus:ring-2 focus:ring-primary focus:outline-none text-center transition-all" style={inputStyle} />
+            <div className="flex flex-wrap items-baseline justify-between gap-1 mb-1">
+                <span className="text-xs font-bold opacity-80" style={{ color: theme.textColor }}>
+                    {label}
+                </span>
+                {hint && (
+                    <span className="text-[10px] opacity-70 font-normal leading-tight">
+                        {hint}
+                    </span>
+                )}
+            </div>
+            <input 
+                type="text" 
+                inputMode="numeric" 
+                pattern="[0-9]*" 
+                min="0" 
+                value={value || ''} 
+                placeholder="0" 
+                onChange={e => setter(parseInt(e.target.value) || 0)} 
+                className="w-full p-2.5 rounded-lg border focus:ring-2 focus:ring-primary focus:outline-hidden text-center transition-all font-bold" 
+                style={inputStyle} 
+            />
         </div>
     );
 
-    const renderCheckbox = (label: string, checked: boolean, setter: (val: boolean) => void, tooltip?: string) => (
-        <label className="flex items-center gap-2 cursor-pointer p-3 rounded-lg border transition-all" style={{ ...inputStyle, borderColor: checked ? 'var(--color-primary)' : inputStyle.borderColor, backgroundColor: checked ? 'rgba(16, 185, 129, 0.1)' : inputStyle.backgroundColor }}>
-            <input type="checkbox" checked={checked} onChange={e => setter(e.target.checked)} className="w-4 h-4 accent-primary" />
-            <span className="text-sm font-bold flex items-center" style={{ color: theme.textColor }}>
-                {label} {tooltip && <Tooltip text={tooltip} />}
-            </span>
+    const renderCheckbox = (label: string, checked: boolean, setter: (val: boolean) => void, hint?: string) => (
+        <label 
+            className="flex items-center justify-between gap-2 cursor-pointer p-2.5 px-3 rounded-lg border transition-all" 
+            style={{ 
+                ...inputStyle, 
+                borderColor: checked ? (isDefaultTheme ? '#000000' : 'var(--color-primary)') : inputStyle.borderColor, 
+                backgroundColor: checked ? 'rgba(16, 185, 129, 0.1)' : inputStyle.backgroundColor 
+            }}
+        >
+            <div className="flex items-center gap-2">
+                <input type="checkbox" checked={checked} onChange={e => setter(e.target.checked)} className="w-4 h-4 accent-primary" />
+                <span className="text-sm font-bold" style={{ color: theme.textColor }}>
+                    {label}
+                </span>
+            </div>
+            {hint && (
+                <span className="text-[10px] opacity-70 font-normal leading-tight">
+                    {hint}
+                </span>
+            )}
         </label>
     );
 
@@ -172,10 +195,22 @@ const MawarithCalculator: React.FC<{ cardBorderColor?: string }> = ({ cardBorder
 
             {/* Estate Value */}
             <div className="themed-card p-4 rounded-xl" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
-                <label className="flex items-center text-sm font-bold mb-2 opacity-80" style={{ color: theme.textColor }}>
-                    قيمة التركة الإجمالية <Tooltip text="المبلغ المتبقي بعد تجهيز الميت وسداد ديونه وتنفيذ وصاياه" />
-                </label>
-                <input type="number" placeholder="أدخل المبلغ" value={estateValue} onChange={e => setEstateValue(e.target.value)} className="w-full p-3 rounded-lg border focus:ring-2 focus:ring-primary focus:outline-none text-center font-bold text-lg transition-all" style={inputStyle} />
+                <div className="flex flex-wrap items-baseline justify-between gap-1 mb-2">
+                    <span className="text-sm font-bold opacity-90" style={{ color: theme.textColor }}>
+                        قيمة التركة الإجمالية
+                    </span>
+                    <span className="text-[11px] opacity-75 font-normal">
+                        بعد تجهيز الميت وسداد ديونه ووصاياه
+                    </span>
+                </div>
+                <input 
+                    type="number" 
+                    placeholder="أدخل المبلغ" 
+                    value={estateValue} 
+                    onChange={e => setEstateValue(e.target.value)} 
+                    className="w-full p-3 rounded-lg border focus:ring-2 focus:ring-primary focus:outline-hidden text-center font-bold text-lg transition-all" 
+                    style={inputStyle} 
+                />
             </div>
 
             {/* Relatives Inputs */}
@@ -196,17 +231,23 @@ const MawarithCalculator: React.FC<{ cardBorderColor?: string }> = ({ cardBorder
                 <div className="themed-card p-4 rounded-xl" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                     <h3 className="font-bold mb-3 text-sm opacity-80" style={{ color: theme.textColor }}>الزوج والزوجة</h3>
                     <div className="flex flex-wrap gap-3">
-                        <label className="flex items-center gap-2 cursor-pointer p-2.5 px-4 rounded-lg border text-sm transition-all" style={{ ...inputStyle, borderColor: spouseType === 'none' ? 'var(--color-primary)' : inputStyle.borderColor, backgroundColor: spouseType === 'none' ? 'rgba(16, 185, 129, 0.1)' : inputStyle.backgroundColor }}>
+                        <label className="flex items-center gap-2 cursor-pointer p-2.5 px-4 rounded-lg border text-sm transition-all" style={{ ...inputStyle, borderColor: spouseType === 'none' ? (isDefaultTheme ? '#000000' : 'var(--color-primary)') : inputStyle.borderColor, backgroundColor: spouseType === 'none' ? 'rgba(16, 185, 129, 0.1)' : inputStyle.backgroundColor }}>
                             <input type="radio" name="spouse" checked={spouseType === 'none'} onChange={() => setSpouseType('none')} className="w-4 h-4 accent-primary" />
                             <span style={{ color: theme.textColor }}>لا يوجد</span>
                         </label>
-                        <label className="flex items-center gap-2 cursor-pointer p-2.5 px-4 rounded-lg border text-sm transition-all" style={{ ...inputStyle, borderColor: spouseType === 'husband' ? 'var(--color-primary)' : inputStyle.borderColor, backgroundColor: spouseType === 'husband' ? 'rgba(16, 185, 129, 0.1)' : inputStyle.backgroundColor }}>
+                        <label className="flex items-center gap-2 cursor-pointer p-2.5 px-4 rounded-lg border text-sm transition-all" style={{ ...inputStyle, borderColor: spouseType === 'husband' ? (isDefaultTheme ? '#000000' : 'var(--color-primary)') : inputStyle.borderColor, backgroundColor: spouseType === 'husband' ? 'rgba(16, 185, 129, 0.1)' : inputStyle.backgroundColor }}>
                             <input type="radio" name="spouse" checked={spouseType === 'husband'} onChange={() => setSpouseType('husband')} className="w-4 h-4 accent-primary" />
-                            <span style={{ color: theme.textColor }}>زوج <Tooltip text="يرث النصف إذا لم يكن للمتوفاة فرع وارث، والربع إذا كان لها فرع وارث" /></span>
+                            <div className="flex flex-col">
+                                <span className="font-bold" style={{ color: theme.textColor }}>زوج</span>
+                                <span className="text-[10px] opacity-70 font-normal leading-tight">يرث النصف أو الربع</span>
+                            </div>
                         </label>
-                        <label className="flex items-center gap-2 cursor-pointer p-2.5 px-4 rounded-lg border text-sm transition-all" style={{ ...inputStyle, borderColor: spouseType === 'wife' ? 'var(--color-primary)' : inputStyle.borderColor, backgroundColor: spouseType === 'wife' ? 'rgba(16, 185, 129, 0.1)' : inputStyle.backgroundColor }}>
+                        <label className="flex items-center gap-2 cursor-pointer p-2.5 px-4 rounded-lg border text-sm transition-all" style={{ ...inputStyle, borderColor: spouseType === 'wife' ? (isDefaultTheme ? '#000000' : 'var(--color-primary)') : inputStyle.borderColor, backgroundColor: spouseType === 'wife' ? 'rgba(16, 185, 129, 0.1)' : inputStyle.backgroundColor }}>
                             <input type="radio" name="spouse" checked={spouseType === 'wife'} onChange={() => setSpouseType('wife')} className="w-4 h-4 accent-primary" />
-                            <span style={{ color: theme.textColor }}>زوجة <Tooltip text="ترث الربع إذا لم يكن للمتوفى فرع وارث، والثمن إذا كان له فرع وارث. ويشتركن فيه إذا كن أكثر من واحدة." /></span>
+                            <div className="flex flex-col">
+                                <span className="font-bold" style={{ color: theme.textColor }}>زوجة</span>
+                                <span className="text-[10px] opacity-70 font-normal leading-tight">ترث الربع أو الثمن</span>
+                            </div>
                         </label>
                     </div>
                     {spouseType === 'wife' && (

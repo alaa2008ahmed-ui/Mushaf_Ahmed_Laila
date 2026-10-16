@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 
 interface ToastProps {
     message: string;
@@ -10,6 +10,8 @@ interface ToastProps {
 const Toast: React.FC<ToastProps> = ({ message, show, onClose, currentTheme }) => {
     const [isVisible, setIsVisible] = useState(false);
     const [shouldRender, setShouldRender] = useState(false);
+    const onCloseRef = useRef(onClose);
+    onCloseRef.current = onClose;
 
     useEffect(() => {
         if (show) {
@@ -18,15 +20,15 @@ const Toast: React.FC<ToastProps> = ({ message, show, onClose, currentTheme }) =
             requestAnimationFrame(() => setIsVisible(true));
             
             const timer = setTimeout(() => {
-                onClose();
-            }, 3000);
+                onCloseRef.current();
+            }, 2500);
             return () => clearTimeout(timer);
         } else {
             setIsVisible(false);
             const timer = setTimeout(() => setShouldRender(false), 400);
             return () => clearTimeout(timer);
         }
-    }, [show, onClose, message]);
+    }, [show, message]);
 
     if (!shouldRender) return null;
 

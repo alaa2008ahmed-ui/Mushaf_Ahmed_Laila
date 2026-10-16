@@ -35,8 +35,7 @@ import FloatingMenu from '../components/QuranReader/FloatingMenu';
 import AyahContextMenu from '../components/QuranReader/AyahContextMenu';
 import { ahlAlQuranService } from '../services/ahlAlQuranService';
 import ShareAyahModal from '../components/QuranReader/ShareAyahModal';
-import TutorialOverlay, { TutorialStep } from '../components/Tutorial/TutorialOverlay';
-import { MousePointer2, Move, ZoomIn, Grid, Mic, Bookmark, Home, Share2, BookOpen, Trophy, Play, Menu, Palette } from 'lucide-react';
+import { Grid, Mic, BookOpen, Trophy, Play } from 'lucide-react';
 import { quranData as quranJsonData } from '../utils/quranData';
 import ReviewTestModal from '../components/QuranReader/ReviewTestModal';
 import { memorizationService } from '../services/memorizationService';
@@ -44,6 +43,7 @@ import { registerBackInterceptor } from '../hooks/useBackButton';
 import { parseVoiceCommand, normalizeArabic } from '../utils/voiceParser';
 import { useTheme } from '../context/ThemeContext';
 import { useAudioStore } from '../hooks/useAudioStore';
+import { useHabitTracker } from '../hooks/useHabitTracker';
 import { App as CapacitorApp } from '@capacitor/app';
 
 declare var window: any;
@@ -366,12 +366,17 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
                 console.error('Failed to lock orientation to portrait', e);
             }
         }
+        // عند فتح المصحف من صفحة الورد اليومي، يتم الرجوع لصفحة الورد اليومي
+        if (isWirdMode || navParams?.isWird) {
+            onNavigate('daily-wird');
+            return;
+        }
         if (targetPage === 'home') {
             onNavigate('home');
         } else {
             onBack();
         }
-    }, [isLandscape, onBack, onNavigate]);
+    }, [isLandscape, isWirdMode, navParams, onBack, onNavigate]);
 
     const [isLandscapeUIHidden, setIsLandscapeUIHidden] = useState(() => {
         if (initialLandscape) return true;
@@ -492,6 +497,15 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
         } catch(e) {}
         return { s: 1, a: 1 };
     });
+
+    // Auto-sync pages read with Habit Tracker (مربّي العبادات)
+    useEffect(() => {
+        if (!currentAyah?.s || !currentAyah?.a || !quranData?.surahs) return;
+        const pageNum = quranData.surahs[currentAyah.s - 1]?.ayahs[currentAyah.a - 1]?.page;
+        if (pageNum && pageNum >= 1 && pageNum <= 604) {
+            useHabitTracker.getState().recordQuranPageRead(pageNum);
+        }
+    }, [currentAyah.s, currentAyah.a, quranData]);
 
     const recordedAudioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -1402,84 +1416,6 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
         };
     });
 
-    const quranTutorialSteps: TutorialStep[] = [
-        {
-            id: 'surah-name',
-            title: 'اسم السورة واختيار الموضع',
-            text: 'عند الضغط يمكنك اختيار السورة او الجزء او الحزب او رقم الايه والانتقال لحظيا اليها وعند الضغط مطولا على اسم السورة يتم عرض معلومات عن السورة',
-            selector: '#surah-name-header',
-            icon: <Grid className="w-8 h-8 text-white" />
-        },
-        {
-            id: 'page-nav',
-            title: 'رقم الصفحة والانتقال السريع',
-            text: 'يعرض رقم الصفحة الحالية وفقاً لطبعة المدينة المنورة. بالضغط عليه، تظهر نافذة تتيح لك كتابة رقم الصفحة التي ترغب في الذهاب إليها مباشرة، مما يوفر عليك عناء التقليب اليدوي في المصحف.',
-            selector: '#header-page',
-            icon: <Move className="w-8 h-8 text-white" />
-        },
-        {
-            id: 'surah-design',
-            title: 'تصميم رأس السورة',
-            text: 'يوجد مجموعة متنوعة من التصميمات المختلفة والمميزة لرأس السورة. يمكنك الضغط مطولاً على اسم السورة لتغيير التصميم واختيار ما يناسب ذوقك الخاص.',
-            selector: '#surah-header-container',
-            icon: <Palette className="w-8 h-8 text-white" />
-        },
-        {
-            id: 'audio-play',
-            title: 'التشغيل الصوتي واختيار القراء',
-            text: 'اضغط هنا لبدء الاستماع لتلاوة عطرة للآيات. الضغط المطول على هذا الزر يفتح لك قائمة بمجموعة كبيرة من القراء من مشاهير القراء، حيث يمكنك اختيار قارئك المفضل وتحديد جودة الصوت.',
-            selector: '#btn-play',
-            icon: <Mic className="w-8 h-8 text-white" />
-        },
-        {
-            id: 'ayah-text',
-            title: 'تفاعل ذكي مع الآيات',
-            text: 'عند الضغط على الايه يتم تحديدها بلون مختلف وعند الضغط المطول يمكنك تغيير لون النص القرانى ولون الخلفيه ولون الايه المحدده',
-            selector: '.ayah-text-block',
-            icon: <MousePointer2 className="w-8 h-8 text-white" />
-        },
-        {
-            id: 'ayah-number',
-            title: 'التفسير والترجمه',
-            text: 'قم بالضغط على رقم الايه لعرض التفسير أو معانى القران او الترجمه وقم بالضغط المطول على الرقم لاختيار من بين التفسيرات المختلفه',
-            selector: '.verse-container',
-            icon: <MousePointer2 className="w-8 h-8 text-white" />
-        },
-        {
-            id: 'zoom-gesture',
-            title: 'تحكم مرن في حجم الخط',
-            text: 'لراحتك، يمكنك استخدام إصبعين على الشاشة (Pinch to Zoom) لتكبير الخط أو تصغيره فوراً في وضع القراءة الطولي، مما يضمن لك رؤية واضحة ومريحة مهما كان حجم شاشة هاتفك.',
-            icon: <ZoomIn className="w-8 h-8 text-white" />
-        },
-        {
-            id: 'share-ayah-feature',
-            title: 'مشاركة آية',
-            text: 'اضغط هنا لمشاركة الآية الحالية كصورة مصممة بشكل جميل. يمكنك تخصيص الخلفية، الخط، والألوان قبل المشاركة مع أصدقائك أو على وسائل التواصل الاجتماعي.',
-            selector: '#btn-share',
-            icon: <Share2 className="w-8 h-8 text-white" />
-        },
-        {
-            id: 'bookmark-feature',
-            title: 'حفظ العلامة',
-            text: 'اضغط هنا لحفظ موضع قراءتك الحالي للعودة إليه لاحقاً. يمكنك الضغط مطولاً على الزر لفتح وإدارة قائمة جميع العلامات المرجعية المحفوظة.',
-            selector: '#btn-bookmark',
-            icon: <Bookmark className="w-8 h-8 text-white" />
-        },
-        {
-            id: 'autoscroll-feature',
-            title: 'التمرير التلقائي',
-            text: 'يتيح لك هذا الزر بدء أو إيقاف التمرير التلقائي للصفحة أثناء القراءة. اضغط مطولاً لضبط سرعة التمرير بما يتناسب مع سرعة قراءتك.',
-            selector: '#btn-autoscroll',
-            icon: <Move className="w-8 h-8 text-white" />
-        },
-        {
-            id: 'home-nav',
-            title: 'الرئيسية',
-            text: 'اضغط هنا للعودة السريعة إلى الشاشة الرئيسية للتطبيق في أي وقت ومن أي مكان داخل صفحة القراءة.',
-            selector: '#btn-home',
-            icon: <Home className="w-8 h-8 text-white" />
-        }
-    ];
     const mushafContentRef = useRef<HTMLDivElement>(null);
     const settingsRef = useRef(settings);
     useEffect(() => { settingsRef.current = settings; }, [settings]);
@@ -2848,6 +2784,7 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
         setLastInteractionType('page');
         
         const targetPageNum = pageNum;
+        useHabitTracker.getState().recordQuranPageRead(targetPageNum);
         
         const pageData = getPageData(targetPageNum);
         if (pageData && pageData.length > 0) {
@@ -4086,7 +4023,6 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
             />
             <JuzNotification isVisible={juzNotification.show} text={juzNotification.text} currentTheme={currentTheme} />
             <Toast message={toast.message} show={toast.show} onClose={handleToastClose} currentTheme={currentTheme} />
-            {!isLandscape && <TutorialOverlay tutorialId="quran-reader-tutorial" steps={quranTutorialSteps} />}
             
             {/* Memorization Review Controls */}
             {localIsMemorizationMode && localMemorizationSettings?.isReviewMode && (

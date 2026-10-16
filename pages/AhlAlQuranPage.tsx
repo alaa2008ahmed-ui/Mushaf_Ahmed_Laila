@@ -5,7 +5,6 @@ import {
   Sparkles, Info, Award, Trash2, AlertTriangle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import BottomBar from '../components/BottomBar';
 import { useTheme } from '../context/ThemeContext';
 import { registerBackInterceptor } from '../hooks/useBackButton';
 import { 
@@ -15,7 +14,6 @@ import {
 } from '../services/ahlAlQuranService';
 import { communityService } from '../services/communityService';
 import UsernameModal from '../components/Community/UsernameModal';
-import TutorialOverlay, { TutorialStep } from '../components/Tutorial/TutorialOverlay';
 import ThemePageLock from '../components/ThemePageLock';
 
 interface AhlAlQuranPageProps {
@@ -177,36 +175,12 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
         setShowUsernameModal(false);
         return true;
       }
-      return false; // Let global handler navigate back to origin (home or more-menu)
+      return false; // Let global handler navigate back to origin (home)
     };
 
     const unregister = registerBackInterceptor(interceptor);
     return unregister;
   }, [isArchiveDropdownOpen, showUsernameModal]);
-
-  const ahlAlQuranTutorialSteps: TutorialStep[] = [
-    {
-      id: 'ahl-leaderboard',
-      title: 'لوحة المتصدرين',
-      text: 'ترتيب شهري وتنافس شريف بين القراء حسب عدد الصفحات والختمات مع تمييز الأوائل بالتيجان والأوسمة.',
-      selector: '#ahl-tab-leaderboard',
-      icon: <Crown className="w-8 h-8 text-amber-300" />
-    },
-    {
-      id: 'ahl-stats',
-      title: 'إحصائياتي الشخصية',
-      text: 'متابعة إنجازك القرآني وترتيبك وعدد الصفحات المقروءة ونسبة تقدمك في الختمة بدقة.',
-      selector: '#ahl-tab-mystats',
-      icon: <BookOpen className="w-8 h-8 text-sky-400" />
-    },
-    {
-      id: 'ahl-privacy',
-      title: 'الخصوصية والظهور',
-      text: 'التحكم في ظهور اسمك وبياناتك في قائمة المتصدرين أو القراءة كفاعل خير بكل أمان.',
-      selector: '#ahl-tab-privacy',
-      icon: <Shield className="w-8 h-8 text-purple-400" />
-    }
-  ];
 
   return (
     <div 
@@ -216,43 +190,55 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
         backgroundColor: 'transparent',
         color: theme.textColor,
         fontFamily: theme.font,
-        paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 3.75rem + 1cm)'
+        paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.5rem)'
       }}
     >
       {/* Top Header Bar */}
       <header className="app-top-bar z-20 shrink-0">
         <div className="app-top-bar__inner">
-          <div className="relative flex items-center justify-between w-full">
-            {/* Right: Quran Shortcut */}
-            <button
-              type="button"
-              onClick={() => onNavigate('quran')}
-              className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-xs active:scale-95 transition-all cursor-pointer flex-shrink-0"
-              style={{
-                backgroundColor: cardBg,
-                borderColor: cardBorder,
-                borderWidth: '1.5px',
-                borderStyle: 'solid',
-                color: primaryColor
-              }}
-              title="الذهاب للمصحف الشريف"
-            >
-              <BookOpen size={20} />
-            </button>
+          <div className="relative flex items-center justify-center w-full min-h-[44px]">
+            {/* سهم الرجوع للخلف على يمين النص */}
+            <div className="absolute right-0 flex items-center">
+              <button
+                onClick={onBack}
+                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                title="رجوع للخلف"
+                aria-label="رجوع للخلف"
+              >
+                <i className="fa-solid fa-arrow-right text-xl"></i>
+              </button>
+            </div>
 
-            {/* Center Title */}
-            <h1 className="app-top-bar__title text-xl sm:text-2xl font-kufi text-center flex-1" style={{ color: theme.textColor }}>
-              أهل القرآن الكريم
-            </h1>
+            {/* عنوان الصفحة في الوسط */}
+            <div className="text-center px-16 sm:px-20 min-w-0">
+              <h1 className="app-top-bar__title text-lg sm:text-xl font-kufi truncate">
+                أهل القرآن الكريم
+              </h1>
+            </div>
 
-            {/* Left: Spacer to keep title centered and balanced with Quran shortcut */}
-            <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center pointer-events-none">
+            {/* أيقونة صفحة القرآن الكريم وأيقونة المنزل على يسار النص */}
+            <div className="absolute left-0 flex items-center gap-1">
               <ThemePageLock />
+              <button
+                type="button"
+                onClick={() => onNavigate('quran')}
+                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                title="صفحة القرآن الكريم (القراءة)"
+                aria-label="صفحة القرآن الكريم"
+              >
+                <BookOpen size={20} />
+              </button>
+              <button
+                type="button"
+                onClick={() => onNavigate('home')}
+                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                title="الصفحة الرئيسية"
+                aria-label="الصفحة الرئيسية"
+              >
+                <i className="fa-solid fa-house text-xl"></i>
+              </button>
             </div>
           </div>
-          <p className="app-top-bar__subtitle text-xs" style={{ color: theme.textColor + 'aa' }}>
-            لوحة المتصدرين وإنجازات قراء كتاب الله الكريم
-          </p>
         </div>
       </header>
 
@@ -998,24 +984,6 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
           setIsProfileComplete(communityService.isProfileComplete());
           setCurrentUser(communityService.getCurrentUser());
           showToast('مرحباً بك! تم تسجيل حسابك بنجاح وأصبحت الآن ضمن أهل القرآن 🌸');
-        }}
-      />
-
-      {/* Standard BottomBar across the app */}
-      <BottomBar 
-        onHomeClick={onBack}
-        onThemesClick={() => {}}
-        showThemes={false}
-      />
-
-      {/* Tutorial Overlay */}
-      <TutorialOverlay 
-        tutorialId="ahl-al-quran-tutorial" 
-        steps={ahlAlQuranTutorialSteps} 
-        onStepChange={(stepId) => {
-          if (stepId === 'ahl-leaderboard') switchTab('leaderboard');
-          else if (stepId === 'ahl-stats') switchTab('my_stats');
-          else if (stepId === 'ahl-privacy') switchTab('privacy');
         }}
       />
     </div>

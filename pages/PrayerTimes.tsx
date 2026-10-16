@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import BottomBar from '../components/BottomBar';
 import { useTheme } from '../context/ThemeContext';
 import { prayerNamesAr, internetTones } from '../data/prayerTimesData';
 import { usePrayerTimes, copyAssetToDevice } from '../context/PrayerTimesContext';
@@ -10,8 +9,7 @@ import PrayerTimesHeader from '../components/PrayerTimes/PrayerTimesHeader';
 import PrayerTimesDateSearch from '../components/PrayerTimes/PrayerTimesDateSearch';
 import NextPrayerCard from '../components/PrayerTimes/NextPrayerCard';
 import NotificationSettingsModal from '../components/QuranReader/NotificationSettingsModal';
-import TutorialOverlay, { TutorialStep } from '../components/Tutorial/TutorialOverlay';
-import { MapPin, Search, Clock, Bell, Calendar, Palette } from 'lucide-react';
+import { MapPin, Calendar, Bell } from 'lucide-react';
 import { Browser } from '@capacitor/browser';
 import { Capacitor } from '@capacitor/core';
 import {
@@ -34,8 +32,8 @@ function PrayerTimes({ onBack, onNavigate }) {
     } = usePrayerTimes();
 
     const isDefaultTheme = themeKey === 'default' || !themeKey || theme.name?.includes('الافتراضي') || theme.name === 'Default';
-    const isBlackAndWhite = themeKey === 'deep_black';
-    const isBlackTheme = theme.bgColor === '#000000' || theme.name === 'أبيض وأسود' || themeKey === 'deep_black';
+    const isBlackAndWhite = themeKey === 'deep_black' || theme.name === 'اسود';
+    const isBlackTheme = theme.bgColor === '#000000' || theme.name === 'أبيض وأسود' || theme.name === 'اسود' || themeKey === 'deep_black';
     const primaryColor = isBlackTheme ? '#FFFFFF' : (isDefaultTheme ? '#000000' : (isBlackAndWhite ? '#FFFFFF' : theme.palette[0]));
     const secondaryColor = isBlackTheme ? '#FFFFFF' : (isDefaultTheme ? '#000000' : (isBlackAndWhite ? '#FFFFFF' : theme.palette[1]));
     const topBarTextColor = isBlackTheme ? '#FFFFFF' : (isDefaultTheme ? '#000000' : (theme.topBarText || (isBlackAndWhite ? '#FFFFFF' : theme.palette[0])));
@@ -76,7 +74,7 @@ function PrayerTimes({ onBack, onNavigate }) {
     const [tempPreReminderEnabled, setTempPreReminderEnabled] = useState(false);
     const [tempPreReminderMinutes, setTempPreReminderMinutes] = useState(15);
     const [tempAutoSilentEnabled, setTempAutoSilentEnabled] = useState(false);
-    const [tempAutoSilentDuration, setTempAutoSilentDuration] = useState(30);
+    const [tempAutoSilentDuration, setTempAutoSilentDuration] = useState(15);
     const [searchInput, setSearchInput] = useState("");
     const searchIconRef = useRef(null);
     const [toastMessage, setToastMessage] = useState('');
@@ -86,57 +84,6 @@ function PrayerTimes({ onBack, onNavigate }) {
     const supportsDST = checkSupportsDST(config.location.combinedCode, config.location.fullCountry);
     const isSummerTimeActive = config.isSummerTime && supportsDST;
 
-    const prayerTutorialSteps: TutorialStep[] = [
-        {
-            id: 'location-refresh',
-            title: 'تحديد الموقع الجغرافي',
-            text: 'اضغط هنا لتحديث موقعك الحالي عبر الـ GPS. هذا يضمن لك الحصول على مواقيت صلاة دقيقة جداً متوافقة مع مكان تواجدك الفعلي، وهو أمر حيوي خاصة عند السفر أو التنقل بين المدن.',
-            selector: '#location-refresh-btn',
-            icon: <MapPin className="w-8 h-8 text-white" />
-        },
-        {
-            id: 'date-search',
-            title: 'البحث العالمي عن المواقيت',
-            text: 'هل تود معرفة مواقيت الصلاة في مدينة أخرى؟ استخدم شريط البحث الذكي هذا للبحث عن أي مدينة حول العالم. سيعرض لك التطبيق المواقيت الخاصة بها فوراً مع إمكانية حفظها كموقع افتراضي.',
-            selector: '#search-input-container',
-            icon: <Search className="w-8 h-8 text-white" />
-        },
-        {
-            id: 'next-prayer',
-            title: 'عداد الصلاة',
-            text: 'هذا القسم هو رفيقك لتنظيم وقتك؛ فهو يعرض اسم الصلاة القادمة مع عد تنازلي دقيق بالثواني.',
-            selector: '#next-prayer-countdown-container',
-            icon: <Clock className="w-8 h-8 text-white" />
-        },
-        {
-            id: 'night-times',
-            title: 'أوقات قيام الليل والتهجد',
-            text: 'للمهتمين بقيام الليل، يوفر التطبيق حساباً دقيقاً لمنتصف الليل والثلث الأخير (وقت النزول الإلهي). يمكنك تفعيل تنبيهات خاصة لهذه الأوقات لتعينك على صلاة التهجد والاستغفار بالأسحار.',
-            selector: '#night-times-container',
-            icon: <Bell className="w-8 h-8 text-white" />
-        },
-        {
-            id: 'prayer-settings',
-            title: 'التحكم في الأذان',
-            text: 'لكل صلاة إعدادات مستقلة؛ يمكنك تفعيل الأذان الكامل، أو التنبيه فقط، أو كتم الصوت. كما يمكنك الضغط على "تخصيص" لاختيار صوت المؤذن المفضل لديك (مثل الحرم المكي أو المدني) وضبط دقائق التنبيه قبل الصلاة.',
-            selector: '#prayer-actions-container',
-            icon: <Bell className="w-8 h-8 text-white" />
-        },
-        {
-            id: 'monthly-times',
-            title: 'إمساكية الشهر الكاملة',
-            text: 'اضغط هنا لعرض جدول كامل لمواقيت الصلاة طوال الشهر الحالي. هذا يساعدك في التخطيط لعباداتك، ومعرفة مواعيد السحور والإفطار في أيام الصيام.',
-            selector: '#monthly-times-btn',
-            icon: <Calendar className="w-8 h-8 text-white" />
-        },
-        {
-            id: 'android-widget',
-            title: 'تطبيق مصغر لشاشة الهاتف',
-            text: 'الآن أصبح بإمكانك وضع تطبيق مصغر (Widget) لمواقيت الصلاة على شاشة هاتفك الرئيسية، لمعرفة مواقيت الصلاة مباشرة ومتابعة ميعاد الصلاة القادمة والعد التنازلي لها دون الحاجة لفتح التطبيق.',
-            icon: <Clock className="w-8 h-8 text-white" />
-        }
-    ];
-    
     useEffect(() => {
         if (toastMessage) {
             const timer = setTimeout(() => setToastMessage(''), 3000);
@@ -162,7 +109,7 @@ function PrayerTimes({ onBack, onNavigate }) {
         return unregister;
     }, [isModalOpen, isNotifModalOpen]);
 
-    const handleHomeClick = () => {
+    const handleBack = () => {
         if (isModalOpen) {
             closeModal();
         } else if (isNotifModalOpen) {
@@ -172,11 +119,17 @@ function PrayerTimes({ onBack, onNavigate }) {
         }
     };
 
+    const handleGoHome = () => {
+        if (isModalOpen) closeModal();
+        if (isNotifModalOpen) setIsNotifModalOpen(false);
+        onNavigate('home');
+    };
+
     const handleRefreshLocation = async () => {
-        showToast("جاري تحديد الموقع الحالي...");
+        showToast("جاري تحديد الموقع واستعادة المواقيت الأصلية...");
         try {
-            await refreshLocation();
-            showToast("تم تحديث الموقع بنجاح");
+            await refreshLocation(true);
+            showToast("تم تحديد الموقع واستعادة المواقيت الأصلية تلقائياً");
         } catch (e) {
             console.error(e);
             showToast("حدث خطأ أثناء تحديد الموقع");
@@ -188,6 +141,7 @@ function PrayerTimes({ onBack, onNavigate }) {
         if (searchIconRef.current) searchIconRef.current.className = 'fa-solid fa-spinner fa-spin';
         try {
             await manualSearch(searchInput);
+            showToast("تم تحديد المدينة بنجاح واستعادة المواقيت الأصلية");
         } catch(e) { 
             console.error(e); 
             showToast("حدث خطأ أثناء البحث أو لم يتم العثور على نتائج.");
@@ -223,10 +177,10 @@ function PrayerTimes({ onBack, onNavigate }) {
         const prayerSilent = config.prayerAutoSilent?.[key];
         if (prayerSilent) {
             setTempAutoSilentEnabled(prayerSilent.enabled);
-            setTempAutoSilentDuration(prayerSilent.duration || 30);
+            setTempAutoSilentDuration(prayerSilent.duration || 15);
         } else {
             setTempAutoSilentEnabled(!!config.autoSilent);
-            setTempAutoSilentDuration(config.autoSilentDuration || 30);
+            setTempAutoSilentDuration(config.autoSilentDuration || 15);
         }
 
         setIsModalOpen(true);
@@ -259,6 +213,7 @@ function PrayerTimes({ onBack, onNavigate }) {
                 }
             }
         });
+        showToast("تم حفظ تعديل وقت الصلاة بنجاح");
         setIsModalOpen(false);
     };
 
@@ -341,6 +296,8 @@ function PrayerTimes({ onBack, onNavigate }) {
                 fullCountry={config.location.fullCountry}
                 combinedCode={config.location.combinedCode}
                 topBarTextColor={topBarTextColor}
+                onBack={handleBack}
+                onHome={handleGoHome}
             />
 
             <main className="flex-1 overflow-y-auto hide-scrollbar px-2 pb-1">
@@ -372,28 +329,28 @@ function PrayerTimes({ onBack, onNavigate }) {
                                         window.open(url, '_blank');
                                     }
                                 }}
-                                className={`${isDefaultTheme ? 'bg-white' : 'themed-card'} flex-1 rounded-xl p-3 flex items-center justify-center gap-1.5 shadow-sm font-bold text-[13px] active:scale-95 transition-all hover:bg-black/5 dark:hover:bg-white/5`}
+                                className={`${isDefaultTheme ? 'bg-white' : 'themed-card'} flex-1 rounded-xl p-3 flex items-center justify-center gap-1.5 shadow-sm font-bold text-[13px] active:scale-95 transition-all hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer`}
                                 style={{ 
-                                    color: primaryColor, 
+                                    color: isBlackTheme ? '#FFFFFF' : primaryColor, 
                                     border: `1.5px solid ${cardBorderColor}`,
-                                    backgroundColor: isDefaultTheme ? '#FFFFFF' : undefined 
+                                    backgroundColor: isDefaultTheme ? '#FFFFFF' : (isBlackTheme ? '#111111' : undefined) 
                                 }}
                             >
-                                <MapPin size={18} className="shrink-0" />
-                                <span className="truncate whitespace-nowrap">المساجد القريبة</span>
+                                <MapPin size={18} className="shrink-0" style={{ color: isBlackTheme ? '#FFFFFF' : primaryColor }} />
+                                <span className="truncate whitespace-nowrap" style={{ color: isBlackTheme ? '#FFFFFF' : primaryColor }}>المساجد القريبة</span>
                             </button>
                              <button
                                 onClick={() => onNavigate('monthly-prayer-times')}
                                 id="monthly-times-btn"
-                                className={`${isDefaultTheme ? 'bg-white' : 'themed-card'} flex-1 rounded-xl p-3 flex items-center justify-center gap-1.5 shadow-sm font-bold text-[13px] active:scale-95 transition-all hover:bg-black/5 dark:hover:bg-white/5`}
+                                className={`${isDefaultTheme ? 'bg-white' : 'themed-card'} flex-1 rounded-xl p-3 flex items-center justify-center gap-1.5 shadow-sm font-bold text-[13px] active:scale-95 transition-all hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer`}
                                 style={{ 
-                                    color: secondaryColor, 
+                                    color: isBlackTheme ? '#FFFFFF' : secondaryColor, 
                                     border: `1.5px solid ${cardBorderColor}`,
-                                    backgroundColor: isDefaultTheme ? '#FFFFFF' : undefined 
+                                    backgroundColor: isDefaultTheme ? '#FFFFFF' : (isBlackTheme ? '#111111' : undefined) 
                                 }}
                             >
-                                <Calendar size={18} className="shrink-0" />
-                                <span className="truncate whitespace-nowrap">المواقيت الشهرية</span>
+                                <Calendar size={18} className="shrink-0" style={{ color: isBlackTheme ? '#FFFFFF' : secondaryColor }} />
+                                <span className="truncate whitespace-nowrap" style={{ color: isBlackTheme ? '#FFFFFF' : secondaryColor }}>المواقيت الشهرية</span>
                             </button>
                         </div>
 
@@ -406,6 +363,7 @@ function PrayerTimes({ onBack, onNavigate }) {
                             secondaryColor={secondaryColor}
                             cardBorderColor={cardBorderColor}
                             isDefaultTheme={isDefaultTheme}
+                            isBlackTheme={isBlackTheme}
                         />
                     </div>
                     
@@ -512,7 +470,7 @@ function PrayerTimes({ onBack, onNavigate }) {
                         })}
                     </div>
                     
-                    <p className="text-center text-sm mt-3 opacity-70" style={{ color: secondaryColor }}>
+                    <p className="text-center text-sm mt-3 opacity-90" style={{ color: isBlackTheme ? '#FFFFFF' : secondaryColor }}>
                         (يجب تفعيل الموقع للهاتف لحساب الموقع بدقه)
                     </p>
                 </div>
@@ -526,6 +484,7 @@ function PrayerTimes({ onBack, onNavigate }) {
                 primaryColor={primaryColor}
                 secondaryColor={secondaryColor}
                 isBlackAndWhite={isBlackAndWhite}
+                isBlackTheme={isBlackTheme}
                 cardBorderColor={cardBorderColor}
                 isDefaultTheme={isDefaultTheme}
                 closeModal={closeModal}
@@ -551,7 +510,7 @@ function PrayerTimes({ onBack, onNavigate }) {
                 tempPreReminderMinutes={tempPreReminderMinutes}
                 setTempPreReminderMinutes={setTempPreReminderMinutes}
                 isGlobalAutoSilentActive={!!config.autoSilent}
-                globalAutoSilentDuration={config.autoSilentDuration || 30}
+                globalAutoSilentDuration={config.autoSilentDuration || 15}
                 tempAutoSilentEnabled={tempAutoSilentEnabled}
                 setTempAutoSilentEnabled={setTempAutoSilentEnabled}
                 tempAutoSilentDuration={tempAutoSilentDuration}
@@ -569,12 +528,10 @@ function PrayerTimes({ onBack, onNavigate }) {
             )}
 
             {toastMessage && (
-                <div className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg z-[100]">
+                <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg z-[100]">
                     {toastMessage}
                 </div>
             )}
-            <BottomBar onHomeClick={handleHomeClick} onThemesClick={() => {}} showThemes={false} />
-            <TutorialOverlay tutorialId="prayer-times-tutorial" steps={prayerTutorialSteps} />
         </div>
     );
 }

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NAWAWI_DATA } from '../data/nawawiData';
 import { NAWAWI_EXPLANATIONS, HadithExplanation } from '../data/nawawiExplanationData';
-import BottomBar from '../components/BottomBar';
 import ThemePageLock from '../components/ThemePageLock';
 import { useTheme } from '../context/ThemeContext';
 import { registerBackInterceptor } from '../hooks/useBackButton';
@@ -528,15 +527,39 @@ const Nawawi = ({ onBack, onNavigate }: { onBack: () => void; onNavigate?: (id: 
         <div className="h-screen flex flex-col overflow-hidden" style={{ backgroundColor: 'transparent', color: theme.textColor, fontFamily: theme.font }}>
             <header className="app-top-bar">
                 <div className="app-top-bar__inner">
-                    <div className="relative flex items-center justify-center w-full">
-                        <div className="absolute left-0">
-                            <ThemePageLock />
+                    <div className="relative flex items-center justify-center w-full min-h-[44px]">
+                        {/* سهم الرجوع للخلف على يمين النص */}
+                        <div className="absolute right-0 flex items-center">
+                            <button
+                                onClick={onBack}
+                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                title="رجوع للخلف"
+                                aria-label="رجوع للخلف"
+                            >
+                                <i className="fa-solid fa-arrow-right text-xl"></i>
+                            </button>
                         </div>
-                        <h1 className="app-top-bar__title text-2xl font-kufi">
-                            الأربعون النووية
-                        </h1>
+
+                        {/* عنوان الصفحة في الوسط */}
+                        <div className="text-center px-12 min-w-0">
+                            <h1 className="app-top-bar__title text-lg sm:text-xl font-kufi truncate">
+                                الأربعون النووية
+                            </h1>
+                        </div>
+
+                        {/* أيقونة المنزل على يسار النص للعودة إلى الصفحة الرئيسية */}
+                        <div className="absolute left-0 flex items-center gap-1">
+                            <ThemePageLock />
+                            <button
+                                onClick={() => onNavigate ? onNavigate('home') : onBack()}
+                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                title="الصفحة الرئيسية"
+                                aria-label="الصفحة الرئيسية"
+                            >
+                                <i className="fa-solid fa-house text-xl"></i>
+                            </button>
+                        </div>
                     </div>
-                    <p className="app-top-bar__subtitle">متن الأربعين حديثًا مع الفوائد والشرح المختصر</p>
                 </div>
             </header>
 
@@ -598,8 +621,8 @@ const Nawawi = ({ onBack, onNavigate }: { onBack: () => void; onNavigate?: (id: 
                                             }}
                                             className="flex-1 py-1 px-2 rounded-xl text-[10px] sm:text-xs font-bold transition-all flex items-center justify-center gap-1 hover:scale-105 active:scale-95"
                                             style={{
-                                                backgroundColor: isDefaultTheme ? '#00000010' : (color + '15'),
-                                                color: isDefaultTheme ? '#000000' : color
+                                                backgroundColor: isDefaultTheme ? '#00000010' : (isBlackTheme ? 'rgba(255, 255, 255, 0.12)' : (color + '15')),
+                                                color: isDefaultTheme ? '#000000' : (isBlackTheme ? '#FFFFFF' : color)
                                             }}
                                             title="عرض الفوائد والشرح"
                                         >
@@ -607,7 +630,7 @@ const Nawawi = ({ onBack, onNavigate }: { onBack: () => void; onNavigate?: (id: 
                                             <span>الفوائد والشرح</span>
                                         </button>
                                         <div className="w-5 h-5 flex items-center justify-center opacity-60 group-hover:opacity-100 transition-opacity">
-                                            <ArrowLeft className="w-3 h-3" style={{ color: isDefaultTheme ? '#000000' : color }} />
+                                            <ArrowLeft className="w-3 h-3" style={{ color: isDefaultTheme ? '#000000' : (isBlackTheme ? '#FFFFFF' : color) }} />
                                         </div>
                                     </div>
                                 </div>
@@ -615,7 +638,7 @@ const Nawawi = ({ onBack, onNavigate }: { onBack: () => void; onNavigate?: (id: 
                         );
                     })}
                 </div>
-                <div className="shrink-0 w-full h-32"></div>
+                <div className="shrink-0 w-full h-6"></div>
             </main>
 
             {selectedHadith && (
@@ -637,14 +660,12 @@ const Nawawi = ({ onBack, onNavigate }: { onBack: () => void; onNavigate?: (id: 
                         initial={{ opacity: 0, y: 50, x: '-50%' }}
                         animate={{ opacity: 1, y: 0, x: '-50%' }}
                         exit={{ opacity: 0, y: 50, x: '-50%' }}
-                        className="fixed bottom-24 left-1/2 z-[200] bg-gray-800 text-white px-6 py-3 rounded-full shadow-lg font-bold text-sm text-center whitespace-nowrap"
+                        className="fixed bottom-8 left-1/2 z-[200] bg-gray-800 text-white px-6 py-3 rounded-full shadow-lg font-bold text-sm text-center whitespace-nowrap"
                     >
                         {toastMessage}
                     </motion.div>
                 )}
             </AnimatePresence>
-
-            <BottomBar onHomeClick={handleHomeClick} onThemesClick={() => {}} showThemes={false} />
         </div>
     );
 };

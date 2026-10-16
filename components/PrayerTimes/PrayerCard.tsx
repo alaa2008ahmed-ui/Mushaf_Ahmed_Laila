@@ -62,15 +62,15 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
     // In other themes: subtle tint
     const activeBgColor = isNextPrayer
         ? (isDefaultTheme ? '#f0fdf4' : (isBlackTheme ? 'rgba(16, 185, 129, 0.12)' : 'rgba(5, 150, 105, 0.08)'))
-        : (isDefaultTheme ? '#FFFFFF' : undefined);
+        : (isDefaultTheme ? '#FFFFFF' : (isBlackTheme ? '#111111' : undefined));
 
-    const activeTextColor = isNextPrayer ? nextPrayerBorderColor : primaryColor;
+    const activeTextColor = isBlackTheme ? '#FFFFFF' : (isNextPrayer ? nextPrayerBorderColor : primaryColor);
 
     return (
         <div 
             className={`prayer-card rounded-2xl p-2 flex flex-col items-center justify-between themed-card relative h-auto min-h-[105px] transition-all duration-200 ${isNextPrayer ? 'shadow-md scale-[1.01]' : 'shadow-xs'}`} 
             style={{
-                borderColor: activeBorderColor, 
+                borderColor: isBlackTheme ? '#FFFFFF' : activeBorderColor, 
                 borderWidth: activeBorderWidth, 
                 borderStyle: 'solid',
                 backgroundColor: activeBgColor
@@ -83,17 +83,17 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
                         <div 
                             onClick={() => togglePrayerSound(prayerKey)} 
                             className={`toggle-dot ${isMuted ? 'bg-red-500' : (isBlackTheme ? 'bg-white' : (isNextPrayer ? 'bg-emerald-500' : 'bg-green-500'))} cursor-pointer transition-transform active:scale-90`} 
-                            style={{borderColor: activeBorderColor, width: '15px', height: '15px', borderRadius: '50%', borderWidth: '1.5px', borderStyle: 'solid'}}
+                            style={{borderColor: isBlackTheme ? '#FFFFFF' : activeBorderColor, width: '15px', height: '15px', borderRadius: '50%', borderWidth: '1.5px', borderStyle: 'solid'}}
                             title={isMuted ? "مكتوم (معطل)" : "مفعل"}
                         ></div>
-                        <button onClick={() => openSettings(prayerKey)} className="text-sm opacity-75 hover:opacity-100 p-0.5 transition-opacity" style={{ color: activeTextColor }} title="تخصيص"><i className="fa-solid fa-sliders"></i></button>
+                        <button onClick={() => openSettings(prayerKey)} className="text-sm opacity-85 hover:opacity-100 p-0.5 transition-opacity" style={{ color: isBlackTheme ? '#FFFFFF' : activeTextColor }} title="تخصيص"><i className="fa-solid fa-sliders"></i></button>
                     </div>
                 ) : (
                     supportsDST ? (
                         <button 
                             onClick={toggleSummerTime}
                             className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors border text-xs pointer-events-auto ${isSummerTime ? (isBlackTheme ? 'bg-white text-black border-white' : 'bg-green-500 text-white border-green-600') : 'bg-gray-200 text-gray-500 border-gray-300 dark:bg-gray-700 dark:text-gray-400 dark:border-gray-600'}`}
-                            style={{ borderColor: activeBorderColor }}
+                            style={{ borderColor: isBlackTheme ? '#FFFFFF' : activeBorderColor }}
                             title="التوقيت الصيفي"
                         >
                             <i className="fa-solid fa-clock"></i>
@@ -104,23 +104,26 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
 
             {/* Middle: Name & Time (Centered and raised slightly upwards) */}
             <div className="flex-1 w-full flex flex-col items-center justify-center text-center -mt-1 pt-3.5 pb-0.5 z-0 relative">
-                <h3 className="font-bold text-[12px] sm:text-xs mb-0.5 text-center leading-tight tracking-wide" style={{ color: activeTextColor }}>{prayerNameAr}</h3>
-                <span className="font-black text-sm sm:text-[15px] text-center leading-tight tracking-normal" style={{ color: activeTextColor }} dangerouslySetInnerHTML={{ __html: formatTime12(displayTimeStr) }}></span>
+                <h3 className="font-bold text-[12px] sm:text-xs mb-0.5 text-center leading-tight tracking-wide" style={{ color: isBlackTheme ? '#FFFFFF' : activeTextColor }}>{prayerNameAr}</h3>
+                <span className="font-black text-sm sm:text-[15px] text-center leading-tight tracking-normal" style={{ color: isBlackTheme ? '#FFFFFF' : activeTextColor }} dangerouslySetInnerHTML={{ __html: formatTime12(displayTimeStr) }}></span>
             </div>
 
             {/* Bottom: Iqama */}
-            <div className="w-full flex justify-center items-center pb-2.5 -translate-y-1.5 min-h-[18px] z-0 relative">
+            <div className="w-full flex justify-center items-center pb-2.5 -translate-y-1.5 min-h-[18px] z-0 relative pointer-events-auto">
                 {prayerKey !== 'Sunrise' && iqamaTime && !iqamaTime.includes('--') ? (
-                    <span 
-                        className="text-[10px] font-bold px-2.5 py-0.5 rounded-full border whitespace-nowrap leading-none" 
+                    <button 
+                        type="button"
+                        onClick={() => openSettings(prayerKey)}
+                        className="text-[10px] font-bold px-2.5 py-0.5 rounded-full border whitespace-nowrap leading-none cursor-pointer hover:opacity-90 active:scale-95 transition-all flex items-center gap-1" 
                         style={{
-                            color: isNextPrayer ? nextPrayerBorderColor : secondaryColor, 
-                            backgroundColor: isNextPrayer ? (isDefaultTheme ? '#dcfce7' : `${nextPrayerBorderColor}20`) : (isBlackAndWhite ? '#333' : (isDefaultTheme ? '#f3f4f6' : themePalette1 + '1A')), 
-                            borderColor: activeBorderColor
+                            color: isBlackTheme ? '#FFFFFF' : (isNextPrayer ? nextPrayerBorderColor : secondaryColor), 
+                            backgroundColor: isNextPrayer ? (isDefaultTheme ? '#dcfce7' : `${nextPrayerBorderColor}20`) : (isBlackTheme || isBlackAndWhite ? '#222222' : (isDefaultTheme ? '#f3f4f6' : themePalette1 + '1A')), 
+                            borderColor: isBlackTheme ? '#FFFFFF' : activeBorderColor
                         }}
+                        title="تخصيص وقت ونغمة الإقامة"
                     >
-                        إقامة {formatTime12_clean(iqamaTime)}
-                    </span>
+                        <span>إقامة {formatTime12_clean(iqamaTime)}</span>
+                    </button>
                 ) : (
                     <div className="h-1" />
                 )}

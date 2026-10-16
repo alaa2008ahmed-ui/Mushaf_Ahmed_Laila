@@ -1,12 +1,14 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { registerBackInterceptor } from '../hooks/useBackButton';
 import { motion, AnimatePresence } from 'motion/react';
-import BottomBar from '../components/BottomBar';
 import ThemePageLock from '../components/ThemePageLock';
 import { asmaulHusna, AsmaulHusnaItem } from '../data/asmaulHusnaData';
-import { X, Info, Book } from 'lucide-react';
+import { Search, LayoutGrid, ListFilter } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import { shareAsImage } from '../utils/shareAsImage';
+import { playTTS, stopTTS, subscribeTTS } from '../utils/ttsEngine';
+
+const toArabicNumerals = (num: number) => String(num).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[+d]);
 
 const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, params?: any) => void; }> = ({ onBack, onNavigate }) => {
     const { theme, themeKey } = useTheme();
@@ -18,27 +20,114 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
           ? '#FFFFFF' 
           : (theme.palette?.[0] || theme.accent || '#000000'));
 
+    const [activeTab, setActiveTab] = useState<'grid' | 'list'>('grid');
+    const [searchQuery, setSearchQuery] = useState('');
     const [selectedName, setSelectedName] = useState<AsmaulHusnaItem | null>(null);
+    const [zoomedName, setZoomedName] = useState<AsmaulHusnaItem | null>(null);
+    const [toastMessage, setToastMessage] = useState('');
+    const [playingText, setPlayingText] = useState<string | null>(null);
+
+    useEffect(() => {
+        const unsubscribe = subscribeTTS(setPlayingText);
+        return () => {
+            unsubscribe();
+            stopTTS();
+        };
+    }, []);
+
+    const showToast = (msg: string) => {
+        setToastMessage(msg);
+        setTimeout(() => setToastMessage(''), 2500);
+    };
 
     const handleHomeClick = () => {
+        if (zoomedName) {
+            setZoomedName(null);
+            return;
+        }
         if (selectedName) {
             setSelectedName(null);
-        } else {
-            onBack();
+            return;
         }
+        if (searchQuery) {
+            setSearchQuery('');
+            return;
+        }
+        onBack();
     };
 
     useEffect(() => {
         const interceptor = () => {
+            if (zoomedName) {
+                setZoomedName(null);
+                return true;
+            }
             if (selectedName) {
                 setSelectedName(null);
+                return true;
+            }
+            if (searchQuery) {
+                setSearchQuery('');
                 return true;
             }
             return false;
         };
         const unregister = registerBackInterceptor(interceptor);
         return unregister;
-    }, [selectedName]);
+    }, [zoomedName, selectedName, searchQuery]);
+
+    const getAudioText = (item: AsmaulHusnaItem) => {
+        let evidenceText = '';
+        if (item.evidence) {
+            // E.g. "اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ (البقرة: 255)"
+            const match = item.evidence.match(/(.*?)\s*\((.*?)(?::\s*(\d+))?\)/);
+            if (match) {
+                const verse = match[1]?.trim();
+                const surah = match[2]?.trim();
+                if (verse) {
+                    evidenceText = `قوله تعالى: ${verse}`;
+                    if (surah) {
+                        evidenceText += `، من سورة ${surah.replace(/^سورة\s*/, '')}`;
+                    }
+                }
+            } else {
+                evidenceText = `قوله تعالى: ${item.evidence.replace(/[()0-9٠-٩:]/g, '').trim()}`;
+            }
+        }
+        return `${item.name}. ${item.meaning}. ${evidenceText}`.trim();
+    };
+
+    const handlePlayAudio = (item: AsmaulHusnaItem, e?: React.MouseEvent) => {
+        if (e) e.stopPropagation();
+        const text = getAudioText(item);
+        if (playingText === text) {
+            stopTTS();
+        } else {
+            playTTS(text, {
+                onToast: (msg) => showToast(msg)
+            });
+        }
+    };
+
+    const handleCopy = (item: AsmaulHusnaItem, e?: React.MouseEvent) => {
+        if (e) e.stopPropagation();
+        const copyText = `${item.name} (${item.transliteration})\n\nالمعنى والدلالة:\n${item.meaning}${item.evidence ? `\n\nالدليل:\n${item.evidence}` : ''}\n\nمن أسماء الله الحسنى (رقم ${item.id})`;
+        navigator.clipboard.writeText(copyText).then(() => {
+            showToast('تم النسخ إلى الحافظة');
+        });
+    };
+
+    const handleShare = async (item: AsmaulHusnaItem, e?: React.MouseEvent) => {
+        if (e) e.stopPropagation();
+        await shareAsImage({
+            title: item.name,
+            text: `${item.meaning}${item.evidence ? `\n\nالدليل: ${item.evidence}` : ''}`,
+            source: `من أسماء الله الحسنى (${toArabicNumerals(item.id)})`,
+            category: 'أسماء الله الحسنى',
+            theme,
+            setToastMessage: (msg) => showToast(msg)
+        });
+    };
 
     const renderEvidence = (evidence: string) => {
         const match = evidence.match(/(.*)(\(.*\))/);
@@ -48,7 +137,7 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
             return (
                 <>
                     {text}
-                    <span className="text-secondary font-bold mr-2 inline-block" style={{ color: 'var(--color-brand-purple)' }}>
+                    <span className="font-bold mr-2 inline-block opacity-90" style={{ color: isBlackTheme ? '#FFFFFF' : theme.palette[0] }}>
                         {ref}
                     </span>
                 </>
@@ -57,120 +146,397 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
         return evidence;
     };
 
+    const filteredNames = useMemo(() => {
+        if (!searchQuery.trim()) return asmaulHusna;
+        const q = searchQuery.trim().toLowerCase();
+        return asmaulHusna.filter(item => 
+            item.name.includes(q) ||
+            item.meaning.includes(q) ||
+            item.transliteration.toLowerCase().includes(q) ||
+            String(item.id).includes(q) ||
+            toArabicNumerals(item.id).includes(q)
+        );
+    }, [searchQuery]);
+
+    // Renders the 3 circular action buttons: Audio, Share, Copy (Magnifying glass removed)
+    const renderActionButtons = (item: AsmaulHusnaItem) => {
+        const text = getAudioText(item);
+        const isPlaying = playingText === text;
+
+        return (
+            <div className="flex items-center gap-2.5" dir="ltr">
+                {/* Audio */}
+                <button 
+                    type="button"
+                    onClick={(e) => handlePlayAudio(item, e)} 
+                    className="w-9 h-9 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 active:scale-95 transition-all opacity-70 hover:opacity-100 cursor-pointer shadow-xs" 
+                    style={{ color: isPlaying ? '#ef4444' : 'var(--text-color)' }} 
+                    title={isPlaying ? "إيقاف الاستماع" : "استماع صوتي"}
+                    aria-label="استماع صوتي"
+                >
+                    <i className={`fa-solid ${isPlaying ? 'fa-circle-pause text-red-500 animate-pulse text-base' : 'fa-volume-high text-sm'}`}></i>
+                </button>
+
+                {/* Share */}
+                <button 
+                    type="button"
+                    onClick={(e) => handleShare(item, e)} 
+                    className="w-9 h-9 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 active:scale-95 transition-all opacity-70 hover:opacity-100 cursor-pointer shadow-xs" 
+                    style={{ color: 'var(--text-color)' }} 
+                    title="مشاركة كصورة"
+                    aria-label="مشاركة"
+                >
+                    <i className="fa-solid fa-share-nodes text-sm"></i>
+                </button>
+
+                {/* Copy */}
+                <button 
+                    type="button"
+                    onClick={(e) => handleCopy(item, e)} 
+                    className="w-9 h-9 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 active:scale-95 transition-all opacity-70 hover:opacity-100 cursor-pointer shadow-xs" 
+                    style={{ color: 'var(--text-color)' }} 
+                    title="نسخ"
+                    aria-label="نسخ"
+                >
+                    <i className="fa-regular fa-copy text-sm"></i>
+                </button>
+            </div>
+        );
+    };
+
     return (
-        <div className="h-screen flex flex-col overflow-hidden relative bg-transparent">
+        <div className="h-screen flex flex-col overflow-hidden relative bg-transparent" dir="rtl">
             <header className="app-top-bar z-20">
                 <div className="app-top-bar__inner">
-                    <div className="relative flex items-center justify-center w-full">
-                        <div className="absolute left-0">
-                            <ThemePageLock />
+                    <div className="relative flex items-center justify-center w-full min-h-[44px]">
+                        {/* سهم الرجوع للخلف على يمين النص */}
+                        <div className="absolute right-0 flex items-center">
+                            <button
+                                type="button"
+                                onClick={handleHomeClick}
+                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                title="رجوع للخلف"
+                                aria-label="رجوع للخلف"
+                            >
+                                <i className="fa-solid fa-arrow-right text-xl"></i>
+                            </button>
                         </div>
-                        <h1 className="app-top-bar__title text-2xl font-kufi">
-                            أسماء الله الحسنى
-                        </h1>
+
+                        {/* عنوان الصفحة في الوسط */}
+                        <div className="text-center px-12 min-w-0">
+                            <h1 className="app-top-bar__title text-lg sm:text-xl font-kufi truncate">
+                                أسماء الله الحسنى
+                            </h1>
+                        </div>
+
+                        {/* أيقونة المنزل على يسار النص للعودة إلى الصفحة الرئيسية */}
+                        <div className="absolute left-0 flex items-center gap-1">
+                            <ThemePageLock />
+                            <button
+                                type="button"
+                                onClick={() => onNavigate('home')}
+                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                title="الصفحة الرئيسية"
+                                aria-label="الصفحة الرئيسية"
+                            >
+                                <i className="fa-solid fa-house text-xl"></i>
+                            </button>
+                        </div>
                     </div>
-                    <p className="app-top-bar__subtitle text-xs">٩٩ اسمًا من أحصاها دخل الجنة</p>
                 </div>
             </header>
 
+            {/* Controls Bar: Switch between Grid and List view + Search */}
+            <div className="px-4 pt-2.5 pb-2 max-w-5xl mx-auto w-full flex items-center justify-between gap-2 z-10 shrink-0">
+                {/* Search Input */}
+                <div className="relative flex-1">
+                    <input 
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="ابحث بالاسم أو المعنى..."
+                        className="w-full h-10 pr-9 pl-8 rounded-xl text-xs sm:text-sm border focus:outline-none transition-colors"
+                        style={{
+                            backgroundColor: isBlackTheme ? '#111111' : (theme.isDark ? '#1e293b' : '#ffffff'),
+                            borderColor: cardBorderColor,
+                            color: 'var(--text-color)'
+                        }}
+                    />
+                    <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 opacity-50 pointer-events-none" />
+                    {searchQuery && (
+                        <button 
+                            type="button"
+                            onClick={() => setSearchQuery('')}
+                            className="absolute left-2.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-black/10 dark:bg-white/10 flex items-center justify-center text-xs opacity-70 hover:opacity-100 cursor-pointer"
+                            title="مسح البحث"
+                        >
+                            ×
+                        </button>
+                    )}
+                </div>
+
+                {/* View Switcher: Grid vs List (قائمة الشرح) */}
+                <div 
+                    className="flex items-center p-1 rounded-xl border shrink-0"
+                    style={{
+                        backgroundColor: isBlackTheme ? '#111111' : (theme.isDark ? '#1e293b' : '#ffffff'),
+                        borderColor: cardBorderColor
+                    }}
+                >
+                    <button
+                        type="button"
+                        onClick={() => setActiveTab('grid')}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${activeTab === 'grid' ? 'shadow-sm' : 'opacity-60 hover:opacity-100'}`}
+                        style={activeTab === 'grid' ? {
+                            backgroundColor: isBlackTheme ? '#FFFFFF' : theme.palette[0],
+                            color: isBlackTheme ? '#000000' : '#ffffff'
+                        } : { color: 'var(--text-color)' }}
+                        title="عرض شبكي"
+                    >
+                        <LayoutGrid size={15} />
+                        <span className="hidden sm:inline">الشبكة</span>
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setActiveTab('list')}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${activeTab === 'list' ? 'shadow-sm' : 'opacity-60 hover:opacity-100'}`}
+                        style={activeTab === 'list' ? {
+                            backgroundColor: isBlackTheme ? '#FFFFFF' : theme.palette[0],
+                            color: isBlackTheme ? '#000000' : '#ffffff'
+                        } : { color: 'var(--text-color)' }}
+                        title="قائمة شرح الأسماء"
+                    >
+                        <ListFilter size={15} />
+                        <span>قائمة الشرح</span>
+                    </button>
+                </div>
+            </div>
+
             <main className="flex-1 overflow-hidden flex flex-col px-4 z-10">
-                <div className="flex-1 overflow-y-auto hide-scrollbar pt-0 pb-48">
-                    <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-1.5 sm:gap-2.5 max-w-5xl mx-auto">
-                        {asmaulHusna.map((item) => (
-                            <motion.button
-                                key={item.id}
-                                whileHover={{ y: -5, scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                onClick={() => setSelectedName(item)}
-                                className="relative themed-card rounded-xl sm:rounded-2xl p-1.5 sm:p-3 flex flex-col items-center justify-center text-center aspect-square group border shadow-sm transition-all duration-300 overflow-hidden"
-                                style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
-                            >
-                                {/* ID Badge */}
-                                <div className="absolute top-1 sm:top-2 right-1 sm:right-2 w-4 sm:w-6 h-4 sm:h-6 flex items-center justify-center rounded-full bg-black/5 dark:bg-white/10 text-[8px] font-bold opacity-60">
-                                    {item.id}
-                                </div>
-                                
-                                <div className="flex flex-col items-center justify-center flex-1 w-full">
-                                    <h3 className="text-lg sm:text-2xl font-bold font-quran leading-none group-hover:scale-110 transition-transform duration-300" style={{ color: 'var(--text-color)' }}>
+                <div className="flex-1 overflow-y-auto hide-scrollbar pt-1 pb-10">
+                    {filteredNames.length === 0 ? (
+                        <div className="py-16 text-center opacity-60 font-bold">
+                            <i className="fa-solid fa-search text-4xl mb-3 block opacity-40"></i>
+                            <p>لا توجد نتائج مطابقة لبحثك</p>
+                        </div>
+                    ) : activeTab === 'grid' ? (
+                        /* Grid View */
+                        <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-1.5 sm:gap-2.5 max-w-5xl mx-auto">
+                            {filteredNames.map((item) => (
+                                <motion.button
+                                    key={item.id}
+                                    whileHover={{ y: -4, scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    onClick={() => setSelectedName(item)}
+                                    className="relative themed-card rounded-xl sm:rounded-2xl p-1.5 sm:p-3 flex flex-col items-center justify-center text-center aspect-square group border shadow-sm transition-all duration-300 overflow-hidden cursor-pointer"
+                                    style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                                >
+                                    {/* ID Badge */}
+                                    <div className="absolute top-1 sm:top-2 right-1 sm:right-2 w-4 sm:w-6 h-4 sm:h-6 flex items-center justify-center rounded-full bg-black/5 dark:bg-white/10 text-[8px] font-bold opacity-60">
+                                        {item.id}
+                                    </div>
+                                    
+                                    <div className="flex flex-col items-center justify-center flex-1 w-full">
+                                        <h3 className="text-lg sm:text-2xl font-bold font-quran leading-none group-hover:scale-110 transition-transform duration-300" style={{ color: 'var(--text-color)' }}>
+                                            {item.name}
+                                        </h3>
+                                        <span className="text-[9px] sm:text-[11px] opacity-60 mt-1 font-cairo">
+                                            {item.transliteration}
+                                        </span>
+                                    </div>
+                                </motion.button>
+                            ))}
+                        </div>
+                    ) : (
+                        /* List View: قائمة شرح الأسماء الكاملة مع الأزرار الأربعة */
+                        <div className="max-w-2xl mx-auto space-y-3.5">
+                            {filteredNames.map((item) => (
+                                <div
+                                    key={item.id}
+                                    className="themed-card p-4 sm:p-5 pb-3 rounded-2xl border relative overflow-hidden group transition-all duration-300 shadow-sm"
+                                    style={{ 
+                                        borderColor: cardBorderColor, 
+                                        borderWidth: '1.5px', 
+                                        borderStyle: 'solid', 
+                                        color: 'var(--text-color)' 
+                                    }}
+                                >
+                                    <div className="flex justify-between items-start mb-2">
+                                        <span 
+                                            className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold shadow-xs" 
+                                            style={{ backgroundColor: theme.palette[1] + '25', color: theme.palette[1] }}
+                                        >
+                                            {item.transliteration}
+                                        </span>
+                                        <div 
+                                            className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm shadow-xs"
+                                            style={
+                                                themeKey === 'default' 
+                                                ? { backgroundColor: '#ffffff', color: '#000000', border: '1px solid rgba(0,0,0,0.1)' } 
+                                                : { backgroundImage: `linear-gradient(to bottom right, ${theme.palette[0]}, ${theme.palette[1]})`, color: theme.name === 'اسود' ? '#000000' : '#ffffff' }
+                                            }
+                                        >
+                                            {toArabicNumerals(item.id)}
+                                        </div>
+                                    </div>
+
+                                    <h3 
+                                        onClick={() => setSelectedName(item)}
+                                        className="text-2xl sm:text-3xl font-bold font-quran text-center mb-2.5 cursor-pointer hover:opacity-80 transition-opacity" 
+                                        style={{ color: 'var(--text-color)' }}
+                                    >
                                         {item.name}
                                     </h3>
+
+                                    <p className="text-base sm:text-lg leading-relaxed text-center font-amiri select-none mb-3 px-1">
+                                        {item.meaning}
+                                    </p>
+
+                                    {item.evidence && (
+                                        <div className="text-sm font-amiri text-center opacity-85 py-1.5 px-3 rounded-xl bg-black/5 dark:bg-white/5 mb-3 border border-black/5 dark:border-white/5">
+                                            {renderEvidence(item.evidence)}
+                                        </div>
+                                    )}
+
+                                    {/* شريط أزرار العمليات (صوت، مشاركة، نسخ) */}
+                                    <div className="flex justify-between items-center mt-3 pt-2.5 border-t" style={{ borderColor: 'var(--card-border)' }}>
+                                        <span className="text-[11px] font-bold opacity-60" style={{ color: isBlackTheme ? '#FFFFFF' : theme.palette[0] }}>
+                                            من أسماء الله الحسنى
+                                        </span>
+                                        {renderActionButtons(item)}
+                                    </div>
                                 </div>
-                            </motion.button>
-                        ))}
-                    </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </main>
 
+            {/* Modal: شرح الاسم مطابق للصورة 1 تماماً */}
             <AnimatePresence>
                 {selectedName && (
-                    <motion.div 
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+                    <div 
+                        className="fixed inset-0 bg-black/80 z-[100] flex justify-center items-center p-4 backdrop-blur-sm"
                         onClick={() => setSelectedName(null)}
                     >
                         <motion.div 
-                            initial={{ scale: 0.9, y: 20 }}
-                            animate={{ scale: 1, y: 0 }}
-                            exit={{ scale: 0.9, y: 20 }}
-                            className="bg-white dark:bg-[#1E1E1E] w-full max-w-md rounded-3xl p-6 shadow-2xl overflow-hidden relative border text-right"
-                            style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
-                            onClick={(e) => e.stopPropagation()}
+                            initial={{ scale: 0.95, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.95, opacity: 0 }}
+                            className="bg-modal-bg text-modal-text p-6 md:p-8 rounded-3xl w-full max-w-xl text-center relative scale-in shadow-2xl border-2 border-modal-border flex flex-col max-h-[90vh]" 
+                            style={{ fontFamily: theme.font }} 
+                            onClick={e => e.stopPropagation()}
                             dir="rtl"
                         >
-                            <button 
-                                onClick={() => setSelectedName(null)}
-                                className="absolute top-4 left-4 p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
-                            >
-                                <X className="w-5 h-5 opacity-60" />
-                            </button>
-
-                            <div className="flex flex-col items-center mb-6">
-                                <div className="w-16 h-16 rounded-2xl bg-amber-500/10 flex items-center justify-center mb-3">
-                                    <span className="text-amber-500 font-bold text-lg">#{selectedName.id}</span>
-                                </div>
-                                <h2 className="text-4xl font-bold font-quran mb-1" style={{ color: 'var(--color-brand-purple)' }}>
+                            <div className="overflow-y-auto hide-scrollbar flex-1 py-2">
+                                {/* اسم الله المبارك في الوسط بحجم كبير */}
+                                <div className="text-3xl md:text-4xl font-bold font-quran mb-3 leading-normal" style={{ color: 'var(--text-color)' }}>
                                     {selectedName.name}
-                                </h2>
-                            </div>
-
-                            <div className="space-y-4">
-                                <div className="bg-black/5 dark:bg-white/5 p-4 rounded-2xl border" style={{ borderColor: cardBorderColor, borderWidth: '1px', borderStyle: 'solid' }}>
-                                    <div className="flex items-center gap-2 mb-2 text-xs font-bold opacity-60">
-                                        <Info className="w-4 h-4" />
-                                        <span>المعنى والدلالة</span>
-                                    </div>
-                                    <p className="text-base leading-relaxed font-cairo">
-                                        {selectedName.meaning}
-                                    </p>
                                 </div>
 
+                                {/* المعنى والشرح الكامل */}
+                                <div className="text-lg md:text-xl leading-relaxed font-amiri text-center mb-4 select-none px-2" style={{ color: 'var(--text-color)' }}>
+                                    {selectedName.meaning}
+                                </div>
+
+                                {/* الدليل من القرآن والسنة */}
                                 {selectedName.evidence && (
-                                    <div className="bg-amber-500/5 p-4 rounded-2xl border" style={{ borderColor: cardBorderColor, borderWidth: '1px', borderStyle: 'solid' }}>
-                                        <div className="flex items-center gap-2 mb-2 text-xs font-bold text-amber-600 dark:text-amber-400">
-                                            <Book className="w-4 h-4" />
-                                            <span>الدليل من القرآن والسنة</span>
-                                        </div>
-                                        <p className="text-sm font-amiri leading-loose">
-                                            {renderEvidence(selectedName.evidence)}
-                                        </p>
+                                    <div className="text-base md:text-lg leading-relaxed font-amiri text-center mb-4 opacity-90">
+                                        {renderEvidence(selectedName.evidence)}
                                     </div>
                                 )}
+
+                                {/* سطر التصنيف باللون المميز مطابق للصورة 1 تماماً */}
+                                <p className="text-base md:text-lg mt-4 font-bold font-cairo" style={{ color: isBlackTheme ? '#FFFFFF' : theme.palette[0] }}>
+                                    من أسماء الله الحسنى
+                                </p>
                             </div>
 
-                            <button
-                                onClick={() => setSelectedName(null)}
-                                className="w-full mt-6 py-3 rounded-xl bg-gray-100 dark:bg-gray-800 font-bold text-sm hover:opacity-90 transition-opacity"
-                            >
-                                إغلاق
-                            </button>
+                            {/* أزرار العمليات (الصوت، المشاركة، النسخ) */}
+                            <div className="flex justify-center items-center py-3 border-t mt-3" style={{ borderColor: 'var(--card-border)' }}>
+                                {renderActionButtons(selectedName)}
+                            </div>
+
+                            {/* زر إغلاق عريض ومطابق للصورة 1 تماماً */}
+                            <div className="mt-2 shrink-0">
+                                <button 
+                                    type="button"
+                                    onClick={() => setSelectedName(null)} 
+                                    className="w-full py-3 rounded-xl font-bold bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:opacity-90 active:scale-[0.99] transition-all cursor-pointer text-base"
+                                >
+                                    إغلاق
+                                </button>
+                            </div>
                         </motion.div>
-                    </motion.div>
+                    </div>
                 )}
             </AnimatePresence>
 
-            <BottomBar onHomeClick={handleHomeClick} onThemesClick={() => {}} showThemes={false} />
+            {/* نافذة التكبير الكلي Zoom Modal مطابق للصورة 1 */}
+            <AnimatePresence>
+                {zoomedName && (
+                    <div 
+                        className="fixed inset-0 bg-black/85 z-[120] flex justify-center items-center p-4 backdrop-blur-md" 
+                        onClick={() => setZoomedName(null)}
+                    >
+                        <motion.div 
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            className="bg-modal-bg text-modal-text p-8 rounded-3xl w-full max-w-2xl text-center relative scale-in shadow-2xl border-2 border-modal-border flex flex-col max-h-[90vh]" 
+                            style={{ fontFamily: theme.font }} 
+                            onClick={e => e.stopPropagation()}
+                            dir="rtl"
+                        >
+                            <div className="overflow-y-auto hide-scrollbar flex-1 py-4">
+                                <div className="text-4xl md:text-5xl font-bold font-quran mb-4" style={{ color: 'var(--text-color)' }}>
+                                    {zoomedName.name}
+                                </div>
+                                <p className="text-2xl md:text-3xl leading-loose font-amiri text-center select-none" style={{ color: 'var(--text-color)' }}>
+                                    {zoomedName.meaning}
+                                </p>
+                                {zoomedName.evidence && (
+                                    <p className="text-lg md:text-xl mt-4 font-amiri leading-relaxed opacity-90">
+                                        {renderEvidence(zoomedName.evidence)}
+                                    </p>
+                                )}
+                                <p className="text-lg mt-6 font-bold" style={{ color: isBlackTheme ? '#FFFFFF' : theme.palette[0] }}>
+                                    من أسماء الله الحسنى ({toArabicNumerals(zoomedName.id)})
+                                </p>
+                            </div>
+
+                            <div className="flex justify-center items-center py-3 border-t mt-2" style={{ borderColor: 'var(--card-border)' }}>
+                                {renderActionButtons(zoomedName)}
+                            </div>
+
+                            <div className="mt-2 shrink-0">
+                                <button 
+                                    type="button"
+                                    onClick={() => setZoomedName(null)} 
+                                    className="w-full py-3 rounded-xl font-bold bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:opacity-90 active:scale-[0.99] transition-all cursor-pointer text-base"
+                                >
+                                    إغلاق
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Toast Notification */}
+            <AnimatePresence>
+                {toastMessage && (
+                    <motion.div 
+                        initial={{ opacity: 0, y: 50, x: '-50%' }}
+                        animate={{ opacity: 1, y: 0, x: '-50%' }}
+                        exit={{ opacity: 0, y: 50, x: '-50%' }}
+                        className="fixed bottom-8 left-1/2 z-[200] bg-gray-800 text-white px-6 py-3 rounded-full shadow-lg font-bold text-sm text-center whitespace-nowrap flex items-center gap-2 pointer-events-none"
+                    >
+                        <i className="fa-solid fa-check text-green-400"></i>
+                        {toastMessage}
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

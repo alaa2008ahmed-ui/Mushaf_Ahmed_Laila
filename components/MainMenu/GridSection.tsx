@@ -98,10 +98,14 @@ const GridSection: React.FC<GridSectionProps> = ({
         e.stopPropagation();
         setMenuItems(prev => prev.map(item => {
             if (item.id === id) {
-                const isLarge = item.className.includes('col-span-2');
-                const newClass = isLarge 
-                    ? item.className.replace('col-span-2', '').trim() 
-                    : `${item.className} col-span-2`.trim();
+                let newClass = item.className;
+                if (item.className.includes('col-span-6')) {
+                    newClass = item.className.replace('col-span-6', 'col-span-2').trim();
+                } else if (item.className.includes('col-span-3')) {
+                    newClass = item.className.replace('col-span-3', 'col-span-6').trim();
+                } else if (item.className.includes('col-span-2')) {
+                    newClass = item.className.replace('col-span-2', 'col-span-3').trim();
+                }
                 return { ...item, className: newClass };
             }
             return item;
@@ -148,9 +152,9 @@ const GridSection: React.FC<GridSectionProps> = ({
         }
     };
 
-    const isBlackTheme = theme.bgColor === '#000000';
+    const isBlackTheme = theme.bgColor === '#000000' || themeKey === 'deep_black' || theme.name === 'اسود' || theme.name === 'black';
 
-    // Dynamic colors for community and ahl-al-quran icons based on current theme
+    // Dynamic colors for community and ahl-al-quran round icons based on current theme
     const communityBg = isBlackTheme 
         ? '#374151' 
         : (theme.isGlass 
@@ -175,27 +179,43 @@ const GridSection: React.FC<GridSectionProps> = ({
         ? '#FFFFFF' 
         : (theme.isGlass ? 'rgba(255, 255, 255, 0.5)' : '#FFFFFF');
 
-    const GREEN_ITEMS = ['quran', 'listen', 'prayer-times', 'more'];
+    const stripIcons = (str: string) => {
+        if (!str) return '';
+        return str.replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{FE00}-\u{FE0F}\u{1F000}-\u{1F02F}\u{1F0A0}-\u{1F0FF}\u{1F100}-\u{1F64F}\u{1F680}-\u{1F6FF}]/gu, '').replace(/^[\s✨📖🎧⏱️🧭🕌🤲🛡️☀️📅🕋📿💬🏆🧠🎯🌐🧮📚📜🎙️🔍📥]+/gu, '').trim();
+    };
+
+    // Exact green items: Row 1, Row 2, Row 5, Row 8, and 'prophetic-seerah' / 'more' button
+    const GREEN_ITEMS = [
+        'quran', 'listen', 
+        'prayer-times', 'qibla', 'salah-adhkar', 
+        'community', 'ahl-al-quran', 
+        'nawawi', 'voice-control', 'asmaul-husna',
+        'prophetic-seerah', 'more'
+    ];
+
+    // Items that display the "جديد" (New) badge based on app launch tracking
+    const NEW_BADGE_ITEMS = ['community', 'ahl-al-quran', 'islamic-sites', 'others', 'prophetic-seerah'];
 
     return (
-        <div className="grid grid-cols-2 gap-x-4 gap-y-3 w-full max-w-sm mx-auto flex-grow content-center relative mt-0 pb-4">
+        <div className="grid grid-cols-6 gap-x-2 sm:gap-x-2.5 gap-y-2.5 w-full max-w-sm mx-auto flex-grow content-center relative mt-0 pb-3" dir="rtl">
             {menuItems.map(item => {
-                const isVisible = visibleItems.includes(item.id);
+                const isBottomBar = item.id === 'prophetic-seerah' || item.id === 'more';
+                const isVisible = isBottomBar ? true : visibleItems.includes(item.id);
                 const isGreen = GREEN_ITEMS.includes(item.id);
-                const buttonColor = themeKey === 'default'
-                    ? (isGreen ? '#059669' : '#8B5CF6')
-                    : (isBlackTheme 
-                        ? (isGreen ? (theme.palette[0] || '#1E293B') : (theme.palette[1] || '#374151'))
+                const buttonColor = isBlackTheme
+                    ? '#000000'
+                    : (themeKey === 'default'
+                        ? (isGreen ? '#059669' : '#8B5CF6')
                         : (isGreen ? theme.palette[0] : (theme.palette[1] || theme.palette[0] || '#8B5CF6')));
-                const textColor = isBlackTheme ? '#FFFFFF' : (theme.btnText || '#FFFFFF');
-                const buttonBorder = isBlackTheme ? '1px solid rgba(255, 255, 255, 0.2)' : theme.btnBorder;
+                const textColor = '#FFFFFF';
+                const buttonBorder = isBlackTheme ? '1px solid rgba(255, 255, 255, 0.25)' : theme.btnBorder;
 
                 return (
                     <motion.div
                         key={item.id}
-                        id={`menu-item-${item.id}`}
+                        id={item.id === 'community' ? 'home-community-btn' : (item.id === 'ahl-al-quran' ? 'home-ahl-al-quran-btn' : `menu-item-${item.id}`)}
                         data-item-id={item.id}
-                        className={`${item.className} relative ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'} ${item.id === 'more' ? 'mt-1' : ''}`}
+                        className={`${item.className} relative ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'} ${isBottomBar ? 'mt-1' : ''}`}
                         style={{ 
                             visibility: isVisible ? 'visible' : 'hidden',
                         }}
@@ -206,12 +226,12 @@ const GridSection: React.FC<GridSectionProps> = ({
                         onDragStart={handleDragStart}
                         onDragEnd={(e, info) => handleDragEnd(e, info, item.id)}
                     >
-                        {item.id === 'more' ? (
+                        {isBottomBar ? (
                             <div className="flex items-center justify-center gap-1.5 sm:gap-2 w-full h-full px-1">
                                 <div className="relative shrink-0">
                                     <motion.button
                                         type="button"
-                                        id="home-community-btn"
+                                        id="home-community-btn-round"
                                         onClick={() => !isEditMode && onNavigate('community')}
                                         whileHover={{ scale: 1.1 }}
                                         whileTap={{ scale: 0.9 }}
@@ -239,8 +259,8 @@ const GridSection: React.FC<GridSectionProps> = ({
                                 <WhatsAppButton />
                                 <div className="flex-1 min-w-[130px] max-w-[210px] h-full">
                                     <NavButton 
-                                        label={item.label.replace(/^[✨\s]+/, '')} 
-                                        onClick={() => !isEditMode && onNavigate(item.id)} 
+                                        label={stripIcons(translateMenuItem(item.id, item.label)) || "السيرة والخط الزمني"} 
+                                        onClick={() => !isEditMode && onNavigate('prophetic-seerah')} 
                                         className="w-full h-full shadow-lg"
                                         color={buttonColor} 
                                         border={buttonBorder || (theme.isGlass ? undefined : (theme.palette[0] ? `2px solid ${theme.palette[0]}` : undefined))} 
@@ -248,15 +268,15 @@ const GridSection: React.FC<GridSectionProps> = ({
                                         onResize={(e) => handleResize(item.id, e)}
                                         isGlass={theme.isGlass}
                                         btnText={textColor}
-                                        showNewBadge={showNewBadges && ['memorization', 'community', 'ahl-al-quran', 'others', 'islamic-sites'].includes(item.id)}
-                                        badgeText="جديد"
+                                        showNewBadge={showNewBadges}
+                                        badgeText={t('common.new', 'جديد')}
                                     />
                                 </div>
                                 <VoiceControlToggle />
                                 <div className="relative shrink-0">
                                     <motion.button
                                         type="button"
-                                        id="home-ahl-al-quran-btn"
+                                        id="home-ahl-al-quran-btn-round"
                                         onClick={() => !isEditMode && onNavigate('ahl-al-quran')}
                                         whileHover={{ scale: 1.1 }}
                                         whileTap={{ scale: 0.9 }}
@@ -289,7 +309,7 @@ const GridSection: React.FC<GridSectionProps> = ({
                             </div>
                         ) : (
                             <NavButton 
-                                label={translateMenuItem(item.id, item.label)} 
+                                label={stripIcons(translateMenuItem(item.id, item.label))} 
                                 onClick={() => !isEditMode && onNavigate(item.id)} 
                                 className="w-full h-full"
                                 color={buttonColor} 
@@ -298,32 +318,126 @@ const GridSection: React.FC<GridSectionProps> = ({
                                 onResize={(e) => handleResize(item.id, e)}
                                 isGlass={theme.isGlass}
                                 btnText={textColor}
-                                showNewBadge={showNewBadges && ['memorization', 'ahl-al-quran', 'others', 'islamic-sites'].includes(item.id)}
+                                showNewBadge={showNewBadges && NEW_BADGE_ITEMS.includes(item.id)}
                                 badgeText={t('common.new', 'جديد')}
-                                unreadBadgeCount={item.id === 'community' ? unreadCommunityCount : undefined}
+                                leftAction={item.id === 'quran' && !isEditMode ? (
+                                    <div
+                                        role="button"
+                                        tabIndex={0}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onNavigate('quran-landscape');
+                                        }}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' || e.key === ' ') {
+                                                e.stopPropagation();
+                                                onNavigate('quran-landscape');
+                                            }
+                                        }}
+                                        className="rounded-full w-[26px] h-[26px] flex items-center justify-center cursor-pointer transition-transform hover:scale-110 active:scale-95 shadow-md border border-white/30 select-none"
+                                        style={{ 
+                                            backgroundColor: isBlackTheme ? '#1F2937' : (theme.isGlass ? 'rgba(255, 255, 255, 0.25)' : (theme.palette[1] || '#9333ea')),
+                                            color: isBlackTheme ? '#FFFFFF' : '#ffffff',
+                                            backdropFilter: theme.isGlass ? 'blur(4px)' : 'none',
+                                            WebkitBackdropFilter: theme.isGlass ? 'blur(4px)' : 'none'
+                                        }}
+                                        title={t('common.landscape_mode', 'وضع العرض')}
+                                        aria-label={t('common.landscape_mode', 'وضع العرض')}
+                                    >
+                                        <i className="fa-solid fa-arrows-rotate text-[12px] pointer-events-none"></i>
+                                    </div>
+                                ) : undefined}
+                                dataId={item.id === 'community' ? 'home-community-btn' : (item.id === 'ahl-al-quran' ? 'home-ahl-al-quran-btn' : undefined)}
                             />
-                        )}
-                        {item.id === 'quran' && !isEditMode && (
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onNavigate('quran-landscape');
-                                }}
-                                className={`absolute top-1/2 left-1.5 -translate-y-1/2 rounded-full w-7 h-7 flex items-center justify-center z-10 transition-colors shadow-lg border border-white/20`}
-                                style={{ 
-                                    backgroundColor: isBlackTheme ? '#FFFFFF' : (theme.isGlass ? 'rgba(255, 255, 255, 0.2)' : (theme.palette[1] || '#9333ea')),
-                                    color: isBlackTheme ? '#000000' : '#ffffff',
-                                    backdropFilter: theme.isGlass ? 'blur(4px)' : 'none',
-                                    WebkitBackdropFilter: theme.isGlass ? 'blur(4px)' : 'none'
-                                }}
-                                title={t('common.landscape_mode', 'وضع العرض')}
-                            >
-                                <i className="fa-solid fa-arrows-rotate text-sm"></i>
-                            </button>
                         )}
                     </motion.div>
                 );
             })}
+
+            {/* Fallback to guarantee the prophetic-seerah bar is ALWAYS present even if localStorage was corrupted */}
+            {!menuItems.some(i => i.id === 'prophetic-seerah' || i.id === 'more') && (
+                <div key="fallback-seerah-bar" className="col-span-6 h-10 relative mt-1 flex justify-center">
+                    <div className="flex items-center justify-center gap-1.5 sm:gap-2 w-full h-full px-1">
+                        <div className="relative shrink-0">
+                            <motion.button
+                                type="button"
+                                id="home-community-btn-round"
+                                onClick={() => !isEditMode && onNavigate('community')}
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                                className="w-9 h-9 rounded-full flex items-center justify-center shadow-lg transition-transform border-2 shrink-0 active:scale-95 relative"
+                                style={{
+                                    backgroundColor: communityBg,
+                                    borderColor: iconBorderColor,
+                                    backdropFilter: theme.isGlass ? 'blur(8px)' : 'none',
+                                    WebkitBackdropFilter: theme.isGlass ? 'blur(8px)' : 'none'
+                                }}
+                                title="مجتمع التواصل"
+                                aria-label="مجتمع التواصل"
+                            >
+                                <MessageCircle className="w-5 h-5" style={{ color: iconTextColor }} />
+                                {unreadCommunityCount > 0 && (
+                                    <span 
+                                        className="absolute -top-1.5 -right-1.5 min-w-[19px] h-[19px] px-1 rounded-full bg-red-600 text-white text-[10px] font-black flex items-center justify-center border-2 border-white shadow-md animate-pulse leading-none pointer-events-none z-30"
+                                        style={{ backgroundColor: '#DC2626' }}
+                                    >
+                                        {unreadCommunityCount > 99 ? '+99' : unreadCommunityCount}
+                                    </span>
+                                )}
+                            </motion.button>
+                        </div>
+                        <WhatsAppButton />
+                        <div className="flex-1 min-w-[130px] max-w-[210px] h-full">
+                            <NavButton 
+                                label="السيرة والخط الزمني" 
+                                onClick={() => !isEditMode && onNavigate('prophetic-seerah')} 
+                                className="w-full h-full shadow-lg"
+                                color={isBlackTheme ? '#000000' : (themeKey === 'default' ? '#059669' : (theme.palette[0] || '#059669'))} 
+                                border={isBlackTheme ? '1px solid rgba(255, 255, 255, 0.25)' : theme.btnBorder} 
+                                isEditMode={false}
+                                isGlass={theme.isGlass}
+                                btnText={isBlackTheme ? '#FFFFFF' : (theme.btnText || '#FFFFFF')}
+                                showNewBadge={showNewBadges}
+                                badgeText={t('common.new', 'جديد')}
+                            />
+                        </div>
+                        <VoiceControlToggle />
+                        <div className="relative shrink-0">
+                            <motion.button
+                                type="button"
+                                id="home-ahl-al-quran-btn-round"
+                                onClick={() => !isEditMode && onNavigate('ahl-al-quran')}
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                                className="w-9 h-9 rounded-full flex items-center justify-center shadow-lg transition-transform border-2 shrink-0 active:scale-95 relative"
+                                style={{
+                                    backgroundColor: ahlQuranBg,
+                                    borderColor: iconBorderColor,
+                                    backdropFilter: theme.isGlass ? 'blur(8px)' : 'none',
+                                    WebkitBackdropFilter: theme.isGlass ? 'blur(8px)' : 'none'
+                                }}
+                                title="أهل القرآن"
+                                aria-label="أهل القرآن"
+                            >
+                                <Trophy className="w-5 h-5" style={{ color: iconTextColor }} />
+                                {userRank !== null && userRank !== undefined && (
+                                    <span 
+                                        className="absolute -top-1.5 -right-1.5 min-w-[19px] h-[19px] px-1 rounded-full bg-white text-[11px] font-black flex items-center justify-center border-2 shadow-md leading-none pointer-events-none z-30"
+                                        style={{ 
+                                            color: getAhlAlQuranRankColor(userRank).textColor,
+                                            borderColor: getAhlAlQuranRankColor(userRank).borderColor,
+                                            backgroundColor: getAhlAlQuranRankColor(userRank).bg,
+                                            boxShadow: `0 2px 5px ${getAhlAlQuranRankColor(userRank).shadowColor}`
+                                        }}
+                                    >
+                                        {userRank}
+                                    </span>
+                                )}
+                            </motion.button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

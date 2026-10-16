@@ -1,12 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import BottomBar from '../components/BottomBar';
 import ThemePageLock from '../components/ThemePageLock';
 import { useTheme } from '../context/ThemeContext';
 import { SURAH_LIST, RECITERS } from '../data/listenQuranData';
 import ReciterSelectModal from '../components/QuranReader/ReciterSelectModal';
 import ListenSurahSelectModal from '../components/QuranReader/ListenSurahSelectModal';
 import { QuranDownloadModal } from '../components/QuranReader/DownloadModals';
-import Toast from '../components/QuranReader/Toast';
 import { SURAH_INFO } from '../components/QuranReader/constants';
 import { registerBackInterceptor } from '../hooks/useBackButton';
 import { getAvailableSurahsForReader } from '../utils/listenQuranUtils';
@@ -61,6 +59,26 @@ function formatTime(seconds) {
     return toArabicNumerals(`${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`);
 }
 
+function formatTimerCountdown(totalSeconds: number) {
+    if (isNaN(totalSeconds) || totalSeconds <= 0) return toArabicNumerals('00:00');
+    const hours = Math.floor(totalSeconds / 3600);
+    const mins = Math.floor((totalSeconds % 3600) / 60);
+    const secs = totalSeconds % 60;
+    if (hours > 0) {
+        return toArabicNumerals(`${hours}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`);
+    }
+    return toArabicNumerals(`${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`);
+}
+
+interface ListenFavorite {
+    id: string;
+    reciterId: string;
+    reciterName: string;
+    surahNumber: number;
+    surahName: string;
+    createdAt: number;
+}
+
 function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
     const { theme, themeKey } = useTheme();
     const isBlackTheme = theme.bgColor === '#000000';
@@ -74,6 +92,8 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
     const [surahNumber, setSurahNumber] = useState(1);
     const [isPlaying, setIsPlaying] = useState(false);
     const [isContinuousPlay, setIsContinuousPlay] = useState(true);
+    const [isRepeatSurah, setIsRepeatSurah] = useState(false);
+    const isRepeatSurahRef = useRef(isRepeatSurah);
     const [duration, setDuration] = useState(0);
     const [currentTime, setCurrentTime] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
@@ -81,8 +101,47 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
     const [showReciterModal, setShowReciterModal] = useState(false);
     const [showSurahModal, setShowSurahModal] = useState(false);
     const [showDownloadModal, setShowDownloadModal] = useState(false);
-    const [toast, setToast] = useState({ show: false, message: '' });
     const [reciterSurahs, setReciterSurahs] = useState<Record<string, number[]>>({});
+
+    // مؤقت النوم (Sleep Timer)
+    const [sleepTimerMode, setSleepTimerMode] = useState<'off' | '15' | '30' | '60' | 'custom' | 'end_of_surah'>('off');
+    const [isSleepTimerActive, setIsSleepTimerActive] = useState(false);
+    const [sleepTimerRemainingSeconds, setSleepTimerRemainingSeconds] = useState<number | null>(null);
+    const [customTimerMinutes, setCustomTimerMinutes] = useState(15);
+
+    const sleepTimerModeRef = useRef(sleepTimerMode);
+    const isSleepTimerActiveRef = useRef(isSleepTimerActive);
+
+    useEffect(() => {
+        isRepeatSurahRef.current = isRepeatSurah;
+    }, [isRepeatSurah]);
+
+    useEffect(() => {
+        sleepTimerModeRef.current = sleepTimerMode;
+        isSleepTimerActiveRef.current = isSleepTimerActive;
+    }, [sleepTimerMode, isSleepTimerActive]);
+
+    // قائمة المفضلات المحفوظة (حتى 10 تلاوات)
+    const [favorites, setFavorites] = useState<ListenFavorite[]>(() => {
+        try {
+            const saved = localStorage.getItem('listen_quran_favorites_v1');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                if (Array.isArray(parsed)) return parsed.slice(0, 10);
+            }
+        } catch (e) {
+            console.error('Failed to load favorites', e);
+        }
+        return [];
+    });
+
+    useEffect(() => {
+        try {
+            localStorage.setItem('listen_quran_favorites_v1', JSON.stringify(favorites));
+        } catch (e) {
+            console.error('Failed to save favorites', e);
+        }
+    }, [favorites]);
 
     const getAvailableSurahs = useCallback((id: string) => {
         const rName = RECITERS.find(r => r.id === id)?.name;
@@ -169,22 +228,30 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
         try {
             const savedState = localStorage.getItem(STORAGE_KEY);
             if (savedState) {
-                const { savedReciterId, savedSurahNumber, savedContinuousPlay } = JSON.parse(savedState);
+                const { savedReciterId, savedSurahNumber, savedContinuousPlay, savedRepeatSurah } = JSON.parse(savedState);
                 if (RECITERS.some(r => r.id === savedReciterId)) setReciterId(savedReciterId);
                 if (SURAH_LIST.some(s => s.number === savedSurahNumber)) setSurahNumber(savedSurahNumber);
                 if (typeof savedContinuousPlay === 'boolean') setIsContinuousPlay(savedContinuousPlay);
+                if (typeof savedRepeatSurah === 'boolean') setIsRepeatSurah(savedRepeatSurah);
             }
         } catch (e) {
             console.error("Failed to load state from localStorage", e);
         }
     }, []);
 
-    const handleHomeClick = useCallback(() => {
+    const handleBack = useCallback(() => {
         if (showReciterModal) { setShowReciterModal(false); }
         else if (showSurahModal) { setShowSurahModal(false); }
         else if (showDownloadModal) { setShowDownloadModal(false); }
         else { onBack(); }
     }, [showReciterModal, showSurahModal, showDownloadModal, onBack]);
+
+    const handleGoHome = useCallback(() => {
+        if (showReciterModal) { setShowReciterModal(false); }
+        if (showSurahModal) { setShowSurahModal(false); }
+        if (showDownloadModal) { setShowDownloadModal(false); }
+        onNavigate('home');
+    }, [showReciterModal, showSurahModal, showDownloadModal, onNavigate]);
 
     useEffect(() => {
         const interceptor = () => {
@@ -283,11 +350,63 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
         };
     }, []);
 
+    // دالة فارغة لإلغاء ظهور أي إشعارات بالصفحة نهائياً ومنع أي خطأ برمجي
+    const showToast = useCallback((_msg?: string) => {}, []);
+
+    // تأثير العد التنازلي لمؤقت النوم
+    useEffect(() => {
+        if (!isSleepTimerActive || sleepTimerRemainingSeconds === null) return;
+
+        if (sleepTimerRemainingSeconds <= 0) {
+            if (audioRef.current) {
+                audioRef.current.pause();
+            }
+            setIsPlaying(false);
+            setIsSleepTimerActive(false);
+            setSleepTimerMode('off');
+            setSleepTimerRemainingSeconds(null);
+            showToast('انتهى مؤقت النوم وتم إيقاف التلاوة');
+            return;
+        }
+
+        const interval = setInterval(() => {
+            setSleepTimerRemainingSeconds(prev => {
+                if (prev === null) return null;
+                return Math.max(0, prev - 1);
+            });
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [isSleepTimerActive, sleepTimerRemainingSeconds, showToast]);
+
+    // معالجة انتهاء السورة الصوتية مع دعم مؤقت النوم
     useEffect(() => {
         const audio = audioRef.current;
         if (!audio) return;
 
         const handleEnded = () => {
+             // التحقق إذا كان مؤقت النوم مضبوط على آخر السورة
+             if (isSleepTimerActiveRef.current && sleepTimerModeRef.current === 'end_of_surah') {
+                 setIsPlaying(false);
+                 setCurrentTime(0);
+                 setIsSleepTimerActive(false);
+                 setSleepTimerMode('off');
+                 setSleepTimerRemainingSeconds(null);
+                 return;
+             }
+             // خاصية تكرار نفس السورة بعد انتهائها
+             if (isRepeatSurahRef.current) {
+                 if (audioRef.current) {
+                     audioRef.current.currentTime = 0;
+                     audioRef.current.play().then(() => {
+                         setIsPlaying(true);
+                     }).catch(err => {
+                         console.error("Failed to repeat surah:", err);
+                         setIsPlaying(false);
+                     });
+                 }
+                 return;
+             }
              if (isContinuousPlay) {
                 autoPlayNextRef.current = true;
                 handleNextSurah();
@@ -301,10 +420,100 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
         return () => {
             audio.removeEventListener('ended', handleEnded);
         };
-    }, [isContinuousPlay, handleNextSurah]);
+    }, [isContinuousPlay, isRepeatSurah, handleNextSurah, surahNumber]);
 
-    const showToast = (message: string) => {
-        setToast({ show: true, message });
+    // دوال التحكم بمؤقت النوم
+    const handleSetPresetTimer = (minutes: number) => {
+        const secs = minutes * 60;
+        setCustomTimerMinutes(minutes);
+        setSleepTimerMode(String(minutes) as any);
+        setSleepTimerRemainingSeconds(secs);
+        setIsSleepTimerActive(true);
+        showToast(`تم تفعيل مؤقت النوم: ${toArabicNumerals(minutes)} دقيقة`);
+    };
+
+    const handleSetEndOfSurahTimer = () => {
+        setSleepTimerMode('end_of_surah');
+        setSleepTimerRemainingSeconds(null);
+        setIsSleepTimerActive(true);
+        const sName = SURAH_LIST.find(s => s.number === surahNumber)?.name || 'السورة';
+        showToast(`تم تفعيل مؤقت النوم عند نهاية سورة ${sName}`);
+    };
+
+    const handleStartCustomTimer = () => {
+        const secs = customTimerMinutes * 60;
+        setSleepTimerMode('custom');
+        setSleepTimerRemainingSeconds(secs);
+        setIsSleepTimerActive(true);
+        showToast(`تم تفعيل مؤقت النوم: ${toArabicNumerals(customTimerMinutes)} دقيقة`);
+    };
+
+    const handleCancelSleepTimer = () => {
+        setIsSleepTimerActive(false);
+        setSleepTimerMode('off');
+        setSleepTimerRemainingSeconds(null);
+        showToast('تم إيقاف مؤقت النوم');
+    };
+
+    const handleIncrementTimer = () => {
+        if (isSleepTimerActive && sleepTimerRemainingSeconds !== null) {
+            setSleepTimerRemainingSeconds(prev => (prev || 0) + 300);
+            showToast('تمت زيادة ٥ دقائق لمؤقت النوم');
+        } else {
+            setCustomTimerMinutes(prev => Math.min(180, prev + 5));
+        }
+    };
+
+    const handleDecrementTimer = () => {
+        if (isSleepTimerActive && sleepTimerRemainingSeconds !== null) {
+            if (sleepTimerRemainingSeconds > 300) {
+                setSleepTimerRemainingSeconds(prev => Math.max(60, (prev || 0) - 300));
+                showToast('تم إنقاص ٥ دقائق من مؤقت النوم');
+            } else if (sleepTimerRemainingSeconds > 60) {
+                setSleepTimerRemainingSeconds(60);
+                showToast('تم تعيين المؤقت إلى دقيقة واحدة');
+            } else {
+                showToast('الحد الأدنى دقيقة واحدة');
+            }
+        } else {
+            setCustomTimerMinutes(prev => Math.max(5, prev - 5));
+        }
+    };
+
+    const isCurrentFavorite = useMemo(() => {
+        return favorites.some(f => f.reciterId === reciterId && f.surahNumber === surahNumber);
+    }, [favorites, reciterId, surahNumber]);
+
+    const handleToggleFavorite = () => {
+        const currentReciter = RECITERS.find(r => r.id === reciterId)?.name || 'غير معروف';
+        const currentSurah = SURAH_LIST.find(s => s.number === surahNumber)?.name || 'غير معروفة';
+
+        if (isCurrentFavorite) {
+            setFavorites(prev => prev.filter(f => !(f.reciterId === reciterId && f.surahNumber === surahNumber)));
+        } else {
+            if (favorites.length >= 10) {
+                return;
+            }
+            const newFav: ListenFavorite = {
+                id: `${reciterId}_${surahNumber}`,
+                reciterId,
+                reciterName: currentReciter,
+                surahNumber,
+                surahName: currentSurah,
+                createdAt: Date.now()
+            };
+            setFavorites(prev => [newFav, ...prev]);
+        }
+    };
+
+    const handleSelectFavorite = (fav: ListenFavorite) => {
+        setReciterId(fav.reciterId);
+        setSurahNumber(fav.surahNumber);
+    };
+
+    const handleRemoveFavorite = (favId: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        setFavorites(prev => prev.filter(f => f.id !== favId));
     };
 
     useEffect(() => {
@@ -379,6 +588,7 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
             savedReciterId: reciterId, 
             savedSurahNumber: surahNumber,
             savedContinuousPlay: isContinuousPlay,
+            savedRepeatSurah: isRepeatSurah,
         }));
 
     }, [reciterId, surahNumber]);
@@ -387,9 +597,10 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
         localStorage.setItem(STORAGE_KEY, JSON.stringify({
              savedReciterId: reciterId, 
              savedSurahNumber: surahNumber,
-             savedContinuousPlay: isContinuousPlay 
+             savedContinuousPlay: isContinuousPlay,
+             savedRepeatSurah: isRepeatSurah
         }));
-    }, [isContinuousPlay]);
+    }, [isContinuousPlay, isRepeatSurah]);
     
     const handlePlayPause = async () => {
         const audio = audioRef.current;
@@ -442,15 +653,48 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
                     }
                 `}</style>
                 <div className="app-top-bar__inner">
-                    <div className="relative flex items-center justify-center w-full">
-                        <div className="absolute left-0">
-                            <ThemePageLock />
+                    <div className="relative flex items-center justify-center w-full min-h-[44px]">
+                        {/* سهم الرجوع للخلف على يمين النص */}
+                        <div className="absolute right-0 flex items-center">
+                            <button
+                                onClick={handleBack}
+                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                title="رجوع للخلف"
+                                aria-label="رجوع للخلف"
+                            >
+                                <i className="fa-solid fa-arrow-right text-xl"></i>
+                            </button>
                         </div>
-                        <h1 className="app-top-bar__title text-2xl font-kufi">
-                            الاستماع للقرآن
-                        </h1>
+
+                        {/* عنوان الصفحة في الوسط */}
+                        <div className="text-center px-16 sm:px-20 min-w-0">
+                            <h1 className="app-top-bar__title text-lg sm:text-xl font-kufi truncate">
+                                الاستماع للقرآن
+                            </h1>
+                        </div>
+
+                        {/* أيقونة المفضلة وأيقونة المنزل على يسار النص للعودة إلى الصفحة الرئيسية */}
+                        <div className="absolute left-0 flex items-center gap-1">
+                            <ThemePageLock />
+                            <button
+                                type="button"
+                                onClick={handleToggleFavorite}
+                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                title={isCurrentFavorite ? "إزالة من المفضلة" : "إضافة إلى المفضلة"}
+                                aria-label="المفضلة"
+                            >
+                                <i className={`text-xl transition-all ${isCurrentFavorite ? 'fa-solid fa-heart text-red-500 scale-110' : 'fa-regular fa-heart opacity-75 hover:opacity-100 hover:text-red-500'}`} style={isCurrentFavorite ? {} : { color: theme.textColor }}></i>
+                            </button>
+                            <button
+                                onClick={handleGoHome}
+                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                title="الصفحة الرئيسية"
+                                aria-label="الصفحة الرئيسية"
+                            >
+                                <i className="fa-solid fa-house text-xl"></i>
+                            </button>
+                        </div>
                     </div>
-                    <p className="app-top-bar__subtitle">تلاوات عطرة من أشهر القراء</p>
                 </div>
             </header>
 
@@ -498,17 +742,263 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
                     </div>
 
                     <div className="flex items-center justify-between">
-                        <button onClick={handlePrevSurah} className="w-24 text-center hover:opacity-80 transition-opacity font-bold" style={{ color: theme.textColor }}>
+                        <button onClick={handlePrevSurah} className="w-24 text-center hover:opacity-80 transition-opacity font-bold cursor-pointer" style={{ color: theme.textColor }}>
                             السابق
                         </button>
-                        <button onClick={handlePlayPause} disabled={isLoading && !isPlaying} className="rounded-full w-20 h-20 flex items-center justify-center shadow-lg active:scale-95 transition disabled:opacity-70" style={{ backgroundColor: themeKey === 'default' ? '#000000' : (themeKey === 'deep_black' || isBlackTheme ? '#FFFFFF' : theme.palette[0]), color: (themeKey === 'deep_black' || isBlackTheme) ? '#000000' : '#FFFFFF' }}>
+                        <button onClick={handlePlayPause} disabled={isLoading && !isPlaying} className="rounded-full w-20 h-20 flex items-center justify-center shadow-lg active:scale-95 transition disabled:opacity-70 cursor-pointer" style={{ backgroundColor: themeKey === 'default' ? '#000000' : (themeKey === 'deep_black' || isBlackTheme ? '#FFFFFF' : theme.palette[0]), color: (themeKey === 'deep_black' || isBlackTheme) ? '#000000' : '#FFFFFF' }}>
                             {isLoading && !isPlaying ? <i className="fa-solid fa-spinner fa-spin fa-2x"></i> : <i className={`fa-solid ${isPlaying ? 'fa-pause' : 'fa-play'} fa-2x pl-1`}></i>}
                         </button>
-                        <button onClick={handleNextSurah} className="w-24 text-center hover:opacity-80 transition-opacity font-bold" style={{ color: theme.textColor }}>
+                        <button onClick={handleNextSurah} className="w-24 text-center hover:opacity-80 transition-opacity font-bold cursor-pointer" style={{ color: theme.textColor }}>
                             التالى
                         </button>
                     </div>
 
+                    {/* خيارات التحكم السريعة: تكرار نفس السورة والتشغيل المتواصل */}
+                    <div className="flex items-center justify-center gap-2 pt-2 border-t border-gray-200/40 dark:border-gray-700/40">
+                        {/* زر تكرار نفس السورة السريع */}
+                        <button
+                            type="button"
+                            onClick={() => setIsRepeatSurah(prev => !prev)}
+                            className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer border ${isRepeatSurah ? 'shadow-xs scale-[1.02]' : 'opacity-70 hover:opacity-100'}`}
+                            style={{
+                                backgroundColor: isRepeatSurah 
+                                    ? ((themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF25' : '#00000015') : `${theme.palette[0]}25`)
+                                    : 'transparent',
+                                borderColor: isRepeatSurah
+                                    ? ((themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF' : '#000000') : theme.palette[0])
+                                    : 'rgba(150, 150, 150, 0.25)',
+                                color: isRepeatSurah
+                                    ? ((themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF' : '#000000') : theme.palette[0])
+                                    : theme.textColor
+                            }}
+                            title={isRepeatSurah ? "تكرار السورة مفعل (اضغط للإلغاء)" : "تفعيل تكرار نفس السورة بعد انتهائها"}
+                        >
+                            <i className={`fa-solid fa-arrow-rotate-right ${isRepeatSurah ? 'text-emerald-500' : ''}`}></i>
+                            <span>تكرار السورة {isRepeatSurah ? '✓' : ''}</span>
+                        </button>
+
+                        {/* زر التشغيل المتواصل السريع */}
+                        <button
+                            type="button"
+                            onClick={() => setIsContinuousPlay(prev => !prev)}
+                            className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer border ${isContinuousPlay ? 'shadow-xs scale-[1.02]' : 'opacity-70 hover:opacity-100'}`}
+                            style={{
+                                backgroundColor: isContinuousPlay 
+                                    ? ((themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF25' : '#00000015') : `${theme.palette[0]}25`)
+                                    : 'transparent',
+                                borderColor: isContinuousPlay
+                                    ? ((themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF' : '#000000') : theme.palette[0])
+                                    : 'rgba(150, 150, 150, 0.25)',
+                                color: isContinuousPlay
+                                    ? ((themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF' : '#000000') : theme.palette[0])
+                                    : theme.textColor
+                            }}
+                            title={isContinuousPlay ? "التشغيل المتواصل مفعل (اضغط للإلغاء)" : "تفعيل الانتقال للسورة التالية تلقائياً"}
+                        >
+                            <i className={`fa-solid fa-forward-step ${isContinuousPlay ? 'text-emerald-500' : ''}`}></i>
+                            <span>تشغيل متواصل {isContinuousPlay ? '✓' : ''}</span>
+                        </button>
+                    </div>
+
+                </div>
+
+                {/* بطاقة مؤقت النوم (Sleep Timer) */}
+                <div className="pt-4 pb-1 flex-shrink-0 space-y-3">
+                    <div 
+                        className="themed-card rounded-2xl p-4 space-y-3.5 transition-all"
+                        style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                    >
+                        {/* عنوان ورأس البطاقة */}
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <i className="fa-solid fa-moon text-amber-500 text-base"></i>
+                                <span className="font-bold text-sm" style={{ color: theme.textColor }}>
+                                    مؤقت النوم
+                                </span>
+                            </div>
+                            
+                            {/* شارة حالة المؤقت */}
+                            {isSleepTimerActive ? (
+                                <div className="flex items-center gap-2">
+                                    <span 
+                                        className="text-xs px-2.5 py-1 rounded-full font-bold flex items-center gap-1.5 shadow-xs"
+                                        style={{
+                                            backgroundColor: (themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF25' : '#00000015') : `${theme.palette[0]}25`,
+                                            color: (themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF' : '#000000') : theme.palette[0]
+                                        }}
+                                    >
+                                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping inline-block"></span>
+                                        {sleepTimerMode === 'end_of_surah' ? 'عند آخر السورة' : `متبقي ${formatTimerCountdown(sleepTimerRemainingSeconds || 0)}`}
+                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={handleCancelSleepTimer}
+                                        className="text-xs px-2 py-0.5 rounded-md hover:bg-red-500/10 text-red-500 transition-colors cursor-pointer font-medium"
+                                        title="إلغاء المؤقت"
+                                    >
+                                        إلغاء
+                                    </button>
+                                </div>
+                            ) : (
+                                <span className="text-xs opacity-60 font-medium">
+                                    متوقف
+                                </span>
+                            )}
+                        </div>
+
+                        {/* خيارات التحديد السريع (15 أو 30 أو 60 دقيقة أو آخر السورة) */}
+                        <div className="grid grid-cols-4 gap-2 text-xs">
+                            {/* 15 دقيقة */}
+                            <button
+                                type="button"
+                                onClick={() => handleSetPresetTimer(15)}
+                                className={`py-2 px-1 rounded-xl font-bold transition-all border flex flex-col items-center justify-center gap-0.5 cursor-pointer ${isSleepTimerActive && sleepTimerMode === '15' ? 'shadow-xs scale-[1.02]' : 'hover:opacity-85'}`}
+                                style={{
+                                    backgroundColor: isSleepTimerActive && sleepTimerMode === '15'
+                                        ? ((themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF25' : '#00000015') : `${theme.palette[0]}25`)
+                                        : 'transparent',
+                                    borderColor: isSleepTimerActive && sleepTimerMode === '15'
+                                        ? ((themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF' : '#000000') : theme.palette[0])
+                                        : 'rgba(150, 150, 150, 0.25)',
+                                    color: theme.textColor
+                                }}
+                            >
+                                <span>١٥ دقيقة</span>
+                            </button>
+
+                            {/* 30 دقيقة */}
+                            <button
+                                type="button"
+                                onClick={() => handleSetPresetTimer(30)}
+                                className={`py-2 px-1 rounded-xl font-bold transition-all border flex flex-col items-center justify-center gap-0.5 cursor-pointer ${isSleepTimerActive && sleepTimerMode === '30' ? 'shadow-xs scale-[1.02]' : 'hover:opacity-85'}`}
+                                style={{
+                                    backgroundColor: isSleepTimerActive && sleepTimerMode === '30'
+                                        ? ((themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF25' : '#00000015') : `${theme.palette[0]}25`)
+                                        : 'transparent',
+                                    borderColor: isSleepTimerActive && sleepTimerMode === '30'
+                                        ? ((themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF' : '#000000') : theme.palette[0])
+                                        : 'rgba(150, 150, 150, 0.25)',
+                                    color: theme.textColor
+                                }}
+                            >
+                                <span>٣٠ دقيقة</span>
+                            </button>
+
+                            {/* 60 دقيقة */}
+                            <button
+                                type="button"
+                                onClick={() => handleSetPresetTimer(60)}
+                                className={`py-2 px-1 rounded-xl font-bold transition-all border flex flex-col items-center justify-center gap-0.5 cursor-pointer ${isSleepTimerActive && sleepTimerMode === '60' ? 'shadow-xs scale-[1.02]' : 'hover:opacity-85'}`}
+                                style={{
+                                    backgroundColor: isSleepTimerActive && sleepTimerMode === '60'
+                                        ? ((themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF25' : '#00000015') : `${theme.palette[0]}25`)
+                                        : 'transparent',
+                                    borderColor: isSleepTimerActive && sleepTimerMode === '60'
+                                        ? ((themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF' : '#000000') : theme.palette[0])
+                                        : 'rgba(150, 150, 150, 0.25)',
+                                    color: theme.textColor
+                                }}
+                            >
+                                <span>٦٠ دقيقة</span>
+                            </button>
+
+                            {/* آخر السورة */}
+                            <button
+                                type="button"
+                                onClick={handleSetEndOfSurahTimer}
+                                className={`py-2 px-1 rounded-xl font-bold transition-all border flex flex-col items-center justify-center gap-0.5 cursor-pointer ${isSleepTimerActive && sleepTimerMode === 'end_of_surah' ? 'shadow-xs scale-[1.02]' : 'hover:opacity-85'}`}
+                                style={{
+                                    backgroundColor: isSleepTimerActive && sleepTimerMode === 'end_of_surah'
+                                        ? ((themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF25' : '#00000015') : `${theme.palette[0]}25`)
+                                        : 'transparent',
+                                    borderColor: isSleepTimerActive && sleepTimerMode === 'end_of_surah'
+                                        ? ((themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF' : '#000000') : theme.palette[0])
+                                        : 'rgba(150, 150, 150, 0.25)',
+                                    color: theme.textColor
+                                }}
+                            >
+                                <span>آخر السورة</span>
+                            </button>
+                        </div>
+
+                        {/* صف أزرار زيادة ونقصان الوقت (+) و (-) مع عرض الوقت وزر التفعيل */}
+                        <div className="pt-1 flex items-center justify-between gap-3 border-t border-gray-200/20 dark:border-gray-700/20">
+                            <div className="flex items-center gap-2">
+                                {/* زر إنقاص الوقت (-) */}
+                                <button
+                                    type="button"
+                                    onClick={handleDecrementTimer}
+                                    disabled={isSleepTimerActive && sleepTimerMode === 'end_of_surah'}
+                                    className="w-9 h-9 rounded-xl flex items-center justify-center border font-bold text-base transition-all hover:opacity-80 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                                    style={{
+                                        borderColor: (themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF40' : '#00000030') : `${theme.palette[0]}50`,
+                                        backgroundColor: (themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF10' : '#00000008') : `${theme.palette[0]}10`,
+                                        color: theme.textColor
+                                    }}
+                                    title="إنقاص الوقت (-٥ دقائق)"
+                                    aria-label="إنقاص الوقت"
+                                >
+                                    <i className="fa-solid fa-minus text-xs"></i>
+                                </button>
+
+                                {/* عرض الوقت الحالي المحدد أو المتبقي */}
+                                <div 
+                                    className="px-3 py-1.5 rounded-xl border text-center font-bold text-sm min-w-[95px]"
+                                    style={{
+                                        borderColor: (themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF30' : '#00000020') : `${theme.palette[0]}30`,
+                                        backgroundColor: (themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF08' : '#00000005') : `${theme.palette[0]}08`,
+                                        color: theme.textColor
+                                    }}
+                                >
+                                    {isSleepTimerActive && sleepTimerRemainingSeconds !== null ? (
+                                        <span>{formatTimerCountdown(sleepTimerRemainingSeconds)}</span>
+                                    ) : (
+                                        <span>{toArabicNumerals(customTimerMinutes)} دقيقة</span>
+                                    )}
+                                </div>
+
+                                {/* زر زيادة الوقت (+) */}
+                                <button
+                                    type="button"
+                                    onClick={handleIncrementTimer}
+                                    disabled={isSleepTimerActive && sleepTimerMode === 'end_of_surah'}
+                                    className="w-9 h-9 rounded-xl flex items-center justify-center border font-bold text-base transition-all hover:opacity-80 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                                    style={{
+                                        borderColor: (themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF40' : '#00000030') : `${theme.palette[0]}50`,
+                                        backgroundColor: (themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF10' : '#00000008') : `${theme.palette[0]}10`,
+                                        color: theme.textColor
+                                    }}
+                                    title="زيادة الوقت (+٥ دقائق)"
+                                    aria-label="زيادة الوقت"
+                                >
+                                    <i className="fa-solid fa-plus text-xs"></i>
+                                </button>
+                            </div>
+
+                            {/* زر تفعيل أو إلغاء المؤقت */}
+                            {!isSleepTimerActive ? (
+                                <button
+                                    type="button"
+                                    onClick={handleStartCustomTimer}
+                                    className="px-3.5 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer shadow-xs"
+                                    style={{
+                                        backgroundColor: (themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF' : '#000000') : theme.palette[0],
+                                        color: (themeKey === 'deep_black' || isBlackTheme) ? '#000000' : '#FFFFFF'
+                                    }}
+                                >
+                                    بدء المؤقت
+                                </button>
+                            ) : (
+                                <button
+                                    type="button"
+                                    onClick={handleCancelSleepTimer}
+                                    className="px-3.5 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer border border-red-500/40 text-red-500 hover:bg-red-500/10"
+                                >
+                                    إيقاف المؤقت
+                                </button>
+                            )}
+                        </div>
+                    </div>
                 </div>
 
                 <div className="pt-6 pb-2 flex-shrink-0 space-y-3">
@@ -516,20 +1006,65 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
                         className="themed-card rounded-2xl p-4 space-y-4 transition-all"
                         style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
                     >
+                        {/* خيار تكرار نفس السورة بعد انتهائها */}
                         <div className="flex items-center justify-between">
-                            <label htmlFor="continuous-play-toggle" className="font-bold text-sm flex items-center gap-2" style={{ color: theme.textColor }}>
+                            <label htmlFor="repeat-surah-toggle" className="font-bold text-sm flex items-center gap-2 cursor-pointer" style={{ color: isBlackTheme ? '#FFFFFF' : theme.textColor }}>
+                                <i className="fa-solid fa-arrow-rotate-right" style={{ color: (themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF' : '#000000') : theme.palette[0] }}></i>
+                                <span>تكرار نفس السورة بعد انتهائها</span>
+                            </label>
+                            <button
+                                id="repeat-surah-toggle"
+                                onClick={() => setIsRepeatSurah(prev => !prev)}
+                                className="relative w-12 h-7 rounded-full transition-colors cursor-pointer"
+                                style={{ 
+                                    backgroundColor: isRepeatSurah 
+                                        ? (isBlackTheme ? '#FFFFFF' : (themeKey === 'default' ? '#000000' : theme.palette[0])) 
+                                        : (isBlackTheme ? '#222222' : (theme.cardBorder || '#d1d5db')),
+                                    border: isBlackTheme ? '1.5px solid #FFFFFF' : 'none'
+                                }}
+                                aria-checked={isRepeatSurah}
+                                role="switch"
+                            >
+                                <span 
+                                    className={`absolute top-1 w-5 h-5 rounded-full shadow-md transition-all duration-300 ease-in-out ${isRepeatSurah ? 'left-6' : 'left-1'}`}
+                                    style={{
+                                        backgroundColor: isBlackTheme 
+                                            ? (isRepeatSurah ? '#000000' : '#FFFFFF') 
+                                            : '#FFFFFF'
+                                    }}
+                                ></span>
+                            </button>
+                        </div>
+
+                        <div className="h-px w-full bg-gray-200 dark:bg-gray-700 opacity-30"></div>
+
+                        {/* خيار تشغيل متواصل */}
+                        <div className="flex items-center justify-between">
+                            <label htmlFor="continuous-play-toggle" className="font-bold text-sm flex items-center gap-2 cursor-pointer" style={{ color: isBlackTheme ? '#FFFFFF' : theme.textColor }}>
                                 <i className="fa-solid fa-repeat" style={{ color: (themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF' : '#000000') : theme.palette[0] }}></i>
-                                <span>تشغيل متواصل</span>
+                                <span>تشغيل متواصل (الانتقال للسورة التالية)</span>
                             </label>
                             <button
                                 id="continuous-play-toggle"
                                 onClick={() => setIsContinuousPlay(prev => !prev)}
-                                className={`relative w-12 h-7 rounded-full transition-colors`}
-                                style={{ backgroundColor: isContinuousPlay ? (themeKey === 'default' ? '#000000' : (isBlackTheme ? '#FFFFFF' : theme.palette[0])) : theme.cardBorder }}
+                                className="relative w-12 h-7 rounded-full transition-colors cursor-pointer"
+                                style={{ 
+                                    backgroundColor: isContinuousPlay 
+                                        ? (isBlackTheme ? '#FFFFFF' : (themeKey === 'default' ? '#000000' : theme.palette[0])) 
+                                        : (isBlackTheme ? '#222222' : (theme.cardBorder || '#d1d5db')),
+                                    border: isBlackTheme ? '1.5px solid #FFFFFF' : 'none'
+                                }}
                                 aria-checked={isContinuousPlay}
                                 role="switch"
                             >
-                                <span className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow-md transition-all duration-300 ease-in-out ${isContinuousPlay ? 'left-6' : 'left-1'}`}></span>
+                                <span 
+                                    className={`absolute top-1 w-5 h-5 rounded-full shadow-md transition-all duration-300 ease-in-out ${isContinuousPlay ? 'left-6' : 'left-1'}`}
+                                    style={{
+                                        backgroundColor: isBlackTheme 
+                                            ? (isContinuousPlay ? '#000000' : '#FFFFFF') 
+                                            : '#FFFFFF'
+                                    }}
+                                ></span>
                             </button>
                         </div>
 
@@ -537,7 +1072,7 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
 
                         <button 
                             onClick={() => setShowDownloadModal(true)} 
-                            className="w-full flex justify-between items-center group"
+                            className="w-full flex justify-between items-center group cursor-pointer"
                         >
                             <div className="flex items-center gap-2">
                                 <i className="fa-solid fa-download" style={{ color: (themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF' : '#000000') : theme.palette[0] }}></i>
@@ -546,12 +1081,111 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
                             <i className="fa-solid fa-chevron-left opacity-30 group-hover:opacity-100 transition-opacity"></i>
                         </button>
                     </div>
-                    <p className="text-xs text-center mt-2" style={{ color: theme.textColor, opacity: 0.6 }}>ملاحظة: لا تعمل هذه الصفحة إلا إذا كنت متصلاً بالإنترنت، ويفضل الواي فاي.</p>
                 </div>
-                <div className="w-full h-24 shrink-0"></div>
-            </main>
 
-            <BottomBar onHomeClick={handleHomeClick} onThemesClick={onOpenThemes} showThemes={false} />
+                {/* قسم المفضلات المحفوظة (حتى 10 سور وقراء) */}
+                <div className="pt-2 pb-2 flex-shrink-0 space-y-3">
+                    <div 
+                        className="themed-card rounded-2xl p-4 space-y-3 transition-all"
+                        style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                    >
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <i className="fa-solid fa-heart text-red-500 text-sm"></i>
+                                <span className="font-bold text-sm" style={{ color: theme.textColor }}>
+                                    المفضلات المحفوظة
+                                </span>
+                            </div>
+                            <span 
+                                className="text-xs px-2.5 py-0.5 rounded-full font-bold shadow-xs"
+                                style={{ 
+                                    backgroundColor: (themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF20' : '#00000015') : `${theme.palette[0]}20`,
+                                    color: (themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF' : '#000000') : theme.palette[0]
+                                }}
+                            >
+                                {toArabicNumerals(favorites.length)} / ١٠
+                            </span>
+                        </div>
+
+                        {favorites.length === 0 ? (
+                            <div className="text-center py-5 px-3 opacity-60">
+                                <i className="fa-regular fa-heart text-3xl mb-2.5 block opacity-40"></i>
+                                <p className="text-xs leading-relaxed font-medium">
+                                    لا توجد مفضلات محفوظة حتى الآن.<br />
+                                    اختر قارئاً وسورة واضغط على أيقونة القلب بالأعلى لحفظها هنا لسهولة الرجوع إليها (حتى ١٠ مفضلات).
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="space-y-2">
+                                {favorites.map((fav) => {
+                                    const isSelected = fav.reciterId === reciterId && fav.surahNumber === surahNumber;
+                                    return (
+                                        <div
+                                            key={fav.id}
+                                            onClick={() => handleSelectFavorite(fav)}
+                                            className={`p-2.5 rounded-xl border flex items-center justify-between cursor-pointer transition-all active:scale-[0.99] ${isSelected ? 'shadow-xs' : 'hover:opacity-90'}`}
+                                            style={{
+                                                backgroundColor: isSelected 
+                                                    ? ((themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF15' : '#0000000c') : `${theme.palette[0]}15`)
+                                                    : 'transparent',
+                                                borderColor: isSelected 
+                                                    ? ((themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF' : '#000000') : theme.palette[0])
+                                                    : 'rgba(150, 150, 150, 0.2)',
+                                                borderWidth: isSelected ? '1.5px' : '1px'
+                                            }}
+                                            title="اضغط للاستماع"
+                                        >
+                                            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                                                <div 
+                                                    className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 font-bold text-xs"
+                                                    style={{
+                                                        backgroundColor: (themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF20' : '#00000010') : `${theme.palette[0]}20`,
+                                                        color: (themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF' : '#000000') : theme.palette[0]
+                                                    }}
+                                                >
+                                                    {toArabicNumerals(fav.surahNumber)}
+                                                </div>
+                                                <div className="truncate text-right">
+                                                    <div className="text-xs font-bold truncate" style={{ color: theme.textColor }}>
+                                                        سورة {fav.surahName}
+                                                    </div>
+                                                    <div className="text-[11px] opacity-65 truncate font-medium">
+                                                        القارئ: {fav.reciterName}
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex items-center gap-1.5 shrink-0 mr-2">
+                                                {isSelected && (
+                                                    <span className="text-[10px] px-2 py-0.5 rounded-md font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+                                                        {isPlaying ? 'قيد التشغيل' : 'المحددة'}
+                                                    </span>
+                                                )}
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => handleRemoveFavorite(fav.id, e)}
+                                                    className="w-8 h-8 rounded-full flex items-center justify-center opacity-50 hover:opacity-100 hover:text-red-500 transition-all cursor-pointer"
+                                                    title="حذف من المفضلة"
+                                                    aria-label="حذف"
+                                                >
+                                                    <i className="fa-regular fa-trash-can text-xs"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* ملاحظة الصفحة في آخر الصفحة بعد بطاقة المفضلة */}
+                <p className="text-xs text-center mt-3 mb-1 px-3" style={{ color: isBlackTheme ? '#FFFFFF' : theme.textColor, opacity: 0.65 }}>
+                    ملاحظة: لا تعمل هذه الصفحة إلا إذا كنت متصلاً بالإنترنت، ويفضل الواي فاي.
+                </p>
+
+                <div className="w-full h-6 shrink-0"></div>
+            </main>
 
             {showReciterModal && (
                 <ReciterSelectModal
@@ -578,16 +1212,11 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
                     quranData={mockQuranData}
                     initialReaderId={reciterId}
                     getAvailableSurahs={getAvailableSurahs}
-                    showToast={showToast}
+                    showToast={() => {}}
                     mode="surah"
                     readersList={RECITERS}
                 />
             )}
-            <Toast 
-                show={toast.show} 
-                message={toast.message} 
-                onClose={() => setToast({ ...toast, show: false })} 
-            />
         </div>
     );
 }

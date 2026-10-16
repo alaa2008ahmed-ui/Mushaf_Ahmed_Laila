@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { ISLAMIC_SITES_DATA, IslamicSite } from '../data/islamicSitesData';
-import BottomBar from '../components/BottomBar';
 import ThemePageLock from '../components/ThemePageLock';
 import { useTheme } from '../context/ThemeContext';
 import { registerBackInterceptor } from '../hooks/useBackButton';
@@ -107,21 +106,38 @@ const IslamicSitesPage: React.FC<IslamicSitesPageProps> = ({ onBack, onNavigate 
             {/* Header */}
             <header className="app-top-bar">
                 <div className="app-top-bar__inner">
-                    <div className="relative flex items-center justify-between w-full">
-                        <div className="w-10 flex items-center">
-                            <ThemePageLock />
+                    <div className="relative flex items-center justify-center w-full min-h-[44px]">
+                        {/* سهم الرجوع للخلف على يمين النص */}
+                        <div className="absolute right-0 flex items-center">
+                            <button
+                                onClick={handleHomeClick}
+                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                title="رجوع للخلف"
+                                aria-label="رجوع للخلف"
+                            >
+                                <i className="fa-solid fa-arrow-right text-xl"></i>
+                            </button>
                         </div>
 
-                        <div className="flex-1 text-center px-2">
-                            <h1 className="app-top-bar__title text-xl sm:text-2xl font-kufi">
+                        {/* عنوان الصفحة في الوسط */}
+                        <div className="text-center px-12 min-w-0">
+                            <h1 className="app-top-bar__title text-lg sm:text-xl font-kufi truncate">
                                 {selectedSite ? selectedSite.name.replace(/^موقع\s+/, '') : 'مواقع إسلامية'}
                             </h1>
-                            <p className="app-top-bar__subtitle text-xs sm:text-sm">
-                                {selectedSite ? selectedSite.category : 'دليل المواقع والمنصات الإسلامية الموثوقة'}
-                            </p>
                         </div>
 
-                        <div className="w-10 flex items-center justify-end" />
+                        {/* أيقونة المنزل على يسار النص للعودة إلى الصفحة الرئيسية */}
+                        <div className="absolute left-0 flex items-center gap-1">
+                            <ThemePageLock />
+                            <button
+                                onClick={() => onNavigate('home')}
+                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                title="الصفحة الرئيسية"
+                                aria-label="الصفحة الرئيسية"
+                            >
+                                <i className="fa-solid fa-house text-xl"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </header>
@@ -452,8 +468,8 @@ const IslamicSitesPage: React.FC<IslamicSitesPageProps> = ({ onBack, onNavigate 
                                 </div>
                             )}
 
-                            {/* Generous bottom spacing ensuring last cards are 100% visible above bottom navigation bar */}
-                            <div className="h-36 sm:h-40 w-full pointer-events-none" aria-hidden="true" />
+                            {/* Bottom spacing */}
+                            <div className="h-6 w-full pointer-events-none" aria-hidden="true" />
                         </motion.div>
                     )}
                 </AnimatePresence>
@@ -466,15 +482,12 @@ const IslamicSitesPage: React.FC<IslamicSitesPageProps> = ({ onBack, onNavigate 
                         initial={{ opacity: 0, y: 30, x: '-50%' }}
                         animate={{ opacity: 1, y: 0, x: '-50%' }}
                         exit={{ opacity: 0, y: 30, x: '-50%' }}
-                        className="fixed bottom-24 left-1/2 z-[200] bg-gray-900 text-white px-5 py-2.5 rounded-full shadow-2xl font-bold text-xs text-center whitespace-nowrap border border-white/10"
+                        className="fixed bottom-8 left-1/2 z-[200] bg-gray-900 text-white px-5 py-2.5 rounded-full shadow-2xl font-bold text-xs text-center whitespace-nowrap border border-white/10"
                     >
                         {toastMessage}
                     </motion.div>
                 )}
             </AnimatePresence>
-
-            {/* Bottom Bar */}
-            <BottomBar onHomeClick={handleHomeClick} onThemesClick={() => {}} showThemes={false} />
         </div>
     );
 };

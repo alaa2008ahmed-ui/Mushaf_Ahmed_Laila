@@ -68,8 +68,6 @@ const DEFAULT_COMMANDS: VoiceCommand[] = [
     { id: 'nav_daily_wird', phrase: 'الورد اليومي', action: 'open_daily_wird', isDefault: true },
     { id: 'open_memorization', phrase: 'فتح التحفيظ', action: 'open_memorization', isDefault: true },
     { id: 'nav_memorization', phrase: 'التحفيظ', action: 'open_memorization', isDefault: true },
-    { id: 'open_more', phrase: 'فتح قائمة التطبيقات', action: 'open_more', isDefault: true },
-    { id: 'nav_more', phrase: 'قائمة التطبيقات', action: 'open_more', isDefault: true },
     { id: 'open_nawawi', phrase: 'فتح الاربعون النوويه', action: 'open_nawawi', isDefault: true },
     { id: 'nav_nawawi', phrase: 'الاربعون النوويه', action: 'open_nawawi', isDefault: true },
     { id: 'go_back', phrase: 'رجوع', action: 'go_back', isDefault: true },

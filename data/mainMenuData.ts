@@ -22,7 +22,6 @@ export const navItems = [
   { id: 'sabah-masaa', title: "أذكار الصباح والمساء", icon: SabahMasaaIcon },
   { id: 'adia', title: "الأدعية المأثورة", icon: AdiaIcon },
   { id: 'tasbeeh', title: "التسبيح", icon: TasbeehIcon },
-  { id: 'radio', title: "إذاعة القرآن", icon: RadioIcon },
   { id: 'calculators', title: "الحاسبة الشرعية", icon: CalculatorIcon },
   { id: 'salah-adhkar', title: "أذكار الصلاة", icon: SalahAdhkarIcon },
   { id: 'prayer-times', title: "مواقيت الصلاة", icon: PrayerTimesIcon },
@@ -32,5 +31,6 @@ export const navItems = [
   { id: 'listen', title: "الاستماع للقرآن", icon: ListenIcon },
   { id: 'calendar', title: "التقويم", icon: CalendarIcon },
   { id: 'nawawi', title: 'الأربعون النووية', icon: HisnMuslimIcon },
-  { id: 'tajweed-education', title: 'تعليم التجويد', icon: TajweedIcon }
+  { id: 'tajweed-education', title: 'تعليم التجويد', icon: TajweedIcon },
+  { id: 'prophetic-seerah', title: 'السيرة والخط الزمني', icon: HisnMuslimIcon }
 ];

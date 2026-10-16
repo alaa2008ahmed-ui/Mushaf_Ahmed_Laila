@@ -1,16 +1,6 @@
 import React, { useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
-import { Info, RefreshCw } from 'lucide-react';
-
-const Tooltip = ({ text }: { text: string }) => (
-    <div className="group relative inline-block ml-1">
-        <Info size={14} className="text-primary opacity-70 cursor-help" />
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-48 p-2 bg-gray-800 text-white text-xs rounded shadow-lg z-50 text-center">
-            {text}
-            <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
-        </div>
-    </div>
-);
+import { RefreshCw } from 'lucide-react';
 
 const KaffaratCalculator: React.FC<{ cardBorderColor?: string }> = ({ cardBorderColor: propCardBorderColor }) => {
     const { theme, themeKey } = useTheme();
@@ -27,9 +17,11 @@ const KaffaratCalculator: React.FC<{ cardBorderColor?: string }> = ({ cardBorder
     
     const [yaminFeedingCost, setYaminFeedingCost] = useState('');
 
-    const inputStyle = {
+    const inputStyle: React.CSSProperties = {
         backgroundColor: theme.isOriginal ? '#fff' : 'rgba(255,255,255,0.05)',
-        borderColor: isDefaultTheme ? '#000000' : (isBlackTheme ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.2)'),
+        borderColor: cardBorderColor,
+        borderWidth: '1.5px',
+        borderStyle: 'solid',
         color: theme.textColor,
     };
 
@@ -49,7 +41,7 @@ const KaffaratCalculator: React.FC<{ cardBorderColor?: string }> = ({ cardBorder
                 <h2 className="text-xl font-bold flex items-center gap-2" style={{ color: theme.textColor }}>
                     <i className={`fa-solid fa-hand-holding-heart ${isBlackTheme ? 'text-white' : (isDefaultTheme ? 'text-black' : 'text-primary')}`}></i> حساب الكفارات
                 </h2>
-                <button onClick={clearAll} className="flex items-center gap-1 text-sm text-red-500 hover:bg-red-500/10 px-3 py-1.5 rounded-lg transition-colors">
+                <button onClick={clearAll} className="flex items-center gap-1 text-sm text-red-500 hover:bg-red-500/10 px-3 py-1.5 rounded-lg transition-colors cursor-pointer">
                     <RefreshCw size={14} /> إعادة ضبط
                 </button>
             </div>
@@ -65,16 +57,18 @@ const KaffaratCalculator: React.FC<{ cardBorderColor?: string }> = ({ cardBorder
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label className="flex items-center text-sm font-bold mb-1 opacity-80" style={{ color: theme.textColor }}>
-                            عدد الأيام المفطرة <Tooltip text="أيام رمضان التي لم يتم صيامها" />
-                        </label>
-                        <input type="number" placeholder="عدد الأيام" value={missedFastingDays} onChange={e => setMissedFastingDays(e.target.value)} className="w-full p-3 rounded-lg border focus:ring-2 focus:ring-primary focus:outline-none transition-all" style={inputStyle} />
+                        <div className="flex flex-wrap items-baseline justify-between gap-1 mb-1">
+                            <span className="text-sm font-bold opacity-80" style={{ color: theme.textColor }}>عدد الأيام المفطرة</span>
+                            <span className="text-[11px] opacity-70 font-normal">أيام رمضان غير المصومة</span>
+                        </div>
+                        <input type="number" placeholder="عدد الأيام" value={missedFastingDays} onChange={e => setMissedFastingDays(e.target.value)} className="w-full p-2.5 rounded-lg border focus:ring-2 focus:ring-primary focus:outline-hidden transition-all text-sm font-bold" style={inputStyle} />
                     </div>
                     <div>
-                        <label className="flex items-center text-sm font-bold mb-1 opacity-80" style={{ color: theme.textColor }}>
-                            تكلفة إطعام مسكين واحد <Tooltip text="متوسط قيمة الوجبة المشبعة في بلدك" />
-                        </label>
-                        <input type="number" placeholder="التكلفة" value={fidyahFeedingCost} onChange={e => setFidyahFeedingCost(e.target.value)} className="w-full p-3 rounded-lg border focus:ring-2 focus:ring-primary focus:outline-none transition-all" style={inputStyle} />
+                        <div className="flex flex-wrap items-baseline justify-between gap-1 mb-1">
+                            <span className="text-sm font-bold opacity-80" style={{ color: theme.textColor }}>تكلفة إطعام مسكين واحد</span>
+                            <span className="text-[11px] opacity-70 font-normal">متوسط قيمة وجبة مشبعة</span>
+                        </div>
+                        <input type="number" placeholder="التكلفة" value={fidyahFeedingCost} onChange={e => setFidyahFeedingCost(e.target.value)} className="w-full p-2.5 rounded-lg border focus:ring-2 focus:ring-primary focus:outline-hidden transition-all text-sm font-bold" style={inputStyle} />
                     </div>
                 </div>
                 
@@ -96,10 +90,11 @@ const KaffaratCalculator: React.FC<{ cardBorderColor?: string }> = ({ cardBorder
                 </p>
                 
                 <div>
-                    <label className="flex items-center text-sm font-bold mb-1 opacity-80" style={{ color: theme.textColor }}>
-                        تكلفة الوجبة الواحدة <Tooltip text="متوسط قيمة الوجبة المشبعة في بلدك" />
-                    </label>
-                    <input type="number" placeholder="التكلفة" value={yaminFeedingCost} onChange={e => setYaminFeedingCost(e.target.value)} className="w-full p-3 rounded-lg border focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all" style={inputStyle} />
+                    <div className="flex flex-wrap items-baseline justify-between gap-1 mb-1">
+                        <span className="text-sm font-bold opacity-80" style={{ color: theme.textColor }}>تكلفة الوجبة الواحدة</span>
+                        <span className="text-[11px] opacity-70 font-normal">متوسط قيمة وجبة مشبعة</span>
+                    </div>
+                    <input type="number" placeholder="التكلفة" value={yaminFeedingCost} onChange={e => setYaminFeedingCost(e.target.value)} className="w-full p-2.5 rounded-lg border focus:ring-2 focus:ring-blue-500 focus:outline-hidden transition-all text-sm font-bold" style={inputStyle} />
                 </div>
                 
                 <div className="mt-4 p-4 rounded-lg bg-blue-500/10 flex justify-between items-center" style={{ borderColor: cardBorderColor, borderWidth: '1px', borderStyle: 'solid' }}>

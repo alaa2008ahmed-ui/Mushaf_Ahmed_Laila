@@ -84,7 +84,7 @@
           border-bottom: 2px solid var(--bottom-bar-border, #334155);
           position: sticky; top: 0; z-index: 40;
           padding-top: env(safe-area-inset-top);
-          min-height: 90px;
+          min-height: 67px;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -102,17 +102,42 @@
           width: 100%;
           max-width: 900px; 
           margin: 0 auto; 
-          padding: 0.5rem 1.25rem; 
+          padding: 0.25rem 1.25rem; 
           display: flex; 
           flex-direction: column; 
           gap: 0.1rem; 
           text-align: center; 
           justify-content: center;
           height: 100%;
-          min-height: 70px;
+          min-height: 52px;
       }
-      .app-top-bar__title { font-weight: 800; letter-spacing: 0.03em; }
+      .app-top-bar__title { 
+          font-weight: 800; 
+          letter-spacing: 0.02em; 
+          font-size: 1.15rem; 
+          line-height: 1.3;
+          max-width: 100%;
+      }
+      @media (min-width: 640px) {
+          .app-top-bar__title {
+              font-size: 1.25rem;
+          }
+      }
       .app-top-bar__subtitle { font-size: 0.85rem; opacity: 0.9; }
+
+      /* Prayer Times Top Bar resized to match other pages (reduced by 25% to 67px) while retaining subtitle */
+      .app-top-bar.app-top-bar--prayer {
+          min-height: 67px !important;
+      }
+      .app-top-bar.app-top-bar--prayer .app-top-bar__inner {
+          min-height: 52px !important;
+          padding: 0.25rem 1.25rem !important;
+      }
+
+      /* Hide subtitles on all pages except prayer times */
+      .app-top-bar:not(.app-top-bar--prayer) .app-top-bar__subtitle {
+          display: none !important;
+      }
       .hide-scrollbar::-webkit-scrollbar { display: none; }
       .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       .app-bottom-bar {
@@ -128,7 +153,7 @@
       .themed-card:hover { background-color: var(--card-bg-hover); }
       .themed-text { color: var(--text-color); }
       .themed-text-muted { color: var(--text-color-muted); }
-      .themed-bg-alt { background-color: var(--card-bg) }
+      .themed-bg-alt { background-color: var(--card-bg); color: var(--text-color); }
 
       .prayer-card { height: 75px; border-radius: 18px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; padding: 0 14px; transition: all 0.3s ease; position: relative; }
 

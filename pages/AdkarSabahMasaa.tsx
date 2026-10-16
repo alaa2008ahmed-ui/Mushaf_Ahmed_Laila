@@ -1,16 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
-import BottomBar from '../components/BottomBar';
 import { BASE_ADHKAR_MORNING, BASE_ADHKAR_EVENING } from '../data/adkarSabahMasaaData';
 import { registerBackInterceptor } from '../hooks/useBackButton';
 import AdkarHeader from '../components/AdkarSabahMasaa/AdkarHeader';
 import DhikrCard from '../components/HisnAlmuslim/DhikrCard';
 import ZoomModal from '../components/AdkarSabahMasaa/ZoomModal';
 import { useTheme } from '../context/ThemeContext';
+import { useHabitTracker } from '../hooks/useHabitTracker';
 import { motion, AnimatePresence } from 'motion/react';
 
 const ADHKAR_STATUS_KEY = 'sabah_masaa_status_v1';
 
-function AdkarSabahMasaa({ onBack, onNavigate }) {
+interface AdkarSabahMasaaProps {
+    onBack: () => void;
+    onNavigate: (page: string, params?: any) => void;
+}
+
+function AdkarSabahMasaa({ onBack, onNavigate }: AdkarSabahMasaaProps) {
     const { theme, themeKey } = useTheme();
     const isBlackTheme = theme.bgColor === '#000000';
     const [adhkarTab, setAdhkarTab] = useState<'morning' | 'evening' | 'favorites'>('morning');
@@ -82,6 +87,16 @@ function AdkarSabahMasaa({ onBack, onNavigate }) {
 
     const handleDecrement = (globalIndex) => {
         if (zoomedDhikr) return;
+        
+        const dhikr = mergedAdhkar[globalIndex];
+        if (dhikr) {
+            if (dhikr.category === 'أذكار الصباح' || adhkarTab === 'morning') {
+                useHabitTracker.getState().recordAdhkarRead('sabah');
+            } else if (dhikr.category === 'أذكار المساء' || adhkarTab === 'evening') {
+                useHabitTracker.getState().recordAdhkarRead('masaa');
+            }
+        }
+
         if (adhkarCounts[globalIndex] === 0) return;
 
         setAdhkarCounts(prev => ({
@@ -98,12 +113,19 @@ function AdkarSabahMasaa({ onBack, onNavigate }) {
         setZoomedDhikr(null);
     };
 
-    const handleHomeClick = () => {
+    const handleBack = () => {
         if (zoomedDhikr) {
             setZoomedDhikr(null);
         } else {
             onBack();
         }
+    };
+
+    const handleGoHome = () => {
+        if (zoomedDhikr) {
+            setZoomedDhikr(null);
+        }
+        onNavigate('home');
     };
 
     const handleFabClick = () => {
@@ -130,6 +152,8 @@ function AdkarSabahMasaa({ onBack, onNavigate }) {
             <AdkarHeader 
                 title={adhkarTab === 'morning' ? "أذكار الصباح" : adhkarTab === 'evening' ? "أذكار المساء" : "الأذكار المفضلة"} 
                 subtitle={adhkarTab === 'favorites' ? "أذكارك التي اخترتها للوصول السريع" : "تابع أذكـارك اليومية مع عداد تفاعلي وواجهة سهلة"} 
+                onBack={handleBack}
+                onHome={handleGoHome}
             />
 
             <main className="w-full flex-1 flex flex-col items-center overflow-hidden px-4 pt-0 pb-4 relative">
@@ -162,7 +186,7 @@ function AdkarSabahMasaa({ onBack, onNavigate }) {
             </main>
             
             {/* Floating Menu & FAB */}
-            <div className="fixed bottom-20 right-4 z-[90] flex flex-col items-end">
+            <div className="fixed bottom-6 right-4 z-[90] flex flex-col items-end">
                 <AnimatePresence>
                     {isMenuOpen && (
                         <motion.div
@@ -220,8 +244,6 @@ function AdkarSabahMasaa({ onBack, onNavigate }) {
                 </button>
             </div>
 
-            <BottomBar onHomeClick={handleHomeClick} onThemesClick={() => {}} showThemes={false} />
-
             <ZoomModal zoomedDhikr={zoomedDhikr} onClose={closeZoomModal} />
 
             <AnimatePresence>
@@ -230,7 +252,7 @@ function AdkarSabahMasaa({ onBack, onNavigate }) {
                         initial={{ opacity: 0, y: 50, x: '-50%' }}
                         animate={{ opacity: 1, y: 0, x: '-50%' }}
                         exit={{ opacity: 0, y: 50, x: '-50%' }}
-                        className="fixed bottom-24 left-1/2 z-[101] bg-gray-800 text-white px-6 py-3 rounded-full shadow-2xl font-bold flex items-center gap-2 whitespace-nowrap border border-white/10"
+                        className="fixed bottom-8 left-1/2 z-[101] bg-gray-800 text-white px-6 py-3 rounded-full shadow-2xl font-bold flex items-center gap-2 whitespace-nowrap border border-white/10"
                     >
                         <i className="fa-solid fa-spinner fa-spin text-primary" style={{ color: theme.palette[0] }}></i>
                         {toastMessage}

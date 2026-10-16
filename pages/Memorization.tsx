@@ -6,8 +6,6 @@ import { quranData as quranJsonData } from '../utils/quranData';
 const quranData = { data: quranJsonData };
 import { SURAH_NAMES_AR, MEMORIZATION_READERS } from '../components/QuranReader/constants';
 import { registerBackInterceptor } from '../hooks/useBackButton';
-import BottomBar from '../components/BottomBar';
-import TutorialOverlay, { TutorialStep } from '../components/Tutorial/TutorialOverlay';
 import { QuranDownloadModal } from '../components/QuranReader/DownloadModals';
 import ReciterSelectModal from '../components/QuranReader/ReciterSelectModal';
 import Toast from '../components/QuranReader/Toast';
@@ -30,8 +28,8 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
       : (isBlackTheme 
           ? '#FFFFFF' 
           : (theme.palette?.[0] || theme.accent || '#000000'));
-    const primaryColor = theme.accent || (isBlackTheme ? '#FFFFFF' : (isBlackAndWhite ? '#FFFFFF' : theme.palette[0]));
-    const btnTextColor = theme.btnText || (isBlackTheme ? '#000000' : (isBlackAndWhite ? '#000000' : '#FFFFFF'));
+    const primaryColor = isBlackTheme ? '#FFFFFF' : (theme.accent || (isBlackAndWhite ? '#FFFFFF' : theme.palette[0]));
+    const btnTextColor = isBlackTheme ? '#000000' : (theme.btnText || (isBlackAndWhite ? '#000000' : '#FFFFFF'));
     
     const [selectedReader, setSelectedReader] = useState(MEMORIZATION_READERS[1].id); // Default to Abdul Basit
     
@@ -202,43 +200,6 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
         });
     };
 
-    const memorizationTutorialSteps: TutorialStep[] = [
-        {
-            id: 'memo-welcome',
-            title: 'رفيقك في رحلة الحفظ والتثبيت',
-            text: 'مرحباً بك في قسم التحفيظ. صُمم هذا القسم ليكون مساعدك الشخصي في حفظ القرآن الكريم وتثبيته. نستخدم هنا تقنيات التكرار الممنهج والاستماع المركز لمساعدتك على الحفظ المتقن بأقل جهد وأعلى كفاءة.',
-            icon: <BookOpen className="w-8 h-8 text-white" />
-        },
-        {
-            id: 'reader-select',
-            title: 'اختيار المعلم (القارئ)',
-            text: 'الحفظ يبدأ بالاستماع الصحيح. اختر من هنا قارئك المفضل الذي ترتاح لصوته وتجده مناسباً لمستوى حفظك. الاستماع المتكرر لنفس القارئ يساعد عقلك على محاكاة النطق الصحيح وتثبيت مخارج الحروف.',
-            selector: '#reader-select-container',
-            icon: <User className="w-8 h-8 text-white" />
-        },
-        {
-            id: 'ayah-range',
-            title: 'تحديد ورد الحفظ بدقة',
-            text: 'من هنا تحدد "المقطع" الذي تود التركيز عليه اليوم. اختر السورة، ثم حدد آية البداية وآية النهاية. ننصحك دائماً بتقسيم الحفظ إلى مقاطع صغيرة (5-10 آيات) لضمان الإتقان قبل الانتقال لما بعدها.',
-            selector: '#ayah-range-container',
-            icon: <ArrowLeftRight className="w-8 h-8 text-white" />
-        },
-        {
-            id: 'repetition-settings',
-            title: 'إعدادات التكرار الذكي',
-            text: 'السر في الحفظ هو التكرار. يمكنك هنا تحديد عدد مرات تكرار كل آية على حدة، وعدد مرات تكرار المقطع كاملاً. كما يمكنك إضافة "فترة صمت" بين الآيات لتعطي نفسك فرصة لترديد الآية غيباً خلف القارئ.',
-            selector: '#repetition-settings-container',
-            icon: <RotateCcw className="w-8 h-8 text-white" />
-        },
-        {
-            id: 'start-btn',
-            title: 'الانتقال لواجهة التحفيظ',
-            text: 'عندما تصبح جاهزاً، اضغط هنا للانتقال إلى "وضع التحفيظ" في المصحف. هناك ستجد واجهة خاصة تركز فقط على الآيات المختارة، مع إمكانية إخفاء الآيات لاختبار حفظك وتفعيل التكرار التلقائي.',
-            selector: '#btn-start-memorization',
-            icon: <Play className="w-8 h-8 text-white" />
-        }
-    ];
-
     const getAyahsCount = (surahNum: number) => {
         return quranData.data.surahs[surahNum - 1]?.ayahs.length || 0;
     };
@@ -313,13 +274,38 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
             <div className="relative z-10 flex flex-col h-full">
                 <header className="app-top-bar shrink-0 relative z-10" style={{ backgroundColor: 'var(--qr-bar-bg)', borderBottom: '1px solid var(--qr-bar-border)' }}>
                     <div className="app-top-bar__inner">
-                        <div className="relative flex items-center justify-center w-full">
-                            <div className="absolute left-0">
-                                <ThemePageLock />
+                        <div className="relative flex items-center justify-center w-full min-h-[44px]">
+                            {/* سهم الرجوع للخلف على يمين النص */}
+                            <div className="absolute right-0 flex items-center">
+                                <button
+                                    onClick={handleHomeClick}
+                                    className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                    title="رجوع للخلف"
+                                    aria-label="رجوع للخلف"
+                                >
+                                    <i className="fa-solid fa-arrow-right text-xl"></i>
+                                </button>
                             </div>
-                            <h1 className="app-top-bar__title text-2xl font-kufi flex items-center justify-center gap-2" style={{ color: 'var(--qr-bar-text)' }}>
-                                التحفيظ
-                            </h1>
+
+                            {/* عنوان الصفحة في الوسط */}
+                            <div className="text-center px-12 min-w-0">
+                                <h1 className="app-top-bar__title text-lg sm:text-xl font-kufi flex items-center justify-center gap-2 truncate" style={{ color: 'var(--qr-bar-text)' }}>
+                                    التحفيظ
+                                </h1>
+                            </div>
+
+                            {/* أيقونة المنزل على يسار النص للعودة إلى الصفحة الرئيسية */}
+                            <div className="absolute left-0 flex items-center gap-1">
+                                <ThemePageLock />
+                                <button
+                                    onClick={() => onNavigate('home')}
+                                    className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                    title="الصفحة الرئيسية"
+                                    aria-label="الصفحة الرئيسية"
+                                >
+                                    <i className="fa-solid fa-house text-xl"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </header>
@@ -656,13 +642,11 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                             </div>
                         </div>
                     )}
-                    <div className="shrink-0 w-full h-32"></div>
+                    <div className="shrink-0 w-full h-6"></div>
                 </main>
 
                 {/* Removed fixed Start Button container to keep it in scrollable area or just before bottom bar */}
             </div>
-            
-            <BottomBar onHomeClick={handleHomeClick} onThemesClick={() => {}} showThemes={false} />
 
             {/* Help Modal */}
             {showHelpModal && (
@@ -845,8 +829,6 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                     </div>
                 </div>
             )}
-
-            <TutorialOverlay tutorialId="memorization-tutorial" steps={memorizationTutorialSteps} />
 
             {showDownloadModal && (
                 <QuranDownloadModal 
