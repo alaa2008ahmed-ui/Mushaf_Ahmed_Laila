@@ -7,11 +7,13 @@ import {
 } from 'lucide-react';
 import { safeHtml2Canvas, renderQuranCardToCanvas } from '../../utils/canvasHelper';
 import { Share as CapacitorShare } from '@capacitor/share';
+import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Capacitor } from '@capacitor/core';
 import { QuranVerseAttachment } from '../../services/communityService';
 import { quranData } from '../../utils/quranData';
 import { FONTS, SURAH_NAMES_AR, toArabic } from '../QuranReader/constants';
 import { renderTajweedTextHtml } from '../QuranReader/MushafPage';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface QuranVerseModalProps {
   isOpen: boolean;
@@ -159,6 +161,8 @@ const QUICK_SUGGESTIONS = [
 ];
 
 const QuranVerseModal: React.FC<QuranVerseModalProps> = ({ isOpen, onClose, onSendVerse }) => {
+  const { language } = useLanguage();
+  const isEn = language === 'en';
   const [step, setStep] = useState<'search' | 'customize'>('search');
   const [quranSearchQuery, setQuranSearchQuery] = useState('');
   const [browseSurah, setBrowseSurah] = useState<number>(1);
@@ -310,9 +314,23 @@ const QuranVerseModal: React.FC<QuranVerseModalProps> = ({ isOpen, onClose, onSe
       const textToCopy = `﴿ ${getCombinedAyahsText()} ﴾\nسورة ${getSurahName(selectedSurah)} (الآيات ${toArabic(fromAyah)} إلى ${toArabic(toAyah)})\nمصحف أحمد وليلى`;
       await navigator.clipboard.writeText(textToCopy);
       showToast('تم نسخ نص الآية بنجاح 📋');
-    } else if (previewCardRef.current) {
+    } else {
       try {
-        const canvas = await safeHtml2Canvas(previewCardRef.current, { scale: 2, useCORS: true });
+        const attachment: QuranVerseAttachment = {
+          surahName: getSurahName(selectedSurah),
+          surahNumber: selectedSurah,
+          ayahNumber: fromAyah,
+          fromAyah,
+          toAyah,
+          text: shareType === 'page' ? getCombinedPageText() : getCombinedAyahsText(),
+          shareType,
+          bgValue: selectedBg.value,
+          textColor,
+          frameType: selectedFrame.type,
+          frameColor: selectedFrame.color,
+          fontSize
+        };
+        const canvas = renderQuranCardToCanvas(attachment);
         canvas.toBlob(async (blob) => {
           if (blob && navigator.clipboard && (window as any).ClipboardItem) {
             await navigator.clipboard.write([new (window as any).ClipboardItem({ 'image/png': blob })]);
@@ -352,45 +370,47 @@ const QuranVerseModal: React.FC<QuranVerseModalProps> = ({ isOpen, onClose, onSe
           showToast('تم نسخ النص 📋');
         }
       } else {
-        let dataUrl = '';
-        try {
-          if (previewCardRef.current) {
-            const canvas = await safeHtml2Canvas(previewCardRef.current, { scale: 2, useCORS: true });
-            dataUrl = canvas.toDataURL('image/png');
-          }
-        } catch (e) {
-          console.warn('DOM share capture failed:', e);
-        }
-
-        if (!dataUrl || dataUrl === 'data:,') {
-          const fallbackAttachment: QuranVerseAttachment = {
-            surahName: getSurahName(selectedSurah),
-            surahNumber: selectedSurah,
-            ayahNumber: fromAyah,
-            fromAyah,
-            toAyah,
-            text: shareType === 'page' ? getCombinedPageText() : getCombinedAyahsText(),
-            shareType,
-            bgValue: selectedBg.value,
-            textColor,
-            frameType: selectedFrame.type,
-            frameColor: selectedFrame.color,
-            fontSize
-          };
-          const fallbackCanvas = renderQuranCardToCanvas(fallbackAttachment);
-          dataUrl = fallbackCanvas.toDataURL('image/png');
-        }
-
-        const response = await fetch(dataUrl);
-        const blob = await response.blob();
-        const file = new File([blob], `quran_share_${selectedSurah}_${fromAyah}.png`, { type: 'image/png' });
+        const attachment: QuranVerseAttachment = {
+          surahName: getSurahName(selectedSurah),
+          surahNumber: selectedSurah,
+          ayahNumber: fromAyah,
+          fromAyah,
+          toAyah,
+          text: shareType === 'page' ? getCombinedPageText() : getCombinedAyahsText(),
+          shareType,
+          bgValue: selectedBg.value,
+          textColor,
+          frameType: selectedFrame.type,
+          frameColor: selectedFrame.color,
+          fontSize
+        };
+        
+        // Exact 1080x1920 high-fidelity mobile canvas renderer
+        const canvas = renderQuranCardToCanvas(attachment);
+        const dataUrl = canvas.toDataURL('image/png');
 
         if (Capacitor.isNativePlatform()) {
-          await CapacitorShare.share({ title: shareTitle, text: shareText, dialogTitle: 'مشاركة عبر' });
-        } else if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          await navigator.share({ title: shareTitle, text: shareText, files: [file] });
+          const fileName = `quran_share_${selectedSurah}_${fromAyah}_${Date.now()}.png`;
+          const base64Data = dataUrl.split(',')[1];
+          const savedFile = await Filesystem.writeFile({
+            path: fileName,
+            data: base64Data,
+            directory: Directory.Cache
+          });
+          await CapacitorShare.share({
+            title: 'مشاركة',
+            url: savedFile.uri,
+            dialogTitle: 'مشاركة عبر'
+          });
         } else if (navigator.share) {
-          await navigator.share({ title: shareTitle, text: shareText });
+          const response = await fetch(dataUrl);
+          const blob = await response.blob();
+          const file = new File([blob], `quran_share_${selectedSurah}_${fromAyah}.png`, { type: 'image/png' });
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({ title: shareTitle, files: [file] });
+          } else {
+            await navigator.share({ title: shareTitle, text: shareText });
+          }
         } else {
           await navigator.clipboard.writeText(shareText);
           showToast('تم نسخ النص للمشاركة 📋');
@@ -958,7 +978,7 @@ const QuranVerseModal: React.FC<QuranVerseModalProps> = ({ isOpen, onClose, onSe
                       fontWeight: 'bold'
                     }}
                   >
-                    {shareType === 'page' ? 'مصحف احمد وليلي • صفحة قراءة تلاوة' : 'مصحف احمد وليلي'}
+                    {isEn ? (shareType === 'page' ? 'Mushaf Ahmed & Laila • Page Reading' : 'Mushaf Ahmed & Laila') : (shareType === 'page' ? 'مصحف أحمد وليلى • صفحة قراءة وتلاوة' : 'مصحف أحمد وليلى')}
                   </span>
                 </div>
               </div>

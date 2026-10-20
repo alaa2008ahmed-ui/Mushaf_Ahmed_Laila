@@ -8,6 +8,7 @@ import { Capacitor } from '@capacitor/core';
 import { FONTS, SURAH_NAMES_AR, toArabic, SURAH_INFO, getAyahCountText } from './constants';
 import MushafPage, { renderTajweedTextHtml } from './MushafPage';
 import SurahHeader from './SurahHeader';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface ShareAyahModalProps {
     isOpen: boolean;
@@ -15,7 +16,7 @@ interface ShareAyahModalProps {
     currentAyah: { s: number; a: number };
     quranData: any;
     currentTheme: any;
-    readingMode?: 'mushaf' | 'tafseer' | 'meanings' | 'translation';
+    readingMode?: 'mushaf' | 'tafseer' | 'meanings' | 'translation' | 'bilingual';
     settings?: any;
     showToast?: (msg: string) => void;
     isLandscape?: boolean;
@@ -129,6 +130,8 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
     showToast
 }) => {
     const [shareType, setShareType] = useState<'text' | 'image' | 'page' | 'audio'>('image');
+    const { language } = useLanguage();
+    const isEn = language === 'en';
     const [fromAyah, setFromAyah] = useState(currentAyah.a);
     const [toAyah, setToAyah] = useState(currentAyah.a);
     const [selectedAyahs, setSelectedAyahs] = useState<{ s: number; a: number }[]>([currentAyah]);
@@ -168,7 +171,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                 
                 if (activeMode === 'tafseer' || activeMode === 'ar.jalalayn') url = '/assets/data/ar.jalalayn.json';
                 else if (activeMode === 'meanings' || activeMode === 'tafseer.json') url = '/tafseer.json';
-                else if (activeMode === 'translation' || activeMode === 'en.json') url = '/en.json';
+                else if (activeMode === 'translation' || activeMode === 'bilingual' || activeMode === 'en.json') url = '/en.json';
                 
                 if (url) {
                     const res = await fetch(url);
@@ -247,7 +250,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
         if (activeMode === 'meanings' || activeMode === 'tafseer.json') {
             return explanationData.find((m: any) => m.number === String(s) && m.aya === String(a))?.text || '';
         }
-        if (activeMode === 'translation' || activeMode === 'en.json') {
+        if (activeMode === 'translation' || activeMode === 'bilingual' || activeMode === 'en.json') {
             return explanationData[s - 1]?.verses?.[a - 1]?.translation || '';
         }
         return '';
@@ -372,7 +375,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                     await new Promise(r => setTimeout(r, 100));
 
                     const canvas = await safeHtml2Canvas(captureElement, {
-                        scale: 2, // 2x is high quality (2560px width) and safe for mobile
+                        scale: 1, // 1080x1920 native scale
                         backgroundColor: null,
                         useCORS: true,
                         logging: false,
@@ -380,7 +383,20 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                         removeContainer: true
                     });
                     
-                    const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+                    // Guarantee exact 1080x1920 output dimensions for story/status format
+                    let finalCanvas = canvas;
+                    if (canvas.width !== 1080 || canvas.height !== 1920) {
+                        const resized = document.createElement('canvas');
+                        resized.width = 1080;
+                        resized.height = 1920;
+                        const rCtx = resized.getContext('2d')!;
+                        rCtx.imageSmoothingEnabled = true;
+                        rCtx.imageSmoothingQuality = 'high';
+                        rCtx.drawImage(canvas, 0, 0, 1080, 1920);
+                        finalCanvas = resized;
+                    }
+                    
+                    const dataUrl = finalCanvas.toDataURL('image/jpeg', 0.95);
                     
                     // Restore original style immediately
                     captureElement.style.cssText = originalStyle;
@@ -481,10 +497,8 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                         // Wait for fonts
                         await document.fonts.ready;
                         // Smaller delay for faster response
-                        await new Promise(r => setTimeout(r, 100));
-
                         const canvas = await safeHtml2Canvas(captureElement, {
-                            scale: 2, // 2x of 1000px = 2000px, very safe and high quality
+                            scale: 1,
                             backgroundColor: '#ffffff',
                             useCORS: true,
                             logging: false,
@@ -492,7 +506,27 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                             removeContainer: true
                         });
                         
-                        const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+                        // Guarantee exact 1080x1920 mobile story dimensions
+                        let finalCanvas = canvas;
+                        if (canvas.width !== 1080 || canvas.height !== 1920) {
+                            const resized = document.createElement('canvas');
+                            resized.width = 1080;
+                            resized.height = 1920;
+                            const rCtx = resized.getContext('2d')!;
+                            rCtx.fillStyle = '#ffffff';
+                            rCtx.fillRect(0, 0, 1080, 1920);
+                            const scale = Math.min(1080 / canvas.width, 1920 / canvas.height);
+                            const sw = canvas.width * scale;
+                            const sh = canvas.height * scale;
+                            const ox = (1080 - sw) / 2;
+                            const oy = (1920 - sh) / 2;
+                            rCtx.imageSmoothingEnabled = true;
+                            rCtx.imageSmoothingQuality = 'high';
+                            rCtx.drawImage(canvas, ox, oy, sw, sh);
+                            finalCanvas = resized;
+                        }
+
+                        const dataUrl = finalCanvas.toDataURL('image/jpeg', 0.95);
 
                         // Restore original style
                         captureElement.style.cssText = originalStyle;
@@ -800,9 +834,40 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
         );
     };
 
+    // Total text length for dynamic auto-fit typography
+    const totalShareTextLen = selectedAyahs.reduce((acc, ay) => acc + (getAyahText(ay.s, ay.a, false) || '').length, 0) + (combinedExplanation?.length || 0);
+
+    // Dynamic auto-fit typography calculation for 1080x1920 (9:16)
+    const userRatio = (fontSize || 20) / 20;
+    let captureAyahFontSize: number;
+    let captureLineHeight: number;
+
+    if (totalShareTextLen < 60) {
+        captureAyahFontSize = Math.round(96 * userRatio);
+        captureLineHeight = 2.15;
+    } else if (totalShareTextLen < 140) {
+        captureAyahFontSize = Math.round(82 * userRatio);
+        captureLineHeight = 2.0;
+    } else if (totalShareTextLen < 280) {
+        captureAyahFontSize = Math.round(66 * userRatio);
+        captureLineHeight = 1.88;
+    } else if (totalShareTextLen < 550) {
+        captureAyahFontSize = Math.round(52 * userRatio);
+        captureLineHeight = 1.76;
+    } else if (totalShareTextLen < 900) {
+        captureAyahFontSize = Math.round(40 * userRatio);
+        captureLineHeight = 1.66;
+    } else {
+        captureAyahFontSize = Math.round(30 * userRatio);
+        captureLineHeight = 1.55;
+    }
+
+    const captureExplanationFontSize = Math.max(22, Math.round(captureAyahFontSize * 0.64));
+    const captureBismillahFontSize = Math.min(52, Math.max(34, Math.round(captureAyahFontSize * 0.68)));
+
     return (
         <div className="fixed z-[1200] bg-black/40 backdrop-blur-sm flex items-center justify-center overflow-hidden" style={{ top: 0, bottom: 0, left: 0, right: 0 }} dir="rtl" onClick={onClose}>
-            {/* Hidden capture element for High Quality Image Share */}
+            {/* Hidden capture element for High Quality Image Share (Exact 1080x1920 Story format) */}
             <div 
                 id="hidden-image-capture"
                 ref={hiddenImageCaptureRef}
@@ -810,105 +875,117 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                     position: 'absolute',
                     left: '-9999px',
                     top: '-9999px',
-                    width: '1000px',
-                    minHeight: '600px',
+                    width: '1080px',
+                    height: '1920px',
+                    minHeight: '1920px',
+                    maxHeight: '1920px',
+                    boxSizing: 'border-box',
                     borderRadius: '40px',
                     overflow: 'hidden',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: '60px',
+                    justifyContent: 'space-between',
+                    padding: '80px 75px',
                     textAlign: 'center',
                     backgroundColor: selectedBg.type === 'solid' ? selectedBg.value : undefined,
                     backgroundImage: selectedBg.type !== 'solid' ? selectedBg.value : undefined,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
-                    border: `10px solid ${selectedBg.border}`,
-                    direction: 'rtl'
+                    border: `12px solid ${selectedBg.border}`,
+                    direction: isEn ? 'ltr' : 'rtl'
                 }}
             >
                 {selectedBg.id !== 'bg_white' && (
-                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 0.2)' }}></div>
+                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 0.22)' }}></div>
                 )}
                 <FrameOverlay frame={selectedFrame} scale={4} />
-                <div style={{ position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyItems: 'center', width: '100%' }}>
-                    {readingMode === 'mushaf' && (
+                <div style={{ position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', width: '100%', height: '100%', flex: 1 }}>
+                    {/* Top Bismillah Header */}
+                    <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '10px' }}>
+                        {readingMode === 'mushaf' && (
+                            <p 
+                                style={{ 
+                                    fontFamily: 'var(--font-amiri-quran), var(--font-hafs), serif', 
+                                    fontSize: `${captureBismillahFontSize}px`, 
+                                    color: selectedBg.accent, 
+                                    margin: 0,
+                                    textShadow: selectedBg.id === 'bg_white' ? 'none' : '0 6px 12px rgba(0,0,0,0.5)',
+                                    fontWeight: 'bold'
+                                }}
+                            >
+                                بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ
+                            </p>
+                        )}
+                    </div>
+
+                    {/* Middle Verse & Explanation auto-centered */}
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', width: '100%', padding: '24px 0' }}>
                         <p 
+                            className="share-preview-text"
                             style={{ 
-                                fontFamily: 'var(--font-amiri-quran), var(--font-hafs), serif', 
-                                fontSize: `${fontSize * 1.2 * 4}px`, 
-                                color: selectedBg.accent, 
-                                marginBottom: '50px',
-                                textShadow: selectedBg.id === 'bg_white' ? 'none' : '0 6px 12px rgba(0,0,0,0.5)',
-                                opacity: 1,
-                                marginTop: '20px',
-                                fontWeight: 'bold'
+                                lineHeight: captureLineHeight,
+                                fontFamily: selectedFont,
+                                fontSize: `${captureAyahFontSize}px`, 
+                                color: textColor,
+                                textShadow: selectedBg.id === 'bg_white' ? 'none' : '0 6px 14px rgba(0,0,0,0.55)',
+                                margin: 0,
+                                fontWeight: 'bold',
+                                whiteSpace: 'normal',
+                                letterSpacing: 0,
+                                wordBreak: 'keep-all',
+                                fontFeatureSettings: '"kern", "liga", "clig", "calt", "ccmp"',
+                                textRendering: 'optimizeLegibility',
+                                textAlign: 'center'
                             }}
                         >
-                            بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ
+                            {selectedAyahs.map((ay, idx) => (
+                                <React.Fragment key={idx}>
+                                    <span style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: renderTajweedTextHtml(getAyahText(ay.s, ay.a, false)) }} />
+                                    {` ﴿${toArabic(ay.a)}﴾ `}
+                                </React.Fragment>
+                            ))}
                         </p>
-                    )}
-                    <p 
-                        className="share-preview-text"
-                        style={{ 
-                            lineHeight: '1.8',
-                            fontFamily: selectedFont,
-                            fontSize: `${fontSize * 1.15 * 4}px`, 
-                            color: textColor,
-                            textShadow: selectedBg.id === 'bg_white' ? 'none' : '0 6px 12px rgba(0,0,0,0.5)',
-                            margin: 0,
-                            marginTop: '20px',
-                            fontWeight: 'bold',
-                            whiteSpace: 'normal',
-                            letterSpacing: 0,
-                            wordBreak: 'keep-all',
-                            fontFeatureSettings: '"kern", "liga", "clig", "calt", "ccmp"',
-                            textRendering: 'optimizeLegibility'
-                        }}
-                    >
-                        {selectedAyahs.map((ay, idx) => (
-                            <React.Fragment key={idx}>
-                                <span style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: renderTajweedTextHtml(getAyahText(ay.s, ay.a, false)) }} />
-                                {` ﴿${toArabic(ay.a)}﴾ `}
-                            </React.Fragment>
-                        ))}
-                    </p>
-                    {combinedExplanation && (
-                        <p style={{
-                            fontFamily: 'var(--font-cairo), sans-serif',
-                            fontSize: `${fontSize * 0.8 * 4}px`,
-                            color: textColor,
-                            opacity: 0.9,
-                            marginTop: '40px',
-                            textAlign: 'center',
-                            lineHeight: '1.6',
-                            textShadow: selectedBg.id === 'bg_white' ? 'none' : '0 3px 6px rgba(0,0,0,0.5)',
-                            maxWidth: '90%'
-                        }}>
-                            {combinedExplanation}
-                        </p>
-                    )}
-                    <div style={{ marginTop: '60px', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '30px' }}>
-                        <p style={{ fontFamily: selectedFont, color: textColor, textShadow: '0 3px 6px rgba(0,0,0,0.5)', fontSize: `${fontSize * 1.8}px`, fontWeight: 'bold', opacity: 0.9, textAlign: 'center', margin: 0 }}>
+                        {combinedExplanation && (
+                            <p style={{
+                                fontFamily: 'var(--font-cairo), sans-serif',
+                                fontSize: `${captureExplanationFontSize}px`,
+                                color: textColor,
+                                opacity: 0.92,
+                                marginTop: '36px',
+                                textAlign: 'center',
+                                lineHeight: '1.65',
+                                textShadow: selectedBg.id === 'bg_white' ? 'none' : '0 4px 8px rgba(0,0,0,0.5)',
+                                maxWidth: '92%'
+                            }}>
+                                {combinedExplanation}
+                            </p>
+                        )}
+                    </div>
+
+                    {/* Bottom Metadata & Footer */}
+                    <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', paddingBottom: '16px', gap: '14px' }}>
+                        <p style={{ fontFamily: selectedFont, color: textColor, textShadow: '0 3px 6px rgba(0,0,0,0.5)', fontSize: '32px', fontWeight: 'bold', opacity: 0.95, textAlign: 'center', margin: 0 }}>
                             {surahInfo}
                         </p>
-                        <div style={{ width: '70%', borderTop: '3px solid rgba(255, 255, 255, 0.3)' }}></div>
-                        <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '15px' }}>
+                        <div style={{ width: '60%', borderTop: '2px solid rgba(255, 255, 255, 0.35)' }}></div>
+                        <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
                             <a 
                                 href="https://play.google.com/store/apps/details?id=com.mushaf.ahmedandlayla"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                style={{ fontFamily: 'var(--font-lateef), serif', color: selectedBg.accent, textShadow: '0 3px 9px rgba(0,0,0,0.8)', fontSize: `${fontSize * 2.4}px`, fontWeight: 700, textAlign: 'center', textDecoration: 'none' }} 
-                                dir="rtl"
+                                style={{ fontFamily: 'var(--font-lateef), serif', color: selectedBg.accent, textShadow: '0 3px 9px rgba(0,0,0,0.8)', fontSize: '42px', fontWeight: 700, textAlign: 'center', textDecoration: 'none' }} 
+                                dir={isEn ? 'ltr' : 'rtl'}
                             >
-                                مصحف احمد وليلى
+                                {isEn ? 'Mushaf Ahmed & Laila' : 'مصحف أحمد وليلى'}
                             </a>
-                            <span 
-                                style={{ fontFamily: selectedFont, color: textColor, textShadow: '0 3px 6px rgba(0,0,0,0.5)', fontSize: `${fontSize * 1.7}px`, fontWeight: 500, maxWidth: '80%', textAlign: 'center', lineHeight: 1.2, opacity: 0.9 }} 
-                            >
-                                {customText}
-                            </span>
+                            {customText ? (
+                                <span 
+                                    style={{ fontFamily: selectedFont, color: textColor, textShadow: '0 3px 6px rgba(0,0,0,0.5)', fontSize: '24px', fontWeight: 500, maxWidth: '85%', textAlign: 'center', lineHeight: 1.25, opacity: 0.9 }} 
+                                >
+                                    {customText}
+                                </span>
+                            ) : null}
                         </div>
                     </div>
                 </div>
@@ -922,11 +999,11 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                     position: 'absolute',
                     left: '-9999px',
                     top: '-9999px',
-                    width: '1000px', 
-                    minHeight: 'auto',
-                    height: 'auto', 
+                    width: '1080px', 
+                    minHeight: '1920px',
                     backgroundColor: '#ffffff',
-                    padding: '80px 60px 0px',
+                    padding: '60px 48px 30px',
+                    boxSizing: 'border-box',
                     color: '#000000',
                     direction: 'rtl',
                     display: 'flex',
@@ -1022,7 +1099,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                     wordSpacing: 0
                 }}>
                     <div style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', letterSpacing: 0, wordSpacing: 0 }}>
-                        <a href="https://play.google.com/store/apps/details?id=com.mushaf.ahmedandlayla" target="_blank" rel="noopener noreferrer" style={{ fontFamily: 'var(--font-lateef), serif', fontSize: '28px', color: '#3b82f6', fontWeight: 'bold', textDecoration: 'none', letterSpacing: 0, wordSpacing: 0, fontVariantLigatures: 'normal' }}>مصحف احمد وليلى</a>
+                        <a href="https://play.google.com/store/apps/details?id=com.mushaf.ahmedandlayla" target="_blank" rel="noopener noreferrer" style={{ fontFamily: 'var(--font-lateef), serif', fontSize: '28px', color: '#3b82f6', fontWeight: 'bold', textDecoration: 'none', letterSpacing: 0, wordSpacing: 0, fontVariantLigatures: 'normal' }}>{isEn ? 'Mushaf Ahmed & Laila' : 'مصحف أحمد وليلى'}</a>
                     </div>
                 </div>
             </div>

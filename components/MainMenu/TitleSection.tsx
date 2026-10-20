@@ -13,6 +13,9 @@ interface TitleSectionProps {
     onOpenSideMenu: () => void;
     hideTitle?: boolean;
     isSticky?: boolean;
+    quickMenuButton?: React.ReactNode;
+    isQuickMenuOpen?: boolean;
+    onCloseQuickMenu?: () => void;
 }
 
 const TitleSection: React.FC<TitleSectionProps> = ({
@@ -25,10 +28,13 @@ const TitleSection: React.FC<TitleSectionProps> = ({
     themeKey,
     onOpenSideMenu,
     hideTitle = false,
-    isSticky = false
+    isSticky = false,
+    quickMenuButton,
+    isQuickMenuOpen = false,
+    onCloseQuickMenu
 }) => {
     const isBlackTheme = theme.bgColor === '#000000';
-    const { t } = useLanguage();
+    const { t, dir } = useLanguage();
 
     const stickyBgColor = isSticky 
         ? (theme.bgColor || (theme.isDark ? '#000000' : '#ffffff')) 
@@ -36,16 +42,32 @@ const TitleSection: React.FC<TitleSectionProps> = ({
 
     return (
         <>
-            {/* عنوان التطبيق: يثبت بأول الصفحة عند وصوله لمكان الآية، وتمر باقي الصفحة من تحته */}
+            {/* عنوان التطبيق: يثبت بأول الصفحة عند وصوله لمكان الآية، وتمر باقي الصفحة من تحته مباشرة تحت شريط الهاتف العلوي */}
             <div 
                 id="sticky-title-wrapper"
-                className={`sticky top-0 z-30 -mx-4 px-4 text-center select-none pt-1 pb-1 transition-colors duration-150 ${
+                dir={dir}
+                onClick={() => {
+                    if (isQuickMenuOpen && onCloseQuickMenu) {
+                        onCloseQuickMenu();
+                    }
+                }}
+                className={`sticky top-[env(safe-area-inset-top,0px)] ${isQuickMenuOpen ? 'z-[1150]' : 'z-30'} -mx-4 px-4 text-center select-none pt-1 pb-1 transition-colors duration-150 relative ${
                     isSticky ? 'shadow-sm backdrop-blur-md' : ''
                 }`}
                 style={{
+                    top: 'env(safe-area-inset-top, 0px)',
                     backgroundColor: stickyBgColor,
                 }}
             >
+                {/* تغطية شريط الحالة العلوية للهاتف عندما يكون العنوان مثبتاً بحيث يبقى شريط الهاتف نظيفاً */}
+                <div 
+                    aria-hidden="true"
+                    className="absolute bottom-full left-0 right-0 pointer-events-none transition-colors duration-150"
+                    style={{
+                        height: 'calc(env(safe-area-inset-top, 0px) + 2px)',
+                        backgroundColor: stickyBgColor,
+                    }}
+                />
                 {!hideTitle && (
                     <h1 
                         id="app-title" 
@@ -54,6 +76,11 @@ const TitleSection: React.FC<TitleSectionProps> = ({
                     >
                         {t('app.name', 'مُصْحَفُ أَحْمَدَ وَلَيْلَى')}
                     </h1>
+                )}
+                {!isEditMode && quickMenuButton && (
+                    <div className={`absolute ${dir === 'ltr' ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 flex items-center z-40 transition-all duration-300`}>
+                        {quickMenuButton}
+                    </div>
                 )}
             </div>
             

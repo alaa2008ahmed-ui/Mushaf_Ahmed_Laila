@@ -40,7 +40,7 @@ const QuranDownload: React.FC<{ onBack: () => void, onNavigate?: (pageId: string
                 <h1 className="text-xl font-bold font-kufi">التحميل</h1>
             </header>
 
-            <main className="flex-1 overflow-y-auto px-4 pb-4 space-y-2">
+            <main className="flex-1 overflow-y-auto px-4 pt-2 pb-4 space-y-2">
                 <div className="p-4 rounded-xl border mb-4" style={{ backgroundColor: `${theme.accent}15`, borderColor: `${theme.accent}30` }}>
                     <p className="text-sm text-center font-bold" style={{ color: theme.accent }}>
                         يمكنك نطق اسم السورة لتحميلها أو حذفها من جهازك

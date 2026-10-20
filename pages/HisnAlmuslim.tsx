@@ -1,23 +1,82 @@
-
+// HisnAlmuslim component
 import React, { useState, useEffect, useRef } from 'react';
-import BottomBar from '../components/BottomBar';
 import { registerBackInterceptor } from '../hooks/useBackButton';
 import HisnHeader from '../components/HisnAlmuslim/HisnHeader';
 import CategoryList from '../components/HisnAlmuslim/CategoryList';
 import CategoryDetail from '../components/HisnAlmuslim/CategoryDetail';
 import ZoomModal from '../components/HisnAlmuslim/ZoomModal';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
+import { useHabitTracker } from '../hooks/useHabitTracker';
+import { HISN_CATEGORIES_EN } from '../data/hisnAlmuslimTranslationsEn';
 import { motion, AnimatePresence } from 'motion/react';
+
+const HISN_STATUS_KEY = 'hisn_almuslim_counts_v1';
 
 function HisnAlmuslim({ onBack, onNavigate }) {
     const { theme, themeKey } = useTheme();
+    const { language } = useLanguage();
+    const isEn = language === 'en';
     const isBlackTheme = theme.bgColor === '#000000';
-    const [selectedCategory, setSelectedCategory] = useState(null);
-    const [zoomedItem, setZoomedItem] = useState(null);
+    const [selectedCategory, setSelectedCategory] = useState<any>(null);
+    const [zoomedItem, setZoomedItem] = useState<any>(null);
     const [toastMessage, setToastMessage] = useState('');
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [menuOpenDirection, setMenuOpenDirection] = useState('up');
-    const fabRef = useRef(null);
+    const [menuOpenDirection, setMenuOpenDirection] = useState<'up' | 'down'>('up');
+    const fabRef = useRef<HTMLButtonElement>(null);
+    const fabContainerRef = useRef<HTMLDivElement>(null);
+
+    const [hisnCounts, setHisnCounts] = useState<{ [key: string]: number }>(() => {
+        const today = new Date().toISOString().split('T')[0];
+        try {
+            const stored = localStorage.getItem(HISN_STATUS_KEY);
+            if (stored) {
+                const data = JSON.parse(stored);
+                if (data.date === today && data.counts) {
+                    return data.counts;
+                }
+            }
+        } catch (e) {}
+        return {};
+    });
+
+    useEffect(() => {
+        const today = new Date().toISOString().split('T')[0];
+        try {
+            localStorage.setItem(HISN_STATUS_KEY, JSON.stringify({ date: today, counts: hisnCounts }));
+        } catch (e) {
+            console.error("Failed to save hisn status", e);
+        }
+    }, [hisnCounts]);
+
+    const handleDecrementHisn = (itemKey: string, current: number) => {
+        if (selectedCategory?.title) {
+            const t = (selectedCategory.titleAr || selectedCategory.title || '').toLowerCase();
+            if (t.includes('صباح') || t.includes('morning')) useHabitTracker.getState().recordAdhkarRead('sabah');
+            if (t.includes('مساء') || t.includes('evening')) useHabitTracker.getState().recordAdhkarRead('masaa');
+            if (t.includes('صلاة') || t.includes('prayer') || t.includes('salah')) useHabitTracker.getState().recordAdhkarRead('salah');
+            if (t.includes('استغفار') || t.includes('دعاء') || t.includes('أدعية') || t.includes('supplication') || t.includes('forgiveness')) useHabitTracker.getState().recordAdhkarRead('adia');
+        }
+        if (current <= 0) return;
+        setHisnCounts(prev => ({
+            ...prev,
+            [itemKey]: current - 1
+        }));
+    };
+
+    const handleResetHisn = (itemKey: string, initCount: number) => {
+        setHisnCounts(prev => ({
+            ...prev,
+            [itemKey]: initCount
+        }));
+    };
+
+    const handleResetAllHisn = () => {
+        setHisnCounts({});
+        setIsMenuOpen(false);
+        setToastMessage(isEn ? 'All counters have been reset' : 'تمت إعادة ضبط جميع العدادات');
+        setTimeout(() => setToastMessage(''), 2000);
+    };
 
     const handleFabClick = () => {
         if (!isMenuOpen && fabRef.current) {
@@ -31,7 +90,7 @@ function HisnAlmuslim({ onBack, onNavigate }) {
         setIsMenuOpen(!isMenuOpen);
     };
 
-    const openZoomModal = (item) => {
+    const openZoomModal = (item: any) => {
         setZoomedItem(item);
     };
 
@@ -44,6 +103,9 @@ function HisnAlmuslim({ onBack, onNavigate }) {
             if (zoomedItem) {
                 setZoomedItem(null);
                 return true;
+            } else if (isMenuOpen) {
+                setIsMenuOpen(false);
+                return true;
             } else if (selectedCategory) {
                 setSelectedCategory(null);
                 return true;
@@ -53,9 +115,9 @@ function HisnAlmuslim({ onBack, onNavigate }) {
 
         const unregister = registerBackInterceptor(interceptor);
         return unregister;
-    }, [selectedCategory, zoomedItem]);
+    }, [selectedCategory, zoomedItem, isMenuOpen]);
 
-    const handleHomeClick = () => {
+    const handleBack = () => {
         if (zoomedItem) {
             setZoomedItem(null);
         } else if (selectedCategory) {
@@ -65,21 +127,70 @@ function HisnAlmuslim({ onBack, onNavigate }) {
         }
     };
 
+    const handleGoHome = () => {
+        if (zoomedItem) {
+            setZoomedItem(null);
+        }
+        if (selectedCategory) {
+            setSelectedCategory(null);
+        }
+        onNavigate('home');
+    };
+
+    // Calculate dynamic header title and subtitle based on active language
+    const getPageTitle = () => {
+        if (!selectedCategory) {
+            return isEn ? 'Fortress of the Muslim' : 'حصن المسلم';
+        }
+        if (selectedCategory.id === 'favorites') {
+            return isEn ? 'Favorites' : 'المفضلة';
+        }
+        if (isEn) {
+            return HISN_CATEGORIES_EN[selectedCategory.id]?.title || selectedCategory.title;
+        }
+        return selectedCategory.titleAr || selectedCategory.title;
+    };
+
+    const getPageSubtitle = () => {
+        if (!selectedCategory) {
+            return isEn ? 'Explore chapters and supplications of Fortress of the Muslim' : 'استعرض أبواب وأذكار حصن المسلم بسهولة.';
+        }
+        if (selectedCategory.id === 'favorites') {
+            return isEn ? 'Your saved favorite supplications' : 'أذكار المفضلة';
+        }
+        if (isEn) {
+            return HISN_CATEGORIES_EN[selectedCategory.id]?.subtitle || `Supplications of ${getPageTitle()}`;
+        }
+        return `أذكار ${selectedCategory.titleAr || selectedCategory.title} من حصن المسلم`;
+    };
+
     return (
-        <div className="h-screen flex flex-col overflow-hidden" style={{ backgroundColor: theme.bgColor }}>
+        <div 
+            className="h-screen flex flex-col overflow-hidden" 
+            dir={isEn ? 'ltr' : 'rtl'}
+            style={{ 
+                backgroundColor: theme.bgColor,
+                fontFamily: isEn ? 'sans-serif' : theme.font
+            }}
+        >
             <HisnHeader 
-                title={selectedCategory ? selectedCategory.title : 'حصن المسلم'} 
-                subtitle={selectedCategory ? `أذكار ${selectedCategory.title}` : 'استعرض أبواب وأذكار حصن المسلم بسهولة.'} 
+                title={getPageTitle()} 
+                subtitle={getPageSubtitle()} 
                 showThemePageLock={!selectedCategory}
+                onBack={handleBack}
+                onHome={handleGoHome}
             />
 
-            <main className="flex-1 overflow-y-auto hide-scrollbar relative mx-auto w-full max-w-lg px-4 pb-4">
+            <main className="flex-1 overflow-y-auto hide-scrollbar relative mx-auto w-full max-w-lg px-4 pb-6">
                 <div>
                     {selectedCategory ? (
                         <CategoryDetail 
                             selectedCategory={selectedCategory} 
                             onZoom={openZoomModal} 
-                            setToastMessage={setToastMessage} 
+                            setToastMessage={setToastMessage}
+                            counts={hisnCounts}
+                            onDecrement={handleDecrementHisn}
+                            onReset={handleResetHisn}
                         />
                     ) : (
                         <CategoryList 
@@ -87,13 +198,27 @@ function HisnAlmuslim({ onBack, onNavigate }) {
                         />
                     )}
                 </div>
-                <div className="shrink-0 w-full h-32"></div>
+                <div className="shrink-0 w-full h-8"></div>
             </main>
 
-            <BottomBar onHomeClick={handleHomeClick} onThemesClick={() => {}} showThemes={false} />
+            {/* Backdrop to close floating menu when clicking anywhere, absorbing the click */}
+            {isMenuOpen && (
+                <div 
+                    className="fixed inset-0 z-[1200] bg-transparent cursor-pointer"
+                    style={{ position: 'fixed' }}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setIsMenuOpen(false);
+                    }}
+                />
+            )}
 
             {/* Floating Menu & FAB */}
-            <div className="fixed bottom-20 right-4 z-[90] flex flex-col items-end">
+            <div 
+                ref={fabContainerRef} 
+                className={`fixed bottom-3 ${isEn ? 'right-4 items-end' : 'right-4 items-end'} ${isMenuOpen ? 'z-[1250]' : 'z-[90]'} flex flex-col`}
+                dir={isEn ? 'ltr' : 'rtl'}
+            >
                 <AnimatePresence>
                     {isMenuOpen && (
                         <motion.div
@@ -101,23 +226,32 @@ function HisnAlmuslim({ onBack, onNavigate }) {
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: menuOpenDirection === 'up' ? 20 : -20, scale: 0.9 }}
                             transition={{ duration: 0.2 }}
-                            className={`absolute right-0 ${menuOpenDirection === 'up' ? 'bottom-full mb-4 origin-bottom-right' : 'top-full mt-4 origin-top-right'} themed-card rounded-2xl shadow-xl border p-2 flex flex-col gap-1 overflow-hidden w-48 z-0`}
+                            className={`absolute right-0 ${menuOpenDirection === 'up' ? 'bottom-full mb-4 origin-bottom-right' : 'top-full mt-4 origin-top-right'} themed-card rounded-2xl shadow-xl border p-2 flex flex-col gap-1 overflow-hidden w-52 z-0`}
                             style={{ borderColor: 'var(--card-border)', color: 'var(--text-color)' }}
+                            onClick={(e) => e.stopPropagation()}
                         >
                             <button 
                                 onClick={() => { setSelectedCategory(null); setIsMenuOpen(false); }}
-                                className={`w-full text-right px-4 py-2.5 rounded-xl text-sm font-bold transition-colors ${!selectedCategory ? 'bg-black/5 dark:bg-white/10' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}
+                                className={`w-full ${isEn ? 'text-left' : 'text-right'} px-4 py-2.5 rounded-xl text-sm font-bold transition-colors ${!selectedCategory ? 'bg-black/5 dark:bg-white/10' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}
                                 style={!selectedCategory ? { color: isBlackTheme ? '#FFFFFF' : theme.palette[0] } : {}}
                             >
-                                كل الأبواب
+                                {isEn ? 'All Chapters' : 'كل الأبواب'}
                             </button>
                             <button 
-                                onClick={() => { setSelectedCategory({ id: 'favorites', title: 'المفضلة' }); setIsMenuOpen(false); }}
-                                className={`w-full text-right px-4 py-2.5 rounded-xl text-sm font-bold transition-colors flex items-center justify-between ${selectedCategory?.id === 'favorites' ? 'bg-black/5 dark:bg-white/10' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}
+                                onClick={() => { setSelectedCategory({ id: 'favorites', title: isEn ? 'Favorites' : 'المفضلة', titleAr: 'المفضلة' }); setIsMenuOpen(false); }}
+                                className={`w-full ${isEn ? 'text-left' : 'text-right'} px-4 py-2.5 rounded-xl text-sm font-bold transition-colors flex items-center justify-between ${selectedCategory?.id === 'favorites' ? 'bg-black/5 dark:bg-white/10' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}
                                 style={selectedCategory?.id === 'favorites' ? { color: isBlackTheme ? '#FFFFFF' : theme.palette[0] } : {}}
                             >
-                                <span>المفضلة</span>
+                                <span>{isEn ? 'Favorites' : 'المفضلة'}</span>
                                 <i className="fa-solid fa-heart text-red-500"></i>
+                            </button>
+                            <div className="h-px bg-black/10 dark:bg-white/10 my-1" />
+                            <button 
+                                onClick={handleResetAllHisn}
+                                className={`w-full ${isEn ? 'text-left' : 'text-right'} px-4 py-2.5 rounded-xl text-sm font-bold transition-colors flex items-center justify-between hover:bg-black/5 dark:hover:bg-white/5`}
+                            >
+                                <span>{isEn ? 'Reset All Counters' : 'إعادة ضبط العدادات'}</span>
+                                <i className="fa-solid fa-rotate-left text-xs opacity-70"></i>
                             </button>
                         </motion.div>
                     )}
@@ -132,12 +266,14 @@ function HisnAlmuslim({ onBack, onNavigate }) {
                         ? { backgroundColor: '#ffffff', border: '1px solid #000000' }
                         : { backgroundColor: isBlackTheme ? '#FFFFFF' : theme.palette[0] }
                     }
+                    title={isEn ? "Chapters & options menu" : "قائمة الأبواب والخيارات"}
+                    aria-label={isEn ? "Chapters & options menu" : "قائمة الأبواب والخيارات"}
                 >
                     <i className={`fa-solid ${isMenuOpen ? 'fa-times' : 'fa-list-ul'} text-xl`}></i>
                 </button>
             </div>
 
-            <ZoomModal zoomedItem={zoomedItem} onClose={closeZoomModal} />
+            <ZoomModal zoomedItem={zoomedItem} onClose={closeZoomModal} setToastMessage={setToastMessage} />
 
             <AnimatePresence>
                 {toastMessage && (
@@ -147,7 +283,7 @@ function HisnAlmuslim({ onBack, onNavigate }) {
                         exit={{ opacity: 0, y: 50 }}
                         className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[101] bg-gray-800 text-white px-6 py-3 rounded-full shadow-2xl font-bold flex items-center gap-2 whitespace-nowrap border border-white/10"
                     >
-                        <i className="fa-solid fa-spinner fa-spin text-primary" style={{ color: theme.palette[0] }}></i>
+                        <i className="fa-solid fa-check text-green-400"></i>
                         {toastMessage}
                     </motion.div>
                 )}

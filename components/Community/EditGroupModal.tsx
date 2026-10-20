@@ -5,6 +5,7 @@ import { Capacitor } from '@capacitor/core';
 import { Camera as CapCamera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { communityService, GroupChat } from '../../services/communityService';
 import { useTheme } from '../../context/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { PRESET_GROUP_IMAGES, PRESET_ICONS } from './CreateGroupModal';
 
 interface EditGroupModalProps {
@@ -57,6 +58,9 @@ export const EditGroupModal: React.FC<EditGroupModalProps> = ({
   onDelete
 }) => {
   const { theme, themeKey } = useTheme();
+  const { language } = useLanguage();
+  const isEn = language === 'en';
+
   const isDefaultTheme = themeKey === 'default' || !themeKey || theme.name?.includes('الافتراضي') || theme.name === 'Default';
   const isDeepBlack = theme.bgColor === '#000000' || theme.name === 'أبيض وأسود' || themeKey === 'deep_black';
   const cardBorderColor = isDefaultTheme 
@@ -75,17 +79,17 @@ export const EditGroupModal: React.FC<EditGroupModalProps> = ({
 
   const [groupName, setGroupName] = useState('');
   const [description, setDescription] = useState('');
-  const [selectedAvatar, setSelectedAvatar] = useState<string>('📖');
+  const [selectedAvatar, setSelectedAvatar] = useState<string>(PRESET_GROUP_IMAGES[0].url);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (group && isOpen) {
-      const cleanName = (group.name || '').replace(/[\p{Extended_Pictographic}\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '').trim() || group.name;
+    if (group) {
+      const cleanName = (group.name || '').replace(/[\p{Extended_Pictographic}\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '').trim() || group.name || '';
       setGroupName(cleanName);
       setDescription(group.description || '');
-      setSelectedAvatar(group.avatarUrl || '📖');
+      setSelectedAvatar(group.avatarUrl || PRESET_GROUP_IMAGES[0].url);
       setErrorMsg(null);
     }
   }, [group, isOpen]);
@@ -95,30 +99,17 @@ export const EditGroupModal: React.FC<EditGroupModalProps> = ({
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    if (!file.type.startsWith('image/')) {
-      setErrorMsg('يرجى اختيار ملف صورة صالح (JPG أو PNG أو WebP)');
-      return;
-    }
-
-    if (file.size > 8 * 1024 * 1024) {
-      setErrorMsg('حجم الصورة كبير جداً، يرجى اختيار صورة أقل من 8 ميجابايت');
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = async () => {
-      try {
-        const rawData = reader.result as string;
-        const compressed = await compressAvatar(rawData);
+    try {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const raw = reader.result as string;
+        const compressed = await compressAvatar(raw, 220, 0.85);
         setSelectedAvatar(compressed);
-        setErrorMsg(null);
-      } catch {
-        setErrorMsg('فشل ضغط وتحميل الصورة');
-      }
-    };
-    reader.readAsDataURL(file);
-    e.target.value = '';
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      console.error('Error reading group image file:', err);
+    }
   };
 
   const handlePickImage = async () => {
@@ -126,47 +117,40 @@ export const EditGroupModal: React.FC<EditGroupModalProps> = ({
       if (Capacitor.isNativePlatform()) {
         try {
           const image = await CapCamera.getPhoto({
-            quality: 90,
+            quality: 85,
             allowEditing: false,
             resultType: CameraResultType.DataUrl,
-            source: CameraSource.Photos
+            source: CameraSource.Prompt
           });
-
-          if (image && image.dataUrl) {
-            const compressed = await compressAvatar(image.dataUrl);
+          if (image?.dataUrl) {
+            const compressed = await compressAvatar(image.dataUrl, 220, 0.85);
             setSelectedAvatar(compressed);
-            setErrorMsg(null);
             return;
           }
         } catch (camErr: any) {
           const msg = (camErr?.message || '').toLowerCase();
-          if (msg.includes('cancel') || msg.includes('user cancelled')) {
-            return;
-          }
+          if (msg.includes('cancel') || msg.includes('user cancelled')) return;
+          console.warn('Native camera failed, falling back to file input:', camErr);
         }
       }
-
       fileInputRef.current?.click();
-    } catch {
+    } catch (err) {
+      console.warn('Error picking group image:', err);
       fileInputRef.current?.click();
     }
   };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMsg(null);
-
-    const rawName = groupName.trim();
-    const cleanName = rawName.replace(/[\p{Extended_Pictographic}\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '').trim() || rawName;
-    if (!cleanName || cleanName.length < 2) {
-      setErrorMsg('يرجى إدخال اسم مناسب للمجموعة (حرفين على الأقل)');
+    if (!groupName.trim() || groupName.trim().length < 2) {
+      setErrorMsg(isEn ? 'Please enter a valid group name (at least 2 characters)' : 'يرجى إدخال اسم المجموعة (حرفين على الأقل)');
       return;
     }
 
+    setIsSubmitting(true);
     try {
-      setIsSubmitting(true);
       const updated = await communityService.updateGroup(group.groupId, {
-        name: cleanName,
+        name: groupName.trim(),
         avatarUrl: selectedAvatar,
         description: description.trim()
       });
@@ -177,7 +161,7 @@ export const EditGroupModal: React.FC<EditGroupModalProps> = ({
       onClose();
     } catch (err: any) {
       setIsSubmitting(false);
-      setErrorMsg(err?.message || 'حدث خطأ أثناء تعديل بيانات المجموعة');
+      setErrorMsg(err?.message || (isEn ? 'An error occurred while updating group' : 'حدث خطأ أثناء تعديل بيانات المجموعة'));
     }
   };
 
@@ -185,7 +169,7 @@ export const EditGroupModal: React.FC<EditGroupModalProps> = ({
     <AnimatePresence>
       <div 
         className="fixed inset-0 z-[120] flex items-start sm:items-center justify-center p-3 sm:p-4 pt-6 sm:pt-4 pb-36 sm:pb-16 bg-black/70 backdrop-blur-md overflow-y-auto overscroll-contain" 
-        dir="rtl"
+        dir={isEn ? 'ltr' : 'rtl'}
         style={{ fontFamily: theme.font }}
       >
         <motion.div
@@ -216,10 +200,10 @@ export const EditGroupModal: React.FC<EditGroupModalProps> = ({
               </div>
               <div>
                 <h3 className="text-base sm:text-lg font-bold" style={{ color: textColor }}>
-                  تعديل اسم وصورة المجموعة
+                  {isEn ? 'Edit Group Details & Icon' : 'تعديل اسم وصورة المجموعة'}
                 </h3>
                 <p className="text-xs" style={{ color: textMuted }}>
-                  تحديث بيانات وأيقونة المحادثة الجماعية الرسمية
+                  {isEn ? 'Update official group name, description, and icon' : 'تحديث بيانات وأيقونة المحادثة الجماعية الرسمية'}
                 </p>
               </div>
             </div>
@@ -259,109 +243,107 @@ export const EditGroupModal: React.FC<EditGroupModalProps> = ({
               <div className="relative group mb-3">
                 <div 
                   onClick={handlePickImage}
-                  className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl border-2 shadow-md flex items-center justify-center overflow-hidden cursor-pointer transition-all hover:scale-105 active:scale-95"
+                  className="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl border-2 shadow-md flex items-center justify-center overflow-hidden cursor-pointer transition-all hover:scale-105 active:scale-95"
                   style={{
                     backgroundColor: `${primaryColor}15`,
                     borderColor: primaryColor
                   }}
-                  title="اضغط لتغيير الصورة من جهازك"
+                  title={isEn ? "Click to pick image from device" : "اضغط لاختيار صورة مخصصة من جهازك"}
                 >
                   {selectedAvatar.startsWith('data:image') || selectedAvatar.startsWith('http') || selectedAvatar.startsWith('/') ? (
-                    <img 
-                      src={selectedAvatar} 
-                      alt="صورة المجموعة" 
-                      className="w-full h-full object-cover" 
-                    />
+                    <img src={selectedAvatar} alt="صورة المجموعة" className="w-full h-full object-cover" />
                   ) : (
-                    <span className="text-3xl sm:text-4xl leading-none select-none">
-                      {selectedAvatar}
-                    </span>
+                    <span className="text-3xl sm:text-4xl select-none">{selectedAvatar}</span>
                   )}
                 </div>
 
+                {/* Camera upload badge */}
                 <button
                   type="button"
                   onClick={handlePickImage}
-                  className="absolute -bottom-1.5 -left-1.5 w-8 h-8 rounded-full border shadow-md flex items-center justify-center transition-all hover:scale-110 active:scale-90 cursor-pointer"
+                  className={`absolute -bottom-1 ${isEn ? '-right-1' : '-left-1'} w-7 h-7 rounded-xl border flex items-center justify-center shadow-md transition-all active:scale-95 cursor-pointer`}
                   style={{
                     backgroundColor: primaryColor,
-                    color: primaryTextColor,
-                    borderColor: cardBg
+                    borderColor: cardBorder,
+                    color: primaryTextColor
                   }}
-                  title="رفع صورة مخصصة من جهازك"
+                  title={isEn ? "Upload photo from device" : "رفع صورة من جهازك"}
                 >
-                  <Camera size={14} />
+                  <Camera size={13} strokeWidth={2.5} />
                 </button>
               </div>
 
               <span className="text-[11px] font-bold mb-2" style={{ color: textMuted }}>
-                الأيقونة أو الصورة الرسمية للمجموعة
+                {isEn ? 'Official Group Icon or Photo' : 'الأيقونة أو الصورة الرسمية للمجموعة'}
               </span>
 
-              {/* Preset Islamic Photos Grid */}
-              <div className="w-full mt-1">
-                <div className="text-[11px] font-bold mb-1.5 flex items-center justify-between" style={{ color: textMuted }}>
-                  <span>صور مختارة للمجموعة:</span>
-                  <button 
+              {/* Preset Islamic Photos */}
+              <div className="w-full">
+                <div className="flex items-center justify-between mb-1.5 px-0.5">
+                  <span className="text-[11px] font-bold" style={{ color: textMuted }}>
+                    {isEn ? 'Suggested Islamic Photos' : 'صور إسلامية مقترحة'}
+                  </span>
+                  <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="text-[10px] font-bold flex items-center gap-1 cursor-pointer transition-opacity hover:opacity-80"
+                    className="text-[11px] font-bold flex items-center gap-1 hover:underline cursor-pointer"
                     style={{ color: primaryColor }}
                   >
-                    <ImageIcon size={12} />
-                    <span>صورة من جهازك</span>
+                    <Camera size={12} />
+                    <span>{isEn ? 'Upload custom image' : 'رفع صورة خاصة'}</span>
                   </button>
                 </div>
-                <div className="grid grid-cols-6 gap-2">
-                  {PRESET_GROUP_IMAGES.map((img, idx) => {
-                    const isSelected = selectedAvatar === img.url;
+                <div className="flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-none w-full">
+                  {PRESET_GROUP_IMAGES.map((imgItem) => {
+                    const isSelected = selectedAvatar === imgItem.url;
                     return (
-                      <div
-                        key={idx}
-                        onClick={() => setSelectedAvatar(img.url)}
-                        className="relative aspect-square rounded-xl overflow-hidden cursor-pointer border-2 transition-all hover:scale-105 active:scale-95 shadow-xs"
+                      <button
+                        key={imgItem.url}
+                        type="button"
+                        onClick={() => setSelectedAvatar(imgItem.url)}
+                        className="relative w-11 h-11 rounded-2xl border overflow-hidden flex-shrink-0 transition-all active:scale-95 cursor-pointer"
                         style={{
-                          borderColor: isSelected ? primaryColor : 'transparent',
+                          borderColor: isSelected ? primaryColor : cardBorder,
                           boxShadow: isSelected ? `0 0 0 2px ${primaryColor}` : 'none'
                         }}
-                        title={img.label}
+                        title={isEn ? imgItem.labelEn : imgItem.label}
                       >
-                        <img src={img.url} alt={img.label} className="w-full h-full object-cover" />
+                        <img src={imgItem.url} alt={imgItem.label} className="w-full h-full object-cover" />
                         {isSelected && (
                           <div 
-                            className="absolute inset-0 flex items-center justify-center bg-black/40"
+                            className="absolute inset-0 bg-black/30 flex items-center justify-center"
                             style={{ color: '#FFFFFF' }}
                           >
                             <Check size={14} strokeWidth={3} />
                           </div>
                         )}
-                      </div>
+                      </button>
                     );
                   })}
                 </div>
               </div>
 
-              {/* Preset Icons Selection */}
-              <div className="w-full mt-2.5">
-                <span className="text-[11px] font-bold mb-1.5 block" style={{ color: textMuted }}>
-                  أو اختر أيقونة رسمية للمجموعة:
+              {/* Preset Emojis & Icons */}
+              <div className="w-full mt-2">
+                <span className="text-[11px] font-bold block mb-1.5 px-0.5" style={{ color: textMuted }}>
+                  {isEn ? 'Or Choose an Icon' : 'أو اختر رمـزاً'}
                 </span>
-                <div className="flex items-center justify-center flex-wrap gap-1.5">
-                  {PRESET_ICONS.map((icon, idx) => {
+                <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none w-full">
+                  {PRESET_ICONS.map(icon => {
                     const isSelected = selectedAvatar === icon;
                     return (
                       <button
-                        key={idx}
+                        key={icon}
                         type="button"
                         onClick={() => setSelectedAvatar(icon)}
-                        className="w-9 h-9 rounded-xl border flex items-center justify-center text-lg transition-all hover:scale-110 active:scale-90 cursor-pointer"
+                        className="w-9 h-9 rounded-xl border text-base flex items-center justify-center transition-all flex-shrink-0 active:scale-95 cursor-pointer"
                         style={{
                           backgroundColor: isSelected ? `${primaryColor}25` : secondaryBg,
                           borderColor: isSelected ? primaryColor : cardBorder,
-                          transform: isSelected ? 'scale(1.1)' : 'scale(1)'
+                          boxShadow: isSelected ? `0 0 0 2px ${primaryColor}` : 'none'
                         }}
                       >
-                        <span>{icon}</span>
+                        {icon}
                       </button>
                     );
                   })}
@@ -372,16 +354,16 @@ export const EditGroupModal: React.FC<EditGroupModalProps> = ({
             {/* Group Name input */}
             <div>
               <label className="block text-xs font-bold mb-1.5" style={{ color: textColor }}>
-                اسم المحادثة الجماعية <span className="text-rose-500">*</span>
+                {isEn ? 'Group Name *' : 'اسم المحادثة الجماعية *'}
               </label>
               <div className="relative">
                 <input
                   type="text"
                   value={groupName}
                   onChange={(e) => setGroupName(e.target.value)}
-                  placeholder="مثال: حلقة أهل القرآن، تدبر سورة الكهف..."
+                  placeholder={isEn ? "e.g., Quran Circle, Surah Al-Kahf Reflection..." : "مثال: حلقة أهل القرآن، تدبر سورة الكهف..."}
                   maxLength={40}
-                  className="w-full px-3.5 py-3 rounded-2xl border text-xs sm:text-sm font-bold focus:outline-none transition-all"
+                  className="w-full px-3.5 py-3 rounded-2xl border text-xs sm:text-sm font-bold focus:outline-none transition-all shadow-xs"
                   style={{
                     backgroundColor: secondaryBg,
                     borderColor: cardBorder,
@@ -390,23 +372,25 @@ export const EditGroupModal: React.FC<EditGroupModalProps> = ({
                   required
                 />
               </div>
-              <p className="text-[10px] mt-1 mr-1" style={{ color: textMuted }}>
-                الأيقونة الرسمية المختارة ستظهر كصورة للمجموعة بدون تكرارها بنص الاسم.
+              <p className={`text-[10px] mt-1 ${isEn ? 'ml-1' : 'mr-1'}`} style={{ color: textMuted }}>
+                {isEn 
+                  ? 'The chosen official icon will appear as the group avatar.' 
+                  : 'الأيقونة الرسمية المختارة ستظهر كصورة للمجموعة بدون تكرارها بنص الاسم.'}
               </p>
             </div>
 
             {/* Description input */}
             <div>
               <label className="block text-xs font-bold mb-1.5" style={{ color: textColor }}>
-                وصف المجموعة (اختياري)
+                {isEn ? 'Group Description (Optional)' : 'وصف المجموعة (اختياري)'}
               </label>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="نبذة عن موضوع المحادثة الجماعية أو أهدافها..."
+                placeholder={isEn ? "Brief description about group purpose or schedule..." : "نبذة عن موضوع المحادثة الجماعية أو أهدافها..."}
                 rows={2}
                 maxLength={200}
-                className="w-full px-3.5 py-2.5 rounded-2xl border text-xs font-medium focus:outline-none transition-all resize-none"
+                className="w-full px-3.5 py-2.5 rounded-2xl border text-xs font-medium focus:outline-none transition-all resize-none shadow-xs"
                 style={{
                   backgroundColor: secondaryBg,
                   borderColor: cardBorder,
@@ -427,7 +411,7 @@ export const EditGroupModal: React.FC<EditGroupModalProps> = ({
                 }}
               >
                 <Check size={18} />
-                <span>{isSubmitting ? 'جارٍ الحفظ...' : 'حفظ التعديلات'}</span>
+                <span>{isSubmitting ? (isEn ? 'Saving...' : 'جارٍ الحفظ...') : (isEn ? 'Save Changes' : 'حفظ التعديلات')}</span>
               </button>
 
               <button
@@ -440,7 +424,7 @@ export const EditGroupModal: React.FC<EditGroupModalProps> = ({
                   color: textColor
                 }}
               >
-                إلغاء
+                {isEn ? 'Cancel' : 'إلغاء'}
               </button>
             </div>
 
@@ -455,7 +439,7 @@ export const EditGroupModal: React.FC<EditGroupModalProps> = ({
                   className="w-full py-2.5 rounded-2xl text-xs font-bold text-rose-500 hover:bg-rose-500/10 border border-rose-500/30 transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
                 >
                   <Trash2 size={14} />
-                  <span>حذف هذه المجموعة نهائياً</span>
+                  <span>{isEn ? 'Permanently Delete This Group' : 'حذف هذه المجموعة نهائياً'}</span>
                 </button>
               </div>
             )}

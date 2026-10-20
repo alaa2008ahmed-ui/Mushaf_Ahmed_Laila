@@ -41,6 +41,7 @@ export interface DailyRecord {
   adhkar: {
     sabah: boolean;
     masaa: boolean;
+    salah: boolean;
     istighfar: boolean;
     adia: boolean;
   };
@@ -66,20 +67,128 @@ export const defaultRecord: DailyRecord = {
     istikharah: false, witr: false
   },
   quran: { pages: 0, completed: false },
-  adhkar: { sabah: false, masaa: false, istighfar: false, adia: false },
+  adhkar: { sabah: false, masaa: false, salah: false, istighfar: false, adia: false },
   ethics: { parents: false, charity: false, visitFamily: false, visitSick: false },
   custom: {}
 };
 
+export const HABIT_WEIGHTS = {
+  // الفرائض الخمس (35 نقطة إجمالاً - 7 نقاط لكل فريضة مكتوبة)
+  fard: {
+    fajr: 7,
+    dhuhr: 7,
+    asr: 7,
+    maghrib: 7,
+    isha: 7,
+  },
+  // السنن الرواتب للصلوات الخمس (10 نقاط إجمالاً - 2 نقطة لكل سنة راتبة)
+  sunnah: {
+    fajrSunnah: 2,
+    dhuhrSunnah: 2,
+    asrSunnah: 2,
+    maghribSunnah: 2,
+    ishaSunnah: 2,
+  },
+  // صلوات النوافل وقيام الليل (13 نقطة إجمالاً)
+  nawafil: {
+    witr: 3,       // صلاة الوتر
+    qiyam: 3,      // قيام الليل
+    duha: 2,       // صلاة الضحى
+    masjid: 1,     // تحية المسجد
+    tasbih: 1,     // صلاة التسابيح
+    hajah: 1,      // صلاة الحاجة
+    tawbah: 1,     // صلاة التوبة
+    istikharah: 1, // صلاة الاستخارة
+  },
+  // الورد القرآني وكمية الصفحات (الحد الأقصى 15 نقطة)
+  quranMax: 15,
+  // الأذكار اليومية (15 نقطة إجمالاً)
+  adhkar: {
+    sabah: 4,      // أذكار الصباح
+    masaa: 4,      // أذكار المساء
+    salah: 3,      // أذكار الصلاة
+    istighfar: 2,  // الاستغفار
+    adia: 2,       // الأدعية
+  },
+  // بر الوالدين والصدقات وصلة الرحم (15 نقطة إجمالاً)
+  ethics: {
+    parents: 5,     // بر الوالدين والدعاء لهما
+    charity: 5,     // الصدقة (مربي الصدقات)
+    visitFamily: 3, // صلة الرحم وزيارة الأقارب
+    visitSick: 2,   // عيادة المريض
+  },
+  // وزن كل عبادة مخصصة مضافة في اليوم (4 نقاط لكل عبادة مخصصة)
+  customHabit: 4,
+};
+
+/**
+ * حساب نقاط الورد القرآني بناءً على عدد الصفحات المقروءة وتأكيد الورد:
+ * كلما زادت صفحات القراءة ارتفعت النقاط تلقائياً حتى 15 نقطة كاملة
+ */
+export const calculateQuranScore = (pages: number = 0, completed: boolean = false): number => {
+  if (pages <= 0 && !completed) return 0;
+
+  // النقاط المكتسبة حسب عدد الصفحات المقروءة:
+  let pageScore = 0;
+  if (pages >= 20) {
+    pageScore = 13; // جزء كامل فأكثر
+  } else if (pages >= 15) {
+    pageScore = 12;
+  } else if (pages >= 10) {
+    pageScore = 10; // نصف جزء تقريباً
+  } else if (pages >= 5) {
+    pageScore = 8;  // ربع حزب أو ربع جزء
+  } else if (pages >= 3) {
+    pageScore = 5;
+  } else if (pages >= 1) {
+    pageScore = 3;  // صفحة أو صفحتين
+  }
+
+  // إضافة مكافأة تأكيد الورد اليومي
+  if (completed) {
+    if (pageScore === 0) {
+      pageScore = 6; // تأكيد دون تحديد عدد الصفحات يمنح 6 نقاط تشجيعية
+    } else {
+      pageScore = Math.min(15, pageScore + 2); // إضافة نقطتي إتمام الورد
+    }
+  }
+
+  // في حال قراءة 20 صفحة فأكثر مع التأكيد ينال كامل الـ 15 نقطة
+  if (pages >= 20 && completed) {
+    return 15;
+  }
+
+  return Math.min(15, pageScore);
+};
+
+export interface DailyScoreBreakdown {
+  totalEarned: number;
+  totalAvailable: number;
+  percentage: number;
+  fardPoints: number;
+  sunnahPoints: number;
+  nawafilPoints: number;
+  quranPoints: number;
+  adhkarPoints: number;
+  ethicsPoints: number;
+  customPoints: number;
+}
+
 interface HabitTrackerState {
   records: Record<string, DailyRecord>;
   customHabits: CustomHabit[];
+  autoSyncEnabled: boolean;
+  setAutoSyncEnabled: (enabled: boolean) => void;
   addCustomHabit: (habit: { title: string; icon?: string; description?: string; days?: number[] }) => void;
   removeCustomHabit: (id: string) => void;
   toggleHabit: (date: string, category: HabitCategory, habitId: string) => void;
+  setHabitStatus: (date: string, category: HabitCategory, habitId: string, status: boolean) => void;
   setQuranPages: (date: string, pages: number) => void;
+  recordQuranPageRead: (pageNum: number) => void;
+  recordAdhkarRead: (type: 'sabah' | 'masaa' | 'salah' | 'istighfar' | 'adia') => void;
   getRecord: (date: string) => DailyRecord;
   getStreak: (category: HabitCategory, habitId: string) => number;
+  getDailyScoreBreakdown: (date: string) => DailyScoreBreakdown;
   getDailyProgress: (date: string) => number;
   getHeatmapData: () => { date: string; progress: number; isToday?: boolean }[];
 }
@@ -89,6 +198,11 @@ export const useHabitTracker = create<HabitTrackerState>()(
     (set, get) => ({
       records: {},
       customHabits: [],
+      autoSyncEnabled: true,
+
+      setAutoSyncEnabled: (enabled) => {
+        set({ autoSyncEnabled: enabled });
+      },
 
       addCustomHabit: (habit) => {
         const newHabit: CustomHabit = {
@@ -131,6 +245,27 @@ export const useHabitTracker = create<HabitTrackerState>()(
         });
       },
 
+      setHabitStatus: (date, category, habitId, status) => {
+        set((state) => {
+          const currentRecord: DailyRecord = state.records[date] 
+            ? JSON.parse(JSON.stringify(state.records[date])) 
+            : JSON.parse(JSON.stringify(defaultRecord));
+
+          if (!currentRecord.custom) currentRecord.custom = {};
+          if (!currentRecord.prayers) currentRecord.prayers = { ...defaultRecord.prayers };
+          if (!currentRecord.quran) currentRecord.quran = { ...defaultRecord.quran };
+          if (!currentRecord.adhkar) currentRecord.adhkar = { ...defaultRecord.adhkar };
+          if (!currentRecord.ethics) currentRecord.ethics = { ...defaultRecord.ethics };
+
+          if (category === 'custom') {
+            currentRecord.custom[habitId] = status;
+          } else {
+            (currentRecord[category] as any)[habitId] = status;
+          }
+          return { records: { ...state.records, [date]: currentRecord } };
+        });
+      },
+
       setQuranPages: (date, pages) => {
         set((state) => {
           const currentRecord: DailyRecord = state.records[date] 
@@ -138,7 +273,65 @@ export const useHabitTracker = create<HabitTrackerState>()(
             : JSON.parse(JSON.stringify(defaultRecord));
           if (!currentRecord.quran) currentRecord.quran = { ...defaultRecord.quran };
           currentRecord.quran.pages = pages;
+          if (pages > 0) {
+            currentRecord.quran.completed = true;
+          }
           return { records: { ...state.records, [date]: currentRecord } };
+        });
+      },
+
+      recordQuranPageRead: (pageNum) => {
+        if (!get().autoSyncEnabled) return;
+        if (!pageNum || pageNum < 1 || pageNum > 604) return;
+        const today = moment().format('YYYY-MM-DD');
+        const storageKey = `quran_pages_read_${today}`;
+        let pagesSet: number[] = [];
+        try {
+          const saved = localStorage.getItem(storageKey);
+          if (saved) pagesSet = JSON.parse(saved);
+        } catch (e) {}
+
+        if (!pagesSet.includes(pageNum)) {
+          pagesSet.push(pageNum);
+          try {
+            localStorage.setItem(storageKey, JSON.stringify(pagesSet));
+          } catch (e) {}
+        }
+
+        const distinctCount = pagesSet.length;
+        set((state) => {
+          const currentRecord: DailyRecord = state.records[today] 
+            ? JSON.parse(JSON.stringify(state.records[today])) 
+            : JSON.parse(JSON.stringify(defaultRecord));
+          if (!currentRecord.quran) currentRecord.quran = { ...defaultRecord.quran };
+          
+          const currentPages = currentRecord.quran.pages || 0;
+          if (distinctCount > currentPages) {
+            currentRecord.quran.pages = distinctCount;
+          }
+          if (currentRecord.quran.pages > 0) {
+            currentRecord.quran.completed = true;
+          }
+          return { records: { ...state.records, [today]: currentRecord } };
+        });
+      },
+
+      recordAdhkarRead: (type) => {
+        if (!get().autoSyncEnabled) return;
+        const today = moment().format('YYYY-MM-DD');
+        set((state) => {
+          const currentRecord: DailyRecord = state.records[today] 
+            ? JSON.parse(JSON.stringify(state.records[today])) 
+            : JSON.parse(JSON.stringify(defaultRecord));
+          if (!currentRecord.adhkar) currentRecord.adhkar = { ...defaultRecord.adhkar };
+          
+          if (type === 'adia') {
+            currentRecord.adhkar.adia = true;
+            currentRecord.adhkar.istighfar = true;
+          } else {
+            (currentRecord.adhkar as any)[type] = true;
+          }
+          return { records: { ...state.records, [today]: currentRecord } };
         });
       },
 
@@ -187,43 +380,114 @@ export const useHabitTracker = create<HabitTrackerState>()(
         return streak;
       },
 
-      getDailyProgress: (date) => {
-        const record = get().records[date];
-        if (!record) return 0;
+      getDailyScoreBreakdown: (date) => {
+        const record = get().records[date] || defaultRecord;
+        let totalAvailable = 0;
+        let totalEarned = 0;
 
-        let total = 0;
-        let completed = 0;
+        let fardPoints = 0;
+        let sunnahPoints = 0;
+        let nawafilPoints = 0;
 
-        // Prayers
-        if (record.prayers) {
-          Object.values(record.prayers).forEach(val => { total++; if (val) completed++; });
-        }
-        // Quran
-        total++; 
-        if (record.quran?.completed) completed++;
-        // Adhkar
-        if (record.adhkar) {
-          Object.values(record.adhkar).forEach(val => { total++; if (val) completed++; });
-        }
-        // Ethics
-        if (record.ethics) {
-          Object.values(record.ethics).forEach(val => { total++; if (val) completed++; });
-        }
-        // Custom habits applicable on this day
+        // 1. الفرائض الخمس (7 نقاط لكل فريضة)
+        const fardKeys: (keyof typeof HABIT_WEIGHTS.fard)[] = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
+        fardKeys.forEach((key) => {
+          const weight = HABIT_WEIGHTS.fard[key];
+          totalAvailable += weight;
+          if (record.prayers?.[key]) {
+            fardPoints += weight;
+            totalEarned += weight;
+          }
+        });
+
+        // 2. السنن الرواتب للصلوات الخمس (2 نقطة لكل سنة)
+        const sunnahKeys: (keyof typeof HABIT_WEIGHTS.sunnah)[] = ['fajrSunnah', 'dhuhrSunnah', 'asrSunnah', 'maghribSunnah', 'ishaSunnah'];
+        sunnahKeys.forEach((key) => {
+          const weight = HABIT_WEIGHTS.sunnah[key];
+          totalAvailable += weight;
+          if (record.prayers?.[key]) {
+            sunnahPoints += weight;
+            totalEarned += weight;
+          }
+        });
+
+        // 3. صلوات النوافل وقيام الليل
+        const nawafilKeys: (keyof typeof HABIT_WEIGHTS.nawafil)[] = ['witr', 'qiyam', 'duha', 'masjid', 'tasbih', 'hajah', 'tawbah', 'istikharah'];
+        nawafilKeys.forEach((key) => {
+          const weight = HABIT_WEIGHTS.nawafil[key];
+          totalAvailable += weight;
+          if (record.prayers?.[key]) {
+            nawafilPoints += weight;
+            totalEarned += weight;
+          }
+        });
+
+        // 4. الورد القرآني وكمية الصفحات المقروءة (تصل حتى 15 نقطة)
+        totalAvailable += HABIT_WEIGHTS.quranMax;
+        const quranPages = record.quran?.pages || 0;
+        const quranDone = !!record.quran?.completed;
+        const quranPoints = calculateQuranScore(quranPages, quranDone);
+        totalEarned += quranPoints;
+
+        // 5. الأذكار اليومية
+        let adhkarPoints = 0;
+        const adhkarKeys: (keyof typeof HABIT_WEIGHTS.adhkar)[] = ['sabah', 'masaa', 'salah', 'istighfar', 'adia'];
+        adhkarKeys.forEach((key) => {
+          const weight = HABIT_WEIGHTS.adhkar[key];
+          totalAvailable += weight;
+          if (record.adhkar?.[key]) {
+            adhkarPoints += weight;
+            totalEarned += weight;
+          }
+        });
+
+        // 6. الأخلاق والصدقات والوالدين
+        let ethicsPoints = 0;
+        const ethicsKeys: (keyof typeof HABIT_WEIGHTS.ethics)[] = ['parents', 'charity', 'visitFamily', 'visitSick'];
+        ethicsKeys.forEach((key) => {
+          const weight = HABIT_WEIGHTS.ethics[key];
+          totalAvailable += weight;
+          if (record.ethics?.[key]) {
+            ethicsPoints += weight;
+            totalEarned += weight;
+          }
+        });
+
+        // 7. العبادات المخصصة المضافة (Custom Habits)
+        let customPoints = 0;
         const customHabits = get().customHabits || [];
         const dayOfWeek = moment(date).day();
-        customHabits.forEach(h => {
+        customHabits.forEach((h) => {
           const isApplicable = !h.days || h.days.length === 0 || h.days.includes(dayOfWeek);
           if (isApplicable) {
-            total++;
+            totalAvailable += HABIT_WEIGHTS.customHabit;
             if (record.custom && record.custom[h.id]) {
-              completed++;
+              customPoints += HABIT_WEIGHTS.customHabit;
+              totalEarned += HABIT_WEIGHTS.customHabit;
             }
           }
         });
 
-        if (total === 0) return 0;
-        return Math.round((completed / total) * 100);
+        const percentage = totalAvailable > 0
+          ? Math.min(100, Math.round((totalEarned / totalAvailable) * 100))
+          : 0;
+
+        return {
+          totalEarned,
+          totalAvailable,
+          percentage,
+          fardPoints,
+          sunnahPoints,
+          nawafilPoints,
+          quranPoints,
+          adhkarPoints,
+          ethicsPoints,
+          customPoints
+        };
+      },
+
+      getDailyProgress: (date) => {
+        return get().getDailyScoreBreakdown(date).percentage;
       },
 
       getHeatmapData: () => {

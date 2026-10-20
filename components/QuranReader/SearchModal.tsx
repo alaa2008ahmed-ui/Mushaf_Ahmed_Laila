@@ -1,9 +1,15 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { toArabic } from './constants';
-import { X } from 'lucide-react';
+import { toArabic, SURAH_NAMES_EN } from './constants';
+import { X, ChevronLeft } from 'lucide-react';
 import { Keyboard } from '@capacitor/keyboard';
 import { Capacitor } from '@capacitor/core';
 import { renderTajweedTextHtml } from './MushafPage';
+import { useLanguage } from '../../context/LanguageContext';
+import { 
+    loadQuranEnglishTranslation, 
+    searchQuranEnglish, 
+    getCachedQuranEnglishTranslation 
+} from '../../utils/quranTranslationHelper';
 
 interface SearchModalProps {
     quranData: any;
@@ -16,6 +22,8 @@ interface SearchModalProps {
 }
 
 const SearchModal: React.FC<SearchModalProps> = ({ quranData, onSelect, onClose, isLandscape, initialQuery, readingMode = 'mushaf', currentTheme }) => {
+    const { language, isRTL } = useLanguage();
+    const isEn = language === 'en';
     const modeSuffix = readingMode === 'mushaf' ? (isLandscape ? '_h' : '_v') : `_${readingMode}_${isLandscape ? 'h' : 'v'}`;
     const [initialHeight] = useState(() => typeof window !== 'undefined' ? window.innerHeight : 800);
 
@@ -75,7 +83,23 @@ const SearchModal: React.FC<SearchModalProps> = ({ quranData, onSelect, onClose,
             .replace(/[ىي]/g, "ي");
     };
 
-    const executeSearchOptimized = useCallback((q: string, jobId: number) => {
+    const executeSearchOptimized = useCallback(async (q: string, jobId: number) => {
+        const hasLatinChars = /[a-zA-Z]/.test(q);
+
+        if (hasLatinChars || isEn || readingMode === 'translation' || readingMode === 'bilingual') {
+            const enData = await loadQuranEnglishTranslation();
+            if (enData && enData.length > 0) {
+                const enResults = searchQuranEnglish(q, enData, quranData);
+                if (searchJobIdRef.current === jobId) {
+                    setResults(enResults);
+                    localStorage.setItem('search_results' + modeSuffix, JSON.stringify(enResults));
+                    setSearchStats(isEn || readingMode === 'translation' || readingMode === 'bilingual' ? `Results: ${enResults.length}` : `النتائج: ${toArabic(enResults.length)}`);
+                    setIsSearching(false);
+                }
+                return;
+            }
+        }
+
         const normQ = normalizeArabic(q);
         const gap = '[\\u0610-\\u061A\\u064B-\\u065F\\u0670\\u06D6-\\u06ED\\u0640]*';
         const highlightPattern = normQ.split('').map(c => (
@@ -87,6 +111,7 @@ const SearchModal: React.FC<SearchModalProps> = ({ quranData, onSelect, onClose,
         const regex = new RegExp(highlightPattern, 'gi');
         const isNumberSearch = /^[0-9\u0660-\u0669]+$/.test(q);
         const searchNum = isNumberSearch ? parseInt(q.replace(/[٠-٩]/g, (d:any) => '0123456789'['٠١٢٣٤٥٦٧٨٩'.indexOf(d)])) : -1;
+        const cachedEn = getCachedQuranEnglishTranslation();
         
         const foundResults: any[] = [];
         let sIdx = 0;
@@ -102,21 +127,24 @@ const SearchModal: React.FC<SearchModalProps> = ({ quranData, onSelect, onClose,
                     const ayah = surah.ayahs[aIdx];
                     const rawText = ayah.text;
                     const cleanText = stripTajweedTags(rawText);
+                    const textEn = cachedEn?.[sIdx]?.verses?.[aIdx]?.translation || '';
                     
                     if (isNumberSearch && ayah.numberInSurah === searchNum) {
                         foundResults.push({ 
                             text: fixQuranText(cleanText), 
                             rawText: fixQuranText(rawText),
+                            textEn,
                             surah: surah.number, 
                             surahName: surah.name, 
                             ayah: ayah.numberInSurah, 
                             page: ayah.page,
-                            highlightRegex: null // No highlight for pure numbers unless we want to
+                            highlightRegex: null
                         });
                     } else if (!isNumberSearch && regex.test(cleanText)) {
                         foundResults.push({ 
                             text: fixQuranText(cleanText), 
                             rawText: fixQuranText(rawText),
+                            textEn,
                             surah: surah.number, 
                             surahName: surah.name, 
                             ayah: ayah.numberInSurah, 
@@ -127,7 +155,7 @@ const SearchModal: React.FC<SearchModalProps> = ({ quranData, onSelect, onClose,
                     aIdx++;
                     if (performance.now() - start > 20) {
                         setResults([...foundResults]);
-                        setSearchStats(`جاري البحث... (${toArabic(foundResults.length)})`);
+                        setSearchStats(isEn ? `Searching... (${foundResults.length})` : `جاري البحث... (${toArabic(foundResults.length)})`);
                         setTimeout(processChunk, 0);
                         return;
                     }
@@ -139,13 +167,13 @@ const SearchModal: React.FC<SearchModalProps> = ({ quranData, onSelect, onClose,
             if (searchJobIdRef.current === jobId) {
                 setResults([...foundResults]);
                 localStorage.setItem('search_results' + modeSuffix, JSON.stringify(foundResults));
-                setSearchStats(`النتائج: ${toArabic(foundResults.length)}`);
+                setSearchStats(isEn ? `Results: ${foundResults.length}` : `النتائج: ${toArabic(foundResults.length)}`);
                 setIsSearching(false);
             }
         };
 
         processChunk();
-    }, [quranData, modeSuffix]);
+    }, [quranData, modeSuffix, isEn, readingMode]);
 
     const performSearch = useCallback((q: string) => {
         if (!quranData) return;
@@ -186,9 +214,9 @@ const SearchModal: React.FC<SearchModalProps> = ({ quranData, onSelect, onClose,
             return;
         }
 
-        setSearchStats('جاري الكتابة...');
+        setSearchStats(isEn ? 'Typing...' : 'جاري الكتابة...');
         searchTimeoutRef.current = setTimeout(() => performSearch(q), 500);
-    }, [modeSuffix, performSearch]);
+    }, [modeSuffix, performSearch, isEn]);
 
     useEffect(() => {
         const handleVoiceCommand = (e: any) => {
@@ -212,19 +240,35 @@ const SearchModal: React.FC<SearchModalProps> = ({ quranData, onSelect, onClose,
         }
     }, [performSearch, query, results.length]);
 
-    const highlightText = (text: string, regex: RegExp) => {
-        const parts = text.split(regex);
-        const matches = text.match(regex) || [];
-        return (
-            <>
-                {parts.map((part, i) => (
-                    <React.Fragment key={i}>
-                        {part}
-                        {matches[i] && <span className="highlighted-search-term">{matches[i]}</span>}
-                    </React.Fragment>
-                ))}
-            </>
-        );
+    const highlightText = (text: string, regex: RegExp | null) => {
+        if (!text) return null;
+        if (!regex) return <span>{text}</span>;
+        try {
+            const parts: React.ReactNode[] = [];
+            let lastIndex = 0;
+            const globalRegex = new RegExp(regex.source, regex.flags.includes('g') ? regex.flags : regex.flags + 'g');
+            let match: RegExpExecArray | null;
+            let safety = 0;
+            while ((match = globalRegex.exec(text)) !== null && safety < 100) {
+                safety++;
+                if (match.index > lastIndex) {
+                    parts.push(text.substring(lastIndex, match.index));
+                }
+                parts.push(
+                    <span key={`${match.index}-${safety}`} className="highlighted-search-term font-bold underline bg-yellow-400/20 px-0.5 rounded">
+                        {match[0]}
+                    </span>
+                );
+                lastIndex = globalRegex.lastIndex;
+                if (match[0].length === 0) globalRegex.lastIndex++;
+            }
+            if (lastIndex < text.length) {
+                parts.push(text.substring(lastIndex));
+            }
+            return <>{parts.length > 0 ? parts : text}</>;
+        } catch (e) {
+            return <span>{text}</span>;
+        }
     };
 
     const visibleResults = results.slice(0, visibleCount);
@@ -245,13 +289,15 @@ const SearchModal: React.FC<SearchModalProps> = ({ quranData, onSelect, onClose,
     };
 
     return (
-        <div className="fixed top-0 left-0 right-0 z-[1200] flex items-center justify-center overflow-hidden" style={{ top: 0, left: 0, right: 0, height: `${initialHeight}px`, backgroundColor: 'rgba(0,0,0,0.5)' }} dir="rtl" onClick={onClose}>
+        <div className="fixed top-0 left-0 right-0 z-[1200] flex items-center justify-center overflow-hidden" style={{ top: 0, left: 0, right: 0, height: `${initialHeight}px`, backgroundColor: 'rgba(0,0,0,0.5)' }} dir={isRTL ? "rtl" : "ltr"} onClick={onClose}>
             <div className="w-full h-full flex flex-col overflow-hidden shadow-none border-[4px]" style={{ backgroundColor: currentTheme?.bg || '#ffffff', borderColor: currentTheme?.accent || '#3b82f6' }} onClick={e => e.stopPropagation()}>
                 <div className="flex-1 w-full flex flex-col overflow-hidden" style={{ color: currentTheme?.text || '#000000' }}>
                     
-                    {/* Full Screen Modal Header */}
-                    <div className="p-3 border-b flex items-center justify-center shrink-0" style={{ backgroundColor: currentTheme?.bg || '#ffffff', borderColor: currentTheme?.id === 'night' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)', paddingTop: 'calc(0.75rem + env(safe-area-inset-top))' }}>
-                        <h3 className="text-sm font-bold" style={{ color: currentTheme?.text }}>البحث المتقدم</h3>
+                    {/* Full Screen Modal Header without top back button */}
+                    <div className="p-3 border-b flex items-center justify-center shrink-0 relative" style={{ backgroundColor: currentTheme?.bg || '#ffffff', borderColor: currentTheme?.id === 'night' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)', paddingTop: 'calc(0.75rem + env(safe-area-inset-top))' }}>
+                        <h3 className="text-sm font-bold text-center" style={{ color: currentTheme?.text }}>
+                            {isEn ? "Advanced Search in Quran" : "البحث المتقدم"}
+                        </h3>
                     </div>
 
                     {/* Search Input Section */}
@@ -261,8 +307,8 @@ const SearchModal: React.FC<SearchModalProps> = ({ quranData, onSelect, onClose,
                                 type="text" 
                                 value={query}
                                 onChange={(e) => handleSearchInput(e.target.value)}
-                                placeholder="ابحث عن آية، أو كلمة، أو في حصن المسلم..." 
-                                className="w-full p-3 pl-10 pr-10 rounded-xl border focus:outline-none font-bold"
+                                placeholder={isEn ? "Search for an ayah, word, or in Hisn Al-Muslim..." : "ابحث عن آية، أو كلمة، أو في حصن المسلم..."} 
+                                className={`w-full p-3 ${isRTL ? "pl-10 pr-10" : "pr-10 pl-10"} rounded-xl border focus:outline-none font-bold`}
                                 style={{ 
                                     backgroundColor: currentTheme?.id === 'night' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)',
                                     borderColor: currentTheme?.accent || '#3b82f6',
@@ -272,16 +318,16 @@ const SearchModal: React.FC<SearchModalProps> = ({ quranData, onSelect, onClose,
                             {query && (
                                 <button 
                                     onClick={() => handleSearchInput('')}
-                                    className="absolute right-3 top-1/2 transform -translate-y-1/2 transition-colors"
+                                    className={`absolute ${isRTL ? "right-3" : "left-3"} top-1/2 transform -translate-y-1/2 transition-colors`}
                                     style={{ color: currentTheme?.text, opacity: 0.5 }}
-                                    title="مسح البحث"
+                                    title={isEn ? "Clear Search" : "مسح البحث"}
                                 >
                                     <X className="w-5 h-5" />
                                 </button>
                             )}
                             <button 
                                 onClick={() => performSearch(query)} 
-                                className="absolute left-2 top-1/2 transform -translate-y-1/2 p-1.5 rounded-lg transition"
+                                className={`absolute ${isRTL ? "left-2" : "right-2"} top-1/2 transform -translate-y-1/2 p-1.5 rounded-lg transition`}
                                 style={{ backgroundColor: currentTheme?.accent || '#10b981', color: '#ffffff' }}
                             >
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
@@ -300,27 +346,28 @@ const SearchModal: React.FC<SearchModalProps> = ({ quranData, onSelect, onClose,
                     {isSearching && (
                         <div className="text-center mt-8">
                             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500 mx-auto"></div>
-                            <p className="mt-2 opacity-60 font-bold">جاري البحث...</p>
+                            <p className="mt-2 opacity-60 font-bold">{isEn ? "Searching..." : "جاري البحث..."}</p>
                         </div>
                     )}
                     
                     {!isSearching && results.length === 0 && query.trim() !== '' && (
                         <div className="text-center opacity-40 mt-10">
                             <svg className="w-16 h-16 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                            <p>لا توجد نتائج لبحثك</p>
+                            <p>{isEn ? "No results found for your search" : "لا توجد نتائج لبحثك"}</p>
                         </div>
                     )}
 
                     {!isSearching && results.length === 0 && query.trim() === '' && (
                         <div className="text-center opacity-40 mt-10">
                             <svg className="w-16 h-16 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                            <p>ابدأ البحث عن آية، أو كلمة، أو في حصن المسلم</p>
+                            <p>{isEn ? "Start searching for an ayah, word, or in Hisn Al-Muslim" : "ابدأ البحث عن آية، أو كلمة، أو في حصن المسلم"}</p>
                         </div>
                     )}
 
                     {sortedSurahKeys.map(surahNum => {
                         const group = groupedResults[surahNum];
                         const isExpanded = expandedSurahs[surahNum];
+                        const surahDisplayName = isEn ? (SURAH_NAMES_EN[surahNum - 1] || group.surahName) : group.surahName;
                         return (
                             <div key={surahNum} className="mb-2 border border-emerald-500/20 rounded-xl overflow-hidden">
                                 <button 
@@ -332,11 +379,11 @@ const SearchModal: React.FC<SearchModalProps> = ({ quranData, onSelect, onClose,
                                     }}
                                 >
                                     <h4 className="font-amiri-quran text-xl font-bold" style={{ color: currentTheme?.accent || '#10b981' }}>
-                                        {group.surahName}
+                                        {surahDisplayName}
                                     </h4>
                                     <div className="flex items-center gap-2">
                                         <span className="text-white text-[10px] px-2 py-0.5 rounded-full font-bold" style={{ backgroundColor: currentTheme?.accent || '#10b981' }}>
-                                            {toArabic(group.ayahs.length)}
+                                            {isEn ? group.ayahs.length : toArabic(group.ayahs.length)}
                                         </span>
                                         <svg 
                                             className={`w-4 h-4 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} 
@@ -356,10 +403,23 @@ const SearchModal: React.FC<SearchModalProps> = ({ quranData, onSelect, onClose,
                                                     borderColor: currentTheme?.id === 'night' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)'
                                                 }}
                                                 onClick={() => { onSelect(r.surah, r.ayah); onClose(); }}>
-                                                <div className="search-context-label !text-[10px] !mb-1 font-bold opacity-50" style={{ color: currentTheme?.text }}>آية {toArabic(r.ayah)} - صفحة {toArabic(r.page)}</div>
-                                                <div className="search-context-ayah !text-base font-amiri-quran" style={{ color: currentTheme?.text, letterSpacing: 0, fontFeatureSettings: '"kern", "liga", "clig", "calt", "ccmp"', textRendering: 'optimizeLegibility' }}>
-                                                    {highlightText(r.text, r.highlightRegex)}
+                                                <div className="search-context-label !text-[10px] !mb-1 font-bold opacity-50" style={{ color: currentTheme?.text }}>
+                                                    {isEn ? `Ayah ${r.ayah} - Page ${r.page}` : `آية ${toArabic(r.ayah)} - صفحة ${toArabic(r.page)}`}
                                                 </div>
+                                                {(isEn || readingMode === 'translation' || readingMode === 'bilingual') && r.textEn ? (
+                                                    <div className="space-y-1.5 text-left mb-2" dir="ltr">
+                                                        <div className="text-sm font-medium leading-relaxed" style={{ color: currentTheme?.text }}>
+                                                            {highlightText(r.textEn, r.highlightRegex)}
+                                                        </div>
+                                                        <div className="search-context-ayah !text-sm font-amiri-quran text-right opacity-70" dir="rtl" style={{ color: currentTheme?.text }}>
+                                                            {r.text}
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="search-context-ayah !text-base font-amiri-quran" style={{ color: currentTheme?.text, letterSpacing: 0, fontFeatureSettings: '"kern", "liga", "clig", "calt", "ccmp"', textRendering: 'optimizeLegibility' }}>
+                                                        {highlightText(r.text, r.highlightRegex)}
+                                                    </div>
+                                                )}
                                             </div>
                                         ))}
                                     </div>
@@ -374,7 +434,7 @@ const SearchModal: React.FC<SearchModalProps> = ({ quranData, onSelect, onClose,
                             className="w-full py-4 mt-4 rounded-xl font-bold transition shadow-md active:scale-95 border-[2px]"
                             style={{ backgroundColor: currentTheme?.accent || '#10b981', color: '#ffffff', borderColor: 'rgba(255,255,255,0.2)' }}
                         >
-                            عرض المزيد من النتائج ({toArabic(results.length - visibleCount)} متبقية)
+                            {isEn ? `Show more results (${results.length - visibleCount} remaining)` : `عرض المزيد من النتائج (${toArabic(results.length - visibleCount)} متبقية)`}
                         </button>
                     )}
                 </div>
@@ -388,7 +448,7 @@ const SearchModal: React.FC<SearchModalProps> = ({ quranData, onSelect, onClose,
                             borderColor: currentTheme?.accent || '#3b82f6' 
                         }}
                     >
-                        إغلاق
+                        {isEn ? "Back" : "رجوع"}
                     </button>
                 </div>
                 </div>

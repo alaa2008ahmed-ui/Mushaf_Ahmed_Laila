@@ -17,6 +17,10 @@ export function normalizeQuranText(text: string): string {
 
   let result = text;
 
+  // Fix Surah Al-Isra (17:7) and similar broken small waw + tatweel + hamza (لِيَسُۥٓـُٔوا۟ -> لِيَسُوٓءُوا۟)
+  result = result.replace(/لِيَسُ\u06E5\u0653\u0640\u0654\u064Fو/g, 'لِيَسُوٓءُو');
+  result = result.replace(/\u06E5\u0653\u0640\u0654/g, '\u0648\u0653\u0621');
+
   // 1. Convert U+06E6 (Arabic Small Yeh) when followed by any Arabic letter (with optional intervening diacritics)
   // This solves words like: ٱلنَّبِيِّۦنَ -> ٱلنَّبِيِّينَ, ٱلْأُمِّيِّۦنَ -> ٱلْأُمِّيِّينَ, رَبَّٰنِيِّۦنَ -> رَبَّٰنِيِّينَ, ٱلْحَوَارِيِّۦنَ -> ٱلْحَوَارِيِّينَ, إِبْرَٰهِۦمَ -> إِبْرَٰهِيمَ
   result = result.replace(/\u06E6(?=[\u064B-\u065F\u0670]*[\u0621-\u064A\u0671-\u06D3])/g, '\u064A');

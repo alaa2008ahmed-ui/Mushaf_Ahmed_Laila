@@ -20,6 +20,10 @@ interface ThemeContextType {
     isPageLocked: boolean;
     isQuranPage: boolean;
     currentPage: string;
+    customBg?: {
+        url: string;
+        isVideo: boolean;
+    };
     togglePageLock: () => void;
     applyPresetTheme: (themeKey: string) => void;
     setCustomBackground: (dataUrl: string, isVideo: boolean) => void;
@@ -98,18 +102,20 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
                       
         const isGlass = activeThemeKey.includes('glass') || activeThemeKey.includes('emerald') || activeThemeKey.includes('crystal');
         
+        const isBlackTheme = (baseTheme.bgColor === '#000000') || baseTheme.name === 'اسود' || baseTheme.name === 'أبيض وأسود' || activeThemeKey === 'deep_black';
+        
         return {
             ...baseTheme,
             isDark,
             isGlass,
-            cardBg: baseTheme.cardBg || (isDark ? '#1e293b' : '#ffffff'),
-            cardBorder: baseTheme.cardBorder || (isDark ? '#334155' : '#e2e8f0'),
-            textColor: baseTheme.textColor || (isDark ? '#ffffff' : '#000000'),
-            accent: baseTheme.accent || baseTheme.palette[0],
-            accentText: baseTheme.accentText || '#ffffff',
-            modalBg: baseTheme.modalBg || baseTheme.cardBg || (isDark ? '#1e293b' : '#ffffff'),
-            modalText: baseTheme.modalText || baseTheme.textColor || (isDark ? '#ffffff' : '#000000'),
-            topBarText: baseTheme.topBarText || baseTheme.textColor || (isDark ? '#ffffff' : '#000000')
+            cardBg: isBlackTheme ? '#111111' : (baseTheme.cardBg || (isDark ? '#1e293b' : '#ffffff')),
+            cardBorder: isBlackTheme ? '#333333' : (baseTheme.cardBorder || (isDark ? '#334155' : '#e2e8f0')),
+            textColor: isBlackTheme ? '#FFFFFF' : (baseTheme.textColor || (isDark ? '#ffffff' : '#000000')),
+            accent: isBlackTheme ? '#FFFFFF' : (baseTheme.accent || baseTheme.palette[0]),
+            accentText: isBlackTheme ? '#000000' : (baseTheme.accentText || '#ffffff'),
+            modalBg: isBlackTheme ? '#000000' : (baseTheme.modalBg || baseTheme.cardBg || (isDark ? '#1e293b' : '#ffffff')),
+            modalText: isBlackTheme ? '#FFFFFF' : (baseTheme.modalText || baseTheme.textColor || (isDark ? '#ffffff' : '#000000')),
+            topBarText: isBlackTheme ? '#FFFFFF' : (baseTheme.topBarText || baseTheme.textColor || (isDark ? '#ffffff' : '#000000'))
         };
     }, [activeThemeKey]);
 
@@ -208,11 +214,10 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
         
         // Apply visual updates immediately
         const isReadingMode = pageKey === 'quran';
-        const isAppList = currentPage === 'more-menu';
         const isPinned = settings.lockedPages?.includes(pageKey);
         const isHome = currentPage === 'home';
 
-        if ((isPinned || isHome) && !isReadingMode && !isAppList) {
+        if ((isPinned || isHome) && !isReadingMode) {
             document.body.style.transition = 'none';
         } else {
             document.body.style.transition = 'background-color 0.5s ease-in-out, color 0.5s ease-in-out';
@@ -287,8 +292,10 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
         document.body.style.fontFamily = theme.font;
         root.style.setProperty('--theme-font', theme.font);
 
-        root.style.setProperty('--color-primary', theme.palette[0]);
-        root.style.setProperty('--color-secondary', theme.palette[1]);
+        const isBlackTheme = (theme.bgColor === '#000000') || theme.name === 'اسود' || theme.name === 'أبيض وأسود' || activeThemeKey === 'deep_black';
+
+        root.style.setProperty('--color-primary', isBlackTheme ? '#FFFFFF' : theme.palette[0]);
+        root.style.setProperty('--color-secondary', isBlackTheme ? '#FFFFFF' : (theme.palette[1] || theme.palette[0]));
         
         const isDark = theme.isDark;
 
@@ -299,13 +306,13 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
         }
 
         root.style.setProperty('--bg-color', theme.bgColor || '#0D1B2A');
-        root.style.setProperty('--text-color', theme.textColor);
-        root.style.setProperty('--text-color-muted', isDark ? '#94a3b8' : '#64748b');
+        root.style.setProperty('--text-color', isBlackTheme ? '#FFFFFF' : theme.textColor);
+        root.style.setProperty('--text-color-muted', isBlackTheme ? '#E2E8F0' : (isDark ? '#94a3b8' : '#64748b'));
 
         const topBarBgColor = theme.topBarBg || theme.barBg || theme.palette[0];
         const topBarRgb = hexToRgb(topBarBgColor);
         root.style.setProperty('--top-bar-rgb', topBarRgb || '26, 35, 50');
-        root.style.setProperty('--top-bar-text', theme.topBarText || theme.textColor);
+        root.style.setProperty('--top-bar-text', isBlackTheme ? '#FFFFFF' : (theme.topBarText || theme.textColor));
         root.style.setProperty('--bottom-bar-bg', theme.barBg || (isDark ? '#1e293b' : '#ffffff'));
         const barBorderColor = theme.barBorder ? theme.barBorder.split(' ')[2] : (isDark ? '#334155' : '#e2e8f0');
         root.style.setProperty('--bottom-bar-border', barBorderColor);
@@ -333,16 +340,16 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
         root.style.setProperty('--badge-finished-text', isDark ? '#4ade80' : '#16a34a');
 
         // Set compatibility variables for components that use qr- prefix
-        root.style.setProperty('--qr-accent', theme.palette[0]);
-        root.style.setProperty('--qr-accent-text', theme.accentText || '#ffffff');
+        root.style.setProperty('--qr-accent', isBlackTheme ? '#FFFFFF' : theme.palette[0]);
+        root.style.setProperty('--qr-accent-text', isBlackTheme ? '#000000' : (theme.accentText || '#ffffff'));
         root.style.setProperty('--qr-bg', theme.bgColor || '#0D1B2A');
-        root.style.setProperty('--qr-text', theme.textColor);
-        root.style.setProperty('--qr-card-bg', pageKey === 'quran' ? quranCardBg : defaultCardBg);
-        root.style.setProperty('--qr-card-text', theme.textColor);
-        root.style.setProperty('--qr-card-border', pageKey === 'quran' ? quranCardBorder : defaultCardBorder);
-        root.style.setProperty('--qr-modal-bg', theme.cardBg || (isDark ? '#1e293b' : '#ffffff'));
-        root.style.setProperty('--qr-modal-text', theme.textColor);
-        root.style.setProperty('--qr-modal-border', theme.palette[0]);
+        root.style.setProperty('--qr-text', isBlackTheme ? '#FFFFFF' : theme.textColor);
+        root.style.setProperty('--qr-card-bg', pageKey === 'quran' ? quranCardBg : (isBlackTheme ? '#111111' : defaultCardBg));
+        root.style.setProperty('--qr-card-text', isBlackTheme ? '#FFFFFF' : theme.textColor);
+        root.style.setProperty('--qr-card-border', pageKey === 'quran' ? quranCardBorder : (isBlackTheme ? '#333333' : defaultCardBorder));
+        root.style.setProperty('--qr-modal-bg', isBlackTheme ? '#000000' : (theme.cardBg || (isDark ? '#1e293b' : '#ffffff')));
+        root.style.setProperty('--qr-modal-text', isBlackTheme ? '#FFFFFF' : theme.textColor);
+        root.style.setProperty('--qr-modal-border', isBlackTheme ? '#FFFFFF' : theme.palette[0]);
     }, [settings.customBg, theme, currentPage]);
 
     const isPageLocked = useMemo(() => {
@@ -390,6 +397,7 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
         isPageLocked,
         isQuranPage,
         currentPage,
+        customBg: settings.customBg,
         togglePageLock,
         applyPresetTheme,
         setCustomBackground,

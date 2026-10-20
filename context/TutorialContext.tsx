@@ -28,9 +28,8 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     loadSeenTutorials();
   }, []);
 
-  const shouldShowTutorial = (tutorialId: string) => {
-    if (!isLoaded) return false; // Don't show until we know what's been seen
-    return !seenTutorials.has(tutorialId);
+  const shouldShowTutorial = (_tutorialId: string) => {
+    return false; // All first-time tutorials and guides are permanently disabled
   };
 
   const markTutorialAsSeen = async (tutorialId: string) => {

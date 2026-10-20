@@ -1,6 +1,7 @@
 import React from 'react';
 import { THEMES } from './constants';
 import { Type, Palette, Highlighter, X, Check } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface AyahContextMenuProps {
     isOpen: boolean;
@@ -27,6 +28,8 @@ const AyahContextMenu: React.FC<AyahContextMenuProps> = ({
     currentTheme,
     isLandscape
 }) => {
+    const { language, dir } = useLanguage();
+    const isEn = language === 'en';
     if (!isOpen) return null;
 
     return (
@@ -34,6 +37,7 @@ const AyahContextMenu: React.FC<AyahContextMenuProps> = ({
             setAyahContextMenu((p: any) => ({...p, isOpen: false}));
         }}>
             <div 
+                dir={dir}
                 className={`ayah-context-menu w-full ${isLandscape ? 'max-w-[300px] max-h-[90vh]' : 'max-w-[320px] max-h-[70vh]'} bg-white rounded-2xl shadow-2xl transition-all duration-300 flex flex-col pointer-events-auto overflow-hidden animate-modal-enter`} 
                 style={{ 
                     fontFamily: currentTheme.font,
@@ -50,14 +54,14 @@ const AyahContextMenu: React.FC<AyahContextMenuProps> = ({
                             }} className="p-1 hover:bg-gray-200 rounded-full transition-colors">
                                 <X size={18} className="text-gray-500" />
                             </button>
-                            <span className="text-xs font-bold text-gray-700">الألوان</span>
+                            <span className="text-xs font-bold text-gray-700">{isEn ? "Colors" : "الألوان"}</span>
                         </div>
                         
                         <div className="grid grid-cols-3 gap-3">
                             {[
-                                { id: 'textColor', label: 'النص', icon: <Type size={14} /> },
-                                { id: 'bgColor', label: 'الخلفية', icon: <Palette size={14} /> },
-                                { id: 'highlightTextColor', label: 'التحديد', icon: <Highlighter size={14} /> }
+                                { id: 'textColor', label: isEn ? 'Text' : 'النص', icon: <Type size={14} /> },
+                                { id: 'bgColor', label: isEn ? 'Background' : 'الخلفية', icon: <Palette size={14} /> },
+                                { id: 'highlightTextColor', label: isEn ? 'Highlight' : 'التحديد', icon: <Highlighter size={14} /> }
                             ].map(field => (
                                 <div key={field.id} className="flex flex-col gap-1.5">
                                     <button 
@@ -80,7 +84,9 @@ const AyahContextMenu: React.FC<AyahContextMenuProps> = ({
                             <div className="bg-gray-50 p-3 rounded-xl border border-gray-100 animate-fadeIn">
                                 <div className="flex justify-between items-center mb-2">
                                     <span className="text-[10px] font-bold text-gray-600">
-                                        اختر لون {ayahContextColorField === 'bgColor' ? 'الخلفية' : ayahContextColorField === 'textColor' ? 'النص' : 'التحديد'}
+                                        {isEn 
+                                            ? `Select ${ayahContextColorField === 'bgColor' ? 'background' : ayahContextColorField === 'textColor' ? 'text' : 'highlight'} color`
+                                            : `اختر لون ${ayahContextColorField === 'bgColor' ? 'الخلفية' : ayahContextColorField === 'textColor' ? 'النص' : 'التحديد'}`}
                                     </span>
                                 </div>
                                 <div className="grid grid-cols-6 gap-1.5">

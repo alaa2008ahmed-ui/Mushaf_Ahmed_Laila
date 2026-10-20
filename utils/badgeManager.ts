@@ -70,6 +70,54 @@ export function recordAppLaunch(): number {
   return newCount;
 }
 
+const SEEN_PAGES_KEY = 'app_seen_pages_badge_v1';
+
+/**
+ * Returns array of page IDs that user has already opened/seen.
+ */
+export function getSeenPages(): string[] {
+  try {
+    const stored = localStorage.getItem(SEEN_PAGES_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch {}
+  return [];
+}
+
+/**
+ * Checks if a specific page has already been opened/seen by user.
+ */
+export function isPageSeen(pageId: string): boolean {
+  const seen = getSeenPages();
+  return seen.includes(pageId);
+}
+
+/**
+ * Marks a specific page as seen so its "جديد" badge automatically disappears.
+ */
+export function markPageAsSeen(pageId: string): void {
+  try {
+    const seen = getSeenPages();
+    if (!seen.includes(pageId)) {
+      seen.push(pageId);
+      localStorage.setItem(SEEN_PAGES_KEY, JSON.stringify(seen));
+      notifyListeners();
+    }
+  } catch {}
+}
+
+/**
+ * Determines whether the "جديد" badge should be shown for a specific page.
+ * Returns false immediately if the page has already been opened/seen,
+ * or if launch count exceeded the maximum.
+ */
+export function shouldShowBadgeForPage(pageId: string): boolean {
+  if (isPageSeen(pageId)) return false;
+  return shouldShowNewBadge();
+}
+
 /**
  * Returns current launch count.
  */
@@ -96,22 +144,46 @@ export function shouldShowNewBadge(): boolean {
 
 /**
  * React hook to reactively get whether the "جديد" badge should be shown.
+ * If pageId is provided, automatically returns false once the page has been opened.
  */
-export function useShowNewBadge(): boolean {
-  const [show, setShow] = useState<boolean>(() => shouldShowNewBadge());
+export function useShowNewBadge(pageId?: string): boolean {
+  const [show, setShow] = useState<boolean>(() => pageId ? shouldShowBadgeForPage(pageId) : shouldShowNewBadge());
 
   useEffect(() => {
-    setShow(shouldShowNewBadge());
+    setShow(pageId ? shouldShowBadgeForPage(pageId) : shouldShowNewBadge());
 
     const handleChange = () => {
-      setShow(shouldShowNewBadge());
+      setShow(pageId ? shouldShowBadgeForPage(pageId) : shouldShowNewBadge());
     };
 
     listeners.add(handleChange);
     return () => {
       listeners.delete(handleChange);
     };
-  }, []);
+  }, [pageId]);
 
   return show;
+}
+
+/**
+ * Hook to get the list of seen pages reactively.
+ */
+export function useSeenPages(): { seenPages: string[]; isPageSeen: (pageId: string) => boolean; markPageAsSeen: (pageId: string) => void } {
+  const [seen, setSeen] = useState<string[]>(() => getSeenPages());
+
+  useEffect(() => {
+    const handleChange = () => {
+      setSeen(getSeenPages());
+    };
+    listeners.add(handleChange);
+    return () => {
+      listeners.delete(handleChange);
+    };
+  }, []);
+
+  return {
+    seenPages: seen,
+    isPageSeen: (id: string) => seen.includes(id),
+    markPageAsSeen
+  };
 }

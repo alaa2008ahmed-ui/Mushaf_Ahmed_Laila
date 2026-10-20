@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { JUZ_MAP, toArabic, SURAH_INFO, HIZB_QUARTERS } from './constants';
+import { JUZ_MAP, toArabic, SURAH_INFO, HIZB_QUARTERS, SURAH_NAMES_EN } from './constants';
 import SurahInfoModal from './SurahInfoModal';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface SurahJuzModalProps {
     type: 'surah' | 'juz' | 'hizb';
@@ -11,9 +12,13 @@ interface SurahJuzModalProps {
     isLandscape?: boolean;
     currentSelection?: number;
     currentAyah?: { s: number, a: number };
+    readingMode?: string;
 }
 
-const SurahJuzModal: React.FC<SurahJuzModalProps> = ({ type, quranData, onSelect, onClose, currentTheme, isLandscape, currentSelection, currentAyah }) => {
+const SurahJuzModal: React.FC<SurahJuzModalProps> = ({ type, quranData, onSelect, onClose, currentTheme, isLandscape, currentSelection, currentAyah, readingMode }) => {
+    const { language, isRTL } = useLanguage();
+    const isEn = language === 'en';
+    const isEnglishMode = isEn || readingMode === 'bilingual' || readingMode === 'translation';
     // Helper to find Juz for a given (Surah, Ayah)
     const getJuzForAyah = useCallback((s: number, a: number) => {
         for (let i = JUZ_MAP.length - 1; i >= 0; i--) {
@@ -201,14 +206,23 @@ const SurahJuzModal: React.FC<SurahJuzModalProps> = ({ type, quranData, onSelect
         const normalizedName = removeDiacritics(s.name);
         const normalizedNameWithoutSurah = removeDiacritics(s.name.replace('سورة', '').trim());
         const surahNumber = s.number.toString();
+        const enName = (SURAH_NAMES_EN[s.number - 1] || '').toLowerCase();
+        const searchLower = searchTerm.trim().toLowerCase();
         return normalizedName.includes(normalizedSearch) || 
                normalizedNameWithoutSurah.includes(normalizedSearch) ||
+               enName.includes(searchLower) ||
                surahNumber.includes(searchTerm);
     });
 
     const formatHizbQuarter = (hq: number) => {
         const hizb = Math.ceil(hq / 4);
         const quarter = hq % 4;
+        if (isEn) {
+            if (quarter === 1) return `Hizb ${hizb}`;
+            if (quarter === 2) return `1/4 Hizb ${hizb}`;
+            if (quarter === 3) return `1/2 Hizb ${hizb}`;
+            return `3/4 Hizb ${hizb}`;
+        }
         let quarterText = '';
         if (quarter === 1) quarterText = 'الحزب';
         else if (quarter === 2) quarterText = 'ربع الحزب';
@@ -220,10 +234,12 @@ const SurahJuzModal: React.FC<SurahJuzModalProps> = ({ type, quranData, onSelect
 
     const listsContent = useMemo(() => {
         return (
-            <div className="flex flex-1 overflow-hidden themed-card-bg">
+            <div className="flex flex-1 overflow-hidden themed-card-bg" dir={isRTL ? "rtl" : "ltr"}>
                 {/* Juz Column */}
-                <div className="flex-[0.5] flex flex-col border-l theme-card-border">
-                    <div className="p-2 text-center text-xs font-bold opacity-60 border-b theme-card-border">الجزء</div>
+                <div className={`flex-[0.5] flex flex-col ${isRTL ? 'border-l' : 'border-r'} theme-card-border`}>
+                    <div className="p-2 text-center text-xs font-bold opacity-60 border-b theme-card-border">
+                        {isEn ? "Juz" : "الجزء"}
+                    </div>
                     <div className="flex-1 overflow-y-auto p-1 space-y-1 min-h-0 overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
                         {Array.from({ length: 30 }, (_, i) => i + 1).map(j => (
                             <button
@@ -232,42 +248,49 @@ const SurahJuzModal: React.FC<SurahJuzModalProps> = ({ type, quranData, onSelect
                                 onClick={() => handleJuzClick(j)}
                                 className={`w-full p-2 rounded text-sm font-bold transition ${selectedJuz === j ? 'theme-accent-btn shadow-md' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}
                             >
-                                {toArabic(j)}
+                                {isEn ? j : toArabic(j)}
                             </button>
                         ))}
                     </div>
                 </div>
 
                 {/* Surah Column */}
-                <div className="flex-[2] flex flex-col border-l theme-card-border">
-                    <div className="p-2 text-center text-xs font-bold opacity-60 border-b theme-card-border">السورة</div>
+                <div className={`flex-[2] flex flex-col ${isRTL ? 'border-l' : 'border-r'} theme-card-border`}>
+                    <div className="p-2 text-center text-xs font-bold opacity-60 border-b theme-card-border">
+                        {isEn ? "Surah" : "السورة"}
+                    </div>
                     <div className="flex-1 overflow-y-auto p-1 space-y-1 min-h-0 overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
                         {filteredSurahs.map((s: any) => {
-                            const surahName = s.name.replace('سورة', '').trim();
+                            const surahNameAr = s.name.replace('سورة', '').trim();
+                            const surahDisplayName = isEn ? (SURAH_NAMES_EN[s.number - 1] || surahNameAr) : surahNameAr;
                             return (
                                 <button
                                     key={s.number}
                                     ref={el => { surahRefs.current[s.number] = el; }}
                                     onClick={() => handleSurahClick(s.number)}
-                                    onPointerDown={() => handleSurahPointerDown(s.number, surahName)}
+                                    onPointerDown={() => handleSurahPointerDown(s.number, surahNameAr)}
                                     onPointerUp={handleSurahPointerUp}
                                     onPointerLeave={handleSurahPointerUp}
                                     className={`w-full p-2 rounded text-sm font-bold text-center flex justify-center items-center gap-2 transition select-none ${selectedSurah === s.number ? 'theme-accent-btn shadow-md' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}
                                 >
-                                    <span className={`text-xs ${selectedSurah === s.number ? 'text-white' : 'opacity-60'}`}>{toArabic(s.number)} -</span>
-                                    <span style={{ fontFamily: 'var(--font-amiri)' }}>{surahName}</span>
+                                    <span className={`text-xs ${selectedSurah === s.number ? 'text-white' : 'opacity-60'}`}>{isEn ? s.number : toArabic(s.number)} -</span>
+                                    <span style={{ fontFamily: isEn ? 'inherit' : 'var(--font-amiri)' }}>{surahDisplayName}</span>
                                 </button>
                             );
                         })}
                         {filteredSurahs.length === 0 && (
-                            <div className="text-center py-4 text-xs opacity-50">لا توجد نتائج</div>
+                            <div className="text-center py-4 text-xs opacity-50">
+                                {isEn ? "No results found" : "لا توجد نتائج"}
+                            </div>
                         )}
                     </div>
                 </div>
 
                 {/* Ayah Column */}
-                <div className="flex-[0.5] flex flex-col border-l theme-card-border">
-                    <div className="p-2 text-center text-xs font-bold opacity-60 border-b theme-card-border">الآية</div>
+                <div className={`flex-[0.5] flex flex-col ${isRTL ? 'border-l' : 'border-r'} theme-card-border`}>
+                    <div className="p-2 text-center text-xs font-bold opacity-60 border-b theme-card-border">
+                        {isEn ? "Ayah" : "الآية"}
+                    </div>
                     <div className="flex-1 overflow-y-auto p-1 space-y-1 min-h-0 overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
                         {Array.from({ length: ayahsCount }, (_, i) => i + 1).map(a => (
                             <button
@@ -276,7 +299,7 @@ const SurahJuzModal: React.FC<SurahJuzModalProps> = ({ type, quranData, onSelect
                                 onClick={() => handleAyahClick(a)}
                                 className={`w-full p-2 rounded text-sm font-bold transition ${selectedAyah === a ? 'theme-accent-btn shadow-md' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}
                             >
-                                {toArabic(a)}
+                                {isEn ? a : toArabic(a)}
                             </button>
                         ))}
                     </div>
@@ -284,7 +307,9 @@ const SurahJuzModal: React.FC<SurahJuzModalProps> = ({ type, quranData, onSelect
 
                 {/* Hizb Quarter Column */}
                 <div className="flex-[1.5] flex flex-col">
-                    <div className="p-2 text-center text-xs font-bold opacity-60 border-b theme-card-border">الحزب</div>
+                    <div className="p-2 text-center text-xs font-bold opacity-60 border-b theme-card-border">
+                        {isEn ? "Hizb" : "الحزب"}
+                    </div>
                     <div className="flex-1 overflow-y-auto p-1 space-y-1 min-h-0 overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
                         {Array.from({ length: 240 }, (_, i) => i + 1).map(hq => (
                             <button
@@ -300,10 +325,11 @@ const SurahJuzModal: React.FC<SurahJuzModalProps> = ({ type, quranData, onSelect
                 </div>
             </div>
         );
-    }, [selectedJuz, selectedSurah, selectedAyah, selectedHizbQuarter, filteredSurahs, ayahsCount]);
+    }, [selectedJuz, selectedSurah, selectedAyah, selectedHizbQuarter, filteredSurahs, ayahsCount, isEn, isRTL]);
 
     return (
         <div className={`fixed inset-0 z-[1200] bg-black/20 backdrop-blur-[2px] flex justify-center items-center ${isLandscape ? 'p-0' : 'p-4'} animate-fadeIn`} 
+             dir={isRTL ? "rtl" : "ltr"}
              onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
             <div 
                 className={`modal-skinned w-full ${isLandscape ? 'max-w-4xl h-full rounded-none max-h-screen' : 'max-w-4xl rounded-2xl max-h-[90vh]'} shadow-2xl overflow-hidden flex flex-col animate-modal-enter`}
@@ -314,16 +340,16 @@ const SurahJuzModal: React.FC<SurahJuzModalProps> = ({ type, quranData, onSelect
                         <div className="relative">
                             <input
                                 type="text"
-                                placeholder="بحث باسم السورة أو رقمها..."
+                                placeholder={isEn ? "Search by surah name or number..." : "بحث باسم السورة أو رقمها..."}
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 onClick={e => e.stopPropagation()}
                                 onFocus={e => e.stopPropagation()}
                                 onMouseDown={e => e.stopPropagation()}
                                 onTouchStart={e => e.stopPropagation()}
-                                className="w-full p-2 pr-10 rounded-xl theme-card-bg border theme-card-border theme-card-text placeholder:opacity-50 text-sm focus:outline-none focus:ring-2 theme-accent-ring transition-all"
+                                className={`w-full p-2 ${isRTL ? 'pr-10' : 'pl-10'} rounded-xl theme-card-bg border theme-card-border theme-card-text placeholder:opacity-50 text-sm focus:outline-none focus:ring-2 theme-accent-ring transition-all`}
                             />
-                            <i className="fas fa-search absolute right-3 top-1/2 -translate-y-1/2 text-sm opacity-70"></i>
+                            <i className={`fas fa-search absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 text-sm opacity-70`}></i>
                         </div>
                     </div>
                 )}
@@ -335,7 +361,7 @@ const SurahJuzModal: React.FC<SurahJuzModalProps> = ({ type, quranData, onSelect
                         onClick={() => onSelect(selectedSurah, selectedAyah)}
                         className="theme-accent-btn px-8 py-2 rounded-full font-bold shadow-lg transform active:scale-95 transition"
                     >
-                        عرض
+                        {isEn ? "View" : "عرض"}
                     </button>
                     <button 
                         onClick={onClose}
@@ -346,7 +372,7 @@ const SurahJuzModal: React.FC<SurahJuzModalProps> = ({ type, quranData, onSelect
                             backgroundColor: currentTheme?.id === 'black' ? (currentTheme?.btnBg || '#ffffff') : (currentTheme?.btnBg || '#ffffff')
                         }}
                     >
-                        إغلاق
+                        {isEn ? "Close" : "إغلاق"}
                     </button>
                 </div>
             </div>
@@ -357,6 +383,7 @@ const SurahJuzModal: React.FC<SurahJuzModalProps> = ({ type, quranData, onSelect
                     surahNumber={infoSurah.number}
                     quranData={quranData}
                     onClose={() => setInfoSurah(null)}
+                    isEnglishMode={isEnglishMode}
                 />
             )}
         </div>

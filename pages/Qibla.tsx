@@ -1,6 +1,4 @@
-
 import React, { useState, useEffect, useRef } from 'react';
-import BottomBar from '../components/BottomBar';
 import { useTheme } from '../context/ThemeContext';
 import ThemePageLock from '../components/ThemePageLock';
 import { usePrayerTimes } from '../context/PrayerTimesContext';
@@ -10,12 +8,13 @@ import { Capacitor } from '@capacitor/core';
 import { useLanguage } from '../context/LanguageContext';
 
 // --- Helper Functions ---
-const toRad = (deg) => deg * Math.PI / 180;
-const toDeg = (rad) => rad * 180 / Math.PI;
+const toRad = (deg: number) => deg * Math.PI / 180;
+const toDeg = (rad: number) => rad * 180 / Math.PI;
 
-function Qibla({ onBack, onNavigate }) {
+function Qibla({ onBack, onNavigate }: { onBack: () => void, onNavigate: (page: string) => void }) {
     const { theme, themeKey } = useTheme();
     const { t, language } = useLanguage();
+    const isEn = language === 'en';
     const isBlackTheme = theme.bgColor === '#000000' || theme.name === 'أبيض وأسود';
     const isDefaultTheme = themeKey === 'default' || !themeKey;
     const cardBorderColor = isDefaultTheme 
@@ -25,22 +24,22 @@ function Qibla({ onBack, onNavigate }) {
             : (theme.palette?.[0] || '#000000'));
     const { config, refreshLocation } = usePrayerTimes();
     const [heading, setHeading] = useState(0);
-    const [qiblaDirection, setQiblaDirection] = useState(null);
+    const [qiblaDirection, setQiblaDirection] = useState<number | null>(null);
     const [isAligned, setIsAligned] = useState(false);
     const [error, setError] = useState('');
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [activeMode, setActiveMode] = useState('compass'); // compass, visual, ar, sun_moon, shadow
     
-    const compassCircleRef = useRef(null);
-    const qiblaPointerRef = useRef(null);
+    const compassCircleRef = useRef<HTMLDivElement>(null);
+    const qiblaPointerRef = useRef<HTMLDivElement>(null);
     const hasVibratedRef = useRef(false);
-    const [permissionStatus, setPermissionStatus] = useState('unknown'); // 'unknown', 'granted', 'denied'
+    const [permissionStatus, setPermissionStatus] = useState('granted');
 
-    const handleOrientation = (event) => {
-        let angle;
-        if (event.webkitCompassHeading) {
+    const handleOrientation = (event: DeviceOrientationEvent) => {
+        let angle: number | undefined;
+        if ((event as any).webkitCompassHeading) {
             // iOS
-            angle = event.webkitCompassHeading;
+            angle = (event as any).webkitCompassHeading;
         } else if (event.absolute && event.alpha !== null) {
             // Android absolute
             angle = (360 - event.alpha) % 360;
@@ -54,38 +53,13 @@ function Qibla({ onBack, onNavigate }) {
         }
     };
 
-    const requestPermission = async () => {
-        if (typeof (window.DeviceOrientationEvent as any)?.requestPermission === 'function') {
-            try {
-                const permission = await (window.DeviceOrientationEvent as any).requestPermission();
-                if (permission === 'granted') {
-                    setPermissionStatus('granted');
-                    window.addEventListener('deviceorientation', handleOrientation);
-                } else {
-                    setPermissionStatus('denied');
-                    setError('تم رفض إذن الوصول إلى البوصلة.');
-                }
-            } catch (e) {
-                setError('حدث خطأ أثناء طلب الإذن.');
-            }
-        } else {
-            // Non-iOS or older iOS
-            setPermissionStatus('granted');
-            if ('ondeviceorientationabsolute' in window) {
-                (window as any).addEventListener('deviceorientationabsolute', handleOrientation);
-            } else {
-                (window as any).addEventListener('deviceorientation', handleOrientation);
-            }
-        }
-    };
-
     const handleRefreshLocation = async () => {
         setIsRefreshing(true);
         setError('');
         try {
             await refreshLocation();
         } catch (e) {
-            setError('حدث خطأ أثناء تحديث الموقع.');
+            setError(isEn ? 'An error occurred while updating location.' : 'حدث خطأ أثناء تحديث الموقع.');
         } finally {
             setIsRefreshing(false);
         }
@@ -96,26 +70,40 @@ function Qibla({ onBack, onNavigate }) {
         if (config && config.location) {
             calculateQiblaDirection(config.location.lat, config.location.lng);
         } else {
-            setError('تعذر تحديد الموقع من إعدادات مواقيت الصلاة.');
+            setError(isEn ? 'Unable to determine location from Prayer Times settings.' : 'تعذر تحديد الموقع من إعدادات مواقيت الصلاة.');
         }
 
-        // Auto-start if not iOS (iOS requires user gesture)
-        if (typeof (window.DeviceOrientationEvent as any)?.requestPermission !== 'function') {
+        // Auto-start compass orientation on entering the page
+        const startCompass = async () => {
+            if (typeof (window.DeviceOrientationEvent as any)?.requestPermission === 'function') {
+                try {
+                    const permission = await (window.DeviceOrientationEvent as any).requestPermission();
+                    if (permission === 'granted') {
+                        setPermissionStatus('granted');
+                        window.addEventListener('deviceorientation', handleOrientation);
+                        return;
+                    }
+                } catch (e) {
+                    // Ignore error if gesture is required; fallback to standard listeners
+                }
+            }
+
+            setPermissionStatus('granted');
             if ('ondeviceorientationabsolute' in window) {
                 (window as any).addEventListener('deviceorientationabsolute', handleOrientation);
-            } else {
-                (window as any).addEventListener('deviceorientation', handleOrientation);
             }
-            setPermissionStatus('granted');
-        }
+            (window as any).addEventListener('deviceorientation', handleOrientation);
+        };
+
+        startCompass();
 
         return () => {
             (window as any).removeEventListener('deviceorientation', handleOrientation);
             (window as any).removeEventListener('deviceorientationabsolute', handleOrientation);
         };
-    }, [config.location]);
+    }, [config?.location, isEn]);
 
-    const calculateQiblaDirection = (latitude, longitude) => {
+    const calculateQiblaDirection = (latitude: number, longitude: number) => {
         const kaabaLat = 21.4225;
         const kaabaLng = 39.8262;
 
@@ -165,95 +153,191 @@ function Qibla({ onBack, onNavigate }) {
         }
     }, [heading, qiblaDirection]);
 
+    const handleBack = () => {
+        onBack();
+    };
+
+    const handleGoHome = () => {
+        onNavigate('home');
+    };
+
     return (
-        <div className="h-screen w-screen relative overflow-hidden bg-transparent">
-            <header className="app-top-bar">
+        <div className="h-screen w-screen flex flex-col overflow-hidden bg-transparent" dir={isEn ? 'ltr' : 'rtl'}>
+            <header className="app-top-bar shrink-0" dir={isEn ? 'ltr' : 'rtl'}>
                 <div className="app-top-bar__inner">
-                    <div className="relative flex items-center justify-center w-full">
-                        <div className="absolute left-0 flex items-center gap-2">
-                             <ThemePageLock />
-                             <i onClick={handleRefreshLocation} className={`text-xl cursor-pointer ${isRefreshing ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-location-crosshairs active:rotate-180 duration-700'}`} style={{ color: theme.name === 'أبيض وأسود' ? '#ffffff' : theme.palette[0] }}></i>
+                    <div className="relative flex items-center justify-center w-full min-h-[44px]">
+                        {/* زر الرجوع للخلف: على اليمين في العربي، وعلى اليسار في الإنجليزي مع سهم لليسار */}
+                        <div className={`absolute ${isEn ? 'left-0' : 'right-0'} flex items-center`}>
+                            <button
+                                onClick={handleBack}
+                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                title={isEn ? 'Go Back' : 'رجوع للخلف'}
+                                aria-label={isEn ? 'Go Back' : 'رجوع للخلف'}
+                            >
+                                <i className={`fa-solid ${isEn ? 'fa-arrow-left' : 'fa-arrow-right'} text-xl`}></i>
+                            </button>
                         </div>
-                        <h1 className="app-top-bar__title text-2xl font-kufi">
-                            {t('page.qibla_title', 'اتجاه القبلة')}
-                        </h1>
+
+                        {/* عنوان الصفحة في الوسط */}
+                        <div className="text-center px-12 min-w-0">
+                            <h1 className="app-top-bar__title text-lg sm:text-xl font-kufi truncate">
+                                {isEn ? 'Qibla Direction' : t('page.qibla_title', 'اتجاه القبلة')}
+                            </h1>
+                        </div>
+
+                        {/* أيقونات الإجراءات (الرئيسية وتحديث الموقع): على اليسار في العربي، وعلى اليمين في الإنجليزي */}
+                        <div className={`absolute ${isEn ? 'right-0' : 'left-0'} flex items-center gap-1`}>
+                            {isEn ? (
+                                <>
+                                    <ThemePageLock />
+                                    <button
+                                        onClick={handleRefreshLocation}
+                                        className="w-9 h-9 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                        title="Refresh Location"
+                                        aria-label="Refresh Location"
+                                    >
+                                        <i className={`text-lg ${isRefreshing ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-location-crosshairs active:rotate-180 duration-700'}`} style={{ color: theme.name === 'أبيض وأسود' ? '#ffffff' : theme.palette[0] }}></i>
+                                    </button>
+                                    <button
+                                        onClick={handleGoHome}
+                                        className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                        title="Home"
+                                        aria-label="Home"
+                                    >
+                                        <i className="fa-solid fa-house text-xl"></i>
+                                    </button>
+                                </>
+                            ) : (
+                                <>
+                                    <ThemePageLock />
+                                    <button
+                                        onClick={handleRefreshLocation}
+                                        className="w-9 h-9 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                        title="تحديث الموقع"
+                                        aria-label="تحديث الموقع"
+                                    >
+                                        <i className={`text-lg ${isRefreshing ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-location-crosshairs active:rotate-180 duration-700'}`} style={{ color: theme.name === 'أبيض وأسود' ? '#ffffff' : theme.palette[0] }}></i>
+                                    </button>
+                                    <button
+                                        onClick={handleGoHome}
+                                        className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                        title="الصفحة الرئيسية"
+                                        aria-label="الصفحة الرئيسية"
+                                    >
+                                        <i className="fa-solid fa-house text-xl"></i>
+                                    </button>
+                                </>
+                            )}
+                        </div>
                     </div>
-                    <p className="app-top-bar__subtitle text-center">
-                        {config?.location?.cityGov 
-                            ? (language === 'en' ? `Based on your location: ${config.location.cityGov}` : `حسب موقعك في: ${config.location.cityGov}`)
-                            : t('page.qibla_subtitle', 'تحديد اتجاه القبلة بدقة')}
-                    </p>
                 </div>
             </header>
 
-            {/* Modes Tabs - Independent Floating Scrollable Row - 100% Transparent */}
-            <div className="w-full overflow-x-auto no-scrollbar scroll-smooth z-30 relative bg-transparent mt-2">
-                <div className="flex items-center gap-3 px-6 min-w-max py-4 bg-transparent pt-4">
-                    {[
-                        { id: 'compass', label: language === 'en' ? 'Compass' : 'البوصلة', icon: 'fa-compass' },
-                        { id: 'visual', label: language === 'en' ? 'Visual Map' : 'المرئية', icon: 'fa-map-location-dot' },
-                        { id: 'ar', label: language === 'en' ? 'AR View' : 'الواقع معزز', icon: 'fa-vr-cardboard' },
-                        { id: 'sun_moon', label: language === 'en' ? 'Sun & Moon' : 'الشمس والقمر', icon: 'fa-cloud-sun' },
-                        { id: 'shadow', label: language === 'en' ? 'Shadow' : 'الظل', icon: 'fa-person-rays' }
-                    ].map(mode => (
-                        <button
-                            key={mode.id}
-                            onClick={() => setActiveMode(mode.id)}
-                            className={`whitespace-nowrap px-6 py-3 rounded-full text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 active:scale-95 shadow-lg ${activeMode === mode.id ? 'scale-105 z-10' : 'opacity-90 hover:opacity-100 hover:scale-105'}`}
-                            style={{
-                                backgroundColor: activeMode === mode.id 
-                                    ? (isDefaultTheme ? '#000000' : (theme.name === 'أبيض وأسود' ? '#ffffff' : theme.palette[0])) 
-                                    : 'var(--card-bg)',
-                                color: activeMode === mode.id 
-                                    ? (isDefaultTheme ? '#ffffff' : (theme.name === 'أبيض وأسود' ? '#000000' : '#ffffff')) 
-                                    : 'var(--text-color)',
-                                borderColor: cardBorderColor,
-                                borderWidth: '1.5px',
-                                borderStyle: 'solid',
-                                boxShadow: activeMode === mode.id 
-                                    ? `0 12px 24px -10px ${isDefaultTheme ? 'rgba(0,0,0,0.4)' : (theme.name === 'أبيض وأسود' ? 'rgba(255,255,255,0.4)' : `${theme.palette[0]}50`)}` 
-                                    : '0 4px 15px -1px rgba(0,0,0,0.2)'
-                            }}
-                        >
-                            <i className={`fa-solid ${mode.icon} text-lg`}></i>
-                            <span>{mode.label}</span>
-                        </button>
-                    ))}
+            {/* Modes Tabs - In a single unified card container with a border */}
+            <div className="w-full shrink-0 flex justify-center px-4 pt-2.5 pb-1 z-20">
+                <div className="max-w-full overflow-x-auto no-scrollbar py-1">
+                    <div 
+                        className="p-1.5 rounded-2xl flex items-center justify-center gap-1 sm:gap-1.5 min-w-max shadow-md transition-all"
+                        style={{
+                            backgroundColor: 'var(--card-bg)',
+                            borderColor: cardBorderColor,
+                            borderWidth: '1.5px',
+                            borderStyle: 'solid',
+                            boxShadow: 'var(--card-shadow)'
+                        }}
+                    >
+                        {[
+                            { id: 'compass', label: isEn ? 'Compass' : 'البوصلة', icon: 'fa-compass' },
+                            { id: 'visual', label: isEn ? 'Visual Map' : 'المرئية', icon: 'fa-map-location-dot' },
+                            { id: 'ar', label: isEn ? 'AR View' : 'الواقع المعزز', icon: 'fa-vr-cardboard' },
+                            { id: 'sun_moon', label: isEn ? 'Sun & Moon' : 'الشمس والقمر', icon: 'fa-cloud-sun' },
+                            { id: 'shadow', label: isEn ? 'Shadow' : 'الظل', icon: 'fa-person-rays' }
+                        ].map(mode => {
+                            const isActive = activeMode === mode.id;
+                            return (
+                                <button
+                                    key={mode.id}
+                                    onClick={() => setActiveMode(mode.id)}
+                                    className={`whitespace-nowrap px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer active:scale-95 ${
+                                        isActive ? 'shadow-sm scale-[1.02]' : 'opacity-80 hover:opacity-100 hover:scale-[1.01]'
+                                    }`}
+                                    style={{
+                                        backgroundColor: isActive 
+                                            ? (isDefaultTheme ? '#000000' : (theme.name === 'أبيض وأسود' ? '#ffffff' : theme.palette[0])) 
+                                            : 'transparent',
+                                        color: isActive 
+                                            ? (isDefaultTheme ? '#ffffff' : (theme.name === 'أبيض وأسود' ? '#000000' : '#ffffff')) 
+                                            : 'var(--text-color)',
+                                    }}
+                                >
+                                    <i className={`fa-solid ${mode.icon} text-sm sm:text-base`}></i>
+                                    <span>{mode.label}</span>
+                                </button>
+                            );
+                        })}
+                    </div>
                 </div>
             </div>
 
-            <main className="absolute inset-0 w-full flex flex-col items-center justify-start p-4 gap-4 text-center overflow-y-auto overflow-x-hidden pt-44 pb-24 z-10">
-                 {error && <p className="themed-card p-3 rounded-lg w-full" style={{backgroundColor: '#ef4444', color: 'white', borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid'}}>{error}</p>}
-                 {qiblaDirection === null && !error && <p className="themed-text w-full">جاري تحديد اتجاه القبلة...</p>}
-                 
-                 {permissionStatus === 'unknown' && activeMode === 'compass' && (
-                     <button 
-                         onClick={requestPermission}
-                         className="themed-card p-4 rounded-xl font-bold flex flex-col items-center gap-2 animate-pulse"
-                         style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+            <main className="flex-1 w-full flex flex-col items-center justify-start p-4 gap-4 text-center overflow-y-auto overflow-x-hidden pb-24 z-10">
+                 {error && (
+                     <p 
+                         className="themed-card p-3 rounded-lg w-full max-w-md shrink-0" 
+                         style={{backgroundColor: '#ef4444', color: 'white', borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid'}}
                      >
-                         <i className="fa-solid fa-compass text-3xl" style={{ color: isDefaultTheme ? '#000000' : theme.palette[0] }}></i>
-                         <span>اضغط هنا لتفعيل البوصلة</span>
-                     </button>
+                         {error}
+                     </p>
                  )}
-
+                 {qiblaDirection === null && !error && (
+                     <p className="themed-text w-full py-8">
+                         {isEn ? 'Determining Qibla direction...' : 'جاري تحديد اتجاه القبلة...'}
+                     </p>
+                 )}
+                 
                 {activeMode === 'compass' && (
-                    <div className="flex-1 flex flex-col items-center justify-center w-full">
-                        <div className="relative w-64 h-64 md:w-80 md:h-80 rounded-full flex items-center justify-center themed-card transition-all duration-300" style={{borderColor: isAligned ? (theme.name === 'أبيض وأسود' ? '#ffffff' : (isDefaultTheme ? '#000000' : theme.palette[0])) : cardBorderColor, borderWidth: '2px', borderStyle: 'solid', boxShadow: isAligned ? `0 0 20px ${theme.name === 'أبيض وأسود' ? '#ffffff' : theme.palette[0]}90` : 'var(--card-shadow)'}}>
+                    <div className="flex-1 flex flex-col items-center justify-start w-full pt-8 sm:pt-10">
+                        <div 
+                            className="relative w-64 h-64 md:w-80 md:h-80 rounded-full flex items-center justify-center themed-card transition-all duration-300" 
+                            style={{
+                                borderColor: isAligned ? (theme.name === 'أبيض وأسود' ? '#ffffff' : (isDefaultTheme ? '#000000' : theme.palette[0])) : cardBorderColor, 
+                                borderWidth: '2px', 
+                                borderStyle: 'solid', 
+                                boxShadow: isAligned ? `0 0 20px ${theme.name === 'أبيض وأسود' ? '#ffffff' : theme.palette[0]}90` : 'var(--card-shadow)'
+                            }}
+                        >
                             
                             <div ref={compassCircleRef} className="absolute w-full h-full transition-transform duration-500 ease-out">
-                                 <div className="absolute top-0 left-1/2 -translate-x-1/2 -mt-4 text-2xl font-bold" style={{color: isDefaultTheme ? '#000000' : (theme.name === 'أبيض وأسود' ? '#ffffff' : theme.palette[0])}}>ش</div>
-                                 <div className="absolute bottom-0 left-1/2 -translate-x-1/2 -mb-2 text-base themed-text-muted">ج</div>
-                                 <div className="absolute left-0 top-1/2 -translate-y-1/2 -ml-2 text-base themed-text-muted">غ</div>
-                                 <div className="absolute right-0 top-1/2 -translate-y-1/2 -mr-2 text-base themed-text-muted">ش</div>
+                                 {/* Direction letters outside the circle: North (N / ش), South (S / ج), West (W / غ), East (E / ق) */}
+                                 <div 
+                                     className="absolute -top-9 left-1/2 -translate-x-1/2 text-2xl font-black select-none" 
+                                     style={{color: isDefaultTheme ? '#000000' : (theme.name === 'أبيض وأسود' ? '#ffffff' : theme.palette[0])}}
+                                 >
+                                     {isEn ? 'N' : 'ش'}
+                                 </div>
+                                 <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 text-base font-bold themed-text-muted select-none">
+                                     {isEn ? 'S' : 'ج'}
+                                 </div>
+                                 <div className="absolute -left-8 top-1/2 -translate-y-1/2 text-base font-bold themed-text-muted select-none">
+                                     {isEn ? 'W' : 'غ'}
+                                 </div>
+                                 <div className="absolute -right-8 top-1/2 -translate-y-1/2 text-base font-bold themed-text-muted select-none">
+                                     {isEn ? 'E' : 'ق'}
+                                 </div>
+
                                  {/* Minor tick marks */}
-                                {Array.from({length: 12}).map((_, i) => (
-                                  <div key={i} className="absolute top-0 left-1/2 w-px h-2 bg-current opacity-20" style={{transform: `translateX(-50%) rotate(${i * 30}deg)`, transformOrigin: '0 128px'}}></div>
-                                ))}
+                                 {Array.from({length: 24}).map((_, i) => (
+                                   <div 
+                                     key={i} 
+                                     className="absolute top-0 left-1/2 w-full h-1/2 pointer-events-none -translate-x-1/2" 
+                                     style={{ transform: `rotate(${i * 15}deg)`, transformOrigin: '50% 100%' }}
+                                   >
+                                     <div className={`mx-auto w-0.5 ${i % 6 === 0 ? 'h-3 opacity-60' : (i % 2 === 0 ? 'h-2 opacity-35' : 'h-1.5 opacity-20')} bg-current rounded-full`}></div>
+                                   </div>
+                                 ))}
                             </div>
                             
                             {qiblaDirection !== null && (
-                                 <div ref={qiblaPointerRef} className="absolute w-full h-full transition-transform duration-500 ease-out">
+                                 <div ref={qiblaPointerRef} className="absolute w-full h-full transition-transform duration-500 ease-out pointer-events-none">
                                      <svg viewBox="0 0 100 100" className="w-full h-full" style={{filter: `drop-shadow(0 2px 4px ${isDefaultTheme ? 'rgba(0,0,0,0.2)' : (theme.name === 'أبيض وأسود' ? 'rgba(255,255,255,0.4)' : `${theme.palette[0]}50`)})`}}>
                                         <path d="M50 0 L60 20 L50 15 L40 20 Z" fill={isDefaultTheme ? '#000000' : (theme.name === 'أبيض وأسود' ? '#ffffff' : theme.palette[0])} />
                                     </svg>
@@ -269,41 +353,60 @@ function Qibla({ onBack, onNavigate }) {
                         </div>
                         
                         {qiblaDirection !== null && (
-                            <div className="themed-card p-4 rounded-xl transition-all duration-300 w-64 mt-12 mb-8" style={{borderColor: isAligned ? (theme.name === 'أبيض وأسود' ? '#ffffff' : (isDefaultTheme ? '#000000' : theme.palette[0])) : cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid'}}>
+                            <div 
+                                className="themed-card p-4 rounded-xl transition-all duration-300 w-64 mt-10 mb-6 shrink-0" 
+                                style={{
+                                    borderColor: isAligned ? (theme.name === 'أبيض وأسود' ? '#ffffff' : (isDefaultTheme ? '#000000' : theme.palette[0])) : cardBorderColor, 
+                                    borderWidth: '1.5px', 
+                                    borderStyle: 'solid'
+                                }}
+                            >
                                 <p className="text-lg font-bold transition-colors" style={{color: isAligned ? (theme.name === 'أبيض وأسود' ? '#ffffff' : theme.palette[0]) : 'var(--text-color)'}}>
-                                     {isAligned ? "هذا هو اتجاه القبلة" : `اتجاه القبلة: ${Math.round(qiblaDirection)}°`}
+                                     {isAligned 
+                                        ? (isEn ? "Facing Qibla" : "هذا هو اتجاه القبلة") 
+                                        : (isEn ? `Qibla Direction: ${Math.round(qiblaDirection)}°` : `اتجاه القبلة: ${Math.round(qiblaDirection)}°`)}
                                 </p>
                                 <p className="text-xs themed-text-muted mt-1">
-                                     {isAligned ? "تقبل الله طاعتكم" : `قم بمحاذاة السهم ${isDefaultTheme ? 'الأسود' : 'الأخضر'} مع علامة الشمال (ش)`}
+                                     {isAligned 
+                                        ? (isEn ? "May Allah accept your prayers" : "تقبل الله طاعتكم") 
+                                        : (isEn 
+                                            ? `Align the ${isDefaultTheme ? 'black' : 'colored'} arrow with the North mark (N)` 
+                                            : `قم بمحاذاة السهم ${isDefaultTheme ? 'الأسود' : 'الأخضر'} مع علامة الشمال (ش)`)}
                                 </p>
                             </div>
                         )}
                         
-                        <p className="text-center text-sm mt-4 opacity-70 themed-text-muted">
-                            (يجب تفعيل الموقع للهاتف لحساب الموقع بدقه)
+                        <p className="text-center text-sm opacity-70 themed-text-muted shrink-0 pb-4">
+                            {isEn ? '(Location must be enabled to calculate exact position)' : '(يجب تفعيل الموقع للهاتف لحساب الموقع بدقه)'}
                         </p>
                     </div>
                 )}
 
                 {activeMode === 'visual' && config?.location && (
-                    <VisualQibla lat={config.location.lat} lng={config.location.lng} theme={theme} cardBorderColor={cardBorderColor} />
+                    <div className="w-full flex-1 min-h-[460px] max-w-2xl flex flex-col">
+                        <VisualQibla lat={config.location.lat} lng={config.location.lng} theme={theme} cardBorderColor={cardBorderColor} />
+                    </div>
                 )}
 
                 {activeMode === 'ar' && qiblaDirection !== null && (
-                    <ARQibla qiblaDirection={qiblaDirection} heading={heading} isAligned={isAligned} theme={theme} cardBorderColor={cardBorderColor} />
+                    <div className="w-full flex-1 min-h-[460px] max-w-2xl flex flex-col">
+                        <ARQibla qiblaDirection={qiblaDirection} heading={heading} isAligned={isAligned} theme={theme} cardBorderColor={cardBorderColor} />
+                    </div>
                 )}
 
                 {activeMode === 'sun_moon' && config?.location && qiblaDirection !== null && (
-                    <SunMoonQibla lat={config.location.lat} lng={config.location.lng} qiblaDirection={qiblaDirection} heading={heading} theme={theme} cardBorderColor={cardBorderColor} />
+                    <div className="w-full flex-1 min-h-[460px] max-w-2xl flex flex-col">
+                        <SunMoonQibla lat={config.location.lat} lng={config.location.lng} qiblaDirection={qiblaDirection} heading={heading} theme={theme} cardBorderColor={cardBorderColor} />
+                    </div>
                 )}
 
                 {activeMode === 'shadow' && config?.location && qiblaDirection !== null && (
-                    <ShadowQibla lat={config.location.lat} lng={config.location.lng} qiblaDirection={qiblaDirection} heading={heading} theme={theme} cardBorderColor={cardBorderColor} />
+                    <div className="w-full flex-1 min-h-[460px] max-w-2xl flex flex-col">
+                        <ShadowQibla lat={config.location.lat} lng={config.location.lng} qiblaDirection={qiblaDirection} heading={heading} theme={theme} cardBorderColor={cardBorderColor} />
+                    </div>
                 )}
-                <div className="w-full h-24 shrink-0"></div>
+                <div className="w-full h-6 shrink-0"></div>
             </main>
-            
-            <BottomBar onHomeClick={onBack} onThemesClick={() => {}} showThemes={false} />
         </div>
     );
 }

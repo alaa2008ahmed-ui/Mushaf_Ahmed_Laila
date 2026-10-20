@@ -1,6 +1,8 @@
 import React from 'react';
 import { useTheme } from '../../context/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { HISN_ALMUSLIM_CATEGORIES } from '../../data/hisnAlmuslimData';
+import { HISN_CATEGORIES_EN } from '../../data/hisnAlmuslimTranslationsEn';
 import { motion } from 'motion/react';
 
 interface CategoryListProps {
@@ -9,6 +11,8 @@ interface CategoryListProps {
 
 const CategoryList: React.FC<CategoryListProps> = ({ onSelectCategory }) => {
     const { theme, themeKey } = useTheme();
+    const { language } = useLanguage();
+    const isEn = language === 'en';
     const isBlackTheme = theme.bgColor === '#000000';
     const isDefaultTheme = themeKey === 'default';
     const cardBorderColor = isDefaultTheme 
@@ -17,27 +21,17 @@ const CategoryList: React.FC<CategoryListProps> = ({ onSelectCategory }) => {
             ? '#FFFFFF' 
             : (theme.palette?.[0] || '#000000'));
 
-    const containerVariants = {
-        hidden: { opacity: 0 },
-        visible: {
-            opacity: 1
-        }
-    };
-
-    const itemVariants = {
-        hidden: { opacity: 0 },
-        visible: { opacity: 1 }
-    };
-
     return (
-        <div className="grid grid-cols-2 gap-3 p-2">
+        <div className="grid grid-cols-2 gap-3 p-2" dir={isEn ? 'ltr' : 'rtl'}>
             {HISN_ALMUSLIM_CATEGORIES.map((category, index) => {
                 const color = theme.palette[index % theme.palette.length];
+                const enInfo = HISN_CATEGORIES_EN[category.id];
+                const categoryTitle = isEn ? (enInfo?.title || category.title) : category.title;
                 
                 return (
                     <div 
                         key={category.id} 
-                        onClick={() => onSelectCategory(category)}
+                        onClick={() => onSelectCategory({ ...category, title: categoryTitle, titleAr: category.title })}
                         className="relative group cursor-pointer active:scale-95 transition-transform"
                     >
                         <div 
@@ -52,7 +46,7 @@ const CategoryList: React.FC<CategoryListProps> = ({ onSelectCategory }) => {
                             {/* Background hint */}
                             {themeKey !== 'default' && (
                                 <div 
-                                    className="absolute -right-4 -top-4 w-16 h-16 rounded-full opacity-10 blur-xl pointer-events-none"
+                                    className={`absolute ${isEn ? '-left-4' : '-right-4'} -top-4 w-16 h-16 rounded-full opacity-10 blur-xl pointer-events-none`}
                                     style={{ backgroundColor: color }}
                                 />
                             )}
@@ -68,12 +62,15 @@ const CategoryList: React.FC<CategoryListProps> = ({ onSelectCategory }) => {
                                 <i className={`fa-solid ${category.icon || 'fa-book-open'} text-2xl`}></i>
                             </div>
                             
-                            <h2 className="font-bold text-sm sm:text-base leading-tight line-clamp-2" style={{ color: 'var(--text-color)' }}>
-                                {category.title}
+                            <h2 
+                                className={`font-bold text-sm sm:text-base leading-tight line-clamp-2 ${isEn ? 'font-sans' : ''}`} 
+                                style={{ color: 'var(--text-color)' }}
+                            >
+                                {categoryTitle}
                             </h2>
 
                             <div className="mt-auto pt-1 w-full flex justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                <i className="fa-solid fa-arrow-left-long text-xs" style={{ color }}></i>
+                                <i className={`fa-solid ${isEn ? 'fa-arrow-right-long' : 'fa-arrow-left-long'} text-xs`} style={{ color }}></i>
                             </div>
                         </div>
                     </div>

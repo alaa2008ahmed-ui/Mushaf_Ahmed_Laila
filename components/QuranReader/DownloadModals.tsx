@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useTheme } from '../../context/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { READERS, TAFSEERS, JUZ_MAP, SURAH_INFO } from './constants';
 import { SURAH_LIST } from '../../data/listenQuranData';
 import { normalizeArabic } from '../../utils/voiceParser';
 import { getAvailableSurahsForReader, getSurahsForJuz } from '../../utils/listenQuranUtils';
+import { getReciterDisplayName, getSurahDisplayName, formatListenNumber } from '../../utils/listenQuranTranslations';
 
 interface DownloadModalProps {
     onClose: () => void;
@@ -189,6 +191,7 @@ export const QuranDownloadModal: React.FC<DownloadModalProps> = ({
     getAvailableSurahs
 }) => {
     const { theme, themeKey } = useTheme();
+    const { language, isRTL, dir } = useLanguage();
     const [selectedReader, setSelectedReader] = useState(initialReaderId || readersList[0]?.id || '');
     const [readerSearch, setReaderSearch] = useState('');
     const [selectedSurahs, setSelectedSurahs] = useState<string[]>([]);
@@ -212,8 +215,13 @@ export const QuranDownloadModal: React.FC<DownloadModalProps> = ({
 
     const filteredReaders = useMemo(() => {
         if (!readerSearch.trim()) return readersList;
-        const normQuery = normalizeArabic(readerSearch.trim().toLowerCase());
-        return readersList.filter(r => normalizeArabic(r.name.toLowerCase()).includes(normQuery));
+        const query = readerSearch.trim().toLowerCase();
+        const normQuery = normalizeArabic(query);
+        return readersList.filter(r => {
+            const ar = normalizeArabic(r.name.toLowerCase());
+            const en = getReciterDisplayName(r.name, 'en').toLowerCase();
+            return ar.includes(normQuery) || en.includes(query);
+        });
     }, [readersList, readerSearch]);
 
     // Available surahs for the currently selected reader
@@ -695,15 +703,19 @@ export const QuranDownloadModal: React.FC<DownloadModalProps> = ({
 
     return (
         <div style={modalStyle} className={`fixed inset-0 bg-transparent z-[1200] flex items-center justify-center ${isLandscape ? 'p-0' : 'p-4'} animate-fadeIn`} onClick={onClose}>
-            <div className={`modal-skinned w-full ${isLandscape ? 'max-w-4xl h-full rounded-none max-h-screen' : 'max-w-md rounded-2xl max-h-[90vh]'} shadow-2xl overflow-hidden flex flex-col`} onClick={e => e.stopPropagation()} style={{ backgroundColor: 'var(--qr-bg)', color: 'var(--qr-text)' }}>
+            <div dir={dir} className={`modal-skinned w-full ${isLandscape ? 'max-w-4xl h-full rounded-none max-h-screen' : 'max-w-md rounded-2xl max-h-[90vh]'} shadow-2xl overflow-hidden flex flex-col`} onClick={e => e.stopPropagation()} style={{ backgroundColor: 'var(--qr-bg)', color: 'var(--qr-text)' }}>
                 <div className="p-3 space-y-4 overflow-y-auto text-center flex-1">
                     <div className="space-y-4">
-                        <div className="text-right">
-                            <div className="flex justify-between items-center mb-1.5" dir="rtl">
-                                <label className="text-xs font-bold opacity-70">اختر القارئ</label>
+                        <div className={isRTL ? "text-right" : "text-left"}>
+                            <div className="flex justify-between items-center mb-1.5" dir={dir}>
+                                <label className="text-xs font-bold opacity-70">
+                                    {language === 'en' ? 'Select Reciter' : 'اختر القارئ'}
+                                </label>
                                 {selectedReaderObj && (
                                     <span className="text-[10px] font-bold" style={{ color: 'var(--qr-accent)' }}>
-                                        {availableSurahsList.length < 114 ? `(متوفر: ${availableSurahsList.length} سورة)` : '(المصحف كامل)'}
+                                        {availableSurahsList.length < 114 
+                                            ? (language === 'en' ? `(Available: ${formatListenNumber(availableSurahsList.length, language)} Surahs)` : `(متوفر: ${formatListenNumber(availableSurahsList.length, language)} سورة)`) 
+                                            : (language === 'en' ? '(Complete Qur\'an)' : '(المصحف كامل)')}
                                     </span>
                                 )}
                             </div>
@@ -714,63 +726,76 @@ export const QuranDownloadModal: React.FC<DownloadModalProps> = ({
                                     type="text"
                                     value={readerSearch}
                                     onChange={(e) => setReaderSearch(e.target.value)}
-                                    placeholder="ابحث عن قارئ..."
-                                    className="w-full py-1.5 pr-8 pl-3 text-xs rounded-lg border themed-card-bg outline-none"
+                                    placeholder={language === 'en' ? 'Search reciters...' : 'ابحث عن قارئ...'}
+                                    className={`w-full py-1.5 ${isRTL ? 'pr-8 pl-3 text-right' : 'pl-8 pr-3 text-left'} text-xs rounded-lg border themed-card-bg outline-none`}
                                     style={{ borderColor: 'var(--qr-card-border)' }}
-                                    dir="rtl"
+                                    dir={dir}
                                 />
-                                <i className="fa-solid fa-magnifying-glass absolute right-2.5 top-2.5 text-xs opacity-50"></i>
+                                <i className={`fa-solid fa-magnifying-glass absolute ${isRTL ? 'right-2.5' : 'left-2.5'} top-2.5 text-xs opacity-50`}></i>
                                 {readerSearch && (
                                     <button 
                                         onClick={() => setReaderSearch('')} 
-                                        className="absolute left-2.5 top-2 text-xs opacity-50 hover:opacity-100"
+                                        className={`absolute ${isRTL ? 'left-2.5' : 'right-2.5'} top-2 text-xs opacity-50 hover:opacity-100 cursor-pointer`}
                                     >
                                         <i className="fa-solid fa-xmark"></i>
                                     </button>
                                 )}
                             </div>
 
-                            <div className={`grid ${isLandscape ? 'grid-cols-4 sm:grid-cols-5 md:grid-cols-6' : 'grid-cols-2 sm:grid-cols-3'} gap-2 ${isLandscape ? 'max-h-40' : 'max-h-48'} overflow-y-auto p-2 border rounded-lg themed-card-bg custom-scrollbar`} dir="rtl">
+                            <div className={`grid ${isLandscape ? 'grid-cols-4 sm:grid-cols-5 md:grid-cols-6' : 'grid-cols-2 sm:grid-cols-3'} gap-2 ${isLandscape ? 'max-h-40' : 'max-h-48'} overflow-y-auto p-2 border rounded-lg themed-card-bg custom-scrollbar`} dir={dir}>
                                 {filteredReaders.map(r => (
                                     <button 
                                         key={r.id}
                                         onClick={() => handleSelectReader(r.id)}
-                                        className={`text-[10px] sm:text-xs p-2 rounded-md border transition-all font-bold ${selectedReader === r.id ? 'border-transparent' : 'bg-black/5 border-gray-200 dark:border-gray-700'}`}
+                                        className={`text-[10px] sm:text-xs p-2 rounded-md border transition-all font-bold cursor-pointer truncate ${selectedReader === r.id ? 'border-transparent' : 'bg-black/5 border-gray-200 dark:border-gray-700'}`}
                                         style={{ 
                                             backgroundColor: selectedReader === r.id ? 'var(--qr-accent)' : undefined,
                                             color: selectedReader === r.id ? 'var(--qr-accent-text, #fff)' : theme.textColor
                                         }}
+                                        title={getReciterDisplayName(r.name, language)}
                                     >
-                                        {r.name}
+                                        {getReciterDisplayName(r.name, language)}
                                     </button>
                                 ))}
                             </div>
 
                             {/* Informational banner when reciter has incomplete mushaf */}
                             {selectedReaderObj && availableSurahsList.length < 114 && (
-                                <div className="flex items-start gap-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-[11px] text-right mt-2 animate-fadeIn" dir="rtl">
+                                <div className={`flex items-start gap-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-[11px] ${isRTL ? 'text-right' : 'text-left'} mt-2 animate-fadeIn`} dir={dir}>
                                     <i className="fa-solid fa-triangle-exclamation shrink-0 text-amber-500 text-xs mt-0.5"></i>
                                     <div>
-                                        <span className="font-bold">تنبيه للقارئ ({selectedReaderObj.name}): </span>
-                                        <span>مسجل له {availableSurahsList.length} سورة فقط من أصل 114 سورة. تم ضبط قائمة السور والأجزاء لتشمل فقط ما هو متوفر له تفادياً لتوقف التحميل.</span>
+                                        <span className="font-bold">
+                                            {language === 'en' 
+                                                ? `Notice for (${getReciterDisplayName(selectedReaderObj.name, language)}): ` 
+                                                : `تنبيه للقارئ (${selectedReaderObj.name}): `}
+                                        </span>
+                                        <span>
+                                            {language === 'en'
+                                                ? `Only ${formatListenNumber(availableSurahsList.length, language)} of 114 Surahs are available for this reciter. Surah and Juz selections have been adjusted to available files only.`
+                                                : `مسجل له ${formatListenNumber(availableSurahsList.length, language)} سورة فقط من أصل 114 سورة. تم ضبط قائمة السور والأجزاء لتشمل فقط ما هو متوفر له تفادياً لتوقف التحميل.`}
+                                        </span>
                                     </div>
                                 </div>
                             )}
                         </div>
 
-                        <div className="text-right">
-                            <div className="flex justify-between items-center mb-2" dir="rtl">
+                        <div className={isRTL ? "text-right" : "text-left"}>
+                            <div className="flex justify-between items-center mb-2" dir={dir}>
                                 <label className="text-xs font-bold opacity-70">
-                                    اختر السور {availableSurahsList.length < 114 ? `(المتاح لهذا القارئ: ${availableSurahsList.length} سورة فقط)` : '(يمكنك اختيار أكثر من سورة)'}
+                                    {language === 'en' 
+                                        ? (availableSurahsList.length < 114 ? `Select Surahs (Available: ${formatListenNumber(availableSurahsList.length, language)})` : 'Select Surahs (Multiple selection allowed)')
+                                        : (availableSurahsList.length < 114 ? `اختر السور (المتاح لهذا القارئ: ${formatListenNumber(availableSurahsList.length, language)} سورة فقط)` : 'اختر السور (يمكنك اختيار أكثر من سورة)')}
                                 </label>
                                 {selectedSurahs.length > 0 && !selectedSurahs.includes('all') && (
-                                    <span className="text-[10px] opacity-60 font-medium">محدد: {selectedSurahs.length} سورة</span>
+                                    <span className="text-[10px] opacity-60 font-medium">
+                                        {language === 'en' ? `Selected: ${formatListenNumber(selectedSurahs.length, language)} Surahs` : `محدد: ${formatListenNumber(selectedSurahs.length, language)} سورة`}
+                                    </span>
                                 )}
                             </div>
-                            <div className={`grid ${isLandscape ? 'grid-cols-4 sm:grid-cols-5 md:grid-cols-6' : 'grid-cols-2 sm:grid-cols-3'} gap-2 ${isLandscape ? 'max-h-32' : 'max-h-40'} overflow-y-auto p-2 border rounded-lg themed-card-bg custom-scrollbar`} dir="rtl">
+                            <div className={`grid ${isLandscape ? 'grid-cols-4 sm:grid-cols-5 md:grid-cols-6' : 'grid-cols-2 sm:grid-cols-3'} gap-2 ${isLandscape ? 'max-h-32' : 'max-h-40'} overflow-y-auto p-2 border rounded-lg themed-card-bg custom-scrollbar`} dir={dir}>
                                 <button 
                                     onClick={() => toggleSurah('all')}
-                                    className={`text-[10px] sm:text-xs p-2 rounded-md border transition-all font-bold flex items-center justify-center gap-1 ${selectedSurahs.includes('all') ? 'border-transparent' : 'bg-black/5 border-gray-200 dark:border-gray-700'}`}
+                                    className={`text-[10px] sm:text-xs p-2 rounded-md border transition-all font-bold flex items-center justify-center gap-1 cursor-pointer ${selectedSurahs.includes('all') ? 'border-transparent' : 'bg-black/5 border-gray-200 dark:border-gray-700'}`}
                                     style={{
                                         backgroundColor: selectedSurahs.includes('all') ? 'var(--qr-accent)' : (isAllSurahsDownloaded ? 'color-mix(in srgb, var(--qr-accent) 20%, transparent)' : undefined),
                                         color: selectedSurahs.includes('all') ? 'var(--qr-accent-text, #fff)' : (isAllSurahsDownloaded ? 'var(--qr-accent)' : theme.textColor),
@@ -778,40 +803,50 @@ export const QuranDownloadModal: React.FC<DownloadModalProps> = ({
                                     }}
                                 >
                                     {isAllSurahsDownloaded && <i className="fa-solid fa-check text-[10px]"></i>}
-                                    <span>{availableSurahsList.length < 114 ? `السور المتاحة كاملة (${availableSurahsList.length})` : 'المصحف كاملًا'}</span>
+                                    <span>
+                                        {language === 'en'
+                                            ? (availableSurahsList.length < 114 ? `All Available (${formatListenNumber(availableSurahsList.length, language)})` : 'Complete Qur\'an')
+                                            : (availableSurahsList.length < 114 ? `السور المتاحة كاملة (${formatListenNumber(availableSurahsList.length, language)})` : 'المصحف كاملًا')}
+                                    </span>
                                 </button>
                                 {availableSurahsList.map((s: any) => {
                                     const isDownloaded = downloadedSurahs.includes(s.number.toString());
                                     const isSelected = selectedSurahs.includes(s.number.toString());
+                                    const surahNameDisplay = language === 'en' ? getSurahDisplayName(s.number, 'en') : s.name.replace('سورة', '').trim();
                                     return (
                                         <button 
-                                            key={s.number}
+                                            key={s.number} 
                                             onClick={() => toggleSurah(s.number.toString())}
-                                            className={`text-[10px] sm:text-xs p-2 rounded-md border transition-all font-bold flex items-center justify-center gap-1 ${isSelected ? 'border-transparent' : 'bg-black/5 border-gray-200 dark:border-gray-700'}`}
+                                            className={`text-[10px] sm:text-xs p-2 rounded-md border transition-all font-bold flex items-center justify-center gap-1 cursor-pointer truncate ${isSelected ? 'border-transparent' : 'bg-black/5 border-gray-200 dark:border-gray-700'}`}
                                             style={{
                                                 backgroundColor: isSelected ? 'var(--qr-accent)' : (isDownloaded ? 'color-mix(in srgb, var(--qr-accent) 20%, transparent)' : undefined),
                                                 color: isSelected ? 'var(--qr-accent-text, #fff)' : (isDownloaded ? 'var(--qr-accent)' : theme.textColor),
                                                 borderColor: (isDownloaded && !isSelected) ? 'var(--qr-accent)' : undefined
                                             }}
+                                            title={surahNameDisplay}
                                         >
                                             {isDownloaded && <i className="fa-solid fa-check text-[10px]"></i>}
-                                            <span>{s.name.replace('سورة', '').trim()}</span>
+                                            <span className="truncate">{surahNameDisplay}</span>
                                         </button>
                                     );
                                 })}
                             </div>
                         </div>
 
-                        <div className="text-right">
-                            <div className="flex justify-between items-center mb-2" dir="rtl">
+                        <div className={isRTL ? "text-right" : "text-left"}>
+                            <div className="flex justify-between items-center mb-2" dir={dir}>
                                 <label className="text-xs font-bold opacity-70">
-                                    اختر الأجزاء {availableSurahsList.length < 114 ? '(يتم تعديل كل جزء ليشمل السور المتوفرة فقط)' : '(يمكنك اختيار أكثر من جزء)'}
+                                    {language === 'en'
+                                        ? (availableSurahsList.length < 114 ? 'Select Juzs (Adjusted to available surahs only)' : 'Select Juzs (Multiple selection allowed)')
+                                        : (availableSurahsList.length < 114 ? 'اختر الأجزاء (يتم تعديل كل جزء ليشمل السور المتوفرة فقط)' : 'اختر الأجزاء (يمكنك اختيار أكثر من جزء)')}
                                 </label>
                                 {selectedJuzs.length > 0 && (
-                                    <span className="text-[10px] opacity-60 font-medium">محدد: {selectedJuzs.length} جزء</span>
+                                    <span className="text-[10px] opacity-60 font-medium">
+                                        {language === 'en' ? `Selected: ${formatListenNumber(selectedJuzs.length, language)} Juzs` : `محدد: ${formatListenNumber(selectedJuzs.length, language)} جزء`}
+                                    </span>
                                 )}
                             </div>
-                            <div className={`grid ${isLandscape ? 'grid-cols-4 sm:grid-cols-5 md:grid-cols-6' : 'grid-cols-2 sm:grid-cols-3'} gap-2 ${isLandscape ? 'max-h-32' : 'max-h-40'} overflow-y-auto p-2 border rounded-lg themed-card-bg custom-scrollbar`} dir="rtl">
+                            <div className={`grid ${isLandscape ? 'grid-cols-4 sm:grid-cols-5 md:grid-cols-6' : 'grid-cols-2 sm:grid-cols-3'} gap-2 ${isLandscape ? 'max-h-32' : 'max-h-40'} overflow-y-auto p-2 border rounded-lg themed-card-bg custom-scrollbar`} dir={dir}>
                                 {Array.from({length: 30}, (_, i) => i + 1).map(juzNum => {
                                     const isDownloaded = downloadedJuzs.includes(juzNum.toString());
                                     const isSelected = selectedJuzs.includes(juzNum.toString());
@@ -828,10 +863,12 @@ export const QuranDownloadModal: React.FC<DownloadModalProps> = ({
                                                 if (isUnavailable) return;
                                                 toggleJuz(juzNum.toString());
                                                 if (isPartialJuz && !isSelected) {
-                                                    showToast(`تم تعديل الجزء ${juzNum} ليشمل ${availableInThisJuz.length} سورة متوفرة فقط لهذا القارئ`);
+                                                    showToast(language === 'en' 
+                                                        ? `Juz ${juzNum} adjusted to include ${availableInThisJuz.length} available surahs only`
+                                                        : `تم تعديل الجزء ${juzNum} ليشمل ${availableInThisJuz.length} سورة متوفرة فقط لهذا القارئ`);
                                                 }
                                             }}
-                                            className={`text-[10px] sm:text-xs p-2 rounded-md border transition-all font-bold flex flex-col items-center justify-center gap-0.5 ${isSelected ? 'border-transparent' : (isUnavailable ? 'opacity-40 cursor-not-allowed bg-black/5 border-gray-200 dark:border-gray-800' : 'bg-black/5 border-gray-200 dark:border-gray-700')}`}
+                                            className={`text-[10px] sm:text-xs p-2 rounded-md border transition-all font-bold flex flex-col items-center justify-center gap-0.5 cursor-pointer ${isSelected ? 'border-transparent' : (isUnavailable ? 'opacity-40 cursor-not-allowed bg-black/5 border-gray-200 dark:border-gray-800' : 'bg-black/5 border-gray-200 dark:border-gray-700')}`}
                                             style={{
                                                 backgroundColor: isSelected ? 'var(--qr-accent)' : (isDownloaded ? 'color-mix(in srgb, var(--qr-accent) 20%, transparent)' : undefined),
                                                 color: isSelected ? 'var(--qr-accent-text, #fff)' : (isDownloaded ? 'var(--qr-accent)' : theme.textColor),
@@ -840,12 +877,16 @@ export const QuranDownloadModal: React.FC<DownloadModalProps> = ({
                                         >
                                             <div className="flex items-center gap-1">
                                                 {isDownloaded && <i className="fa-solid fa-check text-[10px]"></i>}
-                                                <span>الجزء {juzNum}</span>
+                                                <span>{language === 'en' ? `Juz ${formatListenNumber(juzNum, language)}` : `الجزء ${formatListenNumber(juzNum, language)}`}</span>
                                             </div>
                                             {isUnavailable ? (
-                                                <span className="text-[9px] opacity-60 font-normal text-red-500/80">غير متوفر</span>
+                                                <span className="text-[9px] opacity-60 font-normal text-red-500/80">
+                                                    {language === 'en' ? 'Unavailable' : 'غير متوفر'}
+                                                </span>
                                             ) : isPartialJuz ? (
-                                                <span className="text-[9px] text-amber-500 dark:text-amber-400 font-normal">({availableInThisJuz.length} سورة متوفرة)</span>
+                                                <span className="text-[9px] text-amber-500 dark:text-amber-400 font-normal">
+                                                    {language === 'en' ? `(${formatListenNumber(availableInThisJuz.length, language)} available)` : `(${formatListenNumber(availableInThisJuz.length, language)} سورة متوفرة)`}
+                                                </span>
                                             ) : null}
                                         </button>
                                     );
@@ -867,7 +908,7 @@ export const QuranDownloadModal: React.FC<DownloadModalProps> = ({
                                     if (allSelection.length === 0) return false;
                                     return allSelection.every(s => downloadedSurahs.includes(s));
                                 })()} 
-                                className={`w-full py-2.5 rounded-lg shadow font-bold text-sm ${(!selectedReader || (selectedSurahs.length === 0 && selectedJuzs.length === 0) || (() => {
+                                className={`w-full py-2.5 rounded-lg shadow font-bold text-sm cursor-pointer ${(!selectedReader || (selectedSurahs.length === 0 && selectedJuzs.length === 0) || (() => {
                                     if (selectedSurahs.includes('all')) return isAllSurahsDownloaded;
                                     const allSelection = [
                                         ...selectedSurahs, 
@@ -884,32 +925,34 @@ export const QuranDownloadModal: React.FC<DownloadModalProps> = ({
                                 }}
                             >
                                 {(() => {
-                                    if (!selectedReader || (selectedSurahs.length === 0 && selectedJuzs.length === 0)) return 'تحميل';
-                                    if (selectedSurahs.includes('all')) return isAllSurahsDownloaded ? 'محمل' : 'تحميل';
+                                    const dlText = language === 'en' ? 'Download' : 'تحميل';
+                                    const dldText = language === 'en' ? 'Downloaded' : 'محمل';
+                                    if (!selectedReader || (selectedSurahs.length === 0 && selectedJuzs.length === 0)) return dlText;
+                                    if (selectedSurahs.includes('all')) return isAllSurahsDownloaded ? dldText : dlText;
                                     const allSelection = [
                                         ...selectedSurahs, 
                                         ...(mode === 'surah'
                                             ? selectedJuzs.flatMap(j => getSurahsForJuz(parseInt(j)).filter(s => availableSurahNumbers.includes(s)).map(String))
                                             : selectedJuzs.flatMap(j => getAyahsForJuz(parseInt(j), quranData).map(a => a.surah.toString())))
                                     ];
-                                    if (allSelection.length > 0 && allSelection.every(s => downloadedSurahs.includes(s))) return 'محمل';
-                                    return 'تحميل';
+                                    if (allSelection.length > 0 && allSelection.every(s => downloadedSurahs.includes(s))) return dldText;
+                                    return dlText;
                                 })()}
                             </button>
                         ) : (
                             <div className="mt-2 p-3 rounded-xl border themed-card-bg">
-                                <div className="flex items-center justify-between text-xs font-bold mb-1.5" dir="rtl">
-                                    <span className="text-right truncate">{status}</span>
-                                    <span className="shrink-0">{Math.round(progress)}%</span>
+                                <div className="flex items-center justify-between text-xs font-bold mb-1.5" dir={dir}>
+                                    <span className={`truncate ${isRTL ? 'text-right' : 'text-left'}`}>{status}</span>
+                                    <span className="shrink-0">{formatListenNumber(Math.round(progress), language)}%</span>
                                 </div>
                                 <div className="w-full bg-black/10 dark:bg-white/10 rounded-full h-2.5 overflow-hidden">
                                     <div className="h-full rounded-full transition-all duration-300" style={{ width: `${progress}%`, backgroundColor: 'var(--qr-accent)' }}></div>
                                 </div>
                                 <div className="text-[10px] opacity-70 mt-1.5 text-center">
-                                    جاري تحميل السور المتوفرة للقارئ فقط
+                                    {language === 'en' ? 'Downloading available Surahs for this reciter only' : 'جاري تحميل السور المتوفرة للقارئ فقط'}
                                 </div>
-                                <button onClick={stopDownload} className="w-full mt-2.5 bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg shadow font-bold text-xs transition-colors">
-                                    إيقاف التحميل
+                                <button onClick={stopDownload} className="w-full mt-2.5 bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg shadow font-bold text-xs transition-colors cursor-pointer">
+                                    {language === 'en' ? 'Stop Download' : 'إيقاف التحميل'}
                                 </button>
                             </div>
                         )}
@@ -919,9 +962,9 @@ export const QuranDownloadModal: React.FC<DownloadModalProps> = ({
                     <button 
                         onClick={onClose} 
                         style={{ backgroundColor: 'var(--qr-accent)', color: 'var(--qr-accent-text, #fff)' }}
-                        className="font-bold py-2 px-8 rounded-lg shadow text-sm w-full"
+                        className="font-bold py-2 px-8 rounded-lg shadow text-sm w-full cursor-pointer"
                     >
-                        إغلاق
+                        {language === 'en' ? 'Close' : 'إغلاق'}
                     </button>
                 </div>
             </div>

@@ -5,6 +5,8 @@ import { Capacitor } from '@capacitor/core';
 import { Camera as CapCamera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { communityService, CommunityUser } from '../../services/communityService';
 import { useTheme } from '../../context/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
+import { formatCountryName } from './communityLanguageUtils';
 
 interface CreateGroupModalProps {
   isOpen: boolean;
@@ -14,12 +16,12 @@ interface CreateGroupModalProps {
 }
 
 export const PRESET_GROUP_IMAGES = [
-  { url: 'https://images.unsplash.com/photo-1609599006353-e629aaabfeae?w=300', label: 'المصحف الشريف' },
-  { url: 'https://images.unsplash.com/photo-1591604129939-f1efa4d9f7fa?w=300', label: 'الكعبة المشرفة' },
-  { url: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=300', label: 'المسجد النبوي' },
-  { url: 'https://images.unsplash.com/photo-1564769625905-50e93615e769?w=300', label: 'قبة المسجد' },
-  { url: 'https://images.unsplash.com/photo-1584551246679-0daf3d275d0f?w=300', label: 'فانوس إسلامي' },
-  { url: 'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?w=300', label: 'طبيعة وسلام' },
+  { url: 'https://images.unsplash.com/photo-1609599006353-e629aaabfeae?w=300', label: 'المصحف الشريف', labelEn: 'Noble Quran' },
+  { url: 'https://images.unsplash.com/photo-1591604129939-f1efa4d9f7fa?w=300', label: 'الكعبة المشرفة', labelEn: 'Holy Kaaba' },
+  { url: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=300', label: 'المسجد النبوي', labelEn: 'Prophet Mosque' },
+  { url: 'https://images.unsplash.com/photo-1564769625905-50e93615e769?w=300', label: 'قبة المسجد', labelEn: 'Mosque Dome' },
+  { url: 'https://images.unsplash.com/photo-1584551246679-0daf3d275d0f?w=300', label: 'فانوس إسلامي', labelEn: 'Islamic Lantern' },
+  { url: 'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?w=300', label: 'طبيعة وسلام', labelEn: 'Nature & Peace' },
 ];
 
 export const PRESET_ICONS = ['📖', '🌿', '🕌', '🕋', '💫', '🌸', '🤍', '🌟', '🌙', '🕊️'];
@@ -65,6 +67,9 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
   availableUsers
 }) => {
   const { theme, themeKey } = useTheme();
+  const { language } = useLanguage();
+  const isEn = language === 'en';
+
   const isDefaultTheme = themeKey === 'default' || !themeKey || theme.name?.includes('الافتراضي') || theme.name === 'Default';
   const isDeepBlack = theme.bgColor === '#000000' || theme.name === 'أبيض وأسود' || themeKey === 'deep_black';
   const cardBorderColor = isDefaultTheme 
@@ -100,30 +105,17 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    if (!file.type.startsWith('image/')) {
-      setErrorMsg('يرجى اختيار ملف صورة صالح (JPG أو PNG أو WebP)');
-      return;
-    }
-
-    if (file.size > 8 * 1024 * 1024) {
-      setErrorMsg('حجم الصورة كبير جداً، يرجى اختيار صورة أقل من 8 ميجابايت');
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = async () => {
-      try {
-        const rawData = reader.result as string;
-        const compressed = await compressAvatar(rawData);
+    try {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const raw = reader.result as string;
+        const compressed = await compressAvatar(raw, 220, 0.85);
         setSelectedAvatar(compressed);
-        setErrorMsg(null);
-      } catch {
-        setErrorMsg('فشل ضغط وتحميل الصورة');
-      }
-    };
-    reader.readAsDataURL(file);
-    e.target.value = '';
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      console.error('Error reading group image file:', err);
+    }
   };
 
   const handlePickImage = async () => {
@@ -131,57 +123,50 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
       if (Capacitor.isNativePlatform()) {
         try {
           const image = await CapCamera.getPhoto({
-            quality: 90,
+            quality: 85,
             allowEditing: false,
             resultType: CameraResultType.DataUrl,
-            source: CameraSource.Photos
+            source: CameraSource.Prompt
           });
-
-          if (image && image.dataUrl) {
-            const compressed = await compressAvatar(image.dataUrl);
+          if (image?.dataUrl) {
+            const compressed = await compressAvatar(image.dataUrl, 220, 0.85);
             setSelectedAvatar(compressed);
-            setErrorMsg(null);
             return;
           }
         } catch (camErr: any) {
           const msg = (camErr?.message || '').toLowerCase();
-          if (msg.includes('cancel') || msg.includes('user cancelled')) {
-            return;
-          }
+          if (msg.includes('cancel') || msg.includes('user cancelled')) return;
+          console.warn('Native camera failed, falling back to file input:', camErr);
         }
       }
-
       fileInputRef.current?.click();
-    } catch {
+    } catch (err) {
+      console.warn('Error picking group image:', err);
       fileInputRef.current?.click();
     }
   };
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMsg(null);
-
-    const rawName = groupName.trim();
-    const cleanName = rawName.replace(/[\p{Extended_Pictographic}\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '').trim() || rawName;
-    if (!cleanName || cleanName.length < 2) {
-      setErrorMsg('يرجى إدخال اسم للمحادثة الجماعية (حرفين على الأقل)');
+    if (!groupName.trim() || groupName.trim().length < 2) {
+      setErrorMsg(isEn ? 'Please enter a group name (at least 2 characters)' : 'يرجى إدخال اسم المجموعة (حرفين على الأقل)');
       return;
     }
 
+    setIsSubmitting(true);
+    setErrorMsg(null);
     try {
-      setIsSubmitting(true);
       const group = await communityService.createGroup(
-        cleanName,
+        groupName.trim(),
         description.trim(),
         selectedUserIds,
-        selectedAvatar,
-        false
+        selectedAvatar
       );
       setIsSubmitting(false);
       onCreated(group.groupId);
     } catch (err: any) {
       setIsSubmitting(false);
-      setErrorMsg(err?.message || 'حدث خطأ أثناء إنشاء المجموعة');
+      setErrorMsg(err?.message || (isEn ? 'An error occurred while creating group' : 'حدث خطأ أثناء إنشاء المجموعة'));
     }
   };
 
@@ -189,7 +174,7 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
     <AnimatePresence>
       <div 
         className="fixed inset-0 z-[120] flex items-start sm:items-center justify-center p-3 sm:p-4 pt-6 sm:pt-4 pb-36 sm:pb-16 bg-black/70 backdrop-blur-md overflow-y-auto overscroll-contain" 
-        dir="rtl"
+        dir={isEn ? 'ltr' : 'rtl'}
         style={{ fontFamily: theme.font }}
       >
         <motion.div
@@ -220,10 +205,10 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
               </div>
               <div>
                 <h3 className="text-base sm:text-lg font-bold" style={{ color: textColor }}>
-                  إنشاء محادثة جماعية جديدة
+                  {isEn ? 'Create New Group Chat' : 'إنشاء محادثة جماعية جديدة'}
                 </h3>
                 <p className="text-xs" style={{ color: textMuted }}>
-                  تواصل جماعي مبارك لتدارس القرآن وتبادل الفوائد
+                  {isEn ? 'A blessed space to study the Quran and share beneficial reflections' : 'تواصل جماعي مبارك لتدارس القرآن وتبادل الفوائد'}
                 </p>
               </div>
             </div>
@@ -231,7 +216,7 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="w-9 h-9 rounded-xl flex items-center justify-center border transition-all active:scale-95"
+              className="w-9 h-9 rounded-xl flex items-center justify-center border transition-all active:scale-95 cursor-pointer"
               style={{
                 backgroundColor: secondaryBg,
                 borderColor: cardBorder,
@@ -268,7 +253,7 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
                     backgroundColor: `${primaryColor}15`,
                     borderColor: primaryColor
                   }}
-                  title="اضغط لاختيار صورة مخصصة من جهازك"
+                  title={isEn ? "Click to pick image from device" : "اضغط لاختيار صورة مخصصة من جهازك"}
                 >
                   {selectedAvatar.startsWith('data:image') || selectedAvatar.startsWith('http') || selectedAvatar.startsWith('/') ? (
                     <img src={selectedAvatar} alt="صورة المجموعة" className="w-full h-full object-cover" />
@@ -281,27 +266,27 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
                 <button
                   type="button"
                   onClick={handlePickImage}
-                  className="absolute -bottom-1 -left-1 w-7 h-7 rounded-xl border flex items-center justify-center shadow-md transition-all active:scale-95 cursor-pointer"
+                  className={`absolute -bottom-1 ${isEn ? '-right-1' : '-left-1'} w-7 h-7 rounded-xl border flex items-center justify-center shadow-md transition-all active:scale-95 cursor-pointer`}
                   style={{
                     backgroundColor: primaryColor,
                     borderColor: cardBorder,
                     color: primaryTextColor
                   }}
-                  title="رفع صورة من جهازك"
+                  title={isEn ? "Upload photo from device" : "رفع صورة من جهازك"}
                 >
                   <Camera size={13} strokeWidth={2.5} />
                 </button>
               </div>
 
               <span className="text-[11px] font-bold mb-2" style={{ color: textMuted }}>
-                الأيقونة أو الصورة الرسمية للمجموعة
+                {isEn ? 'Official Group Icon or Photo' : 'الأيقونة أو الصورة الرسمية للمجموعة'}
               </span>
 
               {/* Preset Islamic Photos */}
               <div className="w-full">
                 <div className="flex items-center justify-between mb-1.5 px-0.5">
                   <span className="text-[11px] font-bold" style={{ color: textMuted }}>
-                    صور إسلامية مقترحة
+                    {isEn ? 'Suggested Islamic Photos' : 'صور إسلامية مقترحة'}
                   </span>
                   <button
                     type="button"
@@ -310,7 +295,7 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
                     style={{ color: primaryColor }}
                   >
                     <Camera size={12} />
-                    <span>رفع صورة خاصة</span>
+                    <span>{isEn ? 'Upload custom image' : 'رفع صورة خاصة'}</span>
                   </button>
                 </div>
                 <div className="flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-none w-full">
@@ -326,7 +311,7 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
                           borderColor: isSelected ? primaryColor : cardBorder,
                           boxShadow: isSelected ? `0 0 0 2px ${primaryColor}` : 'none'
                         }}
-                        title={imgItem.label}
+                        title={isEn ? imgItem.labelEn : imgItem.label}
                       >
                         <img src={imgItem.url} alt={imgItem.label} className="w-full h-full object-cover" />
                         {isSelected && (
@@ -346,7 +331,7 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
               {/* Preset Emojis & Icons */}
               <div className="w-full mt-2">
                 <span className="text-[11px] font-bold block mb-1.5 px-0.5" style={{ color: textMuted }}>
-                  أو اختر رمـزاً
+                  {isEn ? 'Or Choose an Icon' : 'أو اختر رمـزاً'}
                 </span>
                 <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none w-full">
                   {PRESET_ICONS.map(icon => {
@@ -374,13 +359,13 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
             {/* Group Name */}
             <div>
               <label className="block text-xs font-bold mb-1.5" style={{ color: textColor }}>
-                اسم المحادثة الجماعية *
+                {isEn ? 'Group Chat Name *' : 'اسم المحادثة الجماعية *'}
               </label>
               <input
                 type="text"
                 value={groupName}
                 onChange={(e) => setGroupName(e.target.value)}
-                placeholder="مثال: حلقة حفظ سورة البقرة، مجلس تدبر، أذكار الصباح..."
+                placeholder={isEn ? "e.g., Quran Study Circle, Morning Adhkar, Tajweed..." : "مثال: حلقة حفظ سورة البقرة، مجلس تدبر، أذكار الصباح..."}
                 className="w-full px-3.5 py-2.5 rounded-2xl border text-sm font-medium focus:outline-none transition-all shadow-xs"
                 style={{
                   backgroundColor: secondaryBg,
@@ -394,13 +379,13 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
             {/* Description */}
             <div>
               <label className="block text-xs font-bold mb-1.5" style={{ color: textMuted }}>
-                نبذة أو غرض المجموعة (اختياري)
+                {isEn ? 'Group Purpose / Bio (Optional)' : 'نبذة أو غرض المجموعة (اختياري)'}
               </label>
               <input
                 type="text"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="وصف مختصر للهدف من الحلقة أو أوقات التدارس..."
+                placeholder={isEn ? "Brief description of the circle goal or schedule..." : "وصف مختصر للهدف من الحلقة أو أوقات التدارس..."}
                 className="w-full px-3.5 py-2.5 rounded-2xl border text-sm font-medium focus:outline-none transition-all shadow-xs"
                 style={{
                   backgroundColor: secondaryBg,
@@ -417,16 +402,18 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
                 style={{ backgroundColor: secondaryBg, borderColor: cardBorder }}
               >
                 <p className="text-xs font-bold" style={{ color: textColor }}>
-                  لا يوجد أعضاء تم التحدث معهم سابقاً
+                  {isEn ? 'No previously chatted members found' : 'لا يوجد أعضاء تم التحدث معهم سابقاً'}
                 </p>
                 <p className="text-[11px] leading-relaxed" style={{ color: textMuted }}>
-                  تظهر هنا فقط الحسابات التي أجريت معها محادثات فردية سابقة. يمكنك بدء محادثة مع أي قارئ من تبويب (الأعضاء) أولاً لتتمكن من دعوته للمجموعات.
+                  {isEn 
+                    ? 'Only accounts you have direct chats with will appear here. Start a chat with any reader in Members tab first to invite them.' 
+                    : 'تظهر هنا فقط الحسابات التي أجريت معها محادثات فردية سابقة. يمكنك بدء محادثة مع أي قارئ من تبويب (الأعضاء) أولاً لتتمكن من دعوته للمجموعات.'}
                 </p>
               </div>
             ) : (
               <div>
                 <label className="block text-xs font-bold mb-1.5" style={{ color: textColor }}>
-                  الأعضاء الذين تحدثت معهم سابقاً ({selectedUserIds.length} محددين)
+                  {isEn ? `Previously chatted members (${selectedUserIds.length} selected)` : `الأعضاء الذين تحدثت معهم سابقاً (${selectedUserIds.length} محددين)`}
                 </label>
                 <div 
                   className="max-h-40 overflow-y-auto space-y-1.5 p-2 rounded-2xl border"
@@ -456,7 +443,7 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
                             )}
                           </div>
                           <span className="font-bold truncate" style={{ color: textColor }}>{u.username}</span>
-                          <span className="text-[10px]" style={{ color: textMuted }}>({u.country || '🌍'})</span>
+                          <span className="text-[10px]" style={{ color: textMuted }}>({formatCountryName(u.country, isEn)})</span>
                         </div>
 
                         <div 
@@ -488,7 +475,7 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
                 }}
               >
                 <Users size={18} />
-                <span>{isSubmitting ? 'جارٍ الإنشاء...' : 'إنشاء المجموعة'}</span>
+                <span>{isSubmitting ? (isEn ? 'Creating...' : 'جارٍ الإنشاء...') : (isEn ? 'Create Group' : 'إنشاء المجموعة')}</span>
               </button>
 
               <button
@@ -501,7 +488,7 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
                   color: textColor
                 }}
               >
-                إلغاء
+                {isEn ? 'Cancel' : 'إلغاء'}
               </button>
             </div>
           </form>

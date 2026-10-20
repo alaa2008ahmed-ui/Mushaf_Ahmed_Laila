@@ -23,107 +23,107 @@ export const ISLAMIC_TRANSLATIONS: Translations = {
     ar: 'الإصدار 1.13',
     en: 'Version 1.13'
   },
+  'app.dua_bottom': {
+    ar: 'اللهم ارحمهما واغفر لهما واجعل مثواهما الجنة',
+    en: 'O Allah, have mercy on them, forgive them, and grant them Paradise'
+  },
 
   // Main Page Buttons & Menu Items
   'menu.quran': {
-    ar: '📖 القرآن الكريم',
-    en: '📖 The Noble Qur\'an'
+    ar: 'القرآن الكريم',
+    en: 'The Noble Qur\'an'
   },
   'menu.quran_plain': {
     ar: 'القرآن الكريم',
     en: 'The Noble Qur\'an'
   },
   'menu.listen': {
-    ar: '🎧 الاستماع للقرآن',
-    en: '🎧 Listen to Qur\'an'
+    ar: 'الاستماع للقرآن',
+    en: 'Listen to Qur\'an'
   },
   'menu.prayer_times': {
-    ar: '⏱️ مواقيت الصلاة',
-    en: '⏱️ Prayer Times'
+    ar: 'مواقيت الصلاة',
+    en: 'Prayer Times'
   },
   'menu.adia': {
-    ar: '🤲 الأدعية',
-    en: '🤲 Supplications (Du\'a)'
+    ar: 'الأدعية',
+    en: 'Supplications'
   },
   'menu.sabah_masaa': {
-    ar: '☀️ الأذكار',
-    en: '☀️ Morning & Evening Adhkar'
+    ar: 'الأذكار',
+    en: 'Daily Adhkar'
   },
   'menu.salah_adhkar': {
-    ar: '🕌 أذكار الصلاة',
-    en: '🕌 Adhkar of Salah'
+    ar: 'أذكار الصلاة',
+    en: 'Salah Remembrances'
   },
   'menu.hisn_muslim': {
-    ar: '🛡️ حصن المسلم',
-    en: '🛡️ Fortress of the Muslim'
+    ar: 'حصن المسلم',
+    en: 'Fortress of the Muslim'
   },
   'menu.tasbeeh': {
-    ar: '📿 السبحة',
-    en: '📿 Electronic Tasbeeh'
+    ar: 'السبحة',
+    en: 'Electronic Tasbeeh'
   },
   'menu.calendar': {
-    ar: '📅 التقويم',
-    en: '📅 Hijri Calendar'
+    ar: 'التقويم',
+    en: 'Islamic Calendar'
   },
   'menu.qibla': {
-    ar: '🧭 القبلة',
-    en: '🧭 Qibla Direction'
+    ar: 'القبلة',
+    en: 'Qibla Direction'
   },
   'menu.hajj_umrah': {
-    ar: '🕋 الحج والعمرة',
-    en: '🕋 Hajj & Umrah Guide'
+    ar: 'الحج والعمرة',
+    en: 'Hajj & Umrah'
   },
   'menu.nawawi': {
-    ar: '📚 الأربعون النووية',
-    en: '📚 40 Hadith An-Nawawi'
+    ar: 'الأربعون النووية',
+    en: 'Forty Hadith'
   },
   'menu.calculators': {
-    ar: '🧮 الحاسبة الشرعية',
-    en: '🧮 Islamic Calculators'
+    ar: 'الحاسبة الشرعية',
+    en: 'Calculators'
   },
   'menu.asmaul_husna': {
-    ar: '✨ أسماء الله الحسنى',
-    en: '✨ The 99 Beautiful Names'
+    ar: 'أسماء الله الحسنى',
+    en: 'Divine Names'
   },
   'menu.ahl_al_quran': {
-    ar: '🏆 أهل القرآن',
-    en: '🏆 Ahl Al-Qur\'an'
+    ar: 'أهل القرآن',
+    en: 'Ahl Al-Qur\'an'
   },
   'menu.community': {
-    ar: '💬 مجتمع التواصل',
-    en: '💬 Faith Community'
-  },
-  'menu.more': {
-    ar: 'قائمة التطبيقات',
-    en: 'Apps & Features'
-  },
-  'menu.more_menu': {
-    ar: 'قائمة التطبيقات',
-    en: 'Apps & Features'
+    ar: 'مجتمع التواصل',
+    en: 'Faith Community'
   },
   'menu.daily_wird': {
-    ar: '📅 الورد اليومي',
-    en: '📅 Daily Wird & Khatmah'
+    ar: 'الورد اليومي',
+    en: 'Daily Wird'
   },
   'menu.habit_tracker': {
-    ar: '🎯 مربّي العبادات',
-    en: '🎯 Worship Habit Tracker'
+    ar: 'مربّي العبادات',
+    en: 'Habit Tracker'
   },
   'menu.memorization': {
-    ar: '🧠 التحفيظ',
-    en: '🧠 Qur\'an Memorization'
+    ar: 'التحفيظ',
+    en: 'Memorization'
   },
   'menu.voice_control': {
-    ar: '🎙️ التحكم الصوتي',
-    en: '🎙️ Voice Control'
+    ar: 'التحكم الصوتي',
+    en: 'Voice Control'
   },
   'menu.islamic_sites': {
-    ar: '🌐 مواقع إسلامية',
-    en: '🌐 Islamic Websites'
+    ar: 'مواقع إسلامية',
+    en: 'Islamic Sites'
   },
   'menu.others': {
-    ar: '✨ الرقية الشرعية',
-    en: '✨ Al-Ruqyah Al-Shar\'iyyah'
+    ar: 'الرقية الشرعية',
+    en: 'Al-Ruqyah'
+  },
+  'menu.prophetic_seerah': {
+    ar: 'السيرة النبوية',
+    en: 'Prophetic Seerah'
   },
   'menu.tajweed': {
     ar: 'تعليم التجويد',
@@ -210,6 +210,38 @@ export const ISLAMIC_TRANSLATIONS: Translations = {
   'sidemenu.notifications_desc': {
     ar: 'تنبيهات الأذان والأذكار والورد اليومي.',
     en: 'Adhan prayer alerts, daily adhkar, and wird reminders.'
+  },
+  'sidemenu.page_guide': {
+    ar: 'دليل صفحات التطبيق',
+    en: 'App Pages Guide'
+  },
+  'sidemenu.page_guide_desc': {
+    ar: 'شرح وافٍ ومبسط لجميع خدمات وصفحات ومميزات التطبيق.',
+    en: 'Comprehensive guide to all application services, features, and screens.'
+  },
+  'sidemenu.prophetic_seerah_desc': {
+    ar: 'خط زمني تفاعلي لمحطات السيرة العطرة والعبر المستفادة.',
+    en: 'Interactive timeline of the blessed Prophetic biography and lessons.'
+  },
+  'sidemenu.quran_download_parent': {
+    ar: 'تحميل القرآن',
+    en: 'Download Qur\'an'
+  },
+  'sidemenu.tafseer_download': {
+    ar: 'تحميل التفسير',
+    en: 'Download Tafseer'
+  },
+  'sidemenu.interface_customization': {
+    ar: 'تخصيص الواجهة',
+    en: 'Customize Interface'
+  },
+  'sidemenu.audio': {
+    ar: 'القراء',
+    en: 'Reciters'
+  },
+  'sidemenu.bookmarks': {
+    ar: 'العلامات المرجعية',
+    en: 'Bookmarks'
   },
   'sidemenu.sajdah': {
     ar: 'آيات السجدة',
@@ -433,13 +465,13 @@ export const ISLAMIC_TRANSLATIONS: Translations = {
     ar: 'آيات الشفاء والتحصين من القرآن الكريم والسنة النبوية',
     en: 'Healing and protection verses from Qur\'an & Sunnah'
   },
-  'page.more_menu_title': {
-    ar: 'قائمة التطبيقات',
-    en: 'All Features & Applications'
+  'page.prophetic_seerah_title': {
+    ar: 'السيرة النبوية',
+    en: 'The Prophetic Seerah'
   },
-  'page.more_menu_subtitle': {
-    ar: 'تصفح جميع أقسام التطبيق',
-    en: 'Explore all spiritual sections and tools'
+  'page.prophetic_seerah_subtitle': {
+    ar: 'رحلة تفاعلية في سيرة خير الأنام ﷺ',
+    en: 'Interactive journey through the life of Prophet Muhammad ﷺ'
   },
   'page.voice_control_title': {
     ar: 'التحكم الصوتي',
@@ -477,6 +509,38 @@ export const ISLAMIC_TRANSLATIONS: Translations = {
     ar: 'الافتراضي',
     en: 'Default'
   },
+  'theme.black': { ar: 'افتراضي', en: 'Default' },
+  'theme.night_sky': { ar: 'أزرق', en: 'Blue' },
+  'theme.green': { ar: 'أخضر', en: 'Green' },
+  'theme.red': { ar: 'أحمر', en: 'Red' },
+  'theme.maroon': { ar: 'نبيتي', en: 'Maroon' },
+  'theme.olive': { ar: 'زيتوني', en: 'Olive' },
+  'theme.blue': { ar: 'نيلي فاتح', en: 'Light Indigo' },
+  'theme.brown': { ar: 'بني', en: 'Brown' },
+  'theme.purple': { ar: 'بنفسجي', en: 'Purple' },
+  'theme.orange': { ar: 'برتقالي', en: 'Orange' },
+  'theme.sky': { ar: 'سماوي فاتح', en: 'Light Sky' },
+  'theme.amber_light': { ar: 'كهرماني', en: 'Amber' },
+  'theme.mint': { ar: 'نعناعي', en: 'Mint' },
+  'theme.pink': { ar: 'وردي', en: 'Pink' },
+  'theme.cyan': { ar: 'سماوي', en: 'Cyan' },
+  'theme.lime': { ar: 'ليموني', en: 'Lime' },
+  'theme.i_emerald': { ar: 'زمرد', en: 'Emerald' },
+  'theme.i_ruby': { ar: 'ياقوت', en: 'Ruby' },
+  'theme.i_lapis': { ar: 'لازورد', en: 'Lapis Lazuli' },
+  'theme.i_gold': { ar: 'ذهبي', en: 'Gold' },
+  'theme.i_amber': { ar: 'عنبر', en: 'Amber' },
+  'theme.i_amethyst': { ar: 'أرجوان', en: 'Amethyst' },
+  'theme.i_sunset_royal': { ar: 'ملك الغروب', en: 'Royal Sunset' },
+  'theme.i_deep_ocean': { ar: 'ملك الأعماق', en: 'Deep Ocean' },
+  'theme.i_brocade': { ar: 'إستبرق', en: 'Brocade' },
+  'theme.i_musk': { ar: 'مسك', en: 'Musk' },
+  'theme.i_midnight': { ar: 'ليل', en: 'Midnight' },
+  'theme.i_obsidian': { ar: 'بركان', en: 'Obsidian' },
+  'theme.i_forest': { ar: 'غابة', en: 'Forest' },
+  'theme.i_turquoise': { ar: 'فيروزي داكن', en: 'Dark Turquoise' },
+  'theme.i_slate': { ar: 'حجري', en: 'Slate' },
+
 
   // Common UI Actions & Labels
   'common.save': {
@@ -503,6 +567,22 @@ export const ISLAMIC_TRANSLATIONS: Translations = {
     ar: 'رجوع',
     en: 'Back'
   },
+  'common.copy': {
+    ar: 'نسخ',
+    en: 'Copy'
+  },
+  'common.share': {
+    ar: 'مشاركة',
+    en: 'Share'
+  },
+  'common.copied': {
+    ar: 'تم النسخ إلى الحافظة',
+    en: 'Copied to clipboard'
+  },
+  'common.copy_failed': {
+    ar: 'فشل في النسخ',
+    en: 'Failed to copy'
+  },
   'common.new': {
     ar: 'جديد',
     en: 'NEW'
@@ -526,6 +606,18 @@ export const ISLAMIC_TRANSLATIONS: Translations = {
     en: 'Remaining'
   },
   'prayer.next': {
+    ar: 'القادمة',
+    en: 'Next'
+  },
+  'prayer_card.previous': {
+    ar: 'السابقة',
+    en: 'Previous'
+  },
+  'prayer_card.remaining': {
+    ar: 'متبقي',
+    en: 'Remaining'
+  },
+  'prayer_card.next': {
     ar: 'القادمة',
     en: 'Next'
   },
@@ -554,43 +646,319 @@ export const ISLAMIC_TRANSLATIONS: Translations = {
     en: 'Isha'
   },
 
-  // Main Page Action Buttons
-  'home.customize_menu': {
-    ar: 'تخصيص القائمة',
-    en: 'Customize Menu'
+  // Top Leaders Card (متصدرو أهل القرآن)
+  'top_leaders.title': {
+    ar: 'متصدرو أهل القرآن',
+    en: 'Ahl Al-Qur\'an Leaders'
   },
-  'home.rearrange_buttons': {
-    ar: 'ترتيب الأزرار',
-    en: 'Rearrange Buttons'
+  'top_leaders.all_time': {
+    ar: 'الإجمالي التراكمي',
+    en: 'All-Time Total'
   },
-  'home.share_app': {
-    ar: 'مشاركة التطبيق',
+  'top_leaders.share_tooltip': {
+    ar: 'مشاركة كصورة',
+    en: 'Share as Image'
+  },
+  'top_leaders.register_prompt': {
+    ar: 'سجّل اسمك في مجتمع التواصل لتظهر لك بيانات وتصنيف متصدري أهل القرآن وتشاركهم التنافس الإيماني! 🌟',
+    en: 'Register in the Faith Community to view rankings and participate in the blessed Qur\'an recitation! 🌟'
+  },
+  'top_leaders.register_btn': {
+    ar: 'التسجيل في مجتمع التواصل',
+    en: 'Register in Community'
+  },
+  'top_leaders.you': {
+    ar: 'أنت',
+    en: 'You'
+  },
+  'top_leaders.empty_prompt': {
+    ar: 'كن أول المتصدرين في قراءة القرآن لهذا الشهر! 🌟',
+    en: 'Be the first leader in Qur\'an recitation this month! 🌟'
+  },
+  'top_leaders.start_reading': {
+    ar: 'ابدأ القراءة الآن',
+    en: 'Start Recitation Now'
+  },
+  'top_leaders.first_place': {
+    ar: 'المركز الأول 🥇',
+    en: '1st Place 🥇'
+  },
+  'top_leaders.second_place': {
+    ar: 'المركز الثاني 🥈',
+    en: '2nd Place 🥈'
+  },
+  'top_leaders.third_place': {
+    ar: 'المركز الثالث 🥉',
+    en: '3rd Place 🥉'
+  },
+  'top_leaders.share_title': {
+    ar: '🏆 لوحة شرف متصدري أهل القرآن 🏆',
+    en: '🏆 Ahl Al-Qur\'an Honor Leaderboard 🏆'
+  },
+  'top_leaders.share_verse': {
+    ar: 'قال تعالى: ﴿وَفِي ذَٰلِكَ فَلْيَتَنَافَسِ الْمُتَنَافِسُونَ﴾',
+    en: 'Allah says: "And for this let the competitors compete." [83:26]'
+  },
+
+  // Habit Tracker Card (مربي العبادات)
+  'habit_card.title': {
+    ar: 'مربي العبادات',
+    en: 'Worship Habit Tracker'
+  },
+  'habit_card.today_badge': {
+    ar: 'إنجاز اليوم',
+    en: 'Today\'s Progress'
+  },
+  'habit_card.open_log': {
+    ar: 'فتح السجل',
+    en: 'Open Log'
+  },
+  'habit_card.completion_rate': {
+    ar: 'نسبة إنجاز اليوم',
+    en: 'Today\'s Completion'
+  },
+  'habit_card.completed': {
+    ar: 'مكتمل ما شاء الله 🌟',
+    en: 'Completed, Masha\'Allah! 🌟'
+  },
+  'habit_card.excellent': {
+    ar: 'إنجاز ممتاز 🌿',
+    en: 'Excellent Progress 🌿'
+  },
+  'habit_card.in_progress': {
+    ar: 'مستمر بالعمل 🤲',
+    en: 'In Progress 🤲'
+  },
+  'habit_card.start_today': {
+    ar: 'ابدأ عبادات اليوم ✨',
+    en: 'Start Today\'s Worship ✨'
+  },
+  'habit_card.prev_summary': {
+    ar: 'ملخص الأيام السابقة:',
+    en: 'Previous Days Summary:'
+  },
+  'habit_card.yesterday': {
+    ar: 'اليوم السابق:',
+    en: 'Yesterday:'
+  },
+  'habit_card.before_yesterday': {
+    ar: 'الذي قبله:',
+    en: 'Day Before:'
+  },
+
+  // Tawaf & Sa'i Counter Card
+  'tawaf.title': {
+    ar: 'عداد أشواط الطواف',
+    en: 'Tawaf Lap Counter'
+  },
+  'sai.title': {
+    ar: 'عداد أشواط السعي',
+    en: 'Sa\'i Lap Counter'
+  },
+  'tawaf.tab': {
+    ar: 'طواف',
+    en: 'Tawaf'
+  },
+  'sai.tab': {
+    ar: 'سعي',
+    en: 'Sa\'i'
+  },
+  'tawaf.reset_tooltip': {
+    ar: 'إعادة ضبط العداد',
+    en: 'Reset Counter'
+  },
+  'tawaf.completed_title': {
+    ar: 'اكتملت 7 أشواط مباركة!',
+    en: '7 Blessed Laps Completed!'
+  },
+  'tawaf.completed_subtitle': {
+    ar: 'تقبل الله نسككم وطاعتكم',
+    en: 'May Allah accept your worship'
+  },
+  'tawaf.record_lap_prefix': {
+    ar: 'تسجيل الشوط',
+    en: 'Record Lap'
+  },
+  'tawaf.tap_hint': {
+    ar: 'اضغط بعد كل شوط لاحتساب الرقم',
+    en: 'Tap after each completed circuit'
+  },
+  'tawaf.of_seven': {
+    ar: 'من 7',
+    en: 'of 7'
+  },
+
+  // On This Day Card (حدث في مثل هذا اليوم)
+  'on_this_day.title': {
+    ar: 'حدث في مثل هذا اليوم',
+    en: 'On This Day in History'
+  },
+  'on_this_day.next': {
+    ar: 'حدث آخر',
+    en: 'Another Event'
+  },
+  'on_this_day.next_event': {
+    ar: 'حدث آخر',
+    en: 'Another Event'
+  },
+  'on_this_day.ad': {
+    ar: 'ميلادي',
+    en: 'AD'
+  },
+  'on_this_day.ce': {
+    ar: 'ميلادي',
+    en: 'AD'
+  },
+  'on_this_day.copied': {
+    ar: 'تم النسخ إلى الحافظة',
+    en: 'Copied to clipboard'
+  },
+
+  // Upcoming Events Card (المناسبات الإسلامية)
+  'upcoming.title': {
+    ar: 'المناسبات الإسلامية',
+    en: 'Islamic Occasions'
+  },
+  'islamic_events.title': {
+    ar: 'المناسبات الإسلامية',
+    en: 'Islamic Occasions'
+  },
+  'upcoming.modal_title': {
+    ar: 'المناسبة الإسلامية',
+    en: 'Islamic Occasion'
+  },
+  'islamic_events.single_title': {
+    ar: 'المناسبة الإسلامية',
+    en: 'Islamic Occasion'
+  },
+  'islamic_events.modal_title': {
+    ar: 'المناسبة الإسلامية',
+    en: 'Islamic Occasion'
+  },
+  'upcoming.prev': {
+    ar: 'المناسبة السابقة',
+    en: 'Previous Occasion'
+  },
+  'islamic_events.prev': {
+    ar: 'المناسبة السابقة',
+    en: 'Previous Occasion'
+  },
+  'upcoming.next': {
+    ar: 'المناسبة التالية',
+    en: 'Next Occasion'
+  },
+  'islamic_events.next': {
+    ar: 'المناسبة التالية',
+    en: 'Next Occasion'
+  },
+  'upcoming.today': {
+    ar: 'اليوم',
+    en: 'Today'
+  },
+  'islamic_events.today': {
+    ar: 'اليوم',
+    en: 'Today'
+  },
+  'upcoming.remaining': {
+    ar: 'باقي',
+    en: 'Remaining'
+  },
+  'islamic_events.remaining': {
+    ar: 'باقي',
+    en: 'Remaining'
+  },
+  'upcoming.passed': {
+    ar: 'مر عليها',
+    en: 'Passed'
+  },
+  'islamic_events.passed': {
+    ar: 'مر عليها',
+    en: 'Passed'
+  },
+  'upcoming.days': {
+    ar: 'يوم',
+    en: 'Days'
+  },
+  'islamic_events.days': {
+    ar: 'يوم',
+    en: 'Days'
+  },
+  'upcoming.occurs': {
+    ar: 'توافق',
+    en: 'Occurs on'
+  },
+  'islamic_events.matches': {
+    ar: 'توافق',
+    en: 'Occurs on'
+  },
+  'upcoming.remaining_days': {
+    ar: 'يتبقى عليها',
+    en: 'Time Remaining'
+  },
+  'islamic_events.remaining_on': {
+    ar: 'يتبقى عليها',
+    en: 'Time Remaining'
+  },
+  'islamic_events.passed_on': {
+    ar: 'مر عليها',
+    en: 'Time Elapsed'
+  },
+
+  // Web App Link Card (تصفح التطبيق)
+  'webapp.title': {
+    ar: 'تصفح التطبيق',
+    en: 'Browse Web App'
+  },
+  'webapp.desc': {
+    ar: 'لمشاهدة التطبيق على المتصفح او الايفون اضغط على الرابط',
+    en: 'To view the application on web browser or iPhone, click the link'
+  },
+  'webapp.open': {
+    ar: 'فتح الرابط',
+    en: 'Open Link'
+  },
+  'webapp.open_link': {
+    ar: 'فتح الرابط',
+    en: 'Open Link'
+  },
+  'webapp.copy': {
+    ar: 'نسخ الرابط',
+    en: 'Copy Link'
+  },
+  'webapp.copy_link': {
+    ar: 'نسخ الرابط',
+    en: 'Copy Link'
+  },
+  'webapp.share': {
+    ar: 'مشاركة الرابط',
+    en: 'Share Link'
+  },
+  'webapp.share_link': {
+    ar: 'مشاركة الرابط',
+    en: 'Share Link'
+  },
+  'webapp.copied': {
+    ar: 'تم نسخ الرابط',
+    en: 'Link copied to clipboard'
+  },
+
+  // App Share Card (شارك التطبيق)
+  'app_share.title': {
+    ar: 'شارك التطبيق',
     en: 'Share Application'
   },
-  'home.voice_control': {
-    ar: 'التحكم الصوتي',
-    en: 'Voice Control'
+  'app_share.desc': {
+    ar: 'اذا اعجبك التطبيق قم بنشره على وسائل التواصل ليكون لك الاجر ولمن تحب ان شاء الله .',
+    en: 'If you benefit from the app, share it on social media to earn ongoing rewards, insha\'Allah.'
   },
-  'home.quran_radio': {
-    ar: 'إذاعة القرآن',
-    en: 'Holy Qur\'an Radio'
-  },
-  'home.whatsapp': {
-    ar: 'واتساب',
-    en: 'WhatsApp'
-  },
-  'home.on_this_day': {
-    ar: 'حدث في مثل هذا اليوم',
-    en: 'On This Day in Islamic History'
-  },
-  'home.upcoming_events': {
-    ar: 'المناسبات الإسلامية القادمة',
-    en: 'Upcoming Islamic Occasions'
+  'app_share.copied': {
+    ar: 'تم نسخ نص المشاركة',
+    en: 'Share text copied to clipboard'
   },
 
   // Theme Names Localization
   'theme.default': { ar: 'الافتراضي', en: 'Default Emerald' },
-  'theme.deep_black': { ar: 'أسود عميق', en: 'Deep Obsidian' },
+  'theme.deep_black': { ar: 'اسود غامق', en: 'Deep Black' },
   'theme.fajr_light': { ar: 'نور الفجر', en: 'Fajr Dawn' },
   'theme.golden_sand': { ar: 'رمال ذهبية', en: 'Golden Sand' },
   'theme.olive_grove': { ar: 'بستان الزيتون', en: 'Olive Grove' },
@@ -619,18 +987,49 @@ export const ISLAMIC_TRANSLATIONS: Translations = {
   'theme.midnight_glass': { ar: 'زجاج ليلي', en: 'Midnight Glass' },
 
   // Language Button
-  'lang.switch_to_en': {
-    ar: 'English',
-    en: 'العربية'
-  },
-  'lang.badge': {
-    ar: 'EN',
-    en: 'عربي'
-  },
-  'lang.current': {
-    ar: 'العربية',
-    en: 'English'
+  'lang.toggle_tooltip': {
+    ar: 'التحويل إلى اللغة الإنجليزية',
+    en: 'Switch language to Arabic'
   }
+};
+
+const ISLAMIC_EVENTS_EN: Record<string, string> = {
+  "رأس السنة الهجرية": "Islamic Hijri New Year",
+  "يوم عاشوراء": "Day of Ashura",
+  "المولد النبوي الشريف": "The Prophet's Birthday (Mawlid)",
+  "الإسراء والمعراج": "Al-Isra' & Al-Mi'raj",
+  "النصف من شعبان": "Mid-Sha'ban",
+  "أول أيام شهر رمضان": "First Day of Ramadan",
+  "ليلة القدر": "Laylat Al-Qadr (Night of Decree)",
+  "عيد الفطر المبارك": "Blessed Eid Al-Fitr",
+  "يوم عرفة": "Day of Arafah",
+  "عيد الأضحى المبارك": "Blessed Eid Al-Adha"
+};
+
+const HIJRI_MONTHS_EN = [
+  "Muharram", "Safar", "Rabi' al-Awwal", "Rabi' al-Thani", 
+  "Jumada al-Ula", "Jumada al-Thaniyah", "Rajab", "Sha'ban", 
+  "Ramadan", "Shawwal", "Dhu al-Qi'dah", "Dhu al-Hijjah"
+];
+
+const GREGORIAN_MONTHS_EN = [
+  "January", "February", "March", "April", "May", "June", 
+  "July", "August", "September", "October", "November", "December"
+];
+
+const PRAYER_NAMES_EN: Record<string, string> = {
+  'الفجر': 'Fajr',
+  'الشروق': 'Sunrise',
+  'الظهر': 'Dhuhr',
+  'العصر': 'Asr',
+  'المغرب': 'Maghrib',
+  'العشاء': 'Isha',
+  'Fajr': 'Fajr',
+  'Sunrise': 'Sunrise',
+  'Dhuhr': 'Dhuhr',
+  'Asr': 'Asr',
+  'Maghrib': 'Maghrib',
+  'Isha': 'Isha'
 };
 
 interface LanguageContextType {
@@ -644,6 +1043,11 @@ interface LanguageContextType {
   translatePageTitle: (pageId: string, defaultText?: string) => string;
   translatePageSubtitle: (pageId: string, defaultText?: string) => string;
   translateThemeName: (themeKey: string, defaultName?: string) => string;
+  translatePrayerName: (prayerName: string) => string;
+  translateEventName: (eventName: string) => string;
+  translateHijriMonth: (monthIndex: number) => string;
+  translateGregorianMonth: (monthIndex: number) => string;
+  formatNumber: (n: number | string) => string;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
@@ -675,13 +1079,13 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
     document.documentElement.setAttribute('dir', isRTL ? 'rtl' : 'ltr');
   }, [language, isRTL]);
 
-  const setLanguage = (lang: Language) => {
+  const setLanguage = React.useCallback((lang: Language) => {
     setLanguageState(lang);
-  };
+  }, []);
 
-  const toggleLanguage = () => {
+  const toggleLanguage = React.useCallback(() => {
     setLanguageState(prev => (prev === 'ar' ? 'en' : 'ar'));
-  };
+  }, []);
 
   const t = (key: string, defaultText?: string): string => {
     const item = ISLAMIC_TRANSLATIONS[key];
@@ -692,42 +1096,53 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
   };
 
   const translateMenuItem = (itemId: string, defaultText?: string): string => {
-    // Standardize IDs: 'quran' -> 'menu.quran', 'prayer-times' -> 'menu.prayer_times'
     const normalizedKey = `menu.${itemId.replace(/-/g, '_')}`;
     if (ISLAMIC_TRANSLATIONS[normalizedKey]) {
       return ISLAMIC_TRANSLATIONS[normalizedKey][language];
     }
-    // Check with plain fallback
     if (language === 'ar') {
       return defaultText || itemId;
     }
-    // If English and not matched directly, handle known items
     const fallbackMap: Record<string, string> = {
-      'quran': '📖 The Noble Qur\'an',
-      'listen': '🎧 Listen to Qur\'an',
-      'prayer-times': '⏱️ Prayer Times',
-      'adia': '🤲 Supplications (Du\'a)',
-      'sabah-masaa': '☀️ Morning & Evening Adhkar',
-      'salah-adhkar': '🕌 Adhkar of Salah',
-      'hisn-muslim': '🛡️ Fortress of the Muslim',
-      'tasbeeh': '📿 Electronic Tasbeeh',
-      'calendar': '📅 Hijri Calendar',
-      'qibla': '🧭 Qibla Direction',
-      'hajj-umrah': '🕋 Hajj & Umrah Guide',
-      'nawawi': '📚 40 Hadith An-Nawawi',
-      'calculators': '🧮 Islamic Calculators',
-      'asmaul-husna': '✨ The 99 Beautiful Names',
-      'ahl-al-quran': '🏆 Ahl Al-Qur\'an',
-      'community': '💬 Faith Community',
-      'more': 'Apps & Features',
-      'more-menu': 'Apps & Features',
-      'daily-wird': '📅 Daily Wird & Khatmah',
-      'habit-tracker': '🎯 Worship Habit Tracker',
-      'memorization': '🧠 Qur\'an Memorization',
-      'voice-control': '🎙️ Voice Control',
-      'islamic-sites': '🌐 Islamic Websites',
-      'others': '✨ Al-Ruqyah Al-Shar\'iyyah',
-      'tajweed-education': 'Tajweed Rules'
+      'quran': 'The Noble Qur\'an',
+      'listen': 'Listen to Qur\'an',
+      'prayer-times': 'Prayer Times',
+      'adia': 'Supplications',
+      'sabah-masaa': 'Daily Adhkar',
+      'salah-adhkar': 'Salah Remembrances',
+      'hisn-muslim': 'Fortress of the Muslim',
+      'tasbeeh': 'Electronic Tasbeeh',
+      'calendar': 'Islamic Calendar',
+      'qibla': 'Qibla Direction',
+      'hajj-umrah': 'Hajj & Umrah',
+      'nawawi': 'Forty Hadith',
+      'calculators': 'Calculators',
+      'asmaul-husna': 'Divine Names',
+      'ahl-al-quran': 'Ahl Al-Qur\'an',
+      'community': 'Faith Community',
+      'daily-wird': 'Daily Wird',
+      'habit-tracker': 'Habit Tracker',
+      'memorization': 'Memorization',
+      'voice-control': 'Voice Control',
+      'islamic-sites': 'Islamic Sites',
+      'others': 'Al-Ruqyah',
+      'prophetic-seerah': 'Prophetic Seerah',
+      'tajweed-education': 'Tajweed Rules',
+      'quran-download-parent': 'Download Qur\'an',
+      'tafseer-download': 'Download Tafseer',
+      'interface-customization': 'Customize Interface',
+      'audio': 'Reciters',
+      'font-type': 'Font Style',
+      'notification-settings': 'Notifications',
+      'sajdah-list': 'Sajdah Verses',
+      'mushaf': 'Mushaf',
+      'tafseer': 'Tafseer',
+      'meanings': 'Meanings',
+      'translation': 'Translation',
+      'themes': 'Themes',
+      'settings': 'Settings',
+      'bookmarks': 'Bookmarks',
+      'search': 'Advanced Search'
     };
     return fallbackMap[itemId] || defaultText || itemId;
   };
@@ -756,6 +1171,42 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
     return defaultName || themeKey;
   };
 
+  const translatePrayerName = (prayerName: string): string => {
+    if (!prayerName || prayerName === '-') return prayerName;
+    if (language === 'ar') return prayerName;
+    return PRAYER_NAMES_EN[prayerName] || prayerName;
+  };
+
+  const translateEventName = (eventName: string): string => {
+    if (!eventName) return '';
+    if (language === 'ar') return eventName;
+    return ISLAMIC_EVENTS_EN[eventName] || eventName;
+  };
+
+  const translateHijriMonth = (monthIndex: number): string => {
+    if (language === 'en') {
+      return HIJRI_MONTHS_EN[monthIndex] || '';
+    }
+    const arMonths = ["محرم", "صفر", "ربيع الأول", "ربيع الآخر", "جمادى الأولى", "جمادى الآخرة", "رجب", "شعبان", "رمضان", "شوال", "ذو القعدة", "ذو الحجة"];
+    return arMonths[monthIndex] || '';
+  };
+
+  const translateGregorianMonth = (monthIndex: number): string => {
+    if (language === 'en') {
+      return GREGORIAN_MONTHS_EN[monthIndex] || '';
+    }
+    const arMonths = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
+    return arMonths[monthIndex] || '';
+  };
+
+  const formatNumber = (n: number | string): string => {
+    if (language === 'en') {
+      return String(n);
+    }
+    const easternDigits = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+    return String(n).replace(/[0-9]/g, (w) => easternDigits[+w]);
+  };
+
   return (
     <LanguageContext.Provider
       value={{
@@ -768,7 +1219,12 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
         translateMenuItem,
         translatePageTitle,
         translatePageSubtitle,
-        translateThemeName
+        translateThemeName,
+        translatePrayerName,
+        translateEventName,
+        translateHijriMonth,
+        translateGregorianMonth,
+        formatNumber
       }}
     >
       {children}
@@ -783,3 +1239,4 @@ export const useLanguage = (): LanguageContextType => {
   }
   return context;
 };
+

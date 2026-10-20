@@ -5,8 +5,8 @@ import {
   Sparkles, Info, Award, Trash2, AlertTriangle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import BottomBar from '../components/BottomBar';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { registerBackInterceptor } from '../hooks/useBackButton';
 import { 
   ahlAlQuranService, 
@@ -15,8 +15,8 @@ import {
 } from '../services/ahlAlQuranService';
 import { communityService } from '../services/communityService';
 import UsernameModal from '../components/Community/UsernameModal';
-import TutorialOverlay, { TutorialStep } from '../components/Tutorial/TutorialOverlay';
 import ThemePageLock from '../components/ThemePageLock';
+import { markPageAsSeen } from '../utils/badgeManager';
 
 interface AhlAlQuranPageProps {
   onBack: () => void;
@@ -25,6 +25,8 @@ interface AhlAlQuranPageProps {
 
 const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) => {
   const { theme, themeKey } = useTheme();
+  const { language } = useLanguage();
+  const isEn = language === 'en';
 
   const isDefaultTheme = themeKey === 'default' || !themeKey || theme.name?.includes('الافتراضي') || theme.name === 'Default';
   const isDeepBlack = theme.bgColor === '#000000' || theme.name === 'أبيض وأسود' || themeKey === 'deep_black';
@@ -55,6 +57,10 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
   const [selectedMonthKey, setSelectedMonthKey] = useState<string>('');
   const [isArchiveDropdownOpen, setIsArchiveDropdownOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'leaderboard' | 'my_stats' | 'privacy'>('leaderboard');
+
+  useEffect(() => {
+    markPageAsSeen('ahl-al-quran');
+  }, []);
   const [tabHistory, setTabHistory] = useState<('leaderboard' | 'my_stats' | 'privacy')[]>(['leaderboard']);
 
   const switchTab = (newTab: 'leaderboard' | 'my_stats' | 'privacy') => {
@@ -70,8 +76,8 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
     } catch (e) {}
     showToast(
       type === 'hijri' 
-        ? 'تم اعتماد الشهور الهجرية للوحة المتصدرين' 
-        : 'تم اعتماد الشهور الميلادية للوحة المتصدرين'
+        ? (isEn ? 'Hijri months adopted for leaderboard' : 'تم اعتماد الشهور الهجرية للوحة المتصدرين') 
+        : (isEn ? 'Gregorian months adopted for leaderboard' : 'تم اعتماد الشهور الميلادية للوحة المتصدرين')
     );
   };
   
@@ -88,8 +94,8 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
 
   // Available Month Options (Current + Archived)
   const monthOptions = useMemo(() => {
-    return ahlAlQuranService.getAvailableMonths(calendarType);
-  }, [calendarType]);
+    return ahlAlQuranService.getAvailableMonths(calendarType, isEn ? 'en' : 'ar');
+  }, [calendarType, isEn]);
 
   // Set default month to current month when calendarType changes
   useEffect(() => {
@@ -134,8 +140,8 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
 
   // Compute Leaderboard for Selected Month
   const leaderboard = useMemo(() => {
-    return ahlAlQuranService.getLeaderboard(selectedMonthKey, currentUser?.userId);
-  }, [selectedMonthKey, currentUser?.userId, refreshTrigger]);
+    return ahlAlQuranService.getLeaderboard(selectedMonthKey, currentUser?.userId, isEn ? 'en' : 'ar');
+  }, [selectedMonthKey, currentUser?.userId, refreshTrigger, isEn]);
 
   // Current user's specific performance in this selected month
   const currentUserEntry = useMemo(() => {
@@ -147,18 +153,18 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
     setUserPrivacy(mode);
     showToast(
       mode === 'public' 
-        ? 'تم تفعيل الظهور باسمك وصورتك في لائحة الشرف'
+        ? (isEn ? 'Public appearance with name & avatar enabled' : 'تم تفعيل الظهور باسمك وصورتك في لائحة الشرف')
         : mode === 'anonymous'
-        ? 'تم تفعيل الظهور كفاعل خير (مجهول) للحفاظ على أجر السر'
-        : 'تم حجب اسمك من القائمة العامة مع استمرار حفظ إحصائياتك الشخصية'
+        ? (isEn ? 'Anonymous benefactor mode enabled' : 'تم تفعيل الظهور كفاعل خير (مجهول) للحفاظ على أجر السر')
+        : (isEn ? 'Your name has been hidden from public list while keeping personal stats' : 'تم حجب اسمك من القائمة العامة مع استمرار حفظ إحصائياتك الشخصية')
     );
   };
 
   const selectedMonthName = useMemo(() => {
-    if (selectedMonthKey === 'lifetime') return 'جميع الأوقات (التراكمي)';
+    if (selectedMonthKey === 'lifetime') return isEn ? 'Cumulative Lifetime' : 'جميع الأوقات (التراكمي)';
     const found = monthOptions.find(m => m.key === selectedMonthKey);
-    return found ? found.name : 'الشهر الحالي';
-  }, [selectedMonthKey, monthOptions]);
+    return found ? found.name : (isEn ? 'Current Month' : 'الشهر الحالي');
+  }, [selectedMonthKey, monthOptions, isEn]);
 
   const isCurrentMonthSelected = useMemo(() => {
     return monthOptions.length > 0 && monthOptions[0].key === selectedMonthKey;
@@ -177,82 +183,70 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
         setShowUsernameModal(false);
         return true;
       }
-      return false; // Let global handler navigate back to origin (home or more-menu)
+      return false; // Let global handler navigate back to origin (home)
     };
 
     const unregister = registerBackInterceptor(interceptor);
     return unregister;
   }, [isArchiveDropdownOpen, showUsernameModal]);
 
-  const ahlAlQuranTutorialSteps: TutorialStep[] = [
-    {
-      id: 'ahl-leaderboard',
-      title: 'لوحة المتصدرين',
-      text: 'ترتيب شهري وتنافس شريف بين القراء حسب عدد الصفحات والختمات مع تمييز الأوائل بالتيجان والأوسمة.',
-      selector: '#ahl-tab-leaderboard',
-      icon: <Crown className="w-8 h-8 text-amber-300" />
-    },
-    {
-      id: 'ahl-stats',
-      title: 'إحصائياتي الشخصية',
-      text: 'متابعة إنجازك القرآني وترتيبك وعدد الصفحات المقروءة ونسبة تقدمك في الختمة بدقة.',
-      selector: '#ahl-tab-mystats',
-      icon: <BookOpen className="w-8 h-8 text-sky-400" />
-    },
-    {
-      id: 'ahl-privacy',
-      title: 'الخصوصية والظهور',
-      text: 'التحكم في ظهور اسمك وبياناتك في قائمة المتصدرين أو القراءة كفاعل خير بكل أمان.',
-      selector: '#ahl-tab-privacy',
-      icon: <Shield className="w-8 h-8 text-purple-400" />
-    }
-  ];
-
   return (
     <div 
       className="h-screen max-h-screen h-[100dvh] w-full flex flex-col overflow-y-auto overscroll-contain transition-colors bg-transparent"
-      dir="rtl"
+      dir={isEn ? 'ltr' : 'rtl'}
       style={{
         backgroundColor: 'transparent',
         color: theme.textColor,
         fontFamily: theme.font,
-        paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 3.75rem + 1cm)'
+        paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.5rem)'
       }}
     >
       {/* Top Header Bar */}
       <header className="app-top-bar z-20 shrink-0">
         <div className="app-top-bar__inner">
-          <div className="relative flex items-center justify-between w-full">
-            {/* Right: Quran Shortcut */}
-            <button
-              type="button"
-              onClick={() => onNavigate('quran')}
-              className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-xs active:scale-95 transition-all cursor-pointer flex-shrink-0"
-              style={{
-                backgroundColor: cardBg,
-                borderColor: cardBorder,
-                borderWidth: '1.5px',
-                borderStyle: 'solid',
-                color: primaryColor
-              }}
-              title="الذهاب للمصحف الشريف"
-            >
-              <BookOpen size={20} />
-            </button>
+          <div className="relative flex items-center justify-center w-full min-h-[44px]">
+            {/* Back button */}
+            <div className={`absolute ${isEn ? 'left-0' : 'right-0'} flex items-center`}>
+              <button
+                onClick={onBack}
+                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                title={isEn ? "Go Back" : "رجوع للخلف"}
+                aria-label={isEn ? "Go Back" : "رجوع للخلف"}
+              >
+                <i className={`fa-solid ${isEn ? 'fa-arrow-left' : 'fa-arrow-right'} text-xl`}></i>
+              </button>
+            </div>
 
-            {/* Center Title */}
-            <h1 className="app-top-bar__title text-xl sm:text-2xl font-kufi text-center flex-1" style={{ color: theme.textColor }}>
-              أهل القرآن الكريم
-            </h1>
+            {/* Title in center */}
+            <div className="text-center px-16 sm:px-20 min-w-0">
+              <h1 className="app-top-bar__title text-lg sm:text-xl font-kufi truncate">
+                {isEn ? "People of the Qur'an" : "أهل القرآن الكريم"}
+              </h1>
+            </div>
 
-            {/* Left: Spacer to keep title centered and balanced with Quran shortcut */}
-            <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center pointer-events-none">
+            {/* Quran page & Home icons */}
+            <div className={`absolute ${isEn ? 'right-0' : 'left-0'} flex items-center gap-1`}>
               <ThemePageLock />
+              <button
+                type="button"
+                onClick={() => onNavigate('quran')}
+                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                title={isEn ? "Noble Qur'an Page (Reading)" : "صفحة القرآن الكريم (القراءة)"}
+                aria-label={isEn ? "Noble Qur'an Page" : "صفحة القرآن الكريم"}
+              >
+                <BookOpen size={20} />
+              </button>
+              <button
+                type="button"
+                onClick={() => onNavigate('home')}
+                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                title={isEn ? "Home Page" : "الصفحة الرئيسية"}
+                aria-label={isEn ? "Home Page" : "الصفحة الرئيسية"}
+              >
+                <i className="fa-solid fa-house text-xl"></i>
+              </button>
             </div>
           </div>
-          <p className="app-top-bar__subtitle text-xs" style={{ color: theme.textColor + 'aa' }}>
-            لوحة المتصدرين وإنجازات قراء كتاب الله الكريم
-          </p>
         </div>
       </header>
 
@@ -270,21 +264,23 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
               color: theme.textColor
             }}
           >
-            <div className="flex items-center gap-3 text-right">
+            <div className={`flex items-center gap-3 ${isEn ? 'text-left' : 'text-right'}`}>
               <div 
                 className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0"
                 style={{ backgroundColor: `${primaryColor}25`, color: primaryColor }}
               >
                 <Info size={22} />
               </div>
-              <h4 className="font-bold text-sm">لم تقم بالتسجيل في مجتمع المصحف بعد</h4>
+              <h4 className="font-bold text-sm">
+                {isEn ? "You haven't registered in the Qur'an community yet" : "لم تقم بالتسجيل في مجتمع المصحف بعد"}
+              </h4>
             </div>
             <button
-              onClick={() => setShowUsernameModal(true)}
+              onClick={() => onNavigate('community')}
               className="w-full sm:w-auto px-4 py-2.5 rounded-xl font-bold text-xs shadow-sm transition-all active:scale-95 cursor-pointer whitespace-nowrap"
               style={{ backgroundColor: primaryColor, color: primaryTextColor }}
             >
-              تسجيل حسابي الآن
+              {isEn ? "Register in Community Now" : "التسجيل في مجتمع التواصل"}
             </button>
           </div>
         )}
@@ -308,7 +304,7 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
             }}
           >
             <Trophy size={16} />
-            <span>لوحة المتصدرين</span>
+            <span>{isEn ? "Leaderboard" : "لوحة المتصدرين"}</span>
           </button>
 
           <button
@@ -325,7 +321,7 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
             }}
           >
             <Award size={16} />
-            <span>إحصائياتي</span>
+            <span>{isEn ? "My Statistics" : "إحصائياتي"}</span>
           </button>
 
           <button
@@ -342,7 +338,7 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
             }}
           >
             <Shield size={16} />
-            <span>الخصوصية والظهور</span>
+            <span>{isEn ? "Privacy & Visibility" : "الخصوصية والظهور"}</span>
           </button>
         </div>
 
@@ -364,7 +360,7 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
                     className="text-xs px-2 py-0.5 rounded-full font-bold shrink-0"
                     style={{ backgroundColor: primaryColor, color: primaryTextColor }}
                   >
-                    الشهر الحالي
+                    {isEn ? "Current Month" : "الشهر الحالي"}
                   </span>
                 )}
               </div>
@@ -382,7 +378,7 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
                     color: theme.textColor
                   }}
                 >
-                  <span>الأرشيف</span>
+                  <span>{isEn ? "Archive" : "الأرشيف"}</span>
                   <ChevronDown size={14} className={`transition-transform ${isArchiveDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
 
@@ -393,7 +389,7 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
                       initial={{ opacity: 0, y: -6 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -6 }}
-                      className="absolute left-0 mt-1.5 w-60 rounded-2xl shadow-xl z-50 overflow-hidden max-h-72 overflow-y-auto p-1.5"
+                      className={`absolute ${isEn ? 'right-0' : 'left-0'} mt-1.5 w-60 rounded-2xl shadow-xl z-50 overflow-hidden max-h-72 overflow-y-auto p-1.5`}
                       style={{ backgroundColor: cardBg, borderColor: cardBorder, borderWidth: '1.5px', borderStyle: 'solid' }}
                     >
                       {monthOptions.map((opt) => (
@@ -403,7 +399,7 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
                             setSelectedMonthKey(opt.key);
                             setIsArchiveDropdownOpen(false);
                           }}
-                          className="w-full text-right px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-between gap-2 transition-all hover:opacity-80"
+                          className={`w-full ${isEn ? 'text-left' : 'text-right'} px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-between gap-2 transition-all hover:opacity-80`}
                           style={selectedMonthKey === opt.key ? {
                             backgroundColor: `${primaryColor}20`,
                             color: primaryColor,
@@ -418,7 +414,7 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
                               className="text-[10px] px-1.5 py-0.5 rounded-md"
                               style={{ backgroundColor: `${primaryColor}25`, color: primaryColor }}
                             >
-                              الحالي
+                              {isEn ? "Current" : "الحالي"}
                             </span>
                           )}
                         </button>
@@ -428,7 +424,7 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
                           setSelectedMonthKey('lifetime');
                           setIsArchiveDropdownOpen(false);
                         }}
-                        className="w-full text-right px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-between gap-2 border-t mt-1 hover:opacity-80"
+                        className={`w-full ${isEn ? 'text-left' : 'text-right'} px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-between gap-2 border-t mt-1 hover:opacity-80`}
                         style={selectedMonthKey === 'lifetime' ? {
                           backgroundColor: `${primaryColor}20`,
                           color: primaryColor,
@@ -439,7 +435,7 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
                           borderColor: cardBorder
                         }}
                       >
-                        <span>👑 الإجمالي التراكمي</span>
+                        <span>{isEn ? "👑 Cumulative Total" : "👑 الإجمالي التراكمي"}</span>
                       </button>
                     </motion.div>
                   )}
@@ -468,13 +464,13 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="font-bold text-xs sm:text-sm" style={{ color: theme.textColor }}>
-                        ترتيبك في {selectedMonthName}:
+                        {isEn ? `Your rank in ${selectedMonthName}:` : `ترتيبك في ${selectedMonthName}:`}
                       </span>
                       <span 
                         className="text-xs font-bold px-2 py-0.5 rounded-full"
                         style={{ backgroundColor: `${primaryColor}20`, color: primaryColor }}
                       >
-                        المركز {currentUserEntry.rank}
+                        {isEn ? `Rank ${currentUserEntry.rank}` : `المركز ${currentUserEntry.rank}`}
                       </span>
                     </div>
                     <div className="text-xs font-extrabold mt-0.5" style={{ color: primaryColor }}>
@@ -488,7 +484,7 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
                     style={{ backgroundColor: `${primaryColor}20`, color: primaryColor }}
                   >
                     <Crown size={14} />
-                    <span>{currentUserEntry.khatmas} ختمة</span>
+                    <span>{currentUserEntry.khatmas} {isEn ? 'Khatma(s)' : 'ختمة'}</span>
                   </div>
                 )}
               </div>
@@ -502,7 +498,7 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
               >
                 <Trophy size={48} className="mx-auto mb-3 opacity-60" style={{ color: primaryColor }} />
                 <h3 className="font-bold text-base" style={{ color: theme.textColor }}>
-                  لا توجد قراءات مسجلة في هذا الشهر حتى الآن
+                  {isEn ? "No reading records for this month yet" : "لا توجد قراءات مسجلة في هذا الشهر حتى الآن"}
                 </h3>
                 <button
                   onClick={() => onNavigate('quran')}
@@ -510,7 +506,7 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
                   style={{ backgroundColor: primaryColor, color: primaryTextColor }}
                 >
                   <BookOpen size={16} />
-                  <span>فتح المصحف والقراءة الآن</span>
+                  <span>{isEn ? "Open Qur'an & Read Now" : "فتح المصحف والقراءة الآن"}</span>
                 </button>
               </div>
             ) : (
@@ -520,23 +516,21 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
                   const isTop2 = item.rank === 2;
                   const isTop3 = item.rank === 3;
 
-                  // Width hierarchy: 1st full width, 2nd slightly smaller from left, 3rd smaller than 2nd, rest smaller than 3rd
                   const cardWidthClass = isTop1
                     ? 'w-full'
                     : isTop2
-                    ? 'w-[92%] mr-0 ml-auto ms-0 me-auto'
+                    ? (isEn ? 'w-[92%] ml-0 mr-auto' : 'w-[92%] mr-0 ml-auto ms-0 me-auto')
                     : isTop3
-                    ? 'w-[84%] mr-0 ml-auto ms-0 me-auto'
-                    : 'w-[76%] mr-0 ml-auto ms-0 me-auto';
+                    ? (isEn ? 'w-[84%] ml-0 mr-auto' : 'w-[84%] mr-0 ml-auto ms-0 me-auto')
+                    : (isEn ? 'w-[76%] ml-0 mr-auto' : 'w-[76%] mr-0 ml-auto ms-0 me-auto');
 
-                  // Username colors: 1st gold, 2nd silver, 3rd bronze, rest black
                   const displayNameColor = isTop1
-                    ? '#D4AF37' // ذهبي
+                    ? '#D4AF37'
                     : isTop2
-                    ? '#94A3B8' // فضي
+                    ? '#94A3B8'
                     : isTop3
-                    ? '#CD7F32' // برونزي
-                    : (theme.isDark || isBlackTheme ? '#FFFFFF' : '#000000'); // باقي الأسماء باللون الأسود
+                    ? '#CD7F32'
+                    : (theme.isDark || isBlackTheme ? '#FFFFFF' : '#000000');
 
                   return (
                     <motion.div
@@ -565,7 +559,7 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
                     >
                       {/* Left Side: Rank Badge + User Profile */}
                       <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
-                        {/* Rank Badge - Numbers 1, 2, 3 enlarged prominently */}
+                        {/* Rank Badge */}
                         <div className="relative shrink-0 flex items-center justify-center">
                           {isTop1 ? (
                             <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 text-white flex items-center justify-center font-black text-xl sm:text-2xl shadow-md shadow-amber-500/35 border border-amber-300/50">
@@ -604,7 +598,7 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
                         </div>
 
                         {/* Name & Details */}
-                        <div className="min-w-0 flex-1">
+                        <div className={`min-w-0 flex-1 ${isEn ? 'text-left' : 'text-right'}`}>
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <h4 
                               className="font-black text-xs sm:text-sm truncate" 
@@ -617,7 +611,7 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
                                 className="text-[10px] px-1.5 py-0.2 rounded-full font-bold"
                                 style={{ backgroundColor: primaryColor, color: primaryTextColor }}
                               >
-                                أنت
+                                {isEn ? "You" : "أنت"}
                               </span>
                             )}
                             {item.isAnonymous && (
@@ -625,7 +619,7 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
                                 className="text-[10px] px-1.5 py-0.2 rounded-full font-bold"
                                 style={{ backgroundColor: secondaryBg, color: theme.textColor }}
                               >
-                                مجهول
+                                {isEn ? "Anonymous" : "مجهول"}
                               </span>
                             )}
                           </div>
@@ -634,13 +628,15 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
                             {!item.isAnonymous && item.record.country && (
                               <span>{item.record.country}</span>
                             )}
-                            <span>•</span>
-                            <span className="font-mono">{item.pages} صفحة مسجلة</span>
+                            {!item.isAnonymous && item.record.country && <span>•</span>}
+                            <span className="font-mono">
+                              {isEn ? `${item.pages} recorded pages` : `${item.pages} صفحة مسجلة`}
+                            </span>
                           </div>
                         </div>
                       </div>
 
-                      {/* Right Side: Formatted Progress (Ajza & Remaining Pages) */}
+                      {/* Right Side: Formatted Progress */}
                       <div className="text-left shrink-0">
                         <div className="text-xs sm:text-sm font-extrabold whitespace-nowrap" style={{ color: primaryColor }}>
                           {item.formattedProgress.summaryText}
@@ -651,7 +647,7 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
                             style={{ backgroundColor: `${primaryColor}15`, color: primaryColor }}
                           >
                             <Crown size={12} />
-                            <span>{item.khatmas} ختمة</span>
+                            <span>{item.khatmas} {isEn ? 'Khatma(s)' : 'ختمة'}</span>
                           </div>
                         )}
                       </div>
@@ -682,7 +678,7 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
                 )}
               </div>
               <h3 className="font-extrabold text-base" style={{ color: theme.textColor }}>
-                {currentUser?.username || 'قارئ المصحف'}
+                {currentUser?.username || (isEn ? "Qur'an Reader" : "قارئ المصحف")}
               </h3>
 
               {/* Progress Counters Grid */}
@@ -691,7 +687,9 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
                   className="p-3.5 rounded-2xl text-center"
                   style={{ backgroundColor: secondaryBg, borderColor: cardBorder, borderWidth: '1.5px', borderStyle: 'solid' }}
                 >
-                  <div className="text-xs font-bold" style={{ color: theme.textColor }}>صفحات هذا الشهر</div>
+                  <div className="text-xs font-bold" style={{ color: theme.textColor }}>
+                    {isEn ? "This Month's Pages" : "صفحات هذا الشهر"}
+                  </div>
                   <div className="text-xl font-black mt-1" style={{ color: primaryColor }}>
                     {currentUserEntry?.pages || 0}
                   </div>
@@ -701,7 +699,9 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
                   className="p-3.5 rounded-2xl text-center"
                   style={{ backgroundColor: secondaryBg, borderColor: cardBorder, borderWidth: '1.5px', borderStyle: 'solid' }}
                 >
-                  <div className="text-xs font-bold" style={{ color: theme.textColor }}>ختمات هذا الشهر</div>
+                  <div className="text-xs font-bold" style={{ color: theme.textColor }}>
+                    {isEn ? "This Month's Khatmas" : "ختمات هذا الشهر"}
+                  </div>
                   <div className="text-xl font-black mt-1 text-amber-500">
                     {currentUserEntry?.khatmas || 0}
                   </div>
@@ -711,7 +711,9 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
                   className="col-span-2 sm:col-span-1 p-3.5 rounded-2xl text-center"
                   style={{ backgroundColor: secondaryBg, borderColor: cardBorder, borderWidth: '1.5px', borderStyle: 'solid' }}
                 >
-                  <div className="text-xs font-bold" style={{ color: theme.textColor }}>الترتيب الحالي</div>
+                  <div className="text-xs font-bold" style={{ color: theme.textColor }}>
+                    {isEn ? "Current Rank" : "الترتيب الحالي"}
+                  </div>
                   <div className="text-xl font-black mt-1" style={{ color: primaryColor }}>
                     {currentUserEntry ? `#${currentUserEntry.rank}` : '-'}
                   </div>
@@ -732,7 +734,9 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
                 >
                   <BookOpen size={20} />
                 </div>
-                <div className="font-bold text-sm" style={{ color: theme.textColor }}>فتح المصحف</div>
+                <div className="font-bold text-sm" style={{ color: theme.textColor }}>
+                  {isEn ? "Open Qur'an" : "فتح المصحف"}
+                </div>
               </button>
 
               <button
@@ -746,7 +750,9 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
                 >
                   <User size={20} />
                 </div>
-                <div className="font-bold text-sm" style={{ color: theme.textColor }}>مجتمع المصحف</div>
+                <div className="font-bold text-sm" style={{ color: theme.textColor }}>
+                  {isEn ? "Qur'an Community" : "مجتمع المصحف"}
+                </div>
               </button>
             </div>
           </div>
@@ -755,14 +761,14 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
         {/* TAB 3: PRIVACY & VISIBILITY CONTROLS */}
         {activeTab === 'privacy' && (
           <div className="space-y-4">
-            {/* Calendar Selection Card (Moved here from leaderboard tab) */}
+            {/* Calendar Selection Card */}
             <div 
               className="rounded-3xl p-5 shadow-xs"
               style={{ backgroundColor: cardBg, borderColor: cardBorder, borderWidth: '1.5px', borderStyle: 'solid' }}
             >
-              <h3 className="font-extrabold text-base flex items-center gap-2 mb-3" style={{ color: theme.textColor }}>
+              <h3 className={`font-extrabold text-base flex items-center gap-2 mb-3 ${isEn ? 'text-left' : 'text-right'}`} style={{ color: theme.textColor }}>
                 <Calendar size={20} style={{ color: primaryColor }} />
-                <span>نوع التقويم المعتمد للوحة المتصدرين</span>
+                <span>{isEn ? "Leaderboard Calendar Type" : "نوع التقويم المعتمد للوحة المتصدرين"}</span>
               </h3>
 
               <div 
@@ -781,7 +787,7 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
                     opacity: 0.75
                   }}
                 >
-                  <span>📅 الشهور الهجرية</span>
+                  <span>{isEn ? "📅 Hijri Months" : "📅 الشهور الهجرية"}</span>
                   {calendarType === 'hijri' && <CheckCircle2 size={16} />}
                 </button>
 
@@ -797,7 +803,7 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
                     opacity: 0.75
                   }}
                 >
-                  <span>🗓️ الشهور الميلادية</span>
+                  <span>{isEn ? "🗓️ Gregorian Months" : "🗓️ الشهور الميلادية"}</span>
                   {calendarType === 'gregorian' && <CheckCircle2 size={16} />}
                 </button>
               </div>
@@ -808,12 +814,12 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
               className="rounded-3xl p-5 shadow-xs space-y-3"
               style={{ backgroundColor: cardBg, borderColor: cardBorder, borderWidth: '1.5px', borderStyle: 'solid' }}
             >
-              <h3 className="font-extrabold text-base flex items-center gap-2 mb-2" style={{ color: theme.textColor }}>
+              <h3 className={`font-extrabold text-base flex items-center gap-2 mb-2 ${isEn ? 'text-left' : 'text-right'}`} style={{ color: theme.textColor }}>
                 <Shield size={20} style={{ color: primaryColor }} />
-                <span>إعدادات خصوصية الظهور</span>
+                <span>{isEn ? "Visibility Privacy Settings" : "إعدادات خصوصية الظهور"}</span>
               </h3>
 
-              {/* Option 1: Public with Name & Avatar */}
+              {/* Option 1: Public */}
               <div
                 onClick={() => handlePrivacyChange('public')}
                 className="p-4 rounded-2xl transition-all cursor-pointer flex items-center justify-between gap-3 shadow-xs"
@@ -831,8 +837,8 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
                   >
                     <Eye size={20} />
                   </div>
-                  <h4 className="font-bold text-xs sm:text-sm" style={{ color: theme.textColor }}>
-                    الظهور بالاسم والصورة الرسمية (علني)
+                  <h4 className={`font-bold text-xs sm:text-sm ${isEn ? 'text-left' : 'text-right'}`} style={{ color: theme.textColor }}>
+                    {isEn ? "Appear with official Name & Avatar (Public)" : "الظهور بالاسم والصورة الرسمية (علني)"}
                   </h4>
                 </div>
                 {userPrivacy === 'public' && (
@@ -840,7 +846,7 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
                 )}
               </div>
 
-              {/* Option 2: Anonymous (فاعل خير) */}
+              {/* Option 2: Anonymous */}
               <div
                 onClick={() => handlePrivacyChange('anonymous')}
                 className="p-4 rounded-2xl transition-all cursor-pointer flex items-center justify-between gap-3 shadow-xs"
@@ -855,8 +861,8 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
                   <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0">
                     <Shield size={20} />
                   </div>
-                  <h4 className="font-bold text-xs sm:text-sm" style={{ color: theme.textColor }}>
-                    الظهور كـ "فاعل خير" (مجهول)
+                  <h4 className={`font-bold text-xs sm:text-sm ${isEn ? 'text-left' : 'text-right'}`} style={{ color: theme.textColor }}>
+                    {isEn ? "Appear as 'Benefactor' (Anonymous)" : "الظهور كـ \"فاعل خير\" (مجهول)"}
                   </h4>
                 </div>
                 {userPrivacy === 'anonymous' && (
@@ -864,7 +870,7 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
                 )}
               </div>
 
-              {/* Option 3: Completely Hidden */}
+              {/* Option 3: Hidden */}
               <div
                 onClick={() => handlePrivacyChange('hidden')}
                 className="p-4 rounded-2xl transition-all cursor-pointer flex items-center justify-between gap-3 shadow-xs"
@@ -882,8 +888,8 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
                   >
                     <EyeOff size={20} />
                   </div>
-                  <h4 className="font-bold text-xs sm:text-sm" style={{ color: theme.textColor }}>
-                    عدم الظهور نهائياً في القائمة (خاص)
+                  <h4 className={`font-bold text-xs sm:text-sm ${isEn ? 'text-left' : 'text-right'}`} style={{ color: theme.textColor }}>
+                    {isEn ? "Do not appear in list at all (Private)" : "عدم الظهور نهائياً في القائمة (خاص)"}
                   </h4>
                 </div>
                 {userPrivacy === 'hidden' && (
@@ -895,15 +901,17 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
             {/* Admin Reset Rankings Option */}
             {isAdmin && (
               <div 
-                className="rounded-3xl p-5 shadow-xs space-y-3 bg-rose-500/5 text-right"
+                className={`rounded-3xl p-5 shadow-xs space-y-3 bg-rose-500/5 ${isEn ? 'text-left' : 'text-right'}`}
                 style={{ borderColor: cardBorder, borderWidth: '1.5px', borderStyle: 'solid' }}
               >
                 <h4 className="font-extrabold text-sm text-rose-500 flex items-center gap-2">
                   <AlertTriangle size={18} />
-                  <span>إدارة التطبيق: تصفير ترتيب أهل القرآن</span>
+                  <span>{isEn ? "App Admin: Reset Ahl Al-Quran Rankings" : "إدارة التطبيق: تصفير ترتيب أهل القرآن"}</span>
                 </h4>
                 <p className="text-xs opacity-75 leading-relaxed" style={{ color: theme.textColor }}>
-                  يمكنك كمسؤول تصفير وحذف جميع إحصائيات وترتيب قراء أهل القرآن للبدء من جديد.
+                  {isEn 
+                    ? "As an admin, you can reset and delete all Ahl Al-Quran reader statistics and rankings to start fresh."
+                    : "يمكنك كمسؤول تصفير وحذف جميع إحصائيات وترتيب قراء أهل القرآن للبدء من جديد."}
                 </p>
                 <button
                   type="button"
@@ -911,7 +919,7 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
                   className="px-4 py-2.5 rounded-xl text-xs font-bold bg-rose-500 text-white shadow-xs active:scale-95 transition-all cursor-pointer flex items-center gap-2"
                 >
                   <Trash2 size={15} />
-                  <span>تصفير وحذف الترتيب</span>
+                  <span>{isEn ? "Reset & Delete Rankings" : "تصفير وحذف الترتيب"}</span>
                 </button>
               </div>
             )}
@@ -934,12 +942,12 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
 
         {/* Admin Reset Confirmation Modal */}
         {showResetConfirm && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs" dir="rtl">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs" dir={isEn ? 'ltr' : 'rtl'}>
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="w-full max-w-sm rounded-3xl p-5 text-center shadow-2xl space-y-4"
+              className={`w-full max-w-sm rounded-3xl p-5 ${isEn ? 'text-left' : 'text-center'} shadow-2xl space-y-4`}
               style={{ backgroundColor: cardBg, borderColor: cardBorder, borderWidth: '1.5px', borderStyle: 'solid' }}
             >
               <div className="w-12 h-12 mx-auto rounded-2xl bg-rose-500/15 text-rose-500 flex items-center justify-center">
@@ -947,10 +955,12 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
               </div>
               <div>
                 <h3 className="text-lg font-bold" style={{ color: theme.textColor }}>
-                  تصفير ترتيب أهل القرآن بالكامل؟
+                  {isEn ? "Reset all Ahl Al-Quran rankings completely?" : "تصفير ترتيب أهل القرآن بالكامل؟"}
                 </h3>
                 <p className="text-xs mt-1.5 opacity-70 leading-relaxed">
-                  سيتم حذف جميع إحصائيات وترتيب القراء في صفحة أهل القرآن نهائياً والبدء من جديد كأن الصفحة جديدة تماماً.
+                  {isEn
+                    ? "All reader statistics and rankings on the Ahl Al-Quran page will be permanently deleted and restarted as if brand new."
+                    : "سيتم حذف جميع إحصائيات وترتيب القراء في صفحة أهل القرآن نهائياً والبدء من جديد كأن الصفحة جديدة تماماً."}
                 </p>
               </div>
               <div className="flex items-center gap-2 pt-2">
@@ -961,7 +971,7 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
                   className="flex-1 py-2.5 rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer opacity-80 hover:opacity-100"
                   style={{ borderColor: cardBorder, borderWidth: '1.5px', borderStyle: 'solid', color: theme.textColor }}
                 >
-                  إلغاء
+                  {isEn ? "Cancel" : "إلغاء"}
                 </button>
                 <button
                   type="button"
@@ -971,9 +981,9 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
                     try {
                       await ahlAlQuranService.resetAllRankings();
                       setShowResetConfirm(false);
-                      showToast('تم تصفير وحذف الترتيب بالكامل بنجاح ✅');
+                      showToast(isEn ? 'Rankings successfully reset and deleted ✅' : 'تم تصفير وحذف الترتيب بالكامل بنجاح ✅');
                     } catch (err) {
-                      showToast('حدث خطأ أثناء محاولة التصفير');
+                      showToast(isEn ? 'An error occurred while resetting' : 'حدث خطأ أثناء محاولة التصفير');
                     } finally {
                       setIsResetting(false);
                     }
@@ -981,7 +991,7 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
                   className="flex-1 py-2.5 rounded-xl text-xs font-bold bg-rose-500 text-white shadow-md transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
                 >
                   {isResetting ? <RefreshCw size={14} className="animate-spin" /> : <Trash2 size={14} />}
-                  <span>تأكيد الحذف والتصفير</span>
+                  <span>{isEn ? "Confirm Delete & Reset" : "تأكيد الحذف والتصفير"}</span>
                 </button>
               </div>
             </motion.div>
@@ -989,7 +999,7 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
         )}
       </AnimatePresence>
 
-      {/* Registration Modal if user clicks register */}
+      {/* Registration Modal */}
       <UsernameModal
         isOpen={showUsernameModal}
         onClose={() => setShowUsernameModal(false)}
@@ -997,25 +1007,7 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
           setShowUsernameModal(false);
           setIsProfileComplete(communityService.isProfileComplete());
           setCurrentUser(communityService.getCurrentUser());
-          showToast('مرحباً بك! تم تسجيل حسابك بنجاح وأصبحت الآن ضمن أهل القرآن 🌸');
-        }}
-      />
-
-      {/* Standard BottomBar across the app */}
-      <BottomBar 
-        onHomeClick={onBack}
-        onThemesClick={() => {}}
-        showThemes={false}
-      />
-
-      {/* Tutorial Overlay */}
-      <TutorialOverlay 
-        tutorialId="ahl-al-quran-tutorial" 
-        steps={ahlAlQuranTutorialSteps} 
-        onStepChange={(stepId) => {
-          if (stepId === 'ahl-leaderboard') switchTab('leaderboard');
-          else if (stepId === 'ahl-stats') switchTab('my_stats');
-          else if (stepId === 'ahl-privacy') switchTab('privacy');
+          showToast(isEn ? "Welcome! Your account was registered successfully and you are now among Ahl Al-Quran 🌸" : 'مرحباً بك! تم تسجيل حسابك بنجاح وأصبحت الآن ضمن أهل القرآن 🌸');
         }}
       />
     </div>

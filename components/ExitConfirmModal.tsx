@@ -48,9 +48,9 @@ const ExitConfirmModal: React.FC<ExitConfirmModalProps> = ({ isOpen, onClose, on
                             onClick={onConfirm} 
                             className="px-6 py-2 rounded-lg font-bold transition active:scale-95 shadow-md"
                             style={{
-                                backgroundColor: theme.palette[0] || '#ef4444',
-                                color: theme.name === 'اسود' ? '#000000' : '#ffffff',
-                                boxShadow: `0 4px 10px -2px ${theme.palette[0]}50`
+                                backgroundColor: (theme.name === 'اسود' || theme.bgColor === '#000000') ? '#ffffff' : (theme.palette[0] || '#ef4444'),
+                                color: (theme.name === 'اسود' || theme.bgColor === '#000000') ? '#000000' : '#ffffff',
+                                boxShadow: (theme.name === 'اسود' || theme.bgColor === '#000000') ? '0 4px 10px -2px rgba(255, 255, 255, 0.3)' : `0 4px 10px -2px ${theme.palette[0]}50`
                             }}
                         >
                             نعم

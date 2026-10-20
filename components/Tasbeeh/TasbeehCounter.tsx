@@ -1,5 +1,6 @@
 import React from 'react';
-import { toArabicNumerals } from '../../utils/tasbeehUtils';
+import { useLanguage } from '../../context/LanguageContext';
+import { formatTasbeehNumber, tTasbeeh } from '../../utils/tasbeehTranslations';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface TasbeehCounterProps {
@@ -18,6 +19,7 @@ interface TasbeehCounterProps {
 }
 
 const TasbeehCounter: React.FC<TasbeehCounterProps> = ({ isCountingStopped, target, secondaryTextColor, primaryTextColor, counterColor, count, handleIncrement, isBlackAndWhite, skin = 'modern', isDefaultTheme, theme, cardBorderColor }) => {
+    const { language } = useLanguage();
     const isBlackTheme = theme?.bgColor === '#000000';
     const activeCardBorderColor = cardBorderColor || (isDefaultTheme ? '#000000' : (isBlackTheme ? '#FFFFFF' : (theme?.palette?.[0] || '#000000')));
 
@@ -41,11 +43,11 @@ const TasbeehCounter: React.FC<TasbeehCounterProps> = ({ isCountingStopped, targ
                         color: isWhite ? '#000000' : 'white'
                     }}
                 >
-                    <span className="text-5xl font-mono font-black" style={{ fontFamily: 'Amiri', textShadow: isWhite ? 'none' : '0 2px 4px rgba(0,0,0,0.3)', color: 'inherit' }}>
-                        {toArabicNumerals(count)}
+                    <span className="text-5xl font-mono font-black" style={{ fontFamily: language === 'ar' ? 'Amiri' : 'inherit', textShadow: isWhite ? 'none' : '0 2px 4px rgba(0,0,0,0.3)', color: 'inherit' }}>
+                        {formatTasbeehNumber(count, language)}
                     </span>
                     <span className="text-xs font-bold mt-2" style={{color: 'inherit', opacity: 0.9}}>
-                        {isCountingStopped ? 'قم بالتصفير' : 'اضغط للعد'}
+                        {isCountingStopped ? tTasbeeh('resetPrompt', language) : tTasbeeh('tapToCount', language)}
                     </span>
                 </motion.button>
             );
@@ -71,10 +73,12 @@ const TasbeehCounter: React.FC<TasbeehCounterProps> = ({ isCountingStopped, targ
                         }}
                     >
                         <span className="text-xl font-mono font-black" style={{ color: isWhite ? '#000000' : 'rgba(255,255,255,0.9)' }}>
-                            {toArabicNumerals(count)}
+                            {formatTasbeehNumber(count, language)}
                         </span>
                     </motion.div>
-                    <div className="mt-6 text-xs font-bold opacity-70" style={{color: primaryTextColor}}>اسحب أو اضغط للعد</div>
+                    <div className="mt-6 text-xs font-bold opacity-70" style={{color: primaryTextColor}}>
+                        {tTasbeeh('beadsTapOrSwipe', language)}
+                    </div>
                 </div>
             );
         }
@@ -120,14 +124,14 @@ const TasbeehCounter: React.FC<TasbeehCounterProps> = ({ isCountingStopped, targ
                                 exit={{ y: -20, opacity: 0, scale: 0.8 }}
                                 transition={{ type: "spring", stiffness: 300, damping: 20 }}
                                 className="text-6xl md:text-7xl font-mono font-black absolute" 
-                                style={{ fontFamily: 'Amiri', textShadow: isWhite ? 'none' : '0 4px 8px rgba(0,0,0,0.2)', color: 'inherit' }}
+                                style={{ fontFamily: language === 'ar' ? 'Amiri' : 'inherit', textShadow: isWhite ? 'none' : '0 4px 8px rgba(0,0,0,0.2)', color: 'inherit' }}
                             >
-                                {toArabicNumerals(count)}
+                                {formatTasbeehNumber(count, language)}
                             </motion.span>
                         </AnimatePresence>
                     </div>
                     <span className="text-sm font-bold mt-1 mb-3" style={{color: 'inherit', opacity: 0.7}}>
-                        {isCountingStopped ? 'قم بالتصفير للبدء' : 'اضغط للعد'}
+                        {isCountingStopped ? tTasbeeh('resetToStart', language) : tTasbeeh('tapToCount', language)}
                     </span>
                     
                     {/* Ripple/Glow effect on the bottom */}
@@ -142,13 +146,11 @@ const TasbeehCounter: React.FC<TasbeehCounterProps> = ({ isCountingStopped, targ
             drag="x"
             dragConstraints={{ left: 0, right: 0 }}
             dragElastic={0.2}
-            onDragEnd={(e, { offset, velocity }) => {
+            onDragEnd={(e, { offset }) => {
                 const swipe = offset.x;
                 if (swipe < -50) {
-                    // Swiped left (next)
                     if ((window as any).handleNextPhrase) (window as any).handleNextPhrase();
                 } else if (swipe > 50) {
-                    // Swiped right (prev)
                     if ((window as any).handlePrevPhrase) (window as any).handlePrevPhrase();
                 }
             }}
@@ -160,8 +162,12 @@ const TasbeehCounter: React.FC<TasbeehCounterProps> = ({ isCountingStopped, targ
                 className="text-center px-6 py-3 rounded-2xl themed-card w-full max-w-xs shadow-sm transition-all"
                 style={{ borderColor: activeCardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
             >
-                <span className="block text-sm font-bold mb-1" style={{color: secondaryTextColor}}>{isCountingStopped && target > 0 ? 'تم الوصول للهدف! 🎉' : 'الهدف:'}</span>
-                <span className="text-3xl font-extrabold font-amiri" style={{color: primaryTextColor}}>{toArabicNumerals(target > 0 ? target : 'مفتوح')}</span>
+                <span className="block text-sm font-bold mb-1" style={{color: secondaryTextColor}}>
+                    {isCountingStopped && target > 0 ? tTasbeeh('targetReachedBanner', language) : tTasbeeh('targetLabel', language)}
+                </span>
+                <span className={`text-3xl font-extrabold ${language === 'ar' ? 'font-amiri' : 'font-sans'}`} style={{color: primaryTextColor}}>
+                    {target > 0 ? formatTasbeehNumber(target, language) : tTasbeeh('targetOpen', language)}
+                </span>
             </motion.div>
 
             {renderCounter()}
