@@ -1,8 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BarChart3, Calendar, TrendingUp, X, Zap, ChevronRight } from 'lucide-react';
+import { BarChart3, Calendar, TrendingUp, Zap } from 'lucide-react';
 import { Theme } from '../../context/themes';
-import { toArabicNumerals } from '../../utils/tasbeehUtils';
+import { useLanguage } from '../../context/LanguageContext';
+import { formatTasbeehNumber, tTasbeeh } from '../../utils/tasbeehTranslations';
 import moment from 'moment-hijri';
 
 interface TasbeehChartModalProps {
@@ -18,9 +19,16 @@ type PeriodType = 'weekly' | 'monthly';
 
 const ARABIC_DAYS = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 const ARABIC_DAYS_SHORT = ['أحد', 'اثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة', 'سبت'];
+const ENGLISH_DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const ENGLISH_DAYS_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
 const ARABIC_MONTHS = [
     'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
     'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
+];
+const ENGLISH_MONTHS = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
 ];
 
 export const TasbeehChartModal: React.FC<TasbeehChartModalProps> = ({
@@ -31,6 +39,7 @@ export const TasbeehChartModal: React.FC<TasbeehChartModalProps> = ({
     themeKey,
     onNavigate
 }) => {
+    const { language, isRTL, dir } = useLanguage();
     const [period, setPeriod] = useState<PeriodType>('weekly');
     const [selectedDayIndex, setSelectedDayIndex] = useState<number | null>(null);
 
@@ -41,7 +50,9 @@ export const TasbeehChartModal: React.FC<TasbeehChartModalProps> = ({
     const secondaryColor = isDefaultTheme ? '#4b5563' : (isBlackTheme ? '#d1d5db' : (theme.palette[1] || theme.palette[0]));
     const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
 
-    // Build the dataset for weekly (7 days) or monthly (30 days) with full Arabic localization
+    const isEn = language === 'en';
+
+    // Build the dataset for weekly (7 days) or monthly (30 days) with bilingual localization
     const chartData = useMemo(() => {
         const daysCount = period === 'weekly' ? 7 : 30;
         const result = [];
@@ -58,20 +69,24 @@ export const TasbeehChartModal: React.FC<TasbeehChartModalProps> = ({
             const dayOfMonth = jsDate.getDate();
             const monthIdx = jsDate.getMonth();
 
+            const dayName = isEn ? ENGLISH_DAYS[dayOfWeek] : ARABIC_DAYS[dayOfWeek];
+            const shortDayName = isEn ? ENGLISH_DAYS_SHORT[dayOfWeek] : ARABIC_DAYS_SHORT[dayOfWeek];
+            const monthName = isEn ? ENGLISH_MONTHS[monthIdx] : ARABIC_MONTHS[monthIdx];
+
             result.push({
                 date: dateStr,
                 count,
                 isToday,
-                dayName: ARABIC_DAYS[dayOfWeek],
-                shortDayName: ARABIC_DAYS_SHORT[dayOfWeek],
-                dayNumber: toArabicNumerals(dayOfMonth),
-                formattedDate: `${toArabicNumerals(dayOfMonth)} ${ARABIC_MONTHS[monthIdx]}`,
-                shortDate: `${toArabicNumerals(dayOfMonth)}/${toArabicNumerals(monthIdx + 1)}`
+                dayName,
+                shortDayName,
+                dayNumber: formatTasbeehNumber(dayOfMonth, language),
+                formattedDate: isEn ? `${monthName} ${dayOfMonth}` : `${formatTasbeehNumber(dayOfMonth, language)} ${monthName}`,
+                shortDate: isEn ? `${monthIdx + 1}/${dayOfMonth}` : `${formatTasbeehNumber(dayOfMonth, language)}/${formatTasbeehNumber(monthIdx + 1, language)}`
             });
         }
 
         return result;
-    }, [period, dailyStats, todayStr]);
+    }, [period, dailyStats, todayStr, isEn, language]);
 
     // Summary calculations
     const statsSummary = useMemo(() => {
@@ -116,41 +131,41 @@ export const TasbeehChartModal: React.FC<TasbeehChartModalProps> = ({
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 className="fixed inset-0 z-50 flex flex-col bg-slate-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100"
-                dir="rtl"
+                dir={dir}
             >
                 {/* Full Screen Top Header */}
                 <header className="app-top-bar shrink-0">
                     <div className="app-top-bar__inner">
                         <div className="relative flex items-center justify-center w-full min-h-[44px]">
-                            {/* سهم الرجوع للخلف على يمين النص */}
-                            <div className="absolute right-0 flex items-center">
+                            {/* Back arrow */}
+                            <div className={`absolute ${isRTL ? 'right-0' : 'left-0'} flex items-center`}>
                                 <button
                                     onClick={onClose}
                                     className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
-                                    title="رجوع للخلف"
-                                    aria-label="رجوع للخلف"
+                                    title={isEn ? 'Back' : 'رجوع للخلف'}
+                                    aria-label={isEn ? 'Back' : 'رجوع للخلف'}
                                 >
-                                    <i className="fa-solid fa-arrow-right text-xl"></i>
+                                    <i className={`fa-solid ${isRTL ? 'fa-arrow-right' : 'fa-arrow-left'} text-xl`}></i>
                                 </button>
                             </div>
 
-                            {/* عنوان الصفحة في الوسط */}
+                            {/* Page Title */}
                             <div className="text-center px-12 min-w-0">
                                 <h1 className="app-top-bar__title text-lg sm:text-xl font-kufi truncate">
-                                    مخطط التسبيح
+                                    {isEn ? 'Tasbeeh Chart' : 'مخطط التسبيح'}
                                 </h1>
                             </div>
 
-                            {/* أيقونة المنزل على يسار النص للعودة إلى الصفحة الرئيسية */}
-                            <div className="absolute left-0 flex items-center gap-1">
+                            {/* Home icon */}
+                            <div className={`absolute ${isRTL ? 'left-0' : 'right-0'} flex items-center gap-1`}>
                                 <button
                                     onClick={() => {
                                         onClose();
                                         if (onNavigate) onNavigate('home');
                                     }}
                                     className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
-                                    title="الصفحة الرئيسية"
-                                    aria-label="الصفحة الرئيسية"
+                                    title={isEn ? 'Home' : 'الصفحة الرئيسية'}
+                                    aria-label={isEn ? 'Home' : 'الصفحة الرئيسية'}
                                 >
                                     <i className="fa-solid fa-house text-xl"></i>
                                 </button>
@@ -164,7 +179,6 @@ export const TasbeehChartModal: React.FC<TasbeehChartModalProps> = ({
                     className="flex-1 overflow-y-auto px-3 sm:px-4 pt-3 max-w-lg mx-auto w-full space-y-3.5 overscroll-contain"
                     style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 2rem)' }}
                 >
-                    
                     {/* Period Switcher (Weekly / Monthly) */}
                     <div className="shrink-0">
                         <div className="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-gray-200/70 dark:bg-gray-800" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
@@ -182,7 +196,7 @@ export const TasbeehChartModal: React.FC<TasbeehChartModalProps> = ({
                                 style={period === 'weekly' ? { color: primaryColor } : {}}
                             >
                                 <Calendar className="w-3.5 h-3.5" />
-                                <span>أسبوعي (آخر ٧ أيام)</span>
+                                <span>{isEn ? 'Weekly (Last 7 days)' : 'أسبوعي (آخر ٧ أيام)'}</span>
                             </button>
 
                             <button
@@ -199,7 +213,7 @@ export const TasbeehChartModal: React.FC<TasbeehChartModalProps> = ({
                                 style={period === 'monthly' ? { color: primaryColor } : {}}
                             >
                                 <TrendingUp className="w-3.5 h-3.5" />
-                                <span>شهري (آخر ٣٠ يوماً)</span>
+                                <span>{isEn ? 'Monthly (Last 30 days)' : 'شهري (آخر ٣٠ يوماً)'}</span>
                             </button>
                         </div>
                     </div>
@@ -210,33 +224,43 @@ export const TasbeehChartModal: React.FC<TasbeehChartModalProps> = ({
                             className="p-2.5 rounded-2xl bg-white dark:bg-gray-800/80 shadow-xs text-center flex flex-col items-center justify-center transition-all"
                             style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
                         >
-                            <span className="text-[10px] text-gray-500 dark:text-gray-400 font-semibold mb-0.5">الإجمالي</span>
+                            <span className="text-[10px] text-gray-500 dark:text-gray-400 font-semibold mb-0.5">
+                                {isEn ? 'Total' : 'الإجمالي'}
+                            </span>
                             <span className="text-base sm:text-lg font-black leading-tight" style={{ color: primaryColor }}>
-                                {toArabicNumerals(statsSummary.total)}
+                                {formatTasbeehNumber(statsSummary.total, language)}
                             </span>
-                            <span className="text-[9px] opacity-60">تسبيحة</span>
+                            <span className="text-[9px] opacity-60">
+                                {isEn ? 'Tasbeeh' : 'تسبيحة'}
+                            </span>
                         </div>
 
                         <div 
                             className="p-2.5 rounded-2xl bg-white dark:bg-gray-800/80 shadow-xs text-center flex flex-col items-center justify-center transition-all"
                             style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
                         >
-                            <span className="text-[10px] text-gray-500 dark:text-gray-400 font-semibold mb-0.5">المتوسط اليومي</span>
+                            <span className="text-[10px] text-gray-500 dark:text-gray-400 font-semibold mb-0.5">
+                                {isEn ? 'Daily Average' : 'المتوسط اليومي'}
+                            </span>
                             <span className="text-base sm:text-lg font-black leading-tight" style={{ color: secondaryColor }}>
-                                {toArabicNumerals(statsSummary.average)}
+                                {formatTasbeehNumber(statsSummary.average, language)}
                             </span>
-                            <span className="text-[9px] opacity-60">تسبيحة / يوم</span>
+                            <span className="text-[9px] opacity-60">
+                                {isEn ? 'Tasbeeh / day' : 'تسبيحة / يوم'}
+                            </span>
                         </div>
 
                         <div 
                             className="p-2.5 rounded-2xl bg-white dark:bg-gray-800/80 shadow-xs text-center flex flex-col items-center justify-center transition-all"
                             style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
                         >
-                            <span className="text-[10px] text-gray-500 dark:text-gray-400 font-semibold mb-0.5">أعلى يوم</span>
-                            <span className="text-base sm:text-lg font-black leading-tight text-amber-600 dark:text-amber-400">
-                                {toArabicNumerals(statsSummary.max)}
+                            <span className="text-[10px] text-gray-500 dark:text-gray-400 font-semibold mb-0.5">
+                                {isEn ? 'Peak Day' : 'أعلى يوم'}
                             </span>
-                            <span className="text-[9px] opacity-60 font-bold">
+                            <span className="text-base sm:text-lg font-black leading-tight text-amber-600 dark:text-amber-400">
+                                {formatTasbeehNumber(statsSummary.max, language)}
+                            </span>
+                            <span className="text-[9px] opacity-60 font-bold truncate max-w-[80px]">
                                 {statsSummary.peakDay ? statsSummary.peakDay.dayName : '—'}
                             </span>
                         </div>
@@ -252,12 +276,12 @@ export const TasbeehChartModal: React.FC<TasbeehChartModalProps> = ({
                             <div className="flex items-center justify-between pb-2 mb-2 border-b border-black/5 dark:border-white/5 text-xs">
                                 <div className="flex items-center gap-1.5 font-bold">
                                     <span className="text-amber-500">✨</span>
-                                    <span>{activeSelectedDay.isToday ? 'اليوم' : activeSelectedDay.dayName}</span>
+                                    <span>{activeSelectedDay.isToday ? (isEn ? 'Today' : 'اليوم') : activeSelectedDay.dayName}</span>
                                     <span className="text-[11px] text-gray-500 font-normal">({activeSelectedDay.formattedDate})</span>
                                 </div>
                                 <div className="flex items-center gap-1 font-bold" style={{ color: primaryColor }}>
-                                    <span className="text-sm font-black">{toArabicNumerals(activeSelectedDay.count)}</span>
-                                    <span className="text-[10px] font-normal">تسبيحة</span>
+                                    <span className="text-sm font-black">{formatTasbeehNumber(activeSelectedDay.count, language)}</span>
+                                    <span className="text-[10px] font-normal">{isEn ? 'Tasbeeh' : 'تسبيحة'}</span>
                                 </div>
                             </div>
                         )}
@@ -299,7 +323,7 @@ export const TasbeehChartModal: React.FC<TasbeehChartModalProps> = ({
                                                 y={y - 3} 
                                                 className="text-[8px] fill-gray-400 dark:fill-gray-500 font-sans"
                                             >
-                                                {toArabicNumerals(Math.round(maxVal * pct))}
+                                                {formatTasbeehNumber(Math.round(maxVal * pct), language)}
                                             </text>
                                         </g>
                                     );
@@ -365,7 +389,7 @@ export const TasbeehChartModal: React.FC<TasbeehChartModalProps> = ({
                                                     textAnchor="middle"
                                                     className="text-[9px] font-bold fill-gray-700 dark:fill-gray-200"
                                                 >
-                                                    {toArabicNumerals(item.count)}
+                                                    {formatTasbeehNumber(item.count, language)}
                                                 </text>
                                             )}
 
@@ -406,7 +430,7 @@ export const TasbeehChartModal: React.FC<TasbeehChartModalProps> = ({
                             </svg>
                         </div>
                         <span className="text-[10px] text-center text-gray-400 dark:text-gray-500 mt-1">
-                            انقر على أي عمود لعرض تفاصيل ذلك اليوم
+                            {isEn ? 'Click on any bar to view day details' : 'انقر على أي عمود لعرض تفاصيل ذلك اليوم'}
                         </span>
                     </div>
 
@@ -415,10 +439,10 @@ export const TasbeehChartModal: React.FC<TasbeehChartModalProps> = ({
                         <div className="flex items-center justify-between px-1">
                             <h4 className="text-xs font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
                                 <Zap className="w-3.5 h-3.5 text-amber-500" />
-                                <span>سجل التسبيح يوماً بيوم</span>
+                                <span>{isEn ? 'Daily Tasbeeh Log' : 'سجل التسبيح يوماً بيوم'}</span>
                             </h4>
                             <span className="text-[10px] text-gray-400 font-bold">
-                                {period === 'weekly' ? '٧ أيام' : '٣٠ يوماً'}
+                                {period === 'weekly' ? (isEn ? '7 Days' : '٧ أيام') : (isEn ? '30 Days' : '٣٠ يوماً')}
                             </span>
                         </div>
 
@@ -449,11 +473,11 @@ export const TasbeehChartModal: React.FC<TasbeehChartModalProps> = ({
                                         <div className="min-w-0 flex-1">
                                             <div className="flex items-center gap-1.5">
                                                 <span className="text-xs font-bold text-gray-800 dark:text-gray-200">
-                                                    {item.isToday ? 'اليوم' : item.dayName}
+                                                    {item.isToday ? (isEn ? 'Today' : 'اليوم') : item.dayName}
                                                 </span>
                                                 {item.isToday && (
                                                     <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-amber-500/20 text-amber-700 dark:text-amber-300 font-bold">
-                                                        الحالي
+                                                        {isEn ? 'Current' : 'الحالي'}
                                                     </span>
                                                 )}
                                                 <span className="text-[10px] text-gray-400 dark:text-gray-500 font-medium">
@@ -474,11 +498,13 @@ export const TasbeehChartModal: React.FC<TasbeehChartModalProps> = ({
                                         </div>
 
                                         {/* Count number */}
-                                        <div className="text-left shrink-0">
+                                        <div className="text-end shrink-0">
                                             <span className="text-sm font-black" style={{ color: item.isToday ? '#f59e0b' : primaryColor }}>
-                                                {toArabicNumerals(item.count)}
+                                                {formatTasbeehNumber(item.count, language)}
                                             </span>
-                                            <span className="text-[10px] text-gray-400 mr-1">تسبيحة</span>
+                                            <span className="text-[10px] text-gray-400 mx-1">
+                                                {isEn ? 'Tasbeeh' : 'تسبيحة'}
+                                            </span>
                                         </div>
                                     </div>
                                 );

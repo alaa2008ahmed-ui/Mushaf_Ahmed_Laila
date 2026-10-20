@@ -5,6 +5,8 @@ import { Capacitor } from '@capacitor/core';
 import { isDndPermissionGranted, requestDndPermission } from '../../utils/silentMode';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { playNotificationSound } from '../../utils/prayerTimesUtils';
+import { useLanguage } from '../../context/LanguageContext';
+import { tPrayer, getPrayerDisplayName } from '../../utils/prayerTimesTranslations';
 
 interface PrayerTimesSettingsModalProps {
     isOpen: boolean;
@@ -86,6 +88,7 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
     tempAutoSilentDuration,
     setTempAutoSilentDuration
 }) => {
+    const { language, isRTL, dir } = useLanguage();
     const [hasDndPermission, setHasDndPermission] = useState(true);
     // Local string state to handle manual typing seamlessly across Android APK and web
     const [offsetInputValue, setOffsetInputValue] = useState<string>(() => String(tempOffset));
@@ -223,7 +226,10 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
     };
 
     return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4 sm:p-6 scale-in">
+        <div 
+            dir={dir}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4 sm:p-6 scale-in"
+        >
             <div 
                 className="rounded-[2.5rem] w-full max-w-sm max-h-[92vh] flex flex-col p-5 sm:p-6 shadow-2xl" 
                 style={{ 
@@ -234,8 +240,16 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
             >
                 {/* Header */}
                 <div className="flex justify-between items-center mb-3 pb-2 border-b shrink-0" style={{ borderColor: 'var(--card-border)' }}>
-                    <h3 className="font-black text-sm sm:text-base" style={{ color: primaryColor }}>إعدادات صلاة {prayerNamesAr[currentEditingKey]}</h3>
-                    <button onClick={closeModal} className="hover:text-red-500 transition-colors cursor-pointer" style={{ color: secondaryColor }}>
+                    <h3 className="font-black text-sm sm:text-base" style={{ color: primaryColor }}>
+                        {tPrayer('prayerSettingsTitle', language, { p: getPrayerDisplayName(currentEditingKey, language) })}
+                    </h3>
+                    <button 
+                        onClick={closeModal} 
+                        className="hover:text-red-500 transition-colors cursor-pointer" 
+                        style={{ color: secondaryColor }}
+                        title={tPrayer('close', language)}
+                        aria-label={tPrayer('close', language)}
+                    >
                         <i className="fa-solid fa-circle-xmark text-2xl"></i>
                     </button>
                 </div>
@@ -244,13 +258,15 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
                 <div className="space-y-3 overflow-y-auto hide-scrollbar flex-1 pr-0.5">
                     {/* تعديل وقت الأذان يدوياً وبالأزرار */}
                     <div>
-                        <label className="block text-[10px] font-black mb-1.5 uppercase tracking-widest text-center" style={{ color: secondaryColor }}>تعديل وقت الأذان (بالدقائق)</label>
+                        <label className="block text-[10px] font-black mb-1.5 uppercase tracking-widest text-center" style={{ color: secondaryColor }}>
+                            {tPrayer('adjustAdhanTime', language)}
+                        </label>
                         <div className="flex items-center justify-between themed-bg-alt p-2 rounded-2xl border-2 border-black dark:border-white shadow-xs">
                             <button 
                                 type="button" 
                                 onClick={() => setTempOffset(p => p - 1)} 
                                 className="control-btn text-red-500 shadow-sm cursor-pointer hover:scale-105 active:scale-95"
-                                title="إنقاص دقيقة"
+                                title={tPrayer('decreaseMinuteTooltip', language)}
                             >
                                 <i className="fa-solid fa-minus"></i>
                             </button>
@@ -265,14 +281,14 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
                                         <button 
                                             type="button" 
                                             onClick={() => {
-                                                const newTime = prompt('أدخل وقت الأذان الجديد (مثال: 04:30):', formatTime12_EN(applyOffset(times[currentEditingKey], totalPreviewOffset)));
+                                                const newTime = prompt(tPrayer('directTimePrompt', language), formatTime12_EN(applyOffset(times[currentEditingKey], totalPreviewOffset)));
                                                 if (newTime) {
                                                     handleDirectTimeChange(newTime);
                                                 }
                                             }}
                                             className="w-5 h-5 rounded-md bg-black/5 dark:bg-white/10 flex items-center justify-center text-[11px] opacity-70 hover:opacity-100 cursor-pointer"
                                             style={{ color: primaryColor }}
-                                            title="تعديل الوقت يدويًا"
+                                            title={tPrayer('directTimeEditTooltip', language)}
                                         >
                                             <i className="fa-regular fa-clock"></i>
                                         </button>
@@ -280,8 +296,8 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
                                 </div>
 
                                 {/* Manual minute offset input */}
-                                <div className="flex items-center justify-center gap-1 mt-1" dir="rtl">
-                                    <span className="text-[10px] font-bold" style={{ color: secondaryColor }}>الفارق:</span>
+                                <div className="flex items-center justify-center gap-1 mt-1" dir={dir}>
+                                    <span className="text-[10px] font-bold" style={{ color: secondaryColor }}>{tPrayer('offsetLabel', language)}</span>
                                     <input
                                         type="text"
                                         inputMode="numeric"
@@ -294,10 +310,10 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
                                         onBlur={handleOffsetBlur}
                                         className="w-14 text-center text-xs font-black py-0.5 px-1 rounded-md bg-black/5 dark:bg-white/10 border border-black/15 dark:border-white/20 en-digits focus:outline-hidden cursor-text"
                                         style={{ color: primaryColor }}
-                                        title="تعديل الفارق بالدقائق يدويًا"
+                                        title={tPrayer('manualOffsetTooltip', language)}
                                         placeholder="0"
                                     />
-                                    <span className="text-[10px] font-bold" style={{ color: secondaryColor }}>د</span>
+                                    <span className="text-[10px] font-bold" style={{ color: secondaryColor }}>{tPrayer('minuteShort', language)}</span>
                                 </div>
                             </div>
 
@@ -306,7 +322,7 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
                                 onClick={() => setTempOffset(p => p + 1)} 
                                 className="control-btn shadow-sm cursor-pointer hover:scale-105 active:scale-95" 
                                 style={{ color: primaryColor }}
-                                title="زيادة دقيقة"
+                                title={tPrayer('increaseMinuteTooltip', language)}
                             >
                                 <i className="fa-solid fa-plus"></i>
                             </button>
@@ -339,20 +355,22 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
                                         tempPreReminderEnabled ? '' : 'bg-gray-300 dark:bg-gray-600'
                                     }`}
                                     style={{ backgroundColor: tempPreReminderEnabled ? (isEffectiveBlack ? '#FFFFFF' : primaryColor) : undefined }}
-                                    title="تنبيه الاستعداد"
+                                    title={tPrayer('readinessReminder', language)}
                                 >
                                     <div
                                         className={`w-4 h-4 rounded-full shadow-md transform transition-transform ${
                                             tempPreReminderEnabled 
-                                                ? (isEffectiveBlack ? 'bg-black -translate-x-5' : 'bg-white -translate-x-5') 
+                                                ? (isEffectiveBlack ? (isRTL ? 'bg-black -translate-x-5' : 'bg-black translate-x-5') : (isRTL ? 'bg-white -translate-x-5' : 'bg-white translate-x-5')) 
                                                 : 'bg-white translate-x-0'
                                         }`}
                                     />
                                 </button>
 
                                 {/* Title & Badge */}
-                                <div className="min-w-0 flex-1 text-right flex items-center justify-start gap-1.5 flex-wrap" dir="rtl">
-                                    <span className="font-bold text-xs" style={{ color: isEffectiveBlack ? '#FFFFFF' : undefined }}>تنبيه الاستعداد</span>
+                                <div className={`min-w-0 flex-1 ${isRTL ? 'text-right' : 'text-left'} flex items-center justify-start gap-1.5 flex-wrap`} dir={dir}>
+                                    <span className="font-bold text-xs" style={{ color: isEffectiveBlack ? '#FFFFFF' : undefined }}>
+                                        {tPrayer('readinessReminder', language)}
+                                    </span>
                                     <span 
                                         className="text-[10px] font-bold px-1.5 py-0.5 rounded-full transition-colors"
                                         style={{
@@ -360,15 +378,15 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
                                             color: isEffectiveBlack ? '#FFFFFF' : primaryColor
                                         }}
                                     >
-                                        قبل {tempPreReminderMinutes}د
+                                        {tPrayer('beforeMinutes', language, { m: tempPreReminderMinutes })}
                                     </span>
                                 </div>
                             </div>
 
                             {/* Duration options and +/- buttons */}
-                            <div className="flex items-center justify-between pt-1.5 border-t border-black/10 dark:border-white/10" dir="rtl">
+                            <div className="flex items-center justify-between pt-1.5 border-t border-black/10 dark:border-white/10" dir={dir}>
                                 <div className="flex items-center gap-1.5">
-                                    <span className="text-[10px] opacity-80" style={{ color: isEffectiveBlack ? '#FFFFFF' : undefined }}>الوقت:</span>
+                                    <span className="text-[10px] opacity-80" style={{ color: isEffectiveBlack ? '#FFFFFF' : undefined }}>{tPrayer('timeLabel', language)}</span>
                                     {[10, 15, 20].map((mins) => {
                                         const isSelected = tempPreReminderMinutes === mins;
                                         return (
@@ -388,7 +406,7 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
                                                     color: isEffectiveBlack ? '#FFFFFF' : undefined
                                                 }}
                                             >
-                                                {mins}د
+                                                {mins}{tPrayer('minuteShort', language)}
                                             </button>
                                         );
                                     })}
@@ -400,7 +418,7 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
                                         type="button" 
                                         onClick={() => setTempPreReminderMinutes(p => Math.max(1, p - 1))} 
                                         className="w-5 h-5 rounded-md bg-black/5 dark:bg-white/10 flex items-center justify-center text-red-500 text-[10px] font-bold hover:scale-105 active:scale-95 cursor-pointer"
-                                        title="إنقاص دقيقة"
+                                        title={tPrayer('decreaseMinuteTooltip', language)}
                                     >
                                         <i className="fa-solid fa-minus"></i>
                                     </button>
@@ -409,7 +427,7 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
                                         onClick={() => setTempPreReminderMinutes(p => p + 1)} 
                                         className="w-5 h-5 rounded-md bg-black/5 dark:bg-white/10 flex items-center justify-center text-[10px] font-bold hover:scale-105 active:scale-95 cursor-pointer"
                                         style={{ color: primaryColor }}
-                                        title="زيادة دقيقة"
+                                        title={tPrayer('increaseMinuteTooltip', language)}
                                     >
                                         <i className="fa-solid fa-plus"></i>
                                     </button>
@@ -430,20 +448,22 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
                                         tempIqamaEnabled ? '' : 'bg-gray-300 dark:bg-gray-600'
                                     }`}
                                     style={{ backgroundColor: tempIqamaEnabled ? (isEffectiveBlack ? '#FFFFFF' : primaryColor) : undefined }}
-                                    title="تفعيل/تعطيل تنبيه الإقامة"
+                                    title={tPrayer('iqamaToggleTooltip', language)}
                                 >
                                     <div
                                         className={`w-4 h-4 rounded-full shadow-md transform transition-transform ${
                                             tempIqamaEnabled 
-                                                ? (isEffectiveBlack ? 'bg-black -translate-x-5' : 'bg-white -translate-x-5') 
+                                                ? (isEffectiveBlack ? (isRTL ? 'bg-black -translate-x-5' : 'bg-black translate-x-5') : (isRTL ? 'bg-white -translate-x-5' : 'bg-white translate-x-5')) 
                                                 : 'bg-white translate-x-0'
                                         }`}
                                     />
                                 </button>
 
                                 {/* Title & Badge */}
-                                <div className="min-w-0 flex-1 text-right flex items-center justify-start gap-1.5 flex-wrap" dir="rtl">
-                                    <span className="font-bold text-xs" style={{ color: isEffectiveBlack ? '#FFFFFF' : undefined }}>تنبيه الإقامة</span>
+                                <div className={`min-w-0 flex-1 ${isRTL ? 'text-right' : 'text-left'} flex items-center justify-start gap-1.5 flex-wrap`} dir={dir}>
+                                    <span className="font-bold text-xs" style={{ color: isEffectiveBlack ? '#FFFFFF' : undefined }}>
+                                        {tPrayer('iqamaAlert', language)}
+                                    </span>
                                     <span 
                                         className="text-[10px] font-bold px-1.5 py-0.5 rounded-full transition-colors"
                                         style={{
@@ -451,26 +471,26 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
                                             color: isEffectiveBlack ? '#FFFFFF' : primaryColor
                                         }}
                                     >
-                                        بعد {tempIqama}د
+                                        {tPrayer('afterMinutes', language, { m: tempIqama })}
                                     </span>
                                 </div>
 
                                 <button
                                     type="button"
-                                    onClick={() => playNotificationSound('/assets/audio/chime.mp3')}
+                                    onClick={() => playNotificationSound('/assets/audio/chime.mp3', true)}
                                     className="px-2 py-0.5 rounded-md bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/15 text-[10px] font-bold flex items-center gap-1 transition-all active:scale-95 cursor-pointer shrink-0"
-                                    title="معاينة صوت تنبيه الإقامة"
+                                    title={tPrayer('iqamaSoundPreviewTooltip', language)}
                                     style={{ color: primaryColor }}
                                 >
                                     <i className="fa-solid fa-volume-high text-[9px]"></i>
-                                    <span>صوت التنبيه</span>
+                                    <span>{tPrayer('iqamaSoundBtn', language)}</span>
                                 </button>
                             </div>
 
                             {/* Duration options and inline +/- */}
-                            <div className="flex items-center justify-between pt-1.5 border-t border-black/10 dark:border-white/10" dir="rtl">
+                            <div className="flex items-center justify-between pt-1.5 border-t border-black/10 dark:border-white/10" dir={dir}>
                                 <div className="flex items-center gap-1.5">
-                                    <span className="text-[10px] opacity-80" style={{ color: isEffectiveBlack ? '#FFFFFF' : undefined }}>المدة:</span>
+                                    <span className="text-[10px] opacity-80" style={{ color: isEffectiveBlack ? '#FFFFFF' : undefined }}>{tPrayer('durationLabel', language)}</span>
                                     {[10, 15, 20].map((mins) => {
                                         const isSelected = tempIqama === mins;
                                         return (
@@ -490,7 +510,7 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
                                                     color: isEffectiveBlack ? '#FFFFFF' : undefined
                                                 }}
                                             >
-                                                {mins}د
+                                                {mins}{tPrayer('minuteShort', language)}
                                             </button>
                                         );
                                     })}
@@ -502,7 +522,7 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
                                         type="button" 
                                         onClick={() => setTempIqama(p => Math.max(0, p - 1))} 
                                         className="w-5 h-5 rounded-md bg-black/5 dark:bg-white/10 flex items-center justify-center text-red-500 text-[10px] font-bold hover:scale-105 active:scale-95 cursor-pointer"
-                                        title="إنقاص دقيقة"
+                                        title={tPrayer('decreaseMinuteTooltip', language)}
                                     >
                                         <i className="fa-solid fa-minus"></i>
                                     </button>
@@ -511,7 +531,7 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
                                         onClick={() => setTempIqama(p => p + 1)} 
                                         className="w-5 h-5 rounded-md bg-black/5 dark:bg-white/10 flex items-center justify-center text-[10px] font-bold hover:scale-105 active:scale-95 cursor-pointer"
                                         style={{ color: primaryColor }}
-                                        title="زيادة دقيقة"
+                                        title={tPrayer('increaseMinuteTooltip', language)}
                                     >
                                         <i className="fa-solid fa-plus"></i>
                                     </button>
@@ -532,20 +552,22 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
                                         tempAutoSilentEnabled ? '' : 'bg-gray-300 dark:bg-gray-600'
                                     }`}
                                     style={{ backgroundColor: tempAutoSilentEnabled ? (isEffectiveBlack ? '#FFFFFF' : primaryColor) : undefined }}
-                                    title="الصامت التلقائي"
+                                    title={tPrayer('autoSilent', language)}
                                 >
                                     <div
                                         className={`w-4 h-4 rounded-full shadow-md transform transition-transform ${
                                             tempAutoSilentEnabled 
-                                                ? (isEffectiveBlack ? 'bg-black -translate-x-5' : 'bg-white -translate-x-5') 
+                                                ? (isEffectiveBlack ? (isRTL ? 'bg-black -translate-x-5' : 'bg-black translate-x-5') : (isRTL ? 'bg-white -translate-x-5' : 'bg-white translate-x-5')) 
                                                 : 'bg-white translate-x-0'
                                         }`}
                                     />
                                 </button>
 
                                 {/* Title & Badge */}
-                                <div className="min-w-0 flex-1 text-right flex items-center justify-start gap-1.5 flex-wrap" dir="rtl">
-                                    <span className="font-bold text-xs" style={{ color: isEffectiveBlack ? '#FFFFFF' : undefined }}>الصامت التلقائي</span>
+                                <div className={`min-w-0 flex-1 ${isRTL ? 'text-right' : 'text-left'} flex items-center justify-start gap-1.5 flex-wrap`} dir={dir}>
+                                    <span className="font-bold text-xs" style={{ color: isEffectiveBlack ? '#FFFFFF' : undefined }}>
+                                        {tPrayer('autoSilent', language)}
+                                    </span>
                                     <span 
                                         className="text-[10px] font-bold px-1.5 py-0.5 rounded-full transition-colors"
                                         style={{
@@ -553,15 +575,15 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
                                             color: isEffectiveBlack ? '#FFFFFF' : primaryColor
                                         }}
                                     >
-                                        {tempAutoSilentDuration}د
+                                        {tempAutoSilentDuration}{tPrayer('minuteShort', language)}
                                     </span>
                                 </div>
                             </div>
 
                             {/* Duration options and +/- buttons */}
-                            <div className="flex items-center justify-between pt-1.5 border-t border-black/10 dark:border-white/10" dir="rtl">
+                            <div className="flex items-center justify-between pt-1.5 border-t border-black/10 dark:border-white/10" dir={dir}>
                                 <div className="flex items-center gap-1.5">
-                                    <span className="text-[10px] opacity-80" style={{ color: isEffectiveBlack ? '#FFFFFF' : undefined }}>المدة:</span>
+                                    <span className="text-[10px] opacity-80" style={{ color: isEffectiveBlack ? '#FFFFFF' : undefined }}>{tPrayer('durationLabel', language)}</span>
                                     {[10, 15, 20].map((duration) => {
                                         const isSelected = tempAutoSilentDuration === duration;
                                         return (
@@ -581,7 +603,7 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
                                                     color: isEffectiveBlack ? '#FFFFFF' : undefined
                                                 }}
                                             >
-                                                {duration}د
+                                                {duration}{tPrayer('minuteShort', language)}
                                             </button>
                                         );
                                     })}
@@ -593,7 +615,7 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
                                         type="button" 
                                         onClick={() => setTempAutoSilentDuration(p => Math.max(1, p - 1))} 
                                         className="w-5 h-5 rounded-md bg-black/5 dark:bg-white/10 flex items-center justify-center text-red-500 text-[10px] font-bold hover:scale-105 active:scale-95 cursor-pointer"
-                                        title="إنقاص دقيقة"
+                                        title={tPrayer('decreaseMinuteTooltip', language)}
                                     >
                                         <i className="fa-solid fa-minus"></i>
                                     </button>
@@ -602,7 +624,7 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
                                         onClick={() => setTempAutoSilentDuration(p => p + 1)} 
                                         className="w-5 h-5 rounded-md bg-black/5 dark:bg-white/10 flex items-center justify-center text-[10px] font-bold hover:scale-105 active:scale-95 cursor-pointer"
                                         style={{ color: primaryColor }}
-                                        title="زيادة دقيقة"
+                                        title={tPrayer('increaseMinuteTooltip', language)}
                                     >
                                         <i className="fa-solid fa-plus"></i>
                                     </button>
@@ -611,10 +633,10 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
 
                             {/* Android DND Permission Notice if not granted */}
                             {tempAutoSilentEnabled && !hasDndPermission && Capacitor.getPlatform() === 'android' && (
-                                <div className="mt-1.5 p-2 rounded-xl bg-amber-500/15 border border-amber-500/30 text-right flex items-center justify-between gap-2" dir="rtl">
+                                <div className={`mt-1.5 p-2 rounded-xl bg-amber-500/15 border border-amber-500/30 ${isRTL ? 'text-right' : 'text-left'} flex items-center justify-between gap-2`} dir={dir}>
                                     <div className="flex items-center gap-1.5 text-[11px] text-amber-700 dark:text-amber-300 font-medium">
                                         <ShieldAlert className="w-3.5 h-3.5 shrink-0 text-amber-500" />
-                                        <span>يلزم إذن (عدم الإزعاج) لكتم الهاتف تلقائياً</span>
+                                        <span>{tPrayer('dndRequiredNotice', language)}</span>
                                     </div>
                                     <button
                                         type="button"
@@ -628,7 +650,7 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
                                         className="text-[10px] font-bold px-2 py-1 rounded-lg text-white shrink-0 cursor-pointer shadow-xs active:scale-95"
                                         style={{ backgroundColor: isEffectiveBlack ? '#FFFFFF' : primaryColor, color: isEffectiveBlack ? '#000000' : '#FFFFFF' }}
                                     >
-                                        منح الإذن
+                                        {tPrayer('grantPermission', language)}
                                     </button>
                                 </div>
                             )}
@@ -637,7 +659,13 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
                 </div>
 
                 {/* Save button */}
-                <button onClick={saveUserConfig} className="w-full mt-4 text-white py-3 sm:py-3.5 rounded-2xl font-black text-sm shadow-lg active:scale-95 transition-all shrink-0 cursor-pointer" style={{backgroundColor: isEffectiveBlack ? '#FFFFFF' : primaryColor, color: isEffectiveBlack ? '#000000' : '#FFF'}}>حفظ التغييرات</button>
+                <button 
+                    onClick={saveUserConfig} 
+                    className="w-full mt-4 text-white py-3 sm:py-3.5 rounded-2xl font-black text-sm shadow-lg active:scale-95 transition-all shrink-0 cursor-pointer" 
+                    style={{backgroundColor: isEffectiveBlack ? '#FFFFFF' : primaryColor, color: isEffectiveBlack ? '#000000' : '#FFF'}}
+                >
+                    {tPrayer('saveChanges', language)}
+                </button>
             </div>
         </div>
     );

@@ -5,6 +5,7 @@ import ThemePageLock from '../components/ThemePageLock';
 import { asmaulHusna, AsmaulHusnaItem } from '../data/asmaulHusnaData';
 import { Search, LayoutGrid, ListFilter } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { shareAsImage } from '../utils/shareAsImage';
 import { playTTS, stopTTS, subscribeTTS } from '../utils/ttsEngine';
 
@@ -12,6 +13,9 @@ const toArabicNumerals = (num: number) => String(num).replace(/\d/g, d => '٠١�
 
 const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, params?: any) => void; }> = ({ onBack, onNavigate }) => {
     const { theme, themeKey } = useTheme();
+    const { language } = useLanguage();
+    const isEn = language === 'en';
+
     const isDefaultTheme = themeKey === 'default' || !themeKey || theme.name?.includes('الافتراضي') || theme.name === 'Default';
     const isBlackTheme = theme.bgColor === '#000000' || theme.name === 'أبيض وأسود' || themeKey === 'deep_black';
     const cardBorderColor = isDefaultTheme 
@@ -77,9 +81,11 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
     }, [zoomedName, selectedName, searchQuery]);
 
     const getAudioText = (item: AsmaulHusnaItem) => {
+        if (isEn) {
+            return `${item.transliteration}. ${item.meaningEn}. ${item.evidenceEn}`.trim();
+        }
         let evidenceText = '';
         if (item.evidence) {
-            // E.g. "اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ (البقرة: 255)"
             const match = item.evidence.match(/(.*?)\s*\((.*?)(?::\s*(\d+))?\)/);
             if (match) {
                 const verse = match[1]?.trim();
@@ -111,54 +117,60 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
 
     const handleCopy = (item: AsmaulHusnaItem, e?: React.MouseEvent) => {
         if (e) e.stopPropagation();
-        const copyText = `${item.name} (${item.transliteration})\n\nالمعنى والدلالة:\n${item.meaning}${item.evidence ? `\n\nالدليل:\n${item.evidence}` : ''}\n\nمن أسماء الله الحسنى (رقم ${item.id})`;
+        const copyText = isEn 
+            ? `${item.transliteration} (${item.name})\n\nMeaning:\n${item.meaningEn}${item.evidenceEn ? `\n\nEvidence:\n${item.evidenceEn}` : ''}\n\nFrom Asmaul Husna (#${item.id})`
+            : `${item.name} (${item.transliteration})\n\nالمعنى والدلالة:\n${item.meaning}${item.evidence ? `\n\nالدليل:\n${item.evidence}` : ''}\n\nمن أسماء الله الحسنى (رقم ${item.id})`;
+        
         navigator.clipboard.writeText(copyText).then(() => {
-            showToast('تم النسخ إلى الحافظة');
+            showToast(isEn ? 'Copied to clipboard' : 'تم النسخ إلى الحافظة');
         });
     };
 
     const handleShare = async (item: AsmaulHusnaItem, e?: React.MouseEvent) => {
         if (e) e.stopPropagation();
         await shareAsImage({
-            title: item.name,
-            text: `${item.meaning}${item.evidence ? `\n\nالدليل: ${item.evidence}` : ''}`,
-            source: `من أسماء الله الحسنى (${toArabicNumerals(item.id)})`,
-            category: 'أسماء الله الحسنى',
+            title: isEn ? item.transliteration : item.name,
+            text: isEn 
+                ? `${item.meaningEn}${item.evidenceEn ? `\n\nEvidence: ${item.evidenceEn}` : ''}`
+                : `${item.meaning}${item.evidence ? `\n\nالدليل: ${item.evidence}` : ''}`,
+            source: isEn ? `From Asmaul Husna (#${item.id})` : `من أسماء الله الحسنى (${toArabicNumerals(item.id)})`,
+            category: isEn ? "Beautiful Names of Allah" : 'أسماء الله الحسنى',
             theme,
             setToastMessage: (msg) => showToast(msg)
         });
     };
 
-    const renderEvidence = (evidence: string) => {
-        const match = evidence.match(/(.*)(\(.*\))/);
+    const renderEvidence = (evidence: string, evidenceEn: string) => {
+        const textToDisplay = isEn ? evidenceEn : evidence;
+        const match = textToDisplay.match(/(.*)(\(.*\))/);
         if (match) {
             const text = match[1];
             const ref = match[2];
             return (
                 <>
                     {text}
-                    <span className="font-bold mr-2 inline-block opacity-90" style={{ color: isBlackTheme ? '#FFFFFF' : theme.palette[0] }}>
+                    <span className={`font-bold inline-block opacity-90 ${isEn ? 'ml-2' : 'mr-2'}`} style={{ color: isBlackTheme ? '#FFFFFF' : theme.palette[0] }}>
                         {ref}
                     </span>
                 </>
             );
         }
-        return evidence;
+        return textToDisplay;
     };
 
     const filteredNames = useMemo(() => {
         if (!searchQuery.trim()) return asmaulHusna;
         const q = searchQuery.trim().toLowerCase();
         return asmaulHusna.filter(item => 
-            item.name.includes(q) ||
-            item.meaning.includes(q) ||
+            item.name.toLowerCase().includes(q) ||
+            item.meaning.toLowerCase().includes(q) ||
+            item.meaningEn.toLowerCase().includes(q) ||
             item.transliteration.toLowerCase().includes(q) ||
             String(item.id).includes(q) ||
             toArabicNumerals(item.id).includes(q)
         );
     }, [searchQuery]);
 
-    // Renders the 3 circular action buttons: Audio, Share, Copy (Magnifying glass removed)
     const renderActionButtons = (item: AsmaulHusnaItem) => {
         const text = getAudioText(item);
         const isPlaying = playingText === text;
@@ -171,8 +183,8 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                     onClick={(e) => handlePlayAudio(item, e)} 
                     className="w-9 h-9 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 active:scale-95 transition-all opacity-70 hover:opacity-100 cursor-pointer shadow-xs" 
                     style={{ color: isPlaying ? '#ef4444' : 'var(--text-color)' }} 
-                    title={isPlaying ? "إيقاف الاستماع" : "استماع صوتي"}
-                    aria-label="استماع صوتي"
+                    title={isPlaying ? (isEn ? "Stop Audio" : "إيقاف الاستماع") : (isEn ? "Play Audio" : "استماع صوتي")}
+                    aria-label="Audio"
                 >
                     <i className={`fa-solid ${isPlaying ? 'fa-circle-pause text-red-500 animate-pulse text-base' : 'fa-volume-high text-sm'}`}></i>
                 </button>
@@ -183,8 +195,8 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                     onClick={(e) => handleShare(item, e)} 
                     className="w-9 h-9 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 active:scale-95 transition-all opacity-70 hover:opacity-100 cursor-pointer shadow-xs" 
                     style={{ color: 'var(--text-color)' }} 
-                    title="مشاركة كصورة"
-                    aria-label="مشاركة"
+                    title={isEn ? "Share as Image" : "مشاركة كصورة"}
+                    aria-label="Share"
                 >
                     <i className="fa-solid fa-share-nodes text-sm"></i>
                 </button>
@@ -195,8 +207,8 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                     onClick={(e) => handleCopy(item, e)} 
                     className="w-9 h-9 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 active:scale-95 transition-all opacity-70 hover:opacity-100 cursor-pointer shadow-xs" 
                     style={{ color: 'var(--text-color)' }} 
-                    title="نسخ"
-                    aria-label="نسخ"
+                    title={isEn ? "Copy" : "نسخ"}
+                    aria-label="Copy"
                 >
                     <i className="fa-regular fa-copy text-sm"></i>
                 </button>
@@ -205,39 +217,38 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
     };
 
     return (
-        <div className="h-screen flex flex-col overflow-hidden relative bg-transparent" dir="rtl">
-            <header className="app-top-bar z-20">
+        <div className="h-screen flex flex-col overflow-hidden relative bg-transparent" dir={isEn ? 'ltr' : 'rtl'}>
+            <header className="app-top-bar z-20" dir={isEn ? 'ltr' : 'rtl'}>
                 <div className="app-top-bar__inner">
-                    <div className="relative flex items-center justify-center w-full min-h-[44px]">
-                        {/* سهم الرجوع للخلف على يمين النص */}
-                        <div className="absolute right-0 flex items-center">
+                    <div className="relative flex items-center justify-between w-full min-h-[44px]">
+                        <div className="flex items-center gap-1">
                             <button
                                 type="button"
                                 onClick={handleHomeClick}
                                 className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
-                                title="رجوع للخلف"
-                                aria-label="رجوع للخلف"
+                                title={isEn ? "Back" : "رجوع للخلف"}
+                                aria-label={isEn ? "Back" : "رجوع للخلف"}
                             >
-                                <i className="fa-solid fa-arrow-right text-xl"></i>
+                                <i className={`fa-solid ${isEn ? 'fa-arrow-left' : 'fa-arrow-right'} text-xl`}></i>
                             </button>
                         </div>
 
-                        {/* عنوان الصفحة في الوسط */}
-                        <div className="text-center px-12 min-w-0">
+                        {/* Title */}
+                        <div className="text-center px-2 flex-1 min-w-0">
                             <h1 className="app-top-bar__title text-lg sm:text-xl font-kufi truncate">
-                                أسماء الله الحسنى
+                                {isEn ? "Beautiful Names of Allah" : "أسماء الله الحسنى"}
                             </h1>
                         </div>
 
-                        {/* أيقونة المنزل على يسار النص للعودة إلى الصفحة الرئيسية */}
-                        <div className="absolute left-0 flex items-center gap-1">
+                        {/* Home / Lock */}
+                        <div className="flex items-center gap-1">
                             <ThemePageLock />
                             <button
                                 type="button"
                                 onClick={() => onNavigate('home')}
                                 className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
-                                title="الصفحة الرئيسية"
-                                aria-label="الصفحة الرئيسية"
+                                title={isEn ? "Home" : "الصفحة الرئيسية"}
+                                aria-label={isEn ? "Home" : "الصفحة الرئيسية"}
                             >
                                 <i className="fa-solid fa-house text-xl"></i>
                             </button>
@@ -254,28 +265,28 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                         type="text"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="ابحث بالاسم أو المعنى..."
-                        className="w-full h-10 pr-9 pl-8 rounded-xl text-xs sm:text-sm border focus:outline-none transition-colors"
+                        placeholder={isEn ? "Search by name or meaning..." : "ابحث بالاسم أو المعنى..."}
+                        className={`w-full h-10 rounded-xl text-xs sm:text-sm border focus:outline-none transition-colors ${isEn ? 'pr-8 pl-9' : 'pr-9 pl-8'}`}
                         style={{
                             backgroundColor: isBlackTheme ? '#111111' : (theme.isDark ? '#1e293b' : '#ffffff'),
                             borderColor: cardBorderColor,
                             color: 'var(--text-color)'
                         }}
                     />
-                    <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 opacity-50 pointer-events-none" />
+                    <Search className={`w-4 h-4 absolute top-1/2 -translate-y-1/2 opacity-50 pointer-events-none ${isEn ? 'left-3' : 'right-3'}`} />
                     {searchQuery && (
                         <button 
                             type="button"
                             onClick={() => setSearchQuery('')}
-                            className="absolute left-2.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-black/10 dark:bg-white/10 flex items-center justify-center text-xs opacity-70 hover:opacity-100 cursor-pointer"
-                            title="مسح البحث"
+                            className={`absolute top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-black/10 dark:bg-white/10 flex items-center justify-center text-xs opacity-70 hover:opacity-100 cursor-pointer ${isEn ? 'right-2.5' : 'left-2.5'}`}
+                            title={isEn ? "Clear search" : "مسح البحث"}
                         >
                             ×
                         </button>
                     )}
                 </div>
 
-                {/* View Switcher: Grid vs List (قائمة الشرح) */}
+                {/* View Switcher: Grid vs List */}
                 <div 
                     className="flex items-center p-1 rounded-xl border shrink-0"
                     style={{
@@ -291,10 +302,9 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                             backgroundColor: isBlackTheme ? '#FFFFFF' : theme.palette[0],
                             color: isBlackTheme ? '#000000' : '#ffffff'
                         } : { color: 'var(--text-color)' }}
-                        title="عرض شبكي"
+                        title={isEn ? "Grid View" : "عرض شبكي"}
                     >
                         <LayoutGrid size={15} />
-                        <span className="hidden sm:inline">الشبكة</span>
                     </button>
                     <button
                         type="button"
@@ -304,11 +314,9 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                             backgroundColor: isBlackTheme ? '#FFFFFF' : theme.palette[0],
                             color: isBlackTheme ? '#000000' : '#ffffff'
                         } : { color: 'var(--text-color)' }}
-                        title="قائمة شرح الأسماء"
-                    >
-                        <ListFilter size={15} />
-                        <span>قائمة الشرح</span>
-                    </button>
+                        >
+                            <ListFilter size={15} />
+                        </button>
                 </div>
             </div>
 
@@ -317,7 +325,7 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                     {filteredNames.length === 0 ? (
                         <div className="py-16 text-center opacity-60 font-bold">
                             <i className="fa-solid fa-search text-4xl mb-3 block opacity-40"></i>
-                            <p>لا توجد نتائج مطابقة لبحثك</p>
+                            <p>{isEn ? 'No matching results found' : 'لا توجد نتائج مطابقة لبحثك'}</p>
                         </div>
                     ) : activeTab === 'grid' ? (
                         /* Grid View */
@@ -332,7 +340,7 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                                     style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
                                 >
                                     {/* ID Badge */}
-                                    <div className="absolute top-1 sm:top-2 right-1 sm:right-2 w-4 sm:w-6 h-4 sm:h-6 flex items-center justify-center rounded-full bg-black/5 dark:bg-white/10 text-[8px] font-bold opacity-60">
+                                    <div className={`absolute top-1 sm:top-2 w-4 sm:w-6 h-4 sm:h-6 flex items-center justify-center rounded-full bg-black/5 dark:bg-white/10 text-[8px] font-bold opacity-60 ${isEn ? 'left-1 sm:left-2' : 'right-1 sm:right-2'}`}>
                                         {item.id}
                                     </div>
                                     
@@ -340,7 +348,7 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                                         <h3 className="text-lg sm:text-2xl font-bold font-quran leading-none group-hover:scale-110 transition-transform duration-300" style={{ color: 'var(--text-color)' }}>
                                             {item.name}
                                         </h3>
-                                        <span className="text-[9px] sm:text-[11px] opacity-60 mt-1 font-cairo">
+                                        <span className={`${isEn ? 'text-[16px] sm:text-[20px] font-semibold' : 'text-[9px] sm:text-[11px]'} opacity-90 mt-1 font-cairo`}>
                                             {item.transliteration}
                                         </span>
                                     </div>
@@ -348,7 +356,7 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                             ))}
                         </div>
                     ) : (
-                        /* List View: قائمة شرح الأسماء الكاملة مع الأزرار الأربعة */
+                        /* List View */
                         <div className="max-w-2xl mx-auto space-y-3.5">
                             {filteredNames.map((item) => (
                                 <div
@@ -376,7 +384,7 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                                                 : { backgroundImage: `linear-gradient(to bottom right, ${theme.palette[0]}, ${theme.palette[1]})`, color: theme.name === 'اسود' ? '#000000' : '#ffffff' }
                                             }
                                         >
-                                            {toArabicNumerals(item.id)}
+                                            {isEn ? item.id : toArabicNumerals(item.id)}
                                         </div>
                                     </div>
 
@@ -388,20 +396,19 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                                         {item.name}
                                     </h3>
 
-                                    <p className="text-base sm:text-lg leading-relaxed text-center font-amiri select-none mb-3 px-1">
-                                        {item.meaning}
+                                    <p className={`text-sm sm:text-base leading-relaxed text-center select-none mb-3 px-1 ${isEn ? 'font-sans' : 'font-amiri text-base sm:text-lg'}`}>
+                                        {isEn ? item.meaningEn : item.meaning}
                                     </p>
 
-                                    {item.evidence && (
-                                        <div className="text-sm font-amiri text-center opacity-85 py-1.5 px-3 rounded-xl bg-black/5 dark:bg-white/5 mb-3 border border-black/5 dark:border-white/5">
-                                            {renderEvidence(item.evidence)}
+                                    {(item.evidence || item.evidenceEn) && (
+                                        <div className={`text-xs sm:text-sm text-center opacity-85 py-1.5 px-3 rounded-xl bg-black/5 dark:bg-white/5 mb-3 border border-black/5 dark:border-white/5 ${isEn ? 'font-sans' : 'font-amiri'}`}>
+                                            {renderEvidence(item.evidence, item.evidenceEn)}
                                         </div>
                                     )}
 
-                                    {/* شريط أزرار العمليات (صوت، مشاركة، نسخ) */}
                                     <div className="flex justify-between items-center mt-3 pt-2.5 border-t" style={{ borderColor: 'var(--card-border)' }}>
                                         <span className="text-[11px] font-bold opacity-60" style={{ color: isBlackTheme ? '#FFFFFF' : theme.palette[0] }}>
-                                            من أسماء الله الحسنى
+                                            {isEn ? 'Beautiful Names of Allah' : 'من أسماء الله الحسنى'}
                                         </span>
                                         {renderActionButtons(item)}
                                     </div>
@@ -412,7 +419,7 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                 </div>
             </main>
 
-            {/* Modal: شرح الاسم مطابق للصورة 1 تماماً */}
+            {/* Modal: Explanation */}
             <AnimatePresence>
                 {selectedName && (
                     <div 
@@ -426,45 +433,39 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                             className="bg-modal-bg text-modal-text p-6 md:p-8 rounded-3xl w-full max-w-xl text-center relative scale-in shadow-2xl border-2 border-modal-border flex flex-col max-h-[90vh]" 
                             style={{ fontFamily: theme.font }} 
                             onClick={e => e.stopPropagation()}
-                            dir="rtl"
+                            dir={isEn ? 'ltr' : 'rtl'}
                         >
                             <div className="overflow-y-auto hide-scrollbar flex-1 py-2">
-                                {/* اسم الله المبارك في الوسط بحجم كبير */}
                                 <div className="text-3xl md:text-4xl font-bold font-quran mb-3 leading-normal" style={{ color: 'var(--text-color)' }}>
-                                    {selectedName.name}
+                                    {selectedName.name} ({selectedName.transliteration})
                                 </div>
 
-                                {/* المعنى والشرح الكامل */}
-                                <div className="text-lg md:text-xl leading-relaxed font-amiri text-center mb-4 select-none px-2" style={{ color: 'var(--text-color)' }}>
-                                    {selectedName.meaning}
+                                <div className={`text-base md:text-lg leading-relaxed text-center mb-4 select-none px-2 ${isEn ? 'font-sans' : 'font-amiri text-lg md:text-xl'}`} style={{ color: 'var(--text-color)' }}>
+                                    {isEn ? selectedName.meaningEn : selectedName.meaning}
                                 </div>
 
-                                {/* الدليل من القرآن والسنة */}
-                                {selectedName.evidence && (
-                                    <div className="text-base md:text-lg leading-relaxed font-amiri text-center mb-4 opacity-90">
-                                        {renderEvidence(selectedName.evidence)}
+                                {(selectedName.evidence || selectedName.evidenceEn) && (
+                                    <div className={`text-sm md:text-base leading-relaxed text-center mb-4 opacity-90 ${isEn ? 'font-sans' : 'font-amiri text-base md:text-lg'}`}>
+                                        {renderEvidence(selectedName.evidence, selectedName.evidenceEn)}
                                     </div>
                                 )}
 
-                                {/* سطر التصنيف باللون المميز مطابق للصورة 1 تماماً */}
                                 <p className="text-base md:text-lg mt-4 font-bold font-cairo" style={{ color: isBlackTheme ? '#FFFFFF' : theme.palette[0] }}>
-                                    من أسماء الله الحسنى
+                                    {isEn ? 'Beautiful Names of Allah' : 'من أسماء الله الحسنى'}
                                 </p>
                             </div>
 
-                            {/* أزرار العمليات (الصوت، المشاركة، النسخ) */}
                             <div className="flex justify-center items-center py-3 border-t mt-3" style={{ borderColor: 'var(--card-border)' }}>
                                 {renderActionButtons(selectedName)}
                             </div>
 
-                            {/* زر إغلاق عريض ومطابق للصورة 1 تماماً */}
                             <div className="mt-2 shrink-0">
                                 <button 
                                     type="button"
                                     onClick={() => setSelectedName(null)} 
                                     className="w-full py-3 rounded-xl font-bold bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:opacity-90 active:scale-[0.99] transition-all cursor-pointer text-base"
                                 >
-                                    إغلاق
+                                    {isEn ? 'Close' : 'إغلاق'}
                                 </button>
                             </div>
                         </motion.div>
@@ -472,7 +473,7 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                 )}
             </AnimatePresence>
 
-            {/* نافذة التكبير الكلي Zoom Modal مطابق للصورة 1 */}
+            {/* Zoom Modal */}
             <AnimatePresence>
                 {zoomedName && (
                     <div 
@@ -486,22 +487,22 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                             className="bg-modal-bg text-modal-text p-8 rounded-3xl w-full max-w-2xl text-center relative scale-in shadow-2xl border-2 border-modal-border flex flex-col max-h-[90vh]" 
                             style={{ fontFamily: theme.font }} 
                             onClick={e => e.stopPropagation()}
-                            dir="rtl"
+                            dir={isEn ? 'ltr' : 'rtl'}
                         >
                             <div className="overflow-y-auto hide-scrollbar flex-1 py-4">
                                 <div className="text-4xl md:text-5xl font-bold font-quran mb-4" style={{ color: 'var(--text-color)' }}>
                                     {zoomedName.name}
                                 </div>
-                                <p className="text-2xl md:text-3xl leading-loose font-amiri text-center select-none" style={{ color: 'var(--text-color)' }}>
-                                    {zoomedName.meaning}
+                                <p className={`text-xl md:text-2xl leading-loose text-center select-none ${isEn ? 'font-sans' : 'font-amiri text-2xl md:text-3xl'}`} style={{ color: 'var(--text-color)' }}>
+                                    {isEn ? zoomedName.meaningEn : zoomedName.meaning}
                                 </p>
-                                {zoomedName.evidence && (
-                                    <p className="text-lg md:text-xl mt-4 font-amiri leading-relaxed opacity-90">
-                                        {renderEvidence(zoomedName.evidence)}
+                                {(zoomedName.evidence || zoomedName.evidenceEn) && (
+                                    <p className={`text-base md:text-lg mt-4 leading-relaxed opacity-90 ${isEn ? 'font-sans' : 'font-amiri text-lg md:text-xl'}`}>
+                                        {renderEvidence(zoomedName.evidence, zoomedName.evidenceEn)}
                                     </p>
                                 )}
                                 <p className="text-lg mt-6 font-bold" style={{ color: isBlackTheme ? '#FFFFFF' : theme.palette[0] }}>
-                                    من أسماء الله الحسنى ({toArabicNumerals(zoomedName.id)})
+                                    {isEn ? `Beautiful Names of Allah (#${zoomedName.id})` : `من أسماء الله الحسنى (${toArabicNumerals(zoomedName.id)})`}
                                 </p>
                             </div>
 
@@ -515,7 +516,7 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                                     onClick={() => setZoomedName(null)} 
                                     className="w-full py-3 rounded-xl font-bold bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:opacity-90 active:scale-[0.99] transition-all cursor-pointer text-base"
                                 >
-                                    إغلاق
+                                    {isEn ? 'Close' : 'إغلاق'}
                                 </button>
                             </div>
                         </motion.div>

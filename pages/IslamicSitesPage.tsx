@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { ISLAMIC_SITES_DATA, IslamicSite } from '../data/islamicSitesData';
 import ThemePageLock from '../components/ThemePageLock';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { registerBackInterceptor } from '../hooks/useBackButton';
 import { shareAsImage } from '../utils/shareAsImage';
 import { motion, AnimatePresence } from 'framer-motion';
+import { markPageAsSeen } from '../utils/badgeManager';
 
 interface IslamicSitesPageProps {
     onBack: () => void;
@@ -13,9 +15,16 @@ interface IslamicSitesPageProps {
 
 const IslamicSitesPage: React.FC<IslamicSitesPageProps> = ({ onBack, onNavigate }) => {
     const { theme, themeKey } = useTheme();
+    const { language } = useLanguage();
+    const isEn = language === 'en';
+
     const [selectedSite, setSelectedSite] = useState<IslamicSite | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [toastMessage, setToastMessage] = useState('');
+
+    useEffect(() => {
+        markPageAsSeen('islamic-sites');
+    }, []);
 
     const isBlackTheme = theme.bgColor === '#000000';
     const isDefaultTheme = themeKey === 'default';
@@ -47,9 +56,9 @@ const IslamicSitesPage: React.FC<IslamicSitesPageProps> = ({ onBack, onNavigate 
     const handleCopyUrl = (url: string, e?: React.MouseEvent) => {
         if (e) e.stopPropagation();
         navigator.clipboard.writeText(url).then(() => {
-            showToast('تم نسخ رابط الموقع بنجاح');
+            showToast(isEn ? 'Website link copied successfully' : 'تم نسخ رابط الموقع بنجاح');
         }).catch(() => {
-            showToast('تعذر النسخ، يرجى نسخ الرابط يدوياً');
+            showToast(isEn ? 'Failed to copy, please copy manually' : 'تعذر النسخ، يرجى نسخ الرابط يدوياً');
         });
     };
 
@@ -67,13 +76,35 @@ const IslamicSitesPage: React.FC<IslamicSitesPageProps> = ({ onBack, onNavigate 
             .trim();
     };
 
+    const getSiteName = (site: IslamicSite) => {
+        if (isEn && site.nameEn) return site.nameEn;
+        return cleanSiteName(site.name);
+    };
+
+    const getSiteCategory = (site: IslamicSite) => {
+        if (isEn && site.categoryEn) return site.categoryEn;
+        return site.category;
+    };
+
+    const getSiteDescription = (site: IslamicSite) => {
+        if (isEn && site.descriptionEn) return site.descriptionEn;
+        return site.description;
+    };
+
+    const getSiteFeatures = (site: IslamicSite) => {
+        if (isEn && site.featuresEn && site.featuresEn.length > 0) return site.featuresEn;
+        return site.features;
+    };
+
     const handleShareSite = async (site: IslamicSite, e?: React.MouseEvent) => {
         if (e) e.stopPropagation();
-        const formattedName = cleanSiteName(site.name);
+        const formattedName = getSiteName(site);
+        const desc = getSiteDescription(site);
+        const cat = getSiteCategory(site);
         await shareAsImage({
-            text: `${formattedName}\n${site.url}\n\n${site.description}`,
+            text: `${formattedName}\n${site.url}\n\n${desc}`,
             source: site.url,
-            category: site.category || 'مواقع إسلامية',
+            category: cat || (isEn ? 'Islamic Websites' : 'مواقع إسلامية'),
             theme,
             setToastMessage: showToast
         });
@@ -87,11 +118,18 @@ const IslamicSitesPage: React.FC<IslamicSitesPageProps> = ({ onBack, onNavigate 
         }
     };
 
-    const filteredSites = ISLAMIC_SITES_DATA.filter(site =>
-        site.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        site.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        site.category.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredSites = ISLAMIC_SITES_DATA.filter(site => {
+        const query = searchQuery.toLowerCase();
+        return (
+            site.name.toLowerCase().includes(query) ||
+            (site.nameEn && site.nameEn.toLowerCase().includes(query)) ||
+            site.description.toLowerCase().includes(query) ||
+            (site.descriptionEn && site.descriptionEn.toLowerCase().includes(query)) ||
+            site.category.toLowerCase().includes(query) ||
+            (site.categoryEn && site.categoryEn.toLowerCase().includes(query)) ||
+            site.url.toLowerCase().includes(query)
+        );
+    });
 
     // Current index for next/previous navigation in detail view
     const currentIndex = selectedSite ? ISLAMIC_SITES_DATA.findIndex(s => s.id === selectedSite.id) : -1;
@@ -101,39 +139,40 @@ const IslamicSitesPage: React.FC<IslamicSitesPageProps> = ({ onBack, onNavigate 
     return (
         <div 
             className="h-screen flex flex-col overflow-hidden" 
+            dir={isEn ? 'ltr' : 'rtl'}
             style={{ backgroundColor: 'transparent', color: theme.textColor, fontFamily: theme.font }}
         >
             {/* Header */}
-            <header className="app-top-bar">
+            <header className="app-top-bar shrink-0">
                 <div className="app-top-bar__inner">
                     <div className="relative flex items-center justify-center w-full min-h-[44px]">
-                        {/* سهم الرجوع للخلف على يمين النص */}
-                        <div className="absolute right-0 flex items-center">
+                        {/* زر الرجوع للخلف */}
+                        <div className={`absolute ${isEn ? 'left-0' : 'right-0'} flex items-center`}>
                             <button
                                 onClick={handleHomeClick}
                                 className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
-                                title="رجوع للخلف"
-                                aria-label="رجوع للخلف"
+                                title={isEn ? "Back" : "رجوع للخلف"}
+                                aria-label={isEn ? "Back" : "رجوع للخلف"}
                             >
-                                <i className="fa-solid fa-arrow-right text-xl"></i>
+                                <i className={`fa-solid ${isEn ? 'fa-arrow-left' : 'fa-arrow-right'} text-xl`}></i>
                             </button>
                         </div>
 
                         {/* عنوان الصفحة في الوسط */}
                         <div className="text-center px-12 min-w-0">
                             <h1 className="app-top-bar__title text-lg sm:text-xl font-kufi truncate">
-                                {selectedSite ? selectedSite.name.replace(/^موقع\s+/, '') : 'مواقع إسلامية'}
+                                {selectedSite ? getSiteName(selectedSite) : (isEn ? 'Islamic Websites' : 'مواقع إسلامية')}
                             </h1>
                         </div>
 
-                        {/* أيقونة المنزل على يسار النص للعودة إلى الصفحة الرئيسية */}
-                        <div className="absolute left-0 flex items-center gap-1">
+                        {/* أيقونة المنزل وقفل الصفحة */}
+                        <div className={`absolute ${isEn ? 'right-0' : 'left-0'} flex items-center gap-1`}>
                             <ThemePageLock />
                             <button
                                 onClick={() => onNavigate('home')}
                                 className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
-                                title="الصفحة الرئيسية"
-                                aria-label="الصفحة الرئيسية"
+                                title={isEn ? "Home Page" : "الصفحة الرئيسية"}
+                                aria-label={isEn ? "Home Page" : "الصفحة الرئيسية"}
                             >
                                 <i className="fa-solid fa-house text-xl"></i>
                             </button>
@@ -155,8 +194,8 @@ const IslamicSitesPage: React.FC<IslamicSitesPageProps> = ({ onBack, onNavigate 
                             transition={{ duration: 0.2 }}
                             className="max-w-2xl mx-auto space-y-4"
                         >
-                            {/* Return Navigation Bar / Category */}
-                            <div className="flex items-center justify-end">
+                            {/* Category Tag */}
+                            <div className={`flex items-center ${isEn ? 'justify-start' : 'justify-end'}`}>
                                 <span 
                                     className="text-xs px-2.5 py-1 rounded-full font-bold"
                                     style={{
@@ -164,7 +203,7 @@ const IslamicSitesPage: React.FC<IslamicSitesPageProps> = ({ onBack, onNavigate 
                                         color: themeKey === 'default' ? '#000000' : theme.palette[0]
                                     }}
                                 >
-                                    {selectedSite.category}
+                                    {getSiteCategory(selectedSite)}
                                 </span>
                             </div>
 
@@ -174,11 +213,11 @@ const IslamicSitesPage: React.FC<IslamicSitesPageProps> = ({ onBack, onNavigate 
                                 style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
                             >
                                 <div 
-                                    className="absolute -right-12 -top-12 w-36 h-36 rounded-full opacity-15 blur-2xl pointer-events-none"
+                                    className={`absolute ${isEn ? '-left-12' : '-right-12'} -top-12 w-36 h-36 rounded-full opacity-15 blur-2xl pointer-events-none`}
                                     style={{ backgroundColor: theme.palette[0] }}
                                 />
 
-                                <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-right gap-4">
+                                <div className={`flex flex-col sm:flex-row items-center ${isEn ? 'sm:items-start text-center sm:text-left' : 'sm:items-start text-center sm:text-right'} gap-4`}>
                                     <div 
                                         className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center shrink-0 shadow-md"
                                         style={{ 
@@ -190,18 +229,19 @@ const IslamicSitesPage: React.FC<IslamicSitesPageProps> = ({ onBack, onNavigate 
                                     </div>
 
                                     <div className="flex-1 space-y-1.5">
-                                        <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                                        <div className={`flex flex-wrap items-center justify-center ${isEn ? 'sm:justify-start' : 'sm:justify-start'} gap-2`}>
                                             <h2 className="text-xl sm:text-2xl font-bold font-kufi">
-                                                {cleanSiteName(selectedSite.name)}
+                                                {getSiteName(selectedSite)}
                                             </h2>
                                             <span className="inline-flex items-center gap-1 text-[11px] bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold px-2 py-0.5 rounded-full border border-emerald-500/30">
                                                 <i className="fa-solid fa-circle-check text-[10px]"></i>
-                                                منصة إسلامية معتمدة
+                                                {isEn ? 'Verified Islamic Platform' : 'منصة إسلامية معتمدة'}
                                             </span>
                                         </div>
 
                                         <p className="text-sm opacity-80 font-medium">
-                                            التصنيف: {selectedSite.category}
+                                            {isEn ? 'Category: ' : 'التصنيف: '}
+                                            {getSiteCategory(selectedSite)}
                                         </p>
                                     </div>
                                 </div>
@@ -215,9 +255,9 @@ const IslamicSitesPage: React.FC<IslamicSitesPageProps> = ({ onBack, onNavigate 
                                 <div className="flex items-center justify-between text-xs font-bold opacity-75">
                                     <span className="flex items-center gap-1.5">
                                         <i className="fa-solid fa-link text-indigo-500"></i>
-                                        رابط الموقع الإلكتروني
+                                        {isEn ? 'Website URL' : 'رابط الموقع الإلكتروني'}
                                     </span>
-                                    <span>انقر للفتح المباشر</span>
+                                    <span>{isEn ? 'Click to visit directly' : 'انقر للفتح المباشر'}</span>
                                 </div>
 
                                 <div 
@@ -236,7 +276,7 @@ const IslamicSitesPage: React.FC<IslamicSitesPageProps> = ({ onBack, onNavigate 
                                             onClick={(e) => handleCopyUrl(selectedSite.url, e)}
                                             className="w-9 h-9 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors opacity-70 hover:opacity-100"
                                             style={{ color: 'var(--text-color)' }}
-                                            title="نسخ الرابط"
+                                            title={isEn ? 'Copy Link' : 'نسخ الرابط'}
                                         >
                                             <i className="fa-regular fa-copy"></i>
                                         </button>
@@ -244,7 +284,7 @@ const IslamicSitesPage: React.FC<IslamicSitesPageProps> = ({ onBack, onNavigate 
                                             onClick={(e) => handleShareSite(selectedSite, e)}
                                             className="w-9 h-9 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors opacity-70 hover:opacity-100"
                                             style={{ color: 'var(--text-color)' }}
-                                            title="مشاركة"
+                                            title={isEn ? 'Share' : 'مشاركة'}
                                         >
                                             <i className="fa-solid fa-share-nodes"></i>
                                         </button>
@@ -254,13 +294,17 @@ const IslamicSitesPage: React.FC<IslamicSitesPageProps> = ({ onBack, onNavigate 
                                 {/* Primary Open Link Button */}
                                 <button
                                     onClick={() => handleOpenUrl(selectedSite.url)}
-                                    className="w-full py-3.5 px-4 rounded-2xl font-bold font-kufi text-sm sm:text-base flex items-center justify-center gap-2 shadow-md transition-all active:scale-98 text-white"
+                                    className="w-full py-3.5 px-4 rounded-2xl font-bold font-kufi text-sm sm:text-base flex items-center justify-center gap-2 shadow-md transition-all active:scale-98 text-white cursor-pointer"
                                     style={{
                                         backgroundColor: isDefaultTheme ? '#1e293b' : theme.palette[0],
                                     }}
                                 >
                                     <i className="fa-solid fa-arrow-up-right-from-square"></i>
-                                    <span>زيارة {cleanSiteName(selectedSite.name)} الآن</span>
+                                    <span>
+                                        {isEn 
+                                            ? `Visit ${getSiteName(selectedSite)} Now` 
+                                            : `زيارة ${cleanSiteName(selectedSite.name)} الآن`}
+                                    </span>
                                 </button>
                             </div>
 
@@ -280,22 +324,22 @@ const IslamicSitesPage: React.FC<IslamicSitesPageProps> = ({ onBack, onNavigate 
                                         <i className="fa-solid fa-circle-info"></i>
                                     </div>
                                     <h3 className="text-lg font-bold font-kufi">
-                                        نبذة عن محتوى الموقع
+                                        {isEn ? 'About the Website' : 'نبذة عن محتوى الموقع'}
                                     </h3>
                                 </div>
 
-                                <div className="leading-relaxed text-sm sm:text-base opacity-95 text-justify whitespace-pre-line p-3 rounded-2xl bg-black/[0.02] dark:bg-white/[0.02]">
-                                    {selectedSite.description}
+                                <div className={`leading-relaxed text-sm sm:text-base opacity-95 ${isEn ? 'text-left' : 'text-justify'} whitespace-pre-line p-3 rounded-2xl bg-black/[0.02] dark:bg-white/[0.02]`}>
+                                    {getSiteDescription(selectedSite)}
                                 </div>
 
                                 {/* Highlights / Features */}
-                                {selectedSite.features && selectedSite.features.length > 0 && (
+                                {getSiteFeatures(selectedSite) && getSiteFeatures(selectedSite).length > 0 && (
                                     <div className="space-y-2 pt-2">
                                         <h4 className="text-xs font-bold opacity-75">
-                                            أبرز أقسام وخدمات الموقع:
+                                            {isEn ? 'Key Sections & Features:' : 'أبرز أقسام وخدمات الموقع:'}
                                         </h4>
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                            {selectedSite.features.map((feature, fIdx) => (
+                                            {getSiteFeatures(selectedSite).map((feature, fIdx) => (
                                                 <div 
                                                     key={fIdx}
                                                     className="flex items-center gap-2 text-xs font-semibold p-2.5 rounded-xl border bg-black/[0.02] dark:bg-white/[0.03]"
@@ -315,15 +359,19 @@ const IslamicSitesPage: React.FC<IslamicSitesPageProps> = ({ onBack, onNavigate 
                                 {prevSite ? (
                                     <button
                                         onClick={() => setSelectedSite(prevSite)}
-                                        className="p-3 rounded-2xl border text-right transition-all active:scale-95 shadow-sm hover:border-indigo-400"
+                                        className={`p-3 rounded-2xl border ${isEn ? 'text-left' : 'text-right'} transition-all active:scale-95 shadow-sm hover:border-indigo-400 cursor-pointer`}
                                         style={{ 
                                             borderColor: cardBorderColor,
                                             borderWidth: '1.5px',
                                             backgroundColor: 'var(--card-bg, rgba(255,255,255,0.03))'
                                         }}
                                     >
-                                        <span className="text-[10px] opacity-60 block">الموقع السابق</span>
-                                        <span className="text-xs font-bold block truncate">{cleanSiteName(prevSite.name)}</span>
+                                        <span className="text-[10px] opacity-60 block">
+                                            {isEn ? 'Previous Site' : 'الموقع السابق'}
+                                        </span>
+                                        <span className="text-xs font-bold block truncate">
+                                            {getSiteName(prevSite)}
+                                        </span>
                                     </button>
                                 ) : (
                                     <div />
@@ -332,15 +380,19 @@ const IslamicSitesPage: React.FC<IslamicSitesPageProps> = ({ onBack, onNavigate 
                                 {nextSite ? (
                                     <button
                                         onClick={() => setSelectedSite(nextSite)}
-                                        className="p-3 rounded-2xl border text-left transition-all active:scale-95 shadow-sm hover:border-indigo-400"
+                                        className={`p-3 rounded-2xl border ${isEn ? 'text-right' : 'text-left'} transition-all active:scale-95 shadow-sm hover:border-indigo-400 cursor-pointer`}
                                         style={{ 
                                             borderColor: cardBorderColor,
                                             borderWidth: '1.5px',
                                             backgroundColor: 'var(--card-bg, rgba(255,255,255,0.03))'
                                         }}
                                     >
-                                        <span className="text-[10px] opacity-60 block">الموقع التالي</span>
-                                        <span className="text-xs font-bold block truncate">{cleanSiteName(nextSite.name)}</span>
+                                        <span className="text-[10px] opacity-60 block">
+                                            {isEn ? 'Next Site' : 'الموقع التالي'}
+                                        </span>
+                                        <span className="text-xs font-bold block truncate">
+                                            {getSiteName(nextSite)}
+                                        </span>
                                     </button>
                                 ) : (
                                     <div />
@@ -351,7 +403,7 @@ const IslamicSitesPage: React.FC<IslamicSitesPageProps> = ({ onBack, onNavigate 
                             <div className="h-32 sm:h-36 w-full pointer-events-none" aria-hidden="true" />
                         </motion.div>
                     ) : (
-                        /* 20 Islamic Sites Cards Grid */
+                        /* 25 Islamic Sites Cards Grid */
                         <motion.div
                             key="sites-list"
                             initial={{ opacity: 0 }}
@@ -369,15 +421,15 @@ const IslamicSitesPage: React.FC<IslamicSitesPageProps> = ({ onBack, onNavigate 
                                         type="text"
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
-                                        placeholder="بحث في المواقع الإسلامية..."
-                                        className="w-full pl-8 pr-9 py-2 sm:py-2.5 text-xs sm:text-sm rounded-xl sm:rounded-2xl border bg-black/5 dark:bg-white/5 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                        placeholder={isEn ? 'Search Islamic websites...' : 'بحث في المواقع الإسلامية...'}
+                                        className={`w-full ${isEn ? 'pl-9 pr-8 text-left' : 'pl-8 pr-9 text-right'} py-2 sm:py-2.5 text-xs sm:text-sm rounded-xl sm:rounded-2xl border bg-black/5 dark:bg-white/5 focus:outline-none focus:ring-1 focus:ring-emerald-500`}
                                         style={{ borderColor: 'var(--card-border)', color: theme.textColor }}
                                     />
-                                    <i className="fa-solid fa-magnifying-glass absolute right-3 top-1/2 -translate-y-1/2 text-xs opacity-50"></i>
+                                    <i className={`fa-solid fa-magnifying-glass absolute ${isEn ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 text-xs opacity-50`}></i>
                                     {searchQuery && (
                                         <button
                                             onClick={() => setSearchQuery('')}
-                                            className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs opacity-50 hover:opacity-100"
+                                            className={`absolute ${isEn ? 'right-2.5' : 'left-2.5'} top-1/2 -translate-y-1/2 text-xs opacity-50 hover:opacity-100 cursor-pointer`}
                                         >
                                             <i className="fa-solid fa-times"></i>
                                         </button>
@@ -385,7 +437,7 @@ const IslamicSitesPage: React.FC<IslamicSitesPageProps> = ({ onBack, onNavigate 
                                 </div>
                             </div>
 
-                            {/* 20 Cards Grid */}
+                            {/* 25 Cards Grid */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                                 {filteredSites.map((site) => {
                                     const cardColor = isDefaultTheme 
@@ -404,56 +456,57 @@ const IslamicSitesPage: React.FC<IslamicSitesPageProps> = ({ onBack, onNavigate 
                                             >
                                                 {/* Ambient subtle glow */}
                                                 <div 
-                                                    className="absolute -right-6 -top-6 w-20 h-20 rounded-full opacity-10 blur-xl pointer-events-none group-hover:opacity-20 transition-opacity"
+                                                    className={`absolute ${isEn ? '-left-6' : '-right-6'} -top-6 w-20 h-20 rounded-full opacity-10 blur-xl pointer-events-none group-hover:opacity-20 transition-opacity`}
                                                     style={{ backgroundColor: cardColor }}
                                                 />
 
                                                 {/* Top row: Category tag & Actions (زيارة + مشاركة) */}
                                                 <div className="flex items-center justify-between gap-2">
-                                                    <span className="text-[11px] font-medium opacity-70 px-2.5 py-0.5 rounded-full border bg-black/[0.02] dark:bg-white/[0.02] truncate max-w-[130px] sm:max-w-none" style={{ borderColor: 'var(--card-border)' }}>
-                                                        {site.category}
+                                                    <span className="text-[11px] font-medium opacity-70 px-2.5 py-0.5 rounded-full border bg-black/[0.02] dark:bg-white/[0.02] truncate max-w-[150px] sm:max-w-none" style={{ borderColor: 'var(--card-border)' }}>
+                                                        {getSiteCategory(site)}
                                                     </span>
 
                                                     <div className="flex items-center gap-1.5 shrink-0">
                                                         <button
                                                             onClick={(e) => handleOpenUrl(site.url, e)}
-                                                            className="px-3 py-1 rounded-full text-[11px] font-bold border transition-all active:scale-95 bg-black/5 dark:bg-white/10 hover:bg-black/10 flex items-center justify-center text-blue-600 dark:text-blue-400 shadow-xs"
-                                                            title="فتح الموقع مباشرة"
+                                                            className="px-3 py-1 rounded-full text-[11px] font-bold border transition-all active:scale-95 bg-black/5 dark:bg-white/10 hover:bg-black/10 flex items-center justify-center text-blue-600 dark:text-blue-400 shadow-xs cursor-pointer"
+                                                            title={isEn ? 'Open website directly' : 'فتح الموقع مباشرة'}
                                                         >
-                                                            <span>زيارة</span>
+                                                            <span>{isEn ? 'Visit' : 'زيارة'}</span>
                                                         </button>
 
                                                         <button
                                                             onClick={(e) => handleShareSite(site, e)}
-                                                            className="w-7 h-7 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors opacity-70 hover:opacity-100"
+                                                            className="w-7 h-7 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors opacity-70 hover:opacity-100 cursor-pointer"
                                                             style={{ color: 'var(--text-color)' }}
-                                                            title="مشاركة"
+                                                            title={isEn ? 'Share' : 'مشاركة'}
                                                         >
                                                             <i className="fa-solid fa-share-nodes text-xs"></i>
+                                                        </button>
+
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setSelectedSite(site);
+                                                            }}
+                                                            className="w-7 h-7 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors opacity-70 hover:opacity-100 cursor-pointer"
+                                                            style={{ color: 'var(--text-color)' }}
+                                                            title={isEn ? 'View Details' : 'عرض التفاصيل'}
+                                                            aria-label={isEn ? 'View Details' : 'عرض التفاصيل'}
+                                                        >
+                                                            <i className="fa-solid fa-magnifying-glass text-xs"></i>
                                                         </button>
                                                     </div>
                                                 </div>
 
-                                                {/* Middle: Icon & Name */}
-                                                <div className="flex items-center gap-3">
-                                                    <div 
-                                                        className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-inner"
-                                                        style={{ 
-                                                            backgroundColor: isDefaultTheme ? '#00000008' : `${cardColor}18`,
-                                                            color: isDefaultTheme ? '#000000' : cardColor
-                                                        }}
-                                                    >
-                                                        <i className={`${site.icon} text-lg sm:text-xl`}></i>
-                                                    </div>
-
-                                                    <div className="flex-1 min-w-0">
-                                                        <h3 className="font-bold text-sm sm:text-base font-kufi leading-snug line-clamp-1 group-hover:text-indigo-500 transition-colors">
-                                                            {cleanSiteName(site.name)}
-                                                        </h3>
-                                                        <p className="text-xs opacity-75 line-clamp-1 mt-0.5">
-                                                            {site.description}
-                                                        </p>
-                                                    </div>
+                                                {/* Middle: Name & Description (Without icon) */}
+                                                <div className="flex-1 min-w-0 space-y-1">
+                                                    <h3 className="font-bold text-sm sm:text-base font-kufi leading-snug line-clamp-1 group-hover:text-indigo-500 transition-colors">
+                                                        {getSiteName(site)}
+                                                    </h3>
+                                                    <p className="text-xs opacity-75 line-clamp-2 leading-relaxed">
+                                                        {getSiteDescription(site)}
+                                                    </p>
                                                 </div>
                                             </div>
                                         </div>
@@ -464,7 +517,9 @@ const IslamicSitesPage: React.FC<IslamicSitesPageProps> = ({ onBack, onNavigate 
                             {filteredSites.length === 0 && (
                                 <div className="text-center py-12 opacity-60">
                                     <i className="fa-solid fa-search text-3xl mb-2"></i>
-                                    <p className="text-sm">لا توجد مواقع تطابق بحثك</p>
+                                    <p className="text-sm">
+                                        {isEn ? 'No websites match your search' : 'لا توجد مواقع تطابق بحثك'}
+                                    </p>
                                 </div>
                             )}
 

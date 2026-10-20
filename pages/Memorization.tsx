@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowRight, HelpCircle, Repeat, Play, User, ArrowLeftRight, CheckSquare, Minus, Plus, BookOpen, Calendar, List, Trophy, Trash2, RotateCcw, Download } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import ThemePageLock from '../components/ThemePageLock';
 import { quranData as quranJsonData } from '../utils/quranData';
 const quranData = { data: quranJsonData };
@@ -10,8 +11,24 @@ import { QuranDownloadModal } from '../components/QuranReader/DownloadModals';
 import ReciterSelectModal from '../components/QuranReader/ReciterSelectModal';
 import Toast from '../components/QuranReader/Toast';
 import { memorizationService, MemorizedRange } from '../services/memorizationService';
-import { useShowNewBadge } from '../utils/badgeManager';
+import { getReciterDisplayName } from '../utils/listenQuranTranslations';
+import { useShowNewBadge, markPageAsSeen } from '../utils/badgeManager';
 import './QuranReader.css';
+
+export const SURAH_NAMES_EN = [
+    "Al-Fatihah", "Al-Baqarah", "Aali 'Imran", "An-Nisa'", "Al-Ma'idah", "Al-An'am", "Al-A'raf", "Al-Anfal", "At-Tawbah", "Yunus",
+    "Hud", "Yusuf", "Ar-Ra'd", "Ibrahim", "Al-Hijr", "An-Nahl", "Al-Isra", "Al-Kahf", "Maryam", "Ta-Ha",
+    "Al-Anbiya", "Al-Hajj", "Al-Mu'minun", "An-Nur", "Al-Furqan", "Ash-Shu'ara", "An-Naml", "Al-Qasas", "Al-Ankabut", "Ar-Rum",
+    "Luqman", "As-Sajdah", "Al-Ahzab", "Saba", "Fatir", "Ya-Sin", "As-Saffat", "Sad", "Az-Zumar", "Ghafir",
+    "Fussilat", "Ash-Shura", "Az-Zukhruf", "Ad-Dukhan", "Al-Jathiyah", "Al-Ahqaf", "Muhammad", "Al-Fath", "Al-Hujurat", "Qaf",
+    "Adh-Dhariyat", "At-Tur", "An-Najm", "Al-Qamar", "Ar-Rahman", "Al-Waqi'ah", "Al-Hadid", "Al-Mujadila", "Al-Hashr", "Al-Mumtahana",
+    "As-Saff", "Al-Jumu'ah", "Al-Munafiqun", "At-Taghabun", "At-Talaq", "At-Tahrim", "Al-Mulk", "Al-Qalam", "Al-Haqqah", "Al-Ma'arij",
+    "Nuh", "Al-Jinn", "Al-Muzzammil", "Al-Muddaththir", "Al-Qiyamah", "Al-Insan", "Al-Mursalat", "An-Naba", "An-Nazi'at", "'Abasa",
+    "At-Takwir", "Al-Infitar", "Al-Mutaffifin", "Al-Inshiqaq", "Al-Buruj", "At-Tariq", "Al-A'la", "Al-Ghashiyah", "Al-Fajr", "Al-Balad",
+    "Ash-Shams", "Al-Lail", "Ad-Duha", "Ash-Sharh", "At-Tin", "Al-'Alaq", "Al-Qadr", "Al-Bayyinah", "Az-Zalzalah", "Al-'Adiyat",
+    "Al-Qari'ah", "At-Takathur", "Al-'Asr", "Al-Humazah", "Al-Fil", "Quraish", "Al-Ma'un", "Al-Kauthar", "Al-Kafirun", "An-Nasr",
+    "Al-Masad", "Al-Ikhlas", "Al-Falaq", "An-Nas"
+];
 
 interface MemorizationProps {
     onBack: () => void;
@@ -20,6 +37,9 @@ interface MemorizationProps {
 
 const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
     const { theme, themeKey } = useTheme();
+    const { language } = useLanguage();
+    const isEn = language === 'en';
+
     const isDefaultTheme = themeKey === 'default' || !themeKey || theme.name?.includes('الافتراضي') || theme.name === 'Default';
     const isBlackAndWhite = themeKey === 'deep_black';
     const isBlackTheme = theme.bgColor === '#000000' || theme.name === 'أبيض وأسود' || themeKey === 'deep_black';
@@ -52,8 +72,17 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
     const [savedSession, setSavedSession] = useState<any>(null);
     const [activePicker, setActivePicker] = useState<'range' | 'ayah' | 'pause' | 'reader' | 'fromSurah' | 'fromAyah' | 'toSurah' | 'toAyah' | null>(null);
     const [showDownloadModal, setShowDownloadModal] = useState(false);
-    const showNewBadge = useShowNewBadge();
+    const [dismissedLocally, setDismissedLocally] = useState(false);
+    const isNewBadgeEligible = useShowNewBadge('memorization_review_tab');
+    const showNewBadge = isNewBadgeEligible && !dismissedLocally;
     const [toast, setToast] = useState<{ show: boolean; message: string }>({ show: false, message: '' });
+
+    useEffect(() => {
+        if (activeTab === 'review') {
+            setDismissedLocally(true);
+            markPageAsSeen('memorization_review_tab');
+        }
+    }, [activeTab]);
 
     const showToast = (message: string) => {
         setToast({ show: true, message });
@@ -61,7 +90,6 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
     };
 
     useEffect(() => {
-        // Stop audio when unmounting Memorization page
         return () => {
             const audioElements = document.querySelectorAll('audio');
             audioElements.forEach(audio => {
@@ -92,23 +120,19 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
             }
         }
 
-        // Check for active session
         const session = localStorage.getItem('memorization_session_v1');
         if (session) {
             try {
                 const parsed = JSON.parse(session);
-                // Only suggest if it's recent (last 24h)
                 if (Date.now() - parsed.timestamp < 24 * 60 * 60 * 1000) {
                     setSavedSession(parsed);
                 }
             } catch (e) {}
         }
 
-        // Load memorized ranges
         setMemorizedRanges(memorizationService.getMemorizedRanges());
     }, []);
 
-    // Save settings to localStorage whenever they change
     useEffect(() => {
         const settings = {
             reader: selectedReader,
@@ -125,7 +149,6 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
         localStorage.setItem('memorization_settings_v1', JSON.stringify(settings));
     }, [selectedReader, fromSurah, fromAyah, toSurah, toAyah, rangeRepeat, ayahRepeat, linkedRepeat, pauseLength, testAfterSession]);
 
-    // Auto-scroll to selected items when pickers are opened
     useEffect(() => {
         if (!activePicker || activePicker === 'reader') return;
 
@@ -162,7 +185,6 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
     };
 
     const startNewSession = () => {
-        // Save to history if it's a new range
         memorizationService.saveRange({
             fromSurah,
             fromAyah,
@@ -212,7 +234,7 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                 style={{ backgroundColor: theme.bgColor, borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
             >
                 <span className="font-bold text-lg" style={{ color: 'var(--text-color)' }}>{value}</span>
-                <span className="text-[10px] opacity-60" style={{ color: 'var(--text-color)' }}>مرة</span>
+                <span className="text-[10px] opacity-60" style={{ color: 'var(--text-color)' }}>{isEn ? 'times' : 'مرة'}</span>
             </div>
         </div>
     );
@@ -220,7 +242,7 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
     const handleDeleteRange = (id: string) => {
         memorizationService.deleteRange(id);
         setMemorizedRanges(memorizationService.getMemorizedRanges());
-        showToast('تم حذف النطاق من المراجعة');
+        showToast(isEn ? 'Range removed from review' : 'تم حذف النطاق من المراجعة');
     };
 
     const handleReviewRange = (range: MemorizedRange) => {
@@ -269,39 +291,43 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
         return unregister;
     }, [showHelpModal, showExplanationModal, showResumePrompt, activePicker, showDownloadModal]);
 
+    const getSurahName = (num: number) => {
+        return isEn ? (SURAH_NAMES_EN[num - 1] || `Surah ${num}`) : (SURAH_NAMES_AR[num - 1] || `سورة ${num}`);
+    };
+
     return (
-        <div className="h-screen flex flex-col bg-transparent" style={{ fontFamily: theme.font, color: 'var(--text-color)' }}>
+        <div className="h-screen flex flex-col bg-transparent" dir={isEn ? 'ltr' : 'rtl'} style={{ fontFamily: theme.font, color: 'var(--text-color)' }}>
             <div className="relative z-10 flex flex-col h-full">
                 <header className="app-top-bar shrink-0 relative z-10" style={{ backgroundColor: 'var(--qr-bar-bg)', borderBottom: '1px solid var(--qr-bar-border)' }}>
                     <div className="app-top-bar__inner">
                         <div className="relative flex items-center justify-center w-full min-h-[44px]">
-                            {/* سهم الرجوع للخلف على يمين النص */}
-                            <div className="absolute right-0 flex items-center">
+                            {/* Back button */}
+                            <div className={`absolute ${isEn ? 'left-0' : 'right-0'} flex items-center`}>
                                 <button
                                     onClick={handleHomeClick}
                                     className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
-                                    title="رجوع للخلف"
-                                    aria-label="رجوع للخلف"
+                                    title={isEn ? 'Go Back' : 'رجوع للخلف'}
+                                    aria-label={isEn ? 'Go Back' : 'رجوع للخلف'}
                                 >
-                                    <i className="fa-solid fa-arrow-right text-xl"></i>
+                                    <i className={`fa-solid ${isEn ? 'fa-arrow-left' : 'fa-arrow-right'} text-xl`}></i>
                                 </button>
                             </div>
 
-                            {/* عنوان الصفحة في الوسط */}
+                            {/* Title in center */}
                             <div className="text-center px-12 min-w-0">
                                 <h1 className="app-top-bar__title text-lg sm:text-xl font-kufi flex items-center justify-center gap-2 truncate" style={{ color: 'var(--qr-bar-text)' }}>
-                                    التحفيظ
+                                    {isEn ? 'Memorization' : 'التحفيظ'}
                                 </h1>
                             </div>
 
-                            {/* أيقونة المنزل على يسار النص للعودة إلى الصفحة الرئيسية */}
-                            <div className="absolute left-0 flex items-center gap-1">
+                            {/* Home / Page Lock icons */}
+                            <div className={`absolute ${isEn ? 'right-0' : 'left-0'} flex items-center gap-1`}>
                                 <ThemePageLock />
                                 <button
                                     onClick={() => onNavigate('home')}
                                     className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
-                                    title="الصفحة الرئيسية"
-                                    aria-label="الصفحة الرئيسية"
+                                    title={isEn ? 'Home Page' : 'الصفحة الرئيسية'}
+                                    aria-label={isEn ? 'Home Page' : 'الصفحة الرئيسية'}
                                 >
                                     <i className="fa-solid fa-house text-xl"></i>
                                 </button>
@@ -310,7 +336,7 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                     </div>
                 </header>
 
-                <main className="flex-1 overflow-y-auto p-3 space-y-4 hide-scrollbar relative z-10" dir="rtl">
+                <main className="flex-1 overflow-y-auto p-3 space-y-4 hide-scrollbar relative z-10">
                     {/* Tabs */}
                     <div className="flex p-1 rounded-2xl bg-black/5 border mb-2" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                         <button 
@@ -322,10 +348,14 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                             }}
                         >
                             <BookOpen size={16} />
-                            إعداد الحفظ
+                            {isEn ? 'Memorization Setup' : 'إعداد الحفظ'}
                         </button>
                         <button 
-                            onClick={() => setActiveTab('review')}
+                            onClick={() => {
+                                setActiveTab('review');
+                                setDismissedLocally(true);
+                                markPageAsSeen('memorization_review_tab');
+                            }}
                             className={`flex-1 py-3.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 relative ${activeTab === 'review' ? 'shadow-md' : 'opacity-60'}`}
                             style={{ 
                                 backgroundColor: activeTab === 'review' ? primaryColor : 'transparent',
@@ -333,12 +363,12 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                             }}
                         >
                             {showNewBadge && (
-                                <div className="absolute -top-2.5 -left-1 bg-yellow-400 text-black text-[10px] font-bold px-2 py-0.5 rounded-full z-20 shadow-md border border-white animate-bounce pointer-events-none">
-                                    جديد
+                                <div className={`absolute -top-2.5 ${isEn ? '-right-1' : '-left-1'} bg-yellow-400 text-black text-[10px] font-bold px-2 py-0.5 rounded-full z-20 shadow-md border border-white animate-bounce pointer-events-none scale-75 origin-top`}>
+                                    {isEn ? 'New' : 'جديد'}
                                 </div>
                             )}
                             <Calendar size={16} />
-                            <span>جدول المراجعة</span>
+                            <span>{isEn ? 'Review Schedule' : 'جدول المراجعة'}</span>
                             {memorizedRanges.length > 0 && (
                                 <span className="w-5 h-5 rounded-full bg-emerald-500 text-white text-[10px] font-bold flex items-center justify-center">
                                     {memorizedRanges.length}
@@ -350,195 +380,205 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                     {activeTab === 'setup' ? (
                         <>
                             {/* Reader Selection */}
-                    <div className="space-y-1" id="reader-select-container">
-                        <div className="flex items-center justify-start gap-2 font-bold text-sm" style={{ color: 'var(--text-color)' }}>
-                            <span>اختر اسم القارئ</span>
-                            <User size={18} />
-                        </div>
-                        <div className="relative">
-                            <div 
-                                onClick={() => setActivePicker('reader')}
-                                className="w-full p-4 rounded-2xl cursor-pointer text-right font-medium text-sm shadow-sm border flex items-center justify-between"
-                                style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-color)', borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
-                            >
-                                <div className="w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[7px]" style={{ borderTopColor: 'var(--text-color)' }}></div>
-                                <span>{MEMORIZATION_READERS.find(r => r.id === selectedReader)?.name}</span>
-                            </div>
-                        </div>
-                    </div>
-
-
-                    {/* Ayah Range */}
-                    <div className="space-y-1" id="ayah-range-container">
-                        <div className="flex items-center justify-start gap-2 font-bold text-sm" style={{ color: 'var(--text-color)' }}>
-                            <span>نطاق الآيات</span>
-                            <ArrowLeftRight size={18} />
-                        </div>
-                        
-                        <div className="flex gap-2">
-                            {/* From */}
-                            <div className="flex-1 p-2 rounded-xl border" style={{ backgroundColor: 'var(--card-bg)', borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
-                                <div className="text-center font-bold mb-1 text-xs" style={{ color: 'var(--text-color)' }}>من</div>
-                                <div className="space-y-1.5">
-                                    <div className="relative">
-                                        <div 
-                                            onClick={() => setActivePicker('fromSurah')}
-                                            className="w-full p-3 border rounded-lg cursor-pointer text-center font-bold shadow-sm text-xs transition-colors hover:bg-black/5"
-                                            style={{ backgroundColor: theme.bgColor, color: 'var(--text-color)', borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
-                                        >
-                                            {SURAH_NAMES_AR[fromSurah - 1]}
-                                        </div>
-                                    </div>
-                                    <div className="relative">
-                                        <div 
-                                            onClick={() => setActivePicker('fromAyah')}
-                                            className="w-full p-3 border rounded-lg cursor-pointer text-center font-bold shadow-sm text-xs transition-colors hover:bg-black/5"
-                                            style={{ backgroundColor: theme.bgColor, color: 'var(--text-color)', borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
-                                        >
-                                             آية {fromAyah}
-                                        </div>
-                                    </div>
+                            <div className="space-y-1" id="reader-select-container">
+                                <div className="flex items-center justify-start gap-2 font-bold text-sm" style={{ color: 'var(--text-color)' }}>
+                                    <User size={18} />
+                                    <span>{isEn ? 'Select Reciter' : 'اختر اسم القارئ'}</span>
                                 </div>
-                            </div>
-
-                            {/* To */}
-                            <div className="flex-1 p-2 rounded-xl border" style={{ backgroundColor: 'var(--card-bg)', borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
-                                <div className="text-center font-bold mb-1 text-xs" style={{ color: 'var(--text-color)' }}>إلى</div>
-                                <div className="space-y-1.5">
-                                    <div className="relative">
-                                        <div 
-                                            onClick={() => setActivePicker('toSurah')}
-                                            className="w-full p-3 border rounded-lg cursor-pointer text-center font-bold shadow-sm text-xs transition-colors hover:bg-black/5"
-                                            style={{ backgroundColor: theme.bgColor, color: 'var(--text-color)', borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
-                                        >
-                                            {SURAH_NAMES_AR[toSurah - 1]}
-                                        </div>
-                                    </div>
-                                    <div className="relative">
-                                        <div 
-                                            onClick={() => setActivePicker('toAyah')}
-                                            className="w-full p-3 border rounded-lg cursor-pointer text-center font-bold shadow-sm text-xs transition-colors hover:bg-black/5"
-                                            style={{ backgroundColor: theme.bgColor, color: 'var(--text-color)', borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
-                                        >
-                                             آية {toAyah}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Repetition Settings */}
-                    <div id="repetition-settings-container" className="space-y-2">
-                        <div className="flex items-center justify-start gap-2 font-bold text-base" style={{ color: 'var(--text-color)' }}>
-                            <span>إعدادات التكرار</span>
-                            <Repeat size={20} />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-2">
-                            {/* Range Repeat */}
-                            <div className="flex items-center justify-between p-1 px-2 rounded-xl border" style={{ backgroundColor: 'var(--card-bg)', borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
-                                <span className="font-bold text-[10px] leading-tight" style={{ color: 'var(--text-color)' }}>تكرار النطاق</span>
-                                <NumberPicker value={rangeRepeat} onChange={(v) => { setRangeRepeat(v); setSavedSession(null); }} label="range" />
-                            </div>
-
-                            {/* Ayah Repeat */}
-                            <div className="flex items-center justify-between p-1 px-2 rounded-xl border" style={{ backgroundColor: 'var(--card-bg)', borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
-                                <span className="font-bold text-[10px] leading-tight" style={{ color: 'var(--text-color)' }}>تكرار الآية</span>
-                                <NumberPicker value={ayahRepeat} onChange={(v) => { setAyahRepeat(v); setSavedSession(null); }} label="ayah" />
-                            </div>
-
-                            {/* Linked Repeat */}
-                            <div className="flex items-center justify-between p-1 px-2 rounded-xl border" style={{ backgroundColor: 'var(--card-bg)', borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
-                                <div className="flex flex-col items-start">
-                                    <span className="font-bold text-[10px] leading-tight" style={{ color: 'var(--text-color)' }}>ربط الآيات</span>
-                                    <button 
-                                        onClick={() => setShowExplanationModal(true)}
-                                        className="text-[8px] opacity-60 flex items-center gap-0.5" 
-                                        style={{ color: 'var(--text-color)' }}
-                                    >
-                                        توضيح <Play size={8} />
-                                    </button>
-                                </div>
-                                <label className="relative inline-flex items-center cursor-pointer scale-90">
-                                    <input type="checkbox" className="sr-only peer" checked={linkedRepeat} onChange={(e) => { setLinkedRepeat(e.target.checked); setSavedSession(null); }} />
+                                <div className="relative">
                                     <div 
-                                        className={`w-8 h-4.5 rounded-full peer peer-focus:outline-none transition-colors after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:after:-translate-x-3.5 peer-checked:after:border-white ${linkedRepeat ? (isBlackTheme ? 'bg-white' : (theme.accent ? 'opacity-100' : 'bg-emerald-500')) : 'bg-gray-400'}`}
-                                        style={linkedRepeat && !isBlackTheme ? { backgroundColor: primaryColor } : {}}
+                                        onClick={() => setActivePicker('reader')}
+                                        className={`w-full p-4 rounded-2xl cursor-pointer ${isEn ? 'text-left' : 'text-right'} font-medium text-sm shadow-sm border flex items-center justify-between`}
+                                        style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-color)', borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                                    >
+                                        <div className="w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[7px]" style={{ borderTopColor: 'var(--text-color)' }}></div>
+                                        <span>{getReciterDisplayName(selectedReader, MEMORIZATION_READERS.find(r => r.id === selectedReader)?.name, language)}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Ayah Range */}
+                            <div className="space-y-1" id="ayah-range-container">
+                                <div className="flex items-center justify-start gap-2 font-bold text-sm" style={{ color: 'var(--text-color)' }}>
+                                    <ArrowLeftRight size={18} />
+                                    <span>{isEn ? 'Ayah Range' : 'نطاق الآيات'}</span>
+                                </div>
+                                
+                                <div className="flex gap-2">
+                                    {/* From */}
+                                    <div className="flex-1 p-2 rounded-xl border" style={{ backgroundColor: 'var(--card-bg)', borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
+                                        <div className="text-center font-bold mb-1 text-xs" style={{ color: 'var(--text-color)' }}>
+                                            {isEn ? 'From' : 'من'}
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <div className="relative">
+                                                <div 
+                                                    onClick={() => setActivePicker('fromSurah')}
+                                                    className="w-full p-3 border rounded-lg cursor-pointer text-center font-bold shadow-sm text-xs transition-colors hover:bg-black/5"
+                                                    style={{ backgroundColor: theme.bgColor, color: 'var(--text-color)', borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                                                >
+                                                    {getSurahName(fromSurah)}
+                                                </div>
+                                            </div>
+                                            <div className="relative">
+                                                <div 
+                                                    onClick={() => setActivePicker('fromAyah')}
+                                                    className="w-full p-3 border rounded-lg cursor-pointer text-center font-bold shadow-sm text-xs transition-colors hover:bg-black/5"
+                                                    style={{ backgroundColor: theme.bgColor, color: 'var(--text-color)', borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                                                >
+                                                    {isEn ? `Ayah ${fromAyah}` : `آية ${fromAyah}`}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* To */}
+                                    <div className="flex-1 p-2 rounded-xl border" style={{ backgroundColor: 'var(--card-bg)', borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
+                                        <div className="text-center font-bold mb-1 text-xs" style={{ color: 'var(--text-color)' }}>
+                                            {isEn ? 'To' : 'إلى'}
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <div className="relative">
+                                                <div 
+                                                    onClick={() => setActivePicker('toSurah')}
+                                                    className="w-full p-3 border rounded-lg cursor-pointer text-center font-bold shadow-sm text-xs transition-colors hover:bg-black/5"
+                                                    style={{ backgroundColor: theme.bgColor, color: 'var(--text-color)', borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                                                >
+                                                    {getSurahName(toSurah)}
+                                                </div>
+                                            </div>
+                                            <div className="relative">
+                                                <div 
+                                                    onClick={() => setActivePicker('toAyah')}
+                                                    className="w-full p-3 border rounded-lg cursor-pointer text-center font-bold shadow-sm text-xs transition-colors hover:bg-black/5"
+                                                    style={{ backgroundColor: theme.bgColor, color: 'var(--text-color)', borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                                                >
+                                                    {isEn ? `Ayah ${toAyah}` : `آية ${toAyah}`}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Repetition Settings */}
+                            <div id="repetition-settings-container" className="space-y-2">
+                                <div className="flex items-center justify-start gap-2 font-bold text-base" style={{ color: 'var(--text-color)' }}>
+                                    <Repeat size={20} />
+                                    <span>{isEn ? 'Repetition Settings' : 'إعدادات التكرار'}</span>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-2">
+                                    {/* Range Repeat */}
+                                    <div className="flex items-center justify-between p-1 px-2 rounded-xl border" style={{ backgroundColor: 'var(--card-bg)', borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
+                                        <span className="font-bold text-[10px] leading-tight" style={{ color: 'var(--text-color)' }}>
+                                            {isEn ? 'Range Repeat' : 'تكرار النطاق'}
+                                        </span>
+                                        <NumberPicker value={rangeRepeat} onChange={(v) => { setRangeRepeat(v); setSavedSession(null); }} label="range" />
+                                    </div>
+
+                                    {/* Ayah Repeat */}
+                                    <div className="flex items-center justify-between p-1 px-2 rounded-xl border" style={{ backgroundColor: 'var(--card-bg)', borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
+                                        <span className="font-bold text-[10px] leading-tight" style={{ color: 'var(--text-color)' }}>
+                                            {isEn ? 'Ayah Repeat' : 'تكرار الآية'}
+                                        </span>
+                                        <NumberPicker value={ayahRepeat} onChange={(v) => { setAyahRepeat(v); setSavedSession(null); }} label="ayah" />
+                                    </div>
+
+                                    {/* Linked Repeat */}
+                                    <div className="flex items-center justify-between p-1 px-2 rounded-xl border" style={{ backgroundColor: 'var(--card-bg)', borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
+                                        <div className="flex flex-col items-start">
+                                            <span className="font-bold text-[10px] leading-tight" style={{ color: 'var(--text-color)' }}>
+                                                {isEn ? 'Linked Repeat' : 'ربط الآيات'}
+                                            </span>
+                                            <button 
+                                                onClick={() => setShowExplanationModal(true)}
+                                                className="text-[8px] opacity-60 flex items-center gap-0.5" 
+                                                style={{ color: 'var(--text-color)' }}
+                                            >
+                                                {isEn ? 'Explanation' : 'توضيح'} <Play size={8} />
+                                            </button>
+                                        </div>
+                                        <label className="relative inline-flex items-center cursor-pointer scale-90">
+                                            <input type="checkbox" className="sr-only peer" checked={linkedRepeat} onChange={(e) => { setLinkedRepeat(e.target.checked); setSavedSession(null); }} />
+                                            <div 
+                                                className={`w-8 h-4.5 rounded-full peer peer-focus:outline-none transition-colors after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:after:-translate-x-3.5 peer-checked:after:border-white ${linkedRepeat ? (isBlackTheme ? 'bg-white' : (theme.accent ? 'opacity-100' : 'bg-emerald-500')) : 'bg-gray-400'}`}
+                                                style={linkedRepeat && !isBlackTheme ? { backgroundColor: primaryColor } : {}}
+                                            ></div>
+                                        </label>
+                                    </div>
+
+                                    {/* Pause Length */}
+                                    <div className="flex items-center justify-between p-1 px-2 rounded-xl border" style={{ backgroundColor: 'var(--card-bg)', borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
+                                        <span className="font-bold text-[10px] leading-tight" style={{ color: 'var(--text-color)' }}>
+                                            {isEn ? 'Pause' : 'السكتة'}
+                                        </span>
+                                        <NumberPicker value={pauseLength} onChange={(v) => { setPauseLength(v); setSavedSession(null); }} label="pause" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Test After Session */}
+                            <div className="flex items-center justify-between p-3 rounded-xl border" style={{ backgroundColor: 'var(--card-bg)', borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
+                                <div className="flex items-center gap-2 font-bold text-base" style={{ color: theme.textColor }}>
+                                    <CheckSquare size={20} />
+                                    <span>{isEn ? 'Test After Session' : 'اختبار بعد الجلسة'}</span>
+                                    <HelpCircle 
+                                        size={16} 
+                                        onClick={() => setShowHelpModal(true)} 
+                                        className="cursor-pointer hover:scale-110 transition-transform" 
+                                        style={{ color: theme.btnBg || theme.palette[0] }} 
+                                    />
+                                </div>
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" className="sr-only peer" checked={testAfterSession} onChange={(e) => { setTestAfterSession(e.target.checked); setSavedSession(null); }} />
+                                    <div 
+                                        className={`w-9 h-5 rounded-full peer peer-focus:outline-none transition-colors after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:-translate-x-full peer-checked:after:border-white ${testAfterSession ? (isBlackTheme ? 'bg-white' : (theme.accent ? 'opacity-100' : 'bg-emerald-500')) : 'bg-gray-300'}`}
+                                        style={testAfterSession && !isBlackTheme ? { backgroundColor: primaryColor } : {}}
                                     ></div>
                                 </label>
                             </div>
 
-                            {/* Pause Length */}
-                            <div className="flex items-center justify-between p-1 px-2 rounded-xl border" style={{ backgroundColor: 'var(--card-bg)', borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
-                                <span className="font-bold text-[10px] leading-tight" style={{ color: 'var(--text-color)' }}>السكتة</span>
-                                <NumberPicker value={pauseLength} onChange={(v) => { setPauseLength(v); setSavedSession(null); }} label="pause" />
-                            </div>
-                        </div>
-                    </div>
+                            {/* Start Button */}
+                            {activeTab === 'setup' && (
+                                <div className="space-y-3 pt-2">
+                                    <button 
+                                        id="btn-start-memorization"
+                                        onClick={handleStart}
+                                        className={`w-full py-4 rounded-2xl font-bold text-lg shadow-lg transition-all active:scale-95 flex items-center justify-center gap-3 border-b-4 ring-4`}
+                                        style={{
+                                            backgroundColor: primaryColor,
+                                            borderColor: (isBlackAndWhite ? '#E5E5E5' : theme.palette[1] || primaryColor),
+                                            color: btnTextColor,
+                                            boxShadow: `0 10px 30px -5px ${primaryColor}80`,
+                                            '--tw-ring-color': `${primaryColor}33`
+                                        } as React.CSSProperties}
+                                    >
+                                        <Play size={20} fill="currentColor" />
+                                        {isEn ? 'Start Memorization Session' : 'ابدأ جلسة التحفيظ'}
+                                    </button>
 
-                    {/* Test After Session */}
-                    <div className="flex items-center justify-between p-3 rounded-xl border" style={{ backgroundColor: 'var(--card-bg)', borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
-                        <div className="flex items-center gap-2 font-bold text-base" style={{ color: theme.textColor }}>
-                            <span>اختبار بعد الجلسة</span>
-                            <CheckSquare size={20} />
-                            <HelpCircle 
-                                size={16} 
-                                onClick={() => setShowHelpModal(true)} 
-                                className="cursor-pointer hover:scale-110 transition-transform" 
-                                style={{ color: theme.btnBg || theme.palette[0] }} 
-                            />
-                        </div>
-                        <label className="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" className="sr-only peer" checked={testAfterSession} onChange={(e) => { setTestAfterSession(e.target.checked); setSavedSession(null); }} />
-                            <div 
-                                className={`w-9 h-5 rounded-full peer peer-focus:outline-none transition-colors after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:-translate-x-full peer-checked:after:border-white ${testAfterSession ? (isBlackTheme ? 'bg-white' : (theme.accent ? 'opacity-100' : 'bg-emerald-500')) : 'bg-gray-300'}`}
-                                style={testAfterSession && !isBlackTheme ? { backgroundColor: primaryColor } : {}}
-                            ></div>
-                        </label>
-                    </div>
-
-                    {/* Start Button */}
-                    {activeTab === 'setup' && (
-                        <div className="space-y-3 pt-2">
-                            <button 
-                                id="btn-start-memorization"
-                                onClick={handleStart}
-                                className={`w-full py-4 rounded-2xl font-bold text-lg shadow-lg transition-all active:scale-95 flex items-center justify-center gap-3 border-b-4 ring-4`}
-                                style={{
-                                    backgroundColor: primaryColor,
-                                    borderColor: (isBlackAndWhite ? '#E5E5E5' : theme.palette[1] || primaryColor),
-                                    color: btnTextColor,
-                                    boxShadow: `0 10px 30px -5px ${primaryColor}80`,
-                                    '--tw-ring-color': `${primaryColor}33`
-                                } as React.CSSProperties}
-                            >
-                                <Play size={20} fill="currentColor" />
-                                ابدأ جلسة التحفيظ
-                            </button>
-
-                            {/* Download Button moved to bottom of setup area */}
-                            <button 
-                                onClick={() => setShowDownloadModal(true)} 
-                                className="w-full h-12 px-4 flex items-center justify-between transition-all active:scale-[0.98] rounded-2xl border shadow-sm"
-                                style={{ 
-                                    backgroundColor: 'var(--card-bg)', 
-                                    borderColor: cardBorderColor, 
-                                    borderWidth: '1.5px',
-                                    borderStyle: 'solid',
-                                    color: 'var(--text-color)' 
-                                }}
-                            >
-                                <div className="flex items-center gap-3">
-                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isBlackTheme ? 'bg-white' : 'bg-emerald-500/10'}`}>
-                                        <Download size={18} className={isBlackTheme ? 'text-black' : 'text-emerald-500'} />
-                                    </div>
-                                    <span className="font-bold text-sm">تحميل القراء</span>
+                                    <button 
+                                        onClick={() => setShowDownloadModal(true)} 
+                                        className="w-full h-12 px-4 flex items-center justify-between transition-all active:scale-[0.98] rounded-2xl border shadow-sm"
+                                        style={{ 
+                                            backgroundColor: 'var(--card-bg)', 
+                                            borderColor: cardBorderColor, 
+                                            borderWidth: '1.5px',
+                                            borderStyle: 'solid',
+                                            color: 'var(--text-color)' 
+                                        }}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isBlackTheme ? 'bg-white' : 'bg-emerald-500/10'}`}>
+                                                <Download size={18} className={isBlackTheme ? 'text-black' : 'text-emerald-500'} />
+                                            </div>
+                                            <span className="font-bold text-sm">{isEn ? 'Download Reciters' : 'تحميل القراء'}</span>
+                                        </div>
+                                        <ArrowRight size={16} className={`rotate-180 opacity-30 ${isEn ? 'rotate-0' : ''}`} />
+                                    </button>
                                 </div>
-                                <ArrowRight size={16} className="rotate-180 opacity-30" />
-                            </button>
-                        </div>
-                    )}
+                            )}
                         </>
                     ) : (
                         <div className="space-y-4 animate-fadeIn">
@@ -549,7 +589,9 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                                         <Trophy size={20} />
                                     </div>
                                     <div className="text-2xl font-bold" style={{ color: 'var(--text-color)' }}>{memorizedRanges.length}</div>
-                                    <div className="text-xs opacity-70" style={{ color: 'var(--text-color)' }}>نطاق تم حفظه</div>
+                                    <div className="text-xs opacity-70" style={{ color: 'var(--text-color)' }}>
+                                        {isEn ? 'Memorized Ranges' : 'نطاق تم حفظه'}
+                                    </div>
                                 </div>
                                 <div className="p-4 rounded-2xl border text-center shadow-sm" style={{ backgroundColor: 'var(--card-bg)', borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                                     <div className="w-10 h-10 bg-blue-500/10 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-2">
@@ -558,30 +600,38 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                                     <div className="text-2xl font-bold" style={{ color: 'var(--text-color)' }}>
                                         {memorizedRanges.filter(r => (r.nextReviewDate || 0) <= Date.now()).length}
                                     </div>
-                                    <div className="text-xs opacity-70" style={{ color: 'var(--text-color)' }}>بانتظار المراجعة اليوم</div>
+                                    <div className="text-xs opacity-70" style={{ color: 'var(--text-color)' }}>
+                                        {isEn ? 'Pending Review Today' : 'بانتظار المراجعة اليوم'}
+                                    </div>
                                 </div>
                             </div>
 
                             {/* Review List */}
                             <div className="space-y-3">
                                 <div className="flex items-center justify-between px-1">
-                                    <h3 className="font-bold text-base" style={{ color: 'var(--text-color)' }}>قائمة محفوظاتك للمراجعة</h3>
+                                    <h3 className="font-bold text-base" style={{ color: 'var(--text-color)' }}>
+                                        {isEn ? 'Your Memorization Review List' : 'قائمة محفوظاتك للمراجعة'}
+                                    </h3>
                                     <List size={18} className="opacity-50" />
                                 </div>
 
                                 {memorizedRanges.length === 0 ? (
                                     <div className="p-8 text-center rounded-3xl border border-dashed space-y-3 shadow-sm" style={{ backgroundColor: 'var(--card-bg)', borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                                         <Calendar size={48} className="mx-auto text-emerald-500/40" />
-                                        <h4 className="font-bold text-sm" style={{ color: 'var(--text-color)' }}>لا توجد محفوظات في جدول المراجعة حالياً</h4>
+                                        <h4 className="font-bold text-sm" style={{ color: 'var(--text-color)' }}>
+                                            {isEn ? 'No memorized ranges in review schedule currently' : 'لا توجد محفوظات في جدول المراجعة حالياً'}
+                                        </h4>
                                         <p className="text-xs opacity-70 leading-relaxed max-w-xs mx-auto" style={{ color: 'var(--text-color)' }}>
-                                            ابدأ بحفظ وتكرار أي سورة أو نطاق آيات من تبويب (إعداد الحفظ)، وسيتم إدراجه تلقائياً في جدول المراجعة الذكي.
+                                            {isEn 
+                                                ? 'Start memorizing and repeating any surah or ayah range from the Setup tab, and it will be automatically added to the smart review schedule.' 
+                                                : 'ابدأ بحفظ وتكرار أي سورة أو نطاق آيات من تبويب (إعداد الحفظ)، وسيتم إدراجه تلقائياً في جدول المراجعة الذكي.'}
                                         </p>
                                         <button
                                             type="button"
                                             onClick={() => setActiveTab('setup')}
                                             className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 mt-2"
                                         >
-                                            إعداد نطاق جديد للحفظ
+                                            {isEn ? 'Setup New Memorization Range' : 'إعداد نطاق جديد للحفظ'}
                                         </button>
                                     </div>
                                 ) : (
@@ -598,23 +648,23 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                                                     borderStyle: 'solid'
                                                 }}
                                             >
-                                                {isDue && <div className="absolute top-0 right-0 w-1.5 h-full bg-emerald-500"></div>}
+                                                {isDue && <div className={`absolute top-0 ${isEn ? 'left-0' : 'right-0'} w-1.5 h-full bg-emerald-500`}></div>}
                                                 
                                                 <div className="flex items-center justify-between">
                                                     <div>
                                                         <div className="font-bold text-sm" style={{ color: 'var(--text-color)' }}>
-                                                            سورة {SURAH_NAMES_AR[range.fromSurah - 1]}
+                                                            {getSurahName(range.fromSurah)}
                                                         </div>
                                                         <div className="text-xs opacity-70 mt-0.5" style={{ color: 'var(--text-color)' }}>
-                                                            الآيات: {range.fromAyah} إلى {range.toAyah}
+                                                            {isEn ? `Ayahs: ${range.fromAyah} to ${range.toAyah}` : `الآيات: ${range.fromAyah} إلى ${range.toAyah}`}
                                                         </div>
                                                     </div>
                                                     <div className="text-left">
                                                         <div className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isDue ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30' : 'bg-gray-500/10 opacity-70'}`}>
-                                                            {isDue ? 'حان وقت المراجعة ⏱️' : 'مراجعة قادمة ⏳'}
+                                                            {isDue ? (isEn ? 'Review Time! ⏱️' : 'حان وقت المراجعة ⏱️') : (isEn ? 'Upcoming Review ⏳' : 'مراجعة قادمة ⏳')}
                                                         </div>
                                                         <div className="text-[10px] opacity-60 mt-1 font-sans">
-                                                            {range.nextReviewDate ? new Date(range.nextReviewDate).toLocaleDateString('ar-SA') : 'اليوم'}
+                                                            {range.nextReviewDate ? new Date(range.nextReviewDate).toLocaleDateString(isEn ? 'en-US' : 'ar-SA') : (isEn ? 'Today' : 'اليوم')}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -625,12 +675,12 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                                                         className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm flex items-center justify-center gap-2 transition-all active:scale-95"
                                                     >
                                                         <Play size={14} />
-                                                        بدء جلسة المراجعة والتثبيت
+                                                        {isEn ? 'Start Review & Fixation Session' : 'بدء جلسة المراجعة والتثبيت'}
                                                     </button>
                                                     <button 
                                                         onClick={() => handleDeleteRange(range.id)}
                                                         className="w-10 h-10 flex items-center justify-center rounded-xl border border-red-500/20 text-red-500 hover:bg-red-500/10 transition-all active:scale-95"
-                                                        title="حذف من جدول المراجعة"
+                                                        title={isEn ? 'Delete from review schedule' : 'حذف من جدول المراجعة'}
                                                     >
                                                         <Trash2 size={16} />
                                                     </button>
@@ -644,22 +694,35 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                     )}
                     <div className="shrink-0 w-full h-6"></div>
                 </main>
-
-                {/* Removed fixed Start Button container to keep it in scrollable area or just before bottom bar */}
             </div>
 
             {/* Help Modal */}
             {showHelpModal && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fadeIn" onClick={() => setShowHelpModal(false)}>
-                    <div className="w-full max-w-sm rounded-3xl p-6 shadow-2xl animate-modal-enter text-right border" onClick={e => e.stopPropagation()} style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-color)', borderWidth: '1.5px', borderStyle: 'solid', borderColor: cardBorderColor }}>
-                        <h2 className="text-xl font-bold mb-4 border-b pb-2" style={{ borderColor: cardBorderColor }}>دليل التحفيظ</h2>
+                    <div className={`w-full max-w-sm rounded-3xl p-6 shadow-2xl animate-modal-enter ${isEn ? 'text-left' : 'text-right'} border`} onClick={e => e.stopPropagation()} style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-color)', borderWidth: '1.5px', borderStyle: 'solid', borderColor: cardBorderColor }}>
+                        <h2 className="text-xl font-bold mb-4 border-b pb-2" style={{ borderColor: cardBorderColor }}>
+                            {isEn ? 'Memorization Guide' : 'دليل التحفيظ'}
+                        </h2>
                         <div className="space-y-4 text-sm leading-relaxed">
-                            <p>• <span className="font-bold">تكرار الآية:</span> عدد مرات تكرار كل آية على حدة قبل الانتقال للتالية.</p>
-                            <p>• <span className="font-bold">تكرار النطاق:</span> عدد مرات إعادة المجموعة كاملة بعد الانتهاء منها.</p>
-                            <p>• <span className="font-bold">التكرار المترابط:</span> يقوم بتكرار الآية السابقة مع الحالية لربط الحفظ.</p>
-                            <p>• <span className="font-bold">السكتة:</span> فترة صمت بعد كل آية لتعطيك فرصة للترديد خلف القارئ.</p>
+                            {isEn ? (
+                                <>
+                                    <p>• <span className="font-bold">Ayah Repeat:</span> Number of times to repeat each ayah individually before moving to the next.</p>
+                                    <p>• <span className="font-bold">Range Repeat:</span> Number of times to repeat the entire group after finishing it.</p>
+                                    <p>• <span className="font-bold">Linked Repeat:</span> Repeats the previous ayah with the current one to link memorization.</p>
+                                    <p>• <span className="font-bold">Pause:</span> Silence period after each ayah to give you a chance to recite after the reciter.</p>
+                                </>
+                            ) : (
+                                <>
+                                    <p>• <span className="font-bold">تكرار الآية:</span> عدد مرات تكرار كل آية على حدة قبل الانتقال للتالية.</p>
+                                    <p>• <span className="font-bold">تكرار النطاق:</span> عدد مرات إعادة المجموعة كاملة بعد الانتهاء منها.</p>
+                                    <p>• <span className="font-bold">التكرار المترابط:</span> يقوم بتكرار الآية السابقة مع الحالية لربط الحفظ.</p>
+                                    <p>• <span className="font-bold">السكتة:</span> فترة صمت بعد كل آية لتعطيك فرصة للترديد خلف القارئ.</p>
+                                </>
+                            )}
                         </div>
-                        <button onClick={() => setShowHelpModal(false)} className="w-full mt-6 py-3 rounded-xl font-bold text-white" style={{ backgroundColor: theme.btnBg }}>فهمت</button>
+                        <button onClick={() => setShowHelpModal(false)} className="w-full mt-6 py-3 rounded-xl font-bold text-white" style={{ backgroundColor: theme.btnBg || primaryColor }}>
+                            {isEn ? 'Got it' : 'فهمت'}
+                        </button>
                     </div>
                 </div>
             )}
@@ -667,12 +730,18 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
             {/* Explanation Modal */}
             {showExplanationModal && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fadeIn" onClick={() => setShowExplanationModal(false)}>
-                    <div className="w-full max-w-sm rounded-3xl p-6 shadow-2xl animate-modal-enter text-right border" onClick={e => e.stopPropagation()} style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-color)', borderWidth: '1.5px', borderStyle: 'solid', borderColor: cardBorderColor }}>
-                        <h2 className="text-xl font-bold mb-4 border-b pb-2" style={{ borderColor: cardBorderColor }}>التكرار المترابط</h2>
+                    <div className={`w-full max-w-sm rounded-3xl p-6 shadow-2xl animate-modal-enter ${isEn ? 'text-left' : 'text-right'} border`} onClick={e => e.stopPropagation()} style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-color)', borderWidth: '1.5px', borderStyle: 'solid', borderColor: cardBorderColor }}>
+                        <h2 className="text-xl font-bold mb-4 border-b pb-2" style={{ borderColor: cardBorderColor }}>
+                            {isEn ? 'Linked Repeat' : 'التكرار المترابط'}
+                        </h2>
                         <p className="text-sm leading-relaxed mb-6">
-                            هذه الميزة تساعدك على ربط الآيات ببعضها. عند تفعيلها، سيقوم التطبيق بتشغيل الآية السابقة مرة واحدة قبل البدء بتكرار الآية الحالية، مما يرسخ تسلسل الآيات في ذاكرتك.
+                            {isEn 
+                                ? 'This feature helps you link verses together. When enabled, the app will play the previous ayah once before repeating the current ayah, establishing verse sequence in your memory.' 
+                                : 'هذه الميزة تساعدك على ربط الآيات ببعضها. عند تفعيلها، سيقوم التطبيق بتشغيل الآية السابقة مرة واحدة قبل البدء بتكرار الآية الحالية، مما يرسخ تسلسل الآيات في ذاكرتك.'}
                         </p>
-                        <button onClick={() => setShowExplanationModal(false)} className="w-full py-3 rounded-xl font-bold text-white" style={{ backgroundColor: theme.btnBg }}>إغلاق</button>
+                        <button onClick={() => setShowExplanationModal(false)} className="w-full py-3 rounded-xl font-bold text-white" style={{ backgroundColor: theme.btnBg || primaryColor }}>
+                            {isEn ? 'Close' : 'إغلاق'}
+                        </button>
                     </div>
                 </div>
             )}
@@ -684,17 +753,20 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                         <div className="w-16 h-16 bg-emerald-500/20 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
                             <Play size={32} />
                         </div>
-                        <h2 className="text-xl font-bold mb-2">جلسة سابقة متوفرة</h2>
+                        <h2 className="text-xl font-bold mb-2">
+                            {isEn ? 'Previous Session Available' : 'جلسة سابقة متوفرة'}
+                        </h2>
                         <p className="opacity-70 mb-6 text-sm leading-relaxed">
-                            تم العثور على جلسة تحفيظ سابقة عند سورة {SURAH_NAMES_AR[savedSession.currentAyah.s - 1]} الآية {savedSession.currentAyah.a}.
-                            هل تود الاستمرار من حيث توقفت أم البدء من جديد؟
+                            {isEn 
+                                ? `A previous memorization session was found at ${getSurahName(savedSession.currentAyah.s)} Ayah ${savedSession.currentAyah.a}. Would you like to continue from where you left off or start over?`
+                                : `تم العثور على جلسة تحفيظ سابقة عند سورة ${SURAH_NAMES_AR[savedSession.currentAyah.s - 1]} الآية ${savedSession.currentAyah.a}. هل تود الاستمرار من حيث توقفت أم البدء من جديد؟`}
                         </p>
                         <div className="space-y-3">
                             <button 
                                 onClick={resumeSession}
                                 className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow-md active:scale-95 transition-transform"
                             >
-                                الاستمرار في الجلسة
+                                {isEn ? 'Continue Session' : 'الاستمرار في الجلسة'}
                             </button>
                             <button 
                                 onClick={() => {
@@ -706,7 +778,7 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                                 className="w-full py-3 bg-gray-500/10 hover:bg-gray-500/20 rounded-xl font-bold opacity-70 active:scale-95 transition-transform"
                                 style={{ color: 'var(--text-color)' }}
                             >
-                                البدء من جديد
+                                {isEn ? 'Start Over' : 'البدء من جديد'}
                             </button>
                         </div>
                     </div>
@@ -740,8 +812,8 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
             {activePicker && activePicker !== 'reader' && (
                 <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-fadeIn" onClick={() => setActivePicker(null)}>
                     <div className="w-full max-w-[280px] rounded-[2rem] p-4 shadow-2xl animate-modal-enter flex flex-col max-h-[75vh] border" onClick={e => e.stopPropagation()} style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-color)', borderWidth: '1.5px', borderStyle: 'solid', borderColor: cardBorderColor }}>
-                        <div className="flex-1 overflow-y-auto scrollbar-hide space-y-2 p-2" dir="rtl">
-                            {(activePicker === 'fromSurah' || activePicker === 'toSurah') && SURAH_NAMES_AR.map((name, i) => {
+                        <div className={`flex-1 overflow-y-auto scrollbar-hide space-y-2 p-2 ${isEn ? 'text-left' : 'text-right'}`} dir={isEn ? 'ltr' : 'rtl'}>
+                            {(activePicker === 'fromSurah' || activePicker === 'toSurah') && (isEn ? SURAH_NAMES_EN : SURAH_NAMES_AR).map((name, i) => {
                                 const surahNum = i + 1;
                                 const current = activePicker === 'fromSurah' ? fromSurah : toSurah;
                                 return (
@@ -763,11 +835,11 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                                             setSavedSession(null);
                                             setActivePicker(null);
                                         }}
-                                        className={`w-full p-2.5 rounded-xl text-right font-bold transition-all flex items-center justify-between ${current === surahNum ? 'theme-accent-btn text-white' : 'hover:bg-black/5 opacity-70 hover:opacity-100'}`}
+                                        className={`w-full p-2.5 rounded-xl ${isEn ? 'text-left' : 'text-right'} font-bold transition-all flex items-center justify-between ${current === surahNum ? 'theme-accent-btn text-white' : 'hover:bg-black/5 opacity-70 hover:opacity-100'}`}
                                     >
-                                        <div className="flex items-center gap-3">
+                                        <div className={`flex items-center gap-3 ${isEn ? 'flex-row' : 'flex-row-reverse'}`}>
                                             <span className="w-7 h-7 rounded-full flex items-center justify-center text-[9px] opacity-40 border" style={{ borderColor: 'var(--card-border)' }}>{surahNum}</span>
-                                            <span className="text-sm">سورة {name}</span>
+                                            <span className="text-sm">{isEn ? name : `سورة ${name}`}</span>
                                         </div>
                                     </button>
                                 );

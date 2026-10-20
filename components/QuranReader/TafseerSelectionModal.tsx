@@ -1,6 +1,7 @@
 import React, { FC } from 'react';
-import { TAFSEERS } from './constants';
+import { TAFSEERS, getTafseerDisplayName } from './constants';
 import { useTheme } from '../../context/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 const TafseerSelectionModal: FC<{
     isOpen: boolean,
@@ -10,10 +11,11 @@ const TafseerSelectionModal: FC<{
     isLandscape?: boolean
 }> = ({ isOpen, onClose, onSelect, currentTafseerId, isLandscape }) => {
     const { theme } = useTheme();
+    const { language, dir } = useLanguage();
     if (!isOpen) return null;
     return (
         <div className={`fixed inset-0 z-[1200] bg-transparent flex items-center justify-center ${isLandscape ? 'p-2' : 'p-4'} animate-fadeIn`} onClick={onClose}>
-            <div className={`modal-skinned w-full ${isLandscape ? 'max-w-[300px] max-h-[90vh] rounded-xl' : 'max-w-[280px] rounded-2xl max-h-[80vh]'} shadow-2xl flex flex-col animate-modal-enter`} 
+            <div dir={dir} className={`modal-skinned w-full ${isLandscape ? 'max-w-[300px] max-h-[90vh] rounded-xl' : 'max-w-[280px] rounded-2xl max-h-[80vh]'} shadow-2xl flex flex-col animate-modal-enter`} 
                 style={{ backgroundColor: 'var(--qr-modal-bg, #FFF)', color: 'var(--qr-modal-text, #000)' }}
                 onClick={e => e.stopPropagation()}>
                 <div className={`${isLandscape ? 'p-2.5 gap-2' : 'p-5 gap-4'} overflow-y-auto flex-1 flex flex-col`}>
@@ -27,7 +29,7 @@ const TafseerSelectionModal: FC<{
                                     color: isSelected ? 'var(--qr-accent)' : 'var(--qr-card-text)', 
                                     border: `2px solid ${isSelected ? 'var(--qr-accent)' : 'var(--qr-card-border)'}` 
                                 }}>
-                                <span>{t.name}</span>
+                                <span>{getTafseerDisplayName(t.id, language as 'ar' | 'en')}</span>
                                 {isSelected && <i className="fa-solid fa-check text-sm" style={{ color: 'var(--qr-accent)' }}></i>}
                             </button>
                         );

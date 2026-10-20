@@ -26,6 +26,14 @@ import { MediaAttachmentPicker } from '../components/Community/MediaAttachmentPi
 import { processFileForAttachment } from '../components/Community/mediaPickerUtils';
 import { registerBackInterceptor } from '../hooks/useBackButton';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
+import { 
+  formatCountryName, 
+  formatUsername, 
+  formatGroupName, 
+  formatGroupDescription, 
+  formatUserStatusText 
+} from '../components/Community/communityLanguageUtils';
 
 interface GroupChatPageProps {
   groupId: string;
@@ -35,6 +43,8 @@ interface GroupChatPageProps {
 
 const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNavigate }) => {
   const { theme } = useTheme();
+  const { language } = useLanguage();
+  const isEn = language === 'en';
   const isBlackTheme = theme.bgColor === '#000000';
   const primaryColor = isBlackTheme ? '#FFFFFF' : (theme.palette?.[0] || '#10b981');
   const primaryTextColor = isBlackTheme ? '#000000' : (theme.btnText || '#FFFFFF');
@@ -557,7 +567,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
     return name.replace(/[\p{Extended_Pictographic}\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '').trim() || name;
   };
 
-  const groupDisplayName = cleanGroupName(group?.name || 'محادثة جماعية');
+  const groupDisplayName = cleanGroupName(formatGroupName(group, isEn) || (isEn ? 'Group Chat' : 'محادثة جماعية'));
   const groupMembersCount = group?.members?.length || 1;
   const isSystemDefaultGroup = group?.groupId === 'group_default_quran_readers' || group?.groupId === 'group_default_tadabbur';
   const isAdminSession = currentUser.userId === ADMIN_USER_ID;
@@ -626,7 +636,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
   return (
     <div 
       className="h-screen max-h-screen h-[100dvh] w-full flex flex-col overflow-hidden bg-transparent"
-      dir="rtl"
+      dir={isEn ? "ltr" : "rtl"}
       style={{ 
         fontFamily: theme.font,
         color: textColor,
@@ -653,10 +663,10 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
               borderColor: cardBorder,
               color: textColor
             }}
-            title="رجوع إلى تبويب المجتمع"
-            aria-label="رجوع إلى تبويب المجتمع"
+            title={isEn ? "Back to Community" : "رجوع إلى تبويب المجتمع"}
+            aria-label={isEn ? "Back to Community" : "رجوع إلى تبويب المجتمع"}
           >
-            <ArrowRight size={18} />
+            <ArrowRight size={18} className={isEn ? "rotate-180" : ""} />
           </button>
 
           {/* Group Avatar and Name (Click to open info) */}
@@ -682,10 +692,10 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
               <p className="text-[10px] sm:text-[11px] font-medium flex items-center gap-1.5 truncate" style={{ color: textMuted }}>
                 <span className="flex items-center gap-1" style={{ color: primaryColor }}>
                   <Users size={12} />
-                  <span>{groupMembersCount} عضو</span>
+                  <span>{isEn ? `${groupMembersCount} ${groupMembersCount === 1 ? 'member' : 'members'}` : `${groupMembersCount} عضو`}</span>
                 </span>
                 <span>•</span>
-                <span className="truncate">تواصل جماعي مبارك 🌿</span>
+                <span className="truncate">{isEn ? 'Blessed group chat 🌿' : 'تواصل جماعي مبارك 🌿'}</span>
               </p>
             </div>
           </div>
@@ -702,7 +712,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
               borderColor: cardBorder,
               color: primaryColor
             }}
-            title="تفاصيل المجموعة والأعضاء"
+            title={isEn ? "Group Details & Members" : "تفاصيل المجموعة والأعضاء"}
           >
             <Info size={17} />
           </button>
@@ -719,7 +729,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                 borderColor: cardBorder,
                 color: textColor
               }}
-              title="خيارات إضافية"
+              title={isEn ? "More Options" : "خيارات إضافية"}
             >
               <MoreVertical size={17} />
             </button>
@@ -740,7 +750,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                     initial={{ opacity: 0, scale: 0.95, y: -5 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: -5 }}
-                    className="absolute left-0 top-11 w-44 sm:w-48 rounded-2xl border shadow-xl p-1.5 z-50 text-xs font-bold space-y-1"
+                    className={`absolute ${isEn ? 'right-0' : 'left-0'} top-11 w-48 sm:w-52 rounded-2xl border shadow-xl p-1.5 z-50 text-xs font-bold space-y-1`}
                     style={{
                       backgroundColor: cardBg,
                       borderColor: cardBorder
@@ -752,11 +762,11 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                     setShowMenu(false);
                     setShowInfoModal(true);
                   }}
-                  className="w-full flex items-center gap-2 p-2 rounded-xl transition-all hover:bg-slate-500/10 text-right cursor-pointer"
+                  className={`w-full flex items-center gap-2 p-2 rounded-xl transition-all hover:bg-slate-500/10 ${isEn ? 'text-left' : 'text-right'} cursor-pointer`}
                   style={{ color: textColor }}
                 >
                   <Users size={14} style={{ color: primaryColor }} />
-                  <span>معلومات المجموعه</span>
+                  <span>{isEn ? 'Group Information' : 'معلومات المجموعة'}</span>
                 </button>
 
                 <button
@@ -764,13 +774,13 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                   onClick={() => {
                     setShowMenu(false);
                     navigator.clipboard?.writeText(groupId);
-                    showToast('تم نسخ معرّف المجموعة 📋');
+                    showToast(isEn ? 'Group ID copied 📋' : 'تم نسخ معرّف المجموعة 📋');
                   }}
-                  className="w-full flex items-center gap-2 p-2 rounded-xl transition-all hover:bg-slate-500/10 text-right cursor-pointer"
+                  className={`w-full flex items-center gap-2 p-2 rounded-xl transition-all hover:bg-slate-500/10 ${isEn ? 'text-left' : 'text-right'} cursor-pointer`}
                   style={{ color: textColor }}
                 >
                   <Copy size={14} style={{ color: primaryColor }} />
-                  <span>نسخ معرّف المجموعة</span>
+                  <span>{isEn ? 'Copy Group ID' : 'نسخ معرّف المجموعة'}</span>
                 </button>
 
                 {/* تعديل المجموعة: لمنشئ المجموعة فقط */}
@@ -781,11 +791,11 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                       setShowMenu(false);
                       setShowEditGroupModal(true);
                     }}
-                    className="w-full flex items-center gap-2 p-2 rounded-xl transition-all hover:bg-slate-500/10 text-right cursor-pointer"
+                    className={`w-full flex items-center gap-2 p-2 rounded-xl transition-all hover:bg-slate-500/10 ${isEn ? 'text-left' : 'text-right'} cursor-pointer`}
                     style={{ color: textColor }}
                   >
                     <Edit3 size={14} style={{ color: primaryColor }} />
-                    <span>تعديل المجموعه</span>
+                    <span>{isEn ? 'Edit Group' : 'تعديل المجموعة'}</span>
                   </button>
                 )}
 
@@ -797,11 +807,11 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                       setShowMenu(false);
                       setShowAddMembersModal(true);
                     }}
-                    className="w-full flex items-center gap-2 p-2 rounded-xl transition-all hover:bg-slate-500/10 text-right cursor-pointer"
+                    className={`w-full flex items-center gap-2 p-2 rounded-xl transition-all hover:bg-slate-500/10 ${isEn ? 'text-left' : 'text-right'} cursor-pointer`}
                     style={{ color: textColor }}
                   >
                     <UserPlus size={14} style={{ color: primaryColor }} />
-                    <span>اضافة اعضاء</span>
+                    <span>{isEn ? 'Add Members' : 'إضافة أعضاء'}</span>
                   </button>
                 )}
 
@@ -813,10 +823,10 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                       setShowMenu(false);
                       setShowClearConfirm(true);
                     }}
-                    className="w-full flex items-center gap-2 p-2 rounded-xl transition-all hover:bg-slate-500/10 text-amber-500 text-right cursor-pointer"
+                    className={`w-full flex items-center gap-2 p-2 rounded-xl transition-all hover:bg-slate-500/10 text-amber-500 ${isEn ? 'text-left' : 'text-right'} cursor-pointer`}
                   >
                     <Trash2 size={14} />
-                    <span>مسح الرسائل</span>
+                    <span>{isEn ? 'Clear Messages' : 'مسح الرسائل'}</span>
                   </button>
                 )}
 
@@ -828,10 +838,10 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                       setShowMenu(false);
                       setShowDeleteGroupConfirm(true);
                     }}
-                    className="w-full flex items-center gap-2 p-2 rounded-xl transition-all hover:bg-rose-500/15 text-rose-600 dark:text-rose-400 text-right cursor-pointer"
+                    className={`w-full flex items-center gap-2 p-2 rounded-xl transition-all hover:bg-rose-500/15 text-rose-600 dark:text-rose-400 ${isEn ? 'text-left' : 'text-right'} cursor-pointer`}
                   >
                     <Trash2 size={14} />
-                    <span>حذف المجموعه</span>
+                    <span>{isEn ? 'Delete Group' : 'حذف المجموعة'}</span>
                   </button>
                 )}
 
@@ -845,10 +855,10 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                           setShowMenu(false);
                           handleLeaveGroup();
                         }}
-                        className="w-full flex items-center gap-2 p-2 rounded-xl transition-all hover:bg-slate-500/10 text-slate-500 hover:text-amber-500 text-right cursor-pointer"
+                        className={`w-full flex items-center gap-2 p-2 rounded-xl transition-all hover:bg-slate-500/10 text-slate-500 hover:text-amber-500 ${isEn ? 'text-left' : 'text-right'} cursor-pointer`}
                       >
                         <LogOut size={14} />
-                        <span>مغادرة المجموعة</span>
+                        <span>{isEn ? 'Leave Group' : 'مغادرة المجموعة'}</span>
                       </button>
                     )}
 
@@ -859,13 +869,13 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                         onClick={async () => {
                           setShowMenu(false);
                           communityService.hideGroupFromMyPage(groupId);
-                          showToast('تمت إزالة المجموعة من صفحتك');
+                          showToast(isEn ? 'Group removed from your page' : 'تمت إزالة المجموعة من صفحتك');
                           handleBack();
                         }}
-                        className="w-full flex items-center gap-2 p-2 rounded-xl transition-all hover:bg-rose-500/10 text-rose-600 dark:text-rose-400 text-right cursor-pointer"
+                        className={`w-full flex items-center gap-2 p-2 rounded-xl transition-all hover:bg-rose-500/10 text-rose-600 dark:text-rose-400 ${isEn ? 'text-left' : 'text-right'} cursor-pointer`}
                       >
                         <EyeOff size={14} />
-                        <span>إزالة المجموعة من صفحتي</span>
+                        <span>{isEn ? 'Remove Group from My Page' : 'إزالة المجموعة من صفحتي'}</span>
                       </button>
                     )}
                   </>
@@ -886,19 +896,19 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
         >
           <div className="flex items-center gap-2 min-w-0">
             <EyeOff size={15} className="shrink-0" />
-            <span className="truncate">أنت لست عضواً في هذه المجموعة (يتوقف ظهور أي رسائل جديدة لك).</span>
+            <span className="truncate">{isEn ? 'You are not a member of this group (new messages will stop appearing for you).' : 'أنت لست عضواً في هذه المجموعة (يتوقف ظهور أي رسائل جديدة لك).'}</span>
           </div>
           <button
             type="button"
             onClick={() => {
               communityService.hideGroupFromMyPage(groupId);
-              showToast('تمت إزالة المجموعة من صفحتك بنجاح');
+              showToast(isEn ? 'Group removed from your page successfully' : 'تمت إزالة المجموعة من صفحتك بنجاح');
               handleBack();
             }}
             className="px-2.5 py-1 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-900 dark:text-amber-200 text-[11px] font-bold transition-all shrink-0 cursor-pointer flex items-center gap-1 shadow-xs"
           >
             <Trash2 size={12} />
-            <span>إزالة من صفحتي</span>
+            <span>{isEn ? 'Remove from My Page' : 'إزالة من صفحتي'}</span>
           </button>
         </div>
       )}
@@ -915,10 +925,10 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
         >
           <div className="flex items-center justify-center gap-1.5 text-xs font-bold mb-1" style={{ color: primaryColor }}>
             <Sparkles size={14} />
-            <span>مرحباً بكم في {groupDisplayName}</span>
+            <span>{isEn ? `Welcome to ${groupDisplayName}` : `مرحباً بكم في ${groupDisplayName}`}</span>
           </div>
           <p className="text-[11px] leading-relaxed" style={{ color: textMuted }}>
-            {group?.description || 'مساحة إيمانية مباركة لتدارس كتاب الله وتبادل الفوائد والأذكار.'}
+            {formatGroupDescription(group, isEn) || (isEn ? 'A blessed space for studying the Book of Allah and sharing benefits and adhkar.' : 'مساحة إيمانية مباركة لتدارس كتاب الله وتبادل الفوائد والأذكار.')}
           </p>
         </div>
 
@@ -930,10 +940,14 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
           >
             <div className="flex items-center justify-center gap-2 font-bold text-sm" style={{ color: primaryColor }}>
               <Sparkles size={16} />
-              <span>دعوة للانضمام إلى هذه المحادثة الجماعية</span>
+              <span>{isEn ? 'Invitation to join this group chat' : 'دعوة للانضمام إلى هذه المحادثة الجماعية'}</span>
             </div>
             <p className="text-xs" style={{ color: textMuted }}>
-              تمت دعوتك لهذه المجموعة بواسطة <span className="font-bold" style={{ color: textColor }}>{group?.creatorName || 'أحد الأعضاء'}</span>. هل ترغب في الانضمام والتواصل مع الأعضاء؟
+              {isEn ? (
+                <>You were invited to this group by <span className="font-bold" style={{ color: textColor }}>{group?.creatorName || 'a member'}</span>. Would you like to join and connect with members?</>
+              ) : (
+                <>تمت دعوتك لهذه المجموعة بواسطة <span className="font-bold" style={{ color: textColor }}>{group?.creatorName || 'أحد الأعضاء'}</span>. هل ترغب في الانضمام والتواصل مع الأعضاء؟</>
+              )}
             </p>
             <div className="flex items-center gap-2 pt-1">
               <button
@@ -941,26 +955,26 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                 onClick={async () => {
                   await communityService.acceptGroupInvitation(groupId);
                   loadGroupData();
-                  showToast('تم الانضمام إلى المجموعة بنجاح 🌿');
+                  showToast(isEn ? 'Joined group successfully 🌿' : 'تم الانضمام إلى المجموعة بنجاح 🌿');
                 }}
                 className="flex-1 py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm active:scale-95 cursor-pointer"
                 style={{ backgroundColor: primaryColor, color: primaryTextColor }}
               >
                 <Check size={14} />
-                <span>قبول والانضمام للمحادثة</span>
+                <span>{isEn ? 'Accept and Join Chat' : 'قبول والانضمام للمحادثة'}</span>
               </button>
               <button
                 type="button"
                 onClick={async () => {
                   await communityService.declineGroupInvitation(groupId);
-                  showToast('تم رفض الدعوة');
+                  showToast(isEn ? 'Invitation declined' : 'تم رفض الدعوة');
                   handleBack();
                 }}
                 className="py-2 px-3.5 rounded-xl text-xs font-bold border flex items-center justify-center gap-1.5 active:scale-95 text-rose-500 hover:bg-rose-500/10 cursor-pointer"
                 style={{ backgroundColor: secondaryBg, borderColor: cardBorder }}
               >
                 <X size={14} />
-                <span>رفض</span>
+                <span>{isEn ? 'Decline' : 'رفض'}</span>
               </button>
             </div>
           </div>
@@ -968,13 +982,13 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
 
         {messages.length === 0 ? (
           <div className="text-center py-10" style={{ color: textMuted }}>
-            <p className="text-xs font-bold">لا توجد رسائل سابقة في هذه الحلقة المباركة</p>
-            <p className="text-[11px] mt-1">كن أول من يبدأ بالسلام أو بمشاركة آية كريمة 🌸</p>
+            <p className="text-xs font-bold">{isEn ? 'No previous messages in this blessed circle' : 'لا توجد رسائل سابقة في هذه الحلقة المباركة'}</p>
+            <p className="text-[11px] mt-1">{isEn ? 'Be the first to share peace or a holy verse 🌸' : 'كن أول من يبدأ بالسلام أو بمشاركة آية كريمة 🌸'}</p>
           </div>
         ) : (
           messages.map((msg) => {
             const isMe = msg.senderId === currentUser.userId;
-            const timeStr = msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : '';
+            const timeStr = msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString(isEn ? 'en-US' : 'ar-EG', { hour: '2-digit', minute: '2-digit' }) : '';
 
             return (
               <div
@@ -992,7 +1006,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                       borderColor: `${primaryColor}40`,
                       color: primaryColor
                     }}
-                    title={`عرض بيانات ${msg.senderName} والتحكم بالرسالة`}
+                    title={isEn ? `View ${formatUsername({ userId: msg.senderId, username: msg.senderName }, isEn)} profile` : `عرض بيانات ${msg.senderName} والتحكم بالرسالة`}
                   >
                     {msg.senderAvatarUrl ? (
                       <img src={msg.senderAvatarUrl} alt={msg.senderName} className="w-full h-full object-cover" />
@@ -1009,13 +1023,15 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                     <button
                       type="button"
                       onClick={() => handleOpenMemberProfile(msg.senderId, msg.senderName, msg.senderAvatarUrl, msg.senderCountry, msg)}
-                      className="flex items-center gap-1.5 mb-1 px-1 text-[11px] font-bold cursor-pointer hover:opacity-80 transition-opacity text-right group"
-                      title={`عرض بيانات ${msg.senderName} والتحكم بالرسالة`}
+                      className={`flex items-center gap-1.5 mb-1 px-1 text-[11px] font-bold cursor-pointer hover:opacity-80 transition-opacity ${isEn ? 'text-left' : 'text-right'} group`}
+                      title={isEn ? `View ${formatUsername({ userId: msg.senderId, username: msg.senderName }, isEn)} profile` : `عرض بيانات ${msg.senderName} والتحكم بالرسالة`}
                     >
-                      <span style={{ color: primaryColor }} className="group-hover:underline">{msg.senderName}</span>
+                      <span style={{ color: primaryColor }} className="group-hover:underline">
+                        {formatUsername({ userId: msg.senderId, username: msg.senderName }, isEn)}
+                      </span>
                       {msg.senderCountry && (
                         <span className="text-[10px] px-1.5 py-0.2 rounded-md" style={{ backgroundColor: secondaryBg, color: textMuted }}>
-                          {msg.senderCountry}
+                          {formatCountryName(msg.senderCountry, isEn)}
                         </span>
                       )}
                     </button>
@@ -1042,7 +1058,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                               handleDeleteMessage(msg.messageId);
                             }}
                             className="p-0.5 rounded text-rose-400 hover:text-rose-600 transition-colors cursor-pointer"
-                            title={isMe ? "حذف رسالتي" : "حذف الرسالة (صلاحية منشئ المجموعة)"}
+                            title={isMe ? (isEn ? "Delete my message" : "حذف رسالتي") : (isEn ? "Delete message (Group creator privilege)" : "حذف الرسالة (صلاحية منشئ المجموعة)")}
                           >
                             <Trash2 size={11} />
                           </button>
@@ -1070,7 +1086,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                               handleDeleteMessage(msg.messageId);
                             }}
                             className="p-0.5 rounded text-rose-400 hover:text-rose-600 transition-colors cursor-pointer"
-                            title={isMe ? "حذف رسالتي" : "حذف التسجيل (صلاحية منشئ المجموعة)"}
+                            title={isMe ? (isEn ? "Delete my recording" : "حذف رسالتي") : (isEn ? "Delete recording (Group creator privilege)" : "حذف التسجيل (صلاحية منشئ المجموعة)")}
                           >
                             <Trash2 size={11} />
                           </button>
@@ -1095,15 +1111,15 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                       onClick={() => handleOpenMemberProfile(msg.senderId, msg.senderName, msg.senderAvatarUrl, msg.senderCountry, msg)}
                       className={`p-3 rounded-2xl text-xs sm:text-sm leading-relaxed shadow-xs relative group cursor-pointer transition-all hover:opacity-95 ${
                         isMe 
-                          ? 'rounded-bl-none text-white' 
-                          : 'rounded-br-none border'
+                          ? (isEn ? 'rounded-br-none text-white' : 'rounded-bl-none text-white')
+                          : (isEn ? 'rounded-bl-none border' : 'rounded-br-none border')
                       }`}
                       style={{
                         backgroundColor: isMe ? primaryColor : cardBg,
                         color: isMe ? primaryTextColor : textColor,
                         borderColor: isMe ? 'transparent' : cardBorder
                       }}
-                      title="اضغط لعرض بيانات المرسل"
+                      title={isEn ? "Click to view sender profile" : "اضغط لعرض بيانات المرسل"}
                     >
                       <p className="whitespace-pre-wrap break-words">{msg.text}</p>
                       <div className="flex items-center justify-end gap-1.5 mt-1.5 text-[9px] opacity-75">
@@ -1116,7 +1132,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                               handleDeleteMessage(msg.messageId);
                             }}
                             className="opacity-70 sm:opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded text-rose-400 hover:text-rose-600 cursor-pointer"
-                            title={isMe ? "حذف رسالتي" : "حذف الرسالة (صلاحية منشئ المجموعة)"}
+                            title={isMe ? (isEn ? "Delete my message" : "حذف رسالتي") : (isEn ? "Delete message (Group creator privilege)" : "حذف الرسالة (صلاحية منشئ المجموعة)")}
                           >
                             <Trash2 size={11} />
                           </button>
@@ -1134,7 +1150,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                           type="button"
                           onClick={() => handleDeleteMessage(msg.messageId)}
                           className="p-0.5 rounded hover:text-rose-500 transition-colors cursor-pointer"
-                          title={isMe ? "حذف رسالتي" : "حذف المرفق (صلاحية منشئ المجموعة)"}
+                          title={isMe ? (isEn ? "Delete my attachment" : "حذف رسالتي") : (isEn ? "Delete attachment (Group creator privilege)" : "حذف المرفق (صلاحية منشئ المجموعة)")}
                         >
                           <Trash2 size={11} />
                         </button>
@@ -1161,7 +1177,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
           >
             <div className="flex items-center gap-2 text-rose-500 font-bold text-xs animate-pulse">
               <div className="w-3 h-3 rounded-full bg-rose-500 animate-ping" />
-              <span>جارٍ التسجيل الصوتي... {formatSecs(recordingDuration)}</span>
+              <span>{isEn ? `Recording voice message... ${formatSecs(recordingDuration)}` : `جارٍ التسجيل الصوتي... ${formatSecs(recordingDuration)}`}</span>
             </div>
 
             <div className="flex items-center gap-2">
@@ -1171,7 +1187,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                 className="px-3 py-1.5 rounded-xl border text-xs font-bold transition-all text-rose-500"
                 style={{ backgroundColor: secondaryBg, borderColor: cardBorder }}
               >
-                إلغاء
+                {isEn ? 'Cancel' : 'إلغاء'}
               </button>
               <button
                 type="button"
@@ -1180,7 +1196,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                 style={{ backgroundColor: primaryColor }}
               >
                 <Send size={12} />
-                <span>إرسال</span>
+                <span>{isEn ? 'Send' : 'إرسال'}</span>
               </button>
             </div>
           </motion.div>
@@ -1194,7 +1210,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
           style={{ backgroundColor: cardBg, borderColor: cardBorder }}
         >
           <span className="text-xs font-medium" style={{ color: textMuted }}>
-            يرجى قبول دعوة الانضمام من البطاقة أعلاه للمشاركة في المحادثة
+            {isEn ? 'Please accept the group invitation above to participate in the chat' : 'يرجى قبول دعوة الانضمام من البطاقة أعلاه للمشاركة في المحادثة'}
           </span>
         </div>
       ) : hasLeftOrRemoved ? (
@@ -1204,19 +1220,19 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
         >
           <div className="flex items-center gap-2 text-xs font-bold text-amber-700 dark:text-amber-400">
             <EyeOff size={16} />
-            <span>لقد غادرت هذه المجموعة أو تمت إزالتك منها. يتوقف استلام أي رسائل جديدة.</span>
+            <span>{isEn ? 'You have left or been removed from this group. New messages will stop being received.' : 'لقد غادرت هذه المجموعة أو تمت إزالتك منها. يتوقف استلام أي رسائل جديدة.'}</span>
           </div>
           <button
             type="button"
             onClick={() => {
               communityService.hideGroupFromMyPage(groupId);
-              showToast('تمت إزالة المجموعة من صفحتك بنجاح');
+              showToast(isEn ? 'Group removed from your page successfully' : 'تمت إزالة المجموعة من صفحتك بنجاح');
               handleBack();
             }}
             className="py-2 px-3 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white flex items-center gap-1.5 shadow-sm active:scale-95 cursor-pointer"
           >
             <Trash2 size={13} />
-            <span>إزالة المجموعة من صفحتي</span>
+            <span>{isEn ? 'Remove Group from My Page' : 'إزالة المجموعة من صفحتي'}</span>
           </button>
         </div>
       ) : !isRecording && (
@@ -1254,10 +1270,10 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                   )}
                   <div className="min-w-0">
                     <p className="text-xs font-bold truncate" style={{ color: textColor }}>
-                      {stagedAttachment.fileName || (stagedAttachment.type === 'image' ? 'صورة مختارة' : stagedAttachment.type === 'video' ? 'مقطع مرئي' : 'ملف')}
+                      {stagedAttachment.fileName || (stagedAttachment.type === 'image' ? (isEn ? 'Selected Image' : 'صورة مختارة') : stagedAttachment.type === 'video' ? (isEn ? 'Video' : 'مقطع مرئي') : (isEn ? 'File' : 'ملف'))}
                     </p>
                     <p className="text-[10px]" style={{ color: textMuted }}>
-                      جاهز للإرسال والاسترداد • {formatFileSize(stagedAttachment.fileSize)}
+                      {isEn ? 'Ready to send' : 'جاهز للإرسال والاسترداد'} • {formatFileSize(stagedAttachment.fileSize)}
                     </p>
                   </div>
                 </div>
@@ -1265,7 +1281,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                   type="button"
                   onClick={() => setStagedAttachment(null)}
                   className="p-1.5 rounded-xl hover:bg-rose-500/10 text-rose-500 transition-colors cursor-pointer"
-                  title="إلغاء المرفق"
+                  title={isEn ? "Cancel attachment" : "إلغاء المرفق"}
                 >
                   <X size={16} />
                 </button>
@@ -1280,13 +1296,13 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
               <button
                 type="button"
                 onClick={() => setShowVerseModal(true)}
-                className="w-7 h-8 sm:w-8 sm:h-8.5 rounded-r-xl rounded-l-none flex items-center justify-center border transition-all active:scale-95 flex-shrink-0 cursor-pointer p-0"
+                className={`w-7 h-8 sm:w-8 sm:h-8.5 ${isEn ? 'rounded-l-xl rounded-r-none' : 'rounded-r-xl rounded-l-none'} flex items-center justify-center border transition-all active:scale-95 flex-shrink-0 cursor-pointer p-0`}
                 style={{
                   backgroundColor: secondaryBg,
                   borderColor: cardBorder,
                   color: '#f59e0b'
                 }}
-                title="مشاركة آية كريمة في المجموعة"
+                title={isEn ? "Share Quran verse in the group" : "مشاركة آية كريمة في المجموعة"}
               >
                 <BookOpen size={16} />
               </button>
@@ -1301,7 +1317,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                   borderColor: cardBorder,
                   color: primaryColor
                 }}
-                title="إرفاق واسترداد ملف أو صورة أو فيديو"
+                title={isEn ? "Attach file, photo or video" : "إرفاق واسترداد ملف أو صورة أو فيديو"}
               >
                 <Paperclip size={16} />
               </button>
@@ -1310,13 +1326,13 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
               <button
                 type="button"
                 onClick={() => setShowEmojiPicker(prev => !prev)}
-                className="w-7 h-8 sm:w-8 sm:h-8.5 rounded-l-xl rounded-r-none flex items-center justify-center border transition-all active:scale-95 flex-shrink-0 cursor-pointer p-0"
+                className={`w-7 h-8 sm:w-8 sm:h-8.5 ${isEn ? 'rounded-r-xl rounded-l-none' : 'rounded-l-xl rounded-r-none'} flex items-center justify-center border transition-all active:scale-95 flex-shrink-0 cursor-pointer p-0`}
                 style={{
                   backgroundColor: secondaryBg,
                   borderColor: cardBorder,
                   color: primaryColor
                 }}
-                title="إدراج أذكار وتعبيرات"
+                title={isEn ? "Insert adhkar and emojis" : "إدراج أذكار وتعبيرات"}
               >
                 <Smile size={16} />
               </button>
@@ -1334,7 +1350,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                     handleSendMessage();
                   }
                 }}
-                placeholder={stagedAttachment ? "أضف تعليقاً مع المرفق (اختياري)..." : "اكتب رسالتك للمجموعة..."}
+                placeholder={stagedAttachment ? (isEn ? "Add a caption (optional)..." : "أضف تعليقاً مع المرفق (اختياري)...") : (isEn ? "Type your message to the group..." : "اكتب رسالتك للمجموعة...")}
                 className="w-full px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl border text-xs sm:text-sm font-medium focus:outline-none transition-all shadow-inner min-w-0"
                 style={{
                   backgroundColor: secondaryBg,
@@ -1354,9 +1370,9 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                   backgroundColor: primaryColor,
                   color: primaryTextColor
                 }}
-                title="إرسال"
+                title={isEn ? "Send" : "إرسال"}
               >
-                <Send size={16} />
+                <Send size={16} className={isEn ? "" : "rotate-180"} />
               </button>
             ) : (
               <button
@@ -1368,7 +1384,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                   borderColor: cardBorder,
                   color: primaryColor
                 }}
-                title="تسجيل رسالة صوتية"
+                title={isEn ? "Record voice message" : "تسجيل رسالة صوتية"}
               >
                 <Mic size={16} />
               </button>
@@ -1402,7 +1418,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
         {showInfoModal && (
           <div 
             className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
-            dir="rtl"
+            dir={isEn ? "ltr" : "rtl"}
             style={{ fontFamily: theme.font }}
           >
             <motion.div
@@ -1427,13 +1443,13 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                         setShowEditGroupModal(true);
                       }
                     }}
-                    title={isCreatorOrAdmin ? "اضغط لتعديل صورة واسم المجموعة" : undefined}
+                    title={isCreatorOrAdmin ? (isEn ? "Click to edit group photo and name" : "اضغط لتعديل صورة واسم المجموعة") : undefined}
                   >
                     {renderGroupAvatar(20)}
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="font-bold text-sm sm:text-base truncate">{groupDisplayName}</h3>
-                    <p className="text-[11px]" style={{ color: textMuted }}>معلومات المجموعة</p>
+                    <p className="text-[11px]" style={{ color: textMuted }}>{isEn ? 'Group Information' : 'معلومات المجموعة'}</p>
                   </div>
                 </div>
                 <button
@@ -1448,16 +1464,16 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
 
               {/* Description */}
               <div className="p-3.5 rounded-2xl border" style={{ backgroundColor: secondaryBg, borderColor: cardBorder }}>
-                <h4 className="text-xs font-bold mb-1" style={{ color: primaryColor }}>وصف المجموعة</h4>
+                <h4 className="text-xs font-bold mb-1" style={{ color: primaryColor }}>{isEn ? 'Group Description' : 'وصف المجموعة'}</h4>
                 <p className="text-xs leading-relaxed" style={{ color: textColor }}>
-                  {group?.description || 'مجموعة مباركة لتدارس القرآن الكريم والتواصل بين القراء.'}
+                  {formatGroupDescription(group, isEn) || (isEn ? 'A blessed group for studying the Noble Quran and connecting with readers.' : 'مجموعة مباركة لتدارس القرآن الكريم والتواصل بين القراء.')}
                 </p>
               </div>
 
               {/* Creator info */}
               <div className="flex items-center justify-between text-xs px-1" style={{ color: textMuted }}>
-                <span>المنشئ: {group?.creatorName || 'الإدارة'}</span>
-                <span>تاريخ الإنشاء: {group?.createdAt ? new Date(group.createdAt).toLocaleDateString('ar-EG') : 'حديثاً'}</span>
+                <span>{isEn ? `Creator: ${group?.creatorName === 'المشرف العام' || group?.creatorName === 'الإدارة' ? 'General Admin' : (group?.creatorName || 'Admin')}` : `المنشئ: ${group?.creatorName || 'المشرف العام'}`}</span>
+                <span>{isEn ? `Creation Date: ${group?.createdAt ? new Date(group.createdAt).toLocaleDateString('en-US') : 'Recently'}` : `تاريخ الإنشاء: ${group?.createdAt ? new Date(group.createdAt).toLocaleDateString('ar-EG') : 'حديثاً'}`}</span>
               </div>
 
               {/* Members List */}
@@ -1465,7 +1481,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                 <div className="flex items-center justify-between mb-2">
                   <h4 className="text-xs font-bold flex items-center gap-1.5" style={{ color: primaryColor }}>
                     <Users size={14} />
-                    <span>أعضاء المجموعة ({groupMembersCount})</span>
+                    <span>{isEn ? `Group Members (${groupMembersCount})` : `أعضاء المجموعة (${groupMembersCount})`}</span>
                   </h4>
                   {/* إضافة أعضاء: لمنشئ المجموعة فقط */}
                   {isCreatorOrAdmin && !isSystemDefaultGroup && (
@@ -1476,7 +1492,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                       style={{ backgroundColor: `${primaryColor}20`, color: primaryColor }}
                     >
                       <UserPlus size={13} />
-                      <span>دعوة أعضاء</span>
+                      <span>{isEn ? 'Invite Members' : 'دعوة أعضاء'}</span>
                     </button>
                   )}
                 </div>
@@ -1489,7 +1505,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                   <div 
                     onClick={() => handleOpenMemberProfile(currentUser.userId, currentUser.username, currentUser.avatarUrl, currentUser.country)}
                     className="flex items-center justify-between p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs cursor-pointer hover:bg-emerald-500/15 transition-all"
-                    title="عرض حسابك الشخصي"
+                    title={isEn ? "View your profile" : "عرض حسابك الشخصي"}
                   >
                     <div className="flex items-center gap-2 min-w-0">
                       <div className="w-7 h-7 rounded-full bg-emerald-500 text-white font-bold flex items-center justify-center text-xs shrink-0 overflow-hidden">
@@ -1500,15 +1516,15 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                         )}
                       </div>
                       <div className="min-w-0 flex items-center gap-1.5 truncate">
-                        <span className="font-bold truncate hover:underline" style={{ color: textColor }}>{currentUser.username} (أنت)</span>
+                        <span className="font-bold truncate hover:underline" style={{ color: textColor }}>{currentUser.username} {isEn ? '(You)' : '(أنت)'}</span>
                         {group?.createdBy === currentUser.userId && (
                           <span className="text-[10px] px-1.5 py-0.2 rounded-md bg-amber-500/20 text-amber-600 dark:text-amber-400 font-bold shrink-0">
-                            منشئ 👑
+                            {isEn ? 'Creator 👑' : 'منشئ 👑'}
                           </span>
                         )}
                       </div>
                     </div>
-                    <span className="text-[10px] text-emerald-600 font-bold shrink-0">عضو متصل</span>
+                    <span className="text-[10px] text-emerald-600 font-bold shrink-0">{isEn ? 'Online Member' : 'عضو متصل'}</span>
                   </div>
 
                   {/* Other members */}
@@ -1522,7 +1538,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                           onClick={() => handleOpenMemberProfile(u.userId, u.username, u.avatarUrl, u.country)}
                           className="flex items-center justify-between p-2 rounded-xl border text-xs gap-2 cursor-pointer transition-all hover:bg-slate-500/10 active:scale-[0.99]" 
                           style={{ borderColor: cardBorder }}
-                          title={`عرض بيانات ${u.username}`}
+                          title={isEn ? `View profile of ${formatUsername(u, isEn)}` : `عرض بيانات ${u.username}`}
                         >
                           <div className="flex items-center gap-2 min-w-0 flex-1">
                             <div 
@@ -1537,20 +1553,20 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                             </div>
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-1.5 truncate">
-                                <span className="font-bold truncate hover:underline" style={{ color: textColor }}>{u.username}</span>
+                                <span className="font-bold truncate hover:underline" style={{ color: textColor }}>{formatUsername(u, isEn)}</span>
                                 {isMemberCreator && (
                                   <span className="text-[10px] px-1.5 py-0.2 rounded-md bg-amber-500/20 text-amber-600 dark:text-amber-400 font-bold shrink-0">
-                                    المنشئ 👑
+                                    {isEn ? 'Creator 👑' : 'المنشئ 👑'}
                                   </span>
                                 )}
                               </div>
-                              <span className="text-[10px] block truncate" style={{ color: textMuted }}>({u.country || '🌍'})</span>
+                              <span className="text-[10px] block truncate" style={{ color: textMuted }}>({formatCountryName(u.country, isEn)})</span>
                             </div>
                           </div>
 
                           <div className="flex items-center gap-2 shrink-0">
                             <span className="text-[10px]" style={{ color: communityService.isUserOnline(u) ? '#10b981' : textMuted }}>
-                              {communityService.isUserOnline(u) ? 'متصل الآن' : 'عضو'}
+                              {communityService.isUserOnline(u) ? (isEn ? 'Online' : 'متصل الآن') : (isEn ? 'Member' : 'عضو')}
                             </span>
                             {/* Remove member button for Creator */}
                             {isCreator && !isMemberCreator && (
@@ -1561,10 +1577,10 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                                   setMemberToRemove({ userId: u.userId, username: u.username });
                                 }}
                                 className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-500/15 transition-all cursor-pointer flex items-center gap-1 text-[11px] font-bold"
-                                title={`إزالة ${u.username} من المجموعة`}
+                                title={isEn ? `Remove ${u.username} from group` : `إزالة ${u.username} من المجموعة`}
                               >
                                 <UserMinus size={14} />
-                                <span className="hidden sm:inline">إزالة</span>
+                                <span className="hidden sm:inline">{isEn ? 'Remove' : 'إزالة'}</span>
                               </button>
                             )}
                           </div>
@@ -1574,7 +1590,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
 
                   {currentMembersList.filter(u => u.userId !== currentUser.userId).length === 0 && (
                     <p className="text-center py-3 text-xs" style={{ color: textMuted }}>
-                      لا يوجد أعضاء آخرين بعد. يمكنك دعوة أو إضافة مستخدمين للمجموعة!
+                      {isEn ? 'No other members yet. You can invite or add members to the group!' : 'لا يوجد أعضاء آخرين بعد. يمكنك دعوة أو إضافة مستخدمين للمجموعة!'}
                     </p>
                   )}
                 </div>
@@ -1582,18 +1598,18 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
 
               {/* Creator Zone in Info Modal */}
               {canDeleteGroup && (
-                <div className="p-3.5 rounded-2xl border border-rose-500/30 bg-rose-500/10 space-y-1.5 text-right">
+                <div className={`p-3.5 rounded-2xl border border-rose-500/30 bg-rose-500/10 space-y-1.5 ${isEn ? 'text-left' : 'text-right'}`}>
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-rose-600 dark:text-rose-400 flex items-center gap-1.5">
                       <Shield size={14} />
-                      <span>إدارة المجموعة (خاص بالمنشئ)</span>
+                      <span>{isEn ? 'Group Management (Creator)' : 'إدارة المجموعة (خاص بالمنشئ)'}</span>
                     </span>
                     <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-rose-500/20 text-rose-600 dark:text-rose-400">
-                      أنت المنشئ 👑
+                      {isEn ? 'You are Creator 👑' : 'أنت المنشئ 👑'}
                     </span>
                   </div>
                   <p className="text-[11px] leading-relaxed" style={{ color: textMuted }}>
-                    بصفتك منشئ هذه المجموعة، تتوفر خيارات تعديل المجموعة وحذفها ودعوة الأعضاء من خلال قائمة الخيارات (الثلاث نقاط).
+                    {isEn ? 'As the creator of this group, you can edit, delete, and invite members through the 3-dots options menu.' : 'بصفتك منشئ هذه المجموعة، تتوفر خيارات تعديل المجموعة وحذفها ودعوة الأعضاء من خلال قائمة الخيارات (الثلاث نقاط).'}
                   </p>
                 </div>
               )}
@@ -1606,7 +1622,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                   className="w-full py-2.5 rounded-2xl text-xs font-bold shadow-sm transition-all cursor-pointer"
                   style={{ backgroundColor: primaryColor, color: primaryTextColor }}
                 >
-                  إغلاق
+                  {isEn ? 'Close' : 'إغلاق'}
                 </button>
               </div>
             </motion.div>
@@ -1883,7 +1899,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
       {/* Member Profile & Actions Modal */}
       <AnimatePresence>
         {selectedMember && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" dir="rtl" style={{ fontFamily: theme.font }}>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" dir={isEn ? "ltr" : "rtl"} style={{ fontFamily: theme.font }}>
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -1900,7 +1916,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                 <div className="flex items-center gap-1.5">
                   <User size={16} style={{ color: primaryColor }} />
                   <span className="text-xs font-bold" style={{ color: textColor }}>
-                    بطاقة عضو المجموعة
+                    {isEn ? 'Group Member Card' : 'بطاقة عضو المجموعة'}
                   </span>
                 </div>
                 <button
@@ -1932,10 +1948,10 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                   </div>
                   {/* Online indicator */}
                   <div 
-                    className={`absolute -bottom-1 -left-1 w-4 h-4 rounded-full border-2 border-white dark:border-slate-900 ${
+                    className={`absolute -bottom-1 ${isEn ? '-right-1' : '-left-1'} w-4 h-4 rounded-full border-2 border-white dark:border-slate-900 ${
                       communityService.isUserOnline(selectedMember) ? 'bg-emerald-500' : 'bg-slate-400'
                     }`}
-                    title={communityService.isUserOnline(selectedMember) ? 'متصل الآن' : 'غير متصل'}
+                    title={communityService.isUserOnline(selectedMember) ? (isEn ? 'Online Now' : 'متصل الآن') : (isEn ? 'Offline' : 'غير متصل')}
                   />
                 </div>
 
@@ -1946,11 +1962,11 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                 <div className="flex items-center gap-1.5 mt-1.5 flex-wrap justify-center">
                   {selectedMember.userId === group?.createdBy ? (
                     <span className="text-[10px] px-2.5 py-0.5 rounded-full font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
-                      منشئ المجموعة 👑
+                      {isEn ? 'Group Creator 👑' : 'منشئ المجموعة 👑'}
                     </span>
                   ) : (
                     <span className="text-[10px] px-2.5 py-0.5 rounded-full font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
-                      عضو في المجموعة 🌿
+                      {isEn ? 'Group Member 🌿' : 'عضو في المجموعة 🌿'}
                     </span>
                   )}
 
@@ -1959,7 +1975,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                       ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
                       : 'bg-slate-500/10 text-slate-500 border-slate-500/30'
                   }`}>
-                    {communityService.isUserOnline(selectedMember) ? 'متصل الآن 🟢' : 'غير متصل ⚪'}
+                    {communityService.isUserOnline(selectedMember) ? (isEn ? 'Online Now 🟢' : 'متصل الآن 🟢') : (isEn ? 'Offline ⚪' : 'غير متصل ⚪')}
                   </span>
                 </div>
               </div>
@@ -1969,23 +1985,23 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                 <div className="flex items-center justify-between">
                   <span className="flex items-center gap-1.5 font-medium" style={{ color: textMuted }}>
                     <MapPin size={13} />
-                    <span>الدولة / الإقامة:</span>
+                    <span>{isEn ? 'Country / Residence:' : 'الدولة / الإقامة:'}</span>
                   </span>
                   <span className="font-bold" style={{ color: textColor }}>
-                    {selectedMember.country || 'غير محدد 🌍'}
+                    {formatCountryName(selectedMember.country, isEn) || (isEn ? 'Not specified 🌍' : 'غير محدد 🌍')}
                   </span>
                 </div>
               </div>
 
               {/* Message preview & Delete button if a message was clicked */}
               {selectedMessageForMemberModal && (
-                <div className="space-y-2 p-3 rounded-2xl border text-xs text-right" style={{ backgroundColor: secondaryBg, borderColor: cardBorder }} dir="rtl">
+                <div className={`space-y-2 p-3 rounded-2xl border text-xs ${isEn ? 'text-left' : 'text-right'}`} style={{ backgroundColor: secondaryBg, borderColor: cardBorder }} dir={isEn ? 'ltr' : 'rtl'}>
                   <div className="flex items-center justify-between text-[11px]" style={{ color: textMuted }}>
-                    <span>محتوى الرسالة:</span>
-                    <span className="font-mono">{new Date(selectedMessageForMemberModal.createdAt).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}</span>
+                    <span>{isEn ? 'Message Content:' : 'محتوى الرسالة:'}</span>
+                    <span className="font-mono">{new Date(selectedMessageForMemberModal.createdAt).toLocaleTimeString(isEn ? 'en-US' : 'ar-EG', { hour: '2-digit', minute: '2-digit' })}</span>
                   </div>
                   <p className="line-clamp-3 leading-relaxed font-medium" style={{ color: textColor }}>
-                    {selectedMessageForMemberModal.text || (selectedMessageForMemberModal.verseData ? '📖 آية قرآنية' : selectedMessageForMemberModal.audioUrl ? '🎤 تسجيل صوتي' : '📎 مرفق')}
+                    {selectedMessageForMemberModal.text || (selectedMessageForMemberModal.verseData ? (isEn ? '📖 Quranic Verse' : '📖 آية قرآنية') : selectedMessageForMemberModal.audioUrl ? (isEn ? '🎤 Voice Recording' : '🎤 تسجيل صوتي') : (isEn ? '📎 Attachment' : '📎 مرفق'))}
                   </p>
 
                   {(selectedMessageForMemberModal.senderId === currentUser.userId || isCreator) && (
@@ -2000,7 +2016,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                       className="w-full mt-1.5 py-2.5 px-3 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-sm transition-all"
                     >
                       <Trash2 size={15} />
-                      <span>{selectedMessageForMemberModal.senderId === currentUser.userId ? 'حذف رسالتي من المجموعة' : 'حذف هذه الرسالة من المجموعة (صلاحية المنشئ)'}</span>
+                      <span>{selectedMessageForMemberModal.senderId === currentUser.userId ? (isEn ? 'Delete my message from group' : 'حذف رسالتي من المجموعة') : (isEn ? 'Delete message (Creator privilege)' : 'حذف هذه الرسالة من المجموعة (صلاحية المنشئ)')}</span>
                     </button>
                   )}
                 </div>
@@ -2008,8 +2024,8 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
 
               {/* Admin Actions if in admin session */}
               {currentUser.userId === ADMIN_USER_ID && selectedMember.userId !== currentUser.userId && (
-                <div className="space-y-1.5 pt-1 border-t text-right" style={{ borderColor: cardBorder }} dir="rtl">
-                  <div className="text-[10px] font-bold px-1" style={{ color: textMuted }}>إجراءات الإدارة:</div>
+                <div className={`space-y-1.5 pt-1 border-t ${isEn ? 'text-left' : 'text-right'}`} style={{ borderColor: cardBorder }} dir={isEn ? 'ltr' : 'rtl'}>
+                  <div className="text-[10px] font-bold px-1" style={{ color: textMuted }}>{isEn ? 'Admin Actions:' : 'إجراءات الإدارة:'}</div>
                   <div className="flex gap-2">
                     {!isCreator && (
                       <button
@@ -2023,7 +2039,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                         className="flex-1 py-2 px-2 bg-rose-50 dark:bg-rose-950/40 border border-rose-500/20 text-rose-600 dark:text-rose-400 hover:bg-rose-100 rounded-xl font-bold text-xs flex items-center justify-center gap-1 cursor-pointer transition-all"
                       >
                         <UserMinus size={13} />
-                        <span>طرد من المجموعة</span>
+                        <span>{isEn ? 'Kick from group' : 'طرد من المجموعة'}</span>
                       </button>
                     )}
                     <button
@@ -2036,7 +2052,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                       className="flex-1 py-2 px-2 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-500/20 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 rounded-xl font-bold text-xs flex items-center justify-center gap-1 cursor-pointer transition-all"
                     >
                       <Mail size={13} />
-                      <span>مراسلة بالدعم</span>
+                      <span>{isEn ? 'Direct message' : 'مراسلة بالدعم'}</span>
                     </button>
                   </div>
                 </div>
@@ -2045,7 +2061,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
               {/* Action Buttons: Add Friend + Start Chat */}
               {selectedMember.userId === currentUser.userId ? (
                 <div className="text-center py-2.5 px-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                  ✨ هذا حسابك الشخصي في المجتمع
+                  {isEn ? '✨ This is your personal account in the community' : '✨ هذا حسابك الشخصي في المجتمع'}
                 </div>
               ) : (
                 <div className="space-y-2 pt-1">
@@ -2053,12 +2069,12 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                   {selectedMemberFriendship.status === 'accepted' ? (
                     <div className="w-full py-2.5 px-3 rounded-2xl text-xs font-bold border flex items-center justify-center gap-2 bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400">
                       <UserCheck size={16} />
-                      <span>أصدقاء في المجتمع بالفعل 🌿</span>
+                      <span>{isEn ? 'Already friends in community 🌿' : 'أصدقاء في المجتمع بالفعل 🌿'}</span>
                     </div>
                   ) : selectedMemberFriendship.status === 'pending' && selectedMemberFriendship.isRequester ? (
                     <div className="w-full py-2.5 px-3 rounded-2xl text-xs font-bold border flex items-center justify-center gap-2 bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400">
                       <Clock size={16} />
-                      <span>طلب الإضافة قيد الانتظار ⏳</span>
+                      <span>{isEn ? 'Friend request pending ⏳' : 'طلب الإضافة قيد الانتظار ⏳'}</span>
                     </div>
                   ) : selectedMemberFriendship.status === 'pending' && !selectedMemberFriendship.isRequester ? (
                     <button
@@ -2068,7 +2084,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                       style={{ backgroundColor: primaryColor, color: primaryTextColor }}
                     >
                       <Check size={16} />
-                      <span>قبول طلب الإضافة الوارد</span>
+                      <span>{isEn ? 'Accept incoming friend request' : 'قبول طلب الإضافة الوارد'}</span>
                     </button>
                   ) : (
                     <button
@@ -2082,7 +2098,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                       }}
                     >
                       <UserPlus size={16} className="text-emerald-500" />
-                      <span>إرسال طلب إضافة كصديق</span>
+                      <span>{isEn ? 'Send friend request' : 'إرسال طلب إضافة كصديق'}</span>
                     </button>
                   )}
 
@@ -2097,7 +2113,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                     }}
                   >
                     <MessageCircle size={16} />
-                    <span>بدء محادثة خاصة 💬</span>
+                    <span>{isEn ? 'Start private chat 💬' : 'بدء محادثة خاصة 💬'}</span>
                   </button>
                 </div>
               )}

@@ -10,44 +10,62 @@ interface AdkarHeaderProps {
 }
 
 const AdkarHeader: React.FC<AdkarHeaderProps> = ({ title, subtitle, onBack, onHome }) => {
-    const { t } = useLanguage();
-    const localizedTitle = (title.includes('الصباح والمساء') || title.includes('الأذكار')) ? t('page.sabah_masaa_title', title) : title;
-    const localizedSubtitle = subtitle.includes('حصنك اليومي') ? t('page.sabah_masaa_subtitle', subtitle) : subtitle;
+    const { language } = useLanguage();
+    const isEn = language === 'en';
+
+    // Localize title and subtitle if Arabic strings were passed
+    let localizedTitle = title;
+    if (isEn) {
+        if (title.includes('الصباح') && title.includes('المساء')) localizedTitle = 'Morning & Evening Remembrances';
+        else if (title.includes('الصباح')) localizedTitle = 'Morning Remembrances';
+        else if (title.includes('المساء')) localizedTitle = 'Evening Remembrances';
+        else if (title.includes('المفضلة') || title.includes('المفضله')) localizedTitle = 'Favorite Remembrances';
+        else if (title.includes('الأذكار')) localizedTitle = 'Daily Remembrances';
+    }
+
+    let localizedSubtitle = subtitle;
+    if (isEn) {
+        if (subtitle.includes('المفضلة') || subtitle.includes('المفضله') || subtitle.includes('للوصول السريع')) {
+            localizedSubtitle = 'Your selected remembrances for quick access';
+        } else if (subtitle.includes('عداد تفاعلي') || subtitle.includes('اليومية') || subtitle.includes('حصنك')) {
+            localizedSubtitle = 'Track your daily remembrances with an interactive counter';
+        }
+    }
 
     return (
-        <header className="app-top-bar">
+        <header className="app-top-bar" dir={isEn ? 'ltr' : 'rtl'}>
             <div className="app-top-bar__inner">
                 <div className="relative flex items-center justify-center w-full min-h-[44px]">
-                    {/* زر الرجوع للخلف على يمين النص بالشريط العلوي */}
+                    {/* Back button: Left in LTR, Right in RTL */}
                     {onBack && (
-                        <div className="absolute right-0 flex items-center">
+                        <div className={`absolute ${isEn ? 'left-0' : 'right-0'} flex items-center`}>
                             <button
                                 onClick={onBack}
                                 className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
-                                title="رجوع للخلف"
-                                aria-label="رجوع للخلف"
+                                title={isEn ? "Go Back" : "رجوع للخلف"}
+                                aria-label={isEn ? "Go Back" : "رجوع للخلف"}
                             >
-                                <i className="fa-solid fa-arrow-right text-xl"></i>
+                                <i className={`fa-solid ${isEn ? 'fa-arrow-left' : 'fa-arrow-right'} text-xl`}></i>
                             </button>
                         </div>
                     )}
 
-                    {/* عنوان الصفحة في الوسط */}
+                    {/* Page title in center */}
                     <div className="text-center px-12 min-w-0">
-                        <h1 className="app-top-bar__title text-lg sm:text-xl font-kufi truncate">
+                        <h1 className={`app-top-bar__title text-lg sm:text-xl truncate ${isEn ? 'font-sans font-bold' : 'font-kufi'}`}>
                             {localizedTitle}
                         </h1>
                     </div>
 
-                    {/* زر الهوم على يسار النص بالشريط العلوي */}
-                    <div className="absolute left-0 flex items-center gap-1">
+                    {/* Home & Theme lock: Right in LTR, Left in RTL */}
+                    <div className={`absolute ${isEn ? 'right-0' : 'left-0'} flex items-center gap-1`}>
                         <ThemePageLock />
                         {onHome && (
                             <button
                                 onClick={onHome}
                                 className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
-                                title="الصفحة الرئيسية"
-                                aria-label="الصفحة الرئيسية"
+                                title={isEn ? "Home" : "الصفحة الرئيسية"}
+                                aria-label={isEn ? "Home" : "الصفحة الرئيسية"}
                             >
                                 <i className="fa-solid fa-house text-xl"></i>
                             </button>

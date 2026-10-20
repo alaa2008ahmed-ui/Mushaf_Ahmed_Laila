@@ -32,5 +32,5 @@ export const navItems = [
   { id: 'calendar', title: "التقويم", icon: CalendarIcon },
   { id: 'nawawi', title: 'الأربعون النووية', icon: HisnMuslimIcon },
   { id: 'tajweed-education', title: 'تعليم التجويد', icon: TajweedIcon },
-  { id: 'prophetic-seerah', title: 'السيرة والخط الزمني', icon: HisnMuslimIcon }
+  { id: 'prophetic-seerah', title: 'السيرة النبوية', icon: HisnMuslimIcon }
 ];

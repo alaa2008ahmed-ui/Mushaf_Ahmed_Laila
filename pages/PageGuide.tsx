@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import ThemePageLock from '../components/ThemePageLock';
 import { registerBackInterceptor } from '../hooks/useBackButton';
 import { getPageButtonsGuide, PageButtonItem } from '../data/pageButtonsGuideData';
@@ -16,12 +17,69 @@ import {
 import { toArabic } from '../components/QuranReader/constants';
 import { ButtonExplanationModal, ButtonExplanationData } from '../components/PageGuide/ButtonExplanationModal';
 import { PageMockupDispatcher } from '../components/PageGuide/PageVisualMockups';
+import { translateExplanationData } from '../components/PageGuide/pageGuideTranslations';
 
 interface PageGuideProps {
   onBack: () => void;
   onNavigate: (pageId: string, params?: any) => void;
   initialPageKey?: string;
 }
+
+// English title mappings for pages
+const PAGE_TITLES_EN: Record<string, string> = {
+  'tasbeeh': 'Electronic Tasbeeh',
+  'quran': 'The Holy Quran',
+  'listen': 'Listen to Quran',
+  'prayer-times': 'Prayer Times',
+  'qibla': 'Qibla Direction',
+  'salah-adhkar': 'Post-Prayer Adhkar',
+  'adia': 'Prophetic Supplications',
+  'hisn-muslim': 'Hisn Al-Muslim',
+  'sabah-masaa': 'Daily Adhkar',
+  'calendar': 'Islamic Calendar',
+  'hajj-umrah': 'Hajj & Umrah Rites',
+  'ahl-al-quran': 'Ahl Al-Quran League',
+  'daily-wird': 'Daily Quran Wird',
+  'memorization': 'Memorization & Revision',
+  'habit-tracker': 'Worship & Habits Tracker',
+  'others': 'Ruqyah Shariah',
+  'islamic-sites': 'Islamic Platforms',
+  'calculators': 'Islamic Calculators',
+  'nawawi': 'Forty Hadith of An-Nawawi',
+  'voice-control': 'Voice Control Guide',
+  'asmaul-husna': 'The 99 Names of Allah',
+  'prophetic-seerah': 'Prophetic Seerah Timeline',
+  'side-community': 'Community',
+  'side-whatsapp': 'WhatsApp Support',
+  'side-voice': 'Voice Control Guide',
+  'side-ahl-al-quran': 'Ahl Al-Quran League'
+};
+
+const MENU_ITEMS_EN: Record<string, string> = {
+  'quran': 'Holy Quran',
+  'listen': 'Quran Audio',
+  'prayer-times': 'Prayer Times',
+  'qibla': 'Qibla',
+  'salah-adhkar': 'Prayer Adhkar',
+  'adia': 'Supplications',
+  'hisn-muslim': 'Hisn Al-Muslim',
+  'sabah-masaa': 'Daily Adhkar',
+  'calendar': 'Calendar',
+  'hajj-umrah': 'Hajj & Umrah',
+  'tasbeeh': 'Tasbeeh',
+  'community': 'Community',
+  'ahl-al-quran': 'Ahl Al-Quran',
+  'daily-wird': 'Daily Wird',
+  'memorization': 'Memorization',
+  'habit-tracker': 'Worship Tracker',
+  'others': 'Ruqyah',
+  'islamic-sites': 'Islamic Sites',
+  'calculators': 'Calculators',
+  'nawawi': 'Forty Hadith',
+  'voice-control': 'Voice Control',
+  'asmaul-husna': '99 Names',
+  'prophetic-seerah': 'Prophetic Seerah'
+};
 
 // مطابقة تامة لعناصر وألوان وترتيب الصفحة الرئيسية
 const GREEN_ITEMS = [
@@ -63,8 +121,8 @@ const DEFAULT_MENU_ITEMS = [
   { id: 'nawawi', label: "الأربعون النووية", className: "col-span-2 h-11" },
   { id: 'voice-control', label: "التحكم الصوتي", className: "col-span-2 h-11" },
   { id: 'asmaul-husna', label: "أسماء الله الحسنى", className: "col-span-2 h-11" },
-  // صف السيرة والخط الزمني باللون الأخضر
-  { id: 'prophetic-seerah', label: "السيرة والخط الزمني", className: "col-span-6 h-10 flex justify-center" },
+  // صف السيرة النبوية باللون الأخضر
+  { id: 'prophetic-seerah', label: "السيرة النبوية", className: "col-span-6 h-10 flex justify-center" },
 ];
 
 export const PageGuide: React.FC<PageGuideProps> = ({ 
@@ -73,6 +131,8 @@ export const PageGuide: React.FC<PageGuideProps> = ({
   initialPageKey 
 }) => {
   const { theme, themeKey } = useTheme();
+  const { language, isRTL, dir } = useLanguage();
+  const isEn = language === 'en';
   const isBlackTheme = theme?.bgColor === '#000000' || themeKey === 'deep_black';
   const isDefaultTheme = themeKey === 'default';
 
@@ -127,6 +187,10 @@ export const PageGuide: React.FC<PageGuideProps> = ({
   const handleGoHome = () => {
     setSelectedPageId(null);
     onNavigate('home');
+  };
+
+  const handleInspect = (data: ButtonExplanationData) => {
+    setInspectedElement(isEn ? translateExplanationData(data, 'en') : data);
   };
 
   // دالة لتجسيد الأيقونة المحددة بدقة واحترافية وبأعلى وضوح
@@ -537,29 +601,30 @@ export const PageGuide: React.FC<PageGuideProps> = ({
   };
 
   return (
-    <div className="h-screen flex flex-col bg-transparent relative select-none" dir="rtl">
+    <div className={`h-screen flex flex-col bg-transparent relative select-none ${isEn ? 'font-sans' : 'font-kufi'}`} dir={dir}>
       {/* شريط علوي للصفحة مطابق تماماً 100% للهيدر الأصلي لكل صفحة بالصور */}
       <header className="app-top-bar shrink-0">
         <div className="app-top-bar__inner">
           <div className="relative flex items-center justify-between w-full min-h-[44px]">
-            {/* جهة اليمين: سهم الرجوع للخلف (مع أيقونة البوصلة في مواقيت الصلاة) */}
+            {/* جهة الرجوع للخلف (مع أيقونة البوصلة في مواقيت الصلاة) */}
             <div className="flex items-center gap-1 z-10">
               <button
                 onClick={handleBack}
                 className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
-                title={selectedPageId ? "العودة لقائمة الصفحات" : "رجوع للخلف"}
-                aria-label="رجوع للخلف"
+                title={selectedPageId ? (isEn ? "Back to Pages List" : "العودة لقائمة الصفحات") : (isEn ? "Back" : "رجوع للخلف")}
+                aria-label={selectedPageId ? (isEn ? "Back to Pages List" : "العودة لقائمة الصفحات") : (isEn ? "Back" : "رجوع للخلف")}
               >
-                <i className="fa-solid fa-arrow-right text-xl"></i>
+                <i className={`fa-solid ${isRTL ? 'fa-arrow-right' : 'fa-arrow-left'} text-xl`}></i>
               </button>
 
               {selectedPageId === 'prayer-times' && (
                 <div 
                   className="w-9 h-9 rounded-full flex items-center justify-center cursor-pointer"
-                  onClick={() => setInspectedElement({
+                  onClick={() => handleInspect({
                     title: 'زر بوصلة القبلة بالهيدر',
                     purpose: 'ينتقل بك مباشرة من صفحة مواقيت الصلاة إلى بوصلة القبلة لتحديد اتجاه الكعبة المشرفة فورياً.'
                   })}
+                  title={isEn ? "Qibla Compass" : "بوصلة القبلة"}
                 >
                   <Compass size={20} />
                 </div>
@@ -568,11 +633,11 @@ export const PageGuide: React.FC<PageGuideProps> = ({
               {(selectedPageId === 'community' || selectedPageId === 'side-community') && (
                 <div 
                   className="w-9 h-9 rounded-full flex items-center justify-center cursor-pointer text-emerald-600 dark:text-emerald-400"
-                  onClick={() => setInspectedElement({
+                  onClick={() => handleInspect({
                     title: 'زر فتح المصحف الشريف من المجتمع',
                     purpose: 'يتيح لك الانتقال السريع للمصحف لقراءة القرآن أو مشاركة آية مباشرة داخل محادثات المجتمع.'
                   })}
-                  title="صفحة القرآن الكريم"
+                  title={isEn ? "Holy Quran" : "صفحة القرآن الكريم"}
                 >
                   <BookOpen size={20} />
                 </div>
@@ -584,7 +649,7 @@ export const PageGuide: React.FC<PageGuideProps> = ({
               {selectedPageId === 'prayer-times' ? (
                 <div 
                   className="flex flex-col items-center cursor-pointer"
-                  onClick={() => setInspectedElement({
+                  onClick={() => handleInspect({
                     title: 'مؤشر المدينة والموقع الجغرافي بالهيدر',
                     purpose: 'يعرض اسم المدينة والمحافظة المحددة حالياً وكود الدولة، وبالنقر عليه يمكنك تغيير المدينة أو تحديث الموقع عبر GPS.'
                   })}
@@ -599,64 +664,66 @@ export const PageGuide: React.FC<PageGuideProps> = ({
                 </div>
               ) : selectedPageId === 'listen' ? (
                 <h1 
-                  className="app-top-bar__title text-lg sm:text-xl font-kufi truncate flex items-center justify-center gap-2 cursor-pointer"
-                  onClick={() => setInspectedElement({
+                  className={`app-top-bar__title text-lg sm:text-xl ${isEn ? 'font-sans font-bold' : 'font-kufi'} truncate flex items-center justify-center gap-2 cursor-pointer`}
+                  onClick={() => handleInspect({
                     title: 'عنوان صفحة الاستماع للقرآن',
                     purpose: 'صفحة الاستماع إلى المصحف المرتل والمجود بأصوات كبار قراء العالم الإسلامي مع ميزات التكرار ومؤقت النوم والمفضلات.'
                   })}
                 >
                   <Heart size={18} className="text-red-500 fill-current" />
-                  <span>الاستماع للقرآن</span>
+                  <span>{isEn ? 'Listen to Quran' : 'الاستماع للقرآن'}</span>
                 </h1>
               ) : selectedPageId === 'community' || selectedPageId === 'side-community' ? (
-                /* في صفحة مجتمع التواصل: لا يوجد نص "مجتمع التواصل" في الشريط العلوي نهائياً بل شارة الملف الشخصي */
+                /* في صفحة مجتمع التواصل: شارة الملف الشخصي */
                 <div 
                   className="inline-flex items-center justify-center gap-2 px-3 py-1.5 rounded-xl border border-black/20 dark:border-white/20 text-xs font-bold cursor-pointer hover:opacity-90 shadow-xs max-w-[200px] sm:max-w-[260px] mx-auto"
-                  onClick={() => setInspectedElement({
+                  onClick={() => handleInspect({
                     title: 'شارة الملف الشخصي والدولة',
                     purpose: 'تعرض اسم حسابك وصورتك وعلم دولتك، وبالنقر عليها تفتح نافذة تعديل بياناتك الشخصية.'
                   })}
                 >
                   <div className="w-5 h-5 rounded-full bg-slate-300 dark:bg-slate-700 flex items-center justify-center text-[10px]">👤</div>
-                  <span className="truncate max-w-[120px] sm:max-w-[160px]">مستخدم المصحف</span>
+                  <span className="truncate max-w-[120px] sm:max-w-[160px]">{isEn ? 'Quran App User' : 'مستخدم المصحف'}</span>
                   <span>🌐</span>
                 </div>
               ) : (
-                <h1 className="app-top-bar__title text-lg sm:text-xl font-kufi truncate max-w-[240px] sm:max-w-md mx-auto">
+                <h1 className={`app-top-bar__title text-lg sm:text-xl ${isEn ? 'font-sans font-bold' : 'font-kufi'} truncate max-w-[240px] sm:max-w-md mx-auto`}>
                   {selectedPageId 
-                    ? ({
-                        'tasbeeh': 'السبحة الإلكترونية',
-                        'quran': 'القرآن الكريم',
-                        'listen': 'الاستماع للقرآن',
-                        'prayer-times': 'مواقيت الصلاة',
-                        'qibla': 'اتجاه القبلة',
-                        'salah-adhkar': 'أذكار الصلوات',
-                        'adia': 'الأدعية المأثورة',
-                        'hisn-muslim': 'حصن المسلم',
-                        'sabah-masaa': 'أذكار الصباح',
-                        'calendar': 'التقويم',
-                        'hajj-umrah': 'الحج والعمرة',
-                        'ahl-al-quran': 'أهل القرآن الكريم',
-                        'daily-wird': 'الورد اليومي',
-                        'memorization': 'التحفيظ والمراجعة',
-                        'habit-tracker': 'مربّي العبادات',
-                        'others': 'الرقية الشرعية',
-                        'islamic-sites': 'مواقع إسلامية',
-                        'calculators': 'الحاسبة الشرعية',
-                        'nawawi': 'الأربعون النووية',
-                        'voice-control': 'التحكم الصوتي',
-                        'asmaul-husna': 'أسماء الله الحسنى',
-                        'prophetic-seerah': 'السيرة والخط الزمني',
-                        'side-whatsapp': 'تواصل واتساب',
-                        'side-voice': 'التحكم الصوتي',
-                        'side-ahl-al-quran': 'أهل القرآن الكريم'
-                      }[selectedPageId] || selectedGuide?.pageName || 'دليل صفحات التطبيق')
-                    : 'دليل صفحات التطبيق'}
+                    ? (isEn 
+                        ? (PAGE_TITLES_EN[selectedPageId] || 'App Pages Guide')
+                        : ({
+                            'tasbeeh': 'السبحة الإلكترونية',
+                            'quran': 'القرآن الكريم',
+                            'listen': 'الاستماع للقرآن',
+                            'prayer-times': 'مواقيت الصلاة',
+                            'qibla': 'اتجاه القبلة',
+                            'salah-adhkar': 'أذكار الصلوات',
+                            'adia': 'الأدعية المأثورة',
+                            'hisn-muslim': 'حصن المسلم',
+                            'sabah-masaa': 'أذكار الصباح',
+                            'calendar': 'التقويم',
+                            'hajj-umrah': 'الحج والعمرة',
+                            'ahl-al-quran': 'أهل القرآن الكريم',
+                            'daily-wird': 'الورد اليومي',
+                            'memorization': 'التحفيظ والمراجعة',
+                            'habit-tracker': 'مربّي العبادات',
+                            'others': 'الرقية الشرعية',
+                            'islamic-sites': 'مواقع إسلامية',
+                            'calculators': 'الحاسبة الشرعية',
+                            'nawawi': 'الأربعون النووية',
+                            'voice-control': 'التحكم الصوتي',
+                            'asmaul-husna': 'أسماء الله الحسنى',
+                            'prophetic-seerah': 'السيرة النبوية',
+                            'side-whatsapp': 'تواصل واتساب',
+                            'side-voice': 'التحكم الصوتي',
+                            'side-ahl-al-quran': 'أهل القرآن الكريم'
+                          }[selectedPageId] || selectedGuide?.pageName || 'دليل صفحات التطبيق'))
+                    : (isEn ? 'App Pages Guide' : 'دليل صفحات التطبيق')}
                 </h1>
               )}
             </div>
 
-            {/* أدوات الهيدر اليسرى مطابقة تماماً للصور */}
+            {/* أدوات الهيدر الأخرى */}
             <div className="flex items-center gap-1 z-10">
               {/* في صفحة السبحة فقط يظهر قفل الثيم كما بالصورة */}
               {selectedPageId === 'tasbeeh' ? (
@@ -666,17 +733,19 @@ export const PageGuide: React.FC<PageGuideProps> = ({
                 <div className="flex items-center gap-1">
                   <div 
                     className="w-9 h-9 rounded-full border border-black/10 dark:border-white/10 flex items-center justify-center text-amber-500 cursor-pointer"
-                    onClick={() => setInspectedElement({
+                    onClick={() => handleInspect({
                       title: 'زر لوحة المتصدرين (الكأس)',
                       purpose: 'يفتح لوحة شرف متصدري قراءة القرآن الكريم ونشاط المجتمع لهذا الشهر.'
                     })}
+                    title={isEn ? "Leaderboard" : "لوحة المتصدرين"}
                   >
                     <Trophy size={18} />
                   </div>
                   <button
                     onClick={handleGoHome}
                     className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
-                    title="الصفحة الرئيسية"
+                    title={isEn ? "Home Page" : "الصفحة الرئيسية"}
+                    aria-label={isEn ? "Home Page" : "الصفحة الرئيسية"}
                   >
                     <i className="fa-solid fa-house text-base"></i>
                   </button>
@@ -686,17 +755,19 @@ export const PageGuide: React.FC<PageGuideProps> = ({
                 <div className="flex items-center gap-1">
                   <div 
                     className="w-9 h-9 rounded-full flex items-center justify-center cursor-pointer"
-                    onClick={() => setInspectedElement({
+                    onClick={() => handleInspect({
                       title: 'زر إعدادات مواقيت الصلاة والأذان',
                       purpose: 'يفتح إعدادات طرق الحساب الفلكي، اختيار نغمة الأذان لكل فريضة، معايرة دقائق الصلوات، وتفعيل منبه الإقامة.'
                     })}
+                    title={isEn ? "Prayer Settings" : "إعدادات الصلاة"}
                   >
                     <Settings size={18} />
                   </div>
                   <button
                     onClick={handleGoHome}
                     className="w-9 h-9 rounded-full flex items-center justify-center"
-                    title="الصفحة الرئيسية"
+                    title={isEn ? "Home Page" : "الصفحة الرئيسية"}
+                    aria-label={isEn ? "Home Page" : "الصفحة الرئيسية"}
                   >
                     <i className="fa-solid fa-house text-base"></i>
                   </button>
@@ -706,17 +777,19 @@ export const PageGuide: React.FC<PageGuideProps> = ({
                 <div className="flex items-center gap-1">
                   <div 
                     className="w-9 h-9 rounded-full flex items-center justify-center text-emerald-600 cursor-pointer"
-                    onClick={() => setInspectedElement({
+                    onClick={() => handleInspect({
                       title: 'أيقونة معايرة البوصلة بالهيدر',
                       purpose: 'تتيح فحص دقة مستشعر البوصلة وتوجيهك لمعايرته بحركة 8 بالهواء عند وجود تداخل مغناطيسي.'
                     })}
+                    title={isEn ? "Compass Calibration" : "معايرة البوصلة"}
                   >
                     <Compass size={18} />
                   </div>
                   <button
                     onClick={handleGoHome}
                     className="w-9 h-9 rounded-full flex items-center justify-center"
-                    title="الصفحة الرئيسية"
+                    title={isEn ? "Home Page" : "الصفحة الرئيسية"}
+                    aria-label={isEn ? "Home Page" : "الصفحة الرئيسية"}
                   >
                     <i className="fa-solid fa-house text-base"></i>
                   </button>
@@ -726,19 +799,33 @@ export const PageGuide: React.FC<PageGuideProps> = ({
                 <div className="flex items-center gap-1">
                   <div 
                     className="w-9 h-9 rounded-full flex items-center justify-center cursor-pointer"
-                    onClick={() => setInspectedElement({
+                    onClick={() => handleInspect({
                       title: 'زر الانتقال للمصحف الشريف',
                       purpose: 'ينقلك مباشرة لصفحات القرآن الكريم لقراءة وردك وزيادة صفحاتك المسجلة في المسابقة.'
                     })}
+                    title={isEn ? "Open Quran" : "المصحف الشريف"}
                   >
                     <BookOpen size={18} />
                   </div>
                   <button
                     onClick={handleGoHome}
                     className="w-9 h-9 rounded-full flex items-center justify-center"
-                    title="الصفحة الرئيسية"
+                    title={isEn ? "Home Page" : "الصفحة الرئيسية"}
+                    aria-label={isEn ? "Home Page" : "الصفحة الرئيسية"}
                   >
                     <i className="fa-solid fa-house text-base"></i>
+                  </button>
+                </div>
+              ) : selectedPageId === 'hajj-umrah' ? (
+                /* في صفحة الحج والعمرة: زر الصفحة الرئيسية المنزل فقط مطابق للصورة المرفقة */
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={handleGoHome}
+                    className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                    title={isEn ? "Home Page" : "الصفحة الرئيسية"}
+                    aria-label={isEn ? "Home Page" : "الصفحة الرئيسية"}
+                  >
+                    <i className="fa-solid fa-house text-xl"></i>
                   </button>
                 </div>
               ) : (
@@ -748,8 +835,8 @@ export const PageGuide: React.FC<PageGuideProps> = ({
                   <button
                     onClick={handleGoHome}
                     className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
-                    title="الصفحة الرئيسية"
-                    aria-label="الصفحة الرئيسية"
+                    title={isEn ? "Home Page" : "الصفحة الرئيسية"}
+                    aria-label={isEn ? "Home Page" : "الصفحة الرئيسية"}
                   >
                     <i className="fa-solid fa-house text-xl"></i>
                   </button>
@@ -772,9 +859,9 @@ export const PageGuide: React.FC<PageGuideProps> = ({
           {/* أولاً: عرض كل بطاقات ومكونات الصفحة الرئيسية بنفس الترتيب التام مع شرح موجز عنها */}
           {/* ========================================================= */}
           {!selectedPageId && (
-            <div className="w-full max-w-sm sm:max-w-md mx-auto flex flex-col gap-3 pb-8" dir="rtl">
+            <div className="w-full max-w-sm sm:max-w-md mx-auto flex flex-col gap-3 pb-8" dir={dir}>
 
-              {/* بطاقة معلومات دليل صفحات التطبيق بدلاً من الآية والعنوان والدعاء */}
+              {/* بطاقة معلومات دليل صفحات التطبيق */}
               <div 
                 className="w-full rounded-2xl p-4 sm:p-5 text-center transition-all select-none flex flex-col items-center justify-center gap-2 relative shadow-md border"
                 style={{
@@ -784,16 +871,16 @@ export const PageGuide: React.FC<PageGuideProps> = ({
                 }}
               >
                 <h1 
-                  className="text-2xl sm:text-3xl font-black tracking-tight"
+                  className={`text-2xl sm:text-3xl font-black tracking-tight ${isEn ? 'font-sans' : 'font-kufi'}`}
                   style={{ color: isBlackTheme ? '#FFFFFF' : (theme.palette?.[0] || theme.textColor) }}
                 >
-                  مصحف أحمد وليلى
+                  {isEn ? 'Mushaf Ahmed & Laila' : 'مصحف أحمد وليلى'}
                 </h1>
                 <p 
                   className="text-sm sm:text-base font-bold opacity-90"
                   style={{ color: textColor }}
                 >
-                  شرح كامل لجميع صفحات التطبيق
+                  {isEn ? 'Complete Interactive Guide to All App Pages' : 'شرح كامل لجميع صفحات التطبيق'}
                 </p>
                 <div 
                   className="mt-1 px-3.5 py-1 rounded-full text-xs sm:text-sm font-semibold border flex items-center justify-center gap-1.5 shadow-sm"
@@ -803,7 +890,7 @@ export const PageGuide: React.FC<PageGuideProps> = ({
                     color: isBlackTheme ? '#FFFFFF' : (theme.palette?.[0] || '#059669')
                   }}
                 >
-                  <span>مصمم التطبيق : علاء احمد المرشدى</span>
+                  <span>{isEn ? 'App Designer: Alaa Ahmed El-Morshedy' : 'مصمم التطبيق : علاء احمد المرشدى'}</span>
                 </div>
               </div>
 
@@ -811,7 +898,7 @@ export const PageGuide: React.FC<PageGuideProps> = ({
               <div className="w-full flex flex-col gap-2.5 transition-all">
 
                 {/* شبكة الأزرار الـ 23 بنفس ترتيب وتوزيع ألوان الصفحة الرئيسية */}
-                <div className="grid grid-cols-6 gap-x-2 gap-y-2.5 w-full mx-auto content-center relative py-1" dir="rtl">
+                <div className="grid grid-cols-6 gap-x-2 gap-y-2.5 w-full mx-auto content-center relative py-1" dir={dir}>
                   {DEFAULT_MENU_ITEMS.map((item) => {
                     const isGreen = GREEN_ITEMS.includes(item.id);
                     const buttonColor = isBlackTheme
@@ -820,6 +907,7 @@ export const PageGuide: React.FC<PageGuideProps> = ({
                           ? (isGreen ? '#059669' : '#8B5CF6')
                           : (isGreen ? (theme.palette?.[0] || '#059669') : (theme.palette?.[1] || theme.palette?.[0] || '#8B5CF6')));
                     const buttonBorder = isBlackTheme ? '1px solid rgba(255, 255, 255, 0.25)' : theme.btnBorder;
+                    const displayLabel = isEn ? (MENU_ITEMS_EN[item.id] || item.label) : item.label;
 
                     // صف السيرة والخط الزمني مع الأيقونات الأربعة بجانبيه
                     if (item.id === 'prophetic-seerah') {
@@ -835,8 +923,8 @@ export const PageGuide: React.FC<PageGuideProps> = ({
                               borderColor: isBlackTheme ? 'rgba(255, 255, 255, 0.4)' : (theme.palette?.[0] || '#10b981'),
                               color: isBlackTheme ? '#ffffff' : (theme.palette?.[0] || '#10b981')
                             }}
-                            title="شرح أيقونة مجتمع التواصل"
-                            aria-label="شرح أيقونة مجتمع التواصل"
+                            title={isEn ? "Community Icon Guide" : "شرح أيقونة مجتمع التواصل"}
+                            aria-label={isEn ? "Community Icon Guide" : "شرح أيقونة مجتمع التواصل"}
                           >
                             <MessageCircle className="w-5 h-5" />
                             <span 
@@ -852,8 +940,8 @@ export const PageGuide: React.FC<PageGuideProps> = ({
                             type="button"
                             onClick={() => setSelectedPageId('side-whatsapp')}
                             className="w-9 h-9 rounded-full flex items-center justify-center shadow-lg border-2 border-white shrink-0 relative transition-transform hover:scale-105 active:scale-95 cursor-pointer bg-[#25D366]"
-                            title="شرح أيقونة الواتساب"
-                            aria-label="شرح أيقونة الواتساب"
+                            title={isEn ? "WhatsApp Icon Guide" : "شرح أيقونة الواتساب"}
+                            aria-label={isEn ? "WhatsApp Icon Guide" : "شرح أيقونة الواتساب"}
                           >
                             <svg viewBox="0 0 24 24" className="w-4 h-4 fill-white">
                               <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.361.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
@@ -863,7 +951,7 @@ export const PageGuide: React.FC<PageGuideProps> = ({
                           {/* زر السيرة والخط الزمني في المنتصف */}
                           <div className="flex-1 min-w-[130px] max-w-[210px] h-full">
                             <NavButton
-                              label={item.label}
+                              label={displayLabel}
                               onClick={() => setSelectedPageId(item.id)}
                               className="w-full h-full shadow-lg"
                               color={buttonColor}
@@ -881,8 +969,8 @@ export const PageGuide: React.FC<PageGuideProps> = ({
                             style={{
                               backgroundColor: theme.palette?.[0] || '#10b981'
                             }}
-                            title="شرح أيقونة التحكم الصوتي"
-                            aria-label="شرح أيقونة التحكم الصوتي"
+                            title={isEn ? "Voice Control Icon Guide" : "شرح أيقونة التحكم الصوتي"}
+                            aria-label={isEn ? "Voice Control Icon Guide" : "شرح أيقونة التحكم الصوتي"}
                           >
                             <Mic className="w-5 h-5 text-white" />
                           </button>
@@ -897,8 +985,8 @@ export const PageGuide: React.FC<PageGuideProps> = ({
                               borderColor: isBlackTheme ? 'rgba(255, 255, 255, 0.4)' : '#f59e0b',
                               color: '#f59e0b'
                             }}
-                            title="شرح أيقونة أهل القرآن"
-                            aria-label="شرح أيقونة أهل القرآن"
+                            title={isEn ? "Ahl Al-Quran Icon Guide" : "شرح أيقونة أهل القرآن"}
+                            aria-label={isEn ? "Ahl Al-Quran Icon Guide" : "شرح أيقونة أهل القرآن"}
                           >
                             <Trophy className="w-5 h-5 text-amber-500" />
                             <span 
@@ -914,7 +1002,7 @@ export const PageGuide: React.FC<PageGuideProps> = ({
                     return (
                       <div key={item.id} className={item.className}>
                         <NavButton
-                          label={item.label}
+                          label={displayLabel}
                           onClick={() => setSelectedPageId(item.id)}
                           className="w-full h-full shadow-lg"
                           color={buttonColor}
@@ -931,14 +1019,7 @@ export const PageGuide: React.FC<PageGuideProps> = ({
           )}
 
           {/* ========================================================= */}
-          {/* ثانياً: عند الضغط على الصفحة يتم نسخ شكل الأزرار والأيقونات */}
-          {/* ويكتب أمام كل زر أو أيقونة فائدتها بالصفحة بشرح واضح ووافٍ */}
-          {/* مع حذف بطاقة العودة السفلية لوجود زر الرجوع بالهيدر */}
-          {/* ========================================================= */}
-          {/* ========================================================= */}
           {/* ثانياً: عند الضغط على أى زر من أزرار الصفحات تفتح نفس الصفحة */}
-          {/* وبنفس التصميم تماماً كصورة فقط وعند الضغط على أي أيقونة أو زر */}
-          {/* تظهر قائمة ليس بها سوى نص الشرح الوافي للزر أو البطاقة */}
           {/* ========================================================= */}
           {selectedPageId && (
             <div className="w-full pb-10 flex flex-col items-center animate-fadeIn">
@@ -946,7 +1027,7 @@ export const PageGuide: React.FC<PageGuideProps> = ({
               <div className="w-full max-w-lg">
                 <PageMockupDispatcher
                   pageId={selectedPageId}
-                  onInspect={(data) => setInspectedElement(data)}
+                  onInspect={(data) => handleInspect(data)}
                   theme={theme}
                   themeKey={themeKey}
                   isBlackTheme={isBlackTheme}

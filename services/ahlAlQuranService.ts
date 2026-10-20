@@ -116,28 +116,30 @@ class AhlAlQuranService {
     return `h_${year}-${String(month).padStart(2, '0')}`;
   }
 
-  public getGregorianMonthName(key: string): string {
+  public getGregorianMonthName(key: string, lang: 'ar' | 'en' = 'ar'): string {
     // format: g_YYYY-MM
     const clean = key.replace('g_', '');
     const [yStr, mStr] = clean.split('-');
     const m = parseInt(mStr, 10);
-    const mName = gregorianMonths.find(gm => gm.id === m)?.name || mStr;
-    return `${mName} ${yStr}م`;
+    const engNames = ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const mName = lang === 'en' ? (engNames[m] || mStr) : (gregorianMonths.find(gm => gm.id === m)?.name || mStr);
+    return lang === 'en' ? `${mName} ${yStr}` : `${mName} ${yStr}م`;
   }
 
-  public getHijriMonthName(key: string): string {
+  public getHijriMonthName(key: string, lang: 'ar' | 'en' = 'ar'): string {
     // format: h_YYYY-MM
     const clean = key.replace('h_', '');
     const [yStr, mStr] = clean.split('-');
     const m = parseInt(mStr, 10);
-    const mName = hijriMonths[m - 1]?.name || mStr;
-    return `${mName} ${yStr}هـ`;
+    const engNames = ['Muharram', 'Safar', "Rabi' al-Awwal", "Rabi' al-Thani", 'Jumada al-Ula', 'Jumada al-Thani', 'Rajab', "Sha'ban", 'Ramadan', 'Shawwal', "Dhu al-Qi'dah", 'Dhu al-Hijjah'];
+    const mName = lang === 'en' ? (engNames[m - 1] || mStr) : (hijriMonths[m - 1]?.name || mStr);
+    return lang === 'en' ? `${mName} ${yStr} AH` : `${mName} ${yStr}هـ`;
   }
 
   /**
    * Generates a list of available months (current + past 11 archived months)
    */
-  public getAvailableMonths(type: CalendarType): MonthOption[] {
+  public getAvailableMonths(type: CalendarType, lang: 'ar' | 'en' = 'ar'): MonthOption[] {
     const options: MonthOption[] = [];
     const now = new Date();
 
@@ -148,7 +150,7 @@ class AhlAlQuranService {
         const key = this.getCurrentGregorianKey(d);
         options.push({
           key,
-          name: this.getGregorianMonthName(key),
+          name: this.getGregorianMonthName(key, lang),
           isCurrent: key === currentKey
         });
       }
@@ -163,7 +165,7 @@ class AhlAlQuranService {
         const key = `h_${curYear}-${String(curMonth).padStart(2, '0')}`;
         options.push({
           key,
-          name: this.getHijriMonthName(key),
+          name: this.getHijriMonthName(key, lang),
           isCurrent: key === currentKey
         });
 
@@ -184,7 +186,7 @@ class AhlAlQuranService {
    * بحيث يتم دائما احتساب عدد الصفحات وتقسيمها على عدد صفحات الجزء لتحويل النتيجه الى اجزاء
    * مثال: قام مستخدم بقراءة 30 صفحه مثلا فيظهر بالتصنيف كـ: جزء و10 صفحات.
    */
-  public formatAjzaAndPages(pages: number): {
+  public formatAjzaAndPages(pages: number, lang: 'ar' | 'en' = 'ar'): {
     summaryText: string;
     ajza: number;
     remainingPages: number;
@@ -197,10 +199,40 @@ class AhlAlQuranService {
 
     if (safePages === 0) {
       return {
-        summaryText: 'لم يبدأ بعد',
+        summaryText: lang === 'en' ? 'Not started yet' : 'لم يبدأ بعد',
         ajza: 0,
         remainingPages: 0,
-        fullDetail: '0 صفحة'
+        fullDetail: lang === 'en' ? '0 pages' : '0 صفحة'
+      };
+    }
+
+    if (lang === 'en') {
+      if (safePages < PAGES_PER_JUZ) {
+        const pageWord = safePages === 1 ? '1 page' : `${safePages} pages`;
+        return {
+          summaryText: pageWord,
+          ajza: 0,
+          remainingPages: safePages,
+          fullDetail: pageWord
+        };
+      }
+
+      let ajzaWord = ajza === 1 ? '1 Juz\'' : `${ajza} Juz'`;
+      let remWord = '';
+      if (remainingPages === 1) {
+        remWord = 'and 1 page';
+      } else if (remainingPages > 1) {
+        remWord = `and ${remainingPages} pages`;
+      }
+
+      const summaryText = remWord ? `${ajzaWord} ${remWord}` : ajzaWord;
+      const fullDetail = `${summaryText} (${safePages} pages)`;
+
+      return {
+        summaryText,
+        ajza,
+        remainingPages,
+        fullDetail
       };
     }
 
@@ -445,7 +477,8 @@ class AhlAlQuranService {
    */
   public getLeaderboard(
     monthKey: string,
-    currentUserId?: string
+    currentUserId?: string,
+    lang: 'ar' | 'en' = 'ar'
   ): {
     rank: number;
     record: AhlAlQuranUserRecord;
@@ -513,9 +546,13 @@ class AhlAlQuranService {
       }
 
       const isAnon = record.privacyMode === 'anonymous' && !isCur;
+      const defaultReader = lang === 'en' ? 'Qur\'an Reader' : 'قارئ المصحف';
+      const anonymousName = lang === 'en' ? 'Benefactor (Qur\'an Reader)' : 'فاعل خير (قارئ للقرآن)';
+      const currentUserSuffix = lang === 'en' ? ' (You)' : ' (أنت)';
+
       const displayName = isAnon 
-        ? 'فاعل خير (قارئ للقرآن)' 
-        : (userProfile?.username || (isCur ? (curUser?.username || 'قارئ المصحف (أنت)') : record.username || 'قارئ المصحف'));
+        ? anonymousName 
+        : (userProfile?.username || (isCur ? (curUser?.username ? `${curUser.username}${currentUserSuffix}` : `${defaultReader}${currentUserSuffix}`) : record.username || defaultReader));
       const displayAvatar = isAnon ? undefined : (userProfile?.avatarUrl || (isCur ? curUser?.avatarUrl : record.avatarUrl));
 
       results.push({
@@ -540,7 +577,7 @@ class AhlAlQuranService {
     return results.map((item, index) => ({
       ...item,
       rank: index + 1,
-      formattedProgress: this.formatAjzaAndPages(item.pages)
+      formattedProgress: this.formatAjzaAndPages(item.pages, lang)
     }));
   }
 

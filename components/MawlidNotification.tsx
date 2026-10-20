@@ -6,7 +6,7 @@ import { useTheme } from '../context/ThemeContext';
 import { playNotificationSound, stopNotificationSound } from '../utils/prayerTimesUtils';
 
 interface OccasionDef {
-    id: 'mawlid' | 'eid_fitr' | 'eid_adha' | 'islamic_new_year';
+    id: 'mawlid' | 'eid_fitr' | 'eid_adha' | 'islamic_new_year' | 'ramadan' | 'ramadan_last_ten';
     title: string;
     subtitle: (today: moment.Moment) => string;
     quote: string;
@@ -81,6 +81,36 @@ const ISLAMIC_OCCASIONS: OccasionDef[] = [
         iconType: 'calendar',
         badge: 'رأس السنة الهجرية الجديدة',
         isActive: (today) => today.iMonth() === 0 && today.iDate() === 1
+    },
+    {
+        id: 'ramadan',
+        title: 'شَهْرُ رَمَضَانَ المُبَارَك',
+        subtitle: (today) => `فاتحة شهر رمضان المعظم ${today.iYear()} هـ`,
+        quote: '«شَهْرُ رَمَضَانَ الَّذِي أُنزِلَ فِيهِ الْقُرْآنُ هُدًى لِلنَّاسِ وَبَيِّنَاتٍ مِّنَ الْهُدَى وَالْفُرْقَانِ»',
+        description: 'نبارك لكم حلول شهر رمضان المبارك، شهر القرآن والرحمة والمغفرة والعتق من النار. جعل الله صيامكم وقيامكم مقبولاً وضاعف لكم فيه الأجور.',
+        soundFile: '/assets/audio/takbeer1.mp3',
+        soundLabel: 'تهنئة شهر رمضان المبارك',
+        actionText: 'مبارك عليكم شهر القرآن',
+        greetingShare: (today) => `مبارك عليكم شهر رمضان المعظم ${today.iYear()} هـ! تقبل الله منا ومنكم الصيام والقيام، وجعلنا وإياكم من عتقائه من الشهر الكريم، وكل عام وأنتم بخير.`,
+        accentColor: '#047857',
+        iconType: 'moon',
+        badge: 'شهر رمضان المبارك',
+        isActive: (today) => today.iMonth() === 8 && (today.iDate() >= 1 && today.iDate() <= 3)
+    },
+    {
+        id: 'ramadan_last_ten',
+        title: 'العَشْرُ الأَوَاخِرُ مِنْ رَمَضَان',
+        subtitle: (today) => `ليالي العتق من النيران والتماس ليلة القدر ${today.iYear()} هـ`,
+        quote: '«كَانَ رَسُولُ اللهِ ﷺ إِذَا دَخَلَ العَشْرُ شَدَّ مِئْزَرَهُ، وَأَحْيَا لَيْلَهُ، وَأَيْقَظَ أَهْلَهُ»',
+        description: 'أهلاً بالعشر الأواخر من شهر رمضان المبارك، وفيها ليلة القدر خيرٌ من ألف شهر. فاغتنموا أوقاتها بالصلاة والقيام وتلاوة القرآن، وأكثروا من دعاء: "اللَّهُمَّ إِنَّكَ عَفُوٌّ تُحِبُّ العَفْوَ فَاعْفُ عَنِّي".',
+        soundFile: '/assets/audio/takbeer1.mp3',
+        soundLabel: 'تكبيرات وذكر العشر الأواخر',
+        actionText: 'اجتهدوا في القيام والدعاء',
+        greetingShare: (today) => `حلّت علينا العشر الأواخر من شهر رمضان المبارك ${today.iYear()} هـ، وفيها ليلة القدر خير من ألف شهر. نسأل الله أن يبلغنا وإياكم إياها، ويتقبل منا ومنكم صالح الأعمال، ويعتق رقابنا جميعاً من النار.`,
+        accentColor: '#059669',
+        iconType: 'sparkles',
+        badge: 'العشر الأواخر من رمضان',
+        isActive: (today) => today.iMonth() === 8 && (today.iDate() >= 20 && today.iDate() <= 22)
     }
 ];
 
@@ -131,6 +161,8 @@ const MawlidNotification: React.FC = () => {
                 if (detail.occasionId === 52) targetOcc = ISLAMIC_OCCASIONS.find(o => o.id === 'eid_fitr');
                 if (detail.occasionId === 53) targetOcc = ISLAMIC_OCCASIONS.find(o => o.id === 'eid_adha');
                 if (detail.occasionId === 54) targetOcc = ISLAMIC_OCCASIONS.find(o => o.id === 'islamic_new_year');
+                if (detail.occasionId === 55) targetOcc = ISLAMIC_OCCASIONS.find(o => o.id === 'ramadan');
+                if (detail.occasionId === 56) targetOcc = ISLAMIC_OCCASIONS.find(o => o.id === 'ramadan_last_ten');
             } else if (detail?.occasionKey) {
                 targetOcc = ISLAMIC_OCCASIONS.find(o => o.id === detail.occasionKey);
             }

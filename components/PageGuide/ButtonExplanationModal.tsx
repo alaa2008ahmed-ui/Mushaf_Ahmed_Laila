@@ -1,6 +1,8 @@
 import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
+import { translateExplanationData, tGuide } from './pageGuideTranslations';
 
 export interface ButtonExplanationData {
   title: string;
@@ -19,10 +21,15 @@ interface ButtonExplanationModalProps {
 }
 
 export const ButtonExplanationModal: React.FC<ButtonExplanationModalProps> = ({
-  data,
+  data: rawData,
   onClose
 }) => {
   const { theme, themeKey } = useTheme();
+  const { language, isRTL, dir } = useLanguage();
+  const isEn = language === 'en';
+
+  // Translate data if in English mode
+  const data = rawData ? (isEn ? translateExplanationData(rawData, 'en') : rawData) : null;
 
   // Close on Escape key
   useEffect(() => {
@@ -64,24 +71,25 @@ export const ButtonExplanationModal: React.FC<ButtonExplanationModalProps> = ({
   // تجميع النص الاحتياطي
   const explanationParts: string[] = [];
   if (generalPurpose) explanationParts.push(generalPurpose);
-  if (singleClick) explanationParts.push(`• عند النقر: ${singleClick}`);
-  if (longPress) explanationParts.push(`• عند الضغط المطول: ${longPress}`);
+  if (singleClick) explanationParts.push(isEn ? `• Tap: ${singleClick}` : `• عند النقر: ${singleClick}`);
+  if (longPress) explanationParts.push(isEn ? `• Long press: ${longPress}` : `• عند الضغط المطول: ${longPress}`);
   if (data.details && data.details.length > 0) {
     data.details.forEach(detail => {
-      if (!explanationParts.includes(detail) && detail !== generalPurpose) {
-        explanationParts.push(`• ${detail}`);
+      const translatedDetail = isEn ? tGuide(detail, 'en') : detail;
+      if (!explanationParts.includes(translatedDetail) && translatedDetail !== generalPurpose) {
+        explanationParts.push(`• ${translatedDetail}`);
       }
     });
   }
   const fullExplanationText = explanationParts.length > 0 
     ? explanationParts.join('\n\n') 
-    : (data.title || 'شرح الزر أو العنصر');
+    : (data.title || (isEn ? 'Button or Item Explanation' : 'شرح الزر أو العنصر'));
 
   return (
     <div 
       className="fixed inset-0 z-[99999] bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn select-none"
       onClick={onClose}
-      dir="rtl"
+      dir={dir}
     >
       <div 
         className="w-full max-w-md rounded-2xl shadow-2xl flex flex-col overflow-hidden relative border-2 animate-scaleUp"
@@ -97,15 +105,15 @@ export const ButtonExplanationModal: React.FC<ButtonExplanationModalProps> = ({
           className="py-3.5 px-4 border-b flex items-center justify-between shrink-0"
           style={{ borderColor: isBlackTheme ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)' }}
         >
-          <h2 className="text-base sm:text-lg font-black font-kufi truncate flex-1 text-right">
+          <h2 className={`text-base sm:text-lg font-black ${isEn ? 'font-sans' : 'font-kufi'} truncate flex-1 ${isRTL ? 'text-right' : 'text-left'}`}>
             {data.title}
           </h2>
 
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 shrink-0 cursor-pointer mr-2"
-            title="إغلاق"
-            aria-label="إغلاق"
+            className={`w-8 h-8 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 shrink-0 cursor-pointer ${isRTL ? 'mr-2' : 'ml-2'}`}
+            title={isEn ? "Close" : "إغلاق"}
+            aria-label={isEn ? "Close" : "إغلاق"}
             style={{ color: textColor }}
           >
             <X size={20} />
@@ -126,7 +134,7 @@ export const ButtonExplanationModal: React.FC<ButtonExplanationModalProps> = ({
             >
               <div className="flex items-center gap-1.5 font-bold text-xs opacity-75">
                 <span>ℹ️</span>
-                <span>الوظيفة الأساسية</span>
+                <span>{isEn ? "Primary Function" : "الوظيفة الأساسية"}</span>
               </div>
               <p className="text-sm font-semibold leading-relaxed">
                 {generalPurpose}
@@ -145,7 +153,7 @@ export const ButtonExplanationModal: React.FC<ButtonExplanationModalProps> = ({
             >
               <div className="flex items-center gap-2 text-blue-700 dark:text-blue-400 font-black text-sm">
                 <span className="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center text-xs">👆</span>
-                <span>نقرة واحدة</span>
+                <span>{isEn ? "Single Tap" : "نقرة واحدة"}</span>
               </div>
               <p className="text-sm font-semibold leading-relaxed text-gray-800 dark:text-gray-100">
                 {singleClick}
@@ -164,7 +172,7 @@ export const ButtonExplanationModal: React.FC<ButtonExplanationModalProps> = ({
             >
               <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400 font-black text-sm">
                 <span className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center text-xs">⏱️</span>
-                <span>الضغط المطول</span>
+                <span>{isEn ? "Long Press" : "الضغط المطول"}</span>
               </div>
               <p className="text-sm font-semibold leading-relaxed text-gray-800 dark:text-gray-100">
                 {longPress}
@@ -195,7 +203,7 @@ export const ButtonExplanationModal: React.FC<ButtonExplanationModalProps> = ({
             onClick={onClose}
             className="w-full py-2.5 px-6 rounded-xl font-bold text-sm bg-black text-white dark:bg-white dark:text-black transition-transform active:scale-95 cursor-pointer text-center"
           >
-            إغلاق
+            {isEn ? "Close" : "إغلاق"}
           </button>
         </div>
       </div>

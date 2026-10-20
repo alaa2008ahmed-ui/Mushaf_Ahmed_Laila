@@ -1,16 +1,18 @@
 export interface DuaaItem {
     id: string;
     text: string;
+    textEn?: string;
     source: string;
+    sourceEn?: string;
     categoryId: 'quran' | 'sunnah' | 'jamia' | 'distress';
     count: number;
 }
 
 export const DUAA_CATEGORIES = [
-    { id: 'quran', title: 'أدعية من القرآن الكريم', description: 'أدعية مأثورة من الآيات الكريمة.', icon: 'fa-book-open' },
-    { id: 'sunnah', title: 'أدعية من السنة النبوية', description: 'أدعية صحيحة عن النبي ﷺ.', icon: 'fa-moon' },
-    { id: 'jamia', title: 'أدعية جامعة', description: 'شاملة لخيري الدنيا والآخرة.', icon: 'fa-hands-praying' },
-    { id: 'distress', title: 'أدعية تفريج الكروب', description: 'للهم والحزن والضيق والتفريج.', icon: 'fa-face-sad-tear' }
+    { id: 'quran', title: 'أدعية من القرآن الكريم', titleEn: 'Quranic Supplications', description: 'أدعية مأثورة من الآيات الكريمة.', descriptionEn: 'Supplications from the Holy Qur\'an.', icon: 'fa-book-open' },
+    { id: 'sunnah', title: 'أدعية من السنة النبوية', titleEn: 'Prophetic Sunnah Duas', description: 'أدعية صحيحة عن النبي ﷺ.', descriptionEn: 'Authentic supplications of the Prophet ﷺ.', icon: 'fa-moon' },
+    { id: 'jamia', title: 'أدعية جامعة', titleEn: 'Comprehensive Duas', description: 'شاملة لخيري الدنيا والآخرة.', descriptionEn: 'Encompassing the goodness of this life and the Hereafter.', icon: 'fa-hands-praying' },
+    { id: 'distress', title: 'أدعية تفريج الكروب', titleEn: 'Relief from Distress & Grief', description: 'للهم والحزن والضيق والتفريج.', descriptionEn: 'For anxiety, grief, hardship, and relief.', icon: 'fa-face-sad-tear' }
 ];
 
 // 1. أدعية من القرآن الكريم (61 دعاء)
@@ -275,34 +277,56 @@ const DISTRESS_RELIEF_DUAA: { text: string; source: string; count?: number }[] =
     { text: "اللَّهُمَّ يَا جَابِرَ الْقُلُوبِ الْمُنْكَسِرَةِ، اجْبُرْ كَسْرَ قُلُوبِنَا، وَاشْفِ صُدُورَنَا، وَفَرِّجْ كُرَبَنَا، وَأَنْتَ حَسْبُنَا وَنِعْمَ الْوَكِيلُ", source: "دعاء جبر الخواطر وتفريج الكرب" }
 ];
 
-// دمج جميع الأدعية مع إعطاء كل دعاء معرّفاً فريداً ومصدراً وتصنيفاً
+import { ADIA_EN_MAP } from './adiaTranslationsEn';
+
+// دمج جميع الأدعية مع إعطاء كل دعاء معرّفاً فريداً ومصدراً وتصنيفاً وترجمة إنجليزية
 export const ALL_DUAA: DuaaItem[] = [
-    ...QURAN_DUAA.map((d, i) => ({
-        id: `adia_quran_${i + 1}`,
-        text: d.text,
-        source: d.source,
-        categoryId: 'quran' as const,
-        count: d.count || 1
-    })),
-    ...SUNNAH_DUAA.map((d, i) => ({
-        id: `adia_sunnah_${i + 1}`,
-        text: d.text,
-        source: d.source,
-        categoryId: 'sunnah' as const,
-        count: d.count || 1
-    })),
-    ...JAMIA_DUAA.map((d, i) => ({
-        id: `adia_jamia_${i + 1}`,
-        text: d.text,
-        source: d.source,
-        categoryId: 'jamia' as const,
-        count: d.count || 1
-    })),
-    ...DISTRESS_RELIEF_DUAA.map((d, i) => ({
-        id: `adia_distress_${i + 1}`,
-        text: d.text,
-        source: d.source,
-        categoryId: 'distress' as const,
-        count: d.count || 1
-    }))
+    ...QURAN_DUAA.map((d, i) => {
+        const id = `adia_quran_${i + 1}`;
+        return {
+            id,
+            text: d.text,
+            textEn: ADIA_EN_MAP[id]?.text,
+            source: d.source,
+            sourceEn: ADIA_EN_MAP[id]?.source,
+            categoryId: 'quran' as const,
+            count: d.count || 1
+        };
+    }),
+    ...SUNNAH_DUAA.map((d, i) => {
+        const id = `adia_sunnah_${i + 1}`;
+        return {
+            id,
+            text: d.text,
+            textEn: ADIA_EN_MAP[id]?.text,
+            source: d.source,
+            sourceEn: ADIA_EN_MAP[id]?.source,
+            categoryId: 'sunnah' as const,
+            count: d.count || 1
+        };
+    }),
+    ...JAMIA_DUAA.map((d, i) => {
+        const id = `adia_jamia_${i + 1}`;
+        return {
+            id,
+            text: d.text,
+            textEn: ADIA_EN_MAP[id]?.text,
+            source: d.source,
+            sourceEn: ADIA_EN_MAP[id]?.source,
+            categoryId: 'jamia' as const,
+            count: d.count || 1
+        };
+    }),
+    ...DISTRESS_RELIEF_DUAA.map((d, i) => {
+        const id = `adia_distress_${i + 1}`;
+        return {
+            id,
+            text: d.text,
+            textEn: ADIA_EN_MAP[id]?.text,
+            source: d.source,
+            sourceEn: ADIA_EN_MAP[id]?.source,
+            categoryId: 'distress' as const,
+            count: d.count || 1
+        };
+    })
 ];

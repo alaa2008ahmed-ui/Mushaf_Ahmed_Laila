@@ -5,7 +5,7 @@ import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Capacitor } from '@capacitor/core';
 import { Geolocation } from '@capacitor/geolocation';
 import { prayerNamesAr, ADHAN_CHANNELS_CONFIG } from '../data/prayerTimesData';
-import { checkSupportsDST, calculateNightTimes, playNotificationSound } from '../utils/prayerTimesUtils';
+import { checkSupportsDST, calculateNightTimes, playNotificationSound, stopNotificationSound } from '../utils/prayerTimesUtils';
 import { updateAndroidWidget } from '../utils/widgetUtils';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { scheduleDeviceSilentWindows, cancelAllDeviceSilentWindows, setDeviceSilentNow } from '../utils/silentMode';
@@ -63,6 +63,8 @@ interface PrayerTimesContextType {
     activeSilentPrayerName?: string;
     activeIqamaAlert?: { prayerKey: string; prayerName: string; minutes: number; timeStr: string } | null;
     dismissIqamaAlert?: () => void;
+    activeAdhanAlert?: { prayerKey: string; prayerName: string; timeStr: string; soundFileName?: string } | null;
+    dismissAdhanAlert?: () => void;
 }
 
 // --- Default Configuration ---
@@ -241,7 +243,15 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
     const [isPrayerSilentActive, setIsPrayerSilentActive] = useState(false);
     const [activeSilentPrayerName, setActiveSilentPrayerName] = useState('');
     const [activeIqamaAlert, setActiveIqamaAlert] = useState<{ prayerKey: string; prayerName: string; minutes: number; timeStr: string } | null>(null);
-    const dismissIqamaAlert = useCallback(() => setActiveIqamaAlert(null), []);
+    const dismissIqamaAlert = useCallback(() => {
+        stopNotificationSound();
+        setActiveIqamaAlert(null);
+    }, []);
+    const [activeAdhanAlert, setActiveAdhanAlert] = useState<{ prayerKey: string; prayerName: string; timeStr: string; soundFileName?: string } | null>(null);
+    const dismissAdhanAlert = useCallback(() => {
+        stopNotificationSound();
+        setActiveAdhanAlert(null);
+    }, []);
     const triggeredAlertsRef = React.useRef<Set<string>>(new Set());
 
     // Check if phone/app should be automatically silent during prayer time
@@ -261,6 +271,9 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
             let activeName = '';
 
             for (const key of prayerKeys) {
+                // If this prayer is disabled/muted (button is RED), do NOT activate auto-silent or alerts
+                if (config.mutedPrayers?.[key]) continue;
+
                 // Determine if auto-silent is enabled for this prayer
                 let isSilentEnabled = false;
                 let duration = 15;
@@ -583,6 +596,15 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
     }, []);
 
     const updateConfig = useCallback((newConfig: Partial<PrayerConfig>) => {
+        if (newConfig.mutedPrayers) {
+            for (const [key, isMuted] of Object.entries(newConfig.mutedPrayers)) {
+                if (isMuted) {
+                    stopNotificationSound();
+                    setActiveAdhanAlert(prev => (prev?.prayerKey === key ? null : prev));
+                    setActiveIqamaAlert(prev => (prev?.prayerKey === key ? null : prev));
+                }
+            }
+        }
         setConfig(prev => {
             const updated = { ...prev, ...newConfig };
             try {
@@ -748,6 +770,13 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                 const supportsDST = checkSupportsDST(config.location.combinedCode, config.location.fullCountry);
                 const totalOffset = (config.prayerOffsets[key] || 0) + ((config.isSummerTime && supportsDST) ? 60 : 0);
                 prayerDate.setMinutes(prayerDate.getMinutes() + totalOffset);
+
+                // If this prayer is disabled/muted (button is RED), ALL notifications & alerts (visual and audio)
+                // for this prayer (Adhan, Pre-Adhan reminder, Iqama reminder, Auto-silent mode)
+                // are COMPLETELY STOPPED and never scheduled!
+                if (config.mutedPrayers?.[key]) {
+                    continue;
+                }
 
                 // 1. Adhan Notification (scheduled only if not muted)
                 if (!config.mutedPrayers?.[key] && key !== 'Sunrise') {
@@ -1296,6 +1325,7 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                 const isSummerTimeActive = config.isSummerTime && supportsDST;
 
                 for (const key of prayerCheckKeys) {
+                    const isPrayerMuted = !!config.mutedPrayers?.[key];
                     const totalOffset = (config.prayerOffsets[key] || 0) + (isSummerTimeActive ? 60 : 0);
                     const adjustedTime = applyOffset(times[key], totalOffset);
                     if (!adjustedTime || adjustedTime.includes('--')) continue;
@@ -1306,11 +1336,12 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
 
                     const diffMs = now.getTime() - prayerTimeObj.getTime();
 
-                    // 1. Live Adhan Sound: triggers when current time is at prayer time (within 0-45 seconds)
+                    // 1. Live Adhan Sound & Visual Alert: triggers when current time is at prayer time (within 0-45 seconds)
                     const adhanAlertKey = `${dayStr}_adhan_${key}`;
                     if (diffMs >= 0 && diffMs <= 45000 && !triggeredAlertsRef.current.has(adhanAlertKey)) {
                         triggeredAlertsRef.current.add(adhanAlertKey);
-                        if (!config.mutedPrayers?.[key] && key !== 'Sunrise') {
+                        // If this prayer is NOT muted (GREEN button), trigger audio and visual alerts
+                        if (!isPrayerMuted && key !== 'Sunrise') {
                             const toneConfig = config.tones?.[key];
                             let soundFileName = 'takbeer1.mp3';
                             let canPlay = true;
@@ -1357,7 +1388,31 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                                     console.log(`[Native Adhan] Adhan tone handled natively by Android notification channel for ${key}`);
                                 }
                             }
+
+                            // Trigger in-app visual modal alert
+                            setActiveAdhanAlert({
+                                prayerKey: key,
+                                prayerName: prayerNamesAr[key] || key,
+                                timeStr: adjustedTime,
+                                soundFileName
+                            });
+
+                            // Trigger web browser Notification if permission is granted
+                            if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+                                try {
+                                    new Notification(`حان الآن موعد أذان ${prayerNamesAr[key]}`, {
+                                        body: 'لا تنس ذكر الله. قال رسول الله ﷺ: "أرحنا بها يا بلال"',
+                                        icon: '/icon.png'
+                                    });
+                                } catch (e) {}
+                            }
                         }
+                    }
+
+                    // When prayer is disabled/muted (button is RED), ALL subsequent alerts (Pre-Adhan, Iqama, Auto-silent)
+                    // are COMPLETELY STOPPED and skipped for this prayer!
+                    if (isPrayerMuted) {
+                        continue;
                     }
 
                     // 2. Live Pre-Adhan Preparation Reminder (chime.mp3)
@@ -1491,7 +1546,8 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
             times, dates, nextPrayer, countdown, config, setConfig, 
             refreshLocation, manualSearch, updateConfig,
             isPrayerSilentActive, activeSilentPrayerName,
-            activeIqamaAlert, dismissIqamaAlert
+            activeIqamaAlert, dismissIqamaAlert,
+            activeAdhanAlert, dismissAdhanAlert
         }}>
             {children}
         </PrayerTimesContext.Provider>

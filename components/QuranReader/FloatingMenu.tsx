@@ -14,6 +14,7 @@ import {
   FileText,
   Headphones,
   Languages,
+  Globe,
   Clock,
   Sun,
   Compass,
@@ -40,13 +41,22 @@ import {
 } from "lucide-react";
 import {
   THEMES,
+  THEME_NAMES_EN,
   DEFAULT_SETTINGS,
   READERS,
   MEMORIZATION_READERS,
+  getReadersForMode,
+  isEnglishReader,
+  BILINGUAL_READER_ID,
+  TRANSLATION_READER_ID,
   FONTS,
+  ENGLISH_FONTS,
+  getFontsForMode,
+  FONT_NAMES_EN,
   TAFSEERS,
   JUZ_MAP,
   SURAH_NAMES_AR,
+  SURAH_NAMES_EN,
   SAJDAH_LOCATIONS,
   toArabic,
 } from "./constants";
@@ -61,6 +71,7 @@ import {
   normalizeUrl, 
   simplifyName 
 } from "../../utils/listenQuranUtils";
+import { getReciterDisplayName } from "../../utils/listenQuranTranslations";
 import { normalizeArabic } from "../../utils/voiceParser";
 import { setupNotifications } from "../../utils/notifications";
 
@@ -78,10 +89,10 @@ interface FloatingMenuProps {
   ) => React.CSSProperties;
   currentTheme: any;
   isLandscape: boolean;
-  onNavigate: (pageId: string) => void;
-  readingMode: "mushaf" | "tafseer" | "meanings" | "translation";
+  onNavigate: (pageId: string, params?: any) => void;
+  readingMode: "mushaf" | "tafseer" | "meanings" | "translation" | "bilingual";
   setReadingMode: (
-    mode: "mushaf" | "tafseer" | "meanings" | "translation",
+    mode: "mushaf" | "tafseer" | "meanings" | "translation" | "bilingual",
   ) => void;
   showToast: (msg: string) => void;
   isWirdMode?: boolean;
@@ -158,7 +169,8 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
   initialView = "main",
 }) => {
   const { applyPresetTheme: applyGlobalTheme } = useTheme();
-  const { t, translateMenuItem, language } = useLanguage();
+  const { t, translateMenuItem, language, isRTL, formatNumber } = useLanguage();
+  const isEn = language === 'en';
   const [selectedShortcuts, setSelectedShortcuts] = useState<string[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [tempShortcuts, setTempShortcuts] = useState<string[]>([]);
@@ -304,10 +316,13 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
 
   const filteredCurrentReaders = useMemo(() => {
     if (!readerSearch.trim()) return currentReadersList;
-    const norm = normalizeArabic(readerSearch.trim().toLowerCase());
-    return currentReadersList.filter((r) =>
-      normalizeArabic(r.name.toLowerCase()).includes(norm),
-    );
+    const q = readerSearch.trim().toLowerCase();
+    const norm = normalizeArabic(q);
+    return currentReadersList.filter((r) => {
+      const ar = normalizeArabic(r.name.toLowerCase());
+      const en = getReciterDisplayName(r.name, 'en').toLowerCase();
+      return ar.includes(norm) || en.includes(q);
+    });
   }, [currentReadersList, readerSearch]);
 
   const selectedReaderObj = useMemo(() => {
@@ -917,14 +932,14 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
         if (!abortControllerRef.current?.signal.aborted) {
           setProgress(100);
           if (failedCount === 0) {
-            setStatus("تم التحميل بنجاح!");
-            showToast("تم التحميل بنجاح!");
+            setStatus(isEn ? "Download completed successfully!" : "تم التحميل بنجاح!");
+            showToast(isEn ? "Download completed successfully!" : "تم التحميل بنجاح!");
           } else if (downloaded > 0) {
-            setStatus(`تم تحميل ${downloaded} عنصر (تعذر ${failedCount})`);
-            showToast(`تم تحميل ${downloaded} عنصر (تعذر ${failedCount})`);
+            setStatus(isEn ? `Downloaded ${downloaded} items (failed ${failedCount})` : `تم تحميل ${downloaded} عنصر (تعذر ${failedCount})`);
+            showToast(isEn ? `Downloaded ${downloaded} items (failed ${failedCount})` : `تم تحميل ${downloaded} عنصر (تعذر ${failedCount})`);
           } else {
-            setStatus("تعذر تحميل العناصر");
-            showToast("تعذر تحميل العناصر");
+            setStatus(isEn ? "Failed to download items" : "تعذر تحميل العناصر");
+            showToast(isEn ? "Failed to download items" : "تعذر تحميل العناصر");
           }
         }
       } else {
@@ -957,21 +972,22 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
 
         const total = finalTafseersToDownload.length;
         if (total === 0 && itemsList.length > 0) {
-          setStatus("جميع التفاسير المحددة محملة مسبقاً");
-          showToast("جميع التفاسير المحددة محملة مسبقاً");
+          setStatus(isEn ? "All selected tafseers are already downloaded" : "جميع التفاسير المحددة محملة مسبقاً");
+          showToast(isEn ? "All selected tafseers are already downloaded" : "جميع التفاسير المحددة محملة مسبقاً");
           setIsDownloading(false);
           return;
         }
 
         const skippedCount = itemsList.length - total;
         if (skippedCount > 0) {
-          showToast(`تم تخطي ${skippedCount} تفسير محمل مسبقاً`);
+          showToast(isEn ? `Skipped ${skippedCount} already downloaded tafseers` : `تم تخطي ${skippedCount} تفسير محمل مسبقاً`);
         }
 
         for (let i = 0; i < total; i++) {
           if (abortControllerRef.current?.signal.aborted) break;
           const s = finalTafseersToDownload[i];
-          setStatus(`جاري تحميل تفسير سورة ${SURAH_NAMES_AR[s - 1]}...`);
+          const sName = isEn ? (SURAH_NAMES_EN[s - 1] || SURAH_NAMES_AR[s - 1]) : SURAH_NAMES_AR[s - 1];
+          setStatus(isEn ? `Downloading Tafseer for Surah ${sName}...` : `جاري تحميل تفسير سورة ${SURAH_NAMES_AR[s - 1]}...`);
           await downloadSpecificTafsir(selectedTafsir, s);
           setProgress(((i + 1) / total) * 100);
         }
@@ -1144,7 +1160,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
     );
 
     window.dispatchEvent(new Event("theme-change"));
-    showToast(`تم تطبيق ثيم: ${theme.name}`);
+    showToast(isEn ? `Theme applied: ${THEME_NAMES_EN[themeId] || t(`theme.${themeId}`, theme.name)}` : `تم تطبيق ثيم: ${theme.name}`);
   };
 
   return (
@@ -1157,13 +1173,13 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
       />
       <div
         ref={floatingMenuRef}
-        className={`fixed ${isLandscape ? "top-0 bottom-0" : "top-[calc(3.5rem+var(--logical-safe-top))] bottom-[calc(3.5rem+var(--logical-safe-bottom))]"} right-0 z-[1000] flex items-start gap-4 pointer-events-none`}
-        dir="rtl"
+        className={`fixed ${isLandscape ? "top-0 bottom-0" : "top-[calc(3.5rem+var(--logical-safe-top))] bottom-[calc(3.5rem+var(--logical-safe-bottom))]"} ${isRTL ? "right-0" : "left-0"} z-[1000] flex items-start gap-4 pointer-events-none`}
+        dir={isRTL ? "rtl" : "ltr"}
       >
         {/* The Main Menu Container */}
         <div
           id="floating-menu"
-          className={`w-[190px] max-w-[85vw] ${isLandscape ? "rounded-none" : "rounded-l-2xl"} shadow-2xl transition-all duration-300 origin-top-right flex flex-col pointer-events-auto h-full ${isFloatingMenuOpen ? "opacity-100 visible scale-100 translate-y-0" : "opacity-0 invisible scale-95 -translate-y-4"}`}
+          className={`w-[190px] max-w-[85vw] ${isLandscape ? "rounded-none" : isRTL ? "rounded-l-2xl" : "rounded-r-2xl"} shadow-2xl transition-all duration-300 ${isRTL ? "origin-top-right" : "origin-top-left"} flex flex-col pointer-events-auto h-full ${isFloatingMenuOpen ? "opacity-100 visible scale-100 translate-y-0" : "opacity-0 invisible scale-95 -translate-y-4"}`}
           style={{
             fontFamily: currentTheme.font || "var(--font-amiri)",
             backgroundColor: currentTheme.bg || "#ffffff",
@@ -1174,8 +1190,8 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
             borderBottom: isLandscape
               ? "0px none"
               : `2px solid ${currentTheme.barBorder || currentTheme.accent || "#000000"}`,
-            borderLeft: `2px solid ${currentTheme.barBorder || currentTheme.accent || "#000000"}`,
-            borderRight: `0px solid transparent`,
+            borderLeft: isRTL ? `2px solid ${currentTheme.barBorder || currentTheme.accent || "#000000"}` : "0px solid transparent",
+            borderRight: !isRTL ? `2px solid ${currentTheme.barBorder || currentTheme.accent || "#000000"}` : "0px solid transparent",
           }}
         >
           {isAddModalOpen ? (
@@ -1188,7 +1204,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                     className="font-bold text-sm"
                     style={{ color: "#000000" }}
                   >
-                    تخصيص الاختصارات
+                    {isEn ? "Customize Shortcuts" : "تخصيص الاختصارات"}
                   </h3>
                 </div>
                 <button
@@ -1215,7 +1231,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                             setTempShortcuts([...tempShortcuts, shortcut.id]);
                           }
                         }}
-                        className="flex items-center gap-3 py-2 border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors text-right w-full group"
+                        className={`flex items-center gap-3 py-2 border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors ${isRTL ? "text-right" : "text-left"} w-full group`}
                       >
                         <div
                           style={{ color: isSelected ? "#000000" : "#9ca3af" }}
@@ -1246,13 +1262,13 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                   style={{ backgroundColor: iconColor }}
                 >
                   <Save size={16} />
-                  حفظ
+                  {isEn ? "Save" : "حفظ"}
                 </button>
                 <button
                   onClick={() => setIsAddModalOpen(false)}
                   className="px-4 py-2.5 bg-gray-200 text-gray-600 rounded-xl font-bold text-sm active:scale-95 transition-all"
                 >
-                  إلغاء
+                  {isEn ? "Cancel" : "إلغاء"}
                 </button>
               </div>
             </div>
@@ -1272,7 +1288,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                     className="font-bold text-xs"
                     style={{ color: currentTheme.text }}
                   >
-                    المظهر
+                    {isEn ? "Appearance" : "المظهر"}
                   </h3>
                 </div>
               </div>
@@ -1292,7 +1308,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                         className="text-[11px] font-bold opacity-80"
                         style={{ color: currentTheme.text }}
                       >
-                        قفل لون التحديد
+                        {isEn ? "Lock Highlight Color" : "قفل لون التحديد"}
                       </label>
                       <div className="relative inline-block w-8 align-middle select-none">
                         <input
@@ -1319,7 +1335,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                         className="text-[11px] font-bold opacity-80"
                         style={{ color: currentTheme.text }}
                       >
-                        إخفاء الأشرطة
+                        {isEn ? "Hide Toolbars" : "إخفاء الأشرطة"}
                       </label>
                       <div className="relative inline-block w-8 align-middle select-none">
                         <input
@@ -1341,8 +1357,8 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                             window.dispatchEvent(new Event("settings-change"));
                             showToast(
                               e.target.checked
-                                ? "تم تفعيل إخفاء الأشرطة"
-                                : "تم تعطيل إخفاء الأشرطة",
+                                ? (isEn ? "Hide toolbars enabled" : "تم تفعيل إخفاء الأشرطة")
+                                : (isEn ? "Hide toolbars disabled" : "تم تعطيل إخفاء الأشرطة"),
                             );
                           }}
                           className="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-2 appearance-none cursor-pointer"
@@ -1378,8 +1394,8 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                                       ? "#000000"
                                       : theme.accent ||
                                         theme.palette?.[0] ||
-                                        theme.barText ||
-                                        "#000000",
+                                        theme.bg ||
+                                        "#ffffff",
                               }}
                             >
                               {localStorage.getItem(
@@ -1403,7 +1419,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                               className="text-[7px] font-bold opacity-80 truncate w-full text-center leading-tight"
                               style={{ color: currentTheme.text }}
                             >
-                              {theme.name}
+                              {isEn ? (THEME_NAMES_EN[id] || t(`theme.${id}`, theme.name)) : theme.name}
                             </span>
                           </button>
                           {id === "lime" && (
@@ -1436,7 +1452,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                     color: currentTheme.text,
                   }}
                 >
-                  رجوع
+                  {isEn ? "Back" : "رجوع"}
                 </button>
               </div>
             </div>
@@ -1455,31 +1471,34 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                     className="font-bold text-sm"
                     style={{ color: currentTheme.text }}
                   >
-                    تحميل القرآن
+                    {isEn ? "Download Qur'an" : "تحميل القرآن"}
                   </h3>
                 </div>
               </div>
               <div className="flex-grow overflow-y-auto p-4 custom-scrollbar flex flex-col gap-2">
                 <MenuItem
                   icon={<Download size={18} />}
-                  label="تحميل المصحف"
+                  label={isEn ? "Download Mushaf" : "تحميل المصحف"}
                   onClick={() => setCurrentView("download_quran")}
                   iconColor={iconColor}
                   currentTheme={currentTheme}
+                  isRTL={isRTL}
                 />
                 <MenuItem
                   icon={<Headphones size={18} />}
-                  label="تحميل الاستماع"
+                  label={isEn ? "Download Listening" : "تحميل الاستماع"}
                   onClick={() => setCurrentView("download_listening")}
                   iconColor={iconColor}
                   currentTheme={currentTheme}
+                  isRTL={isRTL}
                 />
                 <MenuItem
                   icon={<Brain size={18} />}
-                  label="تحميل التحفيظ"
+                  label={isEn ? "Download Memorization" : "تحميل التحفيظ"}
                   onClick={() => setCurrentView("download_memorization")}
                   iconColor={iconColor}
                   currentTheme={currentTheme}
+                  isRTL={isRTL}
                 />
               </div>
               <div
@@ -1497,7 +1516,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                     color: currentTheme.text,
                   }}
                 >
-                  رجوع
+                  {isEn ? "Back" : "رجوع"}
                 </button>
               </div>
             </div>
@@ -1516,44 +1535,138 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                     className="font-bold text-sm"
                     style={{ color: currentTheme.text }}
                   >
-                    القراء
+                    {isEn ? "Reciters" : "القراء"}
                   </h3>
                 </div>
               </div>
               <div className="flex-grow overflow-y-auto p-4 custom-scrollbar flex flex-col justify-between">
-                <div className="grid grid-cols-1 gap-3">
-                  {READERS.map((r) => (
-                    <button
-                      key={r.id}
-                      onClick={() => {
-                        updateSetting("reader", r.id);
-                        setCurrentView("main");
-                        setIsFloatingMenuOpen(false);
-                        showToast(`تم اختيار القارئ: ${r.name}`);
-                      }}
-                      className={`flex items-center justify-between p-4 rounded-xl border transition-all ${settings.reader === r.id ? "border-emerald-500" : ""}`}
-                      style={{
-                        backgroundColor:
-                          settings.reader === r.id
-                            ? `${currentTheme.accent}15`
-                            : `${currentTheme.text}05`,
-                        borderColor:
-                          settings.reader === r.id
-                            ? currentTheme.accent
-                            : `${currentTheme.text}10`,
-                        color: currentTheme.text,
-                      }}
-                    >
-                      <span
-                        className={`text-sm font-bold ${settings.reader === r.id ? "text-emerald-500" : ""}`}
-                      >
-                        {r.name}
-                      </span>
-                      {settings.reader === r.id && (
-                        <Check size={16} className="text-emerald-500" />
-                      )}
-                    </button>
-                  ))}
+                <div className="flex flex-col gap-3">
+                  {/* Reciters view strictly filtered by readingMode */}
+                  {(() => {
+                    const modeReaders = getReadersForMode(readingMode, READERS);
+                    const isBilingualMode = readingMode === 'bilingual';
+                    const isTranslationMode = readingMode === 'translation';
+
+                    if (isBilingualMode || isTranslationMode) {
+                      const singleReader = modeReaders[0];
+                      if (!singleReader) return null;
+                      const isSelected = settings.reader === singleReader.id;
+                      const displayName = isEn ? getReciterDisplayName(singleReader.name, 'en') : singleReader.name;
+                      return (
+                        <div className="w-full">
+                          <div className="flex items-center gap-2 mb-2 px-1">
+                            <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 shadow-sm animate-pulse"></span>
+                            <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-500 dark:text-indigo-400">
+                              {isBilingualMode 
+                                ? (isEn ? "Recitation & Translation Reciter" : "قارئ التلاوة والترجمة الإنجليزية")
+                                : (isEn ? "English Translation Audio" : "قارئ الترجمة الإنجليزية (صحيح إنترناشونال)")}
+                            </h4>
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-500 dark:text-indigo-300 font-bold border border-indigo-500/30">
+                              {isBilingualMode ? 'AR+EN' : 'EN'}
+                            </span>
+                          </div>
+                          <div className="flex flex-col gap-2 w-full">
+                            <button
+                              key={singleReader.id}
+                              onClick={() => {
+                                updateSetting("reader", singleReader.id);
+                                setCurrentView("main");
+                                setIsFloatingMenuOpen(false);
+                                showToast(isEn ? `Selected reciter: ${displayName}` : `تم اختيار القارئ: ${singleReader.name}`);
+                              }}
+                              className={`w-full flex items-center justify-between p-3.5 rounded-xl border-2 transition-all font-bold text-start cursor-pointer active:scale-[0.99] ${
+                                isSelected
+                                  ? "bg-gradient-to-r from-indigo-600 to-blue-600 text-white border-indigo-400 shadow-md ring-2 ring-indigo-400/40"
+                                  : "bg-indigo-500/10 hover:bg-indigo-500/15 text-indigo-700 dark:text-indigo-200 border-indigo-500/40"
+                              }`}
+                            >
+                              <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isSelected ? 'bg-white/20 text-white' : 'bg-indigo-500/20 text-indigo-600 dark:text-indigo-300'}`}>
+                                  <Globe size={16} />
+                                </div>
+                                <div className="flex flex-col min-w-0">
+                                  <span className="text-xs font-bold truncate">
+                                    {displayName}
+                                  </span>
+                                  <span className={`text-[10px] truncate ${isSelected ? 'text-indigo-100 opacity-90' : 'opacity-75 text-indigo-900 dark:text-indigo-200'}`}>
+                                    {isEn ? (singleReader.subTitleEn || singleReader.subTitle) : singleReader.subTitle}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1.5 shrink-0 ml-2 mr-2">
+                                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                                  isSelected 
+                                    ? 'bg-white/25 text-white border border-white/30' 
+                                    : 'bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 border border-indigo-500/30'
+                                }`}>
+                                  {isBilingualMode ? 'AR+EN' : 'EN'}
+                                </span>
+                                {isSelected && <Check size={16} className="text-white shrink-0" />}
+                              </div>
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    // Mushaf, Tafseer, Meanings: ONLY Arabic reciters!
+                    return (
+                      <>
+                        <div className="flex items-center gap-2 mb-1 px-1">
+                          <span className="w-2 h-2 rounded-full opacity-40" style={{ backgroundColor: currentTheme.text }}></span>
+                          <h4 className="text-xs font-bold opacity-70" style={{ color: currentTheme.text }}>
+                            {isEn ? "Arabic Reciters" : "القراء باللغة العربية"}
+                          </h4>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-2 w-full">
+                          {modeReaders.map((r) => {
+                            const displayName = isEn ? getReciterDisplayName(r.name, 'en') : r.name;
+                            const isSelected = settings.reader === r.id;
+                            return (
+                              <button
+                                key={r.id}
+                                onClick={() => {
+                                  updateSetting("reader", r.id);
+                                  setCurrentView("main");
+                                  setIsFloatingMenuOpen(false);
+                                  showToast(isEn ? `Selected reciter: ${displayName}` : `تم اختيار القارئ: ${r.name}`);
+                                }}
+                                className={`flex items-center justify-between p-3.5 rounded-xl border transition-all ${
+                                  isSelected ? "border-emerald-500" : ""
+                                }`}
+                                style={{
+                                  backgroundColor:
+                                    isSelected
+                                      ? `${currentTheme.accent}15`
+                                      : `${currentTheme.text}05`,
+                                  borderColor:
+                                    isSelected
+                                      ? currentTheme.accent
+                                      : `${currentTheme.text}10`,
+                                  color: currentTheme.text,
+                                }}
+                              >
+                                <span
+                                  className={`text-xs font-bold truncate ${
+                                    isSelected ? "text-emerald-500" : ""
+                                  }`}
+                                >
+                                  {displayName}
+                                </span>
+                                {isSelected && (
+                                  <Check
+                                    size={16}
+                                    className="text-emerald-500 shrink-0"
+                                  />
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
               <div
@@ -1571,7 +1684,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                     color: currentTheme.text,
                   }}
                 >
-                  رجوع
+                  {isEn ? "Back" : "رجوع"}
                 </button>
               </div>
             </div>
@@ -1590,52 +1703,66 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                     className="font-bold text-sm"
                     style={{ color: currentTheme.text }}
                   >
-                    نوع الخط
+                    {readingMode === "translation" 
+                      ? (isEn ? "English Translation Fonts" : "خطوط الترجمة الإنجليزية")
+                      : (isEn ? "Font Style" : "نوع الخط")}
                   </h3>
                 </div>
               </div>
               <div className="flex-grow overflow-y-auto p-4 custom-scrollbar flex flex-col justify-between">
                 <div className="grid grid-cols-1 gap-3">
-                  {FONTS.map((f) => (
-                    <button
-                      key={f.id}
-                      onClick={() => {
-                        updateSetting("fontFamily", f.id);
-                        setCurrentView("main");
-                        setIsFloatingMenuOpen(false);
-                        showToast(`تم تغيير الخط إلى: ${f.name}`);
-                      }}
-                      className={`flex flex-col p-4 rounded-xl border transition-all ${settings.fontFamily === f.id ? "border-emerald-500" : ""}`}
-                      style={{
-                        backgroundColor:
-                          settings.fontFamily === f.id
-                            ? `${currentTheme.accent}15`
-                            : `${currentTheme.text}05`,
-                        borderColor:
-                          settings.fontFamily === f.id
-                            ? currentTheme.accent
-                            : `${currentTheme.text}10`,
-                        color: currentTheme.text,
-                      }}
-                    >
-                      <div className="flex items-center justify-between w-full mb-2">
-                        <span
-                          className={`text-sm font-bold ${settings.fontFamily === f.id ? "text-emerald-500" : ""}`}
-                        >
-                          {f.name}
-                        </span>
-                        {settings.fontFamily === f.id && (
-                          <Check size={16} className="text-emerald-500" />
-                        )}
-                      </div>
+                  {(readingMode === "translation" ? ENGLISH_FONTS : FONTS).map((f) => {
+                    const isTranslationMode = readingMode === "translation";
+                    const fontDisplayName = isTranslationMode 
+                      ? (f.nameEn || f.name) 
+                      : (isEn ? (FONT_NAMES_EN[f.name] || f.name) : f.name);
+                    const isSelected = isTranslationMode
+                      ? (settings.fontFamily === f.id || ((!settings.fontFamily || settings.fontFamily.startsWith('var(--font-')) && f.id === ENGLISH_FONTS[0].id))
+                      : settings.fontFamily === f.id;
+                    const previewText = isTranslationMode
+                      ? (f.previewEn || "In the name of Allah, the Entirely Merciful")
+                      : "﴿بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ﴾";
+                    return (
+                      <button
+                        key={f.id}
+                        onClick={() => {
+                          updateSetting("fontFamily", f.id);
+                          setCurrentView("main");
+                          setIsFloatingMenuOpen(false);
+                          showToast(isEn ? `Font changed to: ${fontDisplayName}` : `تم تغيير الخط إلى: ${fontDisplayName}`);
+                        }}
+                        className={`flex flex-col p-4 rounded-xl border transition-all ${isSelected ? "border-emerald-500 shadow-sm" : ""}`}
+                        style={{
+                          backgroundColor:
+                            isSelected
+                              ? `${currentTheme.accent}15`
+                              : `${currentTheme.text}05`,
+                          borderColor:
+                            isSelected
+                              ? currentTheme.accent
+                              : `${currentTheme.text}10`,
+                          color: currentTheme.text,
+                        }}
+                      >
+                        <div className="flex items-center justify-between w-full mb-2">
+                          <span
+                            className={`text-sm font-bold ${isSelected ? "text-emerald-500" : ""}`}
+                          >
+                            {fontDisplayName}
+                          </span>
+                          {isSelected && (
+                            <Check size={16} className="text-emerald-500" />
+                          )}
+                        </div>
                       <span
-                        className="text-xl text-center opacity-70"
+                        className={`text-center opacity-80 ${isTranslationMode ? "text-sm text-left italic font-normal" : "text-xl text-center"}`}
                         style={{ fontFamily: f.id }}
                       >
-                        ﴿بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ﴾
+                        {previewText}
                       </span>
                     </button>
-                  ))}
+                  );
+                })}
                 </div>
               </div>
               <div
@@ -1653,7 +1780,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                     color: currentTheme.text,
                   }}
                 >
-                  رجوع
+                  {isEn ? "Back" : "رجوع"}
                 </button>
               </div>
             </div>
@@ -1672,7 +1799,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                     className="font-bold text-sm"
                     style={{ color: currentTheme.text }}
                   >
-                    الإشعارات
+                    {isEn ? "Notifications" : "الإشعارات"}
                   </h3>
                 </div>
               </div>
@@ -1680,6 +1807,8 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                 <NotificationSettingsContent
                   showToast={showToast}
                   currentTheme={currentTheme}
+                  isEn={isEn}
+                  isRTL={isRTL}
                   modeSuffix={
                     isMemorizationMode
                       ? `_memorization_${isLandscape ? "h" : "v"}`
@@ -1708,7 +1837,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                     color: currentTheme.text,
                   }}
                 >
-                  رجوع
+                  {isEn ? "Back" : "رجوع"}
                 </button>
               </div>
             </div>
@@ -1727,7 +1856,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                     className="font-bold text-sm"
                     style={{ color: currentTheme.text }}
                   >
-                    تحميل التفسير
+                    {isEn ? "Download Tafseer" : "تحميل التفسير"}
                   </h3>
                 </div>
               </div>
@@ -1736,17 +1865,17 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                   {/* Tafsir Selection */}
                   <div className="space-y-2">
                     <label
-                      className="text-xs font-bold opacity-50 block"
+                      className={`text-xs font-bold opacity-50 block ${isRTL ? "text-right" : "text-left"}`}
                       style={{ color: currentTheme.text }}
                     >
-                      اختر التفسير
+                      {isEn ? "Select Tafseer" : "اختر التفسير"}
                     </label>
                     <div className="grid grid-cols-1 gap-2">
                       {TAFSEERS.map((t) => (
                         <button
                           key={t.id}
                           onClick={() => setSelectedTafsir(t.id)}
-                          className={`p-3 text-xs font-bold rounded-xl border transition-all text-right flex justify-between items-center ${selectedTafsir === t.id ? "border-emerald-500" : ""}`}
+                          className={`p-3 text-xs font-bold rounded-xl border transition-all ${isRTL ? "text-right" : "text-left"} flex justify-between items-center ${selectedTafsir === t.id ? "border-emerald-500" : ""}`}
                           style={{
                             backgroundColor:
                               selectedTafsir === t.id
@@ -1762,7 +1891,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                                 : currentTheme.text,
                           }}
                         >
-                          <span>{t.name}</span>
+                          <span>{isEn ? (t.englishName || t.name) : t.name}</span>
                           {selectedTafsir === t.id && (
                             <Check size={14} className="text-emerald-500" />
                           )}
@@ -1774,10 +1903,10 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                   {/* Surah Selection */}
                   <div className="space-y-2">
                     <label
-                      className="text-xs font-bold opacity-50 block"
+                      className={`text-xs font-bold opacity-50 block ${isRTL ? "text-right" : "text-left"}`}
                       style={{ color: currentTheme.text }}
                     >
-                      اختر السور
+                      {isEn ? "Select Surahs" : "اختر السور"}
                     </label>
                     <div className="grid grid-cols-3 gap-2 max-h-40 overflow-y-auto p-1 custom-scrollbar">
                       <button
@@ -1793,11 +1922,12 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                             : {}
                         }
                       >
-                        الكل
+                        {isEn ? "All" : "الكل"}
                       </button>
                       {SURAH_NAMES_AR.map((name, i) => {
                         const isDownloaded = downloadedTafseers.includes((i + 1).toString());
                         const isSelected = selectedSurahs.includes((i + 1).toString());
+                        const surahDisplayName = isEn ? (SURAH_NAMES_EN[i] || name) : name;
                         return (
                           <button
                             key={i}
@@ -1819,7 +1949,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                           >
                             <div className="flex items-center justify-center gap-1">
                               {isDownloaded && <Check size={10} />}
-                              <span>{name}</span>
+                              <span className="truncate">{surahDisplayName}</span>
                             </div>
                           </button>
                         );
@@ -1830,10 +1960,10 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                   {/* Juz Selection */}
                   <div className="space-y-2">
                     <label
-                      className="text-xs font-bold opacity-50 block"
+                      className={`text-xs font-bold opacity-50 block ${isRTL ? "text-right" : "text-left"}`}
                       style={{ color: currentTheme.text }}
                     >
-                      اختر الأجزاء
+                      {isEn ? "Select Juzs" : "اختر الأجزاء"}
                     </label>
                     <div className="grid grid-cols-4 gap-2 max-h-32 overflow-y-auto p-1 custom-scrollbar">
                       {Array.from({ length: 30 }, (_, i) => i + 1).map((j) => {
@@ -1858,7 +1988,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                           >
                             <div className="flex items-center justify-center gap-1">
                               {isDownloaded && <Check size={10} />}
-                              <span>ج {j}</span>
+                              <span>{isEn ? `Juz ${j}` : `ج ${toArabic(j)}`}</span>
                             </div>
                           </button>
                         );
@@ -1902,7 +2032,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                     style={!isDownloading ? { backgroundColor: iconColor } : {}}
                   >
                     {isDownloading ? <X size={16} /> : <Download size={16} />}
-                    {isDownloading ? "إيقاف" : isAllSelectedDownloaded() ? "محمل" : "تحميل"}
+                    {isDownloading ? (isEn ? "Stop" : "إيقاف") : isAllSelectedDownloaded() ? (isEn ? "Downloaded" : "محمل") : (isEn ? "Download" : "تحميل")}
                   </button>
                   <button
                     onClick={() => setCurrentView("main")}
@@ -1912,7 +2042,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                       color: currentTheme.text,
                     }}
                   >
-                    رجوع
+                    {isEn ? "Back" : "رجوع"}
                   </button>
                 </div>
               </div>
@@ -1932,7 +2062,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                     className="font-bold text-sm"
                     style={{ color: currentTheme.text }}
                   >
-                    تخصيص الواجهة
+                    {isEn ? "Interface Customization" : "تخصيص الواجهة"}
                   </h3>
                 </div>
               </div>
@@ -1944,6 +2074,8 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                   isWirdMode={isWirdMode}
                   isMemorizationMode={isMemorizationMode}
                   showToast={showToast}
+                  isEn={isEn}
+                  isRTL={isRTL}
                 />
               </div>
               <div
@@ -1961,7 +2093,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                     color: currentTheme.text,
                   }}
                 >
-                  رجوع
+                  {isEn ? "Back" : "رجوع"}
                 </button>
               </div>
             </div>
@@ -1983,10 +2115,10 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                     style={{ color: currentTheme.text }}
                   >
                     {currentView === "download_quran"
-                      ? "تحميل المصحف"
+                      ? (isEn ? "Download Mushaf" : "تحميل المصحف")
                       : currentView === "download_listening"
-                        ? "تحميل الاستماع"
-                        : "تحميل التحفيظ"}
+                        ? (isEn ? "Download Listening" : "تحميل الاستماع")
+                        : (isEn ? "Download Memorization" : "تحميل التحفيظ")}
                   </h3>
                 </div>
               </div>
@@ -1994,18 +2126,18 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                 <div className="space-y-6">
                   {/* Reciter Selection */}
                   <div className="space-y-2">
-                    <div className="flex justify-between items-center" dir="rtl">
+                    <div className="flex justify-between items-center" dir={isRTL ? "rtl" : "ltr"}>
                       <label
                         className="text-xs font-bold opacity-50 block"
                         style={{ color: currentTheme.text }}
                       >
-                        اختر القارئ
+                        {isEn ? "Select Reciter" : "اختر القارئ"}
                       </label>
                       {currentView === "download_listening" && selectedReaderObj && (
                         <span className="text-[10px] font-bold text-emerald-500">
                           {availableSurahsList.length < 114
-                            ? `(متوفر: ${availableSurahsList.length} سورة)`
-                            : "(المصحف كامل)"}
+                            ? (isEn ? `(Available: ${availableSurahsList.length} surahs)` : `(متوفر: ${availableSurahsList.length} سورة)`)
+                            : (isEn ? "(Complete Qur'an)" : "(المصحف كامل)")}
                         </span>
                       )}
                     </div>
@@ -2017,24 +2149,24 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                           type="text"
                           value={readerSearch}
                           onChange={(e) => setReaderSearch(e.target.value)}
-                          placeholder="ابحث عن قارئ..."
-                          className="w-full py-1.5 pr-7 pl-3 text-xs rounded-lg border outline-none"
+                          placeholder={isEn ? "Search reciter..." : "ابحث عن قارئ..."}
+                          className={`w-full py-1.5 ${isRTL ? "pr-7 pl-3" : "pl-7 pr-3"} text-xs rounded-lg border outline-none`}
                           style={{
                             backgroundColor: `${currentTheme.text}05`,
                             borderColor: `${currentTheme.text}15`,
                             color: currentTheme.text,
                           }}
-                          dir="rtl"
+                          dir={isRTL ? "rtl" : "ltr"}
                         />
                         <Search
                           size={12}
-                          className="absolute right-2.5 top-2.5 opacity-40"
+                          className={`absolute ${isRTL ? "right-2.5" : "left-2.5"} top-2.5 opacity-40`}
                           style={{ color: currentTheme.text }}
                         />
                         {readerSearch && (
                           <button
                             onClick={() => setReaderSearch("")}
-                            className="absolute left-2.5 top-2 text-xs opacity-40 hover:opacity-100"
+                            className={`absolute ${isRTL ? "left-2.5" : "right-2.5"} top-2 text-xs opacity-40 hover:opacity-100`}
                             style={{ color: currentTheme.text }}
                           >
                             <X size={12} />
@@ -2043,7 +2175,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                       </div>
                     )}
 
-                    <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-1 custom-scrollbar" dir="rtl">
+                    <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-1 custom-scrollbar" dir={isRTL ? "rtl" : "ltr"}>
                       {filteredCurrentReaders.map((r) => (
                         <button
                           key={r.id}
@@ -2070,7 +2202,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                                 : currentTheme.text,
                           }}
                         >
-                          {r.name}
+                          <span className="truncate block">{isEn ? getReciterDisplayName(r.name, 'en') : r.name}</span>
                         </button>
                       ))}
                     </div>
@@ -2078,18 +2210,18 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                     {/* Warning banner when reader has partial Quran */}
                     {currentView === "download_listening" && selectedReaderObj && availableSurahsList.length < 114 && (
                       <div
-                        className="flex items-start gap-2 p-2 rounded-lg border text-[11px] text-right mt-1 animate-fadeIn"
+                        className={`flex items-start gap-2 p-2 rounded-lg border text-[11px] ${isRTL ? "text-right" : "text-left"} mt-1 animate-fadeIn`}
                         style={{
                           backgroundColor: `${currentTheme.accent}10`,
                           borderColor: `${currentTheme.accent}30`,
                           color: currentTheme.text,
                         }}
-                        dir="rtl"
+                        dir={isRTL ? "rtl" : "ltr"}
                       >
                         <Info size={14} className="shrink-0 text-amber-500 mt-0.5" />
                         <div>
-                          <span className="font-bold">تنبيه للقارئ ({selectedReaderObj.name}): </span>
-                          <span>مسجل له {availableSurahsList.length} سورة فقط من أصل 114 سورة. تم ضبط قائمة السور والأجزاء لتشمل فقط ما هو متوفر له تفادياً لتوقف التحميل.</span>
+                          <span className="font-bold">{isEn ? `Notice for reciter (${getReciterDisplayName(selectedReaderObj.name, 'en')}): ` : `تنبيه للقارئ (${selectedReaderObj.name}): `}</span>
+                          <span>{isEn ? `Only ${availableSurahsList.length} surahs recorded out of 114. Surahs and Juzs adjusted to available only to prevent stoppage.` : `مسجل له ${availableSurahsList.length} سورة فقط من أصل 114 سورة. تم ضبط قائمة السور والأجزاء لتشمل فقط ما هو متوفر له تفادياً لتوقف التحميل.`}</span>
                         </div>
                       </div>
                     )}
@@ -2097,20 +2229,22 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
 
                   {/* Surah Selection */}
                   <div className="space-y-2">
-                    <div className="flex justify-between items-center" dir="rtl">
+                    <div className="flex justify-between items-center" dir={isRTL ? "rtl" : "ltr"}>
                       <label
                         className="text-xs font-bold opacity-50 block"
                         style={{ color: currentTheme.text }}
                       >
                         {currentView === "download_listening" && availableSurahsList.length < 114
-                          ? `اختر السور (المتاح للقارئ: ${availableSurahsList.length} سورة فقط)`
-                          : "اختر السور"}
+                          ? (isEn ? `Select Surahs (${availableSurahsList.length} available)` : `اختر السور (المتاح للقارئ: ${availableSurahsList.length} سورة فقط)`)
+                          : (isEn ? "Select Surahs" : "اختر السور")}
                       </label>
                       {selectedSurahs.length > 0 && !selectedSurahs.includes("all") && (
-                        <span className="text-[10px] opacity-60 font-medium">محدد: {selectedSurahs.length} سورة</span>
+                        <span className="text-[10px] opacity-60 font-medium">
+                          {isEn ? `Selected: ${selectedSurahs.length} surahs` : `محدد: ${selectedSurahs.length} سورة`}
+                        </span>
                       )}
                     </div>
-                    <div className="grid grid-cols-3 gap-2 max-h-40 overflow-y-auto p-1 custom-scrollbar" dir="rtl">
+                    <div className="grid grid-cols-3 gap-2 max-h-40 overflow-y-auto p-1 custom-scrollbar" dir={isRTL ? "rtl" : "ltr"}>
                       <button
                         onClick={() => toggleSelection("all", "surah")}
                         className={`p-2 text-[10px] font-bold rounded-lg border transition-all ${selectedSurahs.includes("all") ? "bg-emerald-500 border-emerald-500 text-white" : ""}`}
@@ -2125,12 +2259,13 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                         }
                       >
                         {currentView === "download_listening" && availableSurahsList.length < 114
-                          ? `المتاح (${availableSurahsList.length})`
-                          : "الكل"}
+                          ? (isEn ? `Available (${availableSurahsList.length})` : `المتاح (${availableSurahsList.length})`)
+                          : (isEn ? "All" : "الكل")}
                       </button>
                       {availableSurahsList.map((surah) => {
                         const isDownloaded = downloadedSurahs.includes(surah.number.toString());
                         const isSelected = selectedSurahs.includes(surah.number.toString());
+                        const surahDisplayName = isEn ? (SURAH_NAMES_EN[surah.number - 1] || surah.name) : surah.name;
                         return (
                           <button
                             key={surah.number}
@@ -2152,7 +2287,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                           >
                             <div className="flex items-center justify-center gap-1">
                               {isDownloaded && <Check size={10} />}
-                              <span>{surah.name}</span>
+                              <span className="truncate">{surahDisplayName}</span>
                             </div>
                           </button>
                         );
@@ -2162,20 +2297,22 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
 
                   {/* Juz Selection */}
                   <div className="space-y-2">
-                    <div className="flex justify-between items-center" dir="rtl">
+                    <div className="flex justify-between items-center" dir={isRTL ? "rtl" : "ltr"}>
                       <label
                         className="text-xs font-bold opacity-50 block"
                         style={{ color: currentTheme.text }}
                       >
                         {currentView === "download_listening" && availableSurahsList.length < 114
-                          ? "اختر الأجزاء (تعديل تلقائي للمتوفر فقط)"
-                          : "اختر الأجزاء"}
+                          ? (isEn ? "Select Juzs (Available only)" : "اختر الأجزاء (تعديل تلقائي للمتوفر فقط)")
+                          : (isEn ? "Select Juzs" : "اختر الأجزاء")}
                       </label>
                       {selectedJuzs.length > 0 && (
-                        <span className="text-[10px] opacity-60 font-medium">محدد: {selectedJuzs.length} جزء</span>
+                        <span className="text-[10px] opacity-60 font-medium">
+                          {isEn ? `Selected: ${selectedJuzs.length} juzs` : `محدد: ${selectedJuzs.length} جزء`}
+                        </span>
                       )}
                     </div>
-                    <div className="grid grid-cols-4 gap-2 max-h-32 overflow-y-auto p-1 custom-scrollbar" dir="rtl">
+                    <div className="grid grid-cols-4 gap-2 max-h-32 overflow-y-auto p-1 custom-scrollbar" dir={isRTL ? "rtl" : "ltr"}>
                       {Array.from({ length: 30 }, (_, i) => i + 1).map((j) => {
                         const isDownloaded = downloadedJuzs.includes(j.toString());
                         const isSelected = selectedJuzs.includes(j.toString());
@@ -2199,7 +2336,9 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                               toggleSelection(j.toString(), "juz");
                               if (isPartialJuz && !isSelected) {
                                 showToast(
-                                  `تم تعديل الجزء ${j} ليشمل ${availableInThisJuz.length} سورة متوفرة فقط لهذا القارئ`,
+                                  isEn
+                                    ? `Juz ${j} adjusted to include only ${availableInThisJuz.length} available surahs`
+                                    : `تم تعديل الجزء ${j} ليشمل ${availableInThisJuz.length} سورة متوفرة فقط لهذا القارئ`,
                                 );
                               }
                             }}
@@ -2218,12 +2357,12 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                           >
                             <div className="flex items-center justify-center gap-1">
                               {isDownloaded && <Check size={10} />}
-                              <span>ج {j}</span>
+                              <span>{isEn ? `Juz ${j}` : `ج ${toArabic(j)}`}</span>
                             </div>
                             {isUnavailable ? (
-                              <span className="text-[8px] text-red-500 opacity-80">غير متوفر</span>
+                              <span className="text-[8px] text-red-500 opacity-80">{isEn ? "Unavailable" : "غير متوفر"}</span>
                             ) : isPartialJuz ? (
-                              <span className="text-[8px] text-amber-500">({availableInThisJuz.length} سورة)</span>
+                              <span className="text-[8px] text-amber-500">({availableInThisJuz.length} {isEn ? "surahs" : "سورة"})</span>
                             ) : null}
                           </button>
                         );
@@ -2259,7 +2398,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                     </div>
                     {currentView === "download_listening" && availableSurahsList.length < 114 && (
                       <p className="text-[10px] text-emerald-600 dark:text-emerald-400 text-center font-bold">
-                        جاري تحميل السور المتوفرة للقارئ فقط
+                        {isEn ? "Downloading available surahs for this reciter only" : "جاري تحميل السور المتوفرة للقارئ فقط"}
                       </p>
                     )}
                   </div>
@@ -2277,7 +2416,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                     style={!isDownloading ? { backgroundColor: iconColor } : {}}
                   >
                     {isDownloading ? <X size={16} /> : <Download size={16} />}
-                    {isDownloading ? "إيقاف" : isAllSelectedDownloaded() ? "محمل" : "تحميل"}
+                    {isDownloading ? (isEn ? "Stop" : "إيقاف") : isAllSelectedDownloaded() ? (isEn ? "Downloaded" : "محمل") : (isEn ? "Download" : "تحميل")}
                   </button>
                   <button
                     onClick={() => setCurrentView("download_quran_menu")}
@@ -2287,7 +2426,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                       color: currentTheme.text,
                     }}
                   >
-                    رجوع
+                    {isEn ? "Back" : "رجوع"}
                   </button>
                 </div>
               </div>
@@ -2307,7 +2446,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                     className="font-bold text-sm"
                     style={{ color: currentTheme.text }}
                   >
-                    العلامات المرجعية
+                    {isEn ? "Bookmarks" : "العلامات المرجعية"}
                   </h3>
                 </div>
               </div>
@@ -2319,7 +2458,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                   >
                     <Bookmark size={40} className="opacity-20" />
                     <span className="text-xs font-bold">
-                      لا توجد علامات مرجعية
+                      {isEn ? "No bookmarks found" : "لا توجد علامات مرجعية"}
                     </span>
                   </div>
                 ) : (
@@ -2340,12 +2479,12 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                           }
                         }}
                       >
-                        <div className="flex flex-col gap-0.5">
+                        <div className={`flex flex-col gap-0.5 ${isRTL ? "text-right" : "text-left"}`}>
                           <span className="font-bold text-sm">
-                            سورة {SURAH_NAMES_AR[b.s - 1]}
+                            {isEn ? `Surah ${SURAH_NAMES_EN[b.s - 1] || SURAH_NAMES_AR[b.s - 1]}` : `سورة ${SURAH_NAMES_AR[b.s - 1]}`}
                           </span>
                           <span className="text-[10px] opacity-60">
-                            آية {b.a} • {b.date}
+                            {isEn ? `Ayah ${b.a} • ${b.date}` : `آية ${toArabic(b.a)} • ${b.date}`}
                           </span>
                         </div>
                         <button
@@ -2378,7 +2517,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                     color: currentTheme.text,
                   }}
                 >
-                  رجوع
+                  {isEn ? "Back" : "رجوع"}
                 </button>
               </div>
             </div>
@@ -2400,7 +2539,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                     border: `1px solid ${currentTheme.accent}40`,
                   }}
                 >
-                  <span className="text-[10px] font-bold">معلومات السجدة</span>
+                  <span className="text-[10px] font-bold">{isEn ? "Sajdah Info" : "معلومات السجدة"}</span>
                 </button>
               </div>
               <div className="flex-grow overflow-y-auto p-2.5 custom-scrollbar">
@@ -2437,17 +2576,17 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                           className="font-bold text-[11px] text-center"
                           style={{ fontFamily: "inherit" }}
                         >
-                          {toArabic(idx + 1)} - سورة {SURAH_NAMES_AR[loc.s - 1]}
+                          {isEn ? `${idx + 1} - Surah ${SURAH_NAMES_EN[loc.s - 1] || SURAH_NAMES_AR[loc.s - 1]}` : `${toArabic(idx + 1)} - سورة ${SURAH_NAMES_AR[loc.s - 1]}`}
                         </div>
                         <div className="flex items-center gap-2 text-[9px] opacity-70 font-bold">
                           <span className="flex items-center gap-1">
                             <i className="fa-regular fa-file-lines text-[8px]"></i>
-                            آية {toArabic(loc.a)}
+                            {isEn ? `Ayah ${loc.a}` : `آية ${toArabic(loc.a)}`}
                           </span>
                           <span className="w-px h-2.5 bg-current opacity-20"></span>
                           <span className="flex items-center gap-1">
                             <i className="fa-solid fa-book-open text-[8px]"></i>
-                            الجزء {toArabic(juzNum)}
+                            {isEn ? `Juz ${juzNum}` : `الجزء ${toArabic(juzNum)}`}
                           </span>
                         </div>
                       </div>
@@ -2470,7 +2609,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                     color: currentTheme.text,
                   }}
                 >
-                  رجوع
+                  {isEn ? "Back" : "رجوع"}
                 </button>
               </div>
             </div>
@@ -2479,108 +2618,192 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
             <div className="p-2 flex flex-col justify-between overflow-y-auto flex-grow custom-scrollbar min-h-0">
               {/* خيارات القراءة */}
               <MenuSection
-                title="خيارات القراءة"
+                title={isEn ? "Reading Options" : "خيارات القراءة"}
                 iconColor={sidebarIconColor}
                 titleColor="#2563eb"
                 currentTheme={currentTheme}
+                isRTL={isRTL}
               >
-                <MenuItem
-                  data-id="menu-item-mushaf"
-                  icon={<BookText size={18} />}
-                  label="المصحف"
-                  onClick={() =>
-                    handleAction(() => {
-                      setReadingMode("mushaf");
-                    })
-                  }
-                  iconColor={sidebarIconColor}
-                  isActive={readingMode === "mushaf"}
-                  currentTheme={currentTheme}
-                />
-                {!isLandscape && (
-                  <>
+                {isLandscape ? (
+                  isEn ? (
+                    <>
+                      <MenuItem
+                        data-id="menu-item-translation"
+                        icon={<Languages size={18} />}
+                        label="Translation"
+                        onClick={() =>
+                          handleAction(() => setReadingMode("translation"))
+                        }
+                        iconColor={sidebarIconColor}
+                        isActive={readingMode === "translation"}
+                        currentTheme={currentTheme}
+                        isRTL={isRTL}
+                      />
+                      <MenuItem
+                        data-id="menu-item-bilingual"
+                        icon={<Globe size={18} />}
+                        label="Recitation & Translation"
+                        onClick={() =>
+                          handleAction(() => setReadingMode("bilingual"))
+                        }
+                        iconColor={sidebarIconColor}
+                        isActive={readingMode === "bilingual"}
+                        currentTheme={currentTheme}
+                        isRTL={isRTL}
+                      />
+                    </>
+                  ) : (
                     <MenuItem
-                      data-id="menu-item-tafseer"
-                      icon={<Book size={18} />}
-                      label="التفسير"
-                      onClick={() => handleAction(() => setReadingMode("tafseer"))}
-                      iconColor={sidebarIconColor}
-                      isActive={readingMode === "tafseer"}
-                      currentTheme={currentTheme}
-                    />
-                    <MenuItem
-                      data-id="menu-item-meanings"
-                      icon={<FileText size={18} />}
-                      label="المعاني"
-                      onClick={() => handleAction(() => setReadingMode("meanings"))}
-                      iconColor={sidebarIconColor}
-                      isActive={readingMode === "meanings"}
-                      currentTheme={currentTheme}
-                    />
-                    <MenuItem
-                      data-id="menu-item-translation"
-                      icon={<Languages size={18} />}
-                      label="الترجمة"
+                      data-id="menu-item-mushaf"
+                      icon={<BookText size={18} />}
+                      label="المصحف"
                       onClick={() =>
-                        handleAction(() => setReadingMode("translation"))
+                        handleAction(() => {
+                          setReadingMode("mushaf");
+                        })
                       }
                       iconColor={sidebarIconColor}
-                      isActive={readingMode === "translation"}
+                      isActive={readingMode === "mushaf"}
                       currentTheme={currentTheme}
+                      isRTL={isRTL}
                     />
-                  </>
+                  )
+                ) : (
+                  isEn ? (
+                    <>
+                      <MenuItem
+                        data-id="menu-item-translation"
+                        icon={<Languages size={18} />}
+                        label="Translation"
+                        onClick={() =>
+                          handleAction(() => setReadingMode("translation"))
+                        }
+                        iconColor={sidebarIconColor}
+                        isActive={readingMode === "translation"}
+                        currentTheme={currentTheme}
+                        isRTL={isRTL}
+                      />
+                      <MenuItem
+                        data-id="menu-item-bilingual"
+                        icon={<Globe size={18} />}
+                        label="Recitation & Translation"
+                        onClick={() =>
+                          handleAction(() => setReadingMode("bilingual"))
+                        }
+                        iconColor={sidebarIconColor}
+                        isActive={readingMode === "bilingual"}
+                        currentTheme={currentTheme}
+                        isRTL={isRTL}
+                      />
+                    </>
+                  ) : (
+                    <>
+                      <MenuItem
+                        data-id="menu-item-mushaf"
+                        icon={<BookText size={18} />}
+                        label="المصحف"
+                        onClick={() =>
+                          handleAction(() => {
+                            setReadingMode("mushaf");
+                          })
+                        }
+                        iconColor={sidebarIconColor}
+                        isActive={readingMode === "mushaf"}
+                        currentTheme={currentTheme}
+                        isRTL={isRTL}
+                      />
+                      <MenuItem
+                        data-id="menu-item-tafseer"
+                        icon={<Book size={18} />}
+                        label="التفسير"
+                        onClick={() => handleAction(() => setReadingMode("tafseer"))}
+                        iconColor={sidebarIconColor}
+                        isActive={readingMode === "tafseer"}
+                        currentTheme={currentTheme}
+                        isRTL={isRTL}
+                      />
+                      <MenuItem
+                        data-id="menu-item-meanings"
+                        icon={<FileText size={18} />}
+                        label="المعاني"
+                        onClick={() => handleAction(() => setReadingMode("meanings"))}
+                        iconColor={sidebarIconColor}
+                        isActive={readingMode === "meanings"}
+                        currentTheme={currentTheme}
+                        isRTL={isRTL}
+                      />
+                      <MenuItem
+                        data-id="menu-item-bilingual"
+                        icon={<Globe size={18} />}
+                        label="التلاوة والترجمة"
+                        onClick={() =>
+                          handleAction(() => setReadingMode("bilingual"))
+                        }
+                        iconColor={sidebarIconColor}
+                        isActive={readingMode === "bilingual"}
+                        currentTheme={currentTheme}
+                        isRTL={isRTL}
+                      />
+                    </>
+                  )
                 )}
               </MenuSection>
 
               {/* الإعدادات والبحث */}
               <MenuSection
-                title="الإعدادات والبحث"
+                title={isEn ? "Settings & Search" : "الإعدادات والبحث"}
                 iconColor={sidebarIconColor}
                 titleColor="#16a34a"
                 currentTheme={currentTheme}
+                isRTL={isRTL}
               >
                 <MenuItem
                   data-id="menu-item-themes"
                   icon={<Palette size={18} />}
-                  label="المظهر"
+                  label={isEn ? "Themes" : "المظهر"}
                   onClick={() => setCurrentView("themes")}
                   iconColor={sidebarIconColor}
                   currentTheme={currentTheme}
+                  isRTL={isRTL}
                 />
                 <MenuItem
                   data-id="menu-item-global-search"
                   icon={<Search size={18} />}
-                  label="البحث المتقدم"
-                  onClick={() => handleAction(() => onNavigate('search'))}
+                  label={isEn ? "Advanced Search" : "البحث المتقدم"}
+                  onClick={() => handleAction(() => onNavigate('search', { from: page || (isLandscape ? 'quran-landscape' : 'quran'), isWird: isWirdMode }))}
                   iconColor={sidebarIconColor}
                   currentTheme={currentTheme}
+                  isRTL={isRTL}
                 />
                 <MenuItem
                   data-id="menu-item-settings"
                   icon={<Settings size={18} />}
-                  label="الإعدادات"
+                  label={isEn ? "Settings" : "الإعدادات"}
                   onClick={() =>
                     handleAction(() => openModal("settings-modal"))
                   }
                   iconColor={sidebarIconColor}
                   currentTheme={currentTheme}
+                  isRTL={isRTL}
                 />
                 <MenuItem
                   data-id="menu-item-bookmarks"
                   icon={<Bookmark size={18} />}
-                  label="العلامات المرجعية"
+                  label={isEn ? "Bookmarks" : "العلامات المرجعية"}
                   onClick={() => setCurrentView("bookmarks")}
                   iconColor={sidebarIconColor}
                   currentTheme={currentTheme}
+                  isRTL={isRTL}
                 />
               </MenuSection>
 
               {/* اختصارات أخرى */}
               <MenuSection
-                title="اختصارات أخرى"
+                title={isEn ? "Other Shortcuts" : "اختصارات أخرى"}
                 iconColor={sidebarIconColor}
                 titleColor="#d97706"
                 currentTheme={currentTheme}
+                isRTL={isRTL}
               >
                 {ALL_SHORTCUTS.filter((s) =>
                   selectedShortcuts.includes(s.id),
@@ -2616,6 +2839,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                       showChevron={false}
                       isActive={page === shortcut.id}
                       currentTheme={currentTheme}
+                      isRTL={isRTL}
                     />
                   </React.Fragment>
                 ))}
@@ -2632,7 +2856,9 @@ const NotificationSettingsContent: React.FC<{
   showToast: (msg: string) => void;
   modeSuffix: string;
   currentTheme: any;
-}> = ({ showToast, modeSuffix, currentTheme }) => {
+  isEn?: boolean;
+  isRTL?: boolean;
+}> = ({ showToast, modeSuffix, currentTheme, isEn = false, isRTL = true }) => {
   const { config, updateConfig } = usePrayerTimes();
   const [activeTab, setActiveTab] = useState<"app" | "phone">("app");
 
@@ -2647,11 +2873,11 @@ const NotificationSettingsContent: React.FC<{
     }
     return {
       quarter: true,
+      juz: true,
       sajda: true,
       themes: true,
       downloads: true,
       bookmarks: true,
-      juz: true,
       general: true,
     };
   });
@@ -2685,16 +2911,16 @@ const NotificationSettingsContent: React.FC<{
     window.dispatchEvent(new Event("notification-settings-change"));
 
     const labels: Record<string, string> = {
-      quarter: "تنبيهات الأحزاب والأرباع",
-      sajda: "تنبيهات السجدات",
-      themes: "تنبيهات تغيير الثيمات",
-      downloads: "تنبيهات التحميل",
-      bookmarks: "تنبيهات الإشارات المرجعية",
-      juz: "تنبيهات بداية الأجزاء",
-      general: "التنبيهات العامة",
+      quarter: isEn ? "Hizbs & Quarters Alerts" : "تنبيهات الأحزاب والأرباع",
+      juz: isEn ? "Juz Transitions Alerts" : "تنبيهات بداية الأجزاء",
+      sajda: isEn ? "Sajdah Verses Alerts" : "تنبيهات السجدات",
+      themes: isEn ? "Theme Changes Alerts" : "تنبيهات تغيير الثيمات",
+      downloads: isEn ? "Downloads Alerts" : "تنبيهات التحميل",
+      bookmarks: isEn ? "Bookmarks Alerts" : "تنبيهات الإشارات المرجعية",
+      general: isEn ? "General Alerts" : "التنبيهات العامة",
     };
 
-    showToast(`${newSettings[key] ? "تم تفعيل" : "تم تعطيل"} ${labels[key]}`);
+    showToast(isEn ? `${labels[key]} ${newSettings[key] ? "enabled" : "disabled"}` : `${newSettings[key] ? "تم تفعيل" : "تم تعطيل"} ${labels[key]}`);
   };
 
   const togglePhoneSetting = (key: string) => {
@@ -2707,15 +2933,15 @@ const NotificationSettingsContent: React.FC<{
     setupNotifications(newSettings);
 
     const labels: Record<string, string> = {
-      sabah: "أذكار الصباح",
-      masaa: "أذكار المساء",
-      dua: "وقت الدعاء",
-      tasbeehMorning: "التسبيح (صباحاً)",
-      tasbeehEvening: "التسبيح (مساءً)",
-      kahf: "سورة الكهف",
+      sabah: isEn ? "Morning Adhkar" : "أذكار الصباح",
+      masaa: isEn ? "Evening Adhkar" : "أذكار المساء",
+      dua: isEn ? "Dua Time" : "وقت الدعاء",
+      tasbeehMorning: isEn ? "Morning Tasbeeh" : "التسبيح (صباحاً)",
+      tasbeehEvening: isEn ? "Evening Tasbeeh" : "التسبيح (مساءً)",
+      kahf: isEn ? "Surah Al-Kahf" : "سورة الكهف",
     };
 
-    showToast(`${newSettings[key] ? "تم تفعيل" : "تم تعطيل"} ${labels[key]}`);
+    showToast(isEn ? `${labels[key]} ${newSettings[key] ? "enabled" : "disabled"}` : `${newSettings[key] ? "تم تفعيل" : "تم تعطيل"} ${labels[key]}`);
   };
 
   const toggleNightNotification = (
@@ -2733,25 +2959,31 @@ const NotificationSettingsContent: React.FC<{
     updateConfig({ nightNotifications: newNightNotifs });
 
     const labels: Record<string, string> = {
-      firstThird: "أول الليل",
-      midnight: "منتصف الليل",
-      lastThird: "الثلث الأخير",
+      firstThird: isEn ? "First Third of Night" : "أول الليل",
+      midnight: isEn ? "Midnight" : "منتصف الليل",
+      lastThird: isEn ? "Last Third of Night" : "الثلث الأخير",
     };
 
     showToast(
-      `${newNightNotifs[key] ? "تم تفعيل" : "تم تعطيل"} إشعار ${labels[key]}`,
+      isEn
+        ? `${labels[key]} alert ${newNightNotifs[key] ? "enabled" : "disabled"}`
+        : `${newNightNotifs[key] ? "تم تفعيل" : "تم تعطيل"} إشعار ${labels[key]}`,
     );
   };
 
   const muteAudioForDuration = (durationDays: number) => {
     const muteUntil = Date.now() + durationDays * 24 * 60 * 60 * 1000;
     updateConfig({ audioMutedUntil: muteUntil });
-    showToast(`تم تعطيل التنبيهات الصوتية للصلاة لمدة ${durationDays} يوم`);
+    showToast(
+      isEn
+        ? `Prayer audio alerts muted for ${durationDays} day(s)`
+        : `تم تعطيل التنبيهات الصوتية للصلاة لمدة ${durationDays} يوم`,
+    );
   };
 
   const unmuteAudio = () => {
     updateConfig({ audioMutedUntil: undefined });
-    showToast("تم تفعيل التنبيهات الصوتية للصلاة");
+    showToast(isEn ? "Prayer audio alerts enabled" : "تم تفعيل التنبيهات الصوتية للصلاة");
   };
 
   const isAudioMuted =
@@ -2761,6 +2993,7 @@ const NotificationSettingsContent: React.FC<{
     <div
       className="flex flex-col h-full"
       style={{ fontFamily: currentTheme.font }}
+      dir={isRTL ? "rtl" : "ltr"}
     >
       <div
         className="flex border-b mb-3"
@@ -2777,7 +3010,7 @@ const NotificationSettingsContent: React.FC<{
           onClick={() => setActiveTab("app")}
         >
           <AppWindow size={14} />
-          إشعارات التطبيق
+          {isEn ? "App Alerts" : "إشعارات التطبيق"}
         </button>
         <button
           className={`flex-1 py-2 text-[10px] font-bold flex items-center justify-center gap-1 transition-colors ${activeTab === "phone" ? "border-b-2" : "opacity-60"}`}
@@ -2790,7 +3023,7 @@ const NotificationSettingsContent: React.FC<{
           onClick={() => setActiveTab("phone")}
         >
           <Smartphone size={14} />
-          إشعارات الهاتف
+          {isEn ? "Phone Alerts" : "إشعارات الهاتف"}
         </button>
       </div>
 
@@ -2800,38 +3033,38 @@ const NotificationSettingsContent: React.FC<{
             {[
               {
                 id: "quarter",
-                label: "الأحزاب والأرباع",
-                desc: "تنبيه عند الوصول لبداية حزب أو ربع جديد",
+                label: isEn ? "Hizbs & Quarters" : "الأحزاب والأرباع",
+                desc: isEn ? "Alert when reaching a new Hizb or Quarter" : "تنبيه عند الوصول لبداية حزب أو ربع جديد",
               },
               {
                 id: "juz",
-                label: "بداية الأجزاء",
-                desc: "تنبيه عند الانتقال لجزء جديد",
+                label: isEn ? "Juz Transitions" : "بداية الأجزاء",
+                desc: isEn ? "Alert when moving to a new Juz" : "تنبيه عند الانتقال لجزء جديد",
               },
               {
                 id: "sajda",
-                label: "مواضع السجدات",
-                desc: "تنبيه عند الوصول لآية بها سجدة تلاوة",
+                label: isEn ? "Sajdah Verses" : "مواضع السجدات",
+                desc: isEn ? "Alert when reaching a prostration verse" : "تنبيه عند الوصول لآية بها سجدة تلاوة",
               },
               {
                 id: "themes",
-                label: "تغيير الثيمات",
-                desc: "تنبيه عند تطبيق لون أو ثيم جديد",
+                label: isEn ? "Theme Changes" : "تغيير الثيمات",
+                desc: isEn ? "Alert when applying a new theme" : "تنبيه عند تطبيق لون أو ثيم جديد",
               },
               {
                 id: "downloads",
-                label: "التحميلات",
-                desc: "تنبيهات حالة تحميل السور أو التفاسير",
+                label: isEn ? "Downloads" : "التحميلات",
+                desc: isEn ? "Alerts for download status" : "تنبيهات حالة تحميل السور أو التفاسير",
               },
               {
                 id: "bookmarks",
-                label: "الإشارات المرجعية",
-                desc: "تنبيه عند حفظ أو حذف إشارة مرجعية",
+                label: isEn ? "Bookmarks" : "الإشارات المرجعية",
+                desc: isEn ? "Alert when saving or deleting a bookmark" : "تنبيه عند حفظ أو حذف إشارة مرجعية",
               },
               {
                 id: "general",
-                label: "تنبيهات عامة",
-                desc: "تنبيهات الحفظ، الاختبارات، والعمليات الأخرى",
+                label: isEn ? "General Alerts" : "تنبيهات عامة",
+                desc: isEn ? "Alerts for memorization, tests, and operations" : "تنبيهات الحفظ، الاختبارات، والعمليات الأخرى",
               },
             ].map((item) => (
               <div
@@ -2848,12 +3081,12 @@ const NotificationSettingsContent: React.FC<{
                   color: currentTheme.text,
                 }}
               >
-                <div className="flex flex-col gap-0.5">
+                <div className={`flex flex-col gap-0.5 ${isRTL ? "text-right" : "text-left"}`}>
                   <span className="font-bold text-[11px]">{item.label}</span>
                   <span className="text-[9px] opacity-60">{item.desc}</span>
                 </div>
                 <div
-                  className={`w-4 h-4 rounded-full flex items-center justify-center transition-colors`}
+                  className={`w-4 h-4 rounded-full flex items-center justify-center transition-colors flex-shrink-0`}
                   style={{
                     backgroundColor: appSettings[item.id]
                       ? currentTheme.accent
@@ -2869,24 +3102,24 @@ const NotificationSettingsContent: React.FC<{
         ) : (
           <div className="space-y-4">
             <div className="space-y-2">
-              <h4 className="font-bold text-[10px] opacity-80 px-1">
-                أوقات الليل
+              <h4 className={`font-bold text-[10px] opacity-80 px-1 ${isRTL ? "text-right" : "text-left"}`}>
+                {isEn ? "Night Times" : "أوقات الليل"}
               </h4>
               {[
                 {
                   id: "firstThird",
-                  label: "أول الليل",
-                  desc: "تنبيه بدخول وقت أول الليل",
+                  label: isEn ? "First Third" : "أول الليل",
+                  desc: isEn ? "Alert when first third of night begins" : "تنبيه بدخول وقت أول الليل",
                 },
                 {
                   id: "midnight",
-                  label: "منتصف الليل",
-                  desc: "تنبيه بدخول منتصف الليل الشرعي",
+                  label: isEn ? "Midnight" : "منتصف الليل",
+                  desc: isEn ? "Alert when Islamic midnight begins" : "تنبيه بدخول منتصف الليل الشرعي",
                 },
                 {
                   id: "lastThird",
-                  label: "الثلث الأخير",
-                  desc: "تنبيه بدخول الثلث الأخير من الليل",
+                  label: isEn ? "Last Third" : "الثلث الأخير",
+                  desc: isEn ? "Alert when last third of night begins" : "تنبيه بدخول الثلث الأخير من الليل",
                 },
               ].map((item) => {
                 const isEnabled =
@@ -2912,14 +3145,14 @@ const NotificationSettingsContent: React.FC<{
                       color: currentTheme.text,
                     }}
                   >
-                    <div className="flex flex-col gap-0.5">
+                    <div className={`flex flex-col gap-0.5 ${isRTL ? "text-right" : "text-left"}`}>
                       <span className="font-bold text-[11px]">
                         {item.label}
                       </span>
                       <span className="text-[9px] opacity-60">{item.desc}</span>
                     </div>
                     <div
-                      className={`w-4 h-4 rounded-full flex items-center justify-center transition-colors`}
+                      className={`w-4 h-4 rounded-full flex items-center justify-center transition-colors flex-shrink-0`}
                       style={{
                         backgroundColor: isEnabled
                           ? currentTheme.accent
@@ -2938,39 +3171,39 @@ const NotificationSettingsContent: React.FC<{
               className="space-y-2 pt-2"
               style={{ borderTop: `1px solid ${currentTheme.text}10` }}
             >
-              <h4 className="font-bold text-[10px] opacity-80 px-1">
-                الأذكار والتسبيح
+              <h4 className={`font-bold text-[10px] opacity-80 px-1 ${isRTL ? "text-right" : "text-left"}`}>
+                {isEn ? "Adhkar & Tasbeeh" : "الأذكار والتسبيح"}
               </h4>
               {[
                 {
                   id: "sabah",
-                  label: "أذكار الصباح",
-                  desc: "تنبيه يومي الساعة 7:00 صباحاً",
+                  label: isEn ? "Morning Adhkar" : "أذكار الصباح",
+                  desc: isEn ? "Daily at 7:00 AM" : "تنبيه يومي الساعة 7:00 صباحاً",
                 },
                 {
                   id: "masaa",
-                  label: "أذكار المساء",
-                  desc: "تنبيه يومي الساعة 4:30 عصراً",
+                  label: isEn ? "Evening Adhkar" : "أذكار المساء",
+                  desc: isEn ? "Daily at 4:30 PM" : "تنبيه يومي الساعة 4:30 عصراً",
                 },
                 {
                   id: "dua",
-                  label: "وقت الدعاء",
-                  desc: "تنبيه يومي الساعة 2:00 ظهراً",
+                  label: isEn ? "Dua Time" : "وقت الدعاء",
+                  desc: isEn ? "Daily at 2:00 PM" : "تنبيه يومي الساعة 2:00 ظهراً",
                 },
                 {
                   id: "tasbeehMorning",
-                  label: "التسبيح (صباحاً)",
-                  desc: "تنبيه يومي الساعة 10:00 صباحاً",
+                  label: isEn ? "Morning Tasbeeh" : "التسبيح (صباحاً)",
+                  desc: isEn ? "Daily at 10:00 AM" : "تنبيه يومي الساعة 10:00 صباحاً",
                 },
                 {
                   id: "tasbeehEvening",
-                  label: "التسبيح (مساءً)",
-                  desc: "تنبيه يومي الساعة 8:00 مساءً",
+                  label: isEn ? "Evening Tasbeeh" : "التسبيح (مساءً)",
+                  desc: isEn ? "Daily at 8:00 PM" : "تنبيه يومي الساعة 8:00 مساءً",
                 },
                 {
                   id: "kahf",
-                  label: "سورة الكهف",
-                  desc: "تنبيه أسبوعي يوم الجمعة الساعة 9:00 صباحاً",
+                  label: isEn ? "Surah Al-Kahf" : "سورة الكهف",
+                  desc: isEn ? "Weekly on Friday at 9:00 AM" : "تنبيه أسبوعي يوم الجمعة الساعة 9:00 صباحاً",
                 },
               ].map((item) => (
                 <div
@@ -2991,12 +3224,12 @@ const NotificationSettingsContent: React.FC<{
                     color: currentTheme.text,
                   }}
                 >
-                  <div className="flex flex-col gap-0.5">
+                  <div className={`flex flex-col gap-0.5 ${isRTL ? "text-right" : "text-left"}`}>
                     <span className="font-bold text-[11px]">{item.label}</span>
                     <span className="text-[9px] opacity-60">{item.desc}</span>
                   </div>
                   <div
-                    className={`w-4 h-4 rounded-full flex items-center justify-center transition-colors`}
+                    className={`w-4 h-4 rounded-full flex items-center justify-center transition-colors flex-shrink-0`}
                     style={{
                       backgroundColor: phoneSettings[
                         item.id as keyof typeof phoneSettings
@@ -3025,33 +3258,33 @@ const NotificationSettingsContent: React.FC<{
               <div className="flex items-center justify-between mb-1 px-1">
                 <h4 className="font-bold text-[10px] opacity-80 flex items-center gap-1">
                   <VolumeX size={12} />
-                  إيقاف التنبيهات الصوتية
+                  {isEn ? "Mute Prayer Audio Alerts" : "إيقاف التنبيهات الصوتية"}
                 </h4>
                 {isAudioMuted && (
                   <button
                     onClick={unmuteAudio}
                     className="text-[8px] bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 px-1.5 py-0.5 rounded font-bold"
                   >
-                    تفعيل
+                    {isEn ? "Enable" : "تفعيل"}
                   </button>
                 )}
               </div>
               {isAudioMuted && config.audioMutedUntil && (
                 <p className="text-[9px] text-red-500 px-1">
-                  متوقفة حتى:{" "}
-                  {new Date(config.audioMutedUntil).toLocaleDateString("ar-SA")}
+                  {isEn ? "Muted until: " : "متوقفة حتى: "}
+                  {new Date(config.audioMutedUntil).toLocaleDateString(isEn ? "en-US" : "ar-SA")}
                 </p>
               )}
               <div className="grid grid-cols-3 gap-1.5">
                 {[
-                  { label: "اليوم", days: 1 },
-                  { label: "يومين", days: 2 },
-                  { label: "3 أيام", days: 3 },
-                  { label: "أسبوع", days: 7 },
-                  { label: "شهر", days: 30 },
+                  { label: isEn ? "Today" : "اليوم", days: 1 },
+                  { label: isEn ? "2 Days" : "يومين", days: 2 },
+                  { label: isEn ? "3 Days" : "3 أيام", days: 3 },
+                  { label: isEn ? "1 Week" : "أسبوع", days: 7 },
+                  { label: isEn ? "1 Month" : "شهر", days: 30 },
                 ].map((opt) => (
                   <button
-                    key={opt.label}
+                    key={opt.days}
                     onClick={() => muteAudioForDuration(opt.days)}
                     className="py-1.5 px-1 text-[9px] font-bold rounded-lg border transition-colors"
                     style={{
@@ -3105,6 +3338,8 @@ const ToolbarColorPickerContent: React.FC<{
   isWirdMode: boolean;
   isMemorizationMode: boolean;
   showToast: (msg: string) => void;
+  isEn?: boolean;
+  isRTL?: boolean;
 }> = ({
   currentTheme,
   isLandscape,
@@ -3112,6 +3347,8 @@ const ToolbarColorPickerContent: React.FC<{
   isWirdMode,
   isMemorizationMode,
   showToast,
+  isEn = false,
+  isRTL = true,
 }) => {
   const modeSuffix = isMemorizationMode
     ? `_memorization_${isLandscape ? "h" : "v"}`
@@ -3159,24 +3396,24 @@ const ToolbarColorPickerContent: React.FC<{
     localStorage.removeItem("toolbar_colors_v2" + modeSuffix);
     setToolbarColors({});
     window.dispatchEvent(new Event("theme-change"));
-    showToast("تم استعادة الألوان الافتراضية");
+    showToast(isEn ? "Default colors restored" : "تم استعادة الألوان الافتراضية");
   };
 
   const sections = [
-    { id: "top-toolbar", label: "الشريط العلوي" },
-    { id: "bottom-toolbar", label: "الشريط السفلي" },
-    { id: "surah", label: "زر السورة" },
-    { id: "page", label: "زر الصفحة" },
-    { id: "audio", label: "أزرار الصوت" },
-    { id: "btn-menu", label: "زر القائمة" },
-    { id: "btn-home", label: "زر الرئيسية" },
-    { id: "btn-autoscroll", label: "زر التمرير" },
-    { id: "btn-share", label: "زر المشاركة" },
-    { id: "btn-bookmark", label: "زر حفظ الإشارة" },
+    { id: "top-toolbar", label: isEn ? "Top Toolbar" : "الشريط العلوي" },
+    { id: "bottom-toolbar", label: isEn ? "Bottom Toolbar" : "الشريط السفلي" },
+    { id: "surah", label: isEn ? "Surah Button" : "زر السورة" },
+    { id: "page", label: isEn ? "Page Button" : "زر الصفحة" },
+    { id: "audio", label: isEn ? "Audio Controls" : "أزرار الصوت" },
+    { id: "btn-menu", label: isEn ? "Menu Button" : "زر القائمة" },
+    { id: "btn-home", label: isEn ? "Home Button" : "زر الرئيسية" },
+    { id: "btn-autoscroll", label: isEn ? "Scroll Button" : "زر التمرير" },
+    { id: "btn-share", label: isEn ? "Share Button" : "زر المشاركة" },
+    { id: "btn-bookmark", label: isEn ? "Bookmark Button" : "زر حفظ الإشارة" },
   ];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" dir={isRTL ? "rtl" : "ltr"}>
       <button
         onClick={resetColors}
         className="w-full py-2 rounded-xl text-xs font-bold active:scale-95 transition-all"
@@ -3185,7 +3422,7 @@ const ToolbarColorPickerContent: React.FC<{
           color: currentTheme.text,
         }}
       >
-        استعادة الألوان الافتراضية
+        {isEn ? "Restore Default Colors" : "استعادة الألوان الافتراضية"}
       </button>
 
       {sections.map((section) => (
@@ -3198,7 +3435,7 @@ const ToolbarColorPickerContent: React.FC<{
           }}
         >
           <h4
-            className="text-xs font-bold opacity-70"
+            className={`text-xs font-bold opacity-70 ${isRTL ? "text-right" : "text-left"}`}
             style={{ color: currentTheme.text }}
           >
             {section.label}
@@ -3271,17 +3508,17 @@ const ToolbarColorPickerContent: React.FC<{
             {[
               {
                 type: "bg" as const,
-                label: "الخلفية",
+                label: isEn ? "Background" : "الخلفية",
                 defaultValue: currentTheme.barBg || "#ffffff",
               },
               {
                 type: "text" as const,
-                label: "النص",
+                label: isEn ? "Text" : "النص",
                 defaultValue: currentTheme.barText || "#000000",
               },
               {
                 type: "border" as const,
-                label: "الحدود",
+                label: isEn ? "Border" : "الحدود",
                 defaultValue: currentTheme.barBorder || "#e5e7eb",
               },
             ].map((field) => {
@@ -3350,10 +3587,11 @@ const MenuSection: React.FC<{
   iconColor: string;
   titleColor?: string;
   currentTheme?: any;
-}> = ({ title, children, iconColor, titleColor = "#000000", currentTheme }) => (
+  isRTL?: boolean;
+}> = ({ title, children, iconColor, titleColor = "#000000", currentTheme, isRTL = true }) => (
   <div className="flex flex-col flex-grow">
     <div
-      className="py-1.5 px-3 rounded-md mb-1.5 text-right"
+      className={`py-1.5 px-3 rounded-md mb-1.5 ${isRTL ? "text-right" : "text-left"}`}
       style={{
         backgroundColor: currentTheme
           ? `${currentTheme.accent}15`
@@ -3384,6 +3622,7 @@ const MenuItem: React.FC<{
   isActive?: boolean;
   currentTheme?: any;
   "data-id"?: string;
+  isRTL?: boolean;
 }> = ({
   icon,
   label,
@@ -3395,11 +3634,12 @@ const MenuItem: React.FC<{
   isActive,
   currentTheme,
   "data-id": dataId,
+  isRTL = true,
 }) => (
   <button
     onClick={onClick}
     data-id={dataId}
-    className={`flex items-center gap-3 py-2.5 border-b last:border-0 hover:bg-black/5 transition-colors text-right w-full ${isSubItem ? "px-2 py-1.5 border-0" : ""}`}
+    className={`flex items-center gap-3 py-2.5 border-b last:border-0 hover:bg-black/5 transition-colors ${isRTL ? "text-right" : "text-left"} w-full ${isSubItem ? "px-2 py-1.5 border-0" : ""}`}
     style={{
       borderBottomColor: currentTheme ? `${currentTheme.text}10` : "#f3f4f6",
     }}

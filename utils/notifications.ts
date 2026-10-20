@@ -111,6 +111,16 @@ export const setupNotifications = async (settings?: PhoneNotificationSettings) =
         vibration: true,
         visibility: 1
       });
+
+      await LocalNotifications.createChannel({
+        id: 'islamic_ramadan_channel',
+        name: 'مناسبات شهر رمضان المبارك',
+        description: 'قناة تنبيهات تهنئة حلول شهر رمضان والعشر الأواخر من رمضان',
+        importance: 5,
+        sound: 'takbeer1.mp3',
+        vibration: true,
+        visibility: 1
+      });
     } catch (e) {}
 
     // 1. Regular Notifications
@@ -267,7 +277,37 @@ export const setupNotifications = async (settings?: PhoneNotificationSettings) =
       });
     } catch (e) {}
 
-    // 5. الاستعداد لرمضان المبارك (ليلة رمضان)
+    // 5. تهنئة حلول شهر رمضان المبارك (1 رمضان) - إشعار سنوي للهاتف
+    try {
+      const ramadanDate = getNextHijriDate(9, 1, 8, 0); // 1 رمضان الساعة 08:00 صباحاً
+      notificationsToSchedule.push({
+        title: 'أهلاً شهر رمضان المبارك 🌙',
+        body: 'مبارك عليكم شهر رمضان المعظم، شهر القرآن والرحمة والمغفرة والعتق من النار. تقبل الله منا ومنكم الصيام والقيام، وكل عام وأنتم بخير.',
+        id: 55,
+        schedule: { at: ramadanDate, allowWhileIdle: true },
+        channelId: 'islamic_ramadan_channel',
+        sound: 'takbeer1.mp3',
+        extra: { page: 'home', playSound: true, soundFile: '/assets/audio/takbeer1.mp3', occasionId: 55 },
+        smallIcon: 'ic_stat_name',
+      });
+    } catch (e) {}
+
+    // 6. تنبيه العشر الأواخر من رمضان (20 رمضان) - إشعار سنوي للهاتف
+    try {
+      const lastTenDate = getNextHijriDate(9, 20, 8, 0); // 20 رمضان الساعة 08:00 صباحاً
+      notificationsToSchedule.push({
+        title: 'العشر الأواخر من رمضان ✨',
+        body: 'بدأت العشر الأواخر وفيها ليلة القدر خير من ألف شهر! شمروا واجتهدوا في القيام والقرآن والدعاء: "اللهم إنك عفو تحب العفو فاعف عني".',
+        id: 56,
+        schedule: { at: lastTenDate, allowWhileIdle: true },
+        channelId: 'islamic_ramadan_channel',
+        sound: 'takbeer1.mp3',
+        extra: { page: 'home', playSound: true, soundFile: '/assets/audio/takbeer1.mp3', occasionId: 56 },
+        smallIcon: 'ic_stat_name',
+      });
+    } catch (e) {}
+
+    // 7. الاستعداد لرمضان المبارك (ليلة رمضان للورد القرآني)
     try {
       const currentHijriYear = moment().iYear();
       const currentHijriMonth = moment().iMonth();

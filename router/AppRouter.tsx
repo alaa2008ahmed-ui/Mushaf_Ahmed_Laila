@@ -80,7 +80,7 @@ const AppRouter: React.FC<AppRouterProps> = ({ page, onBack, onNavigate, onOpenT
       case 'memorization':
         return <Memorization onBack={onBack} onNavigate={onNavigate} />;
       case 'search':
-        return <GlobalSearch onBack={onBack} onNavigate={onNavigate} />;
+        return <GlobalSearch onBack={onBack} onNavigate={onNavigate} navParams={navParams} />;
       case 'asmaul-husna':
         return <AsmaulHusna onBack={onBack} onNavigate={onNavigate} />;
       case 'habit-tracker':

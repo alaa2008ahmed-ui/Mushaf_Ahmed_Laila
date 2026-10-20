@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, Marker, Polyline } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import SunCalc from 'suncalc';
+import { useLanguage } from '../context/LanguageContext';
 
 // Fix Leaflet icon issue
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -16,6 +17,8 @@ const KAABA_LAT = 21.4225;
 const KAABA_LNG = 39.8262;
 
 export const VisualQibla = ({ lat, lng, theme, cardBorderColor }: { lat: number, lng: number, theme: any, cardBorderColor?: string }) => {
+    const { language } = useLanguage();
+    const isEn = language === 'en';
     const [isOnline, setIsOnline] = useState(navigator.onLine);
     const isDefaultTheme = theme?.key === 'default' || theme?.name === 'الأصلي';
     const isBlackTheme = theme?.bgColor === '#000000' || theme?.name === 'أبيض وأسود';
@@ -36,8 +39,14 @@ export const VisualQibla = ({ lat, lng, theme, cardBorderColor }: { lat: number,
         return (
             <div className="w-full h-full rounded-2xl flex flex-col items-center justify-center p-6 text-center themed-card" style={{ borderColor: effectiveBorder, borderWidth: '1.5px', borderStyle: 'solid' }}>
                 <i className="fa-solid fa-wifi text-6xl mb-4 opacity-50" style={{ color: theme.palette[0] }}></i>
-                <h3 className="text-xl font-bold mb-2">لا يوجد اتصال بالإنترنت</h3>
-                <p className="opacity-70">الخريطة المرئية تتطلب اتصالاً بالإنترنت لتحميل الخرائط. يرجى التحقق من اتصالك والمحاولة مرة أخرى.</p>
+                <h3 className="text-xl font-bold mb-2">
+                    {isEn ? 'No Internet Connection' : 'لا يوجد اتصال بالإنترنت'}
+                </h3>
+                <p className="opacity-70 text-sm">
+                    {isEn 
+                        ? 'Visual map requires an active internet connection to load map tiles. Please check your network and try again.' 
+                        : 'الخريطة المرئية تتطلب اتصالاً بالإنترنت لتحميل الخرائط. يرجى التحقق من اتصالك والمحاولة مرة أخرى.'}
+                </p>
             </div>
         );
     }
@@ -55,6 +64,8 @@ export const VisualQibla = ({ lat, lng, theme, cardBorderColor }: { lat: number,
 };
 
 export const ARQibla = ({ qiblaDirection, heading, isAligned, theme, cardBorderColor }: any) => {
+    const { language } = useLanguage();
+    const isEn = language === 'en';
     const videoRef = useRef<HTMLVideoElement>(null);
     const [error, setError] = useState('');
     const isDefaultTheme = theme?.key === 'default' || theme?.name === 'الأصلي';
@@ -93,7 +104,7 @@ export const ARQibla = ({ qiblaDirection, heading, isAligned, theme, cardBorderC
                     startPlay();
                 }
             } catch (err) {
-                setError('تعذر الوصول إلى الكاميرا. يرجى منح الصلاحية.');
+                setError(isEn ? 'Unable to access camera. Please grant camera permission.' : 'تعذر الوصول إلى الكاميرا. يرجى منح الصلاحية.');
             }
         };
         startCamera();
@@ -102,7 +113,7 @@ export const ARQibla = ({ qiblaDirection, heading, isAligned, theme, cardBorderC
                 stream.getTracks().forEach(track => track.stop());
             }
         };
-    }, []);
+    }, [isEn]);
 
     const rotation = qiblaDirection - heading;
 
@@ -128,7 +139,7 @@ export const ARQibla = ({ qiblaDirection, heading, isAligned, theme, cardBorderC
                     )}
                 </div>
                 <div className="mt-8 bg-black/50 backdrop-blur-md px-6 py-3 rounded-full text-white font-bold text-lg" style={{ borderColor: effectiveBorder, borderWidth: '1.5px', borderStyle: 'solid' }}>
-                    {isAligned ? 'أنت متجه للقبلة' : 'وجه الكاميرا نحو الكعبة'}
+                    {isAligned ? (isEn ? 'Facing Qibla' : 'أنت متجه للقبلة') : (isEn ? 'Point camera towards the Kaaba' : 'وجه الكاميرا نحو الكعبة')}
                 </div>
             </div>
         </div>
@@ -136,6 +147,8 @@ export const ARQibla = ({ qiblaDirection, heading, isAligned, theme, cardBorderC
 };
 
 export const SunMoonQibla = ({ lat, lng, qiblaDirection, heading, theme, cardBorderColor }: any) => {
+    const { language } = useLanguage();
+    const isEn = language === 'en';
     const [time, setTime] = useState(new Date());
     const isDefaultTheme = theme?.key === 'default' || theme?.name === 'الأصلي';
     const isBlackTheme = theme?.bgColor === '#000000' || theme?.name === 'أبيض وأسود';
@@ -155,7 +168,7 @@ export const SunMoonQibla = ({ lat, lng, qiblaDirection, heading, theme, cardBor
     const sunDiff = Math.abs(sunHeading - qiblaDirection);
     const moonDiff = Math.abs(moonHeading - qiblaDirection);
 
-    const CompassDial = ({ targetHeading, targetIcon, targetColor, label }: any) => (
+    const CompassDial = ({ targetHeading, targetIcon, targetColor }: any) => (
         <div className="relative w-64 h-64 rounded-full border-4 flex items-center justify-center mx-auto my-6 shadow-lg" style={{ borderColor: `${theme.palette[0]}50`, backgroundColor: `${theme.palette[0]}0a` }}>
             {/* Phone heading indicator (fixed at top) */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 -mt-4 w-8 h-8 rounded-full bg-red-500 z-20 shadow-md flex items-center justify-center border-2 border-white dark:border-gray-800">
@@ -165,7 +178,9 @@ export const SunMoonQibla = ({ lat, lng, qiblaDirection, heading, theme, cardBor
             {/* Rotating dial */}
             <div className="absolute w-full h-full transition-transform duration-300 ease-out" style={{ transform: `rotate(${-heading}deg)` }}>
                 {/* North marker */}
-                <div className="absolute top-2 left-1/2 -translate-x-1/2 text-sm font-bold opacity-50" style={{ color: theme.palette[0] }}>N</div>
+                <div className="absolute top-2 left-1/2 -translate-x-1/2 text-sm font-bold opacity-60" style={{ color: theme.palette[0] }}>
+                    {isEn ? 'N' : 'ش'}
+                </div>
                 
                 {/* Qibla marker */}
                 <div className="absolute w-full h-full" style={{ transform: `rotate(${qiblaDirection}deg)` }}>
@@ -192,63 +207,75 @@ export const SunMoonQibla = ({ lat, lng, qiblaDirection, heading, theme, cardBor
     );
 
     return (
-        <div className="w-full shrink-0 flex flex-col gap-6 pb-8">
+        <div className="w-full shrink-0 flex flex-col gap-6 pb-8" dir={isEn ? 'ltr' : 'rtl'}>
             <div className="themed-card p-8 rounded-2xl flex flex-col items-center justify-center text-center relative overflow-hidden shadow-md" style={{ borderColor: effectiveBorder, borderWidth: '1.5px', borderStyle: 'solid' }}>
-                <div className="absolute top-4 right-4 text-yellow-500 opacity-10"><i className="fa-solid fa-sun text-6xl"></i></div>
-                <h3 className="text-2xl font-bold mb-4" style={{ color: theme.palette[0] }}>تحديد القبلة عن طريق الشمس</h3>
+                <div className={`absolute top-4 ${isEn ? 'left-4' : 'right-4'} text-yellow-500 opacity-10`}><i className="fa-solid fa-sun text-6xl"></i></div>
+                <h3 className="text-2xl font-bold mb-4" style={{ color: theme.palette[0] }}>
+                    {isEn ? 'Qibla Direction by Sun' : 'تحديد القبلة عن طريق الشمس'}
+                </h3>
                 
                 <div className="mb-6 p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/20 max-w-sm shadow-sm backdrop-blur-sm">
                     <p className="text-sm leading-relaxed font-bold text-yellow-700 dark:text-yellow-300">
-                        وجه هاتفك (العلامة الحمراء) نحو الشمس في السماء، وسيشير سهم الكعبة إلى القبلة.
+                        {isEn 
+                            ? 'Point your device (red marker) towards the Sun in the sky; the Kaaba arrow will indicate the Qibla.' 
+                            : 'وجه هاتفك (العلامة الحمراء) نحو الشمس في السماء، وسيشير سهم الكعبة إلى القبلة.'}
                     </p>
                 </div>
                 
-                <CompassDial targetHeading={sunHeading} targetIcon="fa-sun" targetColor="#eab308" label="الشمس" />
+                <CompassDial targetHeading={sunHeading} targetIcon="fa-sun" targetColor="#eab308" />
 
                 <div className="w-full space-y-2 mb-4">
                     <div className="flex justify-between items-center p-3 rounded-lg themed-bg-alt" style={{ borderColor: effectiveBorder, borderWidth: '1px', borderStyle: 'solid' }}>
-                        <span className="text-sm font-bold">اتجاه الشمس:</span>
+                        <span className="text-sm font-bold">{isEn ? 'Sun Direction:' : 'اتجاه الشمس:'}</span>
                         <span className="font-mono text-lg">{Math.round(sunHeading)}°</span>
                     </div>
                     <div className="flex justify-between items-center p-3 rounded-lg themed-bg-alt" style={{ borderColor: effectiveBorder, borderWidth: '1px', borderStyle: 'solid' }}>
-                        <span className="text-sm font-bold">اتجاه القبلة:</span>
+                        <span className="text-sm font-bold">{isEn ? 'Qibla Direction:' : 'اتجاه القبلة:'}</span>
                         <span className="font-mono text-lg">{Math.round(qiblaDirection)}°</span>
                     </div>
                 </div>
 
                 <div className="p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/30 w-full">
                     <p className="font-bold text-yellow-600 dark:text-yellow-400 text-sm">
-                        القبلة تبعد عن الشمس بـ {Math.round(sunDiff)} درجة
+                        {isEn 
+                            ? `Qibla is ${Math.round(sunDiff)}° away from the Sun` 
+                            : `القبلة تبعد عن الشمس بـ ${Math.round(sunDiff)} درجة`}
                     </p>
                 </div>
             </div>
 
             <div className="themed-card p-8 rounded-2xl flex flex-col items-center justify-center text-center relative overflow-hidden shadow-md" style={{ borderColor: effectiveBorder, borderWidth: '1.5px', borderStyle: 'solid' }}>
-                <div className="absolute top-4 right-4 text-blue-400 opacity-10"><i className="fa-solid fa-moon text-6xl"></i></div>
-                <h3 className="text-2xl font-bold mb-4" style={{ color: theme.palette[0] }}>تحديد القبلة عن طريق القمر</h3>
+                <div className={`absolute top-4 ${isEn ? 'left-4' : 'right-4'} text-blue-400 opacity-10`}><i className="fa-solid fa-moon text-6xl"></i></div>
+                <h3 className="text-2xl font-bold mb-4" style={{ color: theme.palette[0] }}>
+                    {isEn ? 'Qibla Direction by Moon' : 'تحديد القبلة عن طريق القمر'}
+                </h3>
                 
                 <div className="mb-6 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 max-w-sm shadow-sm backdrop-blur-sm">
                     <p className="text-sm leading-relaxed font-bold text-blue-700 dark:text-blue-300">
-                        وجه هاتفك (العلامة الحمراء) نحو القمر في السماء، وسيشير سهم الكعبة إلى القبلة.
+                        {isEn 
+                            ? 'Point your device (red marker) towards the Moon in the sky; the Kaaba arrow will indicate the Qibla.' 
+                            : 'وجه هاتفك (العلامة الحمراء) نحو القمر في السماء، وسيشير سهم الكعبة إلى القبلة.'}
                     </p>
                 </div>
                 
-                <CompassDial targetHeading={moonHeading} targetIcon="fa-moon" targetColor="#60a5fa" label="القمر" />
+                <CompassDial targetHeading={moonHeading} targetIcon="fa-moon" targetColor="#60a5fa" />
 
                 <div className="w-full space-y-2 mb-4">
                     <div className="flex justify-between items-center p-3 rounded-lg themed-bg-alt" style={{ borderColor: effectiveBorder, borderWidth: '1px', borderStyle: 'solid' }}>
-                        <span className="text-sm font-bold">اتجاه القمر:</span>
+                        <span className="text-sm font-bold">{isEn ? 'Moon Direction:' : 'اتجاه القمر:'}</span>
                         <span className="font-mono text-lg">{Math.round(moonHeading)}°</span>
                     </div>
                     <div className="flex justify-between items-center p-3 rounded-lg themed-bg-alt" style={{ borderColor: effectiveBorder, borderWidth: '1px', borderStyle: 'solid' }}>
-                        <span className="text-sm font-bold">اتجاه القبلة:</span>
+                        <span className="text-sm font-bold">{isEn ? 'Qibla Direction:' : 'اتجاه القبلة:'}</span>
                         <span className="font-mono text-lg">{Math.round(qiblaDirection)}°</span>
                     </div>
                 </div>
 
                 <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/30 w-full">
                     <p className="font-bold text-blue-600 dark:text-blue-400 text-sm">
-                        القبلة تبعد عن القمر بـ {Math.round(moonDiff)} درجة
+                        {isEn 
+                            ? `Qibla is ${Math.round(moonDiff)}° away from the Moon` 
+                            : `القبلة تبعد عن القمر بـ ${Math.round(moonDiff)} درجة`}
                     </p>
                 </div>
             </div>
@@ -257,6 +284,8 @@ export const SunMoonQibla = ({ lat, lng, qiblaDirection, heading, theme, cardBor
 };
 
 export const ShadowQibla = ({ lat, lng, qiblaDirection, heading, theme, cardBorderColor }: any) => {
+    const { language } = useLanguage();
+    const isEn = language === 'en';
     const [time, setTime] = useState(new Date());
     const isDefaultTheme = theme?.key === 'default' || theme?.name === 'الأصلي';
     const isBlackTheme = theme?.bgColor === '#000000' || theme?.name === 'أبيض وأسود';
@@ -273,17 +302,21 @@ export const ShadowQibla = ({ lat, lng, qiblaDirection, heading, theme, cardBord
     const shadowDiff = Math.abs(shadowHeading - qiblaDirection);
 
     return (
-        <div className="w-full shrink-0 flex flex-col items-center justify-start themed-card p-8 rounded-2xl text-center relative overflow-hidden shadow-md mb-8" style={{ borderColor: effectiveBorder, borderWidth: '1.5px', borderStyle: 'solid' }}>
+        <div className="w-full shrink-0 flex flex-col items-center justify-start themed-card p-8 rounded-2xl text-center relative overflow-hidden shadow-md mb-8" style={{ borderColor: effectiveBorder, borderWidth: '1.5px', borderStyle: 'solid' }} dir={isEn ? 'ltr' : 'rtl'}>
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-5">
                 <i className="fa-solid fa-person-rays text-[15rem]"></i>
             </div>
             
             <div className="z-10 flex flex-col items-center w-full">
-                <h3 className="text-2xl font-bold mb-4" style={{ color: theme.palette[0] }}>تحديد القبلة عن طريق الظل</h3>
+                <h3 className="text-2xl font-bold mb-4" style={{ color: theme.palette[0] }}>
+                    {isEn ? 'Qibla Direction by Shadow' : 'تحديد القبلة عن طريق الظل'}
+                </h3>
                 
                 <div className="mb-6 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 w-full max-w-md shadow-sm backdrop-blur-sm">
                     <p className="text-sm leading-relaxed font-bold text-emerald-700 dark:text-emerald-300">
-                        ضع عصا بشكل عمودي على الأرض المستوية. ظل العصا يشير إلى الاتجاه المعاكس للشمس. وجه هاتفك (العلامة الحمراء) نحو الظل، وسيشير سهم الكعبة إلى القبلة.
+                        {isEn 
+                            ? 'Place a stick vertically on flat ground. Its shadow points directly opposite to the Sun. Point your device (red marker) towards the shadow, and the Kaaba arrow will point to the Qibla.' 
+                            : 'ضع عصا بشكل عمودي على الأرض المستوية. ظل العصا يشير إلى الاتجاه المعاكس للشمس. وجه هاتفك (العلامة الحمراء) نحو الظل، وسيشير سهم الكعبة إلى القبلة.'}
                     </p>
                 </div>
 
@@ -296,7 +329,9 @@ export const ShadowQibla = ({ lat, lng, qiblaDirection, heading, theme, cardBord
                     {/* Rotating dial */}
                     <div className="absolute w-full h-full transition-transform duration-300 ease-out" style={{ transform: `rotate(${-heading}deg)` }}>
                         {/* North marker */}
-                        <div className="absolute top-2 left-1/2 -translate-x-1/2 text-sm font-bold opacity-50" style={{ color: theme.palette[0] }}>N</div>
+                        <div className="absolute top-2 left-1/2 -translate-x-1/2 text-sm font-bold opacity-60" style={{ color: theme.palette[0] }}>
+                            {isEn ? 'N' : 'ش'}
+                        </div>
                         
                         {/* Qibla marker */}
                         <div className="absolute w-full h-full" style={{ transform: `rotate(${qiblaDirection}deg)` }}>
@@ -323,18 +358,20 @@ export const ShadowQibla = ({ lat, lng, qiblaDirection, heading, theme, cardBord
 
                 <div className="w-full space-y-3 mt-4">
                     <div className="flex justify-between items-center p-3 rounded-lg themed-bg-alt" style={{ borderColor: effectiveBorder, borderWidth: '1px', borderStyle: 'solid' }}>
-                        <span className="text-sm font-bold">اتجاه الظل الحالي:</span>
+                        <span className="text-sm font-bold">{isEn ? 'Current Shadow Direction:' : 'اتجاه الظل الحالي:'}</span>
                         <span className="font-mono text-lg">{Math.round(shadowHeading)}°</span>
                     </div>
                     <div className="flex justify-between items-center p-3 rounded-lg themed-bg-alt" style={{ borderColor: effectiveBorder, borderWidth: '1px', borderStyle: 'solid' }}>
-                        <span className="text-sm font-bold">اتجاه القبلة:</span>
+                        <span className="text-sm font-bold">{isEn ? 'Qibla Direction:' : 'اتجاه القبلة:'}</span>
                         <span className="font-mono text-lg">{Math.round(qiblaDirection)}°</span>
                     </div>
                 </div>
 
                 <div className="mt-4 p-4 rounded-xl border w-full" style={{ backgroundColor: `${theme.palette[0]}1a`, borderColor: effectiveBorder, borderWidth: '1px', borderStyle: 'solid' }}>
                     <p className="font-bold text-sm" style={{ color: theme.palette[0] }}>
-                        القبلة تبعد عن الظل بـ {Math.round(shadowDiff)} درجة
+                        {isEn 
+                            ? `Qibla is ${Math.round(shadowDiff)}° away from the Shadow` 
+                            : `القبلة تبعد عن الظل بـ ${Math.round(shadowDiff)} درجة`}
                     </p>
                 </div>
             </div>

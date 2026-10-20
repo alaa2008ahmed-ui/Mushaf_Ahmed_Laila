@@ -18,6 +18,8 @@ interface NavButtonProps {
     rankBadge?: number | null;
     dataId?: string;
     leftAction?: React.ReactNode;
+    rightAction?: React.ReactNode;
+    onBadgeClick?: () => void;
 }
 
 const NavButton: React.FC<NavButtonProps> = ({ 
@@ -35,7 +37,9 @@ const NavButton: React.FC<NavButtonProps> = ({
     unreadBadgeCount,
     rankBadge,
     dataId,
-    leftAction
+    leftAction,
+    rightAction,
+    onBadgeClick
 }) => {
     const rankColor = rankBadge !== undefined && rankBadge !== null ? getAhlAlQuranRankColor(rankBadge) : null;
 
@@ -69,7 +73,7 @@ const NavButton: React.FC<NavButtonProps> = ({
                     <div className="absolute inset-x-0 top-0 h-[1px] bg-white/20 rounded-t-2xl"></div>
                 )}
                 
-                <span className={`relative z-10 font-kufi whitespace-nowrap overflow-hidden text-ellipsis max-w-full ${leftAction ? 'pl-8 pr-2' : 'px-0.5'}`}>
+                <span className={`relative z-10 font-kufi whitespace-nowrap overflow-hidden text-ellipsis max-w-full ${rightAction ? 'pr-8 pl-2' : (leftAction ? 'pl-8 pr-2' : 'px-0.5')}`}>
                     {label}
                 </span>
 
@@ -78,6 +82,12 @@ const NavButton: React.FC<NavButtonProps> = ({
                     <div className={`absolute inset-0 rounded-2xl ${isBlackButton ? 'bg-white' : 'bg-black'} opacity-0 group-active:opacity-10 transition-opacity`}></div>
                 )}
             </motion.button>
+            
+            {rightAction && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 z-20 flex items-center justify-center pointer-events-auto">
+                    {rightAction}
+                </div>
+            )}
             
             {leftAction && (
                 <div className="absolute left-3 top-1/2 -translate-y-1/2 z-20 flex items-center justify-center pointer-events-auto">
@@ -112,7 +122,18 @@ const NavButton: React.FC<NavButtonProps> = ({
 
             {/* شارة جديد */}
             {showNewBadge && (
-                <div className="absolute -top-2 -right-1 bg-yellow-400 text-black text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full z-20 shadow-lg border border-white animate-bounce pointer-events-none">
+                <div 
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        if (onBadgeClick) {
+                            onBadgeClick();
+                        } else {
+                            onClick();
+                        }
+                    }}
+                    className="absolute -top-2 -right-1 bg-yellow-400 text-black text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full z-20 shadow-lg border border-white animate-bounce cursor-pointer select-none scale-75 origin-top-right"
+                    title={badgeText}
+                >
                     {badgeText}
                 </div>
             )}

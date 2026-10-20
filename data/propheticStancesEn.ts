@@ -1,0 +1,222 @@
+import { PropheticStance, PROPHETIC_STANCES_DATA } from './propheticSeerahData';
+
+export const STANCES_TRANSLATIONS_EN: Record<string, Partial<PropheticStance>> = {
+    "stance-conquest-clemency": {
+        title: "Universal Clemency at the Conquest of Makkah (Go, You Are Free)",
+        categoryBadge: "The Greatest Pardon in Human History",
+        situation: "After twenty years of relentless persecution, torture, boycotts, murder of his loved ones, and exile, the Messenger of Allah ﷺ entered Makkah victorious at the head of ten thousand armed companions. The Quraysh leaders gathered in terror before the Kaaba, awaiting execution under the ancient customs of conquest.",
+        quote: "What do you think I shall do with you? They said: 'Good! A noble brother and the son of a noble brother.' He said: 'I speak to you as Yusuf spoke to his brothers: {No blame will there be upon you today. May Allah forgive you; and He is the most merciful of the merciful.} Go, for you are free!'",
+        moralLesson: "Transforming military triumph into the conquest of hearts; rising above vengeance, and demonstrating that pardoning when one holds absolute power is the pinnacle of honor.",
+        proof: "Sirat Ibn Hisham, Sunan al-Bayhaqi in Dala'il al-Nubuwwah; authenticated by al-Hakim and al-Dhahabi",
+        year: "8 AH (Year of the Great Conquest)",
+        keyFigures: ["The Messenger of Allah ﷺ", "Abu Sufyan ibn Harb", "Ikrimah ibn Abi Jahl", "Safwan ibn Umayyah", "Suhayl ibn Amr"],
+        detailedDialogue: "The Prophet ﷺ stood at the threshold of the Kaaba, holding its doorpost while the elders of Quraysh stood in trembling anticipation below. He addressed them: 'O assembly of Quraysh, what do you think I will do with you?' Bowing their heads, they answered: 'Only good, for you are a noble brother and the son of a noble brother.' He replied with boundless mercy: 'Go, you are free!'",
+        psychologicalAnalysis: "The Prophet ﷺ exhibited unmatched emotional mastery. Far from intoxicating him, victory bowed his head in humility until his beard nearly grazed his camel's saddle, turning historical adversaries into devoted ambassadors of Islam with a single sentence.",
+        contemporaryReflection: "This stance proves that personal revenge is a trait of the weak. In family, business, and community disputes, breaking the cycle of hatred with graceful forgiveness restores peace and dignity.",
+        practicalApplication: "1. Relinquishing the desire for retaliation when you gain the upper hand.\n2. Distinguishing between upholding justice and feeding a hidden desire for revenge.\n3. Initiating reconciliation with those who wronged you."
+    },
+    "stance-taif-prayer": {
+        title: "The Supplication of Taif & The Angel of the Mountains",
+        categoryBadge: "Prophetic Patience & Hope for Guidance",
+        situation: "Following the deaths of Khadijah and Abu Talib, the Prophet ﷺ walked to Taif seeking refuge and support from Thaqif. They rejected him maliciously, inciting their ruffians and slaves to pelt him with stones until his blessed heels were drenched in blood.",
+        quote: "O Allah, to You I complain of my weakness and lack of resources... As long as You are not angry with me, I do not care. When the Angel of the Mountains offered to crush them between the two mountains, he replied: 'Rather, I hope that Allah will bring forth from their loins those who will worship Allah alone.'",
+        moralLesson: "Mercy toward the ignorant and looking ahead with unshakeable optimism even in the darkest hours of grief; divine pleasure remains the supreme aspiration.",
+        proof: "Sahih Al-Bukhari (3231) and Sahih Muslim (1795) from Aisha",
+        year: "10th Year of Prophethood (The Year of Sorrow)",
+        keyFigures: ["The Messenger of Allah ﷺ", "Zayd ibn Harithah", "The Angel of the Mountains", "Jibril (peace be upon him)", "Addas the Christian"],
+        detailedDialogue: "Jibril called: 'Allah has heard what your people said to you, and has sent the Angel of the Mountains for you to command him.' The angel said: 'If you wish, I will crush them beneath the two mountains of Makkah.' The Prophet ﷺ replied without hesitation: 'Rather, I hope that Allah will bring forth from their loins those who worship Allah alone, associating nothing with Him.'",
+        psychologicalAnalysis: "At the peak of intense physical agony and vulnerability, where human instinct craves vengeance, the Prophet ﷺ transcended self-interest, focusing purely on long-term salvation rather than destruction.",
+        contemporaryReflection: "In contemporary ideological and personal conflicts, people often seek the total erasure of opponents. The prophetic path prioritizes guidance and future generational transformation.",
+        practicalApplication: "1. Replacing curses against adversaries with prayers for their guidance.\n2. Avoiding fateful decisions in moments of anger and grief.\n3. Enduring harm patiently while seeking reward from Allah."
+    },
+    "stance-hunayn-bravery": {
+        title: "Valorous Steadfastness at Hunayn (I am the Prophet, No Lie)",
+        categoryBadge: "Heroic Courage in the Heat of Ambush",
+        situation: "At the Valley of Hunayn, Hawazin archers launched a devastating surprise volley of arrows at dawn. The Muslim vanguard collapsed, causing thousands to flee in chaotic panic, leaving only a handful of stalwart companions around the Prophet ﷺ.",
+        quote: "'I am the Prophet, without falsehood; I am the son of Abdul-Muttalib!' He charged forward on his white mule directly into thousands of enemy archers, while companions held its reins fearing for his safety.",
+        moralLesson: "Absolute prophetic courage, conviction in Allah's victory, and leading from the absolute front line when all others retreat.",
+        proof: "Sahih Al-Bukhari (2864) and Sahih Muslim (1776) from Al-Bara ibn Azib and Al-Abbas",
+        year: "8 AH (Shawwal after the Conquest)",
+        keyFigures: ["The Messenger of Allah ﷺ", "Al-Abbas ibn Abdul-Muttalib", "Abu Sufyan ibn al-Harith", "Ali ibn Abi Talib"],
+        detailedDialogue: "Amid widespread retreat, the Prophet ﷺ stood unshaken, calling: 'I am the Prophet, no lie! I am the son of Abdul-Muttalib!' He ordered his uncle Al-Abbas: 'Call out: O companions of the tree! O people of Surah Al-Baqarah!' Hearing his call, the fighters turned back instantly like mothers rushing to their offspring, crying: 'Here we are at your service!'",
+        psychologicalAnalysis: "In mass panic, true leaders exhibit rock-solid presence. The Prophet ﷺ declared his exact identity and location to serve as an unshakeable anchor, transforming imminent disaster into decisive triumph.",
+        contemporaryReflection: "Leaders in families, organizations, and crises must maintain composure. When panic grips a team, a leader's calm fortitude restores clarity and morale.",
+        practicalApplication: "1. Standing firm in the face of sudden adversity.\n2. Inspiring others by reminding them of their higher purpose and values.\n3. Being a visible role model of courage before asking sacrifices of others."
+    },
+    "stance-bedouin-cloak": {
+        title: "Smiling at the Bedouin's Harsh Jerk of His Cloak",
+        categoryBadge: "Perfection of Forbearance & Emotional Grace",
+        situation: "While the Prophet ﷺ was walking wearing a coarse Najrani cloak, a nomad overtook him and yanked his cloak so violently that its thick border left a visible red mark on the Prophet's blessed neck, demanding money with crude roughness.",
+        quote: "The Bedouin shouted: 'O Muhammad! Command that I be given from Allah's wealth which you have!' The Prophet ﷺ turned to him, smiled warmly, and ordered a generous gift of provisions for him.",
+        moralLesson: "Broadness of heart, meeting rudeness with kindness, and accommodating diverse cultural and social temperaments without resentment.",
+        proof: "Sahih Al-Bukhari (3149) and Sahih Muslim (1057) from Anas ibn Malik",
+        year: "9 AH",
+        keyFigures: ["The Messenger of Allah ﷺ", "The Bedouin", "Anas ibn Malik"],
+        detailedDialogue: "Anas recounted: 'I was walking with the Prophet ﷺ when a Bedouin pulled his cloak so violently that I saw the red welt left on his shoulder. The man demanded: Muhammad, give me from Allah's wealth! The Prophet ﷺ turned toward him, laughed with gentle humor, and commanded that he be given a gift.'",
+        psychologicalAnalysis: "The Prophet ﷺ deactivated aggression through warmth. Recognizing the man's desert upbringing and poverty, he met provocation with a smile and generosity, disarming hostility instantly.",
+        contemporaryReflection: "In daily interactions on roads, markets, and social media, we encounter brusque behavior. Responding with grace diffuses tension and preserves peace of mind.",
+        practicalApplication: "1. Training oneself to smile rather than react aggressively when provoked.\n2. Giving people the benefit of the doubt regarding their stress and background.\n3. Returning harshness with benevolence to heal hearts."
+    },
+    "stance-cave-thawr-trust": {
+        title: "Absolute Certainty in the Cave of Thawr (Grieve Not, Allah is With Us)",
+        categoryBadge: "The Zenith of Trust in Divine Protection",
+        situation: "During the Hijrah journey, Quraysh trackers pursued the Prophet ﷺ and Abu Bakr to the very mouth of the cave of Thawr, their feet visible just inches from the entrance.",
+        quote: "'O Abu Bakr, what do you think of two companions with whom Allah is the third? {Grieve not; indeed Allah is with us.}'",
+        moralLesson: "Unconditional reliance on Allah (Tawakkul) combined with meticulous practical planning, and infusing peace into anxious hearts.",
+        proof: "Sahih Al-Bukhari (3653) and Sahih Muslim (2381) from Abu Bakr al-Siddiq",
+        year: "1 AH (622 CE - The Blessed Migration)",
+        keyFigures: ["The Messenger of Allah ﷺ", "Abu Bakr al-Siddiq"],
+        detailedDialogue: "Abu Bakr whispered in trembling concern: 'O Messenger of Allah, if any of them were to look down at their feet, they would surely see us!' The Prophet ﷺ serene and unshaken answered: 'O Abu Bakr, what do you think of two of whom Allah is the third?'",
+        psychologicalAnalysis: "The Prophet ﷺ had exhausted every human precaution (guides, secret routes, concealment), yet placed his entire spiritual reliance solely on Allah, exuding supreme tranquility that erased his companion's anxiety.",
+        contemporaryReflection: "When facing overwhelming odds, fulfilling material responsibilities followed by complete trust in Allah protects the soul from paralyzing despair.",
+        practicalApplication: "1. Exhausting all legitimate means while keeping faith in Allah's decree.\n2. Reassuring distressed companions and radiating confidence in divine wisdom.\n3. Overcoming fear through remembrance of Allah's ever-present support."
+    },
+    "stance-gwharath-sword": {
+        title: "Pardoning Ghawrath ibn al-Harith and the Drawn Sword",
+        categoryBadge: "Heroic Steadfastness and Sudden Mercy",
+        situation: "While resting alone under a shady tree with his sword hung from a branch during the expedition of Dhat al-Riqa', a polytheist named Ghawrath sneaked up, unsheathed the Prophet's sword, and stood over him gloating.",
+        quote: "Ghawrath asked: 'Who will save you from me now?' The Prophet ﷺ calmly replied: 'Allah!' The sword dropped from Ghawrath's trembling hand. The Prophet ﷺ picked it up and asked: 'Who will save you from me?' Ghawrath pleaded: 'Be the best of captors!' The Prophet ﷺ pardoned him unconditionally.",
+        moralLesson: "Unyielding certainty in Allah's guardianship, and demonstrating that true power is shown through mercy when one holds the upper hand.",
+        proof: "Sahih Al-Bukhari (4136) and Sahih Muslim (843) from Jabir ibn Abdullah",
+        year: "4 AH",
+        keyFigures: ["The Messenger of Allah ﷺ", "Ghawrath ibn al-Harith", "Jabir ibn Abdullah"],
+        detailedDialogue: "Jabir reported: 'The man stood brandishing the sword, shouting: Who protects you from me? The Prophet ﷺ said: Allah! The sword fell from his grip. The Prophet ﷺ seized it and asked: Who protects you from me? The man pleaded: Be the best taker! The Prophet ﷺ said: Do you testify that none has the right to be worshipped but Allah? The man said: No, but I promise never to fight you nor join those who fight you. The Prophet ﷺ released him, and the man returned to his tribe saying: I have come to you from the best of mankind!'",
+        psychologicalAnalysis: "Instantaneous shift from mortal danger to supreme moral authority. The Prophet's calm mention of Allah shattered the assailant's psychological resolve, and his subsequent pardon converted a would-be assassin into an admirer.",
+        contemporaryReflection: "Confidence rooted in faith conquers intimidation. Demonstrating magnanimity when adversaries are vulnerable leaves an indelible impression on their conscience.",
+        practicalApplication: "1. Trusting Allah's protection during intimidation.\n2. Refraining from humiliating an opponent once you have prevailed.\n3. Offering a graceful exit to those who recognize their mistake."
+    },
+    "stance-khadijah-loyalty": {
+        title: "Lifelong Loyalty to Lady Khadijah Decades After Her Passing",
+        categoryBadge: "Sublime Fidelity and Cherished Memories",
+        situation: "Years after Lady Khadijah's passing and after marrying other wives, the Prophet ﷺ never ceased honoring her memory, praising her virtues, and showing special benevolence to her companions.",
+        quote: "'Indeed, I was nourished with her love.' And when Aisha inquired, he said: 'She believed in me when people rejected me, she declared me truthful when people called me a liar, and she comforted me with her wealth when people deprived me.'",
+        moralLesson: "Noble marital fidelity, honoring the memory of loyal companions, and showing kindness to the friends of deceased loved ones.",
+        proof: "Sahih Al-Bukhari (3818) and Sahih Muslim (2435) from Aisha",
+        year: "Throughout his life in Madinah (1 - 11 AH)",
+        keyFigures: ["The Messenger of Allah ﷺ", "Lady Khadijah bint Khuwaylid", "Lady Aisha bint Abi Bakr", "Halah bint Khuwaylid"],
+        detailedDialogue: "Whenever he slaughtered a sheep, he would instruct: 'Send portions to the friends of Khadijah.' When her sister Halah sought permission to enter, he recognized her voice resembling Khadijah's and joyfully exclaimed: 'O Allah, Halah!'",
+        psychologicalAnalysis: "The Prophet ﷺ preserved deep gratitude and emotional loyalty. Decades later, he unashamedly declared his love for his first wife, teaching the world that true affection outlives earthly existence.",
+        contemporaryReflection: "In an era of fleeting relationships, the Prophetic model of enduring marital appreciation, remembering shared sacrifices, and honoring in-laws sets an eternal standard.",
+        practicalApplication: "1. Expressing constant gratitude to life partners for their sacrifices.\n2. Honoring the friends and relatives of deceased loved ones.\n3. Remaining loyal to shared memories through continuous prayers and charity."
+    },
+    "stance-thumamah-clemency": {
+        title: "The Gracious Treatment of Thumamah ibn Uthal in the Mosque",
+        categoryBadge: "Dignified Hospitality Converting Enemies",
+        situation: "Thumamah, the fierce chief of Banu Hanifah in Yamamah who had killed Muslims, was captured by a patrol and tied to a pillar of the Prophet's Mosque awaiting judgment.",
+        quote: "The Prophet ﷺ greeted him gently for three days: 'What do you expect, Thumamah?' He answered: 'If you kill me, you kill someone worthy of blood; if you show favor, you show favor to a grateful man.' The Prophet ﷺ ordered: 'Untie Thumamah and set him free!' Thumamah washed, returned, and embraced Islam.",
+        moralLesson: "Winning hearts through noble treatment rather than coercion, and allowing opponents to observe the daily beauty and worship of Islamic brotherhood.",
+        proof: "Sahih Al-Bukhari (4372) and Sahih Muslim (1764) from Abu Hurairah",
+        year: "6 AH",
+        keyFigures: ["The Messenger of Allah ﷺ", "Thumamah ibn Uthal"],
+        detailedDialogue: "After being freed unconditionally, Thumamah walked to a nearby palm grove, bathed, entered the Mosque, and declared: 'O Muhammad, by Allah, there was no face on earth more hated by me than your face, but now your face is the most beloved of all faces to me!'",
+        psychologicalAnalysis: "Placing Thumamah inside the Mosque exposed him to the Prophet's humility, congregational equality, and compassion. Unconditional release removed all defensiveness, allowing truth to enter his heart.",
+        contemporaryReflection: "Demonstrating transparency and noble character in everyday interactions is more persuasive than rhetorical arguments.",
+        practicalApplication: "1. Treating captives, subordinates, and rivals with dignity.\n2. Letting actions and environment speak louder than words.\n3. Understanding that true loyalty cannot be compelled by force."
+    },
+    "stance-ansar-tears-hunayn": {
+        title: "Tears of the Ansar and Prophetic Love After the Spoils of Hunayn",
+        categoryBadge: "Spiritual Affinity Over Worldly Wealth",
+        situation: "After Hunayn, the Prophet ﷺ distributed abundant spoils to reconcile the hearts of newly converted Meccan chiefs, giving nothing of the livestock to the Ansar, leading some young Ansar to express quiet sorrow.",
+        quote: "'O assembly of Ansar! Are you pleased that people return home with sheep and camels, while you return with the Messenger of Allah to your homes? If all people walked through a valley and the Ansar walked through a mountain pass, I would walk through the pass of the Ansar!'",
+        moralLesson: "Affirming that spiritual nearness to Allah and His Messenger surpasses all material riches, and addressing legitimate emotional grievances with transparency and heartfelt love.",
+        proof: "Sahih Al-Bukhari (4330) and Sahih Muslim (1059) from Abu Sa'id al-Khudri",
+        year: "8 AH (Al-Ji'ranah)",
+        keyFigures: ["The Messenger of Allah ﷺ", "Sa'd ibn Ubadah", "The Ansar of Madinah"],
+        detailedDialogue: "The Ansar wept until their beards were soaked, proclaiming with one voice: 'We are wholly satisfied and pleased with the Messenger of Allah as our portion and destiny!'",
+        psychologicalAnalysis: "The Prophet ﷺ listened directly, acknowledged their unmatched historical support, validated their worth, and elevated their self-perception above temporary worldly goods, cementing an unbreakable emotional bond.",
+        contemporaryReflection: "Effective leaders address misunderstandings openly with genuine appreciation rather than dismissiveness.",
+        practicalApplication: "1. Valuing spiritual principles and loyal friendships over material rewards.\n2. Listening with empathy when colleagues or family members feel overlooked.\n3. Reassuring companions of their irreplaceable value."
+    },
+    "stance-sawad-retaliation": {
+        title: "Prophetic Retaliation for Sawad ibn Ghaziyyah at Badr",
+        categoryBadge: "Flawless Justice and Humility Before the Law",
+        situation: "While straightening the battle ranks before Badr with an arrow in hand, the Prophet ﷺ gently tapped the protruding belly of Sawad to align him with the rank, causing slight discomfort.",
+        quote: "Sawad said: 'O Messenger of Allah, you hurt me, and Allah has sent you with truth and justice, so grant me retaliation!' The Prophet ﷺ uncovered his blessed belly and said: 'Take your retaliation, Sawad!' Sawad embraced him and kissed his belly.",
+        moralLesson: "Absolute equality of leader and follower under the law; no ruler is above accountability, and genuine affection blossoms from justice.",
+        proof: "Sirat Ibn Hisham, Musnad Ahmad, and Sunan Abi Dawud; authenticated by al-Dhahabi",
+        year: "2 AH (Battle of Badr)",
+        keyFigures: ["The Messenger of Allah ﷺ", "Sawad ibn Ghaziyyah"],
+        detailedDialogue: "The Prophet ﷺ asked Sawad: 'What prompted you to do this?' Sawad replied: 'O Messenger of Allah, you see the battle approaching, and I wanted my last touch in this world to be my skin touching your skin!' The Prophet ﷺ prayed for his well-being.",
+        psychologicalAnalysis: "Unmatched humility: the supreme military commander submitting immediately to physical retribution requested by an ordinary soldier, instantly diffusing tension into profound devotion.",
+        contemporaryReflection: "Legitimacy stems from accountability. Leaders who willingly submit to fairness and admit minor mistakes earn eternal loyalty.",
+        practicalApplication: "1. Accepting constructive feedback and accountability regardless of status.\n2. Never using rank or authority to dismiss the feelings of others.\n3. Fostering a culture of transparent justice in homes and workplaces."
+    },
+    "stance-exhausted-camel": {
+        title: "Championing the Weeping, Overburdened Camel",
+        categoryBadge: "Mercy to Voiceless Animals",
+        situation: "The Prophet ﷺ entered an orchard in Madinah and encountered an emaciated camel that began to weep and groan upon seeing him.",
+        quote: "The Prophet ﷺ approached, wiped away its tears, and smoothed its hump until it calmed. He asked: 'Who is the owner of this camel?' A young Ansari man stepped forward. The Prophet ﷺ admonished him: 'Do you not fear Allah regarding this beast which Allah has placed in your possession? It has complained to me that you starve it and overwork it!'",
+        moralLesson: "Islamic responsibility toward animal welfare; cruelty to voiceless creatures is a grave spiritual sin.",
+        proof: "Sunan Abi Dawud (2549) and Musnad Ahmad; authenticated by al-Nawawi and al-Albani",
+        year: "Medinan Era",
+        keyFigures: ["The Messenger of Allah ﷺ", "The Ansari youth"],
+        detailedDialogue: "The Prophet ﷺ consoled the animal directly with his hand, then held its owner accountable for neglect and excessive burden.",
+        psychologicalAnalysis: "Universal empathy extending to the animal kingdom, establishing institutional accountability for the treatment of creatures unable to speak for themselves.",
+        contemporaryReflection: "Islam anticipated humane animal treatment centuries before modern animal rights charters, making kindness to all living beings an integral part of faith.",
+        practicalApplication: "1. Providing adequate food, rest, and medical care for pets and livestock.\n2. Opposing all forms of animal abuse and environmental degradation.\n3. Remembering that kindness to living creatures earns divine mercy."
+    },
+    "stance-milk-curd-humility": {
+        title: "Reassuring the Trembling Man (I Am the Son of a Woman Who Ate Dried Meat)",
+        categoryBadge: "Absolute Humility & Dismantling Authoritarian Awe",
+        situation: "A man approached the Prophet ﷺ to speak to him, but upon standing before him, the man was seized with awe and began trembling violently.",
+        quote: "'Be calm and at ease! For I am not a king; I am only the son of a woman from Quraysh who ate dried meat (qadid) in Makkah.'",
+        moralLesson: "Dismantling artificial barriers between leaders and citizens; genuine greatness resides in simplicity and accessibility.",
+        proof: "Sunan Ibn Majah (3312) and Al-Mustadrak; authenticated by al-Albani",
+        year: "Post-Conquest Era (8 - 10 AH)",
+        keyFigures: ["The Messenger of Allah ﷺ", "The trembling Arab man"],
+        detailedDialogue: "The Prophet ﷺ stepped closer, placed his comforting hand on the man, and reminded him of their shared humble desert heritage until the man's fear vanished.",
+        psychologicalAnalysis: "The Prophet ﷺ recognized the man's social anxiety and deflated it completely by citing the simplest food of impoverished desert dwellers, putting the man instantly at ease.",
+        contemporaryReflection: "Arrogance and intimidating demeanors alienate people. True leaders cultivate approachable warmth that invites open communication.",
+        practicalApplication: "1. Making others feel welcome and comfortable in your presence.\n2. Remembering one's modest beginnings and rejecting arrogance.\n3. Treating every person with equal respect regardless of wealth or background."
+    },
+    "stance-jewish-funeral": {
+        title: "Standing in Reverence for the Funeral of a Jewish Man",
+        categoryBadge: "Sanctity of Human Dignity Regardless of Faith",
+        situation: "A funeral procession passed by the Prophet ﷺ and his companions, and he immediately stood up out of respect.",
+        quote: "His companions remarked: 'O Messenger of Allah, it is the funeral of a Jew!' He replied: 'Is it not a human soul? Whenever you see a funeral, stand up until it passes.'",
+        moralLesson: "The inherent sanctity of every human soul created by Allah, transcendent above religious or ethnic differences.",
+        proof: "Sahih Al-Bukhari (1312) and Sahih Muslim (961) from Sahl ibn Hunayf and Qays ibn Sa'd",
+        year: "Medinan Era",
+        keyFigures: ["The Messenger of Allah ﷺ", "Sahl ibn Hunayf", "Qays ibn Sa'd"],
+        detailedDialogue: "When companions questioned the gesture, the Prophet ﷺ reminded them of the profound majesty of mortality and divine creation.",
+        psychologicalAnalysis: "Elevating human consciousness above partisan divisions, emphasizing universal dignity and the solemnity of standing before the Creator.",
+        contemporaryReflection: "Recognizing common humanity and showing respectful compassion during grief and loss across cultural and faith boundaries.",
+        practicalApplication: "1. Respecting human dignity without bias.\n2. Honoring solemn moments of death and bereavement across communities.\n3. Fostering peaceful coexistence founded on mutual respect."
+    },
+    "stance-makhzumiyah-theft-justice": {
+        title: "Upholding Justice in the Theft Case of the Makhzumi Noblewoman",
+        categoryBadge: "Impartial Rule of Law & No Immunity for the Elite",
+        situation: "A noblewoman from the prominent Makhzum clan committed theft, and Quraysh sent Usamah ibn Zayd—whom the Prophet loved deeply—to intercede on her behalf to avoid the prescribed penalty.",
+        quote: "The Prophet's face flushed with anger and he asked: 'Do you intercede concerning one of the legal penalties of Allah?' He delivered a sermon, stating: 'By Allah, even if Fatimah daughter of Muhammad were to steal, I would cut off her hand!'",
+        moralLesson: "Absolute impartiality in applying the law; societies collapse when the influential escape justice while the weak are punished.",
+        proof: "Sahih Al-Bukhari (3475) and Sahih Muslim (1688) from Aisha",
+        year: "8 AH (Year of Conquest)",
+        keyFigures: ["The Messenger of Allah ﷺ", "Usamah ibn Zayd", "Lady Fatimah al-Zahra"],
+        detailedDialogue: "He stood before the people and proclaimed: 'Those before you were destroyed because when a noble stole among them, they left him; and when a weak person stole, they applied the penalty!'",
+        psychologicalAnalysis: "Protecting institutional integrity over personal affection. Even for Usamah, his beloved, the Prophet refused to compromise divine justice, naming his own dearest daughter to prove incorruptibility.",
+        contemporaryReflection: "A warning against two-tiered justice systems. True democracy and spiritual integrity demand equal accountability for elites and common citizens.",
+        practicalApplication: "1. Refusing to show favoritism in matters of justice and duty.\n2. Applying ethical standards equally to loved ones and strangers.\n3. Championing fairness even when inconvenient."
+    },
+    "stance-hummara-bird-mercy": {
+        title: "Demanding the Return of the Chicks to the Distressed Bird",
+        categoryBadge: "Protective Compassion for Tiny Creatures",
+        situation: "During a journey, while the Prophet ﷺ was attending to a personal matter, a companion took two fledglings from a small red lark (Hummara), causing the mother bird to flap its wings in frantic distress.",
+        quote: "Returning, the Prophet ﷺ saw the bird and asked: 'Who has distressed this mother regarding her children? Return her chicks to her at once!'",
+        moralLesson: "Maternal bonds are sacred across all living species; disturbing innocent creatures needlessly is unacceptable.",
+        proof: "Sunan Abi Dawud (2675) and Sahih Ibn Hibban; authenticated by al-Albani",
+        year: "Medinan Era",
+        keyFigures: ["The Messenger of Allah ﷺ", "Abdullah ibn Mas'ud"],
+        detailedDialogue: "The companion promptly placed the chicks back in their nest, upon which the mother bird settled peacefully.",
+        psychologicalAnalysis: "Heightened sensitivity to environmental cues. Amid major military and state responsibilities, the distress of a tiny bird immediately captured his protective attention.",
+        contemporaryReflection: "Cultivating empathy for nature, biodiversity, and conservation as expressions of religious devotion.",
+        practicalApplication: "1. Protecting wildlife and respecting their natural habitats.\n2. Teaching children compassion toward animals and birds.\n3. Avoiding actions that inflict emotional or physical trauma on living beings."
+    }
+};
+
+import { STANCES_EXTRA_EN } from './propheticStancesEnExtra';
+
+Object.assign(STANCES_TRANSLATIONS_EN, STANCES_EXTRA_EN);
+
+export const getStanceTranslationEn = (id: string): Partial<PropheticStance> | undefined => {
+    return STANCES_TRANSLATIONS_EN[id];
+};

@@ -1,4 +1,6 @@
 import React from 'react';
+import { useLanguage } from '../../context/LanguageContext';
+import { getPrayerDisplayName, tPrayer } from '../../utils/prayerTimesTranslations';
 
 interface PrayerCardProps {
     prayerKey: string;
@@ -49,6 +51,7 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
     toggleSummerTime,
     supportsDST
 }) => {
+    const { language, isRTL, dir } = useLanguage();
     // Current border color:
     // If next prayer -> always nextPrayerBorderColor
     // Otherwise -> cardBorderColor (#000000 in default theme, changes with each theme)
@@ -68,6 +71,7 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
 
     return (
         <div 
+            dir={dir}
             className={`prayer-card rounded-2xl p-2 flex flex-col items-center justify-between themed-card relative h-auto min-h-[105px] transition-all duration-200 ${isNextPrayer ? 'shadow-md scale-[1.01]' : 'shadow-xs'}`} 
             style={{
                 borderColor: isBlackTheme ? '#FFFFFF' : activeBorderColor, 
@@ -84,17 +88,26 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
                             onClick={() => togglePrayerSound(prayerKey)} 
                             className={`toggle-dot ${isMuted ? 'bg-red-500' : (isBlackTheme ? 'bg-white' : (isNextPrayer ? 'bg-emerald-500' : 'bg-green-500'))} cursor-pointer transition-transform active:scale-90`} 
                             style={{borderColor: isBlackTheme ? '#FFFFFF' : activeBorderColor, width: '15px', height: '15px', borderRadius: '50%', borderWidth: '1.5px', borderStyle: 'solid'}}
-                            title={isMuted ? "مكتوم (معطل)" : "مفعل"}
+                            title={isMuted ? tPrayer('alertsMutedTooltip', language) : tPrayer('alertsActiveTooltip', language)}
                         ></div>
-                        <button onClick={() => openSettings(prayerKey)} className="text-sm opacity-85 hover:opacity-100 p-0.5 transition-opacity" style={{ color: isBlackTheme ? '#FFFFFF' : activeTextColor }} title="تخصيص"><i className="fa-solid fa-sliders"></i></button>
+                        <button 
+                            onClick={() => openSettings(prayerKey)} 
+                            className="text-sm opacity-85 hover:opacity-100 p-0.5 transition-opacity cursor-pointer" 
+                            style={{ color: isBlackTheme ? '#FFFFFF' : activeTextColor }} 
+                            title={tPrayer('customize', language)}
+                            aria-label={tPrayer('customize', language)}
+                        >
+                            <i className="fa-solid fa-sliders"></i>
+                        </button>
                     </div>
                 ) : (
                     supportsDST ? (
                         <button 
                             onClick={toggleSummerTime}
-                            className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors border text-xs pointer-events-auto ${isSummerTime ? (isBlackTheme ? 'bg-white text-black border-white' : 'bg-green-500 text-white border-green-600') : 'bg-gray-200 text-gray-500 border-gray-300 dark:bg-gray-700 dark:text-gray-400 dark:border-gray-600'}`}
+                            className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors border text-xs pointer-events-auto cursor-pointer ${isSummerTime ? (isBlackTheme ? 'bg-white text-black border-white' : 'bg-green-500 text-white border-green-600') : 'bg-gray-200 text-gray-500 border-gray-300 dark:bg-gray-700 dark:text-gray-400 dark:border-gray-600'}`}
                             style={{ borderColor: isBlackTheme ? '#FFFFFF' : activeBorderColor }}
-                            title="التوقيت الصيفي"
+                            title={tPrayer('dstTooltip', language)}
+                            aria-label={tPrayer('dstTooltip', language)}
                         >
                             <i className="fa-solid fa-clock"></i>
                         </button>
@@ -104,7 +117,9 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
 
             {/* Middle: Name & Time (Centered and raised slightly upwards) */}
             <div className="flex-1 w-full flex flex-col items-center justify-center text-center -mt-1 pt-3.5 pb-0.5 z-0 relative">
-                <h3 className="font-bold text-[12px] sm:text-xs mb-0.5 text-center leading-tight tracking-wide" style={{ color: isBlackTheme ? '#FFFFFF' : activeTextColor }}>{prayerNameAr}</h3>
+                <h3 className="font-bold text-[12px] sm:text-xs mb-0.5 text-center leading-tight tracking-wide" style={{ color: isBlackTheme ? '#FFFFFF' : activeTextColor }}>
+                    {getPrayerDisplayName(prayerKey, language)}
+                </h3>
                 <span className="font-black text-sm sm:text-[15px] text-center leading-tight tracking-normal" style={{ color: isBlackTheme ? '#FFFFFF' : activeTextColor }} dangerouslySetInnerHTML={{ __html: formatTime12(displayTimeStr) }}></span>
             </div>
 
@@ -120,9 +135,9 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
                             backgroundColor: isNextPrayer ? (isDefaultTheme ? '#dcfce7' : `${nextPrayerBorderColor}20`) : (isBlackTheme || isBlackAndWhite ? '#222222' : (isDefaultTheme ? '#f3f4f6' : themePalette1 + '1A')), 
                             borderColor: isBlackTheme ? '#FFFFFF' : activeBorderColor
                         }}
-                        title="تخصيص وقت ونغمة الإقامة"
+                        title={tPrayer('iqamaButtonTooltip', language)}
                     >
-                        <span>إقامة {formatTime12_clean(iqamaTime)}</span>
+                        <span>{tPrayer('iqamaPrefix', language)} {formatTime12_clean(iqamaTime)}</span>
                     </button>
                 ) : (
                     <div className="h-1" />

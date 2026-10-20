@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { READERS, TAFSEERS, THEMES, DEFAULT_SETTINGS, toArabic } from './constants';
+import { READERS, TAFSEERS, THEMES, DEFAULT_SETTINGS, toArabic, ReadingMode, getReadersForMode, getValidReaderForMode, ENGLISH_FONTS } from './constants';
 import { ChevronDown, ChevronUp } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 
 import SurahHeader from './SurahHeader';
 
@@ -14,6 +15,8 @@ interface SettingsModalProps {
 }
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, showToast, isLandscape, readingMode, modeSuffix }) => {
+    const { language } = useLanguage();
+    const isEn = language === 'en';
     const [isClosing, setIsClosing] = useState(false);
 
     const handleClose = () => {
@@ -107,9 +110,19 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, sho
 
 
 
-    const getReaderName = (id: string) => READERS.find(r => r.id === id)?.name || id;
+    const effectiveReaderId = getValidReaderForMode(readingMode as ReadingMode, settings.reader);
+    const getReaderName = (id: string) => {
+        const validId = getValidReaderForMode(readingMode as ReadingMode, id);
+        const modeList = getReadersForMode(readingMode as ReadingMode);
+        return modeList.find(r => r.id === validId)?.name || READERS.find(r => r.id === validId)?.name || validId;
+    };
     const getTafseerName = (id: string) => TAFSEERS.find(t => t.id === id)?.name || id;
     const getFontName = (val: string) => {
+        if (readingMode === 'translation') {
+            const found = ENGLISH_FONTS.find(f => f.id === val);
+            if (found) return found.nameEn || found.name;
+            return "EB Garamond (Sacred)";
+        }
         const fontMap: Record<string, string> = {
             "var(--font-amiri-quran)": "حفص", "var(--font-amiri)": "نسخ", "var(--font-scheherazade)": "مجود",
             "var(--font-lateef)": "تراثي", "var(--font-harmattan)": "ورش", "var(--font-aref)": "رقعة",
@@ -120,7 +133,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, sho
             "var(--font-qalam)": "قلم", "var(--font-thuluth)": "ثلوث", "var(--font-digital)": "رقمي",
             "'KFGQPC Uthman Taha Naskh'": "مجمع الملك فهد", "'Me Quran'": "خط المصحف"
         };
-        return fontMap[val] || "افتراضي";
+        return fontMap[val] || (isEn ? "Default" : "افتراضي");
     };
 
     const currentTheme = THEMES[settings.theme] || Object.values(THEMES)[0];
@@ -198,10 +211,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, sho
                     </div>
 
                     <div id="font-family-section" className="border-b border-gray-200 dark:border-gray-700 py-1">
-                        <label className="text-xs font-bold block opacity-80 mb-1">تخصيص الخط</label>
+                        <label className="text-xs font-bold block opacity-80 mb-1">
+                            {readingMode === 'translation' ? (isEn ? "English Font" : "الخط الإنجليزي") : (isEn ? "Font" : "تخصيص الخط")}
+                        </label>
                         <div className="grid grid-cols-3 gap-2">
-                            <button id="font-weight-btn" onClick={() => updateSetting('isBold', !settings.isBold)} className={`col-span-1 p-2 text-xs h-8 rounded-lg border flex justify-center items-center font-bold transition-all ${settings.isBold ? 'bg-indigo-50 text-indigo-700 border-indigo-200 shadow-sm dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-700' : 'themed-card-bg'}`} title="تفعيل/إلغاء سماكة الخط (Bold)">
-                                <span className={`text-[13px] ${settings.isBold ? 'font-black' : ''}`}>سماكة (B)</span>
+                            <button id="font-weight-btn" onClick={() => updateSetting('isBold', !settings.isBold)} className={`col-span-1 p-2 text-xs h-8 rounded-lg border flex justify-center items-center font-bold transition-all ${settings.isBold ? 'bg-indigo-50 text-indigo-700 border-indigo-200 shadow-sm dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-700' : 'themed-card-bg'}`} title={isEn ? "Toggle bold font weight" : "تفعيل/إلغاء سماكة الخط (Bold)"}>
+                                <span className={`text-[13px] ${settings.isBold ? 'font-black' : ''}`}>{isEn ? "Bold (B)" : "سماكة (B)"}</span>
                             </button>
                             <button id="font-family-btn" onClick={() => onOpenModal('font-modal')} className="col-span-2 p-2 text-xs h-8 themed-card-bg rounded-lg border flex justify-between items-center px-3 font-bold">
                                 <span className="truncate">{getFontName(settings.fontFamily)}</span>

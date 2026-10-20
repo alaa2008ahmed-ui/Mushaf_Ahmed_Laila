@@ -1,5 +1,6 @@
 import React, { useRef } from 'react';
-import { toArabic, getAyahCountText, SURAH_INFO } from './constants';
+import { toArabic, getAyahCountText, SURAH_INFO, SURAH_NAMES_EN } from './constants';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface SurahHeaderProps {
     surahNumber: number;
@@ -10,6 +11,8 @@ interface SurahHeaderProps {
     design?: number;
     onLongPress?: () => void;
     compact?: boolean;
+    isTranslationMode?: boolean;
+    isBilingualMode?: boolean;
 }
 
 const SurahHeader: React.FC<SurahHeaderProps> = ({
@@ -20,8 +23,12 @@ const SurahHeader: React.FC<SurahHeaderProps> = ({
     currentTheme,
     design = 1,
     onLongPress,
-    compact = false
+    compact = false,
+    isTranslationMode = false,
+    isBilingualMode = false
 }) => {
+    const { language } = useLanguage();
+    const isEn = (language === 'en' || isTranslationMode) && !isBilingualMode;
     const longPressTimer = useRef<NodeJS.Timeout | null>(null);
 
     const handleTouchStart = () => {
@@ -70,7 +77,23 @@ const SurahHeader: React.FC<SurahHeaderProps> = ({
 
     // Ensure "Surah" is not repeated
     const cleanSurahName = surahName.replace(/سورة|سُورَةُ|سُورَة/g, '').trim();
-    const fullSurahName = `سُورَةُ ${cleanSurahName}`;
+    const englishSurahName = SURAH_NAMES_EN[surahNumber - 1] || cleanSurahName;
+    
+    const fullSurahName = (isEn || isBilingualMode)
+        ? `Surah ${englishSurahName}`
+        : `سُورَةُ ${cleanSurahName}`;
+
+    const rawSurahType = surahType.includes('مدن') || surahType.includes('Medin') ? 'Medinan' : 'Meccan';
+    const displaySurahType = (isEn || isBilingualMode)
+        ? rawSurahType
+        : surahType;
+
+    const displayAyahCount = (isEn || isBilingualMode)
+        ? `${ayahCount} Verses`
+        : getAyahCountText(ayahCount);
+
+    const quranFont = isEn ? 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' : 'var(--font-amiri-quran)';
+    const hafsFont = isEn ? 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' : 'var(--font-hafs)';
 
     const renderDesign = () => {
         switch (design) {
@@ -83,7 +106,7 @@ const SurahHeader: React.FC<SurahHeaderProps> = ({
                              boxShadow: isDefaultTheme ? 'none' : '0 4px 6px -1px rgba(0, 0, 0, 0.2)'
                          }}>
                         <div className={`font-bold text-sm sm:text-lg z-10 ${isDefaultTheme ? '' : 'drop-shadow-md'} whitespace-nowrap`} style={{ color: headerText }}>
-                            {getAyahCountText(ayahCount)}
+                            {displayAyahCount}
                         </div>
                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                             <div className="relative h-10 px-6 sm:px-12 flex items-center justify-center border-2 shadow-inner max-w-[50%] sm:max-w-none"
@@ -99,7 +122,7 @@ const SurahHeader: React.FC<SurahHeaderProps> = ({
                             </div>
                         </div>
                         <div className={`font-bold text-sm sm:text-lg z-10 ${isDefaultTheme ? '' : 'drop-shadow-md'} whitespace-nowrap`} style={{ color: headerText }}>
-                            {surahType}
+                            {displaySurahType}
                         </div>
                     </div>
                 );
@@ -131,15 +154,15 @@ const SurahHeader: React.FC<SurahHeaderProps> = ({
                         
                         <div className={`relative z-10 w-full flex items-center justify-between ${compact ? 'px-2' : 'px-6 sm:px-10'}`}>
                             <div className="font-bold text-xs sm:text-base" style={{ color: headerText }}>
-                                {getAyahCountText(ayahCount)}
+                                {displayAyahCount}
                             </div>
                             <div className="flex flex-col items-center">
-                                <h2 className="text-xl sm:text-3xl font-bold mb-0 leading-none" style={{ color: headerText, fontFamily: 'var(--font-amiri-quran)' }}>
+                                <h2 className="text-xl sm:text-3xl font-bold mb-0 leading-none" style={{ color: headerText, fontFamily: quranFont }}>
                                     {fullSurahName}
                                 </h2>
                             </div>
                             <div className="font-bold text-xs sm:text-base" style={{ color: headerText }}>
-                                {surahType}
+                                {displaySurahType}
                             </div>
                         </div>
                     </div>
@@ -156,16 +179,16 @@ const SurahHeader: React.FC<SurahHeaderProps> = ({
                          }}>
                         <div className={`absolute left-0 top-0 bottom-0 ${compact ? 'w-10' : 'w-16 sm:w-24'} flex items-center justify-center border-r-2`} style={{ backgroundColor: headerBg, borderColor: headerBorder }}>
                             <div className="text-[10px] sm:text-sm font-bold whitespace-nowrap" style={{ color: headerText }}>
-                                {getAyahCountText(ayahCount)}
+                                {displayAyahCount}
                             </div>
                         </div>
                         <div className={`absolute right-0 top-0 bottom-0 ${compact ? 'w-10' : 'w-16 sm:w-24'} flex items-center justify-center border-l-2`} style={{ backgroundColor: headerBg, borderColor: headerBorder }}>
                             <div className="text-[10px] sm:text-sm font-bold whitespace-nowrap" style={{ color: headerText }}>
-                                {surahType}
+                                {displaySurahType}
                             </div>
                         </div>
                         
-                        <h2 className="text-xl sm:text-3xl font-bold mb-0" style={{ color: cartoucheText, fontFamily: 'var(--font-amiri-quran)' }}>
+                        <h2 className="text-xl sm:text-3xl font-bold mb-0" style={{ color: cartoucheText, fontFamily: quranFont }}>
                             {fullSurahName}
                         </h2>
                         
@@ -186,17 +209,17 @@ const SurahHeader: React.FC<SurahHeaderProps> = ({
                         }}></div>
                         
                         <div className="z-10 bg-black/10 backdrop-blur-sm px-4 py-1.5 rounded-full border text-xs sm:text-sm font-bold" style={{ color: headerText, borderColor: `${headerText}40` }}>
-                            {getAyahCountText(ayahCount)}
+                            {displayAyahCount}
                         </div>
                         
                         <div className="z-10 flex flex-col items-center">
-                            <h2 className="text-xl sm:text-3xl font-bold mb-0 drop-shadow-lg" style={{ color: headerText, fontFamily: 'var(--font-amiri-quran)' }}>
+                            <h2 className="text-xl sm:text-3xl font-bold mb-0 drop-shadow-lg" style={{ color: headerText, fontFamily: quranFont }}>
                                 {fullSurahName}
                             </h2>
                         </div>
                         
                         <div className="z-10 bg-black/10 backdrop-blur-sm px-4 py-1.5 rounded-full border text-xs sm:text-sm font-bold" style={{ color: headerText, borderColor: `${headerText}40` }}>
-                            {surahType}
+                            {displaySurahType}
                         </div>
                     </div>
                 );
@@ -206,14 +229,14 @@ const SurahHeader: React.FC<SurahHeaderProps> = ({
                     <div className="surah-header-visual relative h-14 w-full flex items-center justify-center rounded-3xl border-2 shadow-inner"
                          style={{ backgroundColor: headerBg, borderColor: headerBorder }}>
                         <div className="absolute top-2 left-2 right-2 bottom-2 border rounded-2xl opacity-30" style={{ borderColor: headerBorder }}></div>
-                        <div className="absolute left-4 sm:left-8 font-bold text-xs sm:text-sm z-10" style={{ color: headerText, fontFamily: 'var(--font-hafs)' }}>{surahType}</div>
+                        <div className="absolute left-4 sm:left-8 font-bold text-xs sm:text-sm z-10" style={{ color: headerText, fontFamily: hafsFont }}>{displaySurahType}</div>
                         <div className="relative z-10 flex flex-col items-center">
-                            <h2 className="text-2xl sm:text-4xl font-bold" style={{ color: headerText, fontFamily: 'var(--font-amiri-quran)' }}>
+                            <h2 className="text-2xl sm:text-4xl font-bold" style={{ color: headerText, fontFamily: quranFont }}>
                                 {fullSurahName}
                             </h2>
                             <div className="h-0.5 w-24 mt-1" style={{ background: `linear-gradient(to right, transparent, ${headerBorder}, transparent)` }}></div>
                         </div>
-                        <div className="absolute right-4 sm:right-8 font-bold text-xs sm:text-sm z-10" style={{ color: headerText, fontFamily: 'var(--font-hafs)' }}>{getAyahCountText(ayahCount)}</div>
+                        <div className="absolute right-4 sm:right-8 font-bold text-xs sm:text-sm z-10" style={{ color: headerText, fontFamily: hafsFont }}>{displayAyahCount}</div>
                     </div>
                 );
 
@@ -226,12 +249,12 @@ const SurahHeader: React.FC<SurahHeaderProps> = ({
                             backgroundSize: '50px 50px'
                         }}></div>
                         <div className="z-10 bg-white/90 dark:bg-black/80 px-10 py-2 rounded-lg border-2 shadow-xl" style={{ borderColor: headerBorder }}>
-                            <h2 className="text-2xl sm:text-4xl font-bold" style={{ color: cartoucheText, fontFamily: 'var(--font-amiri-quran)' }}>
+                            <h2 className="text-2xl sm:text-4xl font-bold" style={{ color: cartoucheText, fontFamily: quranFont }}>
                                 {fullSurahName}
                             </h2>
                         </div>
-                        <div className="absolute left-4 font-bold text-xs sm:text-sm" style={{ color: headerText }}>{surahType}</div>
-                        <div className="absolute right-4 font-bold text-xs sm:text-sm" style={{ color: headerText }}>{getAyahCountText(ayahCount)}</div>
+                        <div className="absolute left-4 font-bold text-xs sm:text-sm" style={{ color: headerText }}>{displaySurahType}</div>
+                        <div className="absolute right-4 font-bold text-xs sm:text-sm" style={{ color: headerText }}>{displayAyahCount}</div>
                     </div>
                 );
 
@@ -244,13 +267,13 @@ const SurahHeader: React.FC<SurahHeaderProps> = ({
                              backgroundImage: `linear-gradient(45deg, ${headerBorder}10 25%, transparent 25%), linear-gradient(-45deg, ${headerBorder}10 25%, transparent 25%), linear-gradient(45deg, transparent 75%, ${headerBorder}10 75%), linear-gradient(-45deg, transparent 75%, ${headerBorder}10 75%)`,
                              backgroundSize: '20px 20px'
                          }}>
-                        <div className="absolute left-4 sm:left-8 font-bold text-xs sm:text-sm z-10" style={{ color: headerText, fontFamily: 'var(--font-hafs)' }}>{surahType}</div>
+                        <div className="absolute left-4 sm:left-8 font-bold text-xs sm:text-sm z-10" style={{ color: headerText, fontFamily: hafsFont }}>{displaySurahType}</div>
                         <div className="z-10 flex flex-col items-center bg-white/80 dark:bg-black/80 px-8 py-1 rounded-full border shadow-sm" style={{ borderColor: headerBorder }}>
-                            <h2 className="text-2xl sm:text-4xl font-bold" style={{ color: cartoucheText, fontFamily: 'var(--font-amiri-quran)' }}>
+                            <h2 className="text-2xl sm:text-4xl font-bold" style={{ color: cartoucheText, fontFamily: quranFont }}>
                                 {fullSurahName}
                             </h2>
                         </div>
-                        <div className="absolute right-4 sm:right-8 font-bold text-xs sm:text-sm z-10" style={{ color: headerText, fontFamily: 'var(--font-hafs)' }}>{getAyahCountText(ayahCount)}</div>
+                        <div className="absolute right-4 sm:right-8 font-bold text-xs sm:text-sm z-10" style={{ color: headerText, fontFamily: hafsFont }}>{displayAyahCount}</div>
                     </div>
                 );
 
@@ -259,13 +282,13 @@ const SurahHeader: React.FC<SurahHeaderProps> = ({
                     <div className="surah-header-visual relative h-14 w-full flex items-center justify-between px-4 sm:px-8 rounded-full border-2 shadow-md"
                          style={{ backgroundColor: headerBg, borderColor: headerBorder }}>
                         <div className="flex items-center justify-center px-3 py-1 rounded-full border" style={{ backgroundColor: cartoucheBg, borderColor: headerBorder }}>
-                            <span className="text-xs font-bold" style={{ color: cartoucheText, fontFamily: 'var(--font-hafs)' }}>{getAyahCountText(ayahCount)}</span>
+                            <span className="text-xs font-bold" style={{ color: cartoucheText, fontFamily: hafsFont }}>{displayAyahCount}</span>
                         </div>
-                        <h2 className="text-xl sm:text-3xl font-bold" style={{ color: headerText, fontFamily: 'var(--font-hafs)' }}>
+                        <h2 className="text-xl sm:text-3xl font-bold" style={{ color: headerText, fontFamily: hafsFont }}>
                             {fullSurahName}
                         </h2>
                         <div className="flex items-center justify-center px-3 py-1 rounded-full border" style={{ backgroundColor: cartoucheBg, borderColor: headerBorder }}>
-                            <span className="text-xs font-bold" style={{ color: cartoucheText, fontFamily: 'var(--font-hafs)' }}>{surahType}</span>
+                            <span className="text-xs font-bold" style={{ color: cartoucheText, fontFamily: hafsFont }}>{displaySurahType}</span>
                         </div>
                     </div>
                 );
@@ -280,11 +303,11 @@ const SurahHeader: React.FC<SurahHeaderProps> = ({
                             <div className="absolute bottom-0 left-0 w-3 h-3 border-r-2 border-t-2" style={{ borderColor: headerBg, backgroundColor: headerBorder }}></div>
                             <div className="absolute bottom-0 right-0 w-3 h-3 border-l-2 border-t-2" style={{ borderColor: headerBg, backgroundColor: headerBorder }}></div>
                             
-                            <span className="text-sm font-bold z-10" style={{ color: headerText, fontFamily: 'var(--font-hafs)' }}>{getAyahCountText(ayahCount)}</span>
-                            <h2 className="text-2xl sm:text-3xl font-bold z-10" style={{ color: headerText, fontFamily: 'var(--font-hafs)' }}>
+                            <span className="text-sm font-bold z-10" style={{ color: headerText, fontFamily: hafsFont }}>{displayAyahCount}</span>
+                            <h2 className="text-2xl sm:text-3xl font-bold z-10" style={{ color: headerText, fontFamily: hafsFont }}>
                                 {fullSurahName}
                             </h2>
-                            <span className="text-sm font-bold z-10" style={{ color: headerText, fontFamily: 'var(--font-hafs)' }}>{surahType}</span>
+                            <span className="text-sm font-bold z-10" style={{ color: headerText, fontFamily: hafsFont }}>{displaySurahType}</span>
                         </div>
                     </div>
                 );
@@ -296,12 +319,12 @@ const SurahHeader: React.FC<SurahHeaderProps> = ({
                             <div className="w-full h-10 shadow-md" style={{ backgroundColor: headerBg }}></div>
                         </div>
                         <div className="absolute left-2 sm:left-6 w-12 h-14 flex items-center justify-center shadow-lg" style={{ backgroundColor: cartoucheBg, clipPath: 'polygon(0 0, 100% 0, 100% 100%, 50% 80%, 0 100%)' }}>
-                            <span className="text-xs font-bold mb-2" style={{ color: cartoucheText, fontFamily: 'var(--font-hafs)' }}>{surahType}</span>
+                            <span className="text-xs font-bold mb-2" style={{ color: cartoucheText, fontFamily: hafsFont }}>{displaySurahType}</span>
                         </div>
                         <div className="absolute right-2 sm:right-6 w-12 h-14 flex items-center justify-center shadow-lg" style={{ backgroundColor: cartoucheBg, clipPath: 'polygon(0 0, 100% 0, 100% 100%, 50% 80%, 0 100%)' }}>
-                            <span className="text-xs font-bold mb-2 text-center leading-tight" style={{ color: cartoucheText, fontFamily: 'var(--font-hafs)' }}>{getAyahCountText(ayahCount).replace(' ', '\n')}</span>
+                            <span className="text-xs font-bold mb-2 text-center leading-tight" style={{ color: cartoucheText, fontFamily: hafsFont }}>{displayAyahCount.replace(' ', '\n')}</span>
                         </div>
-                        <h2 className="text-2xl sm:text-3xl font-bold z-10 drop-shadow-md" style={{ color: headerText, fontFamily: 'var(--font-hafs)' }}>
+                        <h2 className="text-2xl sm:text-3xl font-bold z-10 drop-shadow-md" style={{ color: headerText, fontFamily: hafsFont }}>
                             {fullSurahName}
                         </h2>
                     </div>
@@ -316,12 +339,12 @@ const SurahHeader: React.FC<SurahHeaderProps> = ({
                             <div className="w-16 h-16 rotate-45 border-2" style={{ borderColor: headerBorder }}></div>
                         </div>
                         <div className="z-10 flex flex-col items-center bg-white/10 backdrop-blur-sm px-12 py-2 rounded-full border" style={{ borderColor: headerBorder }}>
-                            <h2 className="text-2xl sm:text-3xl font-bold" style={{ color: headerText, fontFamily: 'var(--font-hafs)' }}>
+                            <h2 className="text-2xl sm:text-3xl font-bold" style={{ color: headerText, fontFamily: hafsFont }}>
                                 {fullSurahName}
                             </h2>
                         </div>
-                        <div className="absolute left-4 sm:left-12 font-bold text-xs" style={{ color: headerText, fontFamily: 'var(--font-hafs)' }}>{surahType}</div>
-                        <div className="absolute right-4 sm:right-12 font-bold text-xs" style={{ color: headerText, fontFamily: 'var(--font-hafs)' }}>{getAyahCountText(ayahCount)}</div>
+                        <div className="absolute left-4 sm:left-12 font-bold text-xs" style={{ color: headerText, fontFamily: hafsFont }}>{displaySurahType}</div>
+                        <div className="absolute right-4 sm:right-12 font-bold text-xs" style={{ color: headerText, fontFamily: hafsFont }}>{displayAyahCount}</div>
                     </div>
                 );
 
@@ -331,12 +354,12 @@ const SurahHeader: React.FC<SurahHeaderProps> = ({
                          style={{ backgroundColor: headerBg, borderColor: cartoucheBg }}>
                         <div className="absolute inset-1 border-2 border-dashed" style={{ borderColor: headerBorder, opacity: 0.5 }}></div>
                         <div className="z-10 bg-white/90 dark:bg-black/90 px-8 py-1 rounded-sm border-2 shadow-inner" style={{ borderColor: cartoucheBg }}>
-                            <h2 className="text-2xl sm:text-3xl font-bold" style={{ color: cartoucheText, fontFamily: 'var(--font-hafs)' }}>
+                            <h2 className="text-2xl sm:text-3xl font-bold" style={{ color: cartoucheText, fontFamily: hafsFont }}>
                                 {fullSurahName}
                             </h2>
                         </div>
-                        <div className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-xs" style={{ color: headerText, fontFamily: 'var(--font-hafs)' }}>{surahType}</div>
-                        <div className="absolute right-4 top-1/2 -translate-y-1/2 font-bold text-xs" style={{ color: headerText, fontFamily: 'var(--font-hafs)' }}>{getAyahCountText(ayahCount)}</div>
+                        <div className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-xs" style={{ color: headerText, fontFamily: hafsFont }}>{displaySurahType}</div>
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2 font-bold text-xs" style={{ color: headerText, fontFamily: hafsFont }}>{displayAyahCount}</div>
                     </div>
                 );
 
@@ -345,12 +368,12 @@ const SurahHeader: React.FC<SurahHeaderProps> = ({
                     <div className="surah-header-visual relative h-14 w-full flex items-center justify-center">
                         <div className="absolute inset-x-8 inset-y-1 rounded-full shadow-lg border-2" style={{ backgroundColor: headerBg, borderColor: headerBorder }}></div>
                         <div className="absolute left-4 sm:left-12 w-10 h-10 rounded-full flex items-center justify-center border-2 shadow-md z-10" style={{ backgroundColor: cartoucheBg, borderColor: headerBorder }}>
-                            <span className="text-[10px] font-bold text-center leading-tight" style={{ color: cartoucheText, fontFamily: 'var(--font-hafs)' }}>{surahType}</span>
+                            <span className="text-[10px] font-bold text-center leading-tight" style={{ color: cartoucheText, fontFamily: hafsFont }}>{displaySurahType}</span>
                         </div>
                         <div className="absolute right-4 sm:right-12 w-10 h-10 rounded-full flex items-center justify-center border-2 shadow-md z-10" style={{ backgroundColor: cartoucheBg, borderColor: headerBorder }}>
-                            <span className="text-[10px] font-bold text-center leading-tight" style={{ color: cartoucheText, fontFamily: 'var(--font-hafs)' }}>{getAyahCountText(ayahCount).replace(' ', '\n')}</span>
+                            <span className="text-[10px] font-bold text-center leading-tight" style={{ color: cartoucheText, fontFamily: hafsFont }}>{displayAyahCount.replace(' ', '\n')}</span>
                         </div>
-                        <h2 className="text-2xl sm:text-3xl font-bold z-20 drop-shadow-xl" style={{ color: headerText, fontFamily: 'var(--font-hafs)' }}>
+                        <h2 className="text-2xl sm:text-3xl font-bold z-20 drop-shadow-xl" style={{ color: headerText, fontFamily: hafsFont }}>
                             {fullSurahName}
                         </h2>
                     </div>
@@ -365,7 +388,7 @@ const SurahHeader: React.FC<SurahHeaderProps> = ({
                              boxShadow: (isDefaultTheme && isDesign1) ? 'none' : '0 4px 6px -1px rgba(0, 0, 0, 0.2)'
                          }}>
                         <div className={`font-bold text-sm sm:text-lg z-10 ${(isDefaultTheme && isDesign1) ? '' : 'drop-shadow-md'} whitespace-nowrap`} style={{ color: headerText }}>
-                            {getAyahCountText(ayahCount)}
+                            {displayAyahCount}
                         </div>
                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                             <div className="relative h-10 px-6 sm:px-12 flex items-center justify-center border-2 shadow-inner max-w-[50%] sm:max-w-none"
@@ -381,7 +404,7 @@ const SurahHeader: React.FC<SurahHeaderProps> = ({
                             </div>
                         </div>
                         <div className={`font-bold text-sm sm:text-lg z-10 ${(isDefaultTheme && isDesign1) ? '' : 'drop-shadow-md'} whitespace-nowrap`} style={{ color: headerText }}>
-                            {surahType}
+                            {displaySurahType}
                         </div>
                     </div>
                 );

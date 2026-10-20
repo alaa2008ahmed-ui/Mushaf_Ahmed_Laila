@@ -283,6 +283,16 @@ class CommunityService {
     return `MQ-${code}`;
   }
 
+  public isUserInactiveExpired(user?: CommunityUser | null): boolean {
+    if (!user || !user.userId || user.userId === ADMIN_USER_ID) return false;
+    const timeRef = user.lastSeen || user.createdAt;
+    if (!timeRef) return false;
+    const dateMs = new Date(timeRef).getTime();
+    if (isNaN(dateMs) || dateMs <= 0) return false;
+    const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+    return (Date.now() - dateMs) >= thirtyDaysMs;
+  }
+
   public initCurrentUser(): CommunityUser {
     try {
       if (typeof localStorage !== 'undefined') {
@@ -292,13 +302,19 @@ class CommunityService {
       if (stored) {
         const u = JSON.parse(stored);
         if (u && u.userId) {
-          if (!u.accountCode) {
-            u.accountCode = this.generateAccountCode();
-            localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(u));
+          if (this.isUserInactiveExpired(u)) {
+            console.warn(`Local user ${u.userId} inactive for >= 30 days. Deleting from server and local storage...`);
+            deleteDoc(doc(db, 'users', u.userId)).catch(() => {});
+            localStorage.removeItem(STORAGE_KEY_USER);
+          } else {
+            if (!u.accountCode) {
+              u.accountCode = this.generateAccountCode();
+              localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(u));
+            }
+            this.currentUser = u;
+            this.usersMap.set(u.userId, u);
+            return this.currentUser!;
           }
-          this.currentUser = u;
-          this.usersMap.set(u.userId, u);
-          return this.currentUser!;
         }
       }
     } catch (e) {}
@@ -350,7 +366,7 @@ class CommunityService {
     return this.normalizeUsernameForMatch(str);
   }
 
-  public async restoreAccount(codeOrUsername: string, inputPasscode?: string): Promise<CommunityUser> {
+  public async restoreAccount(codeOrUsername: string, inputPasscode?: string, country?: string): Promise<CommunityUser> {
     const rawInput = (codeOrUsername || '').trim();
     if (!rawInput) {
       throw new Error('يرجى إدخال كود الحساب (مثل MQ-XXXXX) أو اسم المستخدم بالكامل');
@@ -506,11 +522,19 @@ class CommunityService {
       throw new Error('لم يتم العثور على أي حساب مطابق.');
     }
 
+    if (this.isUserInactiveExpired(foundUser)) {
+      deleteDoc(doc(db, 'users', foundUser.userId)).catch(() => {});
+      this.usersMap.delete(foundUser.userId);
+      throw new Error('تم حذف هذا الحساب تلقائياً من التطبيق والخادم لعدم فتح التطبيق لمدة 30 يوماً.');
+    }
+
     // Activate restored user session
     const nowIso = new Date().toISOString();
     foundUser.isOnline = true;
     foundUser.lastSeen = nowIso;
-    if (!foundUser.country || !foundUser.country.trim()) {
+    if (country && country.trim()) {
+      foundUser.country = country.trim();
+    } else if (!foundUser.country || !foundUser.country.trim()) {
       foundUser.country = 'دولة أخرى 🌍';
     }
     if (!foundUser.avatarUrl || !foundUser.avatarUrl.trim()) {
@@ -524,6 +548,9 @@ class CommunityService {
     this.usersMap.set(foundUser.userId, foundUser);
 
     localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(foundUser));
+    try {
+      localStorage.setItem('initial_community_onboarding_completed', 'true');
+    } catch (e) {}
     this.saveToLocalStorage();
 
     // Mark online in Firestore
@@ -759,6 +786,9 @@ class CommunityService {
     this.currentUser = user;
     try {
       localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(user));
+      try {
+        localStorage.setItem('initial_community_onboarding_completed', 'true');
+      } catch (err) {}
       this.usersMap.set(user.userId, user);
       
       const payload = this.cleanPayload(user);
@@ -781,6 +811,11 @@ class CommunityService {
     avatarUrl?: string,
     passcode?: string
   ): Promise<CommunityUser> {
+    const cleanPass = this.normalizeDigits(passcode);
+    if (!cleanPass || cleanPass.length < 4 || cleanPass.length > 16) {
+      throw new Error('يرجى إدخال رقم سري مكون من 4 إلى 16 خانة.');
+    }
+
     const randomId = 'usr_' + Date.now().toString(36) + '_' + Math.random().toString(36).substr(2, 6);
     const newCode = this.generateAccountCode();
 
@@ -796,7 +831,7 @@ class CommunityService {
       country: country && country.trim() ? country.trim() : 'دولة أخرى 🌍',
       bio: bio || '',
       avatarUrl: safeAvatar,
-      passcode: this.normalizeDigits(passcode),
+      passcode: cleanPass,
       isOnline: true,
       lastSeen: new Date().toISOString(),
       createdAt: new Date().toISOString()
@@ -805,6 +840,9 @@ class CommunityService {
     this.currentUser = newUser;
     this.usersMap.set(newUser.userId, newUser);
     localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(newUser));
+    try {
+      localStorage.setItem('initial_community_onboarding_completed', 'true');
+    } catch (err) {}
 
     try {
       const payload = this.cleanPayload(newUser);
@@ -1027,22 +1065,53 @@ class CommunityService {
     }
   }
 
+  public async purgeInactiveUsers() {
+    try {
+      const snapshot = await getDocs(collection(db, 'users'));
+      const currentUid = this.currentUser?.userId;
+      const deletes: Promise<any>[] = [];
+
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data() as CommunityUser;
+        const uid = data?.userId || docSnap.id;
+        if (uid && uid !== ADMIN_USER_ID && this.isUserInactiveExpired(data)) {
+          console.log(`Purging inactive user ${uid} (${data.username}) >30 days from server...`);
+          deletes.push(deleteDoc(doc(db, 'users', uid)).catch(() => {}));
+          this.usersMap.delete(uid);
+          if (currentUid === uid) {
+            this.logoutAccount();
+          }
+        }
+      });
+
+      if (deletes.length > 0) {
+        await Promise.all(deletes);
+        this.saveToLocalStorage();
+        window.dispatchEvent(new CustomEvent('community_user_updated'));
+      }
+    } catch (e) {
+      console.warn('Error purging inactive users:', e);
+    }
+  }
+
   private startPolling() {
     if (this.pollInterval) clearInterval(this.pollInterval);
     // Initial light fetch of contacts once on boot
     this.fetchLatestContacts();
 
-    // Background expiration cleanup after startup, then run once every 15 minutes
+    // Background expiration cleanup after startup, then run periodically
     setTimeout(() => {
       this.purgeExpiredServerMessages();
+      this.purgeInactiveUsers();
     }, 6000);
 
     // Light background sync interval (every 45s) for presence/heartbeat
     this.pollInterval = setInterval(() => {
       this.sendHeartbeat();
-      // Periodically clean expired messages every ~15 minutes
-      if (Math.random() < 0.05) {
+      // Periodically clean expired messages and inactive users (>30 days)
+      if (Math.random() < 0.08) {
         this.purgeExpiredServerMessages();
+        this.purgeInactiveUsers();
       }
     }, 45000);
   }
@@ -1056,20 +1125,32 @@ class CommunityService {
       activeIds.add(ADMIN_USER_ID);
       this.usersMap.set(ADMIN_USER_ID, ADMIN_USER);
 
+      const currentUid = this.currentUser?.userId;
+
       snapshot.forEach((docSnap) => {
         const data = docSnap.data() as CommunityUser;
         const uid = data?.userId || docSnap.id;
-        if (data && uid && data.username && data.username.trim() && uid !== ADMIN_USER_ID) {
-          activeIds.add(uid);
-          this.usersMap.set(uid, {
-            ...data,
-            userId: uid
-          });
+        if (data && uid && uid !== ADMIN_USER_ID) {
+          if (this.isUserInactiveExpired(data)) {
+            console.log(`Deleting inactive user ${uid} (>30 days) from server...`);
+            deleteDoc(doc(db, 'users', uid)).catch(() => {});
+            this.usersMap.delete(uid);
+            if (currentUid === uid) {
+              this.logoutAccount();
+            }
+            return;
+          }
+          if (data.username && data.username.trim()) {
+            activeIds.add(uid);
+            this.usersMap.set(uid, {
+              ...data,
+              userId: uid
+            });
+          }
         }
       });
 
       // Check if current user was deleted from Firestore (and is not Admin or empty profile)
-      const currentUid = this.currentUser?.userId;
       if (currentUid && currentUid !== ADMIN_USER_ID && this.isProfileSetup()) {
         const currentUserExistsOnServer = activeIds.has(currentUid);
         if (!currentUserExistsOnServer && snapshot.size > 0) {
@@ -1207,11 +1288,18 @@ class CommunityService {
         snapshot.forEach((docSnap) => {
           const data = docSnap.data() as CommunityUser;
           const uid = data?.userId || docSnap.id;
-          if (data && uid && data.username && data.username.trim()) {
-            this.usersMap.set(uid, {
-              ...data,
-              userId: uid
-            });
+          if (data && uid && uid !== ADMIN_USER_ID) {
+            if (this.isUserInactiveExpired(data)) {
+              deleteDoc(doc(db, 'users', uid)).catch(() => {});
+              this.usersMap.delete(uid);
+              return;
+            }
+            if (data.username && data.username.trim()) {
+              this.usersMap.set(uid, {
+                ...data,
+                userId: uid
+              });
+            }
           }
         });
         this.saveToLocalStorage();

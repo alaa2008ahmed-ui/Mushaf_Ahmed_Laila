@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { prayerNamesAr, internetTones } from '../data/prayerTimesData';
 import { usePrayerTimes, copyAssetToDevice } from '../context/PrayerTimesContext';
 import { registerBackInterceptor } from '../hooks/useBackButton';
@@ -22,10 +23,12 @@ import {
     checkSupportsDST,
     calculateNightTimes
 } from '../utils/prayerTimesUtils';
+import { tPrayer, getPrayerDisplayName } from '../utils/prayerTimesTranslations';
 
 // Main Component
 function PrayerTimes({ onBack, onNavigate }) {
     const { theme, themeKey } = useTheme();
+    const { language, isRTL, dir } = useLanguage();
     const { 
         times, dates, nextPrayer, countdown, config, refreshLocation, manualSearch, updateConfig,
         isPrayerSilentActive, activeSilentPrayerName
@@ -126,13 +129,13 @@ function PrayerTimes({ onBack, onNavigate }) {
     };
 
     const handleRefreshLocation = async () => {
-        showToast("جاري تحديد الموقع واستعادة المواقيت الأصلية...");
+        showToast(tPrayer('toastLocating', language));
         try {
             await refreshLocation(true);
-            showToast("تم تحديد الموقع واستعادة المواقيت الأصلية تلقائياً");
+            showToast(tPrayer('toastLocationSuccess', language));
         } catch (e) {
             console.error(e);
-            showToast("حدث خطأ أثناء تحديد الموقع");
+            showToast(tPrayer('toastLocationError', language));
         }
     };
 
@@ -141,13 +144,13 @@ function PrayerTimes({ onBack, onNavigate }) {
         if (searchIconRef.current) searchIconRef.current.className = 'fa-solid fa-spinner fa-spin';
         try {
             await manualSearch(searchInput);
-            showToast("تم تحديد المدينة بنجاح واستعادة المواقيت الأصلية");
+            showToast(tPrayer('toastCitySuccess', language));
         } catch(e) { 
             console.error(e); 
-            showToast("حدث خطأ أثناء البحث أو لم يتم العثور على نتائج.");
+            showToast(tPrayer('toastSearchError', language));
         } 
         finally { if (searchIconRef.current) searchIconRef.current.className = 'fa-solid fa-magnifying-glass'; }
-    }
+    };
     
     const openSettings = (key) => {
         setCurrentEditingKey(key);
@@ -213,7 +216,7 @@ function PrayerTimes({ onBack, onNavigate }) {
                 }
             }
         });
-        showToast("تم حفظ تعديل وقت الصلاة بنجاح");
+        showToast(tPrayer('toastSettingsSaved', language));
         setIsModalOpen(false);
     };
 
@@ -224,19 +227,29 @@ function PrayerTimes({ onBack, onNavigate }) {
 
     const togglePrayerSound = (key) => {
         if (isAudioMuted) {
-            showToast("التنبيهات الصوتية متوقفة حالياً. قم بتفعيلها أولاً.");
+            showToast(tPrayer('toastAudioMutedNotice', language));
             return;
         }
+        const willBeMuted = !config.mutedPrayers[key];
+        if (willBeMuted) {
+            stopNotificationSound();
+        }
         updateConfig({
-            mutedPrayers: {...config.mutedPrayers, [key]: !config.mutedPrayers[key] }
+            mutedPrayers: {...config.mutedPrayers, [key]: willBeMuted }
         });
+        const pName = getPrayerDisplayName(key, language);
+        showToast(
+            willBeMuted 
+                ? tPrayer('toastPrayerDisabled', language, { p: pName })
+                : tPrayer('toastPrayerEnabled', language, { p: pName })
+        );
     }
 
     const toggleSummerTime = () => {
         if (!supportsDST) return;
         const newState = !config.isSummerTime;
         updateConfig({ isSummerTime: newState });
-        showToast(newState ? "تم تفعيل التقويم الصيفي (+60 دقيقة)" : "تم إلغاء التقويم الصيفي");
+        showToast(newState ? tPrayer('toastDstEnabled', language) : tPrayer('toastDstDisabled', language));
     };
 
     const handleToneSelection = async (e) => {
@@ -254,19 +267,19 @@ function PrayerTimes({ onBack, onNavigate }) {
                 try {
                     let localUri = selectedInternet.path;
                     if (localUri.startsWith('http')) {
-                        showToast("جاري تحميل الصوت للمعاينة...");
+                        showToast(tPrayer('toastDownloadingTone', language));
                         localUri = await copyAssetToDevice(selectedInternet.path);
                     }
-                    playNotificationSound(localUri); // Play preview
+                    playNotificationSound(localUri, true); // Play preview immediately
                     updateConfig({
                         tones: { ...config.tones, [currentEditingKey]: { name: selectedInternet.name, data: localUri, originalUrl: selectedInternet.path }}
                     });
                     if (localUri.startsWith('http')) {
-                        showToast("تم اختيار الصوت بنجاح");
+                        showToast(tPrayer('toastToneSelected', language));
                     }
                 } catch (err) {
                     console.error("Failed to download tone:", err);
-                    showToast("فشل في تحميل الملف الصوتي. يرجى التحقق من اتصالك بالإنترنت.");
+                    showToast(tPrayer('toastToneDownloadFailed', language));
                 }
             }
         }
@@ -278,7 +291,7 @@ function PrayerTimes({ onBack, onNavigate }) {
             const reader = new FileReader();
             reader.onload = (event) => {
                 const audioDataUrl = event.target.result as string;
-                playNotificationSound(audioDataUrl); // Play preview
+                playNotificationSound(audioDataUrl, true); // Play preview immediately
                 updateConfig({
                     tones: { ...config.tones, [currentEditingKey]: { name: file.name, data: audioDataUrl }}
                 });
@@ -288,7 +301,11 @@ function PrayerTimes({ onBack, onNavigate }) {
     };
 
     return (
-        <div className="h-screen w-screen flex flex-col" style={{ backgroundColor: isDefaultTheme ? '#FFFFFF' : 'transparent', color: isDefaultTheme ? '#000000' : theme.textColor }}>
+        <div 
+            dir={dir}
+            className="h-screen w-screen flex flex-col" 
+            style={{ backgroundColor: isDefaultTheme ? '#FFFFFF' : 'transparent', color: isDefaultTheme ? '#000000' : theme.textColor }}
+        >
             <PrayerTimesHeader 
                 handleRefreshLocation={handleRefreshLocation}
                 onOpenNotifications={() => setIsNotifModalOpen(true)}
@@ -300,7 +317,7 @@ function PrayerTimes({ onBack, onNavigate }) {
                 onHome={handleGoHome}
             />
 
-            <main className="flex-1 overflow-y-auto hide-scrollbar px-2 pb-1">
+            <main className="flex-1 overflow-y-auto hide-scrollbar px-2 pt-2 pb-1">
                 <div className="max-w-md mx-auto flex flex-col h-full">
                     <div 
                         className={`themed-card ${isDefaultTheme ? 'bg-white' : 'bg-black/5 dark:bg-white/5'} rounded-xl p-2 mb-1.5 shadow-sm`}
@@ -337,7 +354,9 @@ function PrayerTimes({ onBack, onNavigate }) {
                                 }}
                             >
                                 <MapPin size={18} className="shrink-0" style={{ color: isBlackTheme ? '#FFFFFF' : primaryColor }} />
-                                <span className="truncate whitespace-nowrap" style={{ color: isBlackTheme ? '#FFFFFF' : primaryColor }}>المساجد القريبة</span>
+                                <span className="truncate whitespace-nowrap" style={{ color: isBlackTheme ? '#FFFFFF' : primaryColor }}>
+                                    {tPrayer('nearbyMosques', language)}
+                                </span>
                             </button>
                              <button
                                 onClick={() => onNavigate('monthly-prayer-times')}
@@ -350,7 +369,9 @@ function PrayerTimes({ onBack, onNavigate }) {
                                 }}
                             >
                                 <Calendar size={18} className="shrink-0" style={{ color: isBlackTheme ? '#FFFFFF' : secondaryColor }} />
-                                <span className="truncate whitespace-nowrap" style={{ color: isBlackTheme ? '#FFFFFF' : secondaryColor }}>المواقيت الشهرية</span>
+                                <span className="truncate whitespace-nowrap" style={{ color: isBlackTheme ? '#FFFFFF' : secondaryColor }}>
+                                    {tPrayer('monthlyTimes', language)}
+                                </span>
                             </button>
                         </div>
 
@@ -372,15 +393,15 @@ function PrayerTimes({ onBack, onNavigate }) {
                             <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
                                 <Bell className="w-5 h-5" />
                                 <div className="flex flex-col">
-                                    <span className="text-sm font-bold">التنبيهات الصوتية متوقفة</span>
-                                    <span className="text-xs opacity-80">حتى {new Date(config.audioMutedUntil!).toLocaleDateString('ar-SA')}</span>
+                                    <span className="text-sm font-bold">{tPrayer('audioAlertsPaused', language)}</span>
+                                    <span className="text-xs opacity-80">{tPrayer('untilDate', language)}{new Date(config.audioMutedUntil!).toLocaleDateString(language === 'en' ? 'en-US' : 'ar-SA')}</span>
                                 </div>
                             </div>
                             <button 
                                 onClick={() => updateConfig({ audioMutedUntil: undefined })}
                                 className="text-xs bg-red-200 dark:bg-red-800 text-red-700 dark:text-red-300 px-3 py-1.5 rounded-lg font-bold"
                             >
-                                تفعيل
+                                {tPrayer('enable', language)}
                             </button>
                         </div>
                     )}
@@ -427,9 +448,9 @@ function PrayerTimes({ onBack, onNavigate }) {
                         <div className="p-2.5 px-3.5 mt-2 rounded-2xl bg-purple-100 dark:bg-purple-900/40 border border-purple-300 dark:border-purple-700 text-purple-900 dark:text-purple-100 flex items-center justify-between text-xs font-bold">
                             <div className="flex items-center gap-2">
                                 <span className="text-base">🔕</span>
-                                <span>وضع الصامت نَشِط حالياً لأداء صلاة {activeSilentPrayerName}</span>
+                                <span>{tPrayer('silentModeActive', language, { p: getPrayerDisplayName(activeSilentPrayerName, language) })}</span>
                             </div>
-                            <span className="text-[10px] opacity-75 font-normal">تقبل الله طاعتكم</span>
+                            <span className="text-[10px] opacity-75 font-normal">{tPrayer('mayAllahAccept', language)}</span>
                         </div>
                     )}
 
@@ -471,7 +492,7 @@ function PrayerTimes({ onBack, onNavigate }) {
                     </div>
                     
                     <p className="text-center text-sm mt-3 opacity-90" style={{ color: isBlackTheme ? '#FFFFFF' : secondaryColor }}>
-                        (يجب تفعيل الموقع للهاتف لحساب الموقع بدقه)
+                        {tPrayer('locationRequirementNote', language)}
                     </p>
                 </div>
                 <div className="w-full h-12 shrink-0"></div>

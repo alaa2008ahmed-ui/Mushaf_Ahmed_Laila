@@ -12,7 +12,7 @@ import VerseSection from '../components/MainMenu/VerseSection';
 import TitleSection from '../components/MainMenu/TitleSection';
 import GridSection from '../components/MainMenu/GridSection';
 import VerseContextMenu from '../components/MainMenu/VerseContextMenu';
-import { Palette } from 'lucide-react';
+import { Palette, Globe, HelpCircle } from 'lucide-react';
 import { useVoiceControl } from '../context/VoiceControlContext';
 import { usePrayerTimes } from '../context/PrayerTimesContext';
 import { prayerNamesAr } from '../data/prayerTimesData';
@@ -27,6 +27,8 @@ import moment from 'moment-hijri';
 import TopLeadersCard from '../components/MainMenu/TopLeadersCard';
 import HabitTrackerCard from '../components/MainMenu/HabitTrackerCard';
 import TawafCounterCard from '../components/MainMenu/TawafCounterCard';
+import { useLanguage } from '../context/LanguageContext';
+import { loadDayEvents, getTranslatedEventText, OnThisDayItem } from '../utils/onThisDayService';
 
 const ISLAMIC_EVENTS = [
     { day: 1, month: 1, name: "رأس السنة الهجرية" },
@@ -44,26 +46,57 @@ const ISLAMIC_EVENTS = [
 const HIJRI_MONTHS = ["محرم", "صفر", "ربيع الأول", "ربيع الآخر", "جمادى الأولى", "جمادى الآخرة", "رجب", "شعبان", "رمضان", "شوال", "ذو القعدة", "ذو الحجة"];
 const GREGORIAN_MONTHS = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
 
+const APP_SHARE_TEXT_EN = `🕋✨ Major Update: "Mushaf Ahmed & Laila"! ✨🕋
+(Your Comprehensive Faith Companion — Offline & 100% Ad-Free)
+
+We are delighted to present an exceptional, fully refined release crafted for seamless, beautiful, and swift spiritual daily routines:
+
+🚀 Key Features in this Edition:
+📜 Prophetic Seerah: Inspiring interactive timeline of the Prophet's life ﷺ with detailed historical stations and expeditions.
+🏆 Ahl Al-Quran: Live recitation statistics and leaderboard honouring Quran readers.
+💬 Faith Community: Brotherhood discussions, verified Islamic quotes, and daily reflections.
+🕋 Tawaf & Sa'i Counter: Live circuit tracker with authentic supplications.
+📊 Habit Tracker: Comprehensive tracker for daily obligatory & sunnah prayers and adhkar.
+⭐ Fortress of the Muslim (Hisn Al-Muslim), Tajweed Rules, Audio Quran, and more.
+
+Explore & Share:
+https://mushaf-ahmed-laila.vercel.app/`;
+
 const APP_SHARE_TEXT = `🕋✨ التحديث الأكبر لتطبيق "مصحف أحمد وليلى"! ✨🕋
-(تطبيقك الإسلامي الشامل — يعمل بدون إنترنت وبدون إعلانات)
+(رفيقك الإيماني الشامل — يعمل بدون إنترنت وبدون إعلانات)
 
-نسعد بأن نضع بين أيديكم إصداراً جديداً كلياً يجمع بين روعة التلاوة وروح التنافس في الخيرات، مع صفحات وميزات حصرية أُضيفت خصيصاً لترافق يومك الإيماني:
+نسعد بأن نضع بين أيديكم إصداراً استثنائياً وجديداً كلياً، خضع لتطوير شامل وتحديث جذري لجميع صفحات التطبيق وواجهته لتكون أكثر سلاسة، وجمالاً، وسرعة في الاستخدام، مع باقة حصرية من الصفحات والميزات الإيمانية الجديدة:
 
-🚀 أبرز ما تم إضافته في هذا التحديث:
-🏆 صفحة أهل القرآن: لوحة المتصدرين وترتيب القرّاء؛ لمتابعة إحصائيات تلاوتك وتنافس إيماني مبارك في قراءة وختم القرآن الكريم شهرياً وتراكمياً.
-💬 صفحة مجتمع التواصل: ملتقى إيماني للتواصل الأخوي ومجموعات النقاش الهادف والتواصي بالحق.
-🛡️ صفحة الرقية الشرعية: رقية شرعية كاملة وشاملة من القرآن الكريم والسنة النبوية للتحصين والشفاء.
-🌐 صفحة مواقع إسلامية: دليل متكامل لأوثق المواقع والمنصات الإسلامية للفتوى والبحث الشرعي.
+🚀 أبرز ما تم إضافته وتطويره في هذا التحديث:
+
+📜 صفحة السيرة النبوية (جديد):
+رحلة ملهمة وتفاعلية في سيرة خير الأنام ﷺ عبر خط زمني مفصل يوثق أهم المحطات والغزوات والأحداث النبوية الشريفة بأسلوب عصري وميسر.
+
+🏆 صفحة أهل القرآن:
+لوحة المتصدرين وتنافس إيماني مبارك؛ لمتابعة إحصائيات تلاوتك وتكريم قرّاء القرآن الكريم شهرياً وتراكمياً.
+
+💬 صفحة مجتمع التواصل:
+ملتقى إيماني للتواصل الأخوي، ونشر الفوائد والخواطر، ومجموعات النقاش الهادف والتواصي بالحق.
+
+🛡️ صفحة الرقية الشرعية:
+رقية شرعية كاملة وشاملة وميسرة من القرآن الكريم والسنة النبوية للتحصين والشفاء والسكينة.
+
+🌐 صفحة مواقع ومنصات إسلامية:
+دليل تفاعلي متكامل لأوثق المواقع الإسلامية للفتوى والبحث الشرعي وعلوم القرآن.
+
+🎨 تحديث شامل للواجهة ولكافة الصفحات:
+إعادة تصميم وتحديث لجميع صفحات التطبيق دون استثناء؛ لتحسين تجربة القراءة، والخطوط، والسمات المتعددة، وسرعة التصفح والتنقل.
 
 🌟 بجانب ميزاتك المفضلة:
-(المصحف الشريف كاملاً • حصن المسلم والأذكار • مواقيت الصلاة والقبلة • الورد اليومي والتحفيظ • التحكم الصوتي • مربي العبادات • الحاسبة الشرعية • الأربعون النووية).
+(المصحف الشريف كاملاً بأكثر من رواية وتفسير • حصن المسلم وأذكار اليوم والليلة • مواقيت الصلاة والقبلة • الورد اليومي والتحفيظ • التحكم الصوتي الذكي • مربي العبادات • الحاسبة الشرعية والمواريث • الأربعون النووية).
 
-📥 حمّل التطبيق الآن أو حدّثه عبر متجر Google Play:
+📥 حمّل التطبيق الآن أو حدّثه مجاناً عبر متجر Google Play:
 👉 https://play.google.com/store/apps/details?id=com.AhmedLaila.Quran
 
-🤍 شاركه مع أهلك وأصحابك.. فالدال على الخير كفاعله، واجعله صدقة جارية لك ولوالديك. 🤲🌱`;
+🤍 شاركه مع أهلك وأحبابك..
+فالدال على الخير كفاعله، واجعله صدقة جارية لك ولوالديك. 🤲🌱`;
 
-const CURRENT_LAYOUT_VERSION = 'v2026_row8_seerah_bar_v4';
+const CURRENT_LAYOUT_VERSION = 'v2026_row8_seerah_bar_v5';
 
 const ALL_POSSIBLE_ITEMS = [
     // الصف الاول : بطاقه القران الكريم + بطاقه الاستماع للقران باللون الاخضر
@@ -96,8 +129,8 @@ const ALL_POSSIBLE_ITEMS = [
     { id: 'nawawi', label: "الأربعون النووية", className: "col-span-2 h-11", colorIndex: 0 },
     { id: 'voice-control', label: "التحكم الصوتي", className: "col-span-2 h-11", colorIndex: 0 },
     { id: 'asmaul-husna', label: "أسماء الله الحسنى", className: "col-span-2 h-11", colorIndex: 0 },
-    // صف السيرة والخط الزمني مع أيقونات مجتمع التواصل وأهل القرآن والواتساب والتحكم الصوتي
-    { id: 'prophetic-seerah', label: "السيرة والخط الزمني", className: "col-span-6 h-10 flex justify-center", colorIndex: 0 },
+    // صف السيرة النبوية مع أيقونات مجتمع التواصل وأهل القرآن والواتساب والتحكم الصوتي
+    { id: 'prophetic-seerah', label: "السيرة النبوية", className: "col-span-6 h-10 flex justify-center", colorIndex: 0 },
 ];
 
 const DEFAULT_MENU_ITEMS = [
@@ -131,12 +164,24 @@ const DEFAULT_MENU_ITEMS = [
     { id: 'nawawi', label: "الأربعون النووية", className: "col-span-2 h-11", colorIndex: 0 },
     { id: 'voice-control', label: "التحكم الصوتي", className: "col-span-2 h-11", colorIndex: 0 },
     { id: 'asmaul-husna', label: "أسماء الله الحسنى", className: "col-span-2 h-11", colorIndex: 0 },
-    // صف السيرة والخط الزمني مع أيقونات مجتمع التواصل وأهل القرآن والواتساب والتحكم الصوتي باللون الأخضر
-    { id: 'prophetic-seerah', label: "السيرة والخط الزمني", className: "col-span-6 h-10 flex justify-center", colorIndex: 0 },
+    // صف السيرة النبوية مع أيقونات مجتمع التواصل وأهل القرآن والواتساب والتحكم الصوتي باللون الأخضر
+    { id: 'prophetic-seerah', label: "السيرة النبوية", className: "col-span-6 h-10 flex justify-center", colorIndex: 0 },
 ];
 
 function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
   const { showVoiceIcon } = useVoiceControl();
+  const { 
+    language, 
+    isRTL, 
+    dir, 
+    toggleLanguage, 
+    t, 
+    translatePrayerName, 
+    translateEventName, 
+    translateHijriMonth, 
+    translateGregorianMonth, 
+    formatNumber 
+  } = useLanguage();
   const [currentVerse] = useState(() => {
     const randomIndex = Math.floor(Math.random() * verses.length);
     return verses[randomIndex];
@@ -145,8 +190,8 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
   const isBlackTheme = themeKey === 'deep_black' || theme.bgColor === '#000000' || theme.name === 'اسود' || theme.name === 'black';
   const cardHeaderColor = isBlackTheme ? '#FFFFFF' : theme.palette[0];
   const cardBorderColor = isBlackTheme ? '#FFFFFF' : theme.palette[0];
-  const cardButtonColor = isBlackTheme ? '#FFFFFF' : theme.palette[0];
-  const cardButtonTextColor = isBlackTheme ? '#000000' : '#FFFFFF';
+  const cardButtonColor = isBlackTheme ? '#000000' : theme.palette[0];
+  const cardButtonTextColor = isBlackTheme ? '#FFFFFF' : '#FFFFFF';
   const [visibleItems, setVisibleItems] = useState<string[]>(() => {
     const savedVersion = localStorage.getItem('menu_layout_version_v2');
     if (savedVersion !== CURRENT_LAYOUT_VERSION) {
@@ -203,6 +248,13 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
   const prayerCardRef = useRef<HTMLDivElement>(null);
   const [hideIconsOnScroll, setHideIconsOnScroll] = useState(false);
   const buttonThresholdRef = useRef<number | null>(null);
+  const [isQuickMenuOpen, setIsQuickMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (isThemesSidebarOpen) {
+      setIsQuickMenuOpen(false);
+    }
+  }, [isThemesSidebarOpen]);
 
   const PREDEFINED_COLORS = [
       '#ffffff', '#f3f4f6', '#9ca3af', '#4b5563', '#000000',
@@ -244,7 +296,7 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
         if (gRect.height > 0) buttonThresholdRef.current = gRect.bottom + 6;
       } else if (themesBtn) {
         const tRect = themesBtn.getBoundingClientRect();
-        if (tRect.height > 0) buttonThresholdRef.current = tRect.bottom + 48;
+        if (tRect.height > 0) buttonThresholdRef.current = tRect.bottom + 32;
       }
     };
     handleResize();
@@ -261,9 +313,9 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
   
   const [lastReadAyah, setLastReadAyah] = useState<{ s: number, a: number, text: string, surahName: string } | null>(null);
 
-  const [onThisDayEvent, setOnThisDayEvent] = useState<{ text: string, year: number, dateStr: string } | null>(null);
+  const [onThisDayEvent, setOnThisDayEvent] = useState<{ text: string, textEn?: string, year: number, dateStr: string } | null>(null);
   const [onThisDayIndex, setOnThisDayIndex] = useState(0);
-  const [onThisDayList, setOnThisDayList] = useState<{ text: string, year: number }[]>([]);
+  const [onThisDayList, setOnThisDayList] = useState<OnThisDayItem[]>([]);
   const [showExpandedEventsModal, setShowExpandedEventsModal] = useState(false);
   const [showExpandedUpcomingEventModal, setShowExpandedUpcomingEventModal] = useState(false);
 
@@ -291,13 +343,20 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
           return a.day - b.day;
       });
 
-      const formattedEvents = allCycleEvents.map(ev => ({
-          name: ev.name,
-          dateStr: `${toArabic(ev.date.iDate())} ${HIJRI_MONTHS[ev.date.iMonth()]} ${toArabic(ev.date.iYear())} هـ`,
-          gregorianDateStr: `${toArabic(ev.date.date())} ${GREGORIAN_MONTHS[ev.date.month()]} ${toArabic(ev.date.year())} م`,
-          daysRemaining: ev.diff,
-          isToday: ev.diff === 0
-      }));
+      const formattedEvents = allCycleEvents.map(ev => {
+          const hijriDateAr = `${toArabic(ev.date.iDate())} ${HIJRI_MONTHS[ev.date.iMonth()]} ${toArabic(ev.date.iYear())} هـ`;
+          const hijriDateEn = `${ev.date.iDate()} ${translateHijriMonth(ev.date.iMonth())} ${ev.date.iYear()} AH`;
+          const gregDateAr = `${toArabic(ev.date.date())} ${GREGORIAN_MONTHS[ev.date.month()]} ${toArabic(ev.date.year())} م`;
+          const gregDateEn = `${ev.date.date()} ${translateGregorianMonth(ev.date.month())} ${ev.date.year()} AD`;
+
+          return {
+              name: ev.name,
+              dateStr: language === 'en' ? hijriDateEn : hijriDateAr,
+              gregorianDateStr: language === 'en' ? gregDateEn : gregDateAr,
+              daysRemaining: ev.diff,
+              isToday: ev.diff === 0
+          };
+      });
 
       setUpcomingEvents(formattedEvents);
 
@@ -305,54 +364,78 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
       let initialIndex = formattedEvents.findIndex(ev => ev.daysRemaining >= 0);
       if (initialIndex === -1) initialIndex = 0; // If all passed, start at 0
       setEventIndex(initialIndex);
-  }, []);
+  }, [language]);
 
   useEffect(() => {
+      let isMounted = true;
       const today = new Date();
       const mm = String(today.getMonth() + 1).padStart(2, '0');
       const dd = String(today.getDate()).padStart(2, '0');
       const key = `${mm}-${dd}`;
-      const formatter = new Intl.DateTimeFormat('ar-EG', { weekday: 'long', day: 'numeric', month: 'long' });
+      const formatter = new Intl.DateTimeFormat(language === 'en' ? 'en-US' : 'ar-EG', { weekday: 'long', day: 'numeric', month: 'long' });
       const dateStr = formatter.format(today);
 
-      let events = ON_THIS_DAY_EVENTS[key] || [];
+      const fetchAndSetEvents = async () => {
+          const items = await loadDayEvents(mm, dd, language);
+          if (!isMounted) return;
 
-      let stored = null;
-      try { stored = JSON.parse(localStorage.getItem('on_this_day_state') || 'null'); } catch(e){}
+          let stored = null;
+          try { stored = JSON.parse(localStorage.getItem('on_this_day_state') || 'null'); } catch(e){}
 
-      let startIndex = 0;
-      if (stored && stored.key === key) {
-          startIndex = (stored.index + 1) % Math.max(1, events.length);
-      } else if (events.length > 0) {
-          startIndex = Math.floor(Math.random() * events.length);
-      }
+          let startIndex = 0;
+          if (stored && stored.key === key) {
+              startIndex = stored.index % Math.max(1, items.length);
+          } else if (items.length > 0) {
+              startIndex = Math.floor(Math.random() * items.length);
+          }
 
-      if (events.length > 0) {
-          setOnThisDayList(events);
-          setOnThisDayIndex(startIndex);
-          setOnThisDayEvent({ ...events[startIndex], dateStr });
-      }
-      localStorage.setItem('on_this_day_state', JSON.stringify({ key, index: startIndex }));
-  }, []);
+          if (items.length > 0) {
+              setOnThisDayList(items);
+              setOnThisDayIndex(startIndex);
+              const ev = items[startIndex];
+              const eventText = language === 'en' ? (ev.textEn || getTranslatedEventText(ev.text, ev.year)) : ev.text;
+              setOnThisDayEvent({ 
+                year: ev.year, 
+                text: eventText, 
+                textEn: ev.textEn || getTranslatedEventText(ev.text, ev.year),
+                dateStr 
+              });
+          }
+          localStorage.setItem('on_this_day_state', JSON.stringify({ key, index: startIndex }));
+      };
+
+      fetchAndSetEvents();
+
+      return () => { isMounted = false; };
+  }, [language]);
 
   const handleNextEvent = async (e: React.MouseEvent) => {
       e.stopPropagation();
       const today = new Date();
       const mm = String(today.getMonth() + 1).padStart(2, '0');
       const dd = String(today.getDate()).padStart(2, '0');
-      const formatter = new Intl.DateTimeFormat('ar-EG', { weekday: 'long', day: 'numeric', month: 'long' });
+      const formatter = new Intl.DateTimeFormat(language === 'en' ? 'en-US' : 'ar-EG', { weekday: 'long', day: 'numeric', month: 'long' });
       const dateStr = formatter.format(today);
 
       if (navigator.onLine && onThisDayIndex >= onThisDayList.length - 1) {
           try {
-              const res = await fetch(`https://api.wikimedia.org/feed/v1/wikipedia/ar/onthisday/events/${mm}/${dd}`);
+              const fetchUrl = language === 'en'
+                ? `https://en.wikipedia.org/api/rest_v1/feed/onthisday/events/${mm}/${dd}`
+                : `https://api.wikimedia.org/feed/v1/wikipedia/ar/onthisday/events/${mm}/${dd}`;
+              const res = await fetch(fetchUrl);
               const data = await res.json();
               if (data && data.events && data.events.length > onThisDayList.length) {
-                  const newEvents = data.events.map((e: any) => ({ year: e.year || 0, text: e.text }));
+                  const newEvents: OnThisDayItem[] = data.events.map((e: any) => ({
+                    year: e.year || 0,
+                    text: e.text || '',
+                    textEn: language === 'en' ? (e.text || '') : getTranslatedEventText(e.text || '', e.year || 0)
+                  }));
                   setOnThisDayList(newEvents);
                   const newIndex = onThisDayList.length;
                   setOnThisDayIndex(newIndex);
-                  setOnThisDayEvent({ ...newEvents[newIndex], dateStr });
+                  const ev = newEvents[newIndex];
+                  const eventText = language === 'en' ? (ev.textEn || ev.text) : ev.text;
+                  setOnThisDayEvent({ year: ev.year, text: eventText, textEn: ev.textEn, dateStr });
                   localStorage.setItem('on_this_day_state', JSON.stringify({ key: `${mm}-${dd}`, index: newIndex }));
                   return;
               }
@@ -364,7 +447,9 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
       const nextIndex = (onThisDayIndex + 1) % Math.max(1, onThisDayList.length);
       setOnThisDayIndex(nextIndex);
       if (onThisDayList[nextIndex]) {
-          setOnThisDayEvent({ ...onThisDayList[nextIndex], dateStr });
+          const ev = onThisDayList[nextIndex];
+          const eventText = language === 'en' ? (ev.textEn || getTranslatedEventText(ev.text, ev.year)) : ev.text;
+          setOnThisDayEvent({ year: ev.year, text: eventText, textEn: ev.textEn, dateStr });
           localStorage.setItem('on_this_day_state', JSON.stringify({ key: `${mm}-${dd}`, index: nextIndex }));
       }
   };
@@ -373,9 +458,17 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
     e.stopPropagation();
     if (!onThisDayEvent) return;
 
+    const sourceText = language === 'en'
+      ? `On This Day - ${onThisDayEvent.year} AD`
+      : `حدث في مثل هذا اليوم - ${onThisDayEvent.year}م`;
+
+    const activeText = language === 'en'
+      ? (onThisDayEvent.textEn || getTranslatedEventText(onThisDayEvent.text, onThisDayEvent.year))
+      : onThisDayEvent.text;
+
     await shareAsImage({ 
-      text: onThisDayEvent.text, 
-      source: `حدث في مثل هذا اليوم - ${onThisDayEvent.year}م`, 
+      text: activeText, 
+      source: sourceText, 
       category: onThisDayEvent.dateStr, 
       theme, 
       setToastMessage 
@@ -385,14 +478,20 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
   const handleCopyHighlight = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!onThisDayEvent) return;
-    const textToCopy = `${onThisDayEvent.dateStr}\nفي عام ${onThisDayEvent.year} ميلادي\n${onThisDayEvent.text}`;
+    const activeText = language === 'en'
+      ? (onThisDayEvent.textEn || getTranslatedEventText(onThisDayEvent.text, onThisDayEvent.year))
+      : onThisDayEvent.text;
+
+    const textToCopy = language === 'en'
+      ? `${onThisDayEvent.dateStr}\nIn the year ${onThisDayEvent.year} AD\n${activeText}`
+      : `${onThisDayEvent.dateStr}\nفي عام ${onThisDayEvent.year} ميلادي\n${activeText}`;
     try {
         await navigator.clipboard.writeText(textToCopy);
-        setToastMessage('تم النسخ إلى الحافظة');
+        setToastMessage(t('on_this_day.copied', 'تم النسخ إلى الحافظة'));
         setTimeout(() => setToastMessage(''), 2000);
     } catch (err) {
         console.error('Clipboard error:', err);
-        setToastMessage('فشل في النسخ');
+        setToastMessage(t('common.failed_copy', 'فشل في النسخ'));
         setTimeout(() => setToastMessage(''), 2000);
     }
   };
@@ -404,15 +503,22 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
     const event = upcomingEvents[eventIndex];
     let diffText = '';
     if (event.isToday) {
-        diffText = 'اليوم';
+        diffText = t('islamic_events.today', 'اليوم');
     } else if (event.daysRemaining > 0) {
-        diffText = `المتبقي: ${toArabic(event.daysRemaining)} يوم`;
+        diffText = language === 'en'
+          ? `Remaining: ${formatNumber(event.daysRemaining)} days`
+          : `المتبقي: ${toArabic(event.daysRemaining)} يوم`;
     } else {
-        diffText = `مر عليها: ${toArabic(Math.abs(event.daysRemaining))} يوم`;
+        diffText = language === 'en'
+          ? `Passed: ${formatNumber(Math.abs(event.daysRemaining))} days`
+          : `مر عليها: ${toArabic(Math.abs(event.daysRemaining))} يوم`;
     }
 
+    const eventName = translateEventName(event.name);
+    const labelTitle = t('islamic_events.title', 'المناسبة');
+
     await shareAsImage({ 
-      text: `المناسبة: ${event.name}\n${diffText}`, 
+      text: `${labelTitle}: ${eventName}\n${diffText}`, 
       source: event.gregorianDateStr, 
       category: event.dateStr, 
       theme, 
@@ -426,21 +532,28 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
     const event = upcomingEvents[eventIndex];
     let diffText = '';
     if (event.isToday) {
-        diffText = 'اليوم';
+        diffText = t('islamic_events.today', 'اليوم');
     } else if (event.daysRemaining > 0) {
-        diffText = `المتبقي: ${toArabic(event.daysRemaining)} يوم`;
+        diffText = language === 'en'
+          ? `Remaining: ${formatNumber(event.daysRemaining)} days`
+          : `المتبقي: ${toArabic(event.daysRemaining)} يوم`;
     } else {
-        diffText = `مر عليها: ${toArabic(Math.abs(event.daysRemaining))} يوم`;
+        diffText = language === 'en'
+          ? `Passed: ${formatNumber(Math.abs(event.daysRemaining))} days`
+          : `مر عليها: ${toArabic(Math.abs(event.daysRemaining))} يوم`;
     }
 
-    const textToCopy = `المناسبة الإسلامية: ${event.name}\nالتاريخ الهجري: ${event.dateStr}\nالتاريخ الميلادي: ${event.gregorianDateStr}\n${diffText}`;
+    const eventName = translateEventName(event.name);
+    const textToCopy = language === 'en'
+      ? `Islamic Occasion: ${eventName}\nHijri Date: ${event.dateStr}\nGregorian Date: ${event.gregorianDateStr}\n${diffText}`
+      : `المناسبة الإسلامية: ${event.name}\nالتاريخ الهجري: ${event.dateStr}\nالتاريخ الميلادي: ${event.gregorianDateStr}\n${diffText}`;
     try {
         await navigator.clipboard.writeText(textToCopy);
-        setToastMessage('تم النسخ إلى الحافظة');
+        setToastMessage(t('on_this_day.copied', 'تم النسخ إلى الحافظة'));
         setTimeout(() => setToastMessage(''), 2000);
     } catch (err) {
         console.error('Clipboard error:', err);
-        setToastMessage('فشل في النسخ');
+        setToastMessage(t('common.failed_copy', 'فشل في النسخ'));
         setTimeout(() => setToastMessage(''), 2000);
     }
   };
@@ -506,9 +619,19 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
     const prevIndex = (nextIndex - 1 + salahKeys.length) % salahKeys.length;
     const actualNextIndex = nextIndex % salahKeys.length;
 
+    const rawPrevKey = salahKeys[prevIndex];
+    const rawNextKey = salahKeys[actualNextIndex];
+
+    const prevName = language === 'en'
+      ? translatePrayerName(rawPrevKey)
+      : prayerNamesAr[rawPrevKey as keyof typeof prayerNamesAr];
+    const nextName = language === 'en'
+      ? translatePrayerName(rawNextKey)
+      : prayerNamesAr[rawNextKey as keyof typeof prayerNamesAr];
+
     return {
-      prev: prayerNamesAr[salahKeys[prevIndex] as keyof typeof prayerNamesAr],
-      next: prayerNamesAr[salahKeys[actualNextIndex] as keyof typeof prayerNamesAr],
+      prev: prevName,
+      next: nextName,
       remaining: countdown
     };
   };
@@ -539,6 +662,10 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
 
   useEffect(() => {
       const interceptor = () => {
+          if (isQuickMenuOpen) {
+              setIsQuickMenuOpen(false);
+              return true;
+          }
           if (isThemesSidebarOpen) {
               setIsThemesSidebarOpen(false);
               return true;
@@ -571,7 +698,7 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
       };
       const unregister = registerBackInterceptor(interceptor);
       return unregister;
-  }, [isThemesSidebarOpen, isCustomizationOpen, isEditMode, showExpandedEventsModal, showExpandedUpcomingEventModal, isPasscodeOpen, isVerseMenuOpen]);
+  }, [isQuickMenuOpen, isThemesSidebarOpen, isCustomizationOpen, isEditMode, showExpandedEventsModal, showExpandedUpcomingEventModal, isPasscodeOpen, isVerseMenuOpen]);
 
   const handleSaveCustomization = (selectedIds: string[]) => {
       setVisibleItems(selectedIds);
@@ -595,34 +722,126 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
       if (navigator.vibrate) navigator.vibrate(50);
   };
 
-  return (
+  const renderQuickMenuButton = () => (
     <div className="relative">
-      <InteractiveBackground />
-
-      {/* زر الثيمات العائم الدائري بوضع التباين العالي (mix-blend-mode) لضمان ظهوره دائماً */}
-      {/* زر الثيمات العائم الشفاف - يختفي تماماً عند فتح قائمة الثيمات أو عند وصول بطاقة الصلوات بمحاذاته */}
       <button 
         id="themes-btn"
-        data-id="theme-toggle-button"
+        data-id="quick-options-button"
         type="button"
-        onClick={() => setIsThemesSidebarOpen(prev => !prev)}
-        className={`fixed top-[calc(env(safe-area-inset-top,20px)+44px)] right-3 z-[1260] w-[35px] h-[35px] flex items-center justify-center transition-all duration-300 active:scale-90 hover:scale-110 bg-transparent cursor-pointer group ${
-          (isThemesSidebarOpen || hideIconsOnScroll) ? 'opacity-0 pointer-events-none scale-0 invisible' : 'opacity-100 scale-100 visible'
+        onClick={(e) => {
+          e.stopPropagation();
+          setIsQuickMenuOpen(prev => !prev);
+        }}
+        className={`w-[35px] h-[35px] flex items-center justify-center transition-all duration-300 active:scale-90 hover:scale-110 bg-transparent cursor-pointer group select-none relative z-50 ${
+          isThemesSidebarOpen ? 'opacity-0 pointer-events-none scale-0 invisible' : 'opacity-100 scale-100 visible'
         }`}
         style={{
-          color: isBlackTheme
+          color: (isBlackTheme || theme.isDark)
             ? '#FFFFFF'
             : (theme.palette?.[2] && theme.palette[2] !== theme.palette[0] && theme.palette[2] !== theme.palette[1]) 
               ? theme.palette[2] 
               : (theme.accent && theme.accent !== theme.palette[0] && theme.accent !== theme.palette[1]) 
                 ? theme.accent 
-                : (theme.isDark ? '#FFFFFF' : '#000000')
+                : '#000000'
         }}
-        title="الثيمات والمظهر"
-        aria-label="الثيمات والمظهر"
+        title={language === 'en' ? 'Quick Menu' : 'القائمة السريعة'}
+        aria-label={language === 'en' ? 'Quick Menu' : 'القائمة السريعة'}
+        aria-expanded={isQuickMenuOpen}
       >
-        <Palette className="w-[21px] h-[21px] transition-transform group-hover:rotate-12" />
+        <svg 
+          viewBox="0 0 24 24" 
+          className="w-[22px] h-[22px] transition-transform group-hover:scale-110 drop-shadow-sm pointer-events-none"
+          fill="currentColor"
+        >
+          <circle cx="12" cy="5" r="2.5" />
+          <circle cx="12" cy="12" r="2.5" />
+          <circle cx="12" cy="19" r="2.5" />
+        </svg>
       </button>
+
+      {/* القائمة المنسدلة الرأسية بالثلاث أزرار تحت بعض */}
+      <AnimatePresence>
+        {isQuickMenuOpen && !isThemesSidebarOpen && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.85, y: -6 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.85, y: -6 }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
+            className={`absolute top-full mt-2 ${dir === 'ltr' ? 'left-0' : 'right-0'} z-[1150] flex flex-col items-center gap-2 p-1.5 rounded-2xl shadow-2xl border backdrop-blur-xl`}
+              style={{
+                backgroundColor: isBlackTheme ? 'rgba(20, 20, 20, 0.96)' : (theme.isDark ? 'rgba(30, 30, 30, 0.96)' : 'rgba(255, 255, 255, 0.97)'),
+                borderColor: isBlackTheme ? 'rgba(255, 255, 255, 0.2)' : (theme.isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.1)'),
+                boxShadow: isBlackTheme ? '0 12px 36px rgba(0,0,0,0.85)' : '0 12px 36px rgba(0,0,0,0.16)'
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* 1. زر الثيمات */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsQuickMenuOpen(false);
+                  setIsThemesSidebarOpen(true);
+                }}
+                className="w-9 h-9 rounded-full flex items-center justify-center transition-all duration-150 active:scale-90 hover:scale-110 cursor-pointer shadow-sm select-none"
+                style={{ 
+                  backgroundColor: (isBlackTheme || theme.isDark) ? 'rgba(255,255,255,0.18)' : `${theme.palette[0]}18`,
+                  color: (isBlackTheme || theme.isDark) ? '#FFFFFF' : (theme.accent || theme.palette[0])
+                }}
+                title={language === 'en' ? 'Themes' : 'الثيمات والمظهر'}
+                aria-label={language === 'en' ? 'Themes' : 'الثيمات والمظهر'}
+              >
+                <Palette className="w-[18px] h-[18px] pointer-events-none" />
+              </button>
+
+              {/* 2. زر اللغة */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleLanguage();
+                  setIsQuickMenuOpen(false);
+                }}
+                className="w-9 h-9 rounded-full flex items-center justify-center transition-all duration-150 active:scale-90 hover:scale-110 cursor-pointer shadow-sm select-none"
+                style={{ 
+                  backgroundColor: (isBlackTheme || theme.isDark) ? 'rgba(255,255,255,0.18)' : `${theme.palette[0]}18`,
+                  color: (isBlackTheme || theme.isDark) ? '#FFFFFF' : (theme.accent || theme.palette[0])
+                }}
+                title={language === 'ar' ? 'English' : 'اللغة العربية'}
+                aria-label={language === 'ar' ? 'English' : 'اللغة العربية'}
+              >
+                <span className="text-xs font-bold font-mono pointer-events-none">
+                  {language === 'ar' ? 'En' : 'Ar'}
+                </span>
+              </button>
+
+              {/* 3. زر دليل الصفحات */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsQuickMenuOpen(false);
+                  onNavigate('page-guide');
+                }}
+                className="w-9 h-9 rounded-full flex items-center justify-center transition-all duration-150 active:scale-90 hover:scale-110 cursor-pointer shadow-sm select-none"
+                style={{ 
+                  backgroundColor: (isBlackTheme || theme.isDark) ? 'rgba(255,255,255,0.18)' : `${theme.palette[0]}18`,
+                  color: (isBlackTheme || theme.isDark) ? '#FFFFFF' : (theme.accent || theme.palette[0])
+                }}
+                title={language === 'en' ? 'Pages Guide' : 'دليل صفحات التطبيق'}
+                aria-label={language === 'en' ? 'Pages Guide' : 'دليل صفحات التطبيق'}
+              >
+                <HelpCircle className="w-[18px] h-[18px] pointer-events-none" />
+              </button>
+            </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+
+  return (
+    <div className="relative">
+      <InteractiveBackground />
 
       <div className="h-screen w-full flex flex-col overflow-hidden">
         {/* شريط تغطية منطقة شريط الحالة العلوية للهاتف عند تثبيت اسم التطبيق */}
@@ -661,7 +880,7 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
                 } else if (themesBtn) {
                   const tRect = themesBtn.getBoundingClientRect();
                   if (tRect.height > 0) {
-                    buttonThresholdRef.current = tRect.bottom + 48;
+                    buttonThresholdRef.current = tRect.bottom + 32;
                   }
                 }
               }
@@ -697,6 +916,9 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
                   themeKey={themeKey}
                   onOpenSideMenu={onOpenSideMenu}
                   isSticky={isTitleSticky}
+                  quickMenuButton={renderQuickMenuButton()}
+                  isQuickMenuOpen={isQuickMenuOpen}
+                  onCloseQuickMenu={() => setIsQuickMenuOpen(false)}
               />
 
               <div id="grid-section">
@@ -723,26 +945,27 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
                           id="main-prayer-status-card"
                           className="p-2 rounded-2xl shadow-lg border-2 transition-all duration-300" 
                           style={{ borderColor: cardBorderColor, backgroundColor: theme.cardBg || 'rgba(255, 255, 255, 0.8)' }}
+                          dir={dir}
                       >
                           <div className="grid grid-cols-3 gap-2">
-                           {/* Right Card: Previous Prayer */}
+                           {/* Previous Prayer */}
                            <div className="themed-card py-2 px-1 rounded-xl text-center flex flex-col justify-center items-center shadow-sm border-2 transition-all" 
                                 style={{ borderColor: isBlackTheme ? 'rgba(255, 255, 255, 0.3)' : `${theme.palette[0]}33` }}>
-                               <span className="text-[10px] opacity-70 font-bold mb-0.5">السابقة</span>
+                               <span className="text-[10px] opacity-70 font-bold mb-0.5">{language === 'en' ? 'Previous' : t('prayer_card.previous', 'السابقة')}</span>
                                <span className="text-base font-black truncate w-full" style={{ color: isBlackTheme ? '#FFFFFF' : theme.textColor }}>{prevSalah}</span>
                            </div>
 
                            {/* Middle Card: Remaining Time */}
                            <div className="themed-card py-2 px-1 rounded-xl text-center flex flex-col justify-center items-center shadow-md border-2 relative overflow-hidden" 
                                 style={{ borderColor: cardBorderColor }}>
-                               <span className="text-[10px] opacity-70 font-bold mb-0.5">متبقي</span>
+                               <span className="text-[10px] opacity-70 font-bold mb-0.5">{language === 'en' ? 'Remaining' : t('prayer_card.remaining', 'متبقي')}</span>
                                <span className="text-base font-mono font-black tracking-wider" style={{ color: isBlackTheme ? '#FFFFFF' : theme.textColor }}>{prayerCountdown}</span>
                            </div>
 
-                           {/* Left Card: Next Prayer */}
+                           {/* Next Prayer */}
                            <div className="themed-card py-2 px-1 rounded-xl text-center flex flex-col justify-center items-center shadow-sm border-2 transition-all"
                                 style={{ borderColor: isBlackTheme ? 'rgba(255, 255, 255, 0.3)' : `${theme.palette[0]}33` }}>
-                               <span className="text-[10px] opacity-70 font-bold mb-0.5">القادمة</span>
+                               <span className="text-[10px] opacity-70 font-bold mb-0.5">{language === 'en' ? 'Next' : t('prayer_card.next', 'القادمة')}</span>
                                <span className="text-base font-black truncate w-full" style={{ color: isBlackTheme ? '#FFFFFF' : theme.textColor }}>{nextSalah}</span>
                            </div>
                           </div>
@@ -772,19 +995,19 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
                           <div 
                               className="w-full mt-1 py-4 px-5 rounded-2xl shadow-lg border-2 relative overflow-hidden flex flex-col gap-3 cursor-pointer"
                               style={{ borderColor: cardBorderColor, backgroundColor: theme.cardBg || 'rgba(255, 255, 255, 0.8)' }}
-                              dir="rtl"
+                              dir={dir}
                               onClick={() => setShowExpandedEventsModal(true)}
                           >
                               <div className="flex items-center justify-between z-10 w-full relative">
                                   <div className="flex items-center gap-2" style={{ color: cardHeaderColor }}>
                                       <i className="fa-solid fa-calendar-day text-base"></i>
-                                      <span className="text-[11px] font-bold font-kufi">حدث في مثل هذا اليوم</span>
+                                      <span className="text-[11px] font-bold font-kufi">{t('on_this_day.title', 'حدث في مثل هذا اليوم')}</span>
                                   </div>
                                   <div className="flex items-center gap-2">
                                       <button 
                                           onClick={handleNextEvent}
                                           className="p-1.5 rounded-full bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
-                                          title="حدث آخر"
+                                          title={t('on_this_day.next_event', 'حدث آخر')}
                                           style={{ color: cardHeaderColor }}
                                       >
                                           <i className="fa-solid fa-rotate-right text-xs"></i>
@@ -792,7 +1015,7 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
                                       <button 
                                           onClick={handleCopyHighlight}
                                           className="p-1.5 rounded-full bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
-                                          title="نسخ"
+                                          title={t('common.copy', 'نسخ')}
                                           style={{ color: cardHeaderColor }}
                                       >
                                           <i className="fa-regular fa-copy text-xs"></i>
@@ -800,7 +1023,7 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
                                       <button 
                                           onClick={handleShareHighlight}
                                           className="p-1.5 rounded-full bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
-                                          title="مشاركة"
+                                          title={t('common.share', 'مشاركة')}
                                           style={{ color: cardHeaderColor }}
                                       >
                                           <i className="fa-solid fa-share-nodes text-xs"></i>
@@ -811,12 +1034,12 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
                                   <div className="flex flex-row items-center justify-center gap-3 w-full py-2 px-3 rounded-xl bg-black/5 dark:bg-white/5" style={{ color: isBlackTheme ? '#FFFFFF' : theme.textColor }}>
                                       <span className="text-[10px] font-bold opacity-80" style={{ color: isBlackTheme ? '#FFFFFF' : undefined }}>{onThisDayEvent.dateStr}</span>
                                       <div className="w-[1px] h-4 bg-black/20 dark:bg-white/20"></div>
-                                      <span className="text-base font-black font-kufi leading-none" style={{ color: isBlackTheme ? '#FFFFFF' : undefined }}>{toArabic(onThisDayEvent.year)}</span>
+                                      <span className="text-base font-black font-kufi leading-none" style={{ color: isBlackTheme ? '#FFFFFF' : undefined }}>{formatNumber(onThisDayEvent.year)}</span>
                                       <div className="w-[1px] h-4 bg-black/20 dark:bg-white/20"></div>
-                                      <span className="text-[10px] font-bold opacity-80" style={{ color: isBlackTheme ? '#FFFFFF' : undefined }}>ميلادي</span>
+                                      <span className="text-[10px] font-bold opacity-80" style={{ color: isBlackTheme ? '#FFFFFF' : undefined }}>{t('on_this_day.ad', 'AD')}</span>
                                   </div>
                                   <p className="text-sm text-justify leading-relaxed break-words font-hafs font-bold" style={{ color: isBlackTheme ? '#FFFFFF' : theme.textColor }}>
-                                      {onThisDayEvent.text}
+                                      {language === 'en' ? (onThisDayEvent.textEn || getTranslatedEventText(onThisDayEvent.text, onThisDayEvent.year)) : onThisDayEvent.text}
                                   </p>
                               </div>
                           </div>
@@ -827,14 +1050,14 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
                           <div 
                               className="w-full mt-2 py-4 px-5 rounded-2xl shadow-lg border-2 relative overflow-hidden flex flex-col gap-3 cursor-pointer"
                               style={{ borderColor: cardBorderColor, backgroundColor: theme.cardBg || 'rgba(255, 255, 255, 0.8)' }}
-                              dir="rtl"
+                              dir={dir}
                               onClick={() => setShowExpandedUpcomingEventModal(true)}
                           >
                               <div className="flex items-center justify-between z-10 w-full relative mb-1.5">
                                   <div className="flex items-center gap-2" style={{ color: cardHeaderColor }}>
                                       <i className="fa-solid fa-moon text-base"></i>
                                       <span className="text-[11px] font-bold font-kufi">
-                                          المناسبات الإسلامية
+                                          {t('islamic_events.title', 'المناسبات الإسلامية')}
                                       </span>
                                   </div>
                                   <div className="flex items-center gap-1">
@@ -844,10 +1067,10 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
                                               setEventIndex(prev => (prev - 1 + upcomingEvents.length) % upcomingEvents.length);
                                           }}
                                           className="p-1.5 rounded-full bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
-                                          title="المناسبة السابقة"
+                                          title={t('islamic_events.prev', 'المناسبة السابقة')}
                                           style={{ color: cardHeaderColor }}
                                       >
-                                          <i className="fa-solid fa-chevron-right text-xs"></i>
+                                          <i className={isRTL ? "fa-solid fa-chevron-right text-xs" : "fa-solid fa-chevron-left text-xs"}></i>
                                       </button>
                                       <button 
                                           onClick={(e) => {
@@ -855,15 +1078,15 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
                                               setEventIndex(prev => (prev + 1) % upcomingEvents.length);
                                           }}
                                           className="p-1.5 rounded-full bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
-                                          title="المناسبة التالية"
+                                          title={t('islamic_events.next', 'المناسبة التالية')}
                                           style={{ color: cardHeaderColor }}
                                       >
-                                          <i className="fa-solid fa-chevron-left text-xs"></i>
+                                          <i className={isRTL ? "fa-solid fa-chevron-left text-xs" : "fa-solid fa-chevron-right text-xs"}></i>
                                       </button>
                                       <button 
                                           onClick={handleCopyUpcomingEvent}
                                           className="p-1.5 rounded-full bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
-                                          title="نسخ"
+                                          title={t('common.copy', 'نسخ')}
                                           style={{ color: cardHeaderColor }}
                                       >
                                           <i className="fa-regular fa-copy text-xs"></i>
@@ -871,7 +1094,7 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
                                       <button 
                                           onClick={handleShareUpcomingEvent}
                                           className="p-1.5 rounded-full bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
-                                          title="مشاركة"
+                                          title={t('common.share', 'مشاركة')}
                                           style={{ color: cardHeaderColor }}
                                       >
                                           <i className="fa-solid fa-share-nodes text-xs"></i>
@@ -884,22 +1107,22 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
                                       <div className="flex flex-col gap-2 w-full">
                                           <div className="flex flex-row items-center justify-center gap-2.5 w-full py-1.5 px-2 rounded-xl bg-black/5 dark:bg-white/5" style={{ color: isBlackTheme ? '#FFFFFF' : theme.textColor }}>
                                               {upcomingEvents[eventIndex].isToday ? (
-                                                  <span className="text-base font-black font-kufi leading-none" style={{ color: cardHeaderColor }}>اليوم</span>
+                                                  <span className="text-base font-black font-kufi leading-none" style={{ color: cardHeaderColor }}>{t('islamic_events.today', 'اليوم')}</span>
                                               ) : (
                                                   <>
-                                                      <span className="text-xs font-bold opacity-80" style={{ color: isBlackTheme ? '#FFFFFF' : undefined }}>{upcomingEvents[eventIndex].daysRemaining > 0 ? 'باقي' : 'مر عليها'}</span>
+                                                      <span className="text-xs font-bold opacity-80" style={{ color: isBlackTheme ? '#FFFFFF' : undefined }}>{upcomingEvents[eventIndex].daysRemaining > 0 ? t('islamic_events.remaining', 'باقي') : t('islamic_events.passed', 'مر عليها')}</span>
                                                       <div className="w-[1px] h-3 bg-black/20 dark:bg-white/20"></div>
                                                       <span className="text-base font-black font-kufi leading-none" style={{ color: cardHeaderColor }}>
-                                                          {toArabic(Math.abs(upcomingEvents[eventIndex].daysRemaining))}
+                                                          {formatNumber(Math.abs(upcomingEvents[eventIndex].daysRemaining))}
                                                       </span>
                                                       <div className="w-[1px] h-3 bg-black/20 dark:bg-white/20"></div>
-                                                      <span className="text-xs font-bold opacity-80" style={{ color: isBlackTheme ? '#FFFFFF' : undefined }}>يوم</span>
+                                                      <span className="text-xs font-bold opacity-80" style={{ color: isBlackTheme ? '#FFFFFF' : undefined }}>{t('islamic_events.days', 'يوم')}</span>
                                                   </>
                                               )}
                                           </div>
                                           <div className="flex flex-col text-center gap-1" style={{ color: isBlackTheme ? '#FFFFFF' : theme.textColor }}>
                                               <p className="text-sm leading-tight break-words font-kufi font-bold">
-                                                  {upcomingEvents[eventIndex].name}
+                                                  {translateEventName(upcomingEvents[eventIndex].name)}
                                               </p>
                                               <div className="flex flex-row items-center justify-center gap-2 opacity-60 text-[10px] font-bold" style={{ color: isBlackTheme ? '#FFFFFF' : undefined }}>
                                                   <span>{upcomingEvents[eventIndex].dateStr}</span>
@@ -917,28 +1140,28 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
                       <div 
                           className="w-full mt-3 py-2 px-3 rounded-2xl shadow-lg border-2 relative flex flex-col gap-1"
                           style={{ borderColor: cardBorderColor, backgroundColor: theme.cardBg || 'rgba(255, 255, 255, 0.8)' }}
-                          dir="rtl"
+                          dir={dir}
                       >
                           <div className="flex items-center gap-2 z-10 w-full relative" style={{ color: cardHeaderColor }}>
                               <i className="fa-solid fa-globe text-xs"></i>
-                              <span className="text-[11px] font-bold font-kufi">تصفح التطبيق</span>
+                              <span className="text-[11px] font-bold font-kufi">{t('webapp.title', 'تصفح التطبيق')}</span>
                           </div>
                           
                           <p className="text-sm font-bold opacity-80 leading-relaxed" style={{ color: isBlackTheme ? '#FFFFFF' : theme.textColor }}>
-                              لمشاهدة التطبيق على المتصفح او الايفون اضغط على الرابط
+                              {t('webapp.desc', 'لمشاهدة التطبيق على المتصفح او الايفون اضغط على الرابط')}
                           </p>
 
                           <div className="flex items-center justify-center gap-3 mt-0.5">
                               <button 
                                   onClick={() => window.open('https://mushaf-ahmed-laila.vercel.app/', '_blank')}
-                                  className="py-1.5 px-3 rounded-xl font-bold text-[10px] text-center flex items-center justify-center gap-2 shadow-md active:scale-95 transition-all"
+                                  className="py-1.5 px-3 rounded-xl font-bold text-[10px] text-center flex items-center justify-center shadow-md active:scale-95 transition-all"
                                   style={{ 
                                       backgroundColor: cardButtonColor, 
-                                      color: cardButtonTextColor 
+                                      color: cardButtonTextColor,
+                                      border: isBlackTheme ? '1.5px solid #FFFFFF' : undefined
                                   }}
                               >
-                                  <i className="fa-solid fa-arrow-up-right-from-square"></i>
-                                  <span>فتح الرابط</span>
+                                  <span>{t('webapp.open', 'فتح الرابط')}</span>
                               </button>
                               
                               <button 
@@ -946,15 +1169,15 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
                                       e.stopPropagation();
                                       try {
                                           await navigator.clipboard.writeText('https://mushaf-ahmed-laila.vercel.app/');
-                                          setToastMessage('تم نسخ الرابط');
+                                          setToastMessage(t('webapp.copied', 'تم نسخ الرابط'));
                                           setTimeout(() => setToastMessage(''), 2000);
                                       } catch (err) {
-                                          setToastMessage('فشل في النسخ');
+                                          setToastMessage(t('common.failed_copy', 'فشل في النسخ'));
                                           setTimeout(() => setToastMessage(''), 2000);
                                       }
                                   }}
                                   className="w-8 h-8 flex-shrink-0 rounded-xl flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 transition-colors shadow-sm active:scale-95"
-                                  title="نسخ الرابط"
+                                  title={t('webapp.copy', 'نسخ الرابط')}
                                   style={{ color: cardHeaderColor }}
                               >
                                   <i className="fa-regular fa-copy text-sm"></i>
@@ -964,8 +1187,10 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
                                   onClick={async (e) => {
                                       e.stopPropagation();
                                       const shareData = {
-                                          title: 'تطبيق القرآن الكريم',
-                                          text: 'لمشاهدة التطبيق على المتصفح او الايفون اضغط على الرابط\nhttps://mushaf-ahmed-laila.vercel.app/',
+                                          title: language === 'en' ? 'Holy Quran Application' : 'تطبيق القرآن الكريم',
+                                          text: language === 'en'
+                                            ? 'To open the app on your browser or iPhone, tap the link:\nhttps://mushaf-ahmed-laila.vercel.app/'
+                                            : 'لمشاهدة التطبيق على المتصفح او الايفون اضغط على الرابط\nhttps://mushaf-ahmed-laila.vercel.app/',
                                       };
 
                                       if (Capacitor.isNativePlatform()) {
@@ -974,7 +1199,7 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
                                           } catch (err: any) {
                                               try {
                                                   await navigator.clipboard.writeText(shareData.text);
-                                                  setToastMessage('تم نسخ الرابط');
+                                                  setToastMessage(t('webapp.copied', 'تم نسخ الرابط'));
                                                   setTimeout(() => setToastMessage(''), 2000);
                                               } catch (copyErr) {}
                                           }
@@ -985,7 +1210,7 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
                                               if (err.name !== 'AbortError') {
                                                   try {
                                                       await navigator.clipboard.writeText(shareData.text);
-                                                      setToastMessage('تم نسخ الرابط');
+                                                      setToastMessage(t('webapp.copied', 'تم نسخ الرابط'));
                                                       setTimeout(() => setToastMessage(''), 2000);
                                                   } catch (copyErr) {}
                                               }
@@ -993,13 +1218,13 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
                                       } else {
                                           try {
                                               await navigator.clipboard.writeText(shareData.text);
-                                              setToastMessage('تم نسخ الرابط');
+                                              setToastMessage(t('webapp.copied', 'تم نسخ الرابط'));
                                               setTimeout(() => setToastMessage(''), 2000);
                                           } catch (copyErr) {}
                                       }
                                   }}
                                   className="w-8 h-8 flex-shrink-0 rounded-xl flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 transition-colors shadow-sm active:scale-95"
-                                  title="مشاركة الرابط"
+                                  title={t('webapp.share', 'مشاركة الرابط')}
                                   style={{ color: cardHeaderColor }}
                               >
                                   <i className="fa-solid fa-share-nodes text-sm"></i>
@@ -1011,40 +1236,40 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
                       <div 
                           className="w-full mt-2 py-1.5 px-4 rounded-2xl shadow-lg border-2 relative flex flex-col gap-0.5 overflow-hidden"
                           style={{ borderColor: cardBorderColor, backgroundColor: theme.cardBg || 'rgba(255, 255, 255, 0.8)' }}
-                          dir="rtl"
+                          dir={dir}
                       >
                           <div className="flex items-center gap-2 z-10 w-full relative" style={{ color: cardHeaderColor }}>
                               <i className="fa-solid fa-share-nodes text-xs"></i>
-                              <span className="text-[11px] font-bold font-kufi">شارك التطبيق</span>
+                              <span className="text-[11px] font-bold font-kufi">{t('app_share.title', 'شارك التطبيق')}</span>
                           </div>
                           
                           <p className="text-sm font-bold opacity-80 leading-tight" style={{ color: isBlackTheme ? '#FFFFFF' : theme.textColor }}>
-                              اذا اعجبك التطبيق قم بنشره على وسائل التواصل ليكون لك الاجر ولمن تحب ان شاء الله .
+                              {t('app_share.desc', 'اذا اعجبك التطبيق قم بنشره على وسائل التواصل ليكون لك الاجر ولمن تحب ان شاء الله .')}
                           </p>
 
                           <div className="flex items-center justify-center gap-6">
                               {[
-                                  { icon: 'fa-regular fa-copy', label: 'نسخ', color: cardHeaderColor, action: 'copy' },
-                                  { icon: 'fa-solid fa-share-nodes', label: 'مشاركة', color: cardHeaderColor, action: 'share' }
+                                  { icon: 'fa-regular fa-copy', label: t('common.copy', 'نسخ'), color: cardHeaderColor, action: 'copy' },
+                                  { icon: 'fa-solid fa-share-nodes', label: t('common.share', 'مشاركة'), color: cardHeaderColor, action: 'share' }
                               ].map((item, index) => (
                                   <button 
                                       key={index}
                                       onClick={async (e) => {
                                           e.stopPropagation();
-                                          
+                                          const textToUse = language === 'en' ? APP_SHARE_TEXT_EN : APP_SHARE_TEXT;
                                           if (item.action === 'copy') {
                                               try {
-                                                  await navigator.clipboard.writeText(APP_SHARE_TEXT);
-                                                  setToastMessage('تم نسخ نص المشاركة');
+                                                  await navigator.clipboard.writeText(textToUse);
+                                                  setToastMessage(t('app_share.copied', 'تم نسخ نص المشاركة'));
                                                   setTimeout(() => setToastMessage(''), 2000);
                                               } catch (err) {
-                                                  setToastMessage('فشل في النسخ');
+                                                  setToastMessage(t('common.failed_copy', 'فشل في النسخ'));
                                                   setTimeout(() => setToastMessage(''), 2000);
                                               }
                                           } else if (item.action === 'share') {
                                               const shareData = {
-                                                  title: 'مصحف أحمد وليلى',
-                                                  text: APP_SHARE_TEXT,
+                                                  title: t('app.name', 'مصحف أحمد وليلى'),
+                                                  text: textToUse,
                                               };
 
                                               if (Capacitor.isNativePlatform()) {
@@ -1052,8 +1277,8 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
                                                       await CapacitorShare.share(shareData);
                                                   } catch (error: any) {
                                                       try {
-                                                          await navigator.clipboard.writeText(APP_SHARE_TEXT);
-                                                          setToastMessage('تم نسخ نص المشاركة');
+                                                          await navigator.clipboard.writeText(textToUse);
+                                                          setToastMessage(t('app_share.copied', 'تم نسخ نص المشاركة'));
                                                           setTimeout(() => setToastMessage(''), 2000);
                                                       } catch (copyErr) {}
                                                   }
@@ -1063,16 +1288,16 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
                                                   } catch (error: any) {
                                                       if (error.name !== 'AbortError') {
                                                           try {
-                                                              await navigator.clipboard.writeText(APP_SHARE_TEXT);
-                                                              setToastMessage('تم نسخ نص المشاركة');
+                                                              await navigator.clipboard.writeText(textToUse);
+                                                              setToastMessage(t('app_share.copied', 'تم نسخ نص المشاركة'));
                                                               setTimeout(() => setToastMessage(''), 2000);
                                                           } catch (copyErr) {}
                                                       }
                                                   }
                                               } else {
                                                   try {
-                                                      await navigator.clipboard.writeText(APP_SHARE_TEXT);
-                                                      setToastMessage('تم نسخ نص المشاركة');
+                                                      await navigator.clipboard.writeText(textToUse);
+                                                      setToastMessage(t('app_share.copied', 'تم نسخ نص المشاركة'));
                                                       setTimeout(() => setToastMessage(''), 2000);
                                                   } catch (copyErr) {}
                                               }
@@ -1093,10 +1318,10 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
                       </div>
 
                       {/* Dua Card */}
-                      <div className="flex items-center justify-center gap-2 h-10 mt-3">
+                      <div className="flex items-center justify-center gap-2 h-10 mt-3" dir={dir}>
                           <div className="themed-card p-1 rounded-2xl text-center flex-1 relative h-full flex flex-col justify-center overflow-hidden">
                               <p className="text-sm font-bold leading-tight" style={{ color: theme.bgColor === '#000000' ? '#FFFFFF' : (themeKey === 'default' ? '#a855f7' : (themeKey === 'olive_grove' ? '#65A30D' : theme.textColor)) }}>
-                                  اللهم ارحمهما واغفر لهما واجعل مثواهما الجنة
+                                  {t('app.dua_bottom', 'اللهم ارحمهما واغفر لهما واجعل مثواهما الجنة')}
                               </p>
                           </div>
                       </div>
@@ -1107,18 +1332,20 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
       </div>
 
       {showExpandedEventsModal && onThisDayEvent && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" dir="rtl" onClick={() => setShowExpandedEventsModal(false)}>
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" dir={dir} onClick={() => setShowExpandedEventsModal(false)}>
             <div className="w-full max-w-md max-h-[90vh] overflow-y-auto bg-[#F7F5F0] dark:bg-[#1A1A1A] rounded-3xl shadow-2xl p-6" onClick={e => e.stopPropagation()} style={{ backgroundColor: theme.cardBg || 'rgba(255, 255, 255, 0.95)' }}>
                 <div className="flex flex-col items-center gap-4 mb-6">
                     <div className="text-center font-bold text-2xl font-kufi" style={{ color: theme.palette[0] }}>
-                        {onThisDayEvent.dateStr} {toArabic(onThisDayEvent.year)} ميلادي
+                        {language === 'en'
+                          ? `${onThisDayEvent.dateStr}, ${formatNumber(onThisDayEvent.year)} ${t('on_this_day.ad', 'AD')}`
+                          : `${onThisDayEvent.dateStr} ${formatNumber(onThisDayEvent.year)} ميلادي`}
                     </div>
                 </div>
                 
                 <div className="flex flex-col gap-6 w-full">
                     <div className="flex flex-col items-center justify-center gap-6 p-8 rounded-3xl bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 w-full">
                         <p className="text-[32px] sm:text-[38px] leading-[1.6] font-hafs font-bold text-center w-full" style={{ color: theme.textColor }}>
-                            {onThisDayEvent.text}
+                            {language === 'en' ? (onThisDayEvent.textEn || getTranslatedEventText(onThisDayEvent.text, onThisDayEvent.year)) : onThisDayEvent.text}
                         </p>
                     </div>
 
@@ -1130,7 +1357,7 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
                             color: '#fff'
                         }}
                     >
-                        إغلاق
+                        {t('common.close', 'إغلاق')}
                     </button>
                 </div>
             </div>
@@ -1138,12 +1365,12 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
       )}
 
       {showExpandedUpcomingEventModal && upcomingEvents.length > 0 && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" dir="rtl" onClick={() => setShowExpandedUpcomingEventModal(false)}>
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" dir={dir} onClick={() => setShowExpandedUpcomingEventModal(false)}>
             <div className="w-full max-w-md max-h-[90vh] overflow-y-auto bg-[#F7F5F0] dark:bg-[#1A1A1A] rounded-3xl shadow-2xl p-6" onClick={e => e.stopPropagation()} style={{ backgroundColor: theme.cardBg || 'rgba(255, 255, 255, 0.95)' }}>
                 <div className="flex flex-col items-center gap-4 mb-6">
                     <div className="text-center font-bold text-2xl font-kufi flex items-center gap-2" style={{ color: theme.palette[0] }}>
                         <i className="fa-solid fa-moon"></i>
-                        المناسبة الإسلامية
+                        {t('islamic_events.modal_title', 'المناسبة الإسلامية')}
                     </div>
                 </div>
                 
@@ -1151,7 +1378,7 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
                     {upcomingEvents[eventIndex] && (
                         <div className="flex flex-col items-center justify-center gap-6 p-8 rounded-3xl bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 w-full text-center">
                             <p className="text-[32px] sm:text-[38px] leading-[1.6] font-kufi font-bold w-full" style={{ color: theme.textColor }}>
-                                {upcomingEvents[eventIndex].name}
+                                {translateEventName(upcomingEvents[eventIndex].name)}
                             </p>
                             <hr className="w-1/2 opacity-20 border-current" style={{ color: theme.textColor }} />
                             <div className="flex flex-col gap-2">
@@ -1164,13 +1391,13 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
                             </div>
                             <div className="w-full p-4 rounded-xl mt-2 flex flex-col items-center" style={{ backgroundColor: theme.palette[0] + '20', color: theme.palette[0] }}>
                                <span className="text-lg font-bold mb-1 opacity-80">
-                                   {upcomingEvents[eventIndex].isToday ? 'توافق' : (upcomingEvents[eventIndex].daysRemaining > 0 ? 'يتبقى عليها' : 'مر عليها')}
+                                   {upcomingEvents[eventIndex].isToday ? t('islamic_events.matches', 'توافق') : (upcomingEvents[eventIndex].daysRemaining > 0 ? t('islamic_events.remaining_on', 'يتبقى عليها') : t('islamic_events.passed_on', 'مر عليها'))}
                                </span>
                                <span className="text-5xl font-black font-kufi my-2">
-                                   {upcomingEvents[eventIndex].isToday ? 'اليوم' : toArabic(Math.abs(upcomingEvents[eventIndex].daysRemaining))}
+                                   {upcomingEvents[eventIndex].isToday ? t('islamic_events.today', 'اليوم') : formatNumber(Math.abs(upcomingEvents[eventIndex].daysRemaining))}
                                </span>
                                {!upcomingEvents[eventIndex].isToday && (
-                                   <span className="text-lg font-bold opacity-80">يوم</span>
+                                   <span className="text-lg font-bold opacity-80">{t('islamic_events.days', 'يوم')}</span>
                                )}
                             </div>
                         </div>
@@ -1184,11 +1411,23 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
                             color: '#fff'
                         }}
                     >
-                        إغلاق
+                        {t('common.close', 'إغلاق')}
                     </button>
                 </div>
             </div>
         </div>
+      )}
+
+      {/* غطاء خلفي شفاف لكامل الشاشة لإغلاق القائمة السريعة للثلاث أزرار عند النقر في أي مكان دون تفعيل أي عنصر تحته */}
+      {isQuickMenuOpen && !isThemesSidebarOpen && (
+        <div 
+          className="fixed inset-0 z-[1100] bg-transparent cursor-pointer"
+          style={{ position: 'fixed' }}
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsQuickMenuOpen(false);
+          }}
+        />
       )}
 
       <ThemesSidebar 

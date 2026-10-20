@@ -1,237 +1,341 @@
 export interface IslamicSite {
     id: number;
     name: string;
+    nameEn?: string;
     url: string;
     description: string;
+    descriptionEn?: string;
     category: string;
+    categoryEn?: string;
     icon: string;
     features: string[];
+    featuresEn?: string[];
 }
 
 export const ISLAMIC_SITES_DATA: IslamicSite[] = [
     {
         id: 1,
         name: "القرآن الكريم",
+        nameEn: "Quran.com",
         url: "https://quran.com",
         description: "المنصة العالمية الأولى والأشهر لقراءة القرآن الكريم وتدبره، تضم المصحف الشريف بالرسم العثماني، التلاوات الصوتية لمشاهير القراء مع تزامن الآيات، التفاسير المعتمدة، وترجمات المعاني لأكثر من 50 لغة.",
+        descriptionEn: "The premier global platform for reading and contemplating the Holy Qur'an, featuring the Uthmani script, synchronized recitations by renowned Qaris, authenticated Tafseer, and translations in over 50 languages.",
         category: "القرآن الكريم وتلاواته",
+        categoryEn: "The Holy Qur'an & Recitations",
         icon: "fa-solid fa-book-quran",
-        features: ["قراءة المصحف بالرسم العثماني", "تلاوات صوتية متزامنة للآيات", "تفسير الآيات وترجماتها العالمية", "منصة مجانية سريعة ومتاحة عالمياً"]
+        features: ["قراءة المصحف بالرسم العثماني", "تلاوات صوتية متزامنة للآيات", "تفسير الآيات وترجماتها العالمية", "منصة مجانية سريعة ومتاحة عالمياً"],
+        featuresEn: ["Uthmani script Mushaf reading", "Synchronized audio recitations", "Ayah Tafseer & global translations", "Fast, free, and globally accessible"]
     },
     {
         id: 2,
         name: "سنة",
+        nameEn: "Sunnah.com",
         url: "https://sunnah.com",
         description: "أكبر قاعدة بيانات رقمية عالمية متخصصة في جمع وتبويب السنة النبوية والأحاديث الشريفة، حيث يضم كتب الحديث التسعة والأمهات (صحيح البخاري، صحيح مسلم، السنن الأربعة، وغيرها) مع نصها العربي وترجمتها الإنجليزية ودعم محرك بحث دقيق.",
+        descriptionEn: "The largest global digital database dedicated to compiling the Prophetic Sunnah and Hadith, containing the Nine Primary Hadith Collections (Sahih Al-Bukhari, Sahih Muslim, the Sunan, etc.) in Arabic with verified English translations and advanced search.",
         category: "السنة والحديث النبوي",
+        categoryEn: "Hadith & Prophetic Sunnah",
         icon: "fa-solid fa-book-open",
-        features: ["كتب الحديث التسعة والأمهات", "محرك بحث متقدم وسريع", "الترجمة الإنجليزية المعتمدة", "ترقيم الأحاديث وتخريجها"]
+        features: ["كتب الحديث التسعة والأمهات", "محرك بحث متقدم وسريع", "الترجمة الإنجليزية المعتمدة", "ترقيم الأحاديث وتخريجها"],
+        featuresEn: ["The Nine Primary Hadith Books", "Fast advanced search engine", "Official English translations", "Hadith numbering & authentication grades"]
     },
     {
         id: 3,
         name: "قصة الإسلام",
+        nameEn: "Islam Story",
         url: "https://islamstory.com",
         description: "موقع متخصص في التاريخ الإسلامي تحت إشراف الدكتور راغب السيرجاني، يقدم تفصيلاً شاملاً لسيرة النبي ﷺ، وحياة الصحابة والتابعين، إضافة إلى فتوحات الإسلام والدول التاريخية بأسلوب علمي وموثق.",
+        descriptionEn: "Specialized Islamic history website supervised by Dr. Ragheb El-Sergany, providing a comprehensive narrative of the Prophetic Seerah, lives of the Companions and Successors, and historic Islamic civilizations with rigorous documentation.",
         category: "التاريخ الإسلامي والسيرة",
+        categoryEn: "Islamic History & Seerah",
         icon: "fa-solid fa-landmark",
-        features: ["السيرة النبوية العطرة", "تراجم الصحابة والتابعين", "تاريخ الحضارة والفتوحات", "إشراف د. راغب السيرجاني"]
+        features: ["السيرة النبوية العطرة", "تراجم الصحابة والتابعين", "تاريخ الحضارة والفتوحات", "إشراف د. راغب السيرجاني"],
+        featuresEn: ["Fragrant Prophetic Seerah", "Biographies of Sahabah & Tabi'in", "History of Islamic civilizations", "Supervised by Dr. Ragheb El-Sergany"]
     },
     {
         id: 4,
         name: "الكلم الطيب",
+        nameEn: "Al-Kalem Al-Tayyeb",
         url: "https://kalemtayeb.com",
         description: "موسوعة علمية شمولية تهتم بالسنة النبوية والسيرة، وأحوال الصحابة والتابعين، إلى جانب جمع صحيح الأذكار، الأدعية، والفوائد الفقهية والإيمانية المقسمة بأسلوب مبسط.",
+        descriptionEn: "A comprehensive encyclopedia focused on Prophetic Sunnah, biographies of the Salaf and Companions, authentic daily Adhkar and Du'as, and accessible legal and spiritual insights.",
         category: "الأذكار والفوائد الإيمانية",
+        categoryEn: "Adhkar & Faith Benefits",
         icon: "fa-solid fa-heart",
-        features: ["صحيح الأذكار والأدعية", "فوائد إيمانية وتربوية", "أحوال السلف والصحابة", "تصميم سهل ومبسط"]
+        features: ["صحيح الأذكار والأدعية", "فوائد إيمانية وتربوية", "أحوال السلف والصحابة", "تصميم سهل ومبسط"],
+        featuresEn: ["Authentic Adhkar and Du'as", "Spiritual & educational benefits", "Biographies of the Companions", "Clean & user-friendly design"]
     },
     {
         id: 5,
         name: "جامع خادم الحرمين الشريفين للسنة النبوية",
+        nameEn: "Custodian of the Two Holy Mosques Hadith Platform",
         url: "https://sunnah.sa",
         description: "المنصة المعتمدة المخصصة لخدمة الحديث النبوي وعلومه، تتيح البحث الفائق في متون الأحاديث النبوية وشروحها ورواتها وتخريجها وتحقيق درجة صحتها بإشراف لجان علمية متخصصة.",
+        descriptionEn: "The official Saudi national platform dedicated to serving the Prophetic Hadith and its sciences, offering deep search in Hadith texts, explanations, narrators, and chain verification by specialized academic committees.",
         category: "المنصة المعتمدة للحديث",
+        categoryEn: "Official Hadith Platform",
         icon: "fa-solid fa-kaaba",
-        features: ["بحث فائق في متون وشروح الأحاديث", "تحقيق درجة الصحة والضعف", "معاجم الرواة والأسانيد", "إشراف لجان علمية رسمية"]
+        features: ["بحث فائق في متون وشروح الأحاديث", "تحقيق درجة الصحة والضعف", "معاجم الرواة والأسانيد", "إشراف لجان علمية رسمية"],
+        featuresEn: ["Deep search in Hadith texts and commentaries", "Verification of authenticity grades", "Biographies of narrators & Isnad", "Supervised by official academic committees"]
     },
     {
         id: 6,
         name: "صيد الفوائد",
+        nameEn: "Saaid Al-Fawa'id",
         url: "https://saaid.org",
         description: "مكتبة دعوية وفقهية متكاملة تحتوي على آلاف المقالات والكتب المفرغة التي تشرح الأحكام الفقهية، وتفصل في سير الصحابة وأعلام الإسلام، إضافة إلى البحوث الحديثية والتوجيهات التربوية.",
+        descriptionEn: "A comprehensive Da'wah and jurisprudence library containing thousands of articles and transcribed books explaining Fiqh rulings, scholar biographies, Hadith research, and family guidance.",
         category: "مكتبة دعوية وفقهية",
+        categoryEn: "Da'wah & Fiqh Library",
         icon: "fa-solid fa-book",
-        features: ["آلاف المقالات والكتب المفرغة", "شروح الأحكام الفقهية", "سير الأعلام والدعاة", "بحوث تربوية وأسرية"]
+        features: ["آلاف المقالات والكتب المفرغة", "شروح الأحكام الفقهية", "سير الأعلام والدعاة", "بحوث تربوية وأسرية"],
+        featuresEn: ["Thousands of articles & digital books", "Explanations of Fiqh rulings", "Biographies of scholars and callers", "Educational and family research"]
     },
     {
         id: 7,
         name: "الباحث الحديثي",
+        nameEn: "Al-Bahith Al-Hadithi (Hadith Searcher)",
         url: "https://www.hdith.com",
         description: "محرك بحث متقدم ومباشر خفيف وسريع مخصص للطلاب والباحثين للتأكد المباشر من درجة صحة أي حديث نبوي، والوصول إلى الحكم عليه من أمهات كتب الحديث والتخريج.",
+        descriptionEn: "Lightweight, ultra-fast search engine tailored for students and researchers to quickly verify the authenticity grade and Takrij of any Hadith from classical reference books.",
         category: "محرك بحث حديثي سريع",
+        categoryEn: "Fast Hadith Search Engine",
         icon: "fa-solid fa-magnifying-glass",
-        features: ["فحص فوري لصحة الأحاديث", "أحكام كبار أئمة الحديث", "تخريج دقيق بضغطة زر", "واجهة فائقة السرعة"]
+        features: ["فحص فوري لصحة الأحاديث", "أحكام كبار أئمة الحديث", "تخريج دقيق بضغطة زر", "واجهة فائقة السرعة"],
+        featuresEn: ["Instant Hadith authenticity check", "Verdicts of prominent Hadith scholars", "One-click accurate Takrij", "Ultra-fast search interface"]
     },
     {
         id: 8,
         name: "نبي الرحمة (التعريف بالنبي ﷺ)",
+        nameEn: "Prophet of Mercy (Rasoulallah.net)",
         url: "https://rasoulallah.net",
         description: "موقع موثوق متخصص بالكامل في التعريف بالنبي محمد ﷺ، أخلاقه، دلائل نبوته، غزواته، ومعاملاته، بالإضافة إلى استعراض مواقف وأخبار صحابته الكرام بلغات متعددة.",
+        descriptionEn: "A trusted platform dedicated to introducing Prophet Muhammad ﷺ, his noble character, evidences of prophethood, expeditions, and dealings, alongside inspiring stories of his noble Companions in multiple languages.",
         category: "التعريف بالنبي ﷺ",
+        categoryEn: "Introducing the Prophet ﷺ",
         icon: "fa-solid fa-star-and-crescent",
-        features: ["أخلاق النبي ﷺ ومعاملاته", "دلائل النبوة ومعجزاتها", "مواقف وأخبار الصحابة الكرام", "متاح بعدة لغات عالمية"]
+        features: ["أخلاق النبي ﷺ ومعاملاته", "دلائل النبوة ومعجزاتها", "مواقف وأخبار الصحابة الكرام", "متاح بعدة لغات عالمية"],
+        featuresEn: ["Noble character & ethics of the Prophet ﷺ", "Evidences and miracles of Prophethood", "Inspiring stories of the Sahabah", "Available in multiple world languages"]
     },
     {
         id: 9,
         name: "نداء الإيمان",
+        nameEn: "Nida' Al-Eman",
         url: "https://www.al-eman.com",
         description: "مكتبة إسلامية موثوقة تضم أمهات المصادر في التفاسير، الحديث، السيرة، والتاريخ الإسلامي بتنظيم إلكتروني متين، يتيح قراءة كتب الأئمة وسير الصحابة بسهولة.",
+        descriptionEn: "A classical Islamic library housing foundational reference works in Tafseer, Hadith, Seerah, and Islamic history with robust digital categorization for effortless study.",
         category: "أمهات الكتب والمصادر",
+        categoryEn: "Classical Reference Books",
         icon: "fa-solid fa-scroll",
-        features: ["أمهات كتب التفسير والحديث", "تاريخ دمشق والبداية والنهاية", "تنظيم وفهرسة علمية رصينة", "قراءة وتصفح إلكتروني سلس"]
+        features: ["أمهات كتب التفسير والحديث", "تاريخ دمشق والبداية والنهاية", "تنظيم وفهرسة علمية رصينة", "قراءة وتصفح إلكتروني سلس"],
+        featuresEn: ["Classical Tafseer & Hadith compendiums", "Tarikh Dimashq & Al-Bidayah wa Al-Nihayah", "Solid scientific indexing", "Smooth online reading & browsing"]
     },
     {
         id: 10,
         name: "المجلس الأوروبي للإفتاء والبحوث",
+        nameEn: "European Council for Fatwa and Research",
         url: "https://www.e-cfr.org",
         description: "مرجع إسلامي موثوق للمسلمين خارج العالم الإسلامي، يختص بفقه الأقليات والأحكام الشرعية المتعلقة بالمستجدات الفقهية والمعاملات في المجتمعات الغربية.",
+        descriptionEn: "A trusted Islamic authority for Muslims living outside the Islamic world, specializing in the jurisprudence of Muslim minorities and contemporary rulings concerning modern transactions in Western societies.",
         category: "فقه الأقليات والمعاملات",
+        categoryEn: "Minority Fiqh & Modern Transactions",
         icon: "fa-solid fa-scale-balanced",
-        features: ["فقه الأقليات المسلمة بالغرب", "قرارات وفتاوى الدورات الفقهية", "نوازل ومعاملات معاصرة", "بحوث محكمة من كبار العلماء"]
+        features: ["فقه الأقليات المسلمة بالغرب", "قرارات وفتاوى الدورات الفقهية", "نوازل ومعاملات معاصرة", "بحوث محكمة من كبار العلماء"],
+        featuresEn: ["Fiqh of Muslim minorities in the West", "Official Council Fatwas & resolutions", "Contemporary issues and transactions", "Peer-reviewed research by senior scholars"]
     },
     {
         id: 11,
         name: "مجمع الملك فهد لطباعة المصحف الشريف",
+        nameEn: "King Fahd Glorious Quran Printing Complex",
         url: "https://qurancomplex.gov.sa",
         description: "الصرح العالمي الأول لطباعة ونشر المصحف الشريف وترجماته وتسجيلاته الصوتية، مع إتاحة الخطوط الحاسوبية للمصحف وتفاسير معتمدة وإصدارات علمية متخصصة في علوم القرآن.",
+        descriptionEn: "The world's foremost institution for printing and distributing the Holy Qur'an, verified translations, audio recordings, official digital Qur'anic fonts, and academic Quranic studies.",
         category: "طباعة ونشر المصحف الشريف",
+        categoryEn: "Publishing the Holy Qur'an",
         icon: "fa-solid fa-book-quran",
-        features: ["الروايات والترجمات المعتمدة", "تحميل خطوط المصحف الرسمية", "بحوث علوم القرآن والقراءات", "المكتبة الرقمية للمجمع"]
+        features: ["الروايات والترجمات المعتمدة", "تحميل خطوط المصحف الرسمية", "بحوث علوم القرآن والقراءات", "المكتبة الرقمية للمجمع"],
+        featuresEn: ["Authenticated Riwayahs & translations", "Download official Quranic digital fonts", "Qur'anic sciences & recitation research", "Complex's comprehensive digital library"]
     },
     {
         id: 12,
         name: "الدرر السنية",
+        nameEn: "Al-Durar Al-Saniyyah",
         url: "https://dorar.net",
         description: "موسوعة علمية كبرى ومحرك بحث متقن وشامل بإشراف الشيخ علوي السقاف، يضم الموسوعة الحديثية الكبرى لتخريج الأحاديث وبيان درجتها، والموسوعة الفقهية، والتفسيرية، والعقدية، والتاريخية.",
+        descriptionEn: "A monumental Islamic encyclopedia and search engine supervised by Sheikh Alawi Al-Saqqaf, featuring the world's largest Hadith encyclopedia for Takrij, alongside Fiqh, Tafseer, Aqeedah, and History encyclopedias.",
         category: "الموسوعة العلمية الكبرى",
+        categoryEn: "Comprehensive Knowledge Encyclopedia",
         icon: "fa-solid fa-gem",
-        features: ["الموسوعة الحديثية الأكبر عالمياً", "الموسوعة الفقهية والتفسيرية", "موسوعة العقيدة والفرق", "تطبيقات وتخريجات حديثية رائدة"]
+        features: ["الموسوعة الحديثية الأكبر عالمياً", "الموسوعة الفقهية والتفسيرية", "موسوعة العقيدة والفرق", "تطبيقات وتخريجات حديثية رائدة"],
+        featuresEn: ["World's largest digital Hadith encyclopedia", "Comprehensive Fiqh & Tafseer encyclopedias", "Creed (Aqeedah) and sects reference", "Pioneering Hadith verification apps"]
     },
     {
         id: 13,
         name: "المكتبة الشاملة",
+        nameEn: "Al-Maktaba Al-Shamela",
         url: "https://shamela.ws",
         description: "أكبر مكتبة رقمية إسلامية في العالم، تحوي عشرات الآلاف من أمهات كتب التفسير، الحديث النبوي، السيرة، وسير وقصص الأنبياء والصحابة، وتراجم الأعلام وفق محرك بحث فائق الدقة.",
+        descriptionEn: "The world's largest digital Islamic library, containing tens of thousands of heritage volumes across Tafseer, Hadith, Seerah, Prophet & Companion stories, and scholar biographies with ultra-precise text search.",
         category: "أكبر مكتبة إسلامية وتاريخية",
+        categoryEn: "Largest Islamic Digital Library",
         icon: "fa-solid fa-book",
-        features: ["عشرات الآلاف من الكتب التراثية", "سير الأنبياء والصحابة والأعلام", "محرك بحث نصي دقيق وشامل", "الكتب مصنفة ومحققة وموافقة للمطبوع"]
+        features: ["عشرات الآلاف من الكتب التراثية", "سير الأنبياء والصحابة والأعلام", "محرك بحث نصي دقيق وشامل", "الكتب مصنفة ومحققة وموافقة للمطبوع"],
+        featuresEn: ["Tens of thousands of classical heritage books", "Biographies of Prophets & Companions", "Precise full-text search engine", "Verified editions matched to printed pages"]
     },
     {
         id: 14,
         name: "الإسلام سؤال وجواب",
+        nameEn: "Islam Question and Answer (IslamQA)",
         url: "https://islamqa.info",
         description: "موقع علمي دعوي موثوق بإشراف الشيخ محمد صالح المنجد، يقدم إجابات شرعية مفصلة ومؤصلة بالأدلة من الكتاب والسنة وأقوال أهل العلم على استفسارات المسلمين بأكثر من 15 لغة.",
+        descriptionEn: "A highly trusted academic Da'wah platform supervised by Sheikh Muhammad Salih Al-Munajjid, providing detailed Islamic answers backed by evidences from the Qur'an, Sunnah, and scholar consensus in over 15 languages.",
         category: "فتاوى وأجوبة شرعية",
+        categoryEn: "Islamic Fatwas & Rulings",
         icon: "fa-solid fa-clipboard-question",
-        features: ["أجوبة شرعية مؤصلة بالأدلة", "أكثر من 15 لغة عالمية", "فهرسة موضوعية شاملة", "إشراف الشيخ محمد المنجد"]
+        features: ["أجوبة شرعية مؤصلة بالأدلة", "أكثر من 15 لغة عالمية", "فهرسة موضوعية شاملة", "إشراف الشيخ محمد المنجد"],
+        featuresEn: ["Evidence-based Islamic rulings", "Available in over 15 world languages", "Comprehensive topical categorization", "Supervised by Sheikh Al-Munajjid"]
     },
     {
         id: 15,
         name: "شبكة الألوكة",
+        nameEn: "Alukah Network",
         url: "https://www.alukah.net",
         description: "شبكة إسلامية وثقافية رائدة تعنى بالفكر الشرعي الرصين، تقدم بحوثاً شرعية، مقالات فكرية، استشارات أسرية ونفسية، ومكتبة شاملة للكتب والرسائل العلمية الموثقة.",
+        descriptionEn: "A premier Islamic and intellectual network dedicated to authentic scholarly thought, providing academic research, intellectual essays, family and psychological consultations, and a large academic library.",
         category: "فكر إسلامي واستشارات",
+        categoryEn: "Islamic Thought & Consultations",
         icon: "fa-solid fa-feather-pointed",
-        features: ["بحوث ودراسات شرعية محكمة", "استشارات أسرية واجتماعية", "مكتبة الكتب والرسائل الجامعية", "أقسام أدبية ولغوية غنية"]
+        features: ["بحوث ودراسات شرعية محكمة", "استشارات أسرية واجتماعية", "مكتبة الكتب والرسائل الجامعية", "أقسام أدبية ولغوية غنية"],
+        featuresEn: ["Peer-reviewed Shariah studies", "Family & social consultations", "University theses & digital books", "Rich literary & linguistic sections"]
     },
     {
         id: 16,
         name: "الإمام ابن باز",
+        nameEn: "Imam Ibn Baz Foundation",
         url: "https://binbaz.org.sa",
         description: "الموقع الرسمي المعتمد لتراث سماحة الشيخ عبد العزيز بن عبد الله بن باز رحمه الله، يضم فتاواه الصوتية والمقروءة، برنامج نور على الدرب، وشروحاته للكتب والدروس العلمية.",
+        descriptionEn: "The official platform for the scholarly heritage of His Eminence Sheikh Abdul Aziz bin Abdullah bin Baz (may Allah have mercy on him), hosting audio and text Fatwas, 'Noorun ala Al-Darb' episodes, and book commentaries.",
         category: "تراث الإمام ابن باز",
+        categoryEn: "Scholarly Legacy of Imam Ibn Baz",
         icon: "fa-solid fa-graduation-cap",
-        features: ["فتاوى نور على الدرب كاملة", "شروح كتب التوحيد والحديث", "فتاوى مقروءة وصوتية موثقة", "محرك بحث في مؤلفات الشيخ"]
+        features: ["فتاوى نور على الدرب كاملة", "شروح كتب التوحيد والحديث", "فتاوى مقروءة وصوتية موثقة", "محرك بحث في مؤلفات الشيخ"],
+        featuresEn: ["Complete Noorun ala Al-Darb Fatwa archive", "Commentaries on Tawheed & Hadith books", "Verified audio and written Fatwas", "Dedicated search across Sheikh's works"]
     },
     {
         id: 17,
         name: "الشيخ ابن عثيمين",
+        nameEn: "Sheikh Ibn Uthaymeen Charity Foundation",
         url: "https://binothaimeen.net",
         description: "الموقع الرسمي لمؤسسة الشيخ محمد بن صالح العثيمين الخيرية، يحوي تراثه العلمي الكامل من شروح فقهية، تفاسير، فتاوى الحرم المكي، وكتب إلكترونية ومحاضرات مسجلة.",
+        descriptionEn: "The official website of Sheikh Muhammad bin Salih Al-Uthaymeen's Foundation, featuring his complete scholarly output of Fiqh explanations, Tafseer, Haram Makkah Fatwas, e-books, and indexed recorded lessons.",
         category: "تراث الشيخ ابن عثيمين",
+        categoryEn: "Legacy of Sheikh Ibn Uthaymeen",
         icon: "fa-solid fa-book-bookmark",
-        features: ["الشرح الممتع وتفسير القرآن", "فتاوى الحرمين واللقاء الشهري", "دروس صوتية ومكتوبة مفهرسة", "مكتبة مؤلفات الشيخ الكاملة"]
+        features: ["الشرح الممتع وتفسير القرآن", "فتاوى الحرمين واللقاء الشهري", "دروس صوتية ومكتوبة مفهرسة", "مكتبة مؤلفات الشيخ الكاملة"],
+        featuresEn: ["Al-Sharh Al-Mumti' & Qur'an Tafseer", "Haramain Fatwas & monthly gatherings", "Indexed audio and written lectures", "Complete library of Sheikh's publications"]
     },
     {
         id: 18,
         name: "آيات (جامعة الملك سعود)",
+        nameEn: "Ayat (King Saud University)",
         url: "https://quran.ksu.edu.sa",
         description: "مشروع قرآني رقمي متطور يتيح تصفح المصحف الشريف بعدة روايات، مع الاستماع لتلاوات أشهر القراء، وعرض التفسير الميسر، وابن كثير، والقرطبي، وترجمات لمعاني الآيات بلغات متعددة.",
+        descriptionEn: "An advanced digital Qur'anic project offering high-resolution Medina Mushaf browsing across various Riwayahs, recitations by renowned Qaris, integrated classical Tafseer (Ibn Kathir, Al-Qurtubi, Al-Muyassar), and multi-lingual translations.",
         category: "المصحف الإلكتروني التفاعلي",
+        categoryEn: "Interactive Electronic Mushaf",
         icon: "fa-solid fa-laptop-code",
-        features: ["تصفح مصحف المدينة عالي الدقة", "تلاوات متزامنة لعدة قراء", "مكتبة تفاسير معتمدة مدمجة", "ترجمات لأكثر من 20 لغة"]
+        features: ["تصفح مصحف المدينة عالي الدقة", "تلاوات متزامنة لعدة قراء", "مكتبة تفاسير معتمدة مدمجة", "ترجمات لأكثر من 20 لغة"],
+        featuresEn: ["High-resolution Medina Mushaf", "Synchronized audio by multiple reciters", "Built-in classical Tafseer library", "Translations in over 20 languages"]
     },
     {
         id: 19,
         name: "مركز تفسير للدراسات القرآنية",
+        nameEn: "Tafsir Center for Qur'anic Studies",
         url: "https://tafsir.net",
         description: "مركز متخصص في تطوير الدراسات القرآنية وإثراء المحتوى التفسيري، يقدم موسوعات علمية وإصدارات وبحوثاً معاصرة تهدف إلى تقريب علوم التفسير والقرآن للمجتمع.",
+        descriptionEn: "A specialized research center advancing Qur'anic studies and Tafseer content, offering scientific encyclopedias, 'Al-Mukhtasar fi Tafsir', contemporary research, and training programs to bring Qur'an sciences closer to society.",
         category: "علوم التفسير والقرآن",
+        categoryEn: "Tafseer & Qur'anic Studies",
         icon: "fa-solid fa-compass-drafting",
-        features: ["المختصر في تفسير القرآن", "موسوعات وبحوث التفسير", "دورات وبرامج تدريبية متخصصة", "مقالات وتأصيلات قرآنية"]
+        features: ["المختصر في تفسير القرآن", "موسوعات وبحوث التفسير", "دورات وبرامج تدريبية متخصصة", "مقالات وتأصيلات قرآنية"],
+        featuresEn: ["Al-Mukhtasar fi Tafsir al-Qur'an", "Tafseer encyclopedias & research papers", "Specialized Qur'anic educational courses", "Scholarly Qur'anic essays & foundations"]
     },
     {
         id: 20,
         name: "الهيئة العالمية لتدبر القرآن (تدبر)",
+        nameEn: "World Organization for Contemplating the Qur'an (Tadabbur)",
         url: "https://tadabbur.com",
         description: "موقع متخصص في نشر ثقافة تدبر القرآن الكريم والعمل به، يقدم لفتات تدبرية ومقالات وإصدارات علمية ومرئيات تسلط الضوء على هدايات الآيات وكيفية تطبيقها في الحياة اليومية.",
+        descriptionEn: "A specialized initiative promoting the culture of contemplating and acting upon the Holy Qur'an, offering reflective insights, articles, scientific booklets, and videos highlighting how to apply verses in daily life.",
         category: "تدبر القرآن الكريم",
+        categoryEn: "Qur'anic Contemplation (Tadabbur)",
         icon: "fa-solid fa-sun",
-        features: ["لفتات وهدايات تدبرية للآيات", "برامج تدبرية عملية للأسرة", "إصدارات ومطويات علمية", "مقاطع مرئية وتطبيقات إيمانية"]
+        features: ["لفتات وهدايات تدبرية للآيات", "برامج تدبرية عملية للأسرة", "إصدارات ومطويات علمية", "مقاطع مرئية وتطبيقات إيمانية"],
+        featuresEn: ["Reflective guidance on Qur'anic verses", "Practical family contemplation programs", "Scholarly publications & leaflets", "Video clips & spiritual application"]
     },
     {
         id: 21,
         name: "موسوعة الأحاديث النبوية",
+        nameEn: "Encyclopedia of Prophetic Hadiths",
         url: "https://hadeethenc.com/ar/home",
         description: "موسوعة إسلامية عالمية متخصصة في شرح الأحاديث النبوية الصحيحة وبيان معانيها وفوائدها الفقهية والتربوية، مع ترجمتها إلى أكثر من 30 لغة عالمية بإشراف علمي موثوق.",
+        descriptionEn: "An international Islamic encyclopedia specialized in explaining authentic Prophetic Hadiths, defining word meanings, highlighting Fiqh and spiritual lessons, and translated into over 30 languages with strict scholarly review.",
         category: "شروح الأحاديث والترجمات",
+        categoryEn: "Hadith Commentary & Translations",
         icon: "fa-solid fa-graduation-cap",
-        features: ["شرح الأحاديث الصحيحة والحسنة", "بيان معاني المفردات والفوائد", "ترجمة الشروح لأكثر من 30 لغة", "تحت إشراف ومراجعة علمية متقنة"]
+        features: ["شرح الأحاديث الصحيحة والحسنة", "بيان معاني المفردات والفوائد", "ترجمة الشروح لأكثر من 30 لغة", "تحت إشراف ومراجعة علمية متقنة"],
+        featuresEn: ["Explanations of Sahih and Hasan Hadiths", "Clarification of terms & extracted lessons", "Translations in 30+ languages", "Supervised by certified scholars"]
     },
     {
         id: 22,
         name: "المكتبة الصوتية للقرآن",
+        nameEn: "Mp3Quran Audio Library",
         url: "https://www.mp3quran.net/ar",
         description: "أشهر وأكبر منصة صوتية عالمية لتلاوات القرآن الكريم، توفر تلاوات خاشعة لجميع سور القرآن الكريم بأصوات مئات القراء بمختلف الروايات مع روابط تحميل واستماع مباشرة وفائقة السرعة.",
+        descriptionEn: "The world's most popular and comprehensive audio library for Qur'anic recitations, providing reverent recitations of all Surahs by hundreds of reciters across various Riwayahs with fast, direct streaming and download links.",
         category: "تلاوات وتسجيلات القرآن",
+        categoryEn: "Qur'an Recitations & Audios",
         icon: "fa-solid fa-headphones",
-        features: ["تلاوات مئات القراء بروايات متعددة", "استماع وتحميل مباشر وسريع", "سور كاملة ومصاحف مرتلة ومعلمة", "يعمل بسلاسة في جميع بلدان العالم"]
+        features: ["تلاوات مئات القراء بروايات متعددة", "استماع وتحميل مباشر وسريع", "سور كاملة ومصاحف مرتلة ومعلمة", "يعمل بسلاسة في جميع بلدان العالم"],
+        featuresEn: ["Hundreds of reciters with multiple Riwayahs", "Fast and direct downloads & streaming", "Complete Surahs, Murattal & Muallim Mushafs", "Seamless global access worldwide"]
     },
     {
         id: 23,
         name: "سورة قرآن",
+        nameEn: "Surah Quran Portal",
         url: "https://surahquran.com",
         description: "بوابة قرآنية خفيفة وسريعة توفر تصفح القرآن الكريم مع تفسير الآيات، إعراب القرآن، وأسباب النزول، إضافة إلى قسم خاص بقصص الأنبياء وسير الصحابة وأدعية القرآن الكريم.",
+        descriptionEn: "A fast and lightweight Qur'anic gateway offering Mushaf browsing alongside verse Tafseer, I'rab (grammar), reasons of revelation (Asbab Al-Nuzul), Prophet stories, and Qur'anic supplications.",
         category: "علوم القرآن وقصص الأنبياء",
+        categoryEn: "Qur'an Sciences & Prophet Stories",
         icon: "fa-solid fa-book-open-reader",
-        features: ["قراءة السور مع التفسير وأسباب النزول", "قصص الأنبياء والصحابة الكرام", "إعراب القرآن الكريم كاملاً", "واجهة خفيفة وسريعة جداً"]
+        features: ["قراءة السور مع التفسير وأسباب النزول", "قصص الأنبياء والصحابة الكرام", "إعراب القرآن الكريم كاملاً", "واجهة خفيفة وسريعة جداً"],
+        featuresEn: ["Surah reading with Tafseer & Asbab Al-Nuzul", "Stories of the Prophets and Companions", "Complete grammatical parsing (I'rab)", "Fast and lightweight interface"]
     },
     {
         id: 24,
         name: "موسوعة القرآن الكريم",
+        nameEn: "QuranEnc (Qur'an Translations Encyclopedia)",
         url: "https://quranenc.com/ar/home",
         description: "بوابة عالمية معتمدة لترجمات معاني القرآن الكريم وتفاسيره الموثوقة بإشراف مجمعات ومراكز علمية متخصصة، تتيح تحميل وتصفح التفاسير والترجمات بأعلى درجات الدقة والتحقيق.",
+        descriptionEn: "An authoritative global portal providing verified translations of the meanings of the Holy Qur'an and trusted Tafseers, supervised by specialized academic complexes and centers for maximum accuracy.",
         category: "ترجمات وتفاسير القرآن",
+        categoryEn: "Qur'an Translations & Tafseer",
         icon: "fa-solid fa-language",
-        features: ["ترجمات وتفاسير معتمدة ومحققة", "أكثر من 60 لغة عالمية موثقة", "تصفح ومقارنة الترجمات بسهولة", "مرجع موثوق للمسلمين عالمياً"]
+        features: ["ترجمات وتفاسير معتمدة ومحققة", "أكثر من 60 لغة عالمية موثقة", "تصفح ومقارنة الترجمات بسهولة", "مرجع موثوق للمسلمين عالمياً"],
+        featuresEn: ["Authenticated & verified translations", "Over 60 documented world languages", "Easy side-by-side comparison", "A trusted reference for Muslims worldwide"]
     },
     {
         id: 25,
         name: "تنزيل للقرآن الكريم",
+        nameEn: "Tanzil Project",
         url: "https://tanzil.net",
         description: "مشروع قرآني رقمي عالمي يقدم النص القرآني الموثق والمطابق لمصحف المدينة النبوية بأعلى درجات التدقيق والضبط، مع خيارات بحث دقيقة، وترجمات لمعاني الآيات وتلاوات متنوعة.",
+        descriptionEn: "A global digital Qur'an project providing authenticated Qur'anic text strictly verified and matched to the Medina Mushaf, featuring fine-tuned search tools, verse meaning translations, and diverse recitations.",
         category: "النص القرآني والتدقيق",
+        categoryEn: "Qur'anic Text & Verification",
         icon: "fa-solid fa-font",
-        features: ["النص القرآني المحقق والموثق", "محرك بحث دقيق في ألفاظ القرآن", "ترجمات وتلاوات متعددة", "متاح بلا قيود في جميع دول العالم"]
+        features: ["النص القرآني المحقق والموثق", "محرك بحث دقيق في ألفاظ القرآن", "ترجمات وتلاوات متعددة", "متاح بلا قيود في جميع دول العالم"],
+        featuresEn: ["Verified & authenticated Qur'anic text", "Precise Qur'anic search engine", "Multiple translations and recitations", "Unrestricted global availability"]
     }
 ];

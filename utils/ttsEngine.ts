@@ -18,6 +18,8 @@ export interface PlayTTSOptions {
     isMorning?: boolean;
     isEvening?: boolean;
     isSalah?: boolean;
+    lang?: string;
+    isEn?: boolean;
 }
 
 export type TTSStateCallback = (playingText: string | null) => void;
@@ -198,25 +200,28 @@ export const playTTS = async (text: string, options?: PlayTTSOptions | ((msg: st
     stopTTS();
 
     const onToast = resolvedOptions.onToast;
+    const isEnglish = resolvedOptions.isEn || resolvedOptions.lang === 'en' || resolvedOptions.lang === 'en-US' || (!/[\u0600-\u06FF]/.test(text) && /[a-zA-Z]{4,}/.test(text));
 
-    // Determine if we can stream the actual Sheikh Al-Afasy recording from public CDNs
+    // Determine if we can stream the actual Sheikh Al-Afasy recording from public CDNs (only when Arabic)
     let streamUrl: string | null = null;
 
-    if (resolvedOptions.isMorning || resolvedOptions.categoryId === 'hisn_27') {
-        streamUrl = 'https://server8.mp3quran.net/afs/adhkar/01.mp3';
-    } else if (resolvedOptions.isEvening || resolvedOptions.categoryId === 'hisn_28') {
-        streamUrl = 'https://server8.mp3quran.net/afs/adhkar/02.mp3';
-    } else if (resolvedOptions.isSalah || resolvedOptions.categoryId === 'hisn_25') {
-        streamUrl = 'https://archive.org/download/hesn_el_moslem_mp3/026.mp3';
-    } else if (resolvedOptions.categoryId && resolvedOptions.categoryId.startsWith('hisn_')) {
-        const numPart = parseInt(resolvedOptions.categoryId.replace('hisn_', ''), 10);
-        if (!isNaN(numPart) && numPart >= 1 && numPart <= 132) {
-            const paddedNum = String(numPart + 1).padStart(3, '0');
-            streamUrl = `https://archive.org/download/hesn_el_moslem_mp3/${paddedNum}.mp3`;
+    if (!isEnglish) {
+        if (resolvedOptions.isMorning || resolvedOptions.categoryId === 'hisn_27') {
+            streamUrl = 'https://server8.mp3quran.net/afs/adhkar/01.mp3';
+        } else if (resolvedOptions.isEvening || resolvedOptions.categoryId === 'hisn_28') {
+            streamUrl = 'https://server8.mp3quran.net/afs/adhkar/02.mp3';
+        } else if (resolvedOptions.isSalah || resolvedOptions.categoryId === 'hisn_25') {
+            streamUrl = 'https://archive.org/download/hesn_el_moslem_mp3/026.mp3';
+        } else if (resolvedOptions.categoryId && resolvedOptions.categoryId.startsWith('hisn_')) {
+            const numPart = parseInt(resolvedOptions.categoryId.replace('hisn_', ''), 10);
+            if (!isNaN(numPart) && numPart >= 1 && numPart <= 132) {
+                const paddedNum = String(numPart + 1).padStart(3, '0');
+                streamUrl = `https://archive.org/download/hesn_el_moslem_mp3/${paddedNum}.mp3`;
+            }
+        } else if (resolvedOptions.hadithId) {
+            const paddedNum = String(resolvedOptions.hadithId).padStart(2, '0');
+            streamUrl = `https://archive.org/download/an-nawawi-40-hadith/${paddedNum}.mp3`;
         }
-    } else if (resolvedOptions.hadithId) {
-        const paddedNum = String(resolvedOptions.hadithId).padStart(2, '0');
-        streamUrl = `https://archive.org/download/an-nawawi-40-hadith/${paddedNum}.mp3`;
     }
 
     // If online and we mapped a direct Al-Afasy recording, stream it directly!
@@ -239,7 +244,7 @@ export const playTTS = async (text: string, options?: PlayTTSOptions | ((msg: st
             audio.onerror = (err) => {
                 console.warn('Streaming audio failed, falling back to TTS:', err);
                 activeAudio = null;
-                playLocalTTS(text, onToast);
+                playLocalTTS(text, onToast, isEnglish ? 'en-US' : 'ar-SA');
             };
 
             await audio.play();
@@ -247,19 +252,19 @@ export const playTTS = async (text: string, options?: PlayTTSOptions | ((msg: st
         } catch (err) {
             console.warn('Failed to play streaming audio, falling back to TTS:', err);
             activeAudio = null;
-            playLocalTTS(text, onToast);
+            playLocalTTS(text, onToast, isEnglish ? 'en-US' : 'ar-SA');
             return;
         }
     }
 
-    // Fallback: Local TTS with authentic Arabic voice or online streaming
-    await playLocalTTS(text, onToast);
+    // Fallback: Local TTS with authentic voice
+    await playLocalTTS(text, onToast, isEnglish ? 'en-US' : 'ar-SA');
 };
 
 /**
  * Fallback local Text-to-Speech engine.
  */
-const playLocalTTS = async (text: string, onToast?: (msg: string) => void) => {
+const playLocalTTS = async (text: string, onToast?: (msg: string) => void, targetLang: string = 'ar-SA') => {
     // Strip HTML tags from text if any
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = text;
@@ -268,14 +273,16 @@ const playLocalTTS = async (text: string, onToast?: (msg: string) => void) => {
     currentPlayingText = text;
     notifyListeners();
 
+    const isEnglish = targetLang.startsWith('en');
+
     // 1. NATIVE PLATFORM SOLUTION (Android APK / iOS)
     if (Capacitor.isNativePlatform()) {
         try {
             await TextToSpeech.speak({
                 text: cleanText,
-                lang: 'ar-SA',
-                rate: 0.88,
-                pitch: 0.75,
+                lang: isEnglish ? 'en-US' : 'ar-SA',
+                rate: isEnglish ? 0.95 : 0.88,
+                pitch: isEnglish ? 1.0 : 0.75,
                 volume: 1.0,
                 category: 'playback'
             });
@@ -286,12 +293,12 @@ const playLocalTTS = async (text: string, onToast?: (msg: string) => void) => {
             }
         } catch (err) {
             console.error('Native TTS Speak Error:', err);
-            if (navigator.onLine) {
+            if (!isEnglish && navigator.onLine) {
                 playStreamingGoogleTTS(cleanText, text, onToast);
                 return;
             }
             if (onToast) {
-                onToast('خدمة القراءة الصوتية غير مفعلة على هذا الجهاز');
+                onToast(isEnglish ? 'Text-to-speech service is not available on this device' : 'خدمة القراءة الصوتية غير مفعلة على هذا الجهاز');
             }
             if (currentPlayingText === text) {
                 currentPlayingText = null;
@@ -302,6 +309,54 @@ const playLocalTTS = async (text: string, onToast?: (msg: string) => void) => {
     }
 
     // 2. WEB BROWSER SOLUTION (Previews, Safari, Chrome)
+    if (isEnglish) {
+        if (!('speechSynthesis' in window)) {
+            if (onToast) {
+                onToast('Text-to-speech service is not supported on this browser');
+            }
+            currentPlayingText = null;
+            notifyListeners();
+            return;
+        }
+
+        const voices = window.speechSynthesis.getVoices();
+        const englishVoice = voices.find(v => v.lang.toLowerCase().startsWith('en')) || null;
+
+        const utterance = new SpeechSynthesisUtterance(cleanText);
+        utterance.lang = 'en-US';
+        utterance.rate = 0.95;
+        utterance.pitch = 1.0;
+        if (englishVoice) {
+            utterance.voice = englishVoice;
+        }
+
+        utterance.onstart = () => {
+            currentPlayingText = text;
+            currentUtterance = utterance;
+            notifyListeners();
+        };
+
+        utterance.onend = () => {
+            if (currentPlayingText === text) {
+                currentPlayingText = null;
+                currentUtterance = null;
+                notifyListeners();
+            }
+        };
+
+        utterance.onerror = (event) => {
+            console.error('Web TTS English playback error:', event);
+            if (currentPlayingText === text) {
+                currentPlayingText = null;
+                currentUtterance = null;
+                notifyListeners();
+            }
+        };
+
+        window.speechSynthesis.speak(utterance);
+        return;
+    }
+
     let arabicVoiceAvailable = false;
     let chosenVoice: SpeechSynthesisVoice | null = null;
     let isExplicitMale = false;
@@ -350,7 +405,6 @@ const playLocalTTS = async (text: string, onToast?: (msg: string) => void) => {
 
     // If online and NO Arabic voice is installed on the browser/system,
     // stream pure, fluent Arabic audio using Google TTS!
-    // This prevents English fallback voices from skipping Arabic text and only reading numbers.
     if (!arabicVoiceAvailable && navigator.onLine) {
         playStreamingGoogleTTS(cleanText, text, onToast);
         return;

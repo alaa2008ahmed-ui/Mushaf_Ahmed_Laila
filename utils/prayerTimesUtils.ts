@@ -16,9 +16,14 @@ export const applyOffset = (timeStr: string, offsetMins: number) => {
     return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
 }
 
+const toEnglishDigits = (s: string | number) => String(s ?? '')
+    .replace(/[٠-٩]/g, d => (d.charCodeAt(0) - 1632).toString())
+    .replace(/[۰-۹]/g, d => (d.charCodeAt(0) - 1776).toString());
+
 export const formatTime12 = (time: string) => {
     if(!time || time.includes('--')) return "--:-- --";
-    let [h, m] = time.split(':');
+    const cleaned = toEnglishDigits(time);
+    let [h, m] = cleaned.split(':');
     let hInt = parseInt(h);
     const ap = hInt >= 12 ? 'pm' : 'am';
     hInt = hInt % 12 || 12;
@@ -27,7 +32,8 @@ export const formatTime12 = (time: string) => {
 
 export const formatTime12_EN = (time: string) => {
     if (!time || time.includes('--')) return "--:-- --";
-    let [h, m] = time.split(':');
+    const cleaned = toEnglishDigits(time);
+    let [h, m] = cleaned.split(':');
     let hInt = parseInt(h);
     const ap = hInt >= 12 ? 'pm' : 'am';
     hInt = hInt % 12 || 12;
@@ -36,7 +42,8 @@ export const formatTime12_EN = (time: string) => {
 
 export const formatTime12_clean = (time: string) => {
     if (!time || time.includes('--')) return "--:-- --";
-    let [h, m] = time.split(':');
+    const cleaned = toEnglishDigits(time);
+    let [h, m] = cleaned.split(':');
     let hInt = parseInt(h);
     const ap = hInt >= 12 ? 'pm' : 'am';
     hInt = hInt % 12 || 12;

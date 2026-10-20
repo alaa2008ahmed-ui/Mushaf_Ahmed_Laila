@@ -8,12 +8,14 @@ import FitrAndUdhiyahCalculator from '../components/Calculators/FitrAndUdhiyahCa
 import { useLanguage } from '../context/LanguageContext';
 
 interface CalculatorsProps {
-    onBack: () => void; onNavigate: (id: string, params?: any) => void; 
+    onBack: () => void;
+    onNavigate: (id: string, params?: any) => void; 
 }
 
-const Calculators: React.FC<CalculatorsProps> = ({ onBack , onNavigate }) => {
+const Calculators: React.FC<CalculatorsProps> = ({ onBack, onNavigate }) => {
     const { theme, themeKey } = useTheme();
     const { t, language } = useLanguage();
+    const isEn = language === 'en';
     const isBlackTheme = theme.bgColor === '#000000' || theme.name === 'أبيض وأسود';
     const isDefaultTheme = themeKey === 'default' || !themeKey;
     const cardBorderColor = isDefaultTheme 
@@ -24,38 +26,42 @@ const Calculators: React.FC<CalculatorsProps> = ({ onBack , onNavigate }) => {
     const [activeTab, setActiveTab] = useState<'zakat' | 'mawarith' | 'kaffarat' | 'fitr-udhiyah'>('zakat');
 
     return (
-        <div className="h-screen flex flex-col bg-transparent">
+        <div 
+            className="h-screen flex flex-col bg-transparent"
+            dir={isEn ? 'ltr' : 'rtl'}
+            style={{ fontFamily: theme.font }}
+        >
             {/* Header */}
-            <header className="app-top-bar shadow-sm z-10">
+            <header className="app-top-bar shadow-sm z-10 shrink-0">
                 <div className="app-top-bar__inner">
                     <div className="relative flex items-center justify-center w-full min-h-[44px]">
-                        {/* سهم الرجوع للخلف على يمين النص */}
-                        <div className="absolute right-0 flex items-center">
+                        {/* زر الرجوع للخلف */}
+                        <div className={`absolute ${isEn ? 'left-0' : 'right-0'} flex items-center`}>
                             <button
                                 onClick={onBack}
                                 className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
-                                title="رجوع للخلف"
-                                aria-label="رجوع للخلف"
+                                title={isEn ? "Back" : "رجوع للخلف"}
+                                aria-label={isEn ? "Back" : "رجوع للخلف"}
                             >
-                                <i className="fa-solid fa-arrow-right text-xl"></i>
+                                <i className={`fa-solid ${isEn ? 'fa-arrow-left' : 'fa-arrow-right'} text-xl`}></i>
                             </button>
                         </div>
 
                         {/* عنوان الصفحة في الوسط */}
                         <div className="text-center px-12 min-w-0">
                             <h1 className="app-top-bar__title text-lg sm:text-xl font-kufi truncate">
-                                {t('page.calculators_title', 'الحاسبة الشاملة')}
+                                {isEn ? 'Islamic Legal Calculators' : t('page.calculators_title', 'الحاسبة الشرعية')}
                             </h1>
                         </div>
 
-                        {/* أيقونة المنزل على يسار النص للعودة إلى الصفحة الرئيسية */}
-                        <div className="absolute left-0 flex items-center gap-1">
+                        {/* أيقونة المنزل على يسار/يمين النص للعودة إلى الصفحة الرئيسية */}
+                        <div className={`absolute ${isEn ? 'right-0' : 'left-0'} flex items-center gap-1`}>
                             <ThemePageLock />
                             <button
                                 onClick={() => onNavigate('home')}
                                 className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
-                                title="الصفحة الرئيسية"
-                                aria-label="الصفحة الرئيسية"
+                                title={isEn ? "Home Page" : "الصفحة الرئيسية"}
+                                aria-label={isEn ? "Home Page" : "الصفحة الرئيسية"}
                             >
                                 <i className="fa-solid fa-house text-xl"></i>
                             </button>
@@ -65,17 +71,17 @@ const Calculators: React.FC<CalculatorsProps> = ({ onBack , onNavigate }) => {
             </header>
 
             {/* Tabs */}
-            <div className="flex px-2 sm:px-4 pt-2.5 sm:pt-3 gap-1.5 sm:gap-2 font-cairo z-10">
+            <div className="flex px-1.5 sm:px-4 pt-2.5 sm:pt-3 gap-1 sm:gap-2 font-cairo z-10 shrink-0">
                 {[
-                    { id: 'zakat', label: language === 'en' ? 'Zakat' : 'الزكاة' },
-                    { id: 'mawarith', label: language === 'en' ? 'Mawarith' : 'المواريث' },
-                    { id: 'kaffarat', label: language === 'en' ? 'Kaffarat' : 'الكفارات' },
-                    { id: 'fitr-udhiyah', label: language === 'en' ? 'Fitr & Udhiyah' : 'فطر وأضحية' }
+                    { id: 'zakat', label: isEn ? 'Zakat' : 'الزكاة' },
+                    { id: 'mawarith', label: isEn ? 'Inheritance' : 'المواريث' },
+                    { id: 'kaffarat', label: isEn ? 'Expiations' : 'الكفارات' },
+                    { id: 'fitr-udhiyah', label: isEn ? 'Fitr & Udhiyah' : 'فطر وأضحية' }
                 ].map(tab => (
                     <button 
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id as any)}
-                        className={`flex-1 py-1.5 sm:py-2 px-1 sm:px-2 rounded-t-xl font-bold transition-all duration-300 flex items-center justify-center cursor-pointer
+                        className={`flex-1 py-1.5 sm:py-2 px-1 sm:px-2 rounded-t-xl font-bold transition-all duration-300 flex items-center justify-center cursor-pointer text-center
                             ${activeTab === tab.id 
                                 ? (isDefaultTheme 
                                     ? 'bg-black text-white scale-105 origin-bottom shadow-md' 
@@ -91,7 +97,9 @@ const Calculators: React.FC<CalculatorsProps> = ({ onBack , onNavigate }) => {
                             borderStyle: 'solid',
                         }}
                     >
-                        <span className="text-xs sm:text-sm whitespace-nowrap">{tab.label}</span>
+                        <span className={`${isEn ? 'text-[11px] sm:text-xs md:text-sm tracking-tight' : 'text-xs sm:text-sm'} whitespace-nowrap`}>
+                            {tab.label}
+                        </span>
                     </button>
                 ))}
             </div>

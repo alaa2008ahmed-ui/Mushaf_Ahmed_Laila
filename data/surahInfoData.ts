@@ -3,6 +3,10 @@ export interface SurahDetail {
   naming: string;
   purposes: string;
   virtues: string;
+  aboutEn?: string;
+  namingEn?: string;
+  purposesEn?: string;
+  virtuesEn?: string;
 }
 
 export const SURAH_DETAILS: Record<number, SurahDetail> = {
@@ -10,13 +14,21 @@ export const SURAH_DETAILS: Record<number, SurahDetail> = {
     about: "سورة الفاتحة هي أعظم سورة في القرآن الكريم، وهي السورة التي يفتتح بها المصحف الشريف، وتُعد ركناً أساسياً في الصلاة لا تصح بدونها. تُسمى 'السبع المثاني' لأنها تُكرر في كل ركعة، و'أم القرآن' لاشتمالها على جميع مقاصده الكبرى.",
     naming: "سُميت بالفاتحة لأن القرآن الكريم افتتح بها كتابةً، وتفتح بها الصلاة قراءةً. ولها أسماء عديدة منها: 'الشافية' و'الرقية' و'الأساس'.",
     purposes: "تشتمل السورة على مجمل مقاصد الدين: توحيد الربوبية والألوهية والأسماء والصفات، وإثبات البعث والجزاء، وحصر العبادة والاستعانة بالله وحده، وطلب الهداية.",
-    virtues: "هي أعظم سورة في القرآن، وهي النور الذي أوتيه النبي ﷺ. ومن أعظم فضائلها أنها رقية شرعية شافية بإذن الله."
+    virtues: "هي أعظم سورة في القرآن، وهي النور الذي أوتيه النبي ﷺ. ومن أعظم فضائلها أنها رقية شرعية شافية بإذن الله.",
+    aboutEn: "Al-Fatiha is the greatest surah in the Holy Quran, opening the Sacred Mushaf, and is an essential pillar of every prayer. It is called 'As-Sab' Al-Mathani' (The Seven Repeated Verses) and 'Umm Al-Quran' (The Mother of the Quran).",
+    namingEn: "Named Al-Fatiha (The Opening) because the Quran opens with it in writing and prayer begins with its recitation. Also known as Ash-Shafiyah (The Healer) and Al-Asas (The Foundation).",
+    purposesEn: "Encompasses the core objectives of religion: Oneness of Allah (Tawhid), Lordship, Worship, Day of Judgment, and seeking divine guidance.",
+    virtuesEn: "The greatest surah in the Quran, a divine light granted to the Prophet (ﷺ), and a spiritual cure (Ruqyah) by Allah's permission."
   },
   2: {
     about: "سورة البقرة هي أطول سورة في القرآن الكريم، وهي أول سورة نزلت في المدينة المنورة. تُعد دستوراً شاملاً للدولة الإسلامية والحياة الاجتماعية، حيث تناولت التشريعات الأسرية والمعاملات المالية وقصص الأنبياء.",
     naming: "سُميت بهذا الاسم تخليداً لذكرى معجزة بقرة بني إسرائيل التي كشفت هوية القاتل، وهي قصة تُبرز أهمية التسليم لأوامر الله وعدم المماطلة.",
     purposes: "إعداد الأمة الإسلامية لحمل أمانة الاستخلاف في الأرض، وبيان صفات المتقين والكافرين والمنافقين، وتفصيل أحكام التشريع والعبادات.",
-    virtues: "قال النبي ﷺ: 'اقرؤوا سورة البقرة فإن أخذها بركة وتركها حسرة'. وهي تشتمل على آية الكرسي أعظم آية في كتاب الله، وخواتيمها التي من قرأهما في ليلة كفتاه."
+    virtues: "قال النبي ﷺ: 'اقرؤوا سورة البقرة فإن أخذها بركة وتركها حسرة'. وهي تشتمل على آية الكرسي أعظم آية في كتاب الله، وخواتيمها التي من قرأهما في ليلة كفتاه.",
+    aboutEn: "Al-Baqara is the longest surah in the Holy Quran and the first revealed in Madinah. It serves as a comprehensive constitution for Islamic society, family law, financial transactions, and stories of the prophets.",
+    namingEn: "Named after the miracle of the cow of the Children of Israel, highlighting total submission to Allah's commands without hesitation.",
+    purposesEn: "Preparing the Muslim Ummah for stewardship on Earth, outlining the traits of the righteous, disbelievers, and hypocrites, and detailing Islamic laws and acts of worship.",
+    virtuesEn: "The Prophet (ﷺ) said: 'Read Surah Al-Baqara, for taking it is a blessing and leaving it is a cause of grief.' It contains Ayat Al-Kursi, the greatest verse in the Quran."
   },
   3: {
     about: "سورة آل عمران هي سورة مدنية، تناولت جانباً كبيراً من الحوار العقدي مع أهل الكتاب، كما فصلت أحداث غزوة أحد وما فيها من دروس وعبر حول الثبات والطاعة.",

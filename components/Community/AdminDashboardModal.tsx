@@ -17,11 +17,12 @@ import {
     ADMIN_USER_ID 
 } from '../../services/communityService';
 import ThemePageLock from '../ThemePageLock';
-import { useShowNewBadge } from '../../utils/badgeManager';
+import { useShowNewBadge, markPageAsSeen } from '../../utils/badgeManager';
 import { registerBackInterceptor } from '../../hooks/useBackButton';
 import CreateGroupModal from './CreateGroupModal';
 import { EditGroupModal } from './EditGroupModal';
 import { useTheme } from '../../context/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface AdminDashboardModalProps {
     isOpen: boolean;
@@ -54,7 +55,9 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     onNavigate
 }) => {
     const { theme, themeKey } = useTheme();
-    const showNewBadge = useShowNewBadge();
+    const { language } = useLanguage();
+    const isEn = language === 'en';
+    const showNewBadge = useShowNewBadge('ahl-al-quran');
     const isDefaultTheme = themeKey === 'default' || !themeKey || theme.name?.includes('الافتراضي') || theme.name === 'Default';
     const isDeepBlack = theme.bgColor === '#000000' || theme.name === 'أبيض وأسود' || themeKey === 'deep_black';
     const rawCardBorder = theme.cardBorder?.replace(/^[0-9.]+\s*px\s+solid\s+/i, '') || theme.palette?.[0] || theme.accent || '#000000';
@@ -940,7 +943,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[1300] bg-white dark:bg-slate-950 flex flex-col animate-fadeIn overflow-hidden" dir="rtl" style={{ color: currentTheme.text }}>
+        <div className="fixed inset-0 z-[1300] bg-white dark:bg-slate-950 flex flex-col animate-fadeIn overflow-hidden" dir={isEn ? 'ltr' : 'rtl'} style={{ color: currentTheme.text }}>
             
             {/* Admin In-App Toast */}
             {toastMessage && (
@@ -1358,7 +1361,10 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                         <div className="flex items-center gap-1.5 flex-shrink-0">
                             <button
                                 type="button"
-                                onClick={() => onNavigate ? onNavigate('ahl-al-quran') : null}
+                                onClick={() => {
+                                    markPageAsSeen('ahl-al-quran');
+                                    if (onNavigate) onNavigate('ahl-al-quran');
+                                }}
                                 className="w-10 h-10 rounded-2xl border flex items-center justify-center shadow-xs active:scale-95 transition-all cursor-pointer relative"
                                 style={{
                                     backgroundColor: isDeepBlack ? '#111111' : (theme.cardBg || '#ffffff'),
@@ -1372,7 +1378,14 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                             >
                                 <Trophy size={18} />
                                 {showNewBadge && (
-                                    <span className="absolute -top-1.5 -right-1 bg-yellow-400 text-black text-[9px] font-bold px-1 rounded-full shadow-xs border border-white dark:border-slate-800 animate-bounce pointer-events-none">
+                                    <span 
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            markPageAsSeen('ahl-al-quran');
+                                        }}
+                                        className="absolute -top-1.5 -right-1 bg-yellow-400 text-black text-[9px] font-bold px-1 rounded-full shadow-xs border border-white dark:border-slate-800 animate-bounce cursor-pointer select-none z-30"
+                                        title="جديد"
+                                    >
                                         جديد
                                     </span>
                                 )}

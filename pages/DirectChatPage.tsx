@@ -14,6 +14,12 @@ import { MediaAttachmentPicker } from '../components/Community/MediaAttachmentPi
 import { processFileForAttachment } from '../components/Community/mediaPickerUtils';
 import { Capacitor } from '@capacitor/core';
 import { registerBackInterceptor } from '../hooks/useBackButton';
+import { useLanguage } from '../context/LanguageContext';
+import { 
+  formatCountryName, 
+  formatUsername, 
+  formatUserStatusText 
+} from '../components/Community/communityLanguageUtils';
 
 interface DirectChatPageProps {
   partnerUserId: string;
@@ -88,6 +94,8 @@ export const ChatQuranCard: React.FC<{
   onToggleAudio: (url?: string) => void;
 }> = ({ verseData, playingAudioUrl, onToggleAudio }) => {
   const cardRef = useRef<HTMLDivElement>(null);
+  const { language } = useLanguage();
+  const isEn = language === 'en';
 
   const toArabicDigits = (str: number | string) => {
     return String(str).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[parseInt(d)]);
@@ -114,7 +122,7 @@ export const ChatQuranCard: React.FC<{
               </p>
             )}
             <div className="text-[10px] text-slate-400 dark:text-slate-500 font-bold mt-2 pt-1 border-t border-slate-100 dark:border-slate-800" style={{ letterSpacing: '0px' }}>
-              مصحف احمد وليلي
+              {isEn ? 'Mushaf Ahmed & Laila' : 'مصحف أحمد وليلى'}
             </div>
           </div>
         ) : shareType === 'audio' ? (
@@ -160,7 +168,7 @@ export const ChatQuranCard: React.FC<{
             </p>
             <div className="w-full h-[1px] bg-[#E7E5E4]" />
             <div className="text-[11px] text-[#78716C] font-bold" style={{ letterSpacing: '0px' }}>
-              مصحف احمد وليلي • صفحة قراءة
+              {isEn ? 'Mushaf Ahmed & Laila • Page Reading' : 'مصحف أحمد وليلى • صفحة قراءة'}
             </div>
           </div>
         ) : (
@@ -209,7 +217,7 @@ export const ChatQuranCard: React.FC<{
                 fontFamily: 'var(--font-cairo), "Noto Naskh Arabic", Arial, sans-serif' 
               }}
             >
-              سورة {verseData.surahName} ({verseData.fromAyah && verseData.toAyah && verseData.fromAyah !== verseData.toAyah ? `الآيات ${toArabicDigits(verseData.fromAyah)}-${toArabicDigits(verseData.toAyah)}` : `آية ${toArabicDigits(verseData.ayahNumber)}`}) • مصحف احمد وليلي
+              {isEn ? `Surah ${verseData.surahName} • Mushaf Ahmed & Laila` : `سورة ${verseData.surahName} (${verseData.fromAyah && verseData.toAyah && verseData.fromAyah !== verseData.toAyah ? `الآيات ${toArabicDigits(verseData.fromAyah)}-${toArabicDigits(verseData.toAyah)}` : `آية ${toArabicDigits(verseData.ayahNumber)}`}) • مصحف أحمد وليلى`}
             </div>
           </div>
         )}
@@ -435,6 +443,8 @@ export const ChatMessageAudioPlayer: React.FC<{
 };
 
 const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, onNavigate }) => {
+  const { language } = useLanguage();
+  const isEn = language === 'en';
   const currentUser = communityService.getCurrentUser();
   const [partner, setPartner] = useState<CommunityUser | null>(null);
   const [friendship, setFriendship] = useState(() => communityService.getFriendshipStatus(partnerUserId));
@@ -982,30 +992,30 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
 
   if (isRejectedAsRequester) {
     return (
-      <div className="h-[100dvh] max-h-[100dvh] overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white flex flex-col items-center justify-center p-6 text-center font-sans" dir="rtl">
+      <div className="h-[100dvh] max-h-[100dvh] overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white flex flex-col items-center justify-center p-6 text-center font-sans" dir={isEn ? "ltr" : "rtl"}>
         <div className="w-16 h-16 rounded-3xl bg-rose-500/10 text-rose-500 flex items-center justify-center mb-4 border border-rose-500/20 shadow-inner">
           <Ban size={36} />
         </div>
         <h3 className="font-bold text-base mb-1.5">
-          تم رفض طلب الإضافة
+          {isEn ? 'Friend request declined' : 'تم رفض طلب الإضافة'}
         </h3>
         <p className="text-xs max-w-sm mb-6 leading-relaxed text-slate-500 dark:text-slate-400">
-          قام العضو برفض طلب الإضافة. لا يمكن الدخول إلى صفحة الدردشة أو إرسال رسائل طالما لم يتم قبول الإضافة.
+          {isEn ? 'The user has declined the friend request. Chat is unavailable until request is accepted.' : 'قام العضو برفض طلب الإضافة. لا يمكن الدخول إلى صفحة الدردشة أو إرسال رسائل طالما لم يتم قبول الإضافة.'}
         </p>
         <button
           type="button"
           onClick={onBack}
           className="px-6 py-2.5 rounded-2xl font-bold text-xs bg-emerald-600 hover:bg-emerald-700 text-white shadow-md transition-all active:scale-95 cursor-pointer flex items-center gap-2"
         >
-          <ArrowRight size={16} />
-          <span>العودة لصفحة المجتمع</span>
+          <ArrowRight size={16} className={isEn ? "rotate-180" : ""} />
+          <span>{isEn ? 'Back to Community' : 'العودة لصفحة المجتمع'}</span>
         </button>
       </div>
     );
   }
 
   return (
-    <div className="h-[100dvh] max-h-[100dvh] overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white flex flex-col font-sans" dir="rtl">
+    <div className="h-[100dvh] max-h-[100dvh] overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white flex flex-col font-sans" dir={isEn ? "ltr" : "rtl"}>
       {/* Header */}
       <div 
         className="shrink-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-4 pb-3.5 flex items-center justify-between shadow-sm"
@@ -1014,9 +1024,10 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
         <div className="flex items-center gap-3">
           <button
             onClick={onBack}
-            className="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+            title={isEn ? "Back" : "رجوع"}
           >
-            <ArrowRight size={20} />
+            <ArrowRight size={20} className={isEn ? "rotate-180" : ""} />
           </button>
 
           <div className="flex items-center gap-2.5">
@@ -1038,24 +1049,24 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
                 )}
               </div>
               {communityService.isUserOnline(partner) ? (
-                <div className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-900" title="متصل الآن" />
+                <div className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-900" title={isEn ? "Online" : "متصل الآن"} />
               ) : (
-                <div className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-slate-400 border-2 border-white dark:border-slate-900 opacity-60" title="غير متصل" />
+                <div className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-slate-400 border-2 border-white dark:border-slate-900 opacity-60" title={isEn ? "Offline" : "غير متصل"} />
               )}
             </div>
 
             <div>
               <h2 className="font-bold text-sm leading-tight text-slate-900 dark:text-white flex items-center gap-1.5">
-                <span>{partner?.username || 'مستخدم'}</span>
-                <span className="text-xs font-normal opacity-70">{partner?.country}</span>
+                <span>{formatUsername(partner, isEn)}</span>
+                <span className="text-xs font-normal opacity-70">{formatCountryName(partner?.country, isEn)}</span>
               </h2>
               <p className="text-[11px] font-medium">
                 {isPartnerTyping ? (
-                  <span className="animate-pulse text-amber-500 font-bold">جاري الكتابة الآن... ✍️</span>
+                  <span className="animate-pulse text-amber-500 font-bold">{isEn ? 'Typing now... ✍️' : 'جاري الكتابة الآن... ✍️'}</span>
                 ) : communityService.isUserOnline(partner) ? (
-                  <span className="text-emerald-500 font-bold">متصل الآن</span>
+                  <span className="text-emerald-500 font-bold">{isEn ? 'Online' : 'متصل الآن'}</span>
                 ) : (
-                  <span className="text-slate-400">{communityService.getUserStatusText(partner)}</span>
+                  <span className="text-slate-400">{formatUserStatusText(partner, isEn)}</span>
                 )}
               </p>
             </div>
@@ -1068,7 +1079,7 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
             ref={menuButtonRef}
             onClick={() => setShowMenu(prev => !prev)}
             className="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors relative z-50 cursor-pointer"
-            title="خيارات إضافية"
+            title={isEn ? "More Options" : "خيارات إضافية"}
           >
             <MoreVertical size={20} />
           </button>
@@ -1088,17 +1099,17 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
                   initial={{ opacity: 0, scale: 0.9, y: 10 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.9, y: 10 }}
-                  className="absolute left-0 mt-2 w-52 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl py-2 z-50 text-xs font-bold"
+                  className={`absolute ${isEn ? 'right-0' : 'left-0'} mt-2 w-52 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl py-2 z-50 text-xs font-bold`}
                 >
                   <button
                     onClick={() => {
                       setShowMenu(false);
                       handleDeleteReadMessages();
                     }}
-                    className="w-full px-4 py-2.5 text-right flex items-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
+                    className={`w-full px-4 py-2.5 ${isEn ? 'text-left' : 'text-right'} flex items-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 cursor-pointer`}
                   >
                     <Trash2 size={16} className="text-amber-500" />
-                    <span>حذف الرسائل المقروءة</span>
+                    <span>{isEn ? 'Delete read messages' : 'حذف الرسائل المقروءة'}</span>
                   </button>
 
                   <button
@@ -1106,10 +1117,10 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
                       setShowMenu(false);
                       handleClearConversation();
                     }}
-                    className="w-full px-4 py-2.5 text-right flex items-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
+                    className={`w-full px-4 py-2.5 ${isEn ? 'text-left' : 'text-right'} flex items-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 cursor-pointer`}
                   >
                     <Trash2 size={16} className="text-rose-500" />
-                    <span>حذف المحادثة بالكامل</span>
+                    <span>{isEn ? 'Delete entire conversation' : 'حذف المحادثة بالكامل'}</span>
                   </button>
 
                   {partnerUserId !== 'usr_admin_official' && (
@@ -1121,10 +1132,10 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
                           setShowMenu(false);
                           handleBlockUser();
                         }}
-                        className="w-full px-4 py-2.5 text-right flex items-center gap-2 hover:bg-rose-50 dark:hover:bg-rose-950/30 text-rose-600 dark:text-rose-400"
+                        className={`w-full px-4 py-2.5 ${isEn ? 'text-left' : 'text-right'} flex items-center gap-2 hover:bg-rose-50 dark:hover:bg-rose-950/30 text-rose-600 dark:text-rose-400 cursor-pointer`}
                       >
                         <Ban size={16} />
-                        <span>حظر المستخدم</span>
+                        <span>{isEn ? 'Block user' : 'حظر المستخدم'}</span>
                       </button>
                     </>
                   )}
@@ -1139,7 +1150,7 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
       {isBlocked && (
         <div className="shrink-0 bg-rose-500/10 border-b border-rose-500/20 px-4 py-2.5 text-rose-600 dark:text-rose-400 text-xs font-bold flex items-center justify-center gap-2">
           <AlertCircle size={16} />
-          <span>تم حظر التواصل مع هذا المستخدم</span>
+          <span>{isEn ? 'Communication with this user is blocked' : 'تم حظر التواصل مع هذا المستخدم'}</span>
         </div>
       )}
 
@@ -1152,9 +1163,15 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
                 <UserPlus size={16} />
               </div>
               <div className="min-w-0">
-                <span className="text-slate-900 dark:text-white">أرسل لك {partner?.username} طلب إضافة ومحادثة 🌿</span>
+                <span className="text-slate-900 dark:text-white">
+                  {isEn 
+                    ? `${formatUsername(partner, isEn)} sent you a friend and chat request 🌿` 
+                    : `أرسل لك ${partner?.username} طلب إضافة ومحادثة 🌿`}
+                </span>
                 <p className="text-[11px] font-normal text-slate-500 dark:text-slate-400 truncate">
-                  {friendship.contact?.introMessage ? `رسالة التعريف: «${friendship.contact.introMessage}»` : 'هل ترغب في قبول الطلب لبدء التواصل؟'}
+                  {friendship.contact?.introMessage 
+                    ? (isEn ? `Intro message: "${friendship.contact.introMessage}"` : `رسالة التعريف: «${friendship.contact.introMessage}»`) 
+                    : (isEn ? 'Would you like to accept to start chatting?' : 'هل ترغب في قبول الطلب لبدء التواصل؟')}
                 </p>
               </div>
             </div>
@@ -1164,22 +1181,22 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
                 onClick={async () => {
                   await communityService.acceptFriendRequest(partnerUserId);
                   setFriendship(communityService.getFriendshipStatus(partnerUserId));
-                  showToast('تم قبول طلب الإضافة بنجاح 🌿');
+                  showToast(isEn ? 'Friend request accepted 🌿' : 'تم قبول طلب الإضافة بنجاح 🌿');
                 }}
                 className="flex-1 sm:flex-initial px-4 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center shadow-sm active:scale-95 cursor-pointer"
               >
-                <span>قبول</span>
+                <span>{isEn ? 'Accept' : 'قبول'}</span>
               </button>
               <button
                 type="button"
                 onClick={async () => {
                   await communityService.rejectFriendRequest(partnerUserId);
-                  showToast('تم رفض طلب الإضافة');
+                  showToast(isEn ? 'Friend request declined' : 'تم رفض طلب الإضافة');
                   onBack();
                 }}
                 className="flex-1 sm:flex-initial px-4 py-1.5 rounded-xl text-xs font-bold border border-rose-500/30 text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 active:scale-95 flex items-center justify-center cursor-pointer"
               >
-                <span>رفض</span>
+                <span>{isEn ? 'Decline' : 'رفض'}</span>
               </button>
             </div>
           </div>
@@ -1197,12 +1214,12 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
             {isIntroMessageSent ? (
               <>
                 <Clock size={16} className="shrink-0 text-amber-500" />
-                <span>تم إرسال رسالة التعريف بنجاح. خانة الكتابة معطلة حتى يقبل {partner?.username} طلب الإضافة ⏳</span>
+                <span>{isEn ? `Intro message sent successfully. Input is disabled until ${formatUsername(partner, isEn)} accepts your request ⏳` : `تم إرسال رسالة التعريف بنجاح. خانة الكتابة معطلة حتى يقبل ${partner?.username} طلب الإضافة ⏳`}</span>
               </>
             ) : (
               <>
                 <Sparkles size={16} className="shrink-0 text-emerald-500" />
-                <span>طلب الإضافة قيد الانتظار. مسموح لك بإرسال رسالة واحدة فقط للتعريف بنفسك حتى يتم قبول الطلب 🌿</span>
+                <span>{isEn ? 'Friend request pending. You can send one intro message until request is accepted 🌿' : 'طلب الإضافة قيد الانتظار. مسموح لك بإرسال رسالة واحدة فقط للتعريف بنفسك حتى يتم قبول الطلب 🌿'}</span>
               </>
             )}
           </div>
@@ -1215,18 +1232,18 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
           <div className="max-w-3xl mx-auto flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <UserPlus size={16} className="shrink-0" />
-              <span>لبدء المحادثة، يجب إرسال طلب إضافة أولاً 🌿</span>
+              <span>{isEn ? 'To start chatting, you must send a friend request first 🌿' : 'لبدء المحادثة، يجب إرسال طلب إضافة أولاً 🌿'}</span>
             </div>
             <button
               type="button"
               onClick={async () => {
                 await communityService.sendFriendRequest(partnerUserId);
                 setFriendship(communityService.getFriendshipStatus(partnerUserId));
-                showToast('تم إرسال طلب الإضافة 🌿 يمكنك الآن كتابة رسالة تعريفية واحدة.');
+                showToast(isEn ? 'Friend request sent 🌿 You can now type one intro message.' : 'تم إرسال طلب الإضافة 🌿 يمكنك الآن كتابة رسالة تعريفية واحدة.');
               }}
               className="px-3 py-1 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold active:scale-95 cursor-pointer"
             >
-              إرسال طلب إضافة
+              {isEn ? 'Send Friend Request' : 'إرسال طلب إضافة'}
             </button>
           </div>
         </div>
@@ -1244,9 +1261,11 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
             <div className="w-16 h-16 rounded-3xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center mx-auto mb-3">
               <Sparkles size={32} />
             </div>
-            <p className="text-sm font-bold">بداية المحادثة المباركة ✨</p>
+            <p className="text-sm font-bold">{isEn ? 'Beginning of a blessed conversation ✨' : 'بداية المحادثة المباركة ✨'}</p>
             <p className="text-xs text-slate-500 mt-1">
-              أرسل رسالة أو آية قرآنية طيبة لتبدأ التراسل مع {partner?.username}
+              {isEn 
+                ? `Send a message or a blessed Quran verse to start chatting with ${formatUsername(partner, isEn)}` 
+                : `أرسل رسالة أو آية قرآنية طيبة لتبدأ التراسل مع ${partner?.username}`}
             </p>
           </div>
         ) : (
@@ -1255,7 +1274,7 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
             .map((msg) => {
             const isMe = msg.senderId === currentUser.userId;
             const isSelected = selectedMsgId === msg.messageId;
-            const timeStr = new Date(msg.createdAt).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+            const timeStr = new Date(msg.createdAt).toLocaleTimeString(isEn ? 'en-US' : 'ar-EG', { hour: '2-digit', minute: '2-digit' });
             const isPureAudio = Boolean(msg.audioUrl && !msg.text && !msg.verseData);
 
             return (
@@ -1333,10 +1352,10 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
                     >
                       <button
                         onClick={() => handleDeleteSingleMessage(msg.messageId)}
-                        className="flex items-center gap-1 hover:text-rose-400 text-rose-300 font-bold"
+                        className="flex items-center gap-1 hover:text-rose-400 text-rose-300 font-bold cursor-pointer"
                       >
                         <Trash2 size={13} />
-                        <span>حذف الرسالة</span>
+                        <span>{isEn ? 'Delete message' : 'حذف الرسالة'}</span>
                       </button>
                     </motion.div>
                   )}
@@ -1385,7 +1404,7 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
               >
                 <div className="flex items-center gap-2.5 min-w-0">
                   {stagedAttachment.type === 'image' ? (
-                    <img src={stagedAttachment.url} alt="معاينة" className="w-10 h-10 rounded-xl object-cover border border-slate-200 dark:border-slate-700" />
+                    <img src={stagedAttachment.url} alt={isEn ? "Preview" : "معاينة"} className="w-10 h-10 rounded-xl object-cover border border-slate-200 dark:border-slate-700" />
                   ) : stagedAttachment.type === 'video' ? (
                     <div className="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-500 flex items-center justify-center font-bold">
                       <Video size={18} />
@@ -1397,10 +1416,10 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
                   )}
                   <div className="min-w-0">
                     <p className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
-                      {stagedAttachment.fileName || (stagedAttachment.type === 'image' ? 'صورة مختارة' : stagedAttachment.type === 'video' ? 'مقطع مرئي' : 'ملف')}
+                      {stagedAttachment.fileName || (stagedAttachment.type === 'image' ? (isEn ? 'Selected Image' : 'صورة مختارة') : stagedAttachment.type === 'video' ? (isEn ? 'Video' : 'مقطع مرئي') : (isEn ? 'File' : 'ملف'))}
                     </p>
                     <p className="text-[10px] text-slate-500 dark:text-slate-400">
-                      جاهز للإرسال والاسترداد • {formatFileSize(stagedAttachment.fileSize)}
+                      {isEn ? 'Ready to send' : 'جاهز للإرسال والاسترداد'} • {formatFileSize(stagedAttachment.fileSize)}
                     </p>
                   </div>
                 </div>
@@ -1408,7 +1427,7 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
                   type="button"
                   onClick={() => setStagedAttachment(null)}
                   className="p-1.5 rounded-xl hover:bg-rose-500/10 text-rose-500 transition-colors cursor-pointer"
-                  title="إلغاء المرفق"
+                  title={isEn ? "Cancel attachment" : "إلغاء المرفق"}
                 >
                   <X size={16} />
                 </button>
@@ -1422,8 +1441,8 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
               <button
                 type="button"
                 onClick={cancelRecording}
-                className="p-2.5 text-rose-500 hover:bg-rose-500/10 rounded-xl transition-all active:scale-95 shrink-0"
-                title="إلغاء التسجيل"
+                className="p-2.5 text-rose-500 hover:bg-rose-500/10 rounded-xl transition-all active:scale-95 shrink-0 cursor-pointer"
+                title={isEn ? "Cancel recording" : "إلغاء التسجيل"}
               >
                 <Trash2 size={20} />
               </button>
@@ -1449,14 +1468,14 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
                 type="button"
                 onClick={stopAndSendRecording}
                 disabled={isProcessingAudio}
-                className="p-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl shadow-lg shadow-emerald-600/20 active:scale-95 transition-all flex items-center justify-center gap-1.5 font-bold text-xs shrink-0 disabled:opacity-50"
+                className="p-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl shadow-lg shadow-emerald-600/20 active:scale-95 transition-all flex items-center justify-center gap-1.5 font-bold text-xs shrink-0 disabled:opacity-50 cursor-pointer"
               >
                 {isProcessingAudio ? (
                   <Loader2 size={18} className="animate-spin" />
                 ) : (
                   <>
-                    <Send size={16} className="rotate-180" />
-                    <span>إرسال</span>
+                    <Send size={16} className={isEn ? "" : "rotate-180"} />
+                    <span>{isEn ? 'Send' : 'إرسال'}</span>
                   </>
                 )}
               </button>
@@ -1470,8 +1489,8 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
                   type="button"
                   onClick={() => setShowVerseModal(true)}
                   disabled={isBlocked || isIntroMessageSent || (friendship.status === 'none' && partnerUserId !== ADMIN_USER_ID)}
-                  className="w-7 h-8 sm:w-8 sm:h-8.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-r-xl rounded-l-none transition-colors flex items-center justify-center shrink-0 disabled:opacity-40 cursor-pointer p-0"
-                  title="مشاركة آية قرآنية"
+                  className={`w-7 h-8 sm:w-8 sm:h-8.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 ${isEn ? 'rounded-l-xl rounded-r-none' : 'rounded-r-xl rounded-l-none'} transition-colors flex items-center justify-center shrink-0 disabled:opacity-40 cursor-pointer p-0`}
+                  title={isEn ? "Share Quran verse" : "مشاركة آية قرآنية"}
                 >
                   <BookOpen size={16} />
                 </button>
@@ -1481,7 +1500,7 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
                   onClick={() => setShowAttachmentPicker(true)}
                   disabled={isBlocked || isIntroMessageSent || (friendship.status === 'none' && partnerUserId !== ADMIN_USER_ID)}
                   className="w-7 h-8 sm:w-8 sm:h-8.5 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 rounded-none hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center justify-center shrink-0 disabled:opacity-40 cursor-pointer p-0"
-                  title="إرفاق واسترداد ملف أو صورة أو فيديو"
+                  title={isEn ? "Attach file, photo or video" : "إرفاق واسترداد ملف أو صورة أو فيديو"}
                 >
                   <Paperclip size={16} />
                 </button>
@@ -1490,8 +1509,8 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
                   type="button"
                   onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                   disabled={isBlocked || isIntroMessageSent || (friendship.status === 'none' && partnerUserId !== ADMIN_USER_ID)}
-                  className="w-7 h-8 sm:w-8 sm:h-8.5 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 rounded-l-xl rounded-r-none hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center justify-center shrink-0 disabled:opacity-40 cursor-pointer p-0"
-                  title="إدراج أذكار وتعبيرات"
+                  className={`w-7 h-8 sm:w-8 sm:h-8.5 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 ${isEn ? 'rounded-r-xl rounded-l-none' : 'rounded-l-xl rounded-r-none'} hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center justify-center shrink-0 disabled:opacity-40 cursor-pointer p-0`}
+                  title={isEn ? "Insert adhkar and emojis" : "إدراج أذكار وتعبيرات"}
                 >
                   <Smile size={16} />
                 </button>
@@ -1504,16 +1523,16 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
                 disabled={isBlocked || isIntroMessageSent || (friendship.status === 'none' && partnerUserId !== ADMIN_USER_ID)}
                 placeholder={
                   isBlocked
-                    ? 'التواصل معطل بسبب الحظر'
+                    ? (isEn ? 'Communication disabled due to block' : 'التواصل معطل بسبب الحظر')
                     : isIntroMessageSent
-                      ? 'بانتظار قبول طلب الإضافة...'
+                      ? (isEn ? 'Waiting for friend request to be accepted...' : 'بانتظار قبول طلب الإضافة...')
                       : canSendIntroMessage
-                        ? 'اكتب رسالة للتعريف بنفسك...'
+                        ? (isEn ? 'Type an intro message to introduce yourself...' : 'اكتب رسالة للتعريف بنفسك...')
                         : (friendship.status === 'none' && partnerUserId !== ADMIN_USER_ID)
-                          ? 'يجب إرسال طلب إضافة أولاً...'
+                          ? (isEn ? 'Must send a friend request first...' : 'يجب إرسال طلب إضافة أولاً...')
                           : stagedAttachment
-                            ? 'أضف تعليقاً مع المرفق (اختياري)...'
-                            : 'اكتب رسالة مباركة...'
+                            ? (isEn ? 'Add a caption (optional)...' : 'أضف تعليقاً مع المرفق (اختياري)...')
+                            : (isEn ? 'Type a blessed message...' : 'اكتب رسالة مباركة...')
                 }
                 className="flex-1 min-w-0 px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-white disabled:opacity-50"
               />
@@ -1525,7 +1544,7 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
                   onClick={startRecording}
                   disabled={isBlocked || isIntroMessageSent || (friendship.status === 'none' && partnerUserId !== ADMIN_USER_ID)}
                   className="w-8 h-8 sm:w-9 sm:h-9 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl sm:rounded-2xl shadow-md active:scale-95 transition-all flex items-center justify-center shrink-0 disabled:opacity-40 cursor-pointer"
-                  title="تسجيل صوتي"
+                  title={isEn ? "Record voice message" : "تسجيل صوتي"}
                 >
                   <Mic size={16} />
                 </button>
@@ -1534,9 +1553,9 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
                   type="submit"
                   disabled={(!inputText.trim() && !stagedAttachment) || isBlocked || isIntroMessageSent || (friendship.status === 'none' && partnerUserId !== ADMIN_USER_ID)}
                   className="w-8 h-8 sm:w-9 sm:h-9 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white rounded-xl sm:rounded-2xl shadow-md active:scale-95 transition-all flex items-center justify-center shrink-0 cursor-pointer"
-                  title="إرسال"
+                  title={isEn ? "Send" : "إرسال"}
                 >
-                  <Send size={16} className="rotate-180" />
+                  <Send size={16} className={isEn ? "" : "rotate-180"} />
                 </button>
               )}
             </form>
@@ -1560,10 +1579,10 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
 
       {/* Media Processing Loading Overlay */}
       {isProcessingMedia && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4" dir="rtl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4" dir={isEn ? "ltr" : "rtl"}>
           <div className="bg-white dark:bg-slate-800 rounded-3xl p-5 shadow-2xl flex items-center gap-3 text-sm font-bold border border-slate-200 dark:border-slate-700">
             <Loader2 size={22} className="animate-spin text-emerald-500 shrink-0" />
-            <span className="text-slate-800 dark:text-slate-200">جاري تجهيز واسترداد بيانات الملف للإرسال...</span>
+            <span className="text-slate-800 dark:text-slate-200">{isEn ? 'Preparing file for upload...' : 'جاري تجهيز واسترداد بيانات الملف للإرسال...'}</span>
           </div>
         </div>
       )}
@@ -1571,7 +1590,7 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
       {/* Block User Confirmation Modal */}
       <AnimatePresence>
         {showBlockModal && partner && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" dir="rtl">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" dir={isEn ? "ltr" : "rtl"}>
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -1583,32 +1602,34 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
               </div>
 
               <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white mb-1">
-                تأكيد حظر المستخدم
+                {isEn ? 'Confirm Block User' : 'تأكيد حظر المستخدم'}
               </h2>
 
               <p className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
-                ({partner.username}) {partner.country ? `• ${partner.country}` : ''}
+                ({formatUsername(partner, isEn)}) {partner.country ? `• ${formatCountryName(partner.country, isEn)}` : ''}
               </p>
 
               <p className="text-xs text-slate-500 dark:text-slate-400 mb-6 leading-relaxed">
-                عند الحظر، لن يظهر اسم هذا المستخدم لك ولن تتمكنا من تبادل أي رسائل، وسيتم تحويلك إلى قائمة المجتمع.
+                {isEn 
+                  ? 'When blocked, you will not receive or send messages with this user, and you will return to Community.' 
+                  : 'عند الحظر، لن يظهر اسم هذا المستخدم لك ولن تتمكنا من تبادل أي رسائل، وسيتم تحويلك إلى قائمة المجتمع.'}
               </p>
 
               <div className="flex items-center gap-3">
                 <button
                   type="button"
                   onClick={() => setShowBlockModal(false)}
-                  className="flex-1 py-3 px-4 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
+                  className="flex-1 py-3 px-4 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs hover:bg-slate-200 dark:hover:bg-slate-700 transition-all cursor-pointer"
                 >
-                  تراجع
+                  {isEn ? 'Cancel' : 'تراجع'}
                 </button>
                 <button
                   type="button"
                   onClick={confirmBlockUser}
-                  className="flex-1 py-3 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs transition-all shadow-lg shadow-rose-600/20 active:scale-95 flex items-center justify-center gap-1.5"
+                  className="flex-1 py-3 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs transition-all shadow-lg shadow-rose-600/20 active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <Ban size={15} />
-                  <span>تأكيد الحظر</span>
+                  <span>{isEn ? 'Confirm Block' : 'تأكيد الحظر'}</span>
                 </button>
               </div>
             </motion.div>
@@ -1619,7 +1640,7 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
       {/* Delete Read Messages Modal */}
       <AnimatePresence>
         {showDeleteReadModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" dir="rtl">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" dir={isEn ? "ltr" : "rtl"}>
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -1631,27 +1652,29 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
               </div>
 
               <h2 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white mb-2">
-                حذف الرسائل المقروءة
+                {isEn ? 'Delete Read Messages' : 'حذف الرسائل المقروءة'}
               </h2>
 
               <p className="text-xs text-slate-500 dark:text-slate-400 mb-5">
-                هل أنت متأكد من رغبتك في حذف كافة الرسائل المقروءة في هذه المحادثة؟
+                {isEn 
+                  ? 'Are you sure you want to delete all read messages in this conversation?' 
+                  : 'هل أنت متأكد من رغبتك في حذف كافة الرسائل المقروءة في هذه المحادثة؟'}
               </p>
 
               <div className="flex items-center gap-2.5">
                 <button
                   type="button"
                   onClick={() => setShowDeleteReadModal(false)}
-                  className="flex-1 py-2.5 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs"
+                  className="flex-1 py-2.5 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs cursor-pointer"
                 >
-                  إلغاء
+                  {isEn ? 'Cancel' : 'إلغاء'}
                 </button>
                 <button
                   type="button"
                   onClick={confirmDeleteReadMessages}
-                  className="flex-1 py-2.5 px-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-md shadow-amber-600/20"
+                  className="flex-1 py-2.5 px-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-md shadow-amber-600/20 cursor-pointer"
                 >
-                  تأكيد الحذف
+                  {isEn ? 'Confirm Delete' : 'تأكيد الحذف'}
                 </button>
               </div>
             </motion.div>
@@ -1662,7 +1685,7 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
       {/* Clear Entire Conversation Modal */}
       <AnimatePresence>
         {showClearModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" dir="rtl">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" dir={isEn ? "ltr" : "rtl"}>
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -1674,27 +1697,29 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
               </div>
 
               <h2 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white mb-2">
-                مسح المحادثة بالكامل
+                {isEn ? 'Clear Entire Conversation' : 'مسح المحادثة بالكامل'}
               </h2>
 
               <p className="text-xs text-slate-500 dark:text-slate-400 mb-5">
-                هل أنت متأكد من حذف كافة الرسائل وسجل المحادثة نهائياً؟
+                {isEn 
+                  ? 'Are you sure you want to permanently delete all messages and chat history?' 
+                  : 'هل أنت متأكد من حذف كافة الرسائل وسجل المحادثة نهائياً؟'}
               </p>
 
               <div className="flex items-center gap-2.5">
                 <button
                   type="button"
                   onClick={() => setShowClearModal(false)}
-                  className="flex-1 py-2.5 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs"
+                  className="flex-1 py-2.5 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs cursor-pointer"
                 >
-                  إلغاء
+                  {isEn ? 'Cancel' : 'إلغاء'}
                 </button>
                 <button
                   type="button"
                   onClick={confirmClearConversation}
-                  className="flex-1 py-2.5 px-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-md shadow-rose-600/20"
+                  className="flex-1 py-2.5 px-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-md shadow-rose-600/20 cursor-pointer"
                 >
-                  مسح السجل
+                  {isEn ? 'Clear History' : 'مسح السجل'}
                 </button>
               </div>
             </motion.div>

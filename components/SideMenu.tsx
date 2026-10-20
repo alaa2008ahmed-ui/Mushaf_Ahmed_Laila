@@ -3,12 +3,12 @@ import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
     Home, BookOpen, Headphones, Clock, Calendar, Brain, 
-    Mic, Settings, Palette, MessageCircle, X, ChevronLeft,
+    Mic, Settings, Palette, MessageCircle, X, ChevronLeft, ChevronRight,
     Menu, Info, HelpCircle, Star, Type, Bell, Compass, Search, Trophy,
     ScrollText
 } from 'lucide-react';
 import { THEMES } from './QuranReader/constants';
-import { useShowNewBadge } from '../utils/badgeManager';
+import { useShowNewBadge, useSeenPages, markPageAsSeen } from '../utils/badgeManager';
 import { useLanguage } from '../context/LanguageContext';
 
 interface SideMenuProps {
@@ -22,6 +22,7 @@ interface SideMenuProps {
 
 const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onNavigate, onOpenThemes, currentTheme: _appTheme, currentPage }) => {
     const showNewBadges = useShowNewBadge();
+    const { isPageSeen } = useSeenPages();
     const { t, translateMenuItem, isRTL } = useLanguage();
     const [readerTheme, setReaderTheme] = React.useState(() => {
         try {
@@ -52,10 +53,10 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onNavigate, onOpen
     };
 
     const menuItems = [
-        { id: 'page-guide', label: 'دليل صفحات التطبيق', icon: HelpCircle, color: '#059669', description: 'شرح وافٍ ومبسط لجميع خدمات وصفحات ومميزات التطبيق.' },
+        { id: 'page-guide', label: t('sidemenu.page_guide', 'دليل صفحات التطبيق'), icon: HelpCircle, color: '#059669', description: t('sidemenu.page_guide_desc', 'شرح وافٍ ومبسط لجميع خدمات وصفحات ومميزات التطبيق.') },
         { id: 'community', label: t('menu.community', 'مجتمع التواصل'), icon: MessageCircle, color: '#10b981', description: t('sidemenu.community_desc', 'التواصل والمحادثات مع القراء والحفاظ من جميع أنحاء العالم.') },
         { id: 'ahl-al-quran', label: t('menu.ahl_al_quran', 'أهل القرآن (لوحة الشرف)'), icon: Trophy, color: '#f59e0b', description: t('sidemenu.ahl_al_quran_desc', 'لوحة صدارة وتنافس محمود لقراء القرآن الكريم مع تحديث شهري للأجزاء والختمات.') },
-        { id: 'prophetic-seerah', label: t('menu.prophetic_seerah', 'السيرة والخط الزمني'), icon: ScrollText, color: '#f59e0b', description: 'خط زمني تفاعلي لمحطات السيرة العطرة والعبر المستفادة.' },
+        { id: 'prophetic-seerah', label: t('menu.prophetic_seerah', 'السيرة النبوية'), icon: ScrollText, color: '#f59e0b', description: t('sidemenu.prophetic_seerah_desc', 'خط زمني تفاعلي لمحطات السيرة العطرة والعبر المستفادة.') },
         { id: 'search', label: t('sidemenu.search', 'البحث المتقدم'), icon: Search, color: '#14b8a6', description: t('sidemenu.search_desc', 'البحث عن آية، أو دعاء، أو أذكار.') },
         { id: 'habit-tracker', label: t('menu.habit_tracker', 'مربّي العبادات'), icon: Calendar, color: '#ec4899', description: t('sidemenu.habit_tracker_desc', 'متابعة الصلاة وتلاوة القرآن والأذكار والأهداف اليومية.') },
         { id: 'home', label: t('sidemenu.home', 'الرئيسية'), icon: Home, color: '#3b82f6', description: t('sidemenu.home_desc', 'العودة إلى الشاشة الرئيسية للتطبيق.') },
@@ -90,12 +91,13 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onNavigate, onOpen
                         
                         {/* Menu Content */}
                         <motion.div 
-                            initial={{ x: '100%' }}
+                            initial={{ x: isRTL ? '100%' : '-100%' }}
                             animate={{ x: 0 }}
-                            exit={{ x: '100%' }}
+                            exit={{ x: isRTL ? '100%' : '-100%' }}
                             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                            className="fixed top-0 right-0 h-full w-[280px] z-[10001] shadow-2xl flex flex-col"
+                            className={`fixed top-0 ${isRTL ? 'right-0' : 'left-0'} h-full w-[280px] z-[10001] shadow-2xl flex flex-col`}
                             style={{ backgroundColor: currentTheme.modalBg || '#ffffff', color: currentTheme.textColor }}
+                            dir={isRTL ? 'rtl' : 'ltr'}
                         >
                             {/* Header */}
                             <div className="p-6 border-b flex items-center justify-between" style={{ borderColor: currentTheme.barBorder }}>
@@ -119,6 +121,7 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onNavigate, onOpen
                                     <button
                                         key={item.id}
                                         onClick={() => {
+                                            markPageAsSeen(item.id);
                                             if (item.id === 'themes') onOpenThemes();
                                             else if (item.id === 'whatsapp') window.open('https://wa.me/201000000000', '_blank');
                                             else if (item.id === 'notifications') onNavigate('phone-notifications');
@@ -138,13 +141,24 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onNavigate, onOpen
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <span className="font-bold text-[15px]">{item.label}</span>
-                                            {showNewBadges && (item.id === 'community' || item.id === 'ahl-al-quran' || item.id === 'prophetic-seerah') && (
-                                                <span className="bg-yellow-400 text-black text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-xs border border-white dark:border-slate-800">
+                                            {showNewBadges && (item.id === 'community' || item.id === 'ahl-al-quran' || item.id === 'prophetic-seerah') && !isPageSeen(item.id) && (
+                                                <span 
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        markPageAsSeen(item.id);
+                                                    }}
+                                                    className="bg-yellow-400 text-black text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-xs border border-white dark:border-slate-800 cursor-pointer select-none scale-75 origin-center inline-block"
+                                                    title={t('common.new', 'جديد')}
+                                                >
                                                     {t('common.new', 'جديد')}
                                                 </span>
                                             )}
                                         </div>
-                                        <ChevronLeft size={16} className={`${isRTL ? 'mr-auto' : 'ml-auto'} opacity-30 group-hover:opacity-100 transition-opacity`} />
+                                        {isRTL ? (
+                                            <ChevronLeft size={16} className="mr-auto opacity-30 group-hover:opacity-100 transition-opacity" />
+                                        ) : (
+                                            <ChevronRight size={16} className="ml-auto opacity-30 group-hover:opacity-100 transition-opacity" />
+                                        )}
                                     </button>
                                 ))}
                             </div>

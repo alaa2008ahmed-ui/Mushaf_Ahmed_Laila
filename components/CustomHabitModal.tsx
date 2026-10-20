@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Plus, Sparkles, Check, ChevronRight } from 'lucide-react';
 import { useHabitTracker } from '../hooks/useHabitTracker';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 
 interface CustomHabitModalProps {
   hexColor: string;
@@ -14,15 +15,6 @@ interface CustomHabitModalProps {
 
 const ICONS_LIST = ['🌙', '☀️', '📖', '🤲', '📿', '💧', '🕌', '🤍', '⭐', '🤝', '🌿', '🕊️'];
 
-const DAYS_LIST = [
-  { id: 6, label: 'السبت' },
-  { id: 0, label: 'الأحد' },
-  { id: 1, label: 'الاثنين' },
-  { id: 2, label: 'الثلاثاء' },
-  { id: 3, label: 'الأربعاء' },
-  { id: 4, label: 'الخميس' },
-  { id: 5, label: 'الجمعة' },
-];
 
 export const CustomHabitModal: React.FC<CustomHabitModalProps> = ({
   hexColor,
@@ -32,7 +24,28 @@ export const CustomHabitModal: React.FC<CustomHabitModalProps> = ({
   onNavigate
 }) => {
   const { theme, themeKey } = useTheme();
+  const { language } = useLanguage();
+  const isEn = language === 'en';
   const isDarkBlack = theme.bgColor === '#000000' || theme.name === 'أبيض وأسود' || themeKey === 'deep_black' || isBlackTheme;
+
+  const DAYS_LIST = isEn ? [
+    { id: 6, label: 'Sat' },
+    { id: 0, label: 'Sun' },
+    { id: 1, label: 'Mon' },
+    { id: 2, label: 'Tue' },
+    { id: 3, label: 'Wed' },
+    { id: 4, label: 'Thu' },
+    { id: 5, label: 'Fri' },
+  ] : [
+    { id: 6, label: 'السبت' },
+    { id: 0, label: 'الأحد' },
+    { id: 1, label: 'الاثنين' },
+    { id: 2, label: 'الثلاثاء' },
+    { id: 3, label: 'الأربعاء' },
+    { id: 4, label: 'الخميس' },
+    { id: 5, label: 'الجمعة' },
+  ];
+
   const isDefaultTheme = themeKey === 'default' || !themeKey || theme.name?.includes('الافتراضي') || theme.name === 'Default';
   const cardBorderColor = isDefaultTheme 
     ? '#000000' 
@@ -107,7 +120,7 @@ export const CustomHabitModal: React.FC<CustomHabitModalProps> = ({
               {/* عنوان الصفحة في الوسط */}
               <div className="text-center px-12 min-w-0">
                 <h1 className="app-top-bar__title text-lg sm:text-xl font-kufi truncate">
-                  إضافة عبادة
+                  {isEn ? 'Add Habit' : 'إضافة عبادة'}
                 </h1>
               </div>
 
@@ -143,7 +156,7 @@ export const CustomHabitModal: React.FC<CustomHabitModalProps> = ({
               style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
             >
               <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
-                اسم العبادة أو الطاعة <span className="text-red-500">*</span>
+                {isEn ? 'Habit or Worship Name' : 'اسم العبادة أو الطاعة'} <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -153,11 +166,11 @@ export const CustomHabitModal: React.FC<CustomHabitModalProps> = ({
                   setTitle(e.target.value);
                   if (errorMsg) setErrorMsg('');
                 }}
-                placeholder="مثال: صيام الاثنين والخميس، أو ركعتي الضحى..."
+                placeholder={isEn ? 'e.g. Fasting Mondays and Thursdays, Duha prayer...' : 'مثال: صيام الاثنين والخميس، أو ركعتي الضحى...'}
                 className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-sm font-semibold text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
               />
               {errorMsg && (
-                <p className="text-xs text-red-500 mt-1 font-semibold">{errorMsg}</p>
+                <p className="text-xs text-red-500 mt-1 font-semibold">{isEn ? 'Please enter a habit name' : errorMsg}</p>
               )}
             </div>
 
@@ -167,7 +180,7 @@ export const CustomHabitModal: React.FC<CustomHabitModalProps> = ({
               style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
             >
               <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
-                اختر رمز العبادة:
+                {isEn ? 'Choose habit icon:' : 'اختر رمز العبادة:'}
               </label>
               <div className="grid grid-cols-6 gap-2">
                 {ICONS_LIST.map((ic) => (
@@ -193,7 +206,7 @@ export const CustomHabitModal: React.FC<CustomHabitModalProps> = ({
               style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
             >
               <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
-                تكرار العبادة:
+                {isEn ? 'Habit frequency:' : 'تكرار العبادة:'}
               </label>
               <div className="grid grid-cols-2 gap-2 mb-2">
                 <button
@@ -208,7 +221,7 @@ export const CustomHabitModal: React.FC<CustomHabitModalProps> = ({
                       : 'bg-gray-50 dark:bg-gray-900 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700'
                   }`}
                 >
-                  يومياً (كل يوم)
+                  {isEn ? 'Daily (Every day)' : 'يومياً (كل يوم)'}
                 </button>
                 <button
                   type="button"
@@ -222,7 +235,7 @@ export const CustomHabitModal: React.FC<CustomHabitModalProps> = ({
                       : 'bg-gray-50 dark:bg-gray-900 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700'
                   }`}
                 >
-                  أيام محددة في الأسبوع
+                  {isEn ? 'Specific days of the week' : 'أيام محددة في الأسبوع'}
                 </button>
               </div>
 
@@ -234,7 +247,7 @@ export const CustomHabitModal: React.FC<CustomHabitModalProps> = ({
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] font-semibold text-gray-600 dark:text-gray-400">
-                      حدد الأيام المجدولة:
+                      {isEn ? 'Select scheduled days:' : 'حدد الأيام المجدولة:'}
                     </span>
                     <div className="flex gap-1.5">
                       <button
@@ -242,14 +255,14 @@ export const CustomHabitModal: React.FC<CustomHabitModalProps> = ({
                         onClick={() => setSelectedDays([1, 4])}
                         className="text-[10px] py-0.5 px-2 rounded-lg bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 font-bold"
                       >
-                        الاثنين والخميس
+                        {isEn ? 'Mon & Thu' : 'الاثنين والخميس'}
                       </button>
                       <button
                         type="button"
                         onClick={() => setSelectedDays([5])}
                         className="text-[10px] py-0.5 px-2 rounded-lg bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 font-bold"
                       >
-                        الجمعة فقط
+                        {isEn ? 'Friday only' : 'الجمعة فقط'}
                       </button>
                     </div>
                   </div>
@@ -286,14 +299,14 @@ export const CustomHabitModal: React.FC<CustomHabitModalProps> = ({
                 style={{ backgroundColor: hexColor }}
               >
                 <Plus className="w-4 h-4" />
-                <span>إضافة العبادة للطاعات 🌿</span>
+                <span>{isEn ? 'Add Habit' : 'إضافة العبادة للطاعات 🌿'}</span>
               </motion.button>
               <button
                 type="button"
                 onClick={onClose}
                 className="py-3 px-4 rounded-xl font-bold text-sm bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
               >
-                إلغاء
+                {isEn ? 'Cancel' : 'إلغاء'}
               </button>
             </div>
           </form>

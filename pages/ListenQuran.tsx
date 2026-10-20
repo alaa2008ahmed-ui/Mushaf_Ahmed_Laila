@@ -1,6 +1,15 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import ThemePageLock from '../components/ThemePageLock';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
+import {
+    getSurahDisplayName,
+    getReciterDisplayName,
+    formatListenNumber,
+    formatListenTime,
+    formatListenTimerCountdown,
+    tListen
+} from '../utils/listenQuranTranslations';
 import { SURAH_LIST, RECITERS } from '../data/listenQuranData';
 import ReciterSelectModal from '../components/QuranReader/ReciterSelectModal';
 import ListenSurahSelectModal from '../components/QuranReader/ListenSurahSelectModal';
@@ -20,9 +29,6 @@ const mockQuranData = {
         ayahs: new Array(SURAH_INFO[s.number]?.ayahs || 0)
     }))
 };
-
-// FIX: Correctly convert digits to numbers for array indexing.
-const toArabicNumerals = (numStr) => String(numStr).replace(/[0-9]/g, (d) => '٠١٢٣٤٥٦٧٨٩'[+d]);
 
 // Normalize URL for consistent mapping
 const normalizeUrl = (url: string) => {
@@ -52,24 +58,6 @@ const simplifyName = (name: string) => {
         .trim();
 };
 
-function formatTime(seconds) {
-    if (isNaN(seconds) || seconds < 0) return toArabicNumerals('00:00');
-    const minutes = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return toArabicNumerals(`${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`);
-}
-
-function formatTimerCountdown(totalSeconds: number) {
-    if (isNaN(totalSeconds) || totalSeconds <= 0) return toArabicNumerals('00:00');
-    const hours = Math.floor(totalSeconds / 3600);
-    const mins = Math.floor((totalSeconds % 3600) / 60);
-    const secs = totalSeconds % 60;
-    if (hours > 0) {
-        return toArabicNumerals(`${hours}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`);
-    }
-    return toArabicNumerals(`${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`);
-}
-
 interface ListenFavorite {
     id: string;
     reciterId: string;
@@ -81,6 +69,7 @@ interface ListenFavorite {
 
 function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
     const { theme, themeKey } = useTheme();
+    const { language, isRTL, dir } = useLanguage();
     const isBlackTheme = theme.bgColor === '#000000';
     const isDefaultTheme = themeKey === 'default' || !themeKey;
     const cardBorderColor = isDefaultTheme 
@@ -231,13 +220,34 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
                 const { savedReciterId, savedSurahNumber, savedContinuousPlay, savedRepeatSurah } = JSON.parse(savedState);
                 if (RECITERS.some(r => r.id === savedReciterId)) setReciterId(savedReciterId);
                 if (SURAH_LIST.some(s => s.number === savedSurahNumber)) setSurahNumber(savedSurahNumber);
-                if (typeof savedContinuousPlay === 'boolean') setIsContinuousPlay(savedContinuousPlay);
-                if (typeof savedRepeatSurah === 'boolean') setIsRepeatSurah(savedRepeatSurah);
+                if (typeof savedRepeatSurah === 'boolean') {
+                    setIsRepeatSurah(savedRepeatSurah);
+                    if (savedRepeatSurah) setIsContinuousPlay(false);
+                }
+                if (typeof savedContinuousPlay === 'boolean' && !savedRepeatSurah) {
+                    setIsContinuousPlay(savedContinuousPlay);
+                }
             }
         } catch (e) {
             console.error("Failed to load state from localStorage", e);
         }
     }, []);
+
+    const handleToggleRepeatSurah = () => {
+        const next = !isRepeatSurah;
+        setIsRepeatSurah(next);
+        if (next) {
+            setIsContinuousPlay(false);
+        }
+    };
+
+    const handleToggleContinuousPlay = () => {
+        const next = !isContinuousPlay;
+        setIsContinuousPlay(next);
+        if (next) {
+            setIsRepeatSurah(false);
+        }
+    };
 
     const handleBack = useCallback(() => {
         if (showReciterModal) { setShowReciterModal(false); }
@@ -365,7 +375,7 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
             setIsSleepTimerActive(false);
             setSleepTimerMode('off');
             setSleepTimerRemainingSeconds(null);
-            showToast('انتهى مؤقت النوم وتم إيقاف التلاوة');
+            showToast(tListen('sleepTimerEndedToast', language));
             return;
         }
 
@@ -429,15 +439,23 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
         setSleepTimerMode(String(minutes) as any);
         setSleepTimerRemainingSeconds(secs);
         setIsSleepTimerActive(true);
-        showToast(`تم تفعيل مؤقت النوم: ${toArabicNumerals(minutes)} دقيقة`);
+        showToast(
+            language === 'en'
+                ? `Sleep timer set: ${formatListenNumber(minutes, language)} min`
+                : `تم تفعيل مؤقت النوم: ${formatListenNumber(minutes, language)} دقيقة`
+        );
     };
 
     const handleSetEndOfSurahTimer = () => {
         setSleepTimerMode('end_of_surah');
         setSleepTimerRemainingSeconds(null);
         setIsSleepTimerActive(true);
-        const sName = SURAH_LIST.find(s => s.number === surahNumber)?.name || 'السورة';
-        showToast(`تم تفعيل مؤقت النوم عند نهاية سورة ${sName}`);
+        const sName = getSurahDisplayName(surahNumber, language);
+        showToast(
+            language === 'en'
+                ? `Sleep timer set to end of Surah ${sName}`
+                : `تم تفعيل مؤقت النوم عند نهاية سورة ${sName}`
+        );
     };
 
     const handleStartCustomTimer = () => {
@@ -445,20 +463,24 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
         setSleepTimerMode('custom');
         setSleepTimerRemainingSeconds(secs);
         setIsSleepTimerActive(true);
-        showToast(`تم تفعيل مؤقت النوم: ${toArabicNumerals(customTimerMinutes)} دقيقة`);
+        showToast(
+            language === 'en'
+                ? `Sleep timer set: ${formatListenNumber(customTimerMinutes, language)} min`
+                : `تم تفعيل مؤقت النوم: ${formatListenNumber(customTimerMinutes, language)} دقيقة`
+        );
     };
 
     const handleCancelSleepTimer = () => {
         setIsSleepTimerActive(false);
         setSleepTimerMode('off');
         setSleepTimerRemainingSeconds(null);
-        showToast('تم إيقاف مؤقت النوم');
+        showToast(language === 'en' ? 'Sleep timer cancelled' : 'تم إيقاف مؤقت النوم');
     };
 
     const handleIncrementTimer = () => {
         if (isSleepTimerActive && sleepTimerRemainingSeconds !== null) {
             setSleepTimerRemainingSeconds(prev => (prev || 0) + 300);
-            showToast('تمت زيادة ٥ دقائق لمؤقت النوم');
+            showToast(language === 'en' ? 'Added 5 minutes to sleep timer' : 'تمت زيادة ٥ دقائق لمؤقت النوم');
         } else {
             setCustomTimerMinutes(prev => Math.min(180, prev + 5));
         }
@@ -468,12 +490,12 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
         if (isSleepTimerActive && sleepTimerRemainingSeconds !== null) {
             if (sleepTimerRemainingSeconds > 300) {
                 setSleepTimerRemainingSeconds(prev => Math.max(60, (prev || 0) - 300));
-                showToast('تم إنقاص ٥ دقائق من مؤقت النوم');
+                showToast(language === 'en' ? 'Reduced 5 minutes from sleep timer' : 'تم إنقاص ٥ دقائق من مؤقت النوم');
             } else if (sleepTimerRemainingSeconds > 60) {
                 setSleepTimerRemainingSeconds(60);
-                showToast('تم تعيين المؤقت إلى دقيقة واحدة');
+                showToast(language === 'en' ? 'Timer set to 1 minute' : 'تم تعيين المؤقت إلى دقيقة واحدة');
             } else {
-                showToast('الحد الأدنى دقيقة واحدة');
+                showToast(language === 'en' ? 'Minimum duration is 1 minute' : 'الحد الأدنى دقيقة واحدة');
             }
         } else {
             setCustomTimerMinutes(prev => Math.max(5, prev - 5));
@@ -565,7 +587,7 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
                 if (wasPlaying || autoPlayNextRef.current) {
                     audio.play().catch(err => {
                         console.error("Failed to autoplay:", err);
-                        setError('فشل التشغيل التلقائي.');
+                        setError(tListen('autoPlayError', language));
                         setIsLoading(false);
                     });
                     if (autoPlayNextRef.current) {
@@ -612,7 +634,7 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
             try {
                 await audio.play();
             } catch (err) {
-                setError("لم يتمكن المتصفح من تشغيل الصوت تلقائيًا.");
+                setError(tListen('browserPlayError', language));
             }
         }
     };
@@ -625,12 +647,12 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
         }
     };
     
-    const reciterName = RECITERS.find(r => r.id === reciterId)?.name || 'غير معروف';
-    const surahName = SURAH_LIST.find(s => s.number === surahNumber)?.name || 'غير معروفة';
+    const reciterName = RECITERS.find(r => r.id === reciterId)?.name || (language === 'en' ? 'Unknown' : 'غير معروف');
+    const surahName = SURAH_LIST.find(s => s.number === surahNumber)?.name || (language === 'en' ? 'Unknown' : 'غير معروفة');
 
     return (
-        <div className="h-screen flex flex-col font-cairo overflow-hidden" style={{ backgroundColor: 'transparent', color: theme.textColor }}>
-            <header className="app-top-bar">
+        <div dir={dir} className="h-screen flex flex-col font-cairo overflow-hidden" style={{ backgroundColor: 'transparent', color: theme.textColor }}>
+            <header className="app-top-bar" dir={dir}>
                 <style>{`
                     .quran-slider::-webkit-slider-thumb {
                         appearance: none;
@@ -654,42 +676,42 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
                 `}</style>
                 <div className="app-top-bar__inner">
                     <div className="relative flex items-center justify-center w-full min-h-[44px]">
-                        {/* سهم الرجوع للخلف على يمين النص */}
-                        <div className="absolute right-0 flex items-center">
+                        {/* زر الرجوع للخلف */}
+                        <div className={`absolute ${isRTL ? 'right-0' : 'left-0'} flex items-center`}>
                             <button
                                 onClick={handleBack}
                                 className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
-                                title="رجوع للخلف"
-                                aria-label="رجوع للخلف"
+                                title={tListen('back', language)}
+                                aria-label={tListen('back', language)}
                             >
-                                <i className="fa-solid fa-arrow-right text-xl"></i>
+                                <i className={`fa-solid ${isRTL ? 'fa-arrow-right' : 'fa-arrow-left'} text-xl`}></i>
                             </button>
                         </div>
 
                         {/* عنوان الصفحة في الوسط */}
                         <div className="text-center px-16 sm:px-20 min-w-0">
                             <h1 className="app-top-bar__title text-lg sm:text-xl font-kufi truncate">
-                                الاستماع للقرآن
+                                {tListen('pageTitle', language)}
                             </h1>
                         </div>
 
-                        {/* أيقونة المفضلة وأيقونة المنزل على يسار النص للعودة إلى الصفحة الرئيسية */}
-                        <div className="absolute left-0 flex items-center gap-1">
+                        {/* أيقونة المفضلة وقفل الثيم وأيقونة المنزل */}
+                        <div className={`absolute ${isRTL ? 'left-0' : 'right-0'} flex items-center gap-1`}>
                             <ThemePageLock />
                             <button
                                 type="button"
                                 onClick={handleToggleFavorite}
                                 className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
-                                title={isCurrentFavorite ? "إزالة من المفضلة" : "إضافة إلى المفضلة"}
-                                aria-label="المفضلة"
+                                title={isCurrentFavorite ? tListen('removeFromFavorites', language) : tListen('addToFavorites', language)}
+                                aria-label={tListen('favorites', language)}
                             >
                                 <i className={`text-xl transition-all ${isCurrentFavorite ? 'fa-solid fa-heart text-red-500 scale-110' : 'fa-regular fa-heart opacity-75 hover:opacity-100 hover:text-red-500'}`} style={isCurrentFavorite ? {} : { color: theme.textColor }}></i>
                             </button>
                             <button
                                 onClick={handleGoHome}
                                 className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
-                                title="الصفحة الرئيسية"
-                                aria-label="الصفحة الرئيسية"
+                                title={tListen('home', language)}
+                                aria-label={tListen('home', language)}
                             >
                                 <i className="fa-solid fa-house text-xl"></i>
                             </button>
@@ -703,29 +725,27 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
                 <div className="space-y-3 flex-shrink-0 py-4">
                     <button 
                         onClick={() => setShowReciterModal(true)} 
-                        className="w-full p-3 text-center rounded-xl font-bold themed-card flex justify-between items-center transition-all"
+                        className="w-full p-3 text-center rounded-xl font-bold themed-card flex justify-between items-center transition-all cursor-pointer"
                         style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
                     >
-                        <span>{reciterName}</span>
-                        <i className="fa-solid fa-chevron-down opacity-50"></i>
+                        <span className="truncate">{getReciterDisplayName(reciterId, reciterName, language)}</span>
+                        <i className="fa-solid fa-chevron-down opacity-50 shrink-0"></i>
                     </button>
                     <button 
                         onClick={() => setShowSurahModal(true)} 
-                        className="w-full p-3 text-center rounded-xl font-bold themed-card flex justify-between items-center transition-all"
+                        className="w-full p-3 text-center rounded-xl font-bold themed-card flex justify-between items-center transition-all cursor-pointer"
                         style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
                     >
-                        <span>{surahNumber} - {surahName}</span>
-                        <i className="fa-solid fa-chevron-down opacity-50"></i>
+                        <span className="truncate">{formatListenNumber(surahNumber, language)} - {getSurahDisplayName(surahNumber, surahName, language)}</span>
+                        <i className="fa-solid fa-chevron-down opacity-50 shrink-0"></i>
                     </button>
                 </div>
-
-
 
                 <div 
                     className="themed-card rounded-3xl p-6 space-y-5 flex-shrink-0 transition-all"
                     style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
                 >
-                    <div className="w-full space-y-1.5" dir="rtl">
+                    <div className="w-full space-y-1.5" dir={dir}>
                         <input
                             type="range"
                             min="0"
@@ -733,70 +753,23 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
                             value={currentTime}
                             onChange={handleSeek}
                             className="w-full h-1.5 rounded-lg appearance-none cursor-pointer quran-slider"
-                            style={{ background: `linear-gradient(to left, ${theme.palette[0]} ${duration > 0 ? (currentTime / duration) * 100 : 0}%, ${theme.cardBorder} ${duration > 0 ? (currentTime / duration) * 100 : 0}%)` }}
+                            style={{ background: `linear-gradient(to ${isRTL ? 'left' : 'right'}, ${theme.palette[0]} ${duration > 0 ? (currentTime / duration) * 100 : 0}%, ${theme.cardBorder} ${duration > 0 ? (currentTime / duration) * 100 : 0}%)` }}
                         />
                         <div className="flex justify-between text-xs font-mono" style={{ color: theme.textColor, opacity: 0.7 }}>
-                            <span>{formatTime(currentTime)}</span>
-                            <span>{formatTime(duration)}</span>
+                            <span>{formatListenTime(currentTime, language)}</span>
+                            <span>{formatListenTime(duration, language)}</span>
                         </div>
                     </div>
 
                     <div className="flex items-center justify-between">
                         <button onClick={handlePrevSurah} className="w-24 text-center hover:opacity-80 transition-opacity font-bold cursor-pointer" style={{ color: theme.textColor }}>
-                            السابق
+                            {tListen('previous', language)}
                         </button>
                         <button onClick={handlePlayPause} disabled={isLoading && !isPlaying} className="rounded-full w-20 h-20 flex items-center justify-center shadow-lg active:scale-95 transition disabled:opacity-70 cursor-pointer" style={{ backgroundColor: themeKey === 'default' ? '#000000' : (themeKey === 'deep_black' || isBlackTheme ? '#FFFFFF' : theme.palette[0]), color: (themeKey === 'deep_black' || isBlackTheme) ? '#000000' : '#FFFFFF' }}>
-                            {isLoading && !isPlaying ? <i className="fa-solid fa-spinner fa-spin fa-2x"></i> : <i className={`fa-solid ${isPlaying ? 'fa-pause' : 'fa-play'} fa-2x pl-1`}></i>}
+                            {isLoading && !isPlaying ? <i className="fa-solid fa-spinner fa-spin fa-2x"></i> : <i className={`fa-solid ${isPlaying ? 'fa-pause' : 'fa-play'} fa-2x ${isRTL ? 'pl-1' : 'pr-1'}`}></i>}
                         </button>
                         <button onClick={handleNextSurah} className="w-24 text-center hover:opacity-80 transition-opacity font-bold cursor-pointer" style={{ color: theme.textColor }}>
-                            التالى
-                        </button>
-                    </div>
-
-                    {/* خيارات التحكم السريعة: تكرار نفس السورة والتشغيل المتواصل */}
-                    <div className="flex items-center justify-center gap-2 pt-2 border-t border-gray-200/40 dark:border-gray-700/40">
-                        {/* زر تكرار نفس السورة السريع */}
-                        <button
-                            type="button"
-                            onClick={() => setIsRepeatSurah(prev => !prev)}
-                            className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer border ${isRepeatSurah ? 'shadow-xs scale-[1.02]' : 'opacity-70 hover:opacity-100'}`}
-                            style={{
-                                backgroundColor: isRepeatSurah 
-                                    ? ((themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF25' : '#00000015') : `${theme.palette[0]}25`)
-                                    : 'transparent',
-                                borderColor: isRepeatSurah
-                                    ? ((themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF' : '#000000') : theme.palette[0])
-                                    : 'rgba(150, 150, 150, 0.25)',
-                                color: isRepeatSurah
-                                    ? ((themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF' : '#000000') : theme.palette[0])
-                                    : theme.textColor
-                            }}
-                            title={isRepeatSurah ? "تكرار السورة مفعل (اضغط للإلغاء)" : "تفعيل تكرار نفس السورة بعد انتهائها"}
-                        >
-                            <i className={`fa-solid fa-arrow-rotate-right ${isRepeatSurah ? 'text-emerald-500' : ''}`}></i>
-                            <span>تكرار السورة {isRepeatSurah ? '✓' : ''}</span>
-                        </button>
-
-                        {/* زر التشغيل المتواصل السريع */}
-                        <button
-                            type="button"
-                            onClick={() => setIsContinuousPlay(prev => !prev)}
-                            className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer border ${isContinuousPlay ? 'shadow-xs scale-[1.02]' : 'opacity-70 hover:opacity-100'}`}
-                            style={{
-                                backgroundColor: isContinuousPlay 
-                                    ? ((themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF25' : '#00000015') : `${theme.palette[0]}25`)
-                                    : 'transparent',
-                                borderColor: isContinuousPlay
-                                    ? ((themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF' : '#000000') : theme.palette[0])
-                                    : 'rgba(150, 150, 150, 0.25)',
-                                color: isContinuousPlay
-                                    ? ((themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF' : '#000000') : theme.palette[0])
-                                    : theme.textColor
-                            }}
-                            title={isContinuousPlay ? "التشغيل المتواصل مفعل (اضغط للإلغاء)" : "تفعيل الانتقال للسورة التالية تلقائياً"}
-                        >
-                            <i className={`fa-solid fa-forward-step ${isContinuousPlay ? 'text-emerald-500' : ''}`}></i>
-                            <span>تشغيل متواصل {isContinuousPlay ? '✓' : ''}</span>
+                            {tListen('next', language)}
                         </button>
                     </div>
 
@@ -813,7 +786,7 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
                             <div className="flex items-center gap-2">
                                 <i className="fa-solid fa-moon text-amber-500 text-base"></i>
                                 <span className="font-bold text-sm" style={{ color: theme.textColor }}>
-                                    مؤقت النوم
+                                    {tListen('sleepTimer', language)}
                                 </span>
                             </div>
                             
@@ -828,20 +801,20 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
                                         }}
                                     >
                                         <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping inline-block"></span>
-                                        {sleepTimerMode === 'end_of_surah' ? 'عند آخر السورة' : `متبقي ${formatTimerCountdown(sleepTimerRemainingSeconds || 0)}`}
+                                        {sleepTimerMode === 'end_of_surah' ? tListen('atEndOfSurah', language) : `${tListen('remaining', language)} ${formatListenTimerCountdown(sleepTimerRemainingSeconds || 0, language)}`}
                                     </span>
                                     <button
                                         type="button"
                                         onClick={handleCancelSleepTimer}
                                         className="text-xs px-2 py-0.5 rounded-md hover:bg-red-500/10 text-red-500 transition-colors cursor-pointer font-medium"
-                                        title="إلغاء المؤقت"
+                                        title={tListen('cancelTimer', language)}
                                     >
-                                        إلغاء
+                                        {tListen('cancel', language)}
                                     </button>
                                 </div>
                             ) : (
                                 <span className="text-xs opacity-60 font-medium">
-                                    متوقف
+                                    {tListen('timerOff', language)}
                                 </span>
                             )}
                         </div>
@@ -863,7 +836,7 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
                                     color: theme.textColor
                                 }}
                             >
-                                <span>١٥ دقيقة</span>
+                                <span>{tListen('preset15', language)}</span>
                             </button>
 
                             {/* 30 دقيقة */}
@@ -881,7 +854,7 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
                                     color: theme.textColor
                                 }}
                             >
-                                <span>٣٠ دقيقة</span>
+                                <span>{tListen('preset30', language)}</span>
                             </button>
 
                             {/* 60 دقيقة */}
@@ -899,7 +872,7 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
                                     color: theme.textColor
                                 }}
                             >
-                                <span>٦٠ دقيقة</span>
+                                <span>{tListen('preset60', language)}</span>
                             </button>
 
                             {/* آخر السورة */}
@@ -917,7 +890,7 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
                                     color: theme.textColor
                                 }}
                             >
-                                <span>آخر السورة</span>
+                                <span>{tListen('endOfSurah', language)}</span>
                             </button>
                         </div>
 
@@ -935,8 +908,8 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
                                         backgroundColor: (themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF10' : '#00000008') : `${theme.palette[0]}10`,
                                         color: theme.textColor
                                     }}
-                                    title="إنقاص الوقت (-٥ دقائق)"
-                                    aria-label="إنقاص الوقت"
+                                    title={tListen('decreaseTimeTooltip', language)}
+                                    aria-label={tListen('decreaseTimeAria', language)}
                                 >
                                     <i className="fa-solid fa-minus text-xs"></i>
                                 </button>
@@ -951,9 +924,9 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
                                     }}
                                 >
                                     {isSleepTimerActive && sleepTimerRemainingSeconds !== null ? (
-                                        <span>{formatTimerCountdown(sleepTimerRemainingSeconds)}</span>
+                                        <span>{formatListenTimerCountdown(sleepTimerRemainingSeconds, language)}</span>
                                     ) : (
-                                        <span>{toArabicNumerals(customTimerMinutes)} دقيقة</span>
+                                        <span>{formatListenNumber(customTimerMinutes, language)} {tListen('minShort', language)}</span>
                                     )}
                                 </div>
 
@@ -968,8 +941,8 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
                                         backgroundColor: (themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF10' : '#00000008') : `${theme.palette[0]}10`,
                                         color: theme.textColor
                                     }}
-                                    title="زيادة الوقت (+٥ دقائق)"
-                                    aria-label="زيادة الوقت"
+                                    title={tListen('increaseTimeTooltip', language)}
+                                    aria-label={tListen('increaseTimeAria', language)}
                                 >
                                     <i className="fa-solid fa-plus text-xs"></i>
                                 </button>
@@ -986,7 +959,7 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
                                         color: (themeKey === 'deep_black' || isBlackTheme) ? '#000000' : '#FFFFFF'
                                     }}
                                 >
-                                    بدء المؤقت
+                                    {tListen('startTimer', language)}
                                 </button>
                             ) : (
                                 <button
@@ -994,7 +967,7 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
                                     onClick={handleCancelSleepTimer}
                                     className="px-3.5 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer border border-red-500/40 text-red-500 hover:bg-red-500/10"
                                 >
-                                    إيقاف المؤقت
+                                    {tListen('stopTimer', language)}
                                 </button>
                             )}
                         </div>
@@ -1010,11 +983,11 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
                         <div className="flex items-center justify-between">
                             <label htmlFor="repeat-surah-toggle" className="font-bold text-sm flex items-center gap-2 cursor-pointer" style={{ color: isBlackTheme ? '#FFFFFF' : theme.textColor }}>
                                 <i className="fa-solid fa-arrow-rotate-right" style={{ color: (themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF' : '#000000') : theme.palette[0] }}></i>
-                                <span>تكرار نفس السورة بعد انتهائها</span>
+                                <span>{tListen('repeatSurahToggle', language)}</span>
                             </label>
                             <button
                                 id="repeat-surah-toggle"
-                                onClick={() => setIsRepeatSurah(prev => !prev)}
+                                onClick={handleToggleRepeatSurah}
                                 className="relative w-12 h-7 rounded-full transition-colors cursor-pointer"
                                 style={{ 
                                     backgroundColor: isRepeatSurah 
@@ -1042,11 +1015,11 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
                         <div className="flex items-center justify-between">
                             <label htmlFor="continuous-play-toggle" className="font-bold text-sm flex items-center gap-2 cursor-pointer" style={{ color: isBlackTheme ? '#FFFFFF' : theme.textColor }}>
                                 <i className="fa-solid fa-repeat" style={{ color: (themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF' : '#000000') : theme.palette[0] }}></i>
-                                <span>تشغيل متواصل (الانتقال للسورة التالية)</span>
+                                <span>{tListen('continuousPlayToggle', language)}</span>
                             </label>
                             <button
                                 id="continuous-play-toggle"
-                                onClick={() => setIsContinuousPlay(prev => !prev)}
+                                onClick={handleToggleContinuousPlay}
                                 className="relative w-12 h-7 rounded-full transition-colors cursor-pointer"
                                 style={{ 
                                     backgroundColor: isContinuousPlay 
@@ -1076,9 +1049,9 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
                         >
                             <div className="flex items-center gap-2">
                                 <i className="fa-solid fa-download" style={{ color: (themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF' : '#000000') : theme.palette[0] }}></i>
-                                <span className="font-bold text-sm">تحميل المصحف</span>
+                                <span className="font-bold text-sm">{tListen('downloadMushaf', language)}</span>
                             </div>
-                            <i className="fa-solid fa-chevron-left opacity-30 group-hover:opacity-100 transition-opacity"></i>
+                            <i className={`fa-solid ${isRTL ? 'fa-chevron-left' : 'fa-chevron-right'} opacity-30 group-hover:opacity-100 transition-opacity`}></i>
                         </button>
                     </div>
                 </div>
@@ -1093,7 +1066,7 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
                             <div className="flex items-center gap-2">
                                 <i className="fa-solid fa-heart text-red-500 text-sm"></i>
                                 <span className="font-bold text-sm" style={{ color: theme.textColor }}>
-                                    المفضلات المحفوظة
+                                    {tListen('savedFavorites', language)}
                                 </span>
                             </div>
                             <span 
@@ -1103,17 +1076,17 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
                                     color: (themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF' : '#000000') : theme.palette[0]
                                 }}
                             >
-                                {toArabicNumerals(favorites.length)} / ١٠
+                                {formatListenNumber(favorites.length, language)} / {formatListenNumber(10, language)}
                             </span>
                         </div>
 
                         {favorites.length === 0 ? (
                             <div className="text-center py-5 px-3 opacity-60">
                                 <i className="fa-regular fa-heart text-3xl mb-2.5 block opacity-40"></i>
-                                <p className="text-xs leading-relaxed font-medium">
-                                    لا توجد مفضلات محفوظة حتى الآن.<br />
-                                    اختر قارئاً وسورة واضغط على أيقونة القلب بالأعلى لحفظها هنا لسهولة الرجوع إليها (حتى ١٠ مفضلات).
-                                </p>
+                                <p 
+                                    className="text-xs leading-relaxed font-medium"
+                                    dangerouslySetInnerHTML={{ __html: tListen('noFavoritesDesc', language) }}
+                                />
                             </div>
                         ) : (
                             <div className="space-y-2">
@@ -1133,7 +1106,7 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
                                                     : 'rgba(150, 150, 150, 0.2)',
                                                 borderWidth: isSelected ? '1.5px' : '1px'
                                             }}
-                                            title="اضغط للاستماع"
+                                            title={tListen('tapToListen', language)}
                                         >
                                             <div className="flex items-center gap-2.5 min-w-0 flex-1">
                                                 <div 
@@ -1143,30 +1116,30 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
                                                         color: (themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF' : '#000000') : theme.palette[0]
                                                     }}
                                                 >
-                                                    {toArabicNumerals(fav.surahNumber)}
+                                                    {formatListenNumber(fav.surahNumber, language)}
                                                 </div>
-                                                <div className="truncate text-right">
+                                                <div className={`truncate ${isRTL ? 'text-right' : 'text-left'}`}>
                                                     <div className="text-xs font-bold truncate" style={{ color: theme.textColor }}>
-                                                        سورة {fav.surahName}
+                                                        {tListen('surahPrefix', language)} {getSurahDisplayName(fav.surahNumber, fav.surahName, language)}
                                                     </div>
                                                     <div className="text-[11px] opacity-65 truncate font-medium">
-                                                        القارئ: {fav.reciterName}
+                                                        {tListen('reciterPrefix', language)} {getReciterDisplayName(fav.reciterId, fav.reciterName, language)}
                                                     </div>
                                                 </div>
                                             </div>
 
-                                            <div className="flex items-center gap-1.5 shrink-0 mr-2">
+                                            <div className={`flex items-center gap-1.5 shrink-0 ${isRTL ? 'mr-2' : 'ml-2'}`}>
                                                 {isSelected && (
                                                     <span className="text-[10px] px-2 py-0.5 rounded-md font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
-                                                        {isPlaying ? 'قيد التشغيل' : 'المحددة'}
+                                                        {isPlaying ? tListen('playing', language) : tListen('selected', language)}
                                                     </span>
                                                 )}
                                                 <button
                                                     type="button"
                                                     onClick={(e) => handleRemoveFavorite(fav.id, e)}
                                                     className="w-8 h-8 rounded-full flex items-center justify-center opacity-50 hover:opacity-100 hover:text-red-500 transition-all cursor-pointer"
-                                                    title="حذف من المفضلة"
-                                                    aria-label="حذف"
+                                                    title={tListen('deleteFromFavorites', language)}
+                                                    aria-label={tListen('delete', language)}
                                                 >
                                                     <i className="fa-regular fa-trash-can text-xs"></i>
                                                 </button>
@@ -1181,7 +1154,7 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
 
                 {/* ملاحظة الصفحة في آخر الصفحة بعد بطاقة المفضلة */}
                 <p className="text-xs text-center mt-3 mb-1 px-3" style={{ color: isBlackTheme ? '#FFFFFF' : theme.textColor, opacity: 0.65 }}>
-                    ملاحظة: لا تعمل هذه الصفحة إلا إذا كنت متصلاً بالإنترنت، ويفضل الواي فاي.
+                    {tListen('internetNote', language)}
                 </p>
 
                 <div className="w-full h-6 shrink-0"></div>

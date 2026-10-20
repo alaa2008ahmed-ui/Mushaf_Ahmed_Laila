@@ -7,21 +7,22 @@ import moment from 'moment-hijri';
 import { formatTime12_clean, applyOffset } from '../utils/prayerTimesUtils';
 import jsPDF from 'jspdf';
 import { safeHtml2Canvas } from '../utils/canvasHelper';
-import { Share2, ArrowRight, Download, ChevronRight, ChevronLeft, Calendar, X, FileText } from 'lucide-react';
+import { Share2, ChevronRight, ChevronLeft, Calendar, X, FileText } from 'lucide-react';
 import { Share as CapacitorShare } from '@capacitor/share';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Capacitor } from '@capacitor/core';
 import { registerBackInterceptor } from '../hooks/useBackButton';
-
-const HIJRI_MONTHS = [
-    "محرم", "صفر", "ربيع الأول", "ربيع الآخر", "جمادى الأولى", "جمادى الآخرة",
-    "رجب", "شعبان", "رمضان", "شوال", "ذو القعدة", "ذو الحجة"
-];
-
-const GREGORIAN_MONTHS = [
-    "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
-    "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"
-];
+import { useLanguage } from '../context/LanguageContext';
+import {
+    tPrayer,
+    getPrayerDisplayName,
+    getLocalizedLocationName,
+    HIJRI_MONTHS_AR,
+    HIJRI_MONTHS_EN,
+    GREGORIAN_MONTHS_AR,
+    GREGORIAN_MONTHS_EN,
+    toEnglishDigits
+} from '../utils/prayerTimesTranslations';
 
 const getCalculationParams = (country: string, code: string) => {
     let params = CalculationMethod.MuslimWorldLeague();
@@ -47,6 +48,7 @@ const getCalculationParams = (country: string, code: string) => {
 
 export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () => void, onNavigate: (id: string) => void }) {
     const { theme, themeKey } = useTheme();
+    const { language, isRTL, dir } = useLanguage();
     const { config } = usePrayerTimes();
     const [viewDate, setViewDate] = useState(moment());
     const [calendarType, setCalendarType] = useState<'hijri' | 'gregorian'>('hijri');
@@ -102,7 +104,6 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
             };
 
             // Ramadan Isha Adjustment for specific countries (Saudi Arabia, Qatar)
-            // In Ramadan, Isha is delayed by 30 minutes (90 min -> 120 min after Maghrib)
             const isRamadan = moment(date).iMonth() === 8;
             const country = config.location.fullCountry || '';
             const code = config.location.combinedCode || '';
@@ -113,15 +114,14 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
                 const ishaMs = prayerTimes.isha.getTime();
                 const diffMinutes = (ishaMs - maghribMs) / 60000;
                 
-                // If the library returned the standard 90-minute offset, add the extra 30 minutes for Ramadan
                 if (diffMinutes < 110) {
                     ishaTime = new Date(ishaMs + 30 * 60000);
                 }
             }
 
-            const dayName = new Intl.DateTimeFormat('ar-SA', { weekday: 'long' }).format(date);
-            const gregorianDay = date.getDate();
-            const hijriDay = moment(date).iDate();
+            const dayName = new Intl.DateTimeFormat(language === 'en' ? 'en-US' : 'ar-SA', { weekday: 'long' }).format(date);
+            const gregorianDay = toEnglishDigits(date.getDate());
+            const hijriDay = toEnglishDigits(moment(date).iDate());
             
             const timings = {
                 Fajr: formatTime(prayerTimes.fajr),
@@ -134,19 +134,18 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
             data.push({
                 hijriDay,
                 gregorianDay,
-                gregorianDateStr: `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`,
-                hijriDateStr: `${moment(date).iYear()}/${moment(date).iMonth() + 1}/${hijriDay}`,
+                gregorianDateStr: `${toEnglishDigits(date.getFullYear())}/${toEnglishDigits(date.getMonth() + 1)}/${gregorianDay}`,
+                hijriDateStr: `${toEnglishDigits(moment(date).iYear())}/${toEnglishDigits(moment(date).iMonth() + 1)}/${hijriDay}`,
                 dayName,
                 timings
             });
         }
         return data;
-    }, [viewDate, calendarType, config.location]);
+    }, [viewDate, calendarType, config.location, language]);
 
     // Scroll to today's row when the component mounts or viewDate changes
     useEffect(() => {
         if (todayRowRef.current) {
-            // Add a small delay to ensure rendering is complete
             setTimeout(() => {
                 todayRowRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }, 100);
@@ -171,31 +170,49 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
 
     const monthNameDisplay = useMemo(() => {
         if (calendarType === 'hijri') {
-            const name = new Intl.DateTimeFormat('ar-SA-u-ca-islamic', { month: 'long' }).format(viewDate.toDate());
-            return `${name} ${viewDate.iYear()} هـ`;
+            const mIdx = viewDate.iMonth();
+            const year = toEnglishDigits(viewDate.iYear());
+            if (language === 'en') {
+                const name = HIJRI_MONTHS_EN[mIdx] || '';
+                return `${name} ${year} AH`;
+            } else {
+                const name = HIJRI_MONTHS_AR[mIdx] || '';
+                return `${name} ${year} هـ`;
+            }
         } else {
-            const name = new Intl.DateTimeFormat('ar-SA', { month: 'long' }).format(viewDate.toDate());
-            return `${name} ${viewDate.year()} م`;
+            const mIdx = viewDate.month();
+            const year = toEnglishDigits(viewDate.year());
+            if (language === 'en') {
+                const name = GREGORIAN_MONTHS_EN[mIdx] || '';
+                return `${name} ${year} AD`;
+            } else {
+                const name = GREGORIAN_MONTHS_AR[mIdx] || '';
+                return `${name} ${year} م`;
+            }
         }
-    }, [viewDate, calendarType]);
+    }, [viewDate, calendarType, language]);
 
     const generateImage = async () => {
         if (!pdfTableRef.current) return null;
         const canvas = await safeHtml2Canvas(pdfTableRef.current, {
-            scale: 2.5, // Increased scale for better print quality and clarity
+            scale: 2.5,
             useCORS: true,
             backgroundColor: '#ffffff',
             windowWidth: 800
         });
         return {
             canvas,
-            dataUrl: canvas.toDataURL('image/jpeg', 0.95) // High quality JPEG
+            dataUrl: canvas.toDataURL('image/jpeg', 0.95)
         };
     };
 
     const handleShare = async () => {
         setIsSharing(true);
-        const text = `مواقيت الصلاة لشهر ${monthNameDisplay}\nالموقع: ${config.location.cityGov}\nتم الإنشاء بواسطة: مصحف احمد وليلى`;
+        const heading = tPrayer('monthlyShareHeading', language, { m: monthNameDisplay });
+        const loc = tPrayer('locationLabel', language, { loc: getLocalizedLocationName(config.location.cityGov, language) });
+        const by = tPrayer('generatedByLabel', language, { app: tPrayer('createdAppAttribution', language) });
+        const text = `${heading}\n${loc}\n${by}`;
+
         try {
             const result = await generateImage();
             if (!result) return;
@@ -211,10 +228,10 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
                 });
                 
                 await CapacitorShare.share({
-                    title: `مواقيت الصلاة - ${monthNameDisplay}`,
+                    title: `${tPrayer('monthlyPrayerTitle', language)} - ${monthNameDisplay}`,
                     text: text,
                     url: savedFile.uri,
-                    dialogTitle: 'مشاركة مواقيت الصلاة',
+                    dialogTitle: tPrayer('shareMonthlyTimes', language),
                 });
             } else if (navigator.share) {
                 try {
@@ -222,23 +239,23 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
                     const file = new File([blob], fileName, { type: 'image/jpeg' });
                     if (navigator.canShare && navigator.canShare({ files: [file] })) {
                         await navigator.share({
-                            title: `مواقيت الصلاة - ${monthNameDisplay}`,
+                            title: `${tPrayer('monthlyPrayerTitle', language)} - ${monthNameDisplay}`,
                             text: text,
                             files: [file]
                         });
                     } else {
                         await navigator.share({
-                            title: `مواقيت الصلاة - ${monthNameDisplay}`,
+                            title: `${tPrayer('monthlyPrayerTitle', language)} - ${monthNameDisplay}`,
                             text: text,
                         });
                     }
                 } catch (e: any) {
                     if (e.name !== 'AbortError') {
-                        await navigator.share({ title: `مواقيت الصلاة`, text: text }).catch(() => {});
+                        await navigator.share({ title: tPrayer('monthlyPrayerTitle', language), text: text }).catch(() => {});
                     }
                 }
             } else {
-                alert("المشاركة غير مدعومة في هذا المتصفح");
+                alert(tPrayer('shareNotSupported', language));
             }
         } catch (err) {
             console.error("Share failed:", err);
@@ -272,17 +289,17 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
                     directory: Directory.Cache
                 });
                 await CapacitorShare.share({
-                    title: 'مواقيت الصلاة',
-                    text: `مواقيت الصلاة لشهر ${monthNameDisplay}`,
+                    title: tPrayer('monthlyPrayerTitle', language),
+                    text: tPrayer('monthlyShareHeading', language, { m: monthNameDisplay }),
                     url: savedFile.uri,
-                    dialogTitle: 'مشاركة أو حفظ ملف PDF'
+                    dialogTitle: tPrayer('sharePdfTitle', language)
                 });
             } else {
                 pdf.save(fileName);
             }
         } catch (error) {
             console.error("Error generating PDF:", error);
-            alert("حدث خطأ أثناء إنشاء ملف PDF");
+            alert(tPrayer('pdfError', language));
         } finally {
             setIsExporting(false);
         }
@@ -291,69 +308,73 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
     const getOffset = (key: string) => (config.prayerOffsets[key] || 0) + (config.isSummerTime ? 60 : 0);
 
     return (
-        <div className="h-screen w-screen flex flex-col" style={{ backgroundColor: isDefaultTheme ? '#FFFFFF' : theme.bgColor, color: isDefaultTheme ? '#000000' : theme.textColor }}>
+        <div 
+            dir={dir}
+            className="h-screen w-screen flex flex-col" 
+            style={{ backgroundColor: isDefaultTheme ? '#FFFFFF' : theme.bgColor, color: isDefaultTheme ? '#000000' : theme.textColor }}
+        >
             {/* Top Bar */}
-            <header className="app-top-bar">
+            <header className="app-top-bar" dir={dir}>
                 <div className="app-top-bar__inner">
-                    <div className="relative flex items-center justify-center w-full min-h-[44px]">
-                        {/* أزرار يمين النص: زر الرجوع للخلف + زر PDF */}
-                        <div className="absolute right-0 flex items-center gap-1">
+                    <div className="flex items-center justify-between w-full min-h-[44px] px-1 sm:px-2">
+                        {/* Start buttons: Back + PDF */}
+                        <div className="flex items-center gap-1 shrink-0 z-10">
                             <button
                                 onClick={onBack}
-                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
-                                title="رجوع للخلف"
-                                aria-label="رجوع للخلف"
+                                className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                title={tPrayer('back', language)}
+                                aria-label={tPrayer('back', language)}
                             >
-                                <i className="fa-solid fa-arrow-right text-xl"></i>
+                                <i className={`fa-solid ${isRTL ? 'fa-arrow-right' : 'fa-arrow-left'} text-lg sm:text-xl`}></i>
                             </button>
                             <button 
                                 onClick={handleExportPDF}
                                 disabled={isExporting}
-                                className="w-9 h-9 rounded-xl flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer border"
+                                className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer border"
                                 style={{ 
                                     borderColor: isDefaultTheme ? '#000000' : (isBlackAndWhite ? '#FFFFFF' : primaryColor),
                                     color: topBarTextColor,
                                     backgroundColor: 'transparent'
                                 }}
-                                title="تصدير ملف PDF"
-                                aria-label="تصدير ملف PDF"
+                                title={tPrayer('exportPdf', language)}
+                                aria-label={tPrayer('exportPdf', language)}
                             >
-                                <FileText size={18} className={isExporting ? 'animate-pulse' : ''} />
+                                <FileText size={17} className={isExporting ? 'animate-pulse' : ''} />
                             </button>
                         </div>
 
-                        {/* عنوان الصفحة في الوسط */}
-                        <div className="text-center px-16 min-w-0">
+                        {/* Center Title */}
+                        <div className="text-center px-2 min-w-0 flex-1">
                             <h1 className="app-top-bar__title text-base sm:text-lg font-kufi truncate">
-                                مواقيت الشهر
+                                {tPrayer('monthlyPrayerTitle', language)}
                             </h1>
                         </div>
 
-                        {/* أزرار يسار النص: زر مشاركة + قفل الثيم + زر الهوم */}
-                        <div className="absolute left-0 flex items-center gap-1">
+                        {/* End buttons: Share + ThemeLock + Home */}
+                        <div className="flex items-center gap-1 shrink-0 z-10">
                             <button 
                                 onClick={handleShare}
                                 disabled={isSharing}
-                                className="h-9 px-2.5 rounded-xl text-xs font-bold flex items-center gap-1 transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer border"
+                                className="h-8 sm:h-9 px-2 sm:px-2.5 rounded-xl text-xs font-bold flex items-center gap-1 transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer border"
                                 style={{ 
                                     borderColor: isDefaultTheme ? '#000000' : (isBlackAndWhite ? '#FFFFFF' : primaryColor),
                                     color: topBarTextColor,
                                     backgroundColor: 'transparent'
                                 }}
-                                title="مشاركة المواقيت"
-                                aria-label="مشاركة المواقيت"
+                                title={tPrayer('shareMonthlyTimes', language)}
+                                aria-label={tPrayer('shareMonthlyTimes', language)}
                             >
-                                <Share2 size={16} />
-                                <span className="hidden xs:inline">{isSharing ? '...' : 'مشاركة'}</span>
+                                <Share2 size={15} />
+                                <span className="hidden xs:inline">{isSharing ? '...' : tPrayer('share', language)}</span>
                             </button>
                             <ThemePageLock />
                             <button
                                 onClick={() => onNavigate('home')}
-                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
-                                title="الصفحة الرئيسية"
-                                aria-label="الصفحة الرئيسية"
+                                className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                title={tPrayer('home', language)}
+                                aria-label={tPrayer('home', language)}
                             >
-                                <i className="fa-solid fa-house text-xl"></i>
+                                <i className="fa-solid fa-house text-lg sm:text-xl"></i>
                             </button>
                         </div>
                     </div>
@@ -361,43 +382,51 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
             </header>
 
             {/* Month Navigation */}
-            <div className={`flex items-center justify-between px-4 py-1.5 ${isDefaultTheme ? 'bg-white' : 'themed-bg-alt'} border-b`} style={{ borderColor: tableBorderColor }}>
-                <button onClick={handlePrevMonth} className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-                    <ChevronRight size={24} color={primaryColor} />
+            <div className={`flex items-center justify-between px-4 py-1.5 ${isDefaultTheme ? 'bg-white' : 'themed-bg-alt'} border-b`} style={{ borderColor: tableBorderColor }} dir={dir}>
+                <button 
+                    onClick={handlePrevMonth} 
+                    className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
+                    title={language === 'en' ? 'Previous Month' : 'الشهر السابق'}
+                >
+                    {isRTL ? <ChevronRight size={24} color={primaryColor} /> : <ChevronLeft size={24} color={primaryColor} />}
                 </button>
                 <div className="flex flex-col items-center gap-0.5">
                     <button 
                         onClick={() => setIsPickerOpen(true)}
-                        className="text-lg font-bold flex items-center gap-2 px-3 py-0.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors" 
+                        className="text-base sm:text-lg font-bold flex items-center gap-2 px-3 py-0.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer" 
                         style={{ color: primaryColor }}
                     >
-                        {monthNameDisplay}
+                        <span>{monthNameDisplay}</span>
                         <Calendar size={16} />
                     </button>
                     <div className="flex bg-black/5 dark:bg-white/5 p-0.5 rounded-lg border" style={{ borderColor: tableBorderColor }}>
                         <button 
                             onClick={() => setCalendarType('hijri')}
-                            className={`px-3 py-0.5 text-[10px] rounded-md transition-all ${calendarType === 'hijri' ? 'themed-card shadow-sm' : 'opacity-50'}`}
+                            className={`px-3 py-0.5 text-[10px] rounded-md transition-all cursor-pointer ${calendarType === 'hijri' ? 'themed-card shadow-sm font-bold' : 'opacity-50'}`}
                             style={{ color: calendarType === 'hijri' ? (isBlackAndWhite ? '#8B5CF6' : primaryColor) : (isBlackAndWhite ? '#fff' : undefined) }}
                         >
-                            هجري
+                            {tPrayer('hijri', language)}
                         </button>
                         <button 
                             onClick={() => setCalendarType('gregorian')}
-                            className={`px-3 py-0.5 text-[10px] rounded-md transition-all ${calendarType === 'gregorian' ? 'themed-card shadow-sm' : 'opacity-50'}`}
+                            className={`px-3 py-0.5 text-[10px] rounded-md transition-all cursor-pointer ${calendarType === 'gregorian' ? 'themed-card shadow-sm font-bold' : 'opacity-50'}`}
                             style={{ color: calendarType === 'gregorian' ? (isBlackAndWhite ? '#8B5CF6' : primaryColor) : (isBlackAndWhite ? '#fff' : undefined) }}
                         >
-                            ميلادي
+                            {tPrayer('gregorian', language)}
                         </button>
                     </div>
                 </div>
-                <button onClick={handleNextMonth} className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-                    <ChevronLeft size={24} color={primaryColor} />
+                <button 
+                    onClick={handleNextMonth} 
+                    className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
+                    title={language === 'en' ? 'Next Month' : 'الشهر القادم'}
+                >
+                    {isRTL ? <ChevronLeft size={24} color={primaryColor} /> : <ChevronRight size={24} color={primaryColor} />}
                 </button>
             </div>
 
             {/* Table */}
-            <main className="flex-1 flex flex-col overflow-hidden p-2">
+            <main className="flex-1 flex flex-col overflow-hidden p-2" dir={dir}>
                 <div 
                     className="max-w-4xl w-full mx-auto overflow-auto rounded-xl shadow-sm" 
                     style={{ 
@@ -408,7 +437,7 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
                 >
                     <table 
                         className="w-full text-center text-[11px] xs:text-xs border-collapse" 
-                        dir="rtl" 
+                        dir={dir} 
                         style={{ 
                             border: `1.5px solid ${tableBorderColor}`,
                             borderColor: tableBorderColor 
@@ -416,13 +445,27 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
                     >
                         <thead className="z-20" style={{ color: isDefaultTheme ? '#000000' : '#fff' }}>
                             <tr style={{ borderBottom: `1.5px solid ${tableBorderColor}` }}>
-                                <th className="sticky top-0 px-1 py-2 font-bold z-10" style={{ border: `1.5px solid ${tableBorderColor}`, backgroundColor: isDefaultTheme ? '#f3f4f6' : (isBlackAndWhite ? '#222222' : primaryColor), color: isDefaultTheme ? '#000000' : '#FFFFFF' }}>اليوم</th>
-                                <th className="sticky top-0 px-1 py-2 font-bold z-10" style={{ border: `1.5px solid ${tableBorderColor}`, backgroundColor: isDefaultTheme ? '#f3f4f6' : (isBlackAndWhite ? '#222222' : primaryColor), color: isDefaultTheme ? '#000000' : '#FFFFFF' }}>م/هـ</th>
-                                <th className="sticky top-0 px-1 py-2 font-bold z-10" style={{ border: `1.5px solid ${tableBorderColor}`, backgroundColor: isDefaultTheme ? '#f3f4f6' : (isBlackAndWhite ? '#222222' : primaryColor), color: isDefaultTheme ? '#000000' : '#FFFFFF' }}>الفجر</th>
-                                <th className="sticky top-0 px-1 py-2 font-bold z-10" style={{ border: `1.5px solid ${tableBorderColor}`, backgroundColor: isDefaultTheme ? '#f3f4f6' : (isBlackAndWhite ? '#222222' : primaryColor), color: isDefaultTheme ? '#000000' : '#FFFFFF' }}>الظهر</th>
-                                <th className="sticky top-0 px-1 py-2 font-bold z-10" style={{ border: `1.5px solid ${tableBorderColor}`, backgroundColor: isDefaultTheme ? '#f3f4f6' : (isBlackAndWhite ? '#222222' : primaryColor), color: isDefaultTheme ? '#000000' : '#FFFFFF' }}>العصر</th>
-                                <th className="sticky top-0 px-1 py-2 font-bold z-10" style={{ border: `1.5px solid ${tableBorderColor}`, backgroundColor: isDefaultTheme ? '#f3f4f6' : (isBlackAndWhite ? '#222222' : primaryColor), color: isDefaultTheme ? '#000000' : '#FFFFFF' }}>المغرب</th>
-                                <th className="sticky top-0 px-1 py-2 font-bold z-10" style={{ border: `1.5px solid ${tableBorderColor}`, backgroundColor: isDefaultTheme ? '#f3f4f6' : (isBlackAndWhite ? '#222222' : primaryColor), color: isDefaultTheme ? '#000000' : '#FFFFFF' }}>العشاء</th>
+                                <th className="sticky top-0 px-1 py-2 font-bold z-10" style={{ border: `1.5px solid ${tableBorderColor}`, backgroundColor: isDefaultTheme ? '#f3f4f6' : (isBlackAndWhite ? '#222222' : primaryColor), color: isDefaultTheme ? '#000000' : '#FFFFFF' }}>
+                                    {tPrayer('dayHeader', language)}
+                                </th>
+                                <th className="sticky top-0 px-1 py-2 font-bold z-10" style={{ border: `1.5px solid ${tableBorderColor}`, backgroundColor: isDefaultTheme ? '#f3f4f6' : (isBlackAndWhite ? '#222222' : primaryColor), color: isDefaultTheme ? '#000000' : '#FFFFFF' }}>
+                                    {tPrayer('dateHeader', language)}
+                                </th>
+                                <th className="sticky top-0 px-1 py-2 font-bold z-10" style={{ border: `1.5px solid ${tableBorderColor}`, backgroundColor: isDefaultTheme ? '#f3f4f6' : (isBlackAndWhite ? '#222222' : primaryColor), color: isDefaultTheme ? '#000000' : '#FFFFFF' }}>
+                                    {getPrayerDisplayName('Fajr', language)}
+                                </th>
+                                <th className="sticky top-0 px-1 py-2 font-bold z-10" style={{ border: `1.5px solid ${tableBorderColor}`, backgroundColor: isDefaultTheme ? '#f3f4f6' : (isBlackAndWhite ? '#222222' : primaryColor), color: isDefaultTheme ? '#000000' : '#FFFFFF' }}>
+                                    {getPrayerDisplayName('Dhuhr', language)}
+                                </th>
+                                <th className="sticky top-0 px-1 py-2 font-bold z-10" style={{ border: `1.5px solid ${tableBorderColor}`, backgroundColor: isDefaultTheme ? '#f3f4f6' : (isBlackAndWhite ? '#222222' : primaryColor), color: isDefaultTheme ? '#000000' : '#FFFFFF' }}>
+                                    {getPrayerDisplayName('Asr', language)}
+                                </th>
+                                <th className="sticky top-0 px-1 py-2 font-bold z-10" style={{ border: `1.5px solid ${tableBorderColor}`, backgroundColor: isDefaultTheme ? '#f3f4f6' : (isBlackAndWhite ? '#222222' : primaryColor), color: isDefaultTheme ? '#000000' : '#FFFFFF' }}>
+                                    {getPrayerDisplayName('Maghrib', language)}
+                                </th>
+                                <th className="sticky top-0 px-1 py-2 font-bold z-10" style={{ border: `1.5px solid ${tableBorderColor}`, backgroundColor: isDefaultTheme ? '#f3f4f6' : (isBlackAndWhite ? '#222222' : primaryColor), color: isDefaultTheme ? '#000000' : '#FFFFFF' }}>
+                                    {getPrayerDisplayName('Isha', language)}
+                                </th>
                             </tr>
                         </thead>
                         <tbody>
@@ -435,17 +478,14 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
 
                                 if (isToday) {
                                     if (isBlackAndWhite) {
-                                        // الثيم الأسود: لون أخضر زمردي إسلامي مميز وزاهي جداً مع نص أبيض ناصع
                                         rowBg = '#059669';
                                         rowTextColor = '#FFFFFF';
                                         rowBorderColor = '#34d399';
                                     } else if (isDefaultTheme) {
-                                        // الثيم الافتراضي: خلفية سوداء مع نص أبيض
                                         rowBg = '#000000';
                                         rowTextColor = '#FFFFFF';
                                         rowBorderColor = '#FFFFFF';
                                     } else {
-                                        // باقي الثيمات: خلفية ملونة بلون الثيم
                                         rowBg = `${primaryColor}25`;
                                         rowTextColor = primaryColor;
                                         rowBorderColor = primaryColor;
@@ -482,11 +522,21 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
                                             <span className="mx-0.5 opacity-60">/</span>
                                             <span className="opacity-80">{day.gregorianDay}</span>
                                         </td>
-                                        <td className="px-1 py-2 font-mono" style={cellStyle}>{formatTime12_clean(applyOffset(day.timings.Fajr, getOffset('Fajr')))}</td>
-                                        <td className="px-1 py-2 font-mono" style={cellStyle}>{formatTime12_clean(applyOffset(day.timings.Dhuhr, getOffset('Dhuhr')))}</td>
-                                        <td className="px-1 py-2 font-mono" style={cellStyle}>{formatTime12_clean(applyOffset(day.timings.Asr, getOffset('Asr')))}</td>
-                                        <td className="px-1 py-2 font-mono" style={cellStyle}>{formatTime12_clean(applyOffset(day.timings.Maghrib, getOffset('Maghrib')))}</td>
-                                        <td className="px-1 py-2 font-mono" style={cellStyle}>{formatTime12_clean(applyOffset(day.timings.Isha, getOffset('Isha')))}</td>
+                                        <td className="px-1 py-2 font-mono" style={cellStyle} dir="ltr">
+                                            {toEnglishDigits(formatTime12_clean(applyOffset(day.timings.Fajr, getOffset('Fajr'))))}
+                                        </td>
+                                        <td className="px-1 py-2 font-mono" style={cellStyle} dir="ltr">
+                                            {toEnglishDigits(formatTime12_clean(applyOffset(day.timings.Dhuhr, getOffset('Dhuhr'))))}
+                                        </td>
+                                        <td className="px-1 py-2 font-mono" style={cellStyle} dir="ltr">
+                                            {toEnglishDigits(formatTime12_clean(applyOffset(day.timings.Asr, getOffset('Asr'))))}
+                                        </td>
+                                        <td className="px-1 py-2 font-mono" style={cellStyle} dir="ltr">
+                                            {toEnglishDigits(formatTime12_clean(applyOffset(day.timings.Maghrib, getOffset('Maghrib'))))}
+                                        </td>
+                                        <td className="px-1 py-2 font-mono" style={cellStyle} dir="ltr">
+                                            {toEnglishDigits(formatTime12_clean(applyOffset(day.timings.Isha, getOffset('Isha'))))}
+                                        </td>
                                     </tr>
                                 );
                             })}
@@ -497,23 +547,29 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
 
             {/* Hidden Table for PDF Export */}
             <div style={{ position: 'fixed', top: '-10000px', left: '-10000px', zIndex: -1000 }}>
-                <div ref={pdfTableRef} style={{ width: '800px', padding: '20px', backgroundColor: '#fff', color: '#000', direction: 'rtl', fontFamily: 'Cairo, sans-serif' }}>
+                <div ref={pdfTableRef} style={{ width: '800px', padding: '20px', backgroundColor: '#fff', color: '#000', direction: isRTL ? 'rtl' : 'ltr', fontFamily: 'Cairo, sans-serif' }}>
                     <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-                        <h1 style={{ fontSize: '24px', color: primaryColor }}>مواقيت الصلاة لشهر {monthNameDisplay}</h1>
-                        <p style={{ fontSize: '16px', color: '#666' }}>الموقع: {config.location.cityGov}</p>
-                        <p style={{ fontSize: '14px', color: '#888', marginTop: '5px' }}>تم الإنشاء بواسطة: مصحف احمد وليلى</p>
+                        <h1 style={{ fontSize: '24px', color: primaryColor }}>
+                            {tPrayer('monthlyShareHeading', language, { m: monthNameDisplay })}
+                        </h1>
+                        <p style={{ fontSize: '16px', color: '#666' }}>
+                            {tPrayer('locationLabel', language, { loc: getLocalizedLocationName(config.location.cityGov, language) })}
+                        </p>
+                        <p style={{ fontSize: '14px', color: '#888', marginTop: '5px' }}>
+                            {tPrayer('generatedByLabel', language, { app: tPrayer('createdAppAttribution', language) })}
+                        </p>
                     </div>
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'center', fontSize: '14px', border: `1.5px solid ${tableBorderColor}` }}>
                     <thead>
                         <tr style={{ backgroundColor: isDefaultTheme ? '#000000' : primaryColor, color: '#fff' }}>
-                            <th style={{ padding: '10px', borderWidth: '1.5px', borderStyle: 'solid', borderColor: tableBorderColor }}>اليوم</th>
-                            <th style={{ padding: '10px', borderWidth: '1.5px', borderStyle: 'solid', borderColor: tableBorderColor }}>التاريخ الهجري</th>
-                            <th style={{ padding: '10px', borderWidth: '1.5px', borderStyle: 'solid', borderColor: tableBorderColor }}>التاريخ الميلادي</th>
-                            <th style={{ padding: '10px', borderWidth: '1.5px', borderStyle: 'solid', borderColor: tableBorderColor }}>الفجر</th>
-                            <th style={{ padding: '10px', borderWidth: '1.5px', borderStyle: 'solid', borderColor: tableBorderColor }}>الظهر</th>
-                            <th style={{ padding: '10px', borderWidth: '1.5px', borderStyle: 'solid', borderColor: tableBorderColor }}>العصر</th>
-                            <th style={{ padding: '10px', borderWidth: '1.5px', borderStyle: 'solid', borderColor: tableBorderColor }}>المغرب</th>
-                            <th style={{ padding: '10px', borderWidth: '1.5px', borderStyle: 'solid', borderColor: tableBorderColor }}>العشاء</th>
+                            <th style={{ padding: '10px', borderWidth: '1.5px', borderStyle: 'solid', borderColor: tableBorderColor }}>{tPrayer('dayHeader', language)}</th>
+                            <th style={{ padding: '10px', borderWidth: '1.5px', borderStyle: 'solid', borderColor: tableBorderColor }}>{tPrayer('hijriDateHeader', language)}</th>
+                            <th style={{ padding: '10px', borderWidth: '1.5px', borderStyle: 'solid', borderColor: tableBorderColor }}>{tPrayer('gregorianDateHeader', language)}</th>
+                            <th style={{ padding: '10px', borderWidth: '1.5px', borderStyle: 'solid', borderColor: tableBorderColor }}>{getPrayerDisplayName('Fajr', language)}</th>
+                            <th style={{ padding: '10px', borderWidth: '1.5px', borderStyle: 'solid', borderColor: tableBorderColor }}>{getPrayerDisplayName('Dhuhr', language)}</th>
+                            <th style={{ padding: '10px', borderWidth: '1.5px', borderStyle: 'solid', borderColor: tableBorderColor }}>{getPrayerDisplayName('Asr', language)}</th>
+                            <th style={{ padding: '10px', borderWidth: '1.5px', borderStyle: 'solid', borderColor: tableBorderColor }}>{getPrayerDisplayName('Maghrib', language)}</th>
+                            <th style={{ padding: '10px', borderWidth: '1.5px', borderStyle: 'solid', borderColor: tableBorderColor }}>{getPrayerDisplayName('Isha', language)}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -522,11 +578,11 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
                                 <td style={{ padding: '8px', borderWidth: '1.5px', borderStyle: 'solid', borderColor: tableBorderColor }}>{day.dayName}</td>
                                 <td style={{ padding: '8px', borderWidth: '1.5px', borderStyle: 'solid', borderColor: tableBorderColor, direction: 'ltr' }}>{day.hijriDateStr}</td>
                                 <td style={{ padding: '8px', borderWidth: '1.5px', borderStyle: 'solid', borderColor: tableBorderColor, direction: 'ltr' }}>{day.gregorianDateStr}</td>
-                                <td style={{ padding: '8px', borderWidth: '1.5px', borderStyle: 'solid', borderColor: tableBorderColor, direction: 'ltr' }}>{formatTime12_clean(applyOffset(day.timings.Fajr, getOffset('Fajr')))}</td>
-                                <td style={{ padding: '8px', borderWidth: '1.5px', borderStyle: 'solid', borderColor: tableBorderColor, direction: 'ltr' }}>{formatTime12_clean(applyOffset(day.timings.Dhuhr, getOffset('Dhuhr')))}</td>
-                                <td style={{ padding: '8px', borderWidth: '1.5px', borderStyle: 'solid', borderColor: tableBorderColor, direction: 'ltr' }}>{formatTime12_clean(applyOffset(day.timings.Asr, getOffset('Asr')))}</td>
-                                <td style={{ padding: '8px', borderWidth: '1.5px', borderStyle: 'solid', borderColor: tableBorderColor, direction: 'ltr' }}>{formatTime12_clean(applyOffset(day.timings.Maghrib, getOffset('Maghrib')))}</td>
-                                <td style={{ padding: '8px', borderWidth: '1.5px', borderStyle: 'solid', borderColor: tableBorderColor, direction: 'ltr' }}>{formatTime12_clean(applyOffset(day.timings.Isha, getOffset('Isha')))}</td>
+                                <td style={{ padding: '8px', borderWidth: '1.5px', borderStyle: 'solid', borderColor: tableBorderColor, direction: 'ltr' }}>{toEnglishDigits(formatTime12_clean(applyOffset(day.timings.Fajr, getOffset('Fajr'))))}</td>
+                                <td style={{ padding: '8px', borderWidth: '1.5px', borderStyle: 'solid', borderColor: tableBorderColor, direction: 'ltr' }}>{toEnglishDigits(formatTime12_clean(applyOffset(day.timings.Dhuhr, getOffset('Dhuhr'))))}</td>
+                                <td style={{ padding: '8px', borderWidth: '1.5px', borderStyle: 'solid', borderColor: tableBorderColor, direction: 'ltr' }}>{toEnglishDigits(formatTime12_clean(applyOffset(day.timings.Asr, getOffset('Asr'))))}</td>
+                                <td style={{ padding: '8px', borderWidth: '1.5px', borderStyle: 'solid', borderColor: tableBorderColor, direction: 'ltr' }}>{toEnglishDigits(formatTime12_clean(applyOffset(day.timings.Maghrib, getOffset('Maghrib'))))}</td>
+                                <td style={{ padding: '8px', borderWidth: '1.5px', borderStyle: 'solid', borderColor: tableBorderColor, direction: 'ltr' }}>{toEnglishDigits(formatTime12_clean(applyOffset(day.timings.Isha, getOffset('Isha'))))}</td>
                             </tr>
                         ))}
                     </tbody>
@@ -537,18 +593,25 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
             {/* Month/Year Picker Modal */}
             {isPickerOpen && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white dark:bg-gray-900 w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200" dir="rtl">
+                    <div className="bg-white dark:bg-gray-900 w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200" dir={dir}>
                         <div className="p-6 flex flex-col gap-6">
                             <div className="flex items-center justify-between">
-                                <h3 className="text-xl font-bold" style={{ color: primaryColor }}>اختيار الشهر والسنة</h3>
-                                <button onClick={() => setIsPickerOpen(false)} className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
+                                <h3 className="text-xl font-bold font-kufi" style={{ color: primaryColor }}>
+                                    {tPrayer('selectMonthYear', language)}
+                                </h3>
+                                <button 
+                                    onClick={() => setIsPickerOpen(false)} 
+                                    className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
+                                    title={tPrayer('close', language)}
+                                    aria-label={tPrayer('close', language)}
+                                >
                                     <X size={24} />
                                 </button>
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="flex flex-col gap-2">
-                                    <label className="text-xs opacity-60 font-bold">الشهر</label>
+                                    <label className="text-xs opacity-60 font-bold">{tPrayer('month', language)}</label>
                                     <select 
                                         value={calendarType === 'hijri' ? viewDate.iMonth() : viewDate.month()}
                                         onChange={(e) => {
@@ -559,16 +622,19 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
                                                 setViewDate(prev => prev.clone().month(val));
                                             }
                                         }}
-                                        className="bg-black/5 dark:bg-white/5 p-3 rounded-xl outline-none focus:ring-2 transition-all"
+                                        className="bg-black/5 dark:bg-white/5 p-3 rounded-xl outline-none focus:ring-2 transition-all cursor-pointer font-bold"
                                         style={{ borderColor: 'var(--card-border)', color: theme.textColor, backgroundColor: theme.isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }}
                                     >
-                                        {(calendarType === 'hijri' ? HIJRI_MONTHS : GREGORIAN_MONTHS).map((m, i) => (
+                                        {(calendarType === 'hijri' 
+                                            ? (language === 'en' ? HIJRI_MONTHS_EN : HIJRI_MONTHS_AR) 
+                                            : (language === 'en' ? GREGORIAN_MONTHS_EN : GREGORIAN_MONTHS_AR)
+                                        ).map((m, i) => (
                                             <option key={i} value={i} style={{ backgroundColor: theme.cardBg, color: theme.textColor }}>{m}</option>
                                         ))}
                                     </select>
                                 </div>
                                 <div className="flex flex-col gap-2">
-                                    <label className="text-xs opacity-60 font-bold">السنة</label>
+                                    <label className="text-xs opacity-60 font-bold">{tPrayer('year', language)}</label>
                                     <select 
                                         value={calendarType === 'hijri' ? viewDate.iYear() : viewDate.year()}
                                         onChange={(e) => {
@@ -579,24 +645,24 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
                                                 setViewDate(prev => prev.clone().year(val));
                                             }
                                         }}
-                                        className="bg-black/5 dark:bg-white/5 p-3 rounded-xl outline-none focus:ring-2 transition-all"
+                                        className="bg-black/5 dark:bg-white/5 p-3 rounded-xl outline-none focus:ring-2 transition-all cursor-pointer font-bold font-mono"
                                         style={{ borderColor: 'var(--card-border)', color: theme.textColor, backgroundColor: theme.isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }}
                                     >
                                         {Array.from({ length: 20 }, (_, i) => {
                                             const baseYear = calendarType === 'hijri' ? moment().iYear() : moment().year();
                                             const year = baseYear - 10 + i;
-                                            return <option key={year} value={year} style={{ backgroundColor: theme.cardBg, color: theme.textColor }}>{year}</option>;
+                                            return <option key={year} value={year} style={{ backgroundColor: theme.cardBg, color: theme.textColor }}>{toEnglishDigits(year)}</option>;
                                         })}
                                     </select>
                                 </div>
                             </div>
 
                             <button 
-                                onClick={() => setIsPickerOpen(false)}
-                                className="w-full py-4 rounded-2xl font-bold text-white shadow-lg transition-transform active:scale-95"
+                                onClick={() => setIsPickerOpen(false)} 
+                                className="w-full py-4 rounded-2xl font-bold text-white shadow-lg transition-transform active:scale-95 cursor-pointer"
                                 style={{ backgroundColor: primaryColor }}
                             >
-                                تم
+                                {tPrayer('done', language)}
                             </button>
                         </div>
                     </div>
@@ -605,4 +671,3 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
         </div>
     );
 }
-

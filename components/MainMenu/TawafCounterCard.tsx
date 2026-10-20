@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { RotateCcw } from 'lucide-react';
 import { getTawafCounterState, saveTawafCounterState, subscribeTawafCounter, TawafCounterState } from '../../utils/tawafCounterStorage';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface TawafCounterCardProps {
   theme: any;
@@ -8,6 +9,7 @@ interface TawafCounterCardProps {
 }
 
 export const TawafCounterCard: React.FC<TawafCounterCardProps> = ({ theme }) => {
+  const { language, dir, t, formatNumber } = useLanguage();
   const [state, setState] = useState<TawafCounterState>(getTawafCounterState());
 
   useEffect(() => {
@@ -72,12 +74,12 @@ export const TawafCounterCard: React.FC<TawafCounterCardProps> = ({ theme }) => 
         backgroundColor: cardBg,
         fontFamily: theme?.font
       }}
-      dir="rtl"
+      dir={dir}
     >
       {/* 1. Header with Mode Tabs, Quick reset and Title */}
       <div className="flex items-center justify-between z-10 w-full relative gap-2">
         <span className="text-sm md:text-base font-bold font-kufi truncate" style={{ color: primaryAccent }}>
-          {state.activeTab === 'tawaf' ? 'عداد أشواط الطواف' : 'عداد أشواط السعي'}
+          {state.activeTab === 'tawaf' ? t('tawaf.title', 'عداد أشواط الطواف') : t('sai.title', 'عداد أشواط السعي')}
         </span>
 
         {/* Controls: Tawaf/Sai Toggle + Reset */}
@@ -96,7 +98,7 @@ export const TawafCounterCard: React.FC<TawafCounterCardProps> = ({ theme }) => 
                 color: state.activeTab === 'tawaf' ? (isBlackTheme ? '#000000' : '#FFFFFF') : 'var(--text-color)'
               }}
             >
-              طواف
+              {t('tawaf.tab', 'طواف')}
             </button>
             <button
               onClick={(e) => handleSwitchTab('sai', e)}
@@ -110,14 +112,14 @@ export const TawafCounterCard: React.FC<TawafCounterCardProps> = ({ theme }) => 
                 color: state.activeTab === 'sai' ? (isBlackTheme ? '#000000' : '#FFFFFF') : 'var(--text-color)'
               }}
             >
-              سعي
+              {t('sai.tab', 'سعي')}
             </button>
           </div>
 
           {/* Reset button */}
           <button
             onClick={handleReset}
-            title="إعادة ضبط العداد"
+            title={t('tawaf.reset_tooltip', 'إعادة ضبط العداد')}
             className="w-7 h-7 rounded-lg flex items-center justify-center bg-black/5 dark:bg-white/10 hover:bg-black/10 active:scale-90 transition-all text-gray-500 dark:text-gray-300"
           >
             <RotateCcw className="w-3.5 h-3.5" />
@@ -125,7 +127,7 @@ export const TawafCounterCard: React.FC<TawafCounterCardProps> = ({ theme }) => 
         </div>
       </div>
 
-      {/* 2. Visual 7 Laps Stepper Dots (مع زيادة العرض الرأسي / الارتفاع لتظهر بوضوح) */}
+      {/* 2. Visual 7 Laps Stepper Dots */}
       <div className="flex items-center justify-between gap-1.5 px-0.5 py-1">
         {[1, 2, 3, 4, 5, 6, 7].map((lap) => {
           const isPassed = lap <= currentCount;
@@ -150,14 +152,14 @@ export const TawafCounterCard: React.FC<TawafCounterCardProps> = ({ theme }) => 
                 }}
               />
               <span className={`text-[10px] font-mono font-bold ${isPassed || isCurrent ? 'opacity-95' : 'opacity-40'}`} style={{ color: 'var(--text-color)' }}>
-                {lap}
+                {formatNumber(lap)}
               </span>
             </div>
           );
         })}
       </div>
 
-      {/* 3. Main Lap Counter - زر واحد متكامل وكبير بدون أزرار - و + */}
+      {/* 3. Main Lap Counter */}
       <div className="w-full">
         <button
           onClick={() => handleIncrement()}
@@ -176,18 +178,22 @@ export const TawafCounterCard: React.FC<TawafCounterCardProps> = ({ theme }) => 
               : (isBlackTheme ? '#000000' : '#FFFFFF')
           }}
         >
-          <div className="text-right">
+          <div className="text-start">
             <span className="block text-base md:text-lg font-bold leading-tight font-kufi">
-              {isComplete ? 'اكتملت 7 أشواط مباركة!' : `تسجيل الشوط (${currentCount + 1})`}
+              {isComplete 
+                ? t('tawaf.completed_title', 'اكتملت 7 أشواط مباركة!') 
+                : (language === 'en' 
+                    ? `Record Lap (${formatNumber(currentCount + 1)})` 
+                    : `تسجيل الشوط (${formatNumber(currentCount + 1)})`)}
             </span>
             <span className="block text-xs opacity-85 mt-1 font-medium">
-              {isComplete ? 'تقبل الله نسككم وطاعتكم' : 'اضغط بعد كل شوط لاحتساب الرقم'}
+              {isComplete ? t('tawaf.completed_subtitle', 'تقبل الله نسككم وطاعتكم') : t('tawaf.tap_hint', 'اضغط بعد كل شوط لاحتساب الرقم')}
             </span>
           </div>
 
           <div className="text-center font-mono">
-            <span className="text-3xl font-black leading-none">{currentCount}</span>
-            <span className="block text-[10px] opacity-80 font-sans font-bold mt-0.5">من 7</span>
+            <span className="text-3xl font-black leading-none">{formatNumber(currentCount)}</span>
+            <span className="block text-[10px] opacity-80 font-sans font-bold mt-0.5">{t('tawaf.of_seven', 'من 7')}</span>
           </div>
         </button>
       </div>

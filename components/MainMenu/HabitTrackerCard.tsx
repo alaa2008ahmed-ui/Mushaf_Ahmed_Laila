@@ -1,7 +1,8 @@
 import React, { useMemo } from 'react';
-import { CheckCircle2, ChevronLeft } from 'lucide-react';
+import { CheckCircle2, ChevronLeft, ChevronRight } from 'lucide-react';
 import moment from 'moment-hijri';
 import { useHabitTracker } from '../../hooks/useHabitTracker';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface HabitTrackerCardProps {
   theme: any;
@@ -12,6 +13,8 @@ export const HabitTrackerCard: React.FC<HabitTrackerCardProps> = ({
   theme,
   onNavigate,
 }) => {
+  const { isRTL, dir, t, language } = useLanguage();
+  const isEn = language === 'en';
   const { getDailyProgress, records } = useHabitTracker();
 
   // Dates: Today, Yesterday (اليوم السابق), Day Before Yesterday (الذي قبله)
@@ -41,14 +44,14 @@ export const HabitTrackerCard: React.FC<HabitTrackerCardProps> = ({
         backgroundColor: cardBg,
         fontFamily: theme?.font
       }}
-      dir="rtl"
+      dir={dir}
       onClick={() => onNavigate('habit-tracker')}
     >
       {/* 1. Header with Title & Navigation icon */}
       <div className="flex items-center justify-between z-10 w-full relative">
         <div className="flex items-center gap-2" style={{ color: primaryAccent }}>
           <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-500" />
-          <span className="text-[12px] font-bold font-kufi">مربي العبادات</span>
+          <span className="text-[12px] font-bold font-kufi">{t('habit_card.title', 'مربي العبادات')}</span>
           <span
             className="text-[10px] px-2 py-0.5 rounded-full font-bold opacity-90"
             style={{
@@ -56,13 +59,13 @@ export const HabitTrackerCard: React.FC<HabitTrackerCardProps> = ({
               color: primaryAccent
             }}
           >
-            إنجاز اليوم
+            {t('habit_card.today_badge', 'إنجاز اليوم')}
           </span>
         </div>
 
         <div className="flex items-center gap-1.5 text-xs font-bold opacity-80 hover:opacity-100 transition-opacity" style={{ color: primaryAccent }}>
-          <span className="text-[10px] hidden sm:inline">فتح السجل</span>
-          <ChevronLeft className="w-4 h-4 shrink-0" />
+          <span className="text-[10px] hidden sm:inline">{isEn ? 'Open Log' : 'فتح السجل'}</span>
+          {isRTL ? <ChevronLeft className="w-4 h-4 shrink-0" /> : <ChevronRight className="w-4 h-4 shrink-0" />}
         </div>
       </div>
 
@@ -74,7 +77,7 @@ export const HabitTrackerCard: React.FC<HabitTrackerCardProps> = ({
               {todayProgress}%
             </span>
             <span className="text-[10px] opacity-70 font-bold" style={{ color: textColor }}>
-              نسبة إنجاز اليوم
+              {t('habit_card.completion_rate', 'نسبة إنجاز اليوم')}
             </span>
           </div>
 
@@ -94,12 +97,12 @@ export const HabitTrackerCard: React.FC<HabitTrackerCardProps> = ({
             }}
           >
             {todayProgress === 100 
-              ? 'مكتمل ما شاء الله 🌟' 
+              ? t('habit_card.completed', 'مكتمل ما شاء الله 🌟')
               : todayProgress >= 70 
-                ? 'إنجاز ممتاز 🌿' 
+                ? t('habit_card.excellent', 'إنجاز ممتاز 🌿')
                 : todayProgress > 0 
-                  ? 'مستمر بالعمل 🤲' 
-                  : 'ابدأ عبادات اليوم ✨'}
+                  ? t('habit_card.in_progress', 'مستمر بالعمل 🤲')
+                  : t('habit_card.start_today', 'ابدأ عبادات اليوم ✨')}
           </span>
         </div>
 
@@ -121,7 +124,7 @@ export const HabitTrackerCard: React.FC<HabitTrackerCardProps> = ({
         style={{ borderColor: isBlackTheme ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.08)' }}
       >
         <span className="text-[10px] font-bold opacity-75 shrink-0" style={{ color: textColor }}>
-          ملخص الأيام السابقة:
+          {t('habit_card.prev_summary', 'ملخص الأيام السابقة:')}
         </span>
 
         <div className="flex items-center gap-2">
@@ -134,7 +137,7 @@ export const HabitTrackerCard: React.FC<HabitTrackerCardProps> = ({
             }}
             title="إجمالي اليوم السابق"
           >
-            <span className="text-[10px] opacity-75" style={{ color: textColor }}>اليوم السابق:</span>
+            <span className="text-[10px] opacity-75" style={{ color: textColor }}>{t('habit_card.yesterday', 'اليوم السابق:')}</span>
             <span className="font-sans font-black" style={{ color: primaryAccent }}>
               {yesterdayProgress}%
             </span>
@@ -149,7 +152,7 @@ export const HabitTrackerCard: React.FC<HabitTrackerCardProps> = ({
             }}
             title="إجمالي اليوم الذي قبله"
           >
-            <span className="text-[10px] opacity-75" style={{ color: textColor }}>الذي قبله:</span>
+            <span className="text-[10px] opacity-75" style={{ color: textColor }}>{t('habit_card.before_yesterday', 'الذي قبله:')}</span>
             <span className="font-sans font-black" style={{ color: primaryAccent }}>
               {beforeYesterdayProgress}%
             </span>

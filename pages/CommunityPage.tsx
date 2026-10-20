@@ -13,8 +13,18 @@ import CreateGroupModal from '../components/Community/CreateGroupModal';
 import EditGroupModal from '../components/Community/EditGroupModal';
 import ThemePageLock from '../components/ThemePageLock';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { registerBackInterceptor } from '../hooks/useBackButton';
-import { useShowNewBadge } from '../utils/badgeManager';
+import { useShowNewBadge, markPageAsSeen } from '../utils/badgeManager';
+import { 
+  formatCountryName, 
+  formatUsername, 
+  formatUserBio, 
+  formatUserStatusText, 
+  formatGroupName, 
+  formatGroupDescription, 
+  formatLastMessageText 
+} from '../components/Community/communityLanguageUtils';
 
 interface CommunityPageProps {
   onBack: () => void;
@@ -24,7 +34,10 @@ interface CommunityPageProps {
 
 const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initialTab }) => {
   const { theme, themeKey } = useTheme();
-  const showNewBadge = useShowNewBadge();
+  const { language, dir } = useLanguage();
+  const isEn = language === 'en';
+
+  const showAhlQuranBadge = useShowNewBadge('ahl-al-quran');
   const isDefaultTheme = themeKey === 'default' || !themeKey || theme.name?.includes('الافتراضي') || theme.name === 'Default';
   const isDeepBlack = theme.bgColor === '#000000' || theme.name === 'أبيض وأسود' || themeKey === 'deep_black';
   const cardBorderColor = isDefaultTheme 
@@ -60,6 +73,10 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
       : communityService.getActiveTab();
     return [initial];
   });
+
+  useEffect(() => {
+    markPageAsSeen('community');
+  }, []);
 
   const setActiveTab = (tab: 'users' | 'chats' | 'community' | 'blocked') => {
     userManuallySwitchedTabRef.current = true;
@@ -209,7 +226,9 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
     if (partnerUserId !== ADMIN_USER_ID) {
       const friendship = communityService.getFriendshipStatus(partnerUserId);
       if (friendship.status === 'rejected' && friendship.isRequester) {
-        showToast('تم رفض طلب الإضافة من قِبل هذا العضو. لا يمكن الدخول إلى صفحة الدردشة.');
+        showToast(isEn 
+          ? 'Friend request was declined by this member. Cannot enter chat.' 
+          : 'تم رفض طلب الإضافة من قِبل هذا العضو. لا يمكن الدخول إلى صفحة الدردشة.');
         return;
       }
     }
@@ -225,10 +244,12 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
     try {
       await communityService.sendFriendRequest(targetUser.userId);
       loadData();
-      showToast(`تم إرسال طلب إضافة إلى ${targetUser.username} 🌿 يمكنك كتابة رسالة تعريفية واحدة.`);
+      showToast(isEn 
+        ? `Friend request sent to ${targetUser.username} 🌿 You can send one intro message.` 
+        : `تم إرسال طلب إضافة إلى ${targetUser.username} 🌿 يمكنك كتابة رسالة تعريفية واحدة.`);
       handleStartChat(targetUser.userId);
     } catch (err: any) {
-      showToast(err?.message || 'تعذر إرسال طلب الإضافة');
+      showToast(err?.message || (isEn ? 'Unable to send friend request' : 'تعذر إرسال طلب الإضافة'));
     }
   };
 
@@ -243,7 +264,9 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
       return;
     }
     if (friendship.status === 'rejected' && friendship.isRequester) {
-      showToast('تم رفض طلب الإضافة من قِبل هذا العضو. لا يمكن الدخول إلى صفحة الدردشة.');
+      showToast(isEn 
+        ? 'Friend request was declined by this member. Cannot enter chat.' 
+        : 'تم رفض طلب الإضافة من قِبل هذا العضو. لا يمكن الدخول إلى صفحة الدردشة.');
       return;
     }
     if (friendship.status === 'pending') {
@@ -272,7 +295,7 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
       communityService.exitImpersonate();
       loadData();
       setShowAdminModal(true);
-      showToast('تمت العودة لقائمة المستخدمين بنجاح');
+      showToast(isEn ? 'Returned to users list successfully' : 'تمت العودة لقائمة المستخدمين بنجاح');
       return;
     }
     if (showCreateGroupModal) {
@@ -314,13 +337,15 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
     await communityService.blockUser(userToBlock.userId);
     setUserToBlock(null);
     loadData();
-    showToast(`تم حظر (${targetName}) بنجاح`);
+    showToast(isEn ? `Successfully blocked (${targetName})` : `تم حظر (${targetName}) بنجاح`);
   };
 
   const handleUnblockUser = async (userId: string, username?: string) => {
     await communityService.unblockUser(userId);
     loadData();
-    showToast(`تم إلغاء حظر ${username ? `(${username})` : 'المستخدم'} بنجاح`);
+    showToast(isEn 
+      ? `Successfully unblocked ${username ? `(${username})` : 'user'}` 
+      : `تم إلغاء حظر ${username ? `(${username})` : 'المستخدم'} بنجاح`);
   };
 
   const blockedUsers = communityService.getMyBlockedUsers();
@@ -360,8 +385,6 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
   }, [pendingInvitations]);
 
   const filteredGroups = useMemo(() => {
-    // Exclude any group where current user has a pending invitation
-    // Those invitations are shown exclusively in the "دعوات الانضمام للمحادثات الجماعية" section at the top
     const pendingIds = new Set(uniquePendingInvitations.map(p => p.groupId));
     const pendingNames = new Set(uniquePendingInvitations.map(p => (p.name || '').trim().toLowerCase()));
     const activeGroups = groups.filter((g) => {
@@ -465,7 +488,7 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
           setCurrentUser(u);
           loadData();
           if (u.username) {
-            showToast(`أهلاً بك يا ${u.username}! يمكنك الآن التواصل والتراسل`);
+            showToast(isEn ? `Welcome ${u.username}! You can now connect and chat` : `أهلاً بك يا ${u.username}! يمكنك الآن التواصل والتراسل`);
           }
         }}
       />
@@ -504,7 +527,7 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
   return (
     <div 
       className="h-screen max-h-screen h-[100dvh] w-full flex flex-col overflow-y-auto overscroll-contain transition-colors bg-transparent relative" 
-      dir="rtl"
+      dir={isEn ? 'ltr' : 'rtl'}
       style={{ 
         fontFamily: theme.font,
         color: textColor,
@@ -515,16 +538,16 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
       <header className="app-top-bar">
         <div className="app-top-bar__inner">
           <div className="flex items-center justify-between w-full min-h-[44px] gap-2">
-            {/* جهة اليمين: سهم الرجوع للخلف + اختصار القرآن الكريم */}
+            {/* بداية الشريط (سهم الرجوع للخلف + اختصار القرآن الكريم) */}
             <div className="flex items-center gap-1.5 flex-shrink-0">
               <button
                 type="button"
                 onClick={handleBack}
                 className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
-                title="رجوع للخلف"
-                aria-label="رجوع للخلف"
+                title={isEn ? "Back" : "رجوع للخلف"}
+                aria-label={isEn ? "Back" : "رجوع للخلف"}
               >
-                <i className="fa-solid fa-arrow-right text-xl"></i>
+                <i className={`fa-solid ${isEn ? 'fa-arrow-left' : 'fa-arrow-right'} text-xl`}></i>
               </button>
               <button
                 type="button"
@@ -533,8 +556,8 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
                 style={{
                   color: primaryColor
                 }}
-                title="صفحة القرآن الكريم"
-                aria-label="صفحة القرآن الكريم"
+                title={isEn ? "The Noble Qur'an" : "صفحة القرآن الكريم"}
+                aria-label={isEn ? "The Noble Qur'an" : "صفحة القرآن الكريم"}
               >
                 <BookOpen size={20} />
               </button>
@@ -554,7 +577,7 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
                     borderStyle: 'solid',
                     color: primaryColor
                   }}
-                  title="تعديل الملف الشخصي"
+                  title={isEn ? "Edit Profile" : "تعديل الملف الشخصي"}
                 >
                   <div 
                     className="w-6 h-6 rounded-full font-bold flex items-center justify-center overflow-hidden flex-shrink-0"
@@ -597,35 +620,50 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
                     borderStyle: 'solid',
                     color: primaryColor
                   }}
-                  title="تسجيل الملف الشخصي"
+                  title={isEn ? "Register Account" : "تسجيل الملف الشخصي"}
                 >
                   <User size={14} />
-                  <span>تسجيل حسابي</span>
+                  <span>{isEn ? "Register Account" : "تسجيل حسابي"}</span>
                 </div>
               )}
             </div>
 
-            {/* جهة اليسار: اختصار أهل القرآن الكريم + زر الصفحة الرئيسية */}
+            {/* نهاية الشريط: اختصار أهل القرآن الكريم + زر الصفحة الرئيسية */}
             <div className="flex items-center gap-1.5 flex-shrink-0">
               <button
                 type="button"
-                onClick={() => onNavigate('ahl-al-quran')}
+                onClick={() => {
+                  markPageAsSeen('ahl-al-quran');
+                  onNavigate('ahl-al-quran');
+                }}
                 className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer relative"
                 style={{
                   color: '#f59e0b'
                 }}
-                title="صفحة أهل القرآن الكريم"
-                aria-label="صفحة أهل القرآن الكريم"
+                title={isEn ? "Ahl Al-Qur'an Page" : "صفحة أهل القرآن الكريم"}
+                aria-label={isEn ? "Ahl Al-Qur'an Page" : "صفحة أهل القرآن الكريم"}
               >
                 <Trophy size={20} />
+                {showAhlQuranBadge && (
+                  <span 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      markPageAsSeen('ahl-al-quran');
+                    }}
+                    className={`absolute -top-1.5 ${isEn ? '-right-1' : '-left-1'} bg-yellow-400 text-black text-[9px] font-bold px-1 rounded-full shadow-xs border border-white dark:border-slate-800 animate-bounce cursor-pointer select-none z-30`}
+                    title={isEn ? "New" : "جديد"}
+                  >
+                    {isEn ? "NEW" : "جديد"}
+                  </span>
+                )}
               </button>
               <ThemePageLock />
               <button
                 type="button"
                 onClick={handleGoHome}
                 className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
-                title="الصفحة الرئيسية"
-                aria-label="الصفحة الرئيسية"
+                title={isEn ? "Home" : "الصفحة الرئيسية"}
+                aria-label={isEn ? "Home" : "الصفحة الرئيسية"}
               >
                 <i className="fa-solid fa-house text-xl"></i>
               </button>
@@ -651,7 +689,7 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
               boxShadow: activeTab === 'chats' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
             }}
           >
-            <span>الأصدقاء</span>
+            <span>{isEn ? 'Friends' : 'الأصدقاء'}</span>
             {totalUnreadCount > 0 && (
               <span className="px-1.5 py-0.5 min-w-[18px] h-[18px] rounded-full bg-rose-500 text-white text-[10px] font-extrabold flex items-center justify-center leading-none shadow-sm animate-pulse">
                 {totalUnreadCount > 99 ? '+99' : totalUnreadCount}
@@ -669,11 +707,11 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
               boxShadow: activeTab === 'community' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
             }}
           >
-            <span>المجتمع</span>
+            <span>{isEn ? 'Community' : 'المجتمع'}</span>
             {uniquePendingInvitations.length > 0 && (
               <span 
                 className="px-1.5 py-0.5 min-w-[18px] h-[18px] rounded-full bg-amber-500 text-white text-[10px] font-extrabold flex items-center justify-center leading-none shadow-sm animate-pulse"
-                title={`${uniquePendingInvitations.length} دعوة جديدة`}
+                title={isEn ? `${uniquePendingInvitations.length} new invite(s)` : `${uniquePendingInvitations.length} دعوة جديدة`}
               >
                 {uniquePendingInvitations.length}
               </span>
@@ -690,7 +728,7 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
               boxShadow: activeTab === 'users' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
             }}
           >
-            <span>الأعضاء</span>
+            <span>{isEn ? 'Members' : 'الأعضاء'}</span>
           </button>
 
           <button
@@ -703,9 +741,9 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
               boxShadow: activeTab === 'blocked' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
             }}
           >
-            <span>الحظر</span>
+            <span>{isEn ? 'Blocked' : 'الحظر'}</span>
             {blockedUsers.length > 0 && (
-              <span className="mr-0.5 text-[10px] opacity-75">({blockedUsers.length})</span>
+              <span className={`${isEn ? 'ml-0.5' : 'mr-0.5'} text-[10px] opacity-75`}>({blockedUsers.length})</span>
             )}
           </button>
         </div>
@@ -725,27 +763,29 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-bold text-sm text-rose-700 dark:text-rose-300">
-                    تأكيد حظر ({userToBlock.username}) {userToBlock.country ? `• ${userToBlock.country}` : ''}
+                    {isEn ? `Confirm blocking (${userToBlock.username})` : `تأكيد حظر (${userToBlock.username})`} {userToBlock.country ? `• ${formatCountryName(userToBlock.country, isEn)}` : ''}
                   </h3>
                   <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">
-                    عند الحظر، لن يظهر اسم هذا المستخدم لك في القوائم ولن تتمكن من مراسلته ولن يتمكن من مراسلتك.
+                    {isEn 
+                      ? 'When blocked, this user will not appear in your lists, you will not be able to message them, and they cannot message you.' 
+                      : 'عند الحظر، لن يظهر اسم هذا المستخدم لك في القوائم ولن تتمكن من مراسلته ولن يتمكن من مراسلتك.'}
                   </p>
                   <div className="flex items-center gap-2 mt-3">
                     <button
                       type="button"
                       onClick={confirmBlockUser}
-                      className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 active:scale-95"
+                      className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 active:scale-95 cursor-pointer"
                     >
                       <Ban size={14} />
-                      <span>نعم، تأكيد الحظر</span>
+                      <span>{isEn ? 'Yes, Confirm Block' : 'نعم، تأكيد الحظر'}</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => setUserToBlock(null)}
-                      className="px-4 py-2 rounded-xl text-xs font-bold transition-all"
+                      className="px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer"
                       style={{ backgroundColor: secondaryBg, color: textColor }}
                     >
-                      تراجع
+                      {isEn ? 'Cancel' : 'تراجع'}
                     </button>
                   </div>
                 </div>
@@ -754,18 +794,25 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
           )}
         </AnimatePresence>
 
-
-        {/* Search Input & Refresh Button (Always available for both chats and users tabs to search for friends) */}
+        {/* Search Input & Refresh Button */}
         {(activeTab === 'chats' || activeTab === 'users' || activeTab === 'community') && (
           <div className="flex items-center gap-2 mb-4">
             <div className="relative flex-1">
-              <Search size={18} className="absolute right-3.5 top-1/2 -translate-y-1/2" style={{ color: textMuted }} />
+              <Search 
+                size={18} 
+                className={`absolute ${isEn ? 'left-3.5' : 'right-3.5'} top-1/2 -translate-y-1/2 pointer-events-none`} 
+                style={{ color: textMuted }} 
+              />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={activeTab === 'community' ? "ابحث في المحادثات الجماعية والمجموعات..." : "ابحث عن أصدقاء وقُرّاء بالاسم أو الدولة أو كود الحساب..."}
-                className="w-full pl-10 pr-10 py-2.5 rounded-2xl border text-sm font-medium focus:outline-none transition-all shadow-xs"
+                placeholder={
+                  activeTab === 'community' 
+                    ? (isEn ? "Search group chats and circles..." : "ابحث في المحادثات الجماعية والمجموعات...") 
+                    : (isEn ? "Search for friends and readers by name, country, or code..." : "ابحث عن أصدقاء وقُرّاء بالاسم أو الدولة أو كود الحساب...")
+                }
+                className={`w-full ${isEn ? 'pl-10 pr-12 text-left' : 'pr-10 pl-12 text-right'} py-2.5 rounded-2xl border text-sm font-medium focus:outline-none transition-all shadow-xs`}
                 style={{
                   backgroundColor: cardBg,
                   borderColor: cardBorder,
@@ -778,10 +825,10 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
                 <button
                   type="button"
                   onClick={() => setSearchQuery('')}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-xs px-2 py-0.5 rounded-lg"
+                  className={`absolute ${isEn ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 text-xs px-2 py-0.5 rounded-lg cursor-pointer`}
                   style={{ backgroundColor: secondaryBg, color: textMuted }}
                 >
-                  مسح
+                  {isEn ? 'Clear' : 'مسح'}
                 </button>
               )}
             </div>
@@ -789,7 +836,7 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
               type="button"
               onClick={handleRefresh}
               disabled={isRefreshing}
-              className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl border text-xs font-bold transition-all flex-shrink-0 active:scale-95"
+              className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl border text-xs font-bold transition-all flex-shrink-0 active:scale-95 cursor-pointer"
               style={{
                 backgroundColor: `${primaryColor}15`,
                 borderColor: cardBorder,
@@ -797,10 +844,10 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
                 borderStyle: 'solid',
                 color: primaryColor
               }}
-              title="تحديث القائمة الآن من الخادم"
+              title={isEn ? "Refresh list from server now" : "تحديث القائمة الآن من الخادم"}
             >
               <RefreshCw size={14} className={isRefreshing ? "animate-spin" : ""} />
-              <span className="hidden sm:inline">تحديث</span>
+              <span className="hidden sm:inline">{isEn ? 'Refresh' : 'تحديث'}</span>
             </button>
           </div>
         )}
@@ -820,15 +867,15 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
                 <Globe size={40} className="mx-auto mb-2" style={{ color: textMuted }} />
                 <p className="text-sm font-bold" style={{ color: textColor }}>
                   {searchQuery 
-                    ? 'لا يوجد مستخدمون مطابقون للبحث' 
-                    : 'لا يوجد مستخدمون آخرون مسجلون حالياً'
+                    ? (isEn ? 'No users match your search' : 'لا يوجد مستخدمون مطابقون للبحث') 
+                    : (isEn ? 'No other registered users currently' : 'لا يوجد مستخدمون آخرون مسجلون حالياً')
                   }
                 </p>
               </div>
             ) : (
               users.map((u) => {
                 const isOnline = communityService.isUserOnline(u);
-                const statusText = communityService.getUserStatusText(u);
+                const statusText = formatUserStatusText(u, isEn);
                 const isDense = users.length > 100 || totalUsersCount > 100;
 
                 return (
@@ -866,18 +913,20 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
                           )}
                         </div>
                         {isOnline ? (
-                          <div className={`absolute bottom-0 right-0 ${isDense ? 'w-2.5 h-2.5' : 'w-3.5 h-3.5'} rounded-full bg-emerald-500 border-2 border-white dark:border-slate-900`} title="متصل الآن" />
+                          <div className={`absolute bottom-0 ${isEn ? 'right-0' : 'right-0'} ${isDense ? 'w-2.5 h-2.5' : 'w-3.5 h-3.5'} rounded-full bg-emerald-500 border-2 border-white dark:border-slate-900`} title={isEn ? "Online" : "متصل الآن"} />
                         ) : (
-                          <div className={`absolute bottom-0 right-0 ${isDense ? 'w-2.5 h-2.5' : 'w-3.5 h-3.5'} rounded-full bg-slate-400 border-2 border-white dark:border-slate-900 opacity-60`} title="غير متصل" />
+                          <div className={`absolute bottom-0 ${isEn ? 'right-0' : 'right-0'} ${isDense ? 'w-2.5 h-2.5' : 'w-3.5 h-3.5'} rounded-full bg-slate-400 border-2 border-white dark:border-slate-900 opacity-60`} title={isEn ? "Offline" : "غير متصل"} />
                         )}
                       </div>
 
                       <div className="min-w-0 flex-1">
                         <h3 className={`font-bold ${isDense ? 'text-xs sm:text-sm' : 'text-sm'} truncate transition-colors`} style={{ color: textColor }}>
-                          {u.username}
+                          {formatUsername(u, isEn)}
                         </h3>
                         <div className={`flex items-center gap-1.5 ${isDense ? 'text-[10px] sm:text-[11px]' : 'text-xs'} mt-0.5 truncate`}>
-                          <span className="font-medium truncate" style={{ color: primaryColor }}>{u.country || 'دولة أخرى 🌍'}</span>
+                          <span className="font-medium truncate" style={{ color: primaryColor }}>
+                            {formatCountryName(u.country, isEn)}
+                          </span>
                           <span style={{ color: textMuted }}>•</span>
                           <span className="text-[10px] truncate" style={{ color: isOnline ? '#10b981' : textMuted }}>
                             {statusText}
@@ -885,14 +934,14 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
                         </div>
                         {u.bio && (
                           <p className={`${isDense ? 'text-[10px]' : 'text-[11px]'} mt-0.5 line-clamp-1`} style={{ color: textMuted }}>
-                            {u.bio}
+                            {formatUserBio(u, isEn)}
                           </p>
                         )}
                       </div>
                     </div>
 
                     {/* Friend request / Chat action button */}
-                    <div className="shrink-0 mr-2" onClick={(e) => e.stopPropagation()}>
+                    <div className={`shrink-0 ${isEn ? 'ml-2' : 'mr-2'}`} onClick={(e) => e.stopPropagation()}>
                       {(() => {
                         if (u.userId === ADMIN_USER_ID) {
                           return null;
@@ -910,10 +959,10 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
                               type="button"
                               onClick={() => handleStartChat(u.userId)}
                               className="px-2.5 py-1.5 rounded-xl text-xs font-bold border border-amber-500/30 bg-amber-500/15 text-amber-600 dark:text-amber-400 active:scale-95 flex items-center gap-1 cursor-pointer"
-                              title="طلب الإضافة قيد الانتظار، اضغط للدخول وإرسال رسالة التعريف"
+                              title={isEn ? "Friend request is pending, click to send intro message" : "طلب الإضافة قيد الانتظار، اضغط للدخول وإرسال رسالة التعريف"}
                             >
                               <Clock size={13} />
-                              <span>بانتظار القبول</span>
+                              <span>{isEn ? 'Pending' : 'بانتظار القبول'}</span>
                             </button>
                           );
                         }
@@ -926,24 +975,24 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
                                 onClick={async () => {
                                   await communityService.acceptFriendRequest(u.userId);
                                   loadData();
-                                  showToast(`تم قبول طلب إضافة ${u.username} بنجاح 🌿`);
+                                  showToast(isEn ? `Friend request from ${u.username} accepted successfully 🌿` : `تم قبول طلب إضافة ${u.username} بنجاح 🌿`);
                                 }}
                                 className="px-3 py-1.5 rounded-xl text-xs font-bold shadow-xs active:scale-95 flex items-center justify-center cursor-pointer"
                                 style={{ backgroundColor: primaryColor, color: primaryTextColor }}
                               >
-                                <span>قبول</span>
+                                <span>{isEn ? 'Accept' : 'قبول'}</span>
                               </button>
                               <button
                                 type="button"
                                 onClick={async () => {
                                   await communityService.rejectFriendRequest(u.userId);
                                   loadData();
-                                  showToast('تم رفض طلب الإضافة');
+                                  showToast(isEn ? 'Friend request declined' : 'تم رفض طلب الإضافة');
                                 }}
                                 className="px-3 py-1.5 rounded-xl text-xs font-bold border border-rose-500/30 text-rose-500 hover:bg-rose-500/10 active:scale-95 flex items-center justify-center cursor-pointer"
                                 style={{ backgroundColor: secondaryBg }}
                               >
-                                <span>رفض</span>
+                                <span>{isEn ? 'Decline' : 'رفض'}</span>
                               </button>
                             </div>
                           );
@@ -954,13 +1003,15 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
                             <button
                               type="button"
                               onClick={() => {
-                                showToast('تم رفض طلب الإضافة من قِبل هذا العضو. لا يمكن الدخول إلى صفحة الدردشة.');
+                                showToast(isEn 
+                                  ? 'Friend request was declined by this member. Cannot enter chat.' 
+                                  : 'تم رفض طلب الإضافة من قِبل هذا العضو. لا يمكن الدخول إلى صفحة الدردشة.');
                               }}
                               className="px-2.5 py-1.5 rounded-xl text-xs font-bold border border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-400 cursor-not-allowed flex items-center gap-1"
-                              title="تم رفض طلب الإضافة"
+                              title={isEn ? "Friend request was declined" : "تم رفض طلب الإضافة"}
                             >
                               <Ban size={12} />
-                              <span>تم الرفض</span>
+                              <span>{isEn ? 'Declined' : 'تم الرفض'}</span>
                             </button>
                           );
                         }
@@ -974,7 +1025,7 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
                             style={{ backgroundColor: primaryColor, color: primaryTextColor }}
                           >
                             <UserPlus size={13} />
-                            <span>إضافة</span>
+                            <span>{isEn ? 'Add' : 'إضافة'}</span>
                           </button>
                         );
                       })()}
@@ -1007,10 +1058,14 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
                   </div>
                   <div>
                     <div className="text-xs font-bold" style={{ color: textColor }}>
-                      لديك ({uniquePendingInvitations.length}) دعوة انضمام لمحادثة جماعية
+                      {isEn 
+                        ? `You have (${uniquePendingInvitations.length}) group chat invitation${uniquePendingInvitations.length > 1 ? 's' : ''}` 
+                        : `لديك (${uniquePendingInvitations.length}) دعوة انضمام لمحادثة جماعية`}
                     </div>
                     <div className="text-[10px]" style={{ color: textMuted }}>
-                      انقر هنا للانتقال إلى تبويب المجتمع للقبول أو الرفض
+                      {isEn 
+                        ? 'Click here to switch to Community tab to accept or decline' 
+                        : 'انقر هنا للانتقال إلى تبويب المجتمع للقبول أو الرفض'}
                     </div>
                   </div>
                 </div>
@@ -1018,34 +1073,116 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
                   className="px-2.5 py-1 rounded-xl text-xs font-bold shadow-xs flex-shrink-0"
                   style={{ backgroundColor: primaryColor, color: primaryTextColor }}
                 >
-                  عرض في المجتمع
+                  {isEn ? 'View in Community' : 'عرض في المجتمع'}
                 </span>
               </div>
             )}
 
             {/* Direct Chats List */}
             {filteredChats.length === 0 && newMatchingFriends.length === 0 ? (
-                  <div 
-                    className="text-center py-12 rounded-3xl border p-6"
-                    style={{ backgroundColor: cardBg, borderColor: cardBorder, borderWidth: '1.5px', borderStyle: 'solid' }}
-                  >
-                    <MessageSquare size={40} className="mx-auto mb-2" style={{ color: textMuted }} />
-                    <p className="text-sm font-bold" style={{ color: textColor }}>
-                      {searchQuery ? 'لا توجد محادثات أو أصدقاء مطابقون للبحث' : 'لا توجد محادثات نشطة حالياً'}
-                    </p>
-                    <p className="text-xs mt-1" style={{ color: textMuted }}>
-                      {searchQuery ? 'جرب البحث باسم أو كود حساب آخر' : 'اختر قارئاً من تبويب (الأعضاء) أو استخدم شريط البحث أعلاه لبدء محادثة'}
-                    </p>
-                  </div>
-                ) : (
-                  <>
-                    {filteredChats.map((chat) => {
-                      const isPartnerOnline = communityService.isUserOnline(chat.partner);
-                      return (
+              <div 
+                className="text-center py-12 rounded-3xl border p-6"
+                style={{ backgroundColor: cardBg, borderColor: cardBorder, borderWidth: '1.5px', borderStyle: 'solid' }}
+              >
+                <MessageSquare size={40} className="mx-auto mb-2" style={{ color: textMuted }} />
+                <p className="text-sm font-bold" style={{ color: textColor }}>
+                  {searchQuery 
+                    ? (isEn ? 'No chats or friends match your search' : 'لا توجد محادثات أو أصدقاء مطابقون للبحث') 
+                    : (isEn ? 'No active chats currently' : 'لا توجد محادثات نشطة حالياً')}
+                </p>
+                <p className="text-xs mt-1" style={{ color: textMuted }}>
+                  {searchQuery 
+                    ? (isEn ? 'Try searching with another name or account code' : 'جرب البحث باسم أو كود حساب آخر') 
+                    : (isEn ? 'Choose a reader from Members tab or use search above to start a chat' : 'اختر قارئاً من تبويب (الأعضاء) أو استخدم شريط البحث أعلاه لبدء محادثة')}
+                </p>
+              </div>
+            ) : (
+              <>
+                {filteredChats.map((chat) => {
+                  const isPartnerOnline = communityService.isUserOnline(chat.partner);
+                  return (
+                    <div
+                      key={chat.chatId}
+                      onClick={() => handleMemberCardClick(chat.partner)}
+                      className="border rounded-2xl p-4 flex items-center justify-between cursor-pointer transition-all shadow-xs"
+                      style={{
+                        backgroundColor: cardBg,
+                        borderColor: cardBorder,
+                        borderWidth: '1.5px',
+                        borderStyle: 'solid'
+                      }}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="relative flex-shrink-0">
+                          <div 
+                            className="w-12 h-12 rounded-full font-bold flex items-center justify-center border overflow-hidden"
+                            style={{
+                              backgroundColor: `${primaryColor}15`,
+                              borderColor: `${primaryColor}30`,
+                              color: primaryColor
+                            }}
+                          >
+                            {(chat.partner.userId === ADMIN_USER_ID ? SUPPORT_AVATAR_BASE64 : chat.partner.avatarUrl) ? (
+                              <img 
+                                src={chat.partner.userId === ADMIN_USER_ID ? SUPPORT_AVATAR_BASE64 : chat.partner.avatarUrl} 
+                                alt={chat.partner.username} 
+                                className="w-full h-full object-cover" 
+                                onError={(e) => {
+                                  if (chat.partner.userId === ADMIN_USER_ID) {
+                                    e.currentTarget.src = SUPPORT_AVATAR_BASE64;
+                                  }
+                                }}
+                              />
+                            ) : (
+                              <User size={24} />
+                            )}
+                          </div>
+                          {isPartnerOnline ? (
+                            <div className={`absolute bottom-0 ${isEn ? 'right-0' : 'right-0'} w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-900`} title={isEn ? "Online" : "متصل الآن"} />
+                          ) : (
+                            <div className={`absolute bottom-0 ${isEn ? 'right-0' : 'right-0'} w-3.5 h-3.5 rounded-full bg-slate-400 border-2 border-white dark:border-slate-900 opacity-60`} title={isEn ? "Offline" : "غير متصل"} />
+                          )}
+                          {chat.unreadCount > 0 && (
+                            <div className={`absolute -top-1 ${isEn ? '-right-1' : '-left-1'} bg-rose-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-white dark:border-slate-900 shadow`}>
+                              {chat.unreadCount}
+                            </div>
+                          )}
+                        </div>
+
+                        <div>
+                          <h3 className="font-bold text-sm flex items-center gap-2" style={{ color: textColor }}>
+                            <span>{formatUsername(chat.partner, isEn)}</span>
+                            {chat.partner.country && (
+                              <span className="text-xs font-normal" style={{ color: primaryColor }}>
+                                ({formatCountryName(chat.partner.country, isEn)})
+                              </span>
+                            )}
+                          </h3>
+                          <p className="text-xs mt-0.5 line-clamp-1 font-medium" style={{ color: textMuted }}>
+                            {formatLastMessageText(chat.lastMessage, isEn, chat.partner.userId)}
+                          </p>
+                        </div>
+                      </div>
+
+                      <span className="text-[10px] font-medium" style={{ color: textMuted }}>
+                        {chat.lastMessageTime ? new Date(chat.lastMessageTime).toLocaleTimeString(isEn ? 'en-US' : 'ar-EG', { hour: '2-digit', minute: '2-digit' }) : ''}
+                      </span>
+                    </div>
+                  );
+                })}
+
+                {/* Additional Friends Found Matching Search Query */}
+                {newMatchingFriends.length > 0 && (
+                  <div className="mt-4 pt-3 border-t" style={{ borderColor: cardBorder }}>
+                    <h4 className="text-xs font-bold mb-2 flex items-center gap-1.5 px-1" style={{ color: textMuted }}>
+                      <span>{isEn ? `Available friends and readers (${newMatchingFriends.length})` : `أصدقاء وقُرّاء متاحون لبدء المحادثة (${newMatchingFriends.length})`}</span>
+                    </h4>
+                    <div className="space-y-2">
+                      {newMatchingFriends.map(friend => (
                         <div
-                          key={chat.chatId}
-                          onClick={() => handleMemberCardClick(chat.partner)}
-                          className="border rounded-2xl p-4 flex items-center justify-between cursor-pointer transition-all shadow-xs"
+                          key={friend.userId}
+                          onClick={() => handleMemberCardClick(friend)}
+                          className="border rounded-2xl p-3 flex items-center justify-between cursor-pointer transition-all shadow-xs"
                           style={{
                             backgroundColor: cardBg,
                             borderColor: cardBorder,
@@ -1054,160 +1191,90 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
                           }}
                         >
                           <div className="flex items-center gap-3">
-                            <div className="relative">
-                              <div 
-                                className="w-12 h-12 rounded-full font-bold flex items-center justify-center border overflow-hidden"
-                                style={{
-                                  backgroundColor: `${primaryColor}15`,
-                                  borderColor: `${primaryColor}30`,
-                                  color: primaryColor
-                                }}
-                              >
-                                {(chat.partner.userId === ADMIN_USER_ID ? SUPPORT_AVATAR_BASE64 : chat.partner.avatarUrl) ? (
-                                  <img 
-                                    src={chat.partner.userId === ADMIN_USER_ID ? SUPPORT_AVATAR_BASE64 : chat.partner.avatarUrl} 
-                                    alt={chat.partner.username} 
-                                    className="w-full h-full object-cover" 
-                                    onError={(e) => {
-                                      if (chat.partner.userId === ADMIN_USER_ID) {
-                                        e.currentTarget.src = SUPPORT_AVATAR_BASE64;
-                                      }
-                                    }}
-                                  />
-                                ) : (
-                                  <User size={24} />
-                                )}
-                              </div>
-                              {isPartnerOnline ? (
-                                <div className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-900" title="متصل الآن" />
-                              ) : (
-                                <div className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-slate-400 border-2 border-white dark:border-slate-900 opacity-60" title="غير متصل" />
-                              )}
-                              {chat.unreadCount > 0 && (
-                                <div className="absolute -top-1 -right-1 bg-rose-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-white dark:border-slate-900 shadow">
-                                  {chat.unreadCount}
-                                </div>
-                              )}
-                            </div>
-
-                            <div>
-                              <h3 className="font-bold text-sm flex items-center gap-2" style={{ color: textColor }}>
-                                <span>{chat.partner.username}</span>
-                                <span className="text-xs font-normal" style={{ color: primaryColor }}>({chat.partner.country})</span>
-                              </h3>
-                              <p className="text-xs mt-0.5 line-clamp-1 font-medium" style={{ color: textMuted }}>
-                                {chat.lastMessage || 'بدء المحادثة'}
-                              </p>
-                            </div>
-                          </div>
-
-                          <span className="text-[10px] font-medium" style={{ color: textMuted }}>
-                            {chat.lastMessageTime ? new Date(chat.lastMessageTime).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : ''}
-                          </span>
-                        </div>
-                      );
-                    })}
-
-                    {/* Additional Friends Found Matching Search Query */}
-                    {newMatchingFriends.length > 0 && (
-                      <div className="mt-4 pt-3 border-t" style={{ borderColor: cardBorder }}>
-                        <h4 className="text-xs font-bold mb-2 flex items-center gap-1.5 px-1" style={{ color: textMuted }}>
-                          <span>أصدقاء وقُرّاء متاحون لبدء المحادثة ({newMatchingFriends.length})</span>
-                        </h4>
-                        <div className="space-y-2">
-                          {newMatchingFriends.map(friend => (
-                            <div
-                              key={friend.userId}
-                              onClick={() => handleMemberCardClick(friend)}
-                              className="border rounded-2xl p-3 flex items-center justify-between cursor-pointer transition-all shadow-xs"
+                            <div 
+                              className="w-10 h-10 rounded-full font-bold flex items-center justify-center border overflow-hidden flex-shrink-0"
                               style={{
-                                backgroundColor: cardBg,
-                                borderColor: cardBorder,
-                                borderWidth: '1.5px',
-                                borderStyle: 'solid'
+                                backgroundColor: `${primaryColor}15`,
+                                borderColor: `${primaryColor}30`,
+                                color: primaryColor
                               }}
                             >
-                              <div className="flex items-center gap-3">
-                                <div 
-                                  className="w-10 h-10 rounded-full font-bold flex items-center justify-center border overflow-hidden"
-                                  style={{
-                                    backgroundColor: `${primaryColor}15`,
-                                    borderColor: `${primaryColor}30`,
-                                    color: primaryColor
-                                  }}
-                                >
-                                  {friend.avatarUrl ? (
-                                    <img src={friend.avatarUrl} alt={friend.username} className="w-full h-full object-cover" />
-                                  ) : (
-                                    <User size={20} />
-                                  )}
-                                </div>
-                                <div>
-                                  <div className="font-bold text-sm flex items-center gap-1.5" style={{ color: textColor }}>
-                                    <span>{friend.username}</span>
-                                    <span className="text-[11px] font-normal" style={{ color: primaryColor }}>({friend.country || 'دولة أخرى'})</span>
-                                  </div>
-                                  {friend.bio && (
-                                    <p className="text-[11px] line-clamp-1" style={{ color: textMuted }}>{friend.bio}</p>
-                                  )}
-                                </div>
-                              </div>
-                              <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
-                                {(() => {
-                                  const friendship = communityService.getFriendshipStatus(friend.userId);
-                                  if (friendship.status === 'accepted') {
-                                    return null;
-                                  }
-                                  if (friendship.status === 'pending' && friendship.isRequester) {
-                                    return (
-                                      <button
-                                        type="button"
-                                        onClick={() => handleStartChat(friend.userId)}
-                                        className="px-2.5 py-1.5 rounded-xl text-xs font-bold border border-amber-500/30 bg-amber-500/15 text-amber-600 dark:text-amber-400 active:scale-95 flex items-center gap-1 cursor-pointer"
-                                      >
-                                        <Clock size={13} />
-                                        <span>بانتظار القبول</span>
-                                      </button>
-                                    );
-                                  }
-                                  if (friendship.status === 'rejected' && friendship.isRequester) {
-                                    return (
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          showToast('تم رفض طلب الإضافة من قِبل هذا العضو. لا يمكن الدخول إلى صفحة الدردشة.');
-                                        }}
-                                        className="px-2.5 py-1.5 rounded-xl text-xs font-bold border border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-400 cursor-not-allowed flex items-center gap-1"
-                                      >
-                                        <Ban size={12} />
-                                        <span>تم الرفض</span>
-                                      </button>
-                                    );
-                                  }
-                                  return (
-                                    <button
-                                      type="button"
-                                      onClick={() => handleSendAddRequest(friend)}
-                                      className="px-3 py-1.5 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1 active:scale-95 cursor-pointer"
-                                      style={{ backgroundColor: primaryColor, color: primaryTextColor }}
-                                    >
-                                      <UserPlus size={13} />
-                                      <span>إضافة</span>
-                                    </button>
-                                  );
-                                })()}
-                              </div>
+                              {friend.avatarUrl ? (
+                                <img src={friend.avatarUrl} alt={friend.username} className="w-full h-full object-cover" />
+                              ) : (
+                                <User size={20} />
+                              )}
                             </div>
-                          ))}
+                            <div>
+                              <div className="font-bold text-sm flex items-center gap-1.5" style={{ color: textColor }}>
+                                <span>{formatUsername(friend, isEn)}</span>
+                                <span className="text-[11px] font-normal" style={{ color: primaryColor }}>
+                                  ({formatCountryName(friend.country, isEn)})
+                                </span>
+                              </div>
+                              {friend.bio && (
+                                <p className="text-[11px] line-clamp-1" style={{ color: textMuted }}>{formatUserBio(friend, isEn)}</p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
+                            {(() => {
+                              const friendship = communityService.getFriendshipStatus(friend.userId);
+                              if (friendship.status === 'accepted') {
+                                return null;
+                              }
+                              if (friendship.status === 'pending' && friendship.isRequester) {
+                                return (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleStartChat(friend.userId)}
+                                    className="px-2.5 py-1.5 rounded-xl text-xs font-bold border border-amber-500/30 bg-amber-500/15 text-amber-600 dark:text-amber-400 active:scale-95 flex items-center gap-1 cursor-pointer"
+                                  >
+                                    <Clock size={13} />
+                                    <span>{isEn ? 'Pending' : 'بانتظار القبول'}</span>
+                                  </button>
+                                );
+                              }
+                              if (friendship.status === 'rejected' && friendship.isRequester) {
+                                return (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      showToast(isEn 
+                                        ? 'Friend request was declined by this member. Cannot enter chat.' 
+                                        : 'تم رفض طلب الإضافة من قِبل هذا العضو. لا يمكن الدخول إلى صفحة الدردشة.');
+                                    }}
+                                    className="px-2.5 py-1.5 rounded-xl text-xs font-bold border border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-400 cursor-not-allowed flex items-center gap-1"
+                                  >
+                                    <Ban size={12} />
+                                    <span>{isEn ? 'Declined' : 'تم الرفض'}</span>
+                                  </button>
+                                );
+                              }
+                              return (
+                                <button
+                                  type="button"
+                                  onClick={() => handleSendAddRequest(friend)}
+                                  className="px-3 py-1.5 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1 active:scale-95 cursor-pointer"
+                                  style={{ backgroundColor: primaryColor, color: primaryTextColor }}
+                                >
+                                  <UserPlus size={13} />
+                                  <span>{isEn ? 'Add' : 'إضافة'}</span>
+                                </button>
+                              );
+                            })()}
+                          </div>
                         </div>
-                      </div>
-                    )}
-                  </>
+                      ))}
+                    </div>
+                  </div>
                 )}
+              </>
+            )}
           </div>
         )}
 
-        {/* Tab 3: Community Tab (المجتمع - مخصص للمحادثات الجماعية) */}
+        {/* Tab 3: Community Tab (Groups and Circles) */}
         {activeTab === 'community' && (
           <div className="space-y-3">
             {/* Header: Groups count & Create Group Button */}
@@ -1215,7 +1282,9 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
               <div className="flex items-center gap-2">
                 <Users size={17} style={{ color: primaryColor }} />
                 <span className="text-xs sm:text-sm font-bold" style={{ color: textColor }}>
-                  المحادثات وحلقات المجتمع ({filteredGroups.length})
+                  {isEn 
+                    ? `Community Chats & Circles (${filteredGroups.length})` 
+                    : `المحادثات وحلقات المجتمع (${filteredGroups.length})`}
                 </span>
               </div>
 
@@ -1233,10 +1302,10 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
                   backgroundColor: primaryColor,
                   color: primaryTextColor
                 }}
-                title="إنشاء محادثة جماعية جديدة"
+                title={isEn ? "Create new group chat" : "إنشاء محادثة جماعية جديدة"}
               >
                 <Users size={14} />
-                <span>+ إنشاء مجموعة</span>
+                <span>{isEn ? '+ Create Group' : '+ إنشاء مجموعة'}</span>
               </button>
             </div>
 
@@ -1246,7 +1315,9 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
                 <div className="flex items-center gap-1.5 px-1">
                   <Sparkles size={14} className="text-amber-500 animate-pulse" />
                   <span className="text-xs font-bold" style={{ color: textColor }}>
-                    دعوات الانضمام للمحادثات الجماعية ({uniquePendingInvitations.length})
+                    {isEn 
+                      ? `Group Chat Invitations (${uniquePendingInvitations.length})` 
+                      : `دعوات الانضمام للمحادثات الجماعية (${uniquePendingInvitations.length})`}
                   </span>
                 </div>
 
@@ -1282,20 +1353,21 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
                           <h4 className="font-bold text-xs sm:text-sm truncate" style={{ color: textColor }}>
-                            {invitation.name}
+                            {formatGroupName(invitation, isEn)}
                           </h4>
                           <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 flex-shrink-0">
-                            دعوة انضمام
+                            {isEn ? 'Invitation' : 'دعوة انضمام'}
                           </span>
                         </div>
 
                         <p className="text-[11px] mt-0.5 truncate" style={{ color: textMuted }}>
-                          تمت دعوتك بواسطة: <span className="font-bold" style={{ color: primaryColor }}>{invitation.creatorName || 'مستخدم المصحف'}</span>
-                          {invitation.description ? ` • ${invitation.description}` : ''}
+                          {isEn ? 'Invited by: ' : 'تمت دعوتك بواسطة: '}
+                          <span className="font-bold" style={{ color: primaryColor }}>{invitation.creatorName || (isEn ? 'App User' : 'مستخدم المصحف')}</span>
+                          {invitation.description ? ` • ${formatGroupDescription(invitation, isEn)}` : ''}
                         </p>
 
                         <div className="text-[10px] mt-1" style={{ color: textMuted }}>
-                          الأعضاء الحاليون: {invitation.members?.length || 1}
+                          {isEn ? `Current members: ${invitation.members?.length || 1}` : `الأعضاء الحاليون: ${invitation.members?.length || 1}`}
                         </div>
                       </div>
                     </div>
@@ -1307,7 +1379,7 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
                         onClick={async () => {
                           await communityService.acceptGroupInvitation(invitation.groupId);
                           loadData();
-                          showToast(`تم الانضمام إلى "${invitation.name}" بنجاح 🌿`);
+                          showToast(isEn ? `Joined "${formatGroupName(invitation, isEn)}" successfully 🌿` : `تم الانضمام إلى "${invitation.name}" بنجاح 🌿`);
                           handleStartGroupChat(invitation.groupId);
                         }}
                         className="flex-1 py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all cursor-pointer"
@@ -1317,7 +1389,7 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
                         }}
                       >
                         <Check size={14} />
-                        <span>قبول والانضمام</span>
+                        <span>{isEn ? 'Accept & Join' : 'قبول والانضمام'}</span>
                       </button>
 
                       <button
@@ -1325,7 +1397,7 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
                         onClick={async () => {
                           await communityService.declineGroupInvitation(invitation.groupId);
                           loadData();
-                          showToast('تم رفض دعوة الانضمام');
+                          showToast(isEn ? 'Group invitation declined' : 'تم رفض دعوة الانضمام');
                         }}
                         className="py-2 px-3.5 rounded-xl text-xs font-bold border flex items-center justify-center gap-1.5 active:scale-95 transition-all hover:bg-rose-500/10 hover:border-rose-500/30 hover:text-rose-500 cursor-pointer"
                         style={{
@@ -1335,7 +1407,7 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
                         }}
                       >
                         <X size={14} />
-                        <span>رفض</span>
+                        <span>{isEn ? 'Decline' : 'رفض'}</span>
                       </button>
                     </div>
                   </motion.div>
@@ -1351,10 +1423,14 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
               >
                 <Users size={40} className="mx-auto mb-2" style={{ color: textMuted }} />
                 <p className="text-sm font-bold" style={{ color: textColor }}>
-                  {searchQuery ? 'لا توجد مجموعات مطابقة للبحث' : 'لا توجد محادثات جماعية حالياً'}
+                  {searchQuery 
+                    ? (isEn ? 'No groups match your search' : 'لا توجد مجموعات مطابقة للبحث') 
+                    : (isEn ? 'No group chats currently' : 'لا توجد محادثات جماعية حالياً')}
                 </p>
                 <p className="text-xs mt-1" style={{ color: textMuted }}>
-                  اضغط على زر (+ إنشاء مجموعة) لبدء حلقة تواصل جديدة مع القراء
+                  {isEn 
+                    ? 'Click (+ Create Group) to start a new circle with fellow readers' 
+                    : 'اضغط على زر (+ إنشاء مجموعة) لبدء حلقة تواصل جديدة مع القراء'}
                 </p>
                 <button
                   type="button"
@@ -1363,7 +1439,7 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
                   style={{ backgroundColor: primaryColor, color: primaryTextColor }}
                 >
                   <Users size={14} />
-                  <span>إنشاء محادثة جماعية الآن</span>
+                  <span>{isEn ? 'Create Group Chat Now' : 'إنشاء محادثة جماعية الآن'}</span>
                 </button>
               </div>
             ) : (
@@ -1379,7 +1455,7 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
                       borderWidth: '1.5px',
                       borderStyle: 'solid'
                     }}
-                    title={cleanGroupName(grp.name)}
+                    title={cleanGroupName(formatGroupName(grp, isEn))}
                   >
                     <div className="flex items-center gap-3 min-w-0 flex-1">
                       <div 
@@ -1395,15 +1471,17 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
 
                       <div className="min-w-0 flex-1">
                         <h3 className="font-bold text-xs sm:text-sm truncate leading-snug" style={{ color: textColor }}>
-                          {cleanGroupName(grp.name)}
+                          {cleanGroupName(formatGroupName(grp, isEn))}
                         </h3>
                         {grp.description && (
                           <p className="text-[11px] truncate mt-0.5" style={{ color: textMuted }}>
-                            {grp.description}
+                            {formatGroupDescription(grp, isEn)}
                           </p>
                         )}
                         <p className="text-[10px] mt-0.5 font-medium" style={{ color: textMuted }}>
-                          {grp.members?.length || 1} عضو
+                          {isEn 
+                            ? `${grp.members?.length || 1} member${(grp.members?.length || 1) > 1 ? 's' : ''}` 
+                            : `${grp.members?.length || 1} عضو`}
                         </p>
                       </div>
                     </div>
@@ -1414,7 +1492,7 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
           </div>
         )}
 
-        {/* Tab 3: Blocked Users */}
+        {/* Tab 4: Blocked Users */}
         {activeTab === 'blocked' && (
           <div className="space-y-2.5">
             {blockedUsers.length === 0 ? (
@@ -1423,13 +1501,19 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
                 style={{ backgroundColor: cardBg, borderColor: cardBorder, borderWidth: '1.5px', borderStyle: 'solid' }}
               >
                 <Shield size={40} className="mx-auto mb-2 opacity-60" style={{ color: primaryColor }} />
-                <p className="text-sm font-bold" style={{ color: textColor }}>لا يوجد مستخدمون محظورون</p>
-                <p className="text-xs mt-1" style={{ color: textMuted }}>المستخدمون المحظورون فلن تظهر أسماؤهم لك ولن يتمكنوا من التراسل معك</p>
+                <p className="text-sm font-bold" style={{ color: textColor }}>
+                  {isEn ? 'No blocked users' : 'لا يوجد مستخدمون محظورون'}
+                </p>
+                <p className="text-xs mt-1" style={{ color: textMuted }}>
+                  {isEn 
+                    ? 'Blocked users will not appear in your lists and cannot message you' 
+                    : 'المستخدمون المحظورون فلن تظهر أسماؤهم لك ولن يتمكنوا من التراسل معك'}
+                </p>
               </div>
             ) : (
               blockedUsers.map((b) => {
-                const displayName = b.user?.username || 'مستخدم محظور';
-                const displayCountry = b.user?.country;
+                const displayName = formatUsername(b.user || { username: isEn ? 'Blocked User' : 'مستخدم محظور' }, isEn);
+                const displayCountry = b.user?.country ? formatCountryName(b.user.country, isEn) : '';
                 return (
                   <div
                     key={b.blockedId}
@@ -1456,13 +1540,17 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
                             <span className="text-xs font-normal" style={{ color: textMuted }}>({displayCountry})</span>
                           )}
                         </h3>
-                        <p className="text-[11px]" style={{ color: textMuted }}>تاريخ الحظر: {new Date(b.createdAt).toLocaleDateString('ar-EG')}</p>
+                        <p className="text-[11px]" style={{ color: textMuted }}>
+                          {isEn 
+                            ? `Blocked on: ${new Date(b.createdAt).toLocaleDateString('en-US')}` 
+                            : `تاريخ الحظر: ${new Date(b.createdAt).toLocaleDateString('ar-EG')}`}
+                        </p>
                       </div>
                     </div>
 
                     <button
                       onClick={() => handleUnblockUser(b.blockedId, b.user?.username)}
-                      className="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all border active:scale-95"
+                      className="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all border active:scale-95 cursor-pointer"
                       style={{
                         backgroundColor: secondaryBg,
                         borderColor: cardBorder,
@@ -1471,7 +1559,7 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
                         color: primaryColor
                       }}
                     >
-                      إلغاء الحظر
+                      {isEn ? 'Unblock' : 'إلغاء الحظر'}
                     </button>
                   </div>
                 );
@@ -1499,7 +1587,7 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
       {/* Delete Group Confirmation Modal */}
       <AnimatePresence>
         {groupToDelete && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" dir="rtl" style={{ fontFamily: theme.font }}>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" dir={isEn ? 'ltr' : 'rtl'} style={{ fontFamily: theme.font }}>
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -1510,9 +1598,13 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
               <div className="w-14 h-14 rounded-full bg-rose-500/15 text-rose-500 flex items-center justify-center mx-auto">
                 <Trash2 size={28} />
               </div>
-              <h3 className="text-base font-bold text-rose-600 dark:text-rose-400">حذف المحادثة الجماعية نهائياً؟</h3>
+              <h3 className="text-base font-bold text-rose-600 dark:text-rose-400">
+                {isEn ? 'Permanently delete group chat?' : 'حذف المحادثة الجماعية نهائياً؟'}
+              </h3>
               <p className="text-xs leading-relaxed" style={{ color: textMuted }}>
-                أنت على وشك حذف مجموعة <strong>"{groupToDelete.name}"</strong> بشكل نهائي. سيتم حذف المجموعة ومسح كافة رسائلها لدى جميع المشتركين.
+                {isEn 
+                  ? `You are about to permanently delete group "${formatGroupName(groupToDelete, isEn)}". The group and all its messages will be wiped for all members.` 
+                  : `أنت على وشك حذف مجموعة "${groupToDelete.name}" بشكل نهائي. سيتم حذف المجموعة ومسح كافة رسائلها لدى جميع المشتركين.`}
               </p>
               <div className="flex items-center gap-2 pt-2">
                 <button
@@ -1520,19 +1612,19 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
                   onClick={async () => {
                     try {
                       await communityService.deleteGroup(groupToDelete.groupId);
-                      showToast('تم حذف المحادثة الجماعية بنجاح');
+                      showToast(isEn ? 'Group chat deleted successfully' : 'تم حذف المحادثة الجماعية بنجاح');
                       setGroupToDelete(null);
                       communityService.setActiveTab('community');
                       setActiveTabState('community');
                       userManuallySwitchedTabRef.current = true;
                       loadData();
                     } catch (err: any) {
-                      showToast(err?.message || 'تعذر حذف المجموعة');
+                      showToast(err?.message || (isEn ? 'Unable to delete group' : 'تعذر حذف المجموعة'));
                     }
                   }}
                   className="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-all shadow-sm cursor-pointer"
                 >
-                  نعم، حذف المجموعة
+                  {isEn ? 'Yes, Delete Group' : 'نعم، حذف المجموعة'}
                 </button>
                 <button
                   type="button"
@@ -1540,7 +1632,7 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
                   className="flex-1 py-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer"
                   style={{ backgroundColor: secondaryBg, borderColor: cardBorder, borderWidth: '1.5px', borderStyle: 'solid', color: textColor }}
                 >
-                  تراجع
+                  {isEn ? 'Cancel' : 'تراجع'}
                 </button>
               </div>
             </motion.div>
@@ -1551,7 +1643,7 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
       {/* Hide Group From My Page Modal */}
       <AnimatePresence>
         {groupToHide && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" dir="rtl" style={{ fontFamily: theme.font }}>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" dir={isEn ? 'ltr' : 'rtl'} style={{ fontFamily: theme.font }}>
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -1562,9 +1654,13 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
               <div className="w-14 h-14 rounded-full bg-slate-500/15 text-slate-500 flex items-center justify-center mx-auto">
                 <EyeOff size={28} />
               </div>
-              <h3 className="text-base font-bold" style={{ color: textColor }}>إزالة المجموعة من صفحتك؟</h3>
+              <h3 className="text-base font-bold" style={{ color: textColor }}>
+                {isEn ? 'Remove group from your page?' : 'إزالة المجموعة من صفحتك؟'}
+              </h3>
               <p className="text-xs leading-relaxed" style={{ color: textMuted }}>
-                هل تريد إزالة مجموعة <strong>"{groupToHide.name}"</strong> من صفحتك؟ لن تظهر لك في تبويب المجتمع بعد الآن، مع بقاء المجموعة لجميع المشتركين الآخرين.
+                {isEn 
+                  ? `Do you want to remove group "${formatGroupName(groupToHide, isEn)}" from your page? It will no longer appear in your Community tab, while remaining for other members.` 
+                  : `هل تريد إزالة مجموعة "${groupToHide.name}" من صفحتك؟ لن تظهر لك في تبويب المجتمع بعد الآن، مع بقاء المجموعة لجميع المشتركين الآخرين.`}
               </p>
               <div className="flex items-center gap-2 pt-2">
                 <button
@@ -1575,16 +1671,16 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
                         await communityService.leaveGroup(groupToHide.groupId);
                       }
                       communityService.hideGroupFromMyPage(groupToHide.groupId);
-                      showToast('تمت إزالة المجموعة من صفحتك بنجاح');
+                      showToast(isEn ? 'Group removed from your page successfully' : 'تمت إزالة المجموعة من صفحتك بنجاح');
                       setGroupToHide(null);
                       loadData();
                     } catch (err: any) {
-                      showToast(err?.message || 'تعذر إزالة المجموعة');
+                      showToast(err?.message || (isEn ? 'Unable to remove group' : 'تعذر إزالة المجموعة'));
                     }
                   }}
                   className="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-all shadow-sm cursor-pointer"
                 >
-                  نعم، إزالة من صفحتي
+                  {isEn ? 'Yes, Remove From My Page' : 'نعم، إزالة من صفحتي'}
                 </button>
                 <button
                   type="button"
@@ -1592,7 +1688,7 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
                   className="flex-1 py-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer"
                   style={{ backgroundColor: secondaryBg, borderColor: cardBorder, color: textColor }}
                 >
-                  تراجع
+                  {isEn ? 'Cancel' : 'تراجع'}
                 </button>
               </div>
             </motion.div>
@@ -1621,7 +1717,7 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
         onUpdated={(updatedGroup) => {
           setGroupToEdit(null);
           loadData();
-          showToast('تم حفظ تعديل اسم وصورة المجموعة بنجاح 🌿');
+          showToast(isEn ? 'Group details saved successfully 🌿' : 'تم حفظ تعديل اسم وصورة المجموعة بنجاح 🌿');
         }}
         onDelete={() => {
           if (groupToEdit) {

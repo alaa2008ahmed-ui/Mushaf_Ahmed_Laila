@@ -93,27 +93,27 @@ export const safeHtml2Canvas = async (element: HTMLElement, options: Partial<Opt
   });
 };
 
-// High-reliability Pure Canvas Renderer for Quran Verse & Page Cards
+// High-reliability Pure Canvas Renderer for Quran Verse & Page Cards (Fixed 1080x1920 Story Resolution)
 export function renderQuranCardToCanvas(verseData: QuranVerseAttachment): HTMLCanvasElement {
   const canvas = document.createElement('canvas');
-  const width = 1200;
-  const isPage = verseData.shareType === 'page';
-  const minHeight = isPage ? 800 : 650;
+  const width = 1080;
+  const height = 1920; // Fixed 9:16 mobile story aspect ratio
   canvas.width = width;
-  canvas.height = minHeight;
+  canvas.height = height;
 
   const ctx = canvas.getContext('2d');
   if (!ctx) return canvas;
 
-  // Background
+  const isPage = verseData.shareType === 'page';
+
+  // 1. Background
   if (isPage) {
     ctx.fillStyle = '#FFFDF5';
-    ctx.fillRect(0, 0, width, canvas.height);
+    ctx.fillRect(0, 0, width, height);
   } else {
     const bgVal = verseData.bgValue || '#ffffff';
     if (bgVal.startsWith('linear-gradient') || bgVal.startsWith('radial-gradient')) {
-      // Draw rich gradient
-      const grad = ctx.createLinearGradient(0, 0, width, canvas.height);
+      const grad = ctx.createLinearGradient(0, 0, width, height);
       if (bgVal.includes('#064e3b') || bgVal.includes('#0f766e')) {
         grad.addColorStop(0, '#064e3b');
         grad.addColorStop(1, '#0f766e');
@@ -134,102 +134,118 @@ export function renderQuranCardToCanvas(verseData: QuranVerseAttachment): HTMLCa
     } else {
       ctx.fillStyle = bgVal;
     }
-    ctx.fillRect(0, 0, width, canvas.height);
+    ctx.fillRect(0, 0, width, height);
   }
 
-  // Border & Frame
+  // 2. Borders & Ornate Frame
   ctx.direction = 'rtl';
   ctx.textAlign = 'center';
 
   if (isPage) {
     ctx.strokeStyle = '#F59E0B';
     ctx.lineWidth = 6;
-    ctx.strokeRect(20, 20, width - 40, canvas.height - 40);
+    ctx.strokeRect(30, 30, width - 60, height - 60);
   } else if (verseData.frameType && verseData.frameType !== 'none') {
     ctx.strokeStyle = verseData.frameColor || '#FFD700';
     ctx.lineWidth = 8;
-    ctx.strokeRect(30, 30, width - 60, canvas.height - 60);
+    ctx.strokeRect(36, 36, width - 72, height - 72);
     ctx.lineWidth = 2;
-    ctx.strokeRect(45, 45, width - 90, canvas.height - 90);
+    ctx.strokeRect(52, 52, width - 104, height - 104);
   }
 
-  // Draw Header
-  let currentY = 90;
+  // 3. Top Section Header
+  let currentY = 140;
   if (isPage) {
     ctx.fillStyle = '#9A3412';
-    ctx.font = 'bold 26px "Noto Naskh Arabic", "Traditional Arabic", Arial, sans-serif';
+    ctx.font = 'bold 32px "Noto Naskh Arabic", "Traditional Arabic", Arial, sans-serif';
     const surahTitle = `صفحة مصحف - سورة ${verseData.surahName} (${verseData.fromAyah && verseData.toAyah && verseData.fromAyah !== verseData.toAyah ? `الآيات ${verseData.fromAyah} إلى ${verseData.toAyah}` : `آية ${verseData.ayahNumber}`})`;
     ctx.fillText(surahTitle, width / 2, currentY);
 
-    currentY += 25;
+    currentY += 30;
     ctx.strokeStyle = '#E7E5E4';
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(100, currentY);
-    ctx.lineTo(width - 100, currentY);
+    ctx.moveTo(120, currentY);
+    ctx.lineTo(width - 120, currentY);
     ctx.stroke();
-    currentY += 50;
+    currentY += 60;
   } else {
     ctx.fillStyle = verseData.textColor || '#000000';
-    ctx.font = 'bold 30px "Amiri", "Amiri Quran", "Noto Naskh Arabic", serif';
+    ctx.font = 'bold 36px "Amiri", "Amiri Quran", "Noto Naskh Arabic", serif';
     ctx.fillText('بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ', width / 2, currentY);
-    currentY += 60;
+    currentY += 80;
   }
 
-  // Draw Verse Text with Word Wrap
+  const topHeaderEndY = currentY;
+  const footerStartY = height - 140;
+  const availableMiddleHeight = footerStartY - topHeaderEndY - 40; // ~1500px
+
+  // 4. Dynamic Auto-Fit Typography for Verse Text
+  const maxWidth = width - 180;
+  const verseText = `﴿ ${verseData.text} ﴾`;
+  const cleanLen = verseData.text.length;
+
+  let fontSize = 64;
+  if (cleanLen > 800) fontSize = 24;
+  else if (cleanLen > 450) fontSize = 32;
+  else if (cleanLen > 220) fontSize = 42;
+  else if (cleanLen > 90) fontSize = 52;
+  else fontSize = 66;
+
+  let lineHeight = Math.round(fontSize * 1.85);
+
+  const wrapWithFs = (fs: number) => {
+    ctx.font = `bold ${fs}px "Amiri", "Amiri Quran", "Noto Naskh Arabic", serif`;
+    const words = verseText.split(/\s+/);
+    let curLine = '';
+    const resultLines: string[] = [];
+    for (let n = 0; n < words.length; n++) {
+      const testLine = curLine ? `${curLine} ${words[n]}` : words[n];
+      if (ctx.measureText(testLine).width > maxWidth && curLine) {
+        resultLines.push(curLine);
+        curLine = words[n];
+      } else {
+        curLine = testLine;
+      }
+    }
+    if (curLine) resultLines.push(curLine);
+    return resultLines;
+  };
+
+  let lines = wrapWithFs(fontSize);
+  while (lines.length * lineHeight > availableMiddleHeight && fontSize > 18) {
+    fontSize -= 2;
+    lineHeight = Math.round(fontSize * 1.75);
+    lines = wrapWithFs(fontSize);
+  }
+
+  // Vertically center middle lines in available height
+  const totalTextHeight = lines.length * lineHeight;
+  currentY = topHeaderEndY + Math.max(20, Math.round((availableMiddleHeight - totalTextHeight) / 2));
+
   const textColor = isPage ? '#1C1917' : (verseData.textColor || '#000000');
   ctx.fillStyle = textColor;
-  ctx.font = 'bold 36px "Amiri", "Amiri Quran", "Noto Naskh Arabic", serif';
-
-  const verseText = `﴿ ${verseData.text} ﴾`;
-  const words = verseText.split(' ');
-  let line = '';
-  const lines: string[] = [];
-  const maxWidth = width - 180;
-
-  for (let n = 0; n < words.length; n++) {
-    const testLine = line + words[n] + ' ';
-    const metrics = ctx.measureText(testLine);
-    const testWidth = metrics.width;
-    if (testWidth > maxWidth && n > 0) {
-      lines.push(line.trim());
-      line = words[n] + ' ';
-    } else {
-      line = testLine;
-    }
-  }
-  lines.push(line.trim());
-
-  // If text is tall, resize canvas if needed
-  const lineHeight = 65;
-  const neededHeight = currentY + (lines.length * lineHeight) + 160;
-  if (neededHeight > canvas.height) {
-    // Redraw on larger canvas
-    canvas.height = neededHeight;
-    return renderQuranCardToCanvas(verseData);
-  }
+  ctx.font = `bold ${fontSize}px "Amiri", "Amiri Quran", "Noto Naskh Arabic", serif`;
 
   for (let k = 0; k < lines.length; k++) {
-    ctx.fillText(lines[k], width / 2, currentY);
+    ctx.fillText(lines[k], width / 2, currentY + fontSize * 0.85);
     currentY += lineHeight;
   }
 
-  // Draw Footer
-  currentY += 30;
-  ctx.strokeStyle = isPage ? '#E7E5E4' : 'rgba(0,0,0,0.15)';
+  // 5. Footer (Grounded at the bottom of 1080x1920)
+  ctx.strokeStyle = isPage ? '#E7E5E4' : 'rgba(254, 240, 138, 0.4)';
   ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.moveTo(150, currentY);
-  ctx.lineTo(width - 150, currentY);
+  ctx.moveTo(180, footerStartY);
+  ctx.lineTo(width - 180, footerStartY);
   ctx.stroke();
-  currentY += 45;
 
   ctx.fillStyle = isPage ? '#78716C' : textColor;
-  ctx.font = 'bold 24px "Noto Naskh Arabic", "Traditional Arabic", Arial, sans-serif';
+  ctx.font = 'bold 28px "Noto Naskh Arabic", "Traditional Arabic", Arial, sans-serif';
   const footerText = isPage
-    ? 'مصحف احمد وليلي • صفحة قراءة'
-    : `سورة ${verseData.surahName} (${verseData.fromAyah && verseData.toAyah && verseData.fromAyah !== verseData.toAyah ? `الآيات ${verseData.fromAyah} إلى ${verseData.toAyah}` : `آية ${verseData.ayahNumber}`}) • مصحف احمد وليلي`;
-  ctx.fillText(footerText, width / 2, currentY);
+    ? 'مصحف أحمد وليلى • صفحة قراءة'
+    : `سورة ${verseData.surahName} (${verseData.fromAyah && verseData.toAyah && verseData.fromAyah !== verseData.toAyah ? `الآيات ${verseData.fromAyah} إلى ${verseData.toAyah}` : `آية ${verseData.ayahNumber}`}) • مصحف أحمد وليلى`;
+  ctx.fillText(footerText, width / 2, footerStartY + 45);
 
   return canvas;
 }

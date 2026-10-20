@@ -841,31 +841,49 @@ export const PAGES_BUTTONS_GUIDE: PageButtonsGuide[] = [
     pageName: 'الحج والعمرة',
     buttons: [
       {
-        id: 'umrah_tab',
-        name: 'تبويب خطوات ومناسك العمرة',
-        icon: 'fa-solid fa-kaaba',
-        visualType: 'pill-button',
-        iconColor: '#10b981',
-        label: 'مناسك العمرة خطوة بخطوة',
-        purpose: 'يعرض خطوات أداء العمرة بالترتيب الشرعي (الإحرام، الطواف 7 أشواط، السعي 7 أشواط، والحلق أو التقصير) مع أدعية كل خطوة.'
-      },
-      {
-        id: 'hajj_tab',
-        name: 'تبويب أيام ومناسك الحج يوماً بيوم',
-        icon: 'fa-solid fa-campground',
-        visualType: 'pill-button',
+        id: 'btn_hajj_guide',
+        name: 'زر دليل الحج',
+        icon: 'fa-solid fa-tent',
+        visualType: 'card-button',
         iconColor: '#3b82f6',
-        label: 'مناسك الحج يوماً بيوم',
-        purpose: 'يعرض أعمال الحج مرتبة بالتواريخ: يوم التروية (8 ذو الحجة)، عرفة (9)، ليلة مزدلفة، يوم النحر (10)، وأيام التشريق مع واجبات وسنن كل يوم.'
+        label: 'دليل الحج',
+        purpose: 'شرح مفصل لمناسك الحج بأنواعه الثلاثة (التمتع، الإفراد، القِران) مع المخطط الزمني لمحطات النسك يوماً بيوم من يوم التروية وحتى طواف الوداع وأدلة الكتاب والسنة.'
       },
       {
-        id: 'duaa_cards',
-        name: 'بطاقات أدعية المناسك الصحيحة',
-        icon: 'fa-solid fa-hands-praying',
+        id: 'btn_umrah_guide',
+        name: 'زر دليل العمرة',
+        icon: 'fa-solid fa-compass',
+        visualType: 'card-button',
+        iconColor: '#10b981',
+        label: 'دليل العمرة',
+        purpose: 'دليل شامل لمناسك العمرة خطوة بخطوة موثقة بالقرآن الكريم وصحيح السنة النبوية، مع بيان الأركان والواجبات والسنن والمحظورات وتفاصيل الطواف والسعي.'
+      },
+      {
+        id: 'btn_hajj_duaa',
+        name: 'زر أدعية وأذكار',
+        icon: 'fa-solid fa-book-open',
+        visualType: 'card-button',
+        iconColor: '#10b981',
+        label: 'أدعية وأذكار',
+        purpose: 'موسوعة أدعية وأذكار الحج والعمرة المأثورة عن النبي ﷺ في الطواف والمسعى ويوم عرفة والمشعر الحرام مع إمكانية التكبير والتنقل السهل بين الأدعية.'
+      },
+      {
+        id: 'btn_tawaf_counter',
+        name: 'زر عَدّاد الطواف',
+        icon: 'fa-solid fa-rotate-left',
+        visualType: 'card-button',
+        iconColor: '#8b5cf6',
+        label: 'عَدّاد الطواف',
+        purpose: 'عداد إلكتروني تفاعلي لمتابعة أشواط الطواف والسعي (٧ أشواط) مع التكبير والدعاء المأثور لكل شوط وخاصية الاهتزاز عند اكتمال كل شوط.'
+      },
+      {
+        id: 'btn_hajj_checklist',
+        name: 'زر قائمة التجهيزات والأمتعة',
+        icon: 'fa-solid fa-sliders',
         visualType: 'card-button',
         iconColor: '#f59e0b',
-        label: 'أدعية الطواف والسعي وعرفة',
-        purpose: 'تعرض الأدعية الثابتة عن النبي ﷺ في الطواف والسعي وعلى الصفا والمروة وفي صعيد عرفات الطاهر مع الترجمة وشرح المعاني.'
+        label: 'قائمة التجهيزات والأمتعة',
+        purpose: 'قائمة تفاعلية ذكية لتنظيم وتجهيز مستلزمات الحج والعمرة، ملابس الإحرام، الأدوية، والأوراق الهامة لضمان عدم نسيان أي متطلب قبل السفر.'
       }
     ]
   },
@@ -1581,7 +1599,7 @@ export const PAGES_BUTTONS_GUIDE: PageButtonsGuide[] = [
   // 23. السيرة والخط الزمني (مستقلة تماماً بدون أيقونات الجوانب)
   {
     id: 'prophetic-seerah',
-    pageName: 'السيرة والخط الزمني',
+    pageName: 'السيرة النبوية',
     buttons: [
       {
         id: 'timeline_cards',

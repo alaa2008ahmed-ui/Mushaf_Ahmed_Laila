@@ -15,9 +15,11 @@ import {
   List, Shirt, Wand2, Droplet, Waves, DoorOpen, Bath,
   LogOut, ArrowRightSquare, Navigation, Map,
   User, CheckCircle, Repeat, ArrowLeftRight, HelpCircle, ListFilter,
-  Home, Phone, ExternalLink
+  Home, Phone, ExternalLink, Tent, Ban, ShieldAlert, SlidersHorizontal, ZoomIn
 } from 'lucide-react';
 import { ButtonExplanationData } from './ButtonExplanationModal';
+import { useLanguage } from '../../context/LanguageContext';
+import { translateExplanationData, translateTree, tGuide } from './pageGuideTranslations';
 
 interface PageMockupProps {
   onInspect: (data: ButtonExplanationData) => void;
@@ -39,13 +41,17 @@ export const Hotspot: React.FC<{
   className?: string;
   title?: string;
 }> = ({ onClick, children, className = '', title }) => {
+  const { language } = useLanguage();
+  const defaultTitle = language === 'en' ? "Tap to view button explanation" : "اضغط لعرض شرح هذا الزر";
+  const finalTitle = title ? (language === 'en' ? tGuide(title, 'en') : title) : defaultTitle;
+
   return (
     <div
       onClick={(e) => {
         e.stopPropagation();
         onClick();
       }}
-      title={title || "اضغط لعرض شرح هذا الزر"}
+      title={finalTitle}
       className={`cursor-pointer transition-all duration-150 hover:opacity-90 active:scale-[0.98] select-none ${className}`}
     >
       {children}
@@ -1462,7 +1468,7 @@ export const AhlAlQuranMockup: React.FC<PageMockupProps> = ({
         </div>
       </Hotspot>
 
-      {/* 2. شريط فلترة الشهر والأرشيف */}
+      {/* 2. شريط فلترة الشهر والأرشيف - من اليمين إلى اليسار */}
       <Hotspot onClick={() => onInspect({
         title: 'شريط اختيار الشهر والأرشيف',
         purpose: 'يتيح لك استعراض المتصدرين للشهر الهجري الحالي، أو فتح الأرشيف للاطلاع على سجل المتصدرين في الأشهر والسنوات السابقة.'
@@ -1471,19 +1477,19 @@ export const AhlAlQuranMockup: React.FC<PageMockupProps> = ({
           className="p-2.5 px-3.5 rounded-2xl border-2 flex items-center justify-between text-xs sm:text-sm font-bold shadow-xs"
           style={{ backgroundColor: isBlackTheme ? '#141414' : '#ffffff', borderColor: isBlackTheme ? 'rgba(255, 255, 255, 0.4)' : '#000000', color: textColor }}
         >
-          <div className="flex items-center gap-1.5 opacity-75">
-            <ChevronDown size={16} />
-            <span>الأرشيف</span>
+          <div className="flex items-center gap-1.5">
+            <Calendar size={16} className="text-emerald-600" />
+            <span>جمادى الأولى 8...</span>
           </div>
           <span className="px-2.5 py-1 rounded-xl bg-emerald-500/15 text-emerald-600 text-xs font-black">الشهر الحالي</span>
-          <div className="flex items-center gap-1.5">
-            <span>جمادى الأولى 8...</span>
-            <Calendar size={16} />
+          <div className="flex items-center gap-1.5 opacity-75">
+            <span>الأرشيف</span>
+            <ChevronDown size={16} />
           </div>
         </div>
       </Hotspot>
 
-      {/* 3. بطاقة ترتيبك الشخصي: المركز 3 */}
+      {/* 3. بطاقة ترتيبك الشخصي: المركز 3 - من اليمين إلى اليسار */}
       <Hotspot onClick={() => onInspect({
         title: 'بطاقة ترتيبك الشهري بين قراء القرآن',
         purpose: 'توضح مركزك الحالي وترتيبك التنافسي في قراءة القرآن الكريم لهذا الشهر مع بيان عدد الصفحات التي قرأتها وسجلتها.'
@@ -1492,21 +1498,22 @@ export const AhlAlQuranMockup: React.FC<PageMockupProps> = ({
           className="p-3.5 px-4 rounded-2xl border-2 flex items-center justify-between shadow-xs"
           style={{ backgroundColor: isBlackTheme ? '#141414' : '#ffffff', borderColor: isBlackTheme ? 'rgba(255, 255, 255, 0.4)' : '#000000', color: textColor }}
         >
-          <div className="text-right">
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-xs sm:text-sm">ترتيبك في جمادى الأولى 1448هـ:</span>
-              <span className="px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-600 text-xs font-black">المركز 3</span>
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center font-black text-lg shadow-sm shrink-0">
+              #3
             </div>
-            <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 block mt-1">صفحة واحدة</span>
-          </div>
-
-          <div className="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center font-black text-lg shadow-sm">
-            #3
+            <div className="text-right">
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-xs sm:text-sm">ترتيبك في جمادى الأولى 1448هـ:</span>
+                <span className="px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-600 text-xs font-black">المركز 3</span>
+              </div>
+              <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 block mt-1">صفحة واحدة</span>
+            </div>
           </div>
         </div>
       </Hotspot>
 
-      {/* 4. لوحة المتصدرين الثلاثة */}
+      {/* 4. لوحة المتصدرين الثلاثة - من اليمين إلى اليسار */}
       {/* المركز الأول: فاعل خير */}
       <Hotspot onClick={() => onInspect({
         title: 'المتصدر بالمركز الأول (الميدالية الذهبية)',
@@ -1516,17 +1523,22 @@ export const AhlAlQuranMockup: React.FC<PageMockupProps> = ({
           className="p-3 px-4 rounded-2xl border-2 flex items-center justify-between shadow-xs"
           style={{ backgroundColor: isBlackTheme ? '#141414' : '#ffffff', borderColor: isBlackTheme ? 'rgba(255, 255, 255, 0.4)' : '#000000', color: textColor }}
         >
-          <span className="text-xs font-black text-emerald-600 dark:text-emerald-400">13 صفحة</span>
-          <div className="text-right flex-1 pr-3">
-            <div className="flex items-center gap-1.5 justify-end">
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-black/5 dark:bg-white/5 opacity-70">مجهول</span>
-              <h5 className="font-black text-xs sm:text-sm text-amber-600">فاعل خير (قارئ للقرآن)</h5>
+          {/* اليمين: الترتيب واسم القارئ */}
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <div className="w-10 h-10 rounded-full bg-amber-500 text-white flex items-center justify-center font-black text-base shadow-sm shrink-0">
+              1
             </div>
-            <span className="text-[10px] opacity-60 block mt-0.5">▪ 13 صفحة مسجلة</span>
+            <div className="text-right flex-1 min-w-0">
+              <div className="flex items-center gap-1.5 justify-start">
+                <h5 className="font-black text-xs sm:text-sm text-amber-600">فاعل خير (قارئ للقرآن)</h5>
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-black/5 dark:bg-white/5 opacity-70">مجهول</span>
+              </div>
+              <span className="text-[10px] opacity-60 block mt-0.5">▪ 13 صفحة مسجلة</span>
+            </div>
           </div>
-          <div className="w-10 h-10 rounded-full bg-amber-500 text-white flex items-center justify-center font-black text-base shadow-sm">
-            1
-          </div>
+
+          {/* اليسار: عدد الصفحات المسجلة */}
+          <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 shrink-0">13 صفحة</span>
         </div>
       </Hotspot>
 
@@ -1536,20 +1548,25 @@ export const AhlAlQuranMockup: React.FC<PageMockupProps> = ({
         purpose: 'صاحب المركز الثاني لهذا الشهر بإجمالي 6 صفحات مسجلة وموثقة داخل التطبيق.'
       })}>
         <div 
-          className="p-3 px-4 rounded-2xl border-2 flex items-center justify-between shadow-xs mr-4"
+          className="p-3 px-4 rounded-2xl border-2 flex items-center justify-between shadow-xs ml-4"
           style={{ backgroundColor: isBlackTheme ? '#141414' : '#ffffff', borderColor: isBlackTheme ? 'rgba(255, 255, 255, 0.4)' : '#000000', color: textColor }}
         >
-          <span className="text-xs font-black text-emerald-600 dark:text-emerald-400">6 صفحات</span>
-          <div className="text-right flex-1 pr-3">
-            <div className="flex items-center gap-1.5 justify-end">
-              <span className="text-xs opacity-75">🌐 عضو مميز</span>
-              <h5 className="font-black text-xs sm:text-sm">المتسابق الثاني (محب القرآن)</h5>
+          {/* اليمين: الترتيب واسم القارئ */}
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <div className="w-10 h-10 rounded-full bg-slate-400 text-white flex items-center justify-center font-black text-base shadow-sm shrink-0">
+              2
             </div>
-            <span className="text-[10px] opacity-60 block mt-0.5">▪ 6 صفحات مسجلة</span>
+            <div className="text-right flex-1 min-w-0">
+              <div className="flex items-center gap-1.5 justify-start">
+                <h5 className="font-black text-xs sm:text-sm">المتسابق الثاني (محب القرآن)</h5>
+                <span className="text-xs opacity-75">🌐 عضو مميز</span>
+              </div>
+              <span className="text-[10px] opacity-60 block mt-0.5">▪ 6 صفحات مسجلة</span>
+            </div>
           </div>
-          <div className="w-10 h-10 rounded-full bg-slate-400 text-white flex items-center justify-center font-black text-base shadow-sm">
-            2
-          </div>
+
+          {/* اليسار: عدد الصفحات المسجلة */}
+          <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 shrink-0">6 صفحات</span>
         </div>
       </Hotspot>
 
@@ -1559,21 +1576,26 @@ export const AhlAlQuranMockup: React.FC<PageMockupProps> = ({
         purpose: 'صاحب المركز الثالث برصيد صفحة واحدة مسجلة، ويرتفع الترتيب تلقائياً بتسجيل القراءة اليومية للقرآن الكريم.'
       })}>
         <div 
-          className="p-3 px-4 rounded-2xl border-2 border-emerald-500 flex items-center justify-between shadow-xs mr-8"
+          className="p-3 px-4 rounded-2xl border-2 border-emerald-500 flex items-center justify-between shadow-xs ml-8"
           style={{ backgroundColor: isBlackTheme ? '#141414' : '#ffffff', color: textColor }}
         >
-          <span className="text-xs font-black text-emerald-600 dark:text-emerald-400">صفحة واحدة</span>
-          <div className="text-right flex-1 pr-3">
-            <div className="flex items-center gap-1.5 justify-end">
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-500 text-white">متسابق</span>
-              <span className="text-xs opacity-75">🇪🇬 مصر</span>
-              <h5 className="font-black text-xs sm:text-sm text-amber-700 dark:text-amber-400">المتسابق الثالث (عضو مجتهد)</h5>
+          {/* اليمين: الترتيب واسم القارئ */}
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <div className="w-10 h-10 rounded-full bg-amber-600 text-white flex items-center justify-center font-black text-base shadow-sm shrink-0">
+              3
             </div>
-            <span className="text-[10px] opacity-60 block mt-0.5">▪ 1 صفحة مسجلة</span>
+            <div className="text-right flex-1 min-w-0">
+              <div className="flex items-center gap-1.5 justify-start">
+                <h5 className="font-black text-xs sm:text-sm text-amber-700 dark:text-amber-400">المتسابق الثالث (عضو مجتهد)</h5>
+                <span className="text-xs opacity-75">🇪🇬 مصر</span>
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-500 text-white">متسابق</span>
+              </div>
+              <span className="text-[10px] opacity-60 block mt-0.5">▪ 1 صفحة مسجلة</span>
+            </div>
           </div>
-          <div className="w-10 h-10 rounded-full bg-amber-600 text-white flex items-center justify-center font-black text-base shadow-sm">
-            3
-          </div>
+
+          {/* اليسار: عدد الصفحات المسجلة */}
+          <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 shrink-0">صفحة واحدة</span>
         </div>
       </Hotspot>
 
@@ -1985,7 +2007,7 @@ export const QuranReaderMockup: React.FC<PageMockupProps> = ({
 };
 
 // =============================================================
-// 13. صفحة الحج والعمرة (HajjUmrah)
+// 13. صفحة الحج والعمرة (HajjUmrah) - مطابقة 100% للصفحة المحدثة
 // =============================================================
 export const HajjUmrahMockup: React.FC<PageMockupProps> = ({
   onInspect, isBlackTheme, textColor, cardBorderColor
@@ -1993,142 +2015,244 @@ export const HajjUmrahMockup: React.FC<PageMockupProps> = ({
   return (
     <div className="w-full max-w-md mx-auto flex flex-col gap-3 py-1 select-none" dir="rtl">
       
-      {/* 1. البانر الترحيبي وإحصائيات الحج والعمرة */}
+      {/* 1. الصف الأول: دليل العمرة + دليل الحج (بدون أيقونات) */}
+      <div className="grid grid-cols-2 gap-3 w-full">
+        {/* دليل الحج */}
+        <Hotspot onClick={() => onInspect({
+          title: 'زر دليل الحج',
+          purpose: 'شرح مفصل لمناسك الحج بأنواعه الثلاثة (التمتع، الإفراد، القِران) مع المخطط الزمني لمحطات النسك يوماً بيوم من يوم التروية وحتى طواف الوداع وأدلة الكتاب والسنة.'
+        })}>
+          <div 
+            className="rounded-2xl border-2 p-4 flex flex-col items-center justify-center gap-2 h-20 sm:h-24 shadow-xs transition-all w-full"
+            style={{ 
+              backgroundColor: isBlackTheme ? '#141414' : '#ffffff', 
+              borderColor: isBlackTheme ? 'rgba(255, 255, 255, 0.4)' : '#000000', 
+              color: textColor 
+            }}
+          >
+            <span className="font-bold text-base sm:text-lg font-kufi">دليل الحج</span>
+          </div>
+        </Hotspot>
+
+        {/* دليل العمرة */}
+        <Hotspot onClick={() => onInspect({
+          title: 'زر دليل العمرة',
+          purpose: 'دليل شامل لمناسك العمرة خطوة بخطوة موثقة بالقرآن الكريم وصحيح السنة النبوية، مع بيان الأركان والواجبات والسنن والمحظورات وتفاصيل الطواف والسعي.'
+        })}>
+          <div 
+            className="rounded-2xl border-2 p-4 flex flex-col items-center justify-center gap-2 h-20 sm:h-24 shadow-xs transition-all w-full"
+            style={{ 
+              backgroundColor: isBlackTheme ? '#141414' : '#ffffff', 
+              borderColor: isBlackTheme ? 'rgba(255, 255, 255, 0.4)' : '#000000', 
+              color: textColor 
+            }}
+          >
+            <span className="font-bold text-base sm:text-lg font-kufi">دليل العمرة</span>
+          </div>
+        </Hotspot>
+      </div>
+
+      {/* 2. الصف الثاني: أدعية وأذكار + عَدّاد الطواف (بدون أيقونات) */}
+      <div className="grid grid-cols-2 gap-3 w-full">
+        {/* أدعية وأذكار */}
+        <Hotspot onClick={() => onInspect({
+          title: 'زر أدعية وأذكار',
+          purpose: 'موسوعة أدعية وأذكار الحج والعمرة المأثورة عن النبي ﷺ في الطواف والمسعى ويوم عرفة والمشعر الحرام مع إمكانية التكبير والتنقل السهل بين الأدعية.'
+        })}>
+          <div 
+            className="rounded-2xl border-2 p-4 flex flex-col items-center justify-center gap-2 h-20 sm:h-24 shadow-xs transition-all w-full"
+            style={{ 
+              backgroundColor: isBlackTheme ? '#141414' : '#ffffff', 
+              borderColor: isBlackTheme ? 'rgba(255, 255, 255, 0.4)' : '#000000', 
+              color: textColor 
+            }}
+          >
+            <span className="font-bold text-base sm:text-lg font-kufi">أدعية وأذكار</span>
+          </div>
+        </Hotspot>
+
+        {/* عَدّاد الطواف */}
+        <Hotspot onClick={() => onInspect({
+          title: 'زر عَدّاد الطواف',
+          purpose: 'عداد إلكتروني تفاعلي لمتابعة أشواط الطواف والسعي (٧ أشواط) مع التكبير والدعاء المأثور لكل شوط وخاصية الاهتزاز عند اكتمال كل شوط.'
+        })}>
+          <div 
+            className="rounded-2xl border-2 p-4 flex flex-col items-center justify-center gap-2 h-20 sm:h-24 shadow-xs transition-all w-full"
+            style={{ 
+              backgroundColor: isBlackTheme ? '#141414' : '#ffffff', 
+              borderColor: isBlackTheme ? 'rgba(255, 255, 255, 0.4)' : '#000000', 
+              color: textColor 
+            }}
+          >
+            <span className="font-bold text-base sm:text-lg font-kufi">عَدّاد الطواف</span>
+          </div>
+        </Hotspot>
+      </div>
+
+      {/* 3. الصف الثالث: قائمة التجهيزات والأمتعة (بعرض كامل) */}
       <Hotspot onClick={() => onInspect({
-        title: 'لافتة وبانر رحلة الحج والعمرة المباركة',
-        purpose: 'دليل تفصيلي إيماني لمناسك الحج والعمرة يجمع الخطوات الشرعية، الأدعية المأثورة لكل موضع، وإمكانية تتبع وإتمام المناسك خطوة بخطوة بيسر وسهولة.'
+        title: 'زر قائمة التجهيزات والأمتعة',
+        purpose: 'قائمة تفاعلية ذكية لتنظيم وتجهيز مستلزمات الحج والعمرة، ملابس الإحرام، الأدوية، والأوراق الهامة لضمان عدم نسيان أي متطلب قبل السفر.'
       })}>
         <div 
-          className="p-4 rounded-3xl border-2 flex flex-col gap-2.5 relative overflow-hidden shadow-xs"
-          style={{ backgroundColor: isBlackTheme ? '#141414' : '#ffffff', borderColor: isBlackTheme ? 'rgba(255, 255, 255, 0.4)' : '#000000', color: textColor }}
+          className="rounded-2xl border-2 p-4 flex flex-col items-center justify-center gap-2 h-16 sm:h-20 shadow-xs transition-all w-full"
+          style={{ 
+            backgroundColor: isBlackTheme ? '#141414' : '#ffffff', 
+            borderColor: isBlackTheme ? 'rgba(255, 255, 255, 0.4)' : '#000000', 
+            color: textColor 
+          }}
+        >
+          <span className="font-bold text-base sm:text-lg font-kufi">قائمة التجهيزات والأمتعة</span>
+        </div>
+      </Hotspot>
+
+      {/* 4. بطاقة: فضل الحج والعمرة (مع أيقونة العدسة لتكبير النص) */}
+      <Hotspot onClick={() => onInspect({
+        title: 'بطاقة فضل الحج والعمرة',
+        purpose: 'تذكير إيماني بفضل وثواب الحج المبرور والعمرة وتكفير الذنوب مستنداً إلى الحديث النبوي الشريف الصحيح عن أبي هريرة رضي الله عنه مع أيقونة العدسة للتكبير.'
+      })}>
+        <div 
+          className="rounded-2xl border-2 p-4 flex flex-col gap-2.5 shadow-xs transition-all w-full"
+          style={{ 
+            backgroundColor: isBlackTheme ? '#141414' : '#ffffff', 
+            borderColor: isBlackTheme ? 'rgba(255, 255, 255, 0.4)' : '#000000', 
+            color: textColor 
+          }}
         >
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
-              دليل المناسك الشامل 🕋
-            </span>
-            <span className="text-xs opacity-75 font-bold">مكة والمدينة</span>
+            <span className="font-bold text-base sm:text-lg text-teal-600 dark:text-teal-400 font-kufi">فضل الحج والعمرة</span>
+            <ZoomIn className="w-5 h-5 opacity-70 hover:opacity-100" />
           </div>
-          <h3 className="font-black text-base sm:text-lg font-kufi">رحلة الحج والعمرة المباركة</h3>
-          <p className="text-xs opacity-80 leading-relaxed font-bold">
-            دليل شامل لمناسك الحج والعمرة مع الأدعية والخطوات التفصيلية ومتابعة أعمالك خطوة بخطوة.
+          <div className="border-r-2 border-teal-600 dark:border-teal-400 pr-3">
+            <p className="text-xs sm:text-sm leading-relaxed font-medium text-right opacity-90">
+              عن أبي هريرة رضي الله عنه أن رسول الله ﷺ قال: "العُمْرَةُ إِلَى العُمْرَةِ كَفَّارَةٌ لِمَا بَيْنَهُمَا، وَالحَجُّ المَبْرُورُ لَيْسَ لَهُ جَزَاءٌ إِلَّا الجَنَّةُ".
+            </p>
+          </div>
+        </div>
+      </Hotspot>
+
+      {/* 5. بطاقة: محظورات الإحرام (مع أيقونة العدسة لتكبير النص) */}
+      <Hotspot onClick={() => onInspect({
+        title: 'بطاقة محظورات الإحرام',
+        purpose: 'بيان ما يحرم على المحرم فعله بعد عقد نية النسك كالطيب والمخيط وتغطية الرأس وعقد النكاح والصيد مع أيقونة العدسة لتكبير وقراءة المحظورات.'
+      })}>
+        <div 
+          className="rounded-2xl border-2 p-4 flex flex-col gap-3 shadow-xs transition-all w-full"
+          style={{ 
+            backgroundColor: isBlackTheme ? '#141414' : '#ffffff', 
+            borderColor: isBlackTheme ? 'rgba(255, 255, 255, 0.4)' : '#000000', 
+            color: textColor 
+          }}
+        >
+          <div className="flex items-center justify-between">
+            <span className="font-bold text-base sm:text-lg text-purple-600 dark:text-purple-400 font-kufi">محظورات الإحرام</span>
+            <ZoomIn className="w-5 h-5 opacity-70 hover:opacity-100" />
+          </div>
+          <div className="space-y-2 text-right">
+            {[
+              'إزالة الشعر أو قص الأظافر.',
+              'استعمال الطيب بعد الإحرام.',
+              'لبس المخيط للرجل وتغطية الرأس.',
+              'لبس النقاب والقفازين للمرأة.',
+              'عقد النكاح أو الخطبة.',
+              'الجماع ومقدماته.',
+              'صيد البر.'
+            ].map((item, idx) => (
+              <div key={idx} className="flex items-center justify-end gap-2.5 text-xs sm:text-sm font-medium">
+                <span className="opacity-90">{item}</span>
+                <span className="w-2 h-2 rounded-full bg-teal-400 dark:bg-teal-500 shrink-0"></span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </Hotspot>
+
+      {/* 6. بطاقة: المواقيت المكانية (مع أيقونة العدسة لتكبير النص) */}
+      <Hotspot onClick={() => onInspect({
+        title: 'بطاقة المواقيت المكانية',
+        purpose: 'توضيح حدود ومواقيت الإحرام المكانية الخمسة المحددة شرعاً لكل قادم إلى مكة المكرمة لأداء المناسك مع أيقونة العدسة للتكبير.'
+      })}>
+        <div 
+          className="rounded-2xl border-2 p-4 flex flex-col gap-3 shadow-xs transition-all w-full"
+          style={{ 
+            backgroundColor: isBlackTheme ? '#141414' : '#ffffff', 
+            borderColor: isBlackTheme ? 'rgba(255, 255, 255, 0.4)' : '#000000', 
+            color: textColor 
+          }}
+        >
+          <div className="flex items-center justify-between">
+            <span className="font-bold text-base sm:text-lg text-teal-600 dark:text-teal-400 font-kufi">المواقيت المكانية</span>
+            <ZoomIn className="w-5 h-5 opacity-70 hover:opacity-100" />
+          </div>
+          <div className="space-y-2 text-right">
+            {[
+              'ذو الحليفة (لأهل المدينة).',
+              'الجحفة (لأهل الشام ومصر والمغرب).',
+              'قرن المنازل (لأهل نجد).',
+              'يلملم (لأهل اليمن).',
+              'ذات عرق (لأهل العراق).'
+            ].map((item, idx) => (
+              <div key={idx} className="flex items-center justify-end gap-2.5 text-xs sm:text-sm font-medium">
+                <span className="opacity-90">{item}</span>
+                <span className="w-2 h-2 rounded-full bg-teal-400 dark:bg-teal-500 shrink-0"></span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </Hotspot>
+
+      {/* 7. بطاقة: ما الفرق بين الحج والعمرة؟ (مع أيقونة العدسة لتكبير النص) */}
+      <Hotspot onClick={() => onInspect({
+        title: 'بطاقة الفرق بين الحج والعمرة',
+        purpose: 'مقارنة فقهية سريعة توضح الفروق الجوهرية بين فريضة الحج والنافلة/الواجب في العمرة مع أيقونة العدسة للتكبير.'
+      })}>
+        <div 
+          className="rounded-2xl border-2 p-4 flex flex-col gap-3 shadow-xs transition-all w-full"
+          style={{ 
+            backgroundColor: isBlackTheme ? '#141414' : '#ffffff', 
+            borderColor: isBlackTheme ? 'rgba(255, 255, 255, 0.4)' : '#000000', 
+            color: textColor 
+          }}
+        >
+          <div className="flex items-center justify-between">
+            <span className="font-bold text-base sm:text-lg text-teal-600 dark:text-teal-400 font-kufi">ما الفرق بين الحج والعمرة؟</span>
+            <ZoomIn className="w-5 h-5 opacity-70 hover:opacity-100" />
+          </div>
+          <div className="space-y-2 text-right">
+            {[
+              'الحج ركن من أركان الإسلام، أما العمرة فواجبة مرة في العمر على القول الراجح.',
+              'الحج له وقت محدد (أشهر الحج)، بينما العمرة متاحة طوال العام.',
+              'أعمال الحج أكبر وتشمل الوقوف بعرفة والمبيت بمنى ومزدلفة ورمي الجمار.'
+            ].map((item, idx) => (
+              <div key={idx} className="flex items-start justify-end gap-2.5 text-xs sm:text-sm font-medium">
+                <span className="opacity-90 leading-relaxed">{item}</span>
+                <span className="w-2 h-2 rounded-full bg-teal-400 dark:bg-teal-500 shrink-0 mt-1.5"></span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </Hotspot>
+
+      {/* 8. بطاقة: تنبيه هام (مع أيقونة العدسة لتكبير النص) */}
+      <Hotspot onClick={() => onInspect({
+        title: 'تنبيه فقهي هام',
+        purpose: 'قاعدة فقهية جوهرية توضح حكم ترك الركن والواجب والمحظور وما يترتب على كل منها من بطلان النسك أو لزوم الدم أو الفدية مع أيقونة العدسة لتكبير النص.'
+      })}>
+        <div 
+          className="rounded-2xl border-2 p-4 flex flex-col gap-2 shadow-xs transition-all w-full"
+          style={{ 
+            backgroundColor: isBlackTheme ? '#141414' : '#ffffff', 
+            borderColor: isBlackTheme ? 'rgba(255, 255, 255, 0.4)' : '#000000', 
+            color: textColor 
+          }}
+        >
+          <div className="flex items-center justify-between mb-1">
+            <span className="font-bold text-base sm:text-lg text-amber-600 dark:text-amber-500 font-kufi">تنبيه هام</span>
+            <ZoomIn className="w-5 h-5 opacity-70 hover:opacity-100 text-amber-600 dark:text-amber-500" />
+          </div>
+          <p className="text-xs sm:text-sm leading-relaxed font-medium text-center opacity-90">
+            ترك ركن يبطل النسك، أما ترك واجب فيُجبر بدم، وارتكاب المحظورات يوجب الفدية.
           </p>
-          <div className="grid grid-cols-3 gap-1.5 pt-1 text-center text-[10px] font-bold">
-            <div className="p-1.5 rounded-xl bg-black/5 dark:bg-white/5 border border-black/5">١٠ خطوات العمرة</div>
-            <div className="p-1.5 rounded-xl bg-black/5 dark:bg-white/5 border border-black/5">٦ أيام الحج</div>
-            <div className="p-1.5 rounded-xl bg-black/5 dark:bg-white/5 border border-black/5">٤٠+ دعاء مأثور</div>
-          </div>
-        </div>
-      </Hotspot>
-
-      {/* 2. شريط التبويبات الأربعة */}
-      <Hotspot onClick={() => onInspect({
-        title: 'شريط تبويبات الحج والعمرة',
-        purpose: 'يتيح لك التنقل الفوري بين أقسام الدليل: مناسك العمرة، مناسك الحج المفصلة، أدعية الحرمين الشريفين، وأدوات ومتابعة الأعمال.'
-      })}>
-        <div 
-          className="p-1.5 rounded-2xl border-2 flex items-center justify-between text-xs font-bold shadow-xs"
-          style={{ backgroundColor: isBlackTheme ? '#141414' : '#ffffff', borderColor: isBlackTheme ? 'rgba(255, 255, 255, 0.4)' : '#000000' }}
-        >
-          <div className="flex-1 py-1.5 px-2 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-black text-center">
-            مناسك العمرة
-          </div>
-          <div className="flex-1 py-1.5 px-2 text-center opacity-70">
-            مناسك الحج
-          </div>
-          <div className="flex-1 py-1.5 px-2 text-center opacity-70">
-            أدعية الحرمين
-          </div>
-          <div className="flex-1 py-1.5 px-2 text-center opacity-70">
-            أدوات ومتابعة
-          </div>
-        </div>
-      </Hotspot>
-
-      {/* 3. بطاقة الخطوة الأولى: الإحرام والميقات */}
-      <Hotspot onClick={() => onInspect({
-        title: 'الخطوة الأولى: الإحرام والميقات',
-        purpose: 'توضح أحكام نية الدخول في النسك من الميقات المحدد، الاغتسال، ارتداء ملابس الإحرام، والتلبية: «لَبَّيْكَ اللَّهُمَّ عُمْرَةً».'
-      })}>
-        <div 
-          className="p-3.5 rounded-2xl border-2 flex items-center justify-between shadow-xs"
-          style={{ backgroundColor: isBlackTheme ? '#141414' : '#ffffff', borderColor: isBlackTheme ? 'rgba(255, 255, 255, 0.4)' : '#000000', color: textColor }}
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-emerald-500 text-white flex items-center justify-center font-black text-sm shrink-0">
-              ١
-            </div>
-            <div>
-              <h4 className="font-black text-sm font-kufi">الإحرام والميقات</h4>
-              <p className="text-xs opacity-75 mt-0.5 font-bold">النية والتلبية وارتداء ملابس الإحرام</p>
-            </div>
-          </div>
-          <span className="text-[10px] font-bold px-2 py-1 rounded-lg bg-emerald-500/10 text-emerald-600">ابدأ الآن</span>
-        </div>
-      </Hotspot>
-
-      {/* 4. بطاقة الخطوة الثانية: الطواف حول الكعبة */}
-      <Hotspot onClick={() => onInspect({
-        title: 'الخطوة الثانية: الطواف حول الكعبة المشرفة',
-        purpose: 'دليل الطواف سبعة أشواط كاملة تبدأ من الحجر الأسود وتنتهي به، مع أحكام الاضطباع والرمل وسنن الأدعية والتكبير.'
-      })}>
-        <div 
-          className="p-3.5 rounded-2xl border-2 flex items-center justify-between shadow-xs"
-          style={{ backgroundColor: isBlackTheme ? '#141414' : '#ffffff', borderColor: isBlackTheme ? 'rgba(255, 255, 255, 0.4)' : '#000000', color: textColor }}
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-black/10 dark:bg-white/10 flex items-center justify-center font-black text-sm shrink-0">
-              ٢
-            </div>
-            <div>
-              <h4 className="font-black text-sm font-kufi">الطواف حول الكعبة</h4>
-              <p className="text-xs opacity-75 mt-0.5 font-bold">سبعة أشواط تبدأ بالحجر الأسود</p>
-            </div>
-          </div>
-          <Compass size={18} className="opacity-60" />
-        </div>
-      </Hotspot>
-
-      {/* 5. بطاقة الخطوة الثالثة: السعي بين الصفا والمروة */}
-      <Hotspot onClick={() => onInspect({
-        title: 'الخطوة الثالثة: السعي بين الصفا والمروة',
-        purpose: 'دليل السعي سبعة أشواط بين جبلي الصفا والمروة ابتداءً بالصفا وانتهاءً بالمروة مع الأدعية النبوية المأثورة على الصفا والمروة.'
-      })}>
-        <div 
-          className="p-3.5 rounded-2xl border-2 flex items-center justify-between shadow-xs"
-          style={{ backgroundColor: isBlackTheme ? '#141414' : '#ffffff', borderColor: isBlackTheme ? 'rgba(255, 255, 255, 0.4)' : '#000000', color: textColor }}
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-black/10 dark:bg-white/10 flex items-center justify-center font-black text-sm shrink-0">
-              ٣
-            </div>
-            <div>
-              <h4 className="font-black text-sm font-kufi">السعي بين الصفا والمروة</h4>
-              <p className="text-xs opacity-75 mt-0.5 font-bold">سبعة أشواط تبدأ بالصفا وتنتهي بالمروة</p>
-            </div>
-          </div>
-          <Navigation size={18} className="opacity-60" />
-        </div>
-      </Hotspot>
-
-      {/* 6. بطاقة الخطوة الرابعة: الحلق أو التقصير */}
-      <Hotspot onClick={() => onInspect({
-        title: 'الخطوة الرابعة: الحلق أو التقصير',
-        purpose: 'إتمام التحلل الكامل من الإحرام للرجال بحلق شعر الرأس أو تقصيره، وللنساء بقص قدر أنملة من أطراف الشعر وإتمام العمرة.'
-      })}>
-        <div 
-          className="p-3.5 rounded-2xl border-2 flex items-center justify-between shadow-xs"
-          style={{ backgroundColor: isBlackTheme ? '#141414' : '#ffffff', borderColor: isBlackTheme ? 'rgba(255, 255, 255, 0.4)' : '#000000', color: textColor }}
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-black/10 dark:bg-white/10 flex items-center justify-center font-black text-sm shrink-0">
-              ٤
-            </div>
-            <div>
-              <h4 className="font-black text-sm font-kufi">الحلق أو التقصير</h4>
-              <p className="text-xs opacity-75 mt-0.5 font-bold">التحلل التام وإتمام مناسك العمرة</p>
-            </div>
-          </div>
-          <CheckCircle size={18} className="text-emerald-500" />
         </div>
       </Hotspot>
 
@@ -3418,60 +3542,120 @@ export const PageMockupDispatcher: React.FC<{
   cardBg: string;
   cardBorderColor: string;
 }> = (props) => {
+  const { language } = useLanguage();
+  const isEn = language === 'en';
+
+  // Wrap onInspect so any data passed from any mockup is translated if in English
+  const localizedOnInspect = (data: ButtonExplanationData) => {
+    if (isEn) {
+      props.onInspect(translateExplanationData(data, 'en'));
+    } else {
+      props.onInspect(data);
+    }
+  };
+
+  const localizedProps = {
+    ...props,
+    onInspect: localizedOnInspect,
+  };
+
+  let MockupComponent: React.FC<PageMockupProps>;
   switch (props.pageId) {
     case 'tasbeeh':
-      return <TasbeehMockup {...props} />;
+      MockupComponent = TasbeehMockup;
+      break;
     case 'community':
     case 'side-community':
-      return <CommunityMockup {...props} />;
+      MockupComponent = CommunityMockup;
+      break;
     case 'adia':
-      return <AdiaMockup {...props} />;
+      MockupComponent = AdiaMockup;
+      break;
     case 'salah-adhkar':
-      return <AthkarAlSalahMockup {...props} />;
+      MockupComponent = AthkarAlSalahMockup;
+      break;
     case 'hisn-muslim':
-      return <HisnAlmuslimMockup {...props} />;
+      MockupComponent = HisnAlmuslimMockup;
+      break;
     case 'calendar':
-      return <CalendarMockup {...props} />;
+      MockupComponent = CalendarMockup;
+      break;
     case 'sabah-masaa':
-      return <SabahMasaaMockup {...props} />;
+      MockupComponent = SabahMasaaMockup;
+      break;
     case 'prayer-times':
-      return <PrayerTimesMockup {...props} />;
+      MockupComponent = PrayerTimesMockup;
+      break;
     case 'qibla':
-      return <QiblaMockup {...props} />;
+      MockupComponent = QiblaMockup;
+      break;
     case 'listen':
-      return <ListenQuranMockup {...props} />;
+      MockupComponent = ListenQuranMockup;
+      break;
     case 'ahl-al-quran':
     case 'side-ahl-al-quran':
-      return <AhlAlQuranMockup {...props} />;
+      MockupComponent = AhlAlQuranMockup;
+      break;
     case 'quran':
-      return <QuranReaderMockup {...props} />;
+      MockupComponent = QuranReaderMockup;
+      break;
     case 'hajj-umrah':
-      return <HajjUmrahMockup {...props} />;
+      MockupComponent = HajjUmrahMockup;
+      break;
     case 'daily-wird':
-      return <DailyWirdMockup {...props} />;
+      MockupComponent = DailyWirdMockup;
+      break;
     case 'memorization':
-      return <MemorizationMockup {...props} />;
+      MockupComponent = MemorizationMockup;
+      break;
     case 'habit-tracker':
-      return <HabitTrackerMockup {...props} />;
+      MockupComponent = HabitTrackerMockup;
+      break;
     case 'others':
-      return <OthersMockup {...props} />;
+      MockupComponent = OthersMockup;
+      break;
     case 'prophetic-seerah':
-      return <PropheticSeerahMockup {...props} />;
+      MockupComponent = PropheticSeerahMockup;
+      break;
     case 'islamic-sites':
-      return <IslamicSitesMockup {...props} />;
+      MockupComponent = IslamicSitesMockup;
+      break;
     case 'nawawi':
-      return <NawawiMockup {...props} />;
+      MockupComponent = NawawiMockup;
+      break;
     case 'calculators':
-      return <CalculatorsMockup {...props} />;
+      MockupComponent = CalculatorsMockup;
+      break;
     case 'voice-control':
     case 'side-voice':
-      return <VoiceControlMockup {...props} />;
+      MockupComponent = VoiceControlMockup;
+      break;
     case 'asmaul-husna':
-      return <AsmaulHusnaMockup {...props} />;
+      MockupComponent = AsmaulHusnaMockup;
+      break;
     case 'side-whatsapp':
-      return <WhatsAppMockup {...props} />;
+      MockupComponent = WhatsAppMockup;
+      break;
     default:
-      return <TasbeehMockup {...props} />;
+      MockupComponent = TasbeehMockup;
+      break;
   }
+
+  // Directly call the mockup component to get its real JSX elements
+  const rawElement = MockupComponent(localizedProps) as React.ReactElement;
+
+  if (isEn) {
+    return (
+      <div dir="ltr" className="w-full font-sans">
+        {translateTree(rawElement, 'en')}
+      </div>
+    );
+  }
+
+  return (
+    <div dir="rtl" className="w-full font-kufi">
+      {rawElement}
+    </div>
+  );
 };
 

@@ -191,7 +191,9 @@ export const WeeklyAchievementModal: React.FC<WeeklyAchievementModalProps> = ({
     container.style.position = 'fixed';
     container.style.left = '-9999px';
     container.style.top = '-9999px';
-    container.style.width = '750px';
+    container.style.width = '1080px';
+    container.style.height = '1920px';
+    container.style.boxSizing = 'border-box';
     container.style.direction = 'rtl';
     container.style.fontFamily = '"Cairo", "Amiri", sans-serif';
 
@@ -199,35 +201,49 @@ export const WeeklyAchievementModal: React.FC<WeeklyAchievementModalProps> = ({
       ? 'linear-gradient(145deg, #09090b 0%, #18181b 100%)'
       : 'linear-gradient(145deg, #064e3b 0%, #065f46 50%, #047857 100%)';
 
-    const primaryAccent = isBlackTheme ? '#FFFFFF' : hexColor;
-
     container.innerHTML = `
       <div style="
         background: ${bgGradient};
-        padding: 36px 32px;
+        width: 1080px;
+        height: 1920px;
+        padding: 64px 56px;
         color: #ffffff;
-        border-radius: 28px;
-        border: 2px solid rgba(255, 255, 255, 0.2);
+        border-radius: 40px;
+        border: 4px solid rgba(255, 255, 255, 0.25);
         box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
         position: relative;
         overflow: hidden;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
       ">
+        <!-- Subtle Pattern Overlay -->
+        <div style="
+          position: absolute;
+          inset: 0;
+          opacity: 0.08;
+          background-image: radial-gradient(circle, #ffffff 1px, transparent 1px);
+          background-size: 24px 24px;
+          pointer-events: none;
+        "></div>
+
         <!-- Decorative Header -->
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 18px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid rgba(255,255,255,0.22); padding-bottom: 24px; position: relative; z-index: 1;">
           <div style="text-align: right;">
-            <div style="font-size: 24px; font-weight: 800; display: flex; align-items: center; gap: 8px;">
+            <div style="font-size: 32px; font-weight: 800; display: flex; align-items: center; gap: 12px;">
               <span>مربّي العبادات</span>
-              <span style="font-size: 20px;">🌙</span>
+              <span style="font-size: 28px;">🌙</span>
             </div>
-            <div style="font-size: 14px; opacity: 0.85; margin-top: 4px;">
+            <div style="font-size: 20px; opacity: 0.9; margin-top: 6px;">
               حصاد الأسبوع الإيماني
             </div>
           </div>
           <div style="text-align: left;">
-            <div style="font-size: 18px; font-weight: 700; color: #fef08a;">
+            <div style="font-size: 26px; font-weight: 700; color: #fef08a;">
               مصحف أحمد وليلى
             </div>
-            <div style="font-size: 13px; opacity: 0.8; margin-top: 4px;">
+            <div style="font-size: 18px; opacity: 0.85; margin-top: 6px;">
               ${stats.dateRangeStr}
             </div>
           </div>
@@ -236,43 +252,44 @@ export const WeeklyAchievementModal: React.FC<WeeklyAchievementModalProps> = ({
         <!-- Hero Percentage & Medal -->
         <div style="
           background: rgba(255, 255, 255, 0.12);
-          border: 1px solid rgba(255, 255, 255, 0.25);
-          border-radius: 20px;
-          padding: 24px;
+          border: 2px solid rgba(255, 255, 255, 0.25);
+          border-radius: 28px;
+          padding: 32px;
           display: flex;
           align-items: center;
           justify-content: space-between;
-          margin-bottom: 24px;
+          position: relative;
+          z-index: 1;
         ">
           <div>
-            <div style="font-size: 20px; font-weight: 800; color: #fef08a; margin-bottom: 6px;">
+            <div style="font-size: 28px; font-weight: 800; color: #fef08a; margin-bottom: 8px;">
               ${stats.medal.title}
             </div>
-            <div style="font-size: 14px; opacity: 0.9; max-width: 440px; line-height: 1.6;">
+            <div style="font-size: 20px; opacity: 0.92; max-width: 620px; line-height: 1.6;">
               ${stats.medal.desc}
             </div>
-            <div style="margin-top: 10px; font-size: 13px; opacity: 0.8;">
-              حافظت على الطاعات في <b style="color: #ffffff;">${stats.activeDaysCount} من 7 أيام</b> هذا الأسبوع
+            <div style="margin-top: 14px; font-size: 18px; opacity: 0.85;">
+              حافظت على الطاعات في <b style="color: #ffffff; font-size: 20px;">${stats.activeDaysCount} من 7 أيام</b> هذا الأسبوع
             </div>
           </div>
           <div style="
-            width: 100px;
-            height: 100px;
+            width: 140px;
+            height: 140px;
             border-radius: 50%;
-            border: 5px solid rgba(255,255,255,0.3);
+            border: 6px solid rgba(255,255,255,0.3);
             border-top-color: #fef08a;
             border-right-color: #fef08a;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            background: rgba(0,0,0,0.25);
+            background: rgba(0,0,0,0.3);
             flex-shrink: 0;
           ">
-            <span style="font-size: 28px; font-weight: 900; line-height: 1; font-family: sans-serif;">
+            <span style="font-size: 40px; font-weight: 900; line-height: 1; font-family: sans-serif;">
               ${stats.averageProgress}%
             </span>
-            <span style="font-size: 11px; opacity: 0.8; margin-top: 4px;">إنجاز الأسبوع</span>
+            <span style="font-size: 15px; opacity: 0.85; margin-top: 6px;">إنجاز الأسبوع</span>
           </div>
         </div>
 
@@ -280,92 +297,94 @@ export const WeeklyAchievementModal: React.FC<WeeklyAchievementModalProps> = ({
         <div style="
           display: grid;
           grid-template-columns: repeat(2, 1fr);
-          gap: 14px;
-          margin-bottom: 24px;
+          gap: 20px;
+          position: relative;
+          z-index: 1;
         ">
           <!-- Prayers -->
           <div style="
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 16px;
-            padding: 16px;
+            background: rgba(255, 255, 255, 0.09);
+            border: 1.5px solid rgba(255, 255, 255, 0.18);
+            border-radius: 24px;
+            padding: 24px;
             text-align: right;
           ">
-            <div style="font-size: 13px; opacity: 0.85; margin-bottom: 6px;">🕌 الصلوات والسنن</div>
-            <div style="font-size: 26px; font-weight: 800; color: #ffffff;">
-              ${stats.prayersCount} <span style="font-size: 14px; font-weight: 500; opacity: 0.8;">صلاة وسنة</span>
+            <div style="font-size: 19px; opacity: 0.9; margin-bottom: 8px;">🕌 الصلوات والسنن</div>
+            <div style="font-size: 36px; font-weight: 800; color: #ffffff;">
+              ${stats.prayersCount} <span style="font-size: 20px; font-weight: 500; opacity: 0.85;">صلاة وسنة</span>
             </div>
           </div>
 
           <!-- Quran -->
           <div style="
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 16px;
-            padding: 16px;
+            background: rgba(255, 255, 255, 0.09);
+            border: 1.5px solid rgba(255, 255, 255, 0.18);
+            border-radius: 24px;
+            padding: 24px;
             text-align: right;
           ">
-            <div style="font-size: 13px; opacity: 0.85; margin-bottom: 6px;">📖 الورد القرآني</div>
-            <div style="font-size: 26px; font-weight: 800; color: #ffffff;">
-              ${stats.quranPages} <span style="font-size: 14px; font-weight: 500; opacity: 0.8;">صفحة مقروءة</span>
+            <div style="font-size: 19px; opacity: 0.9; margin-bottom: 8px;">📖 الورد القرآني</div>
+            <div style="font-size: 36px; font-weight: 800; color: #ffffff;">
+              ${stats.quranPages} <span style="font-size: 20px; font-weight: 500; opacity: 0.85;">صفحة مقروءة</span>
             </div>
           </div>
 
           <!-- Adhkar -->
           <div style="
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 16px;
-            padding: 16px;
+            background: rgba(255, 255, 255, 0.09);
+            border: 1.5px solid rgba(255, 255, 255, 0.18);
+            border-radius: 24px;
+            padding: 24px;
             text-align: right;
           ">
-            <div style="font-size: 13px; opacity: 0.85; margin-bottom: 6px;">📿 الأذكار والاستغفار</div>
-            <div style="font-size: 26px; font-weight: 800; color: #ffffff;">
-              ${stats.adhkarCount} <span style="font-size: 14px; font-weight: 500; opacity: 0.8;">أوراد منجزة</span>
+            <div style="font-size: 19px; opacity: 0.9; margin-bottom: 8px;">📿 الأذكار والاستغفار</div>
+            <div style="font-size: 36px; font-weight: 800; color: #ffffff;">
+              ${stats.adhkarCount} <span style="font-size: 20px; font-weight: 500; opacity: 0.85;">أوراد منجزة</span>
             </div>
           </div>
 
           <!-- Ethics & Custom Habits -->
           <div style="
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 16px;
-            padding: 16px;
+            background: rgba(255, 255, 255, 0.09);
+            border: 1.5px solid rgba(255, 255, 255, 0.18);
+            border-radius: 24px;
+            padding: 24px;
             text-align: right;
           ">
-            <div style="font-size: 13px; opacity: 0.85; margin-bottom: 6px;">🤍 البر والعادات المخصصة</div>
-            <div style="font-size: 26px; font-weight: 800; color: #ffffff;">
-              ${stats.goodDeedsTotal} <span style="font-size: 14px; font-weight: 500; opacity: 0.8;">طاعة وعمل صالح</span>
+            <div style="font-size: 19px; opacity: 0.9; margin-bottom: 8px;">🤍 البر والعادات المخصصة</div>
+            <div style="font-size: 36px; font-weight: 800; color: #ffffff;">
+              ${stats.goodDeedsTotal} <span style="font-size: 20px; font-weight: 500; opacity: 0.85;">طاعة وعمل صالح</span>
             </div>
           </div>
         </div>
 
         <!-- 7 Days Checklist -->
         <div style="
-          background: rgba(255, 255, 255, 0.08);
-          border: 1px solid rgba(255, 255, 255, 0.15);
-          border-radius: 18px;
-          padding: 16px;
-          margin-bottom: 22px;
+          background: rgba(255, 255, 255, 0.09);
+          border: 1.5px solid rgba(255, 255, 255, 0.18);
+          border-radius: 26px;
+          padding: 24px;
+          position: relative;
+          z-index: 1;
         ">
-          <div style="font-size: 13px; font-weight: 700; margin-bottom: 12px; opacity: 0.9; text-align: right;">
+          <div style="font-size: 19px; font-weight: 700; margin-bottom: 16px; opacity: 0.95; text-align: right;">
             تقويم الأيام السبعة:
           </div>
-          <div style="display: flex; justify-content: space-between; gap: 8px;">
+          <div style="display: flex; justify-content: space-between; gap: 10px;">
             ${stats.daysStats.map((d) => `
               <div style="
                 flex: 1;
-                background: ${d.progress >= 80 ? 'rgba(16, 185, 129, 0.25)' : d.progress > 0 ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.2)'};
-                border: 1px solid ${d.isToday ? '#fef08a' : d.progress >= 80 ? 'rgba(16, 185, 129, 0.5)' : 'rgba(255, 255, 255, 0.15)'};
-                border-radius: 12px;
-                padding: 10px 4px;
+                background: ${d.progress >= 80 ? 'rgba(16, 185, 129, 0.28)' : d.progress > 0 ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.2)'};
+                border: 2px solid ${d.isToday ? '#fef08a' : d.progress >= 80 ? 'rgba(16, 185, 129, 0.6)' : 'rgba(255, 255, 255, 0.18)'};
+                border-radius: 16px;
+                padding: 14px 6px;
                 text-align: center;
               ">
-                <div style="font-size: 11px; opacity: 0.85; margin-bottom: 4px;">${d.dayName}</div>
-                <div style="font-size: 14px; font-weight: 800; font-family: sans-serif; color: ${d.progress >= 80 ? '#6ee7b7' : '#ffffff'};">
+                <div style="font-size: 15px; opacity: 0.9; margin-bottom: 6px; font-weight: 600;">${d.dayName}</div>
+                <div style="font-size: 18px; font-weight: 800; font-family: sans-serif; color: ${d.progress >= 80 ? '#6ee7b7' : '#ffffff'};">
                   ${d.isFuture ? '—' : `${d.progress}%`}
                 </div>
-                <div style="font-size: 10px; margin-top: 4px; opacity: 0.7;">
+                <div style="font-size: 14px; margin-top: 6px; opacity: 0.8;">
                   ${d.progress === 100 ? '⭐' : d.progress >= 50 ? '✓' : '•'}
                 </div>
               </div>
@@ -374,11 +393,11 @@ export const WeeklyAchievementModal: React.FC<WeeklyAchievementModalProps> = ({
         </div>
 
         <!-- Hadith & Dedication Footer -->
-        <div style="text-align: center; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 18px;">
-          <div style="font-size: 15px; font-weight: 700; color: #fef08a; font-family: 'Amiri', serif; margin-bottom: 6px;">
+        <div style="text-align: center; border-top: 2px solid rgba(255,255,255,0.22); padding-top: 24px; position: relative; z-index: 1;">
+          <div style="font-size: 24px; font-weight: 700; color: #fef08a; font-family: 'Amiri', serif; margin-bottom: 10px;">
             «أَحَبُّ الأَعْمَالِ إِلَى اللهِ أَدْوَمُهَا وَإِنْ قَلَّ»
           </div>
-          <div style="font-size: 12px; opacity: 0.8; font-family: 'Amiri', serif;">
+          <div style="font-size: 17px; opacity: 0.9; font-family: 'Amiri', serif;">
             جعله الله في ميزان حسناتكم وصدقة جارية عن أرواح أحمد وليلى 🤍
           </div>
         </div>
@@ -389,16 +408,29 @@ export const WeeklyAchievementModal: React.FC<WeeklyAchievementModalProps> = ({
 
     try {
       // Allow fonts to render
-      await new Promise((r) => setTimeout(r, 350));
+      await new Promise((r) => setTimeout(r, 400));
 
       const canvas = await safeHtml2Canvas(container, {
-        scale: 2.5,
+        scale: 1,
         backgroundColor: null,
         useCORS: true,
         logging: false
       });
 
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+      // Guarantee exact 1080x1920
+      let finalCanvas = canvas;
+      if (canvas.width !== 1080 || canvas.height !== 1920) {
+        const resized = document.createElement('canvas');
+        resized.width = 1080;
+        resized.height = 1920;
+        const rCtx = resized.getContext('2d')!;
+        rCtx.imageSmoothingEnabled = true;
+        rCtx.imageSmoothingQuality = 'high';
+        rCtx.drawImage(canvas, 0, 0, 1080, 1920);
+        finalCanvas = resized;
+      }
+
+      const dataUrl = finalCanvas.toDataURL('image/jpeg', 0.95);
       return dataUrl;
     } finally {
       if (document.body.contains(container)) {

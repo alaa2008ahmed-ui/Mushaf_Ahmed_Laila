@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { NAWAWI_DATA } from '../data/nawawiData';
+import { NAWAWI_DATA_EN } from '../data/nawawiDataEn';
 import { NAWAWI_EXPLANATIONS, HadithExplanation } from '../data/nawawiExplanationData';
+import { NAWAWI_EXPLANATIONS_EN, HadithExplanationEn } from '../data/nawawiExplanationDataEn';
 import ThemePageLock from '../components/ThemePageLock';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { registerBackInterceptor } from '../hooks/useBackButton';
 import { motion, AnimatePresence } from 'framer-motion';
 import { shareAsImage } from '../utils/shareAsImage';
@@ -15,6 +18,7 @@ import {
 
 interface HadithModalProps {
     hadith: typeof NAWAWI_DATA[0];
+    hadithEn: typeof NAWAWI_DATA_EN[0];
     initialTab?: 'hadith' | 'explanation';
     onClose: () => void;
     favorites: number[];
@@ -22,17 +26,22 @@ interface HadithModalProps {
     handleCopy: (text: string, e: React.MouseEvent) => void;
     handleShare: (hadith: any, e: React.MouseEvent) => void;
     setToastMessage: (msg: string) => void;
+    isEn: boolean;
 }
+
+const toArabicDigits = (str: number | string) => String(str).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[parseInt(d)]);
 
 const HadithModal: React.FC<HadithModalProps> = ({ 
     hadith, 
+    hadithEn,
     initialTab = 'hadith',
     onClose, 
     favorites, 
     toggleFavorite, 
     handleCopy, 
     handleShare,
-    setToastMessage
+    setToastMessage,
+    isEn
 }) => {
     const { theme, themeKey } = useTheme();
     const [activeTab, setActiveTab] = useState<'hadith' | 'explanation'>(initialTab);
@@ -48,7 +57,11 @@ const HadithModal: React.FC<HadithModalProps> = ({
     const primaryColor = isBlackTheme ? '#FFFFFF' : (isDefaultTheme ? '#000000' : theme.palette[0]);
     const primaryTextColor = isBlackTheme ? '#000000' : (isDefaultTheme ? '#000000' : '#FFFFFF');
 
+    const activeHadithText = isEn ? hadithEn.hadith : hadith.hadith;
+    const activeHadithTitle = isEn ? hadithEn.title : hadith.title;
     const explanation: HadithExplanation | undefined = NAWAWI_EXPLANATIONS[hadith.id];
+    const explanationEn: HadithExplanationEn | undefined = NAWAWI_EXPLANATIONS_EN[hadith.id];
+    const activeExplanation = isEn ? explanationEn : explanation;
 
     useEffect(() => {
         const unsubscribe = subscribeTTS(setPlayingText);
@@ -58,8 +71,8 @@ const HadithModal: React.FC<HadithModalProps> = ({
         };
     }, []);
 
-    const isHadithPlaying = playingText === hadith.hadith;
-    const isExplanationPlaying = !!(explanation && playingText?.includes(explanation.summary.slice(0, 30)));
+    const isHadithPlaying = playingText === activeHadithText;
+    const isExplanationPlaying = !!(activeExplanation && playingText?.includes(activeExplanation.summary.slice(0, 30)));
 
     const increaseFontSize = () => {
         setFontSize(prev => (prev >= 32 ? 18 : prev + 4));
@@ -82,13 +95,18 @@ const HadithModal: React.FC<HadithModalProps> = ({
             if (isHadithPlaying) {
                 stopTTS();
             } else {
-                playTTS(hadith.hadith, { hadithId: hadith.id });
+                playTTS(activeHadithText, { hadithId: hadith.id });
             }
-        } else if (explanation) {
+        } else if (activeExplanation) {
             if (isExplanationPlaying) {
                 stopTTS();
             } else {
-                const combinedExplanationSpeech = `الشرح المختصر: ${explanation.summary}. الفوائد العقدية: ${explanation.creedBenefits.join('. ')}. الفوائد الفقهية: ${explanation.fiqhBenefits.join('. ')}. الفوائد التربوية: ${explanation.valuesBenefits.join('. ')}.`;
+                let combinedExplanationSpeech = '';
+                if (isEn) {
+                    combinedExplanationSpeech = `Brief Explanation: ${activeExplanation.summary}. Creed Benefits: ${activeExplanation.creedBenefits.join('. ')}. Fiqh Benefits: ${activeExplanation.fiqhBenefits.join('. ')}. Values Benefits: ${activeExplanation.valuesBenefits.join('. ')}.`;
+                } else {
+                    combinedExplanationSpeech = `الشرح المختصر: ${activeExplanation.summary}. الفوائد العقدية: ${activeExplanation.creedBenefits.join('. ')}. الفوائد الفقهية: ${activeExplanation.fiqhBenefits.join('. ')}. الفوائد التربوية: ${activeExplanation.valuesBenefits.join('. ')}.`;
+                }
                 playTTS(combinedExplanationSpeech);
             }
         }
@@ -96,34 +114,56 @@ const HadithModal: React.FC<HadithModalProps> = ({
 
     const handleCopyExplanation = (e: React.MouseEvent) => {
         e.stopPropagation();
-        if (!explanation) return;
-        let text = `📚 ${hadith.title}\n\n`;
-        text += `📖 الشرح المختصر:\n${explanation.summary}\n\n`;
-        if (explanation.creedBenefits?.length) {
-            text += `💎 الفوائد العقدية والإيمانية:\n` + explanation.creedBenefits.map((b, i) => `• ${b}`).join('\n') + `\n\n`;
+        if (!activeExplanation) return;
+        let text = `📚 ${activeHadithTitle}\n\n`;
+        if (isEn) {
+            text += `📖 Brief Explanation:\n${activeExplanation.summary}\n\n`;
+            if (activeExplanation.creedBenefits?.length) {
+                text += `💎 Creed & Faith Benefits:\n` + activeExplanation.creedBenefits.map((b) => `• ${b}`).join('\n') + `\n\n`;
+            }
+            if (activeExplanation.fiqhBenefits?.length) {
+                text += `⚖️ Jurisprudential Benefits:\n` + activeExplanation.fiqhBenefits.map((b) => `• ${b}`).join('\n') + `\n\n`;
+            }
+            if (activeExplanation.valuesBenefits?.length) {
+                text += `🌿 Educational & Behavioral Benefits:\n` + activeExplanation.valuesBenefits.map((b) => `• ${b}`).join('\n') + `\n\n`;
+            }
+            text += `— From Ahmed & Layla Mushaf App (Al-Arba'in Al-Nawawiyyah)`;
+        } else {
+            text += `📖 الشرح المختصر:\n${activeExplanation.summary}\n\n`;
+            if (activeExplanation.creedBenefits?.length) {
+                text += `💎 الفوائد العقدية والإيمانية:\n` + activeExplanation.creedBenefits.map((b) => `• ${b}`).join('\n') + `\n\n`;
+            }
+            if (activeExplanation.fiqhBenefits?.length) {
+                text += `⚖️ الفوائد الفقهية والعملية:\n` + activeExplanation.fiqhBenefits.map((b) => `• ${b}`).join('\n') + `\n\n`;
+            }
+            if (activeExplanation.valuesBenefits?.length) {
+                text += `🌿 الفوائد التربوية والسلوكية:\n` + activeExplanation.valuesBenefits.map((b) => `• ${b}`).join('\n') + `\n\n`;
+            }
+            text += `— من تطبيق مصحف أحمد وليلى (الأربعون النووية)`;
         }
-        if (explanation.fiqhBenefits?.length) {
-            text += `⚖️ الفوائد الفقهية والعملية:\n` + explanation.fiqhBenefits.map((b, i) => `• ${b}`).join('\n') + `\n\n`;
-        }
-        if (explanation.valuesBenefits?.length) {
-            text += `🌿 الفوائد التربوية والسلوكية:\n` + explanation.valuesBenefits.map((b, i) => `• ${b}`).join('\n') + `\n\n`;
-        }
-        text += `— من تطبيق مصحف أحمد وليلى (الأربعون النووية)`;
         handleCopy(text, e);
     };
 
     const handleShareExplanation = async (e: React.MouseEvent) => {
         e.stopPropagation();
-        if (!explanation) return;
-        let text = `📖 الشرح المختصر:\n${explanation.summary}\n\n`;
-        text += `💎 الفوائد العقدية والإيمانية:\n` + explanation.creedBenefits.map(b => `• ${b}`).join('\n') + `\n\n`;
-        text += `⚖️ الفوائد الفقهية والعملية:\n` + explanation.fiqhBenefits.map(b => `• ${b}`).join('\n') + `\n\n`;
-        text += `🌿 الفوائد التربوية والسلوكية:\n` + explanation.valuesBenefits.map(b => `• ${b}`).join('\n');
+        if (!activeExplanation) return;
+        let text = '';
+        if (isEn) {
+            text = `📖 Brief Explanation:\n${activeExplanation.summary}\n\n`;
+            text += `💎 Creed Benefits:\n` + activeExplanation.creedBenefits.map(b => `• ${b}`).join('\n') + `\n\n`;
+            text += `⚖️ Fiqh Benefits:\n` + activeExplanation.fiqhBenefits.map(b => `• ${b}`).join('\n') + `\n\n`;
+            text += `🌿 Behavioral Benefits:\n` + activeExplanation.valuesBenefits.map(b => `• ${b}`).join('\n');
+        } else {
+            text = `📖 الشرح المختصر:\n${activeExplanation.summary}\n\n`;
+            text += `💎 الفوائد العقدية والإيمانية:\n` + activeExplanation.creedBenefits.map(b => `• ${b}`).join('\n') + `\n\n`;
+            text += `⚖️ الفوائد الفقهية والعملية:\n` + activeExplanation.fiqhBenefits.map(b => `• ${b}`).join('\n') + `\n\n`;
+            text += `🌿 الفوائد التربوية والسلوكية:\n` + activeExplanation.valuesBenefits.map(b => `• ${b}`).join('\n');
+        }
 
         await shareAsImage({
             text,
-            source: 'الأربعون النووية - الفوائد والشرح',
-            category: hadith.title,
+            source: isEn ? "Al-Nawawi's 40 Hadith - Explanation" : 'الأربعون النووية - الفوائد والشرح',
+            category: activeHadithTitle,
             theme,
             setToastMessage
         });
@@ -142,7 +182,7 @@ const HadithModal: React.FC<HadithModalProps> = ({
                     borderStyle: 'solid'
                 }} 
                 onClick={(e) => e.stopPropagation()}
-                dir="rtl"
+                dir={isEn ? 'ltr' : 'rtl'}
             >
                 {/* Header */}
                 <div className="p-4 sm:p-5 border-b flex flex-col gap-3" style={{ borderColor: 'var(--card-border)' }}>
@@ -157,16 +197,16 @@ const HadithModal: React.FC<HadithModalProps> = ({
                                 borderStyle: 'solid'
                             }}
                         >
-                            الحديث {toArabicDigits(hadith.id)}
+                            {isEn ? `Hadith ${hadith.id}` : `الحديث ${toArabicDigits(hadith.id)}`}
                         </span>
                         
-                        <h3 className="text-lg sm:text-xl font-bold text-center flex-1 mx-2 truncate" style={{ color: 'var(--modal-text)' }}>
-                            {cleanTitle(hadith.title)}
+                        <h3 className="text-sm sm:text-base font-bold text-center flex-1 mx-2 truncate" style={{ color: 'var(--modal-text)' }}>
+                            {cleanTitle(activeHadithTitle)}
                         </h3>
 
                         <button 
                             onClick={onClose} 
-                            className="w-9 h-9 rounded-full flex items-center justify-center text-gray-400 hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                            className="w-9 h-9 rounded-full flex items-center justify-center text-gray-400 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
                         >
                             <X className="w-5 h-5" />
                         </button>
@@ -177,7 +217,7 @@ const HadithModal: React.FC<HadithModalProps> = ({
                         <button
                             type="button"
                             onClick={() => setActiveTab('hadith')}
-                            className={`flex-1 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition-all ${
+                            className={`flex-1 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                                 activeTab === 'hadith' 
                                     ? 'shadow-md scale-[1.01]' 
                                     : 'opacity-70 hover:opacity-100'
@@ -192,13 +232,13 @@ const HadithModal: React.FC<HadithModalProps> = ({
                             }
                         >
                             <BookOpen className="w-4 h-4" />
-                            <span>نص الحديث</span>
+                            <span>{isEn ? 'Hadith Text' : 'نص الحديث'}</span>
                         </button>
 
                         <button
                             type="button"
                             onClick={() => setActiveTab('explanation')}
-                            className={`flex-1 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition-all ${
+                            className={`flex-1 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                                 activeTab === 'explanation' 
                                     ? 'shadow-md scale-[1.01]' 
                                     : 'opacity-70 hover:opacity-100'
@@ -213,7 +253,7 @@ const HadithModal: React.FC<HadithModalProps> = ({
                             }
                         >
                             <Lightbulb className="w-4 h-4" />
-                            <span>الفوائد والشرح المختصر</span>
+                            <span>{isEn ? 'Explanation & Benefits' : 'الفوائد والشرح المختصر'}</span>
                         </button>
                     </div>
                 </div>
@@ -221,8 +261,8 @@ const HadithModal: React.FC<HadithModalProps> = ({
                 {/* Tab 1: Hadith Text */}
                 {activeTab === 'hadith' && (
                     <div className="p-6 sm:p-8 overflow-y-auto leading-loose text-center flex-1 hide-scrollbar" style={{ fontSize: `${fontSize}px`, color: 'var(--modal-text)' }}>
-                        <p className="whitespace-pre-line font-amiri leading-loose selection:bg-amber-100">
-                            {hadith.hadith}
+                        <p className={`whitespace-pre-line leading-loose selection:bg-amber-100 ${isEn ? 'font-sans text-left' : 'font-amiri'}`} style={{ textAlign: isEn ? 'left' : 'center' }}>
+                            {activeHadithText}
                         </p>
 
                         {/* Quick Prominent Switcher to Explanation */}
@@ -230,7 +270,7 @@ const HadithModal: React.FC<HadithModalProps> = ({
                             <button
                                 type="button"
                                 onClick={() => setActiveTab('explanation')}
-                                className="flex items-center gap-2 px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold shadow-md hover:scale-105 active:scale-95 transition-all border"
+                                className="flex items-center gap-2 px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold shadow-md hover:scale-105 active:scale-95 transition-all border cursor-pointer"
                                 style={{
                                     backgroundColor: isDefaultTheme ? '#000000' : (isBlackTheme ? '#1e1e1e' : (theme.palette[0] + '18')),
                                     color: isDefaultTheme ? '#FFFFFF' : (isBlackTheme ? '#FFFFFF' : (theme.palette[0] || '#10b981')),
@@ -238,8 +278,8 @@ const HadithModal: React.FC<HadithModalProps> = ({
                                 }}
                             >
                                 <Sparkles className="w-4 h-4 animate-pulse text-amber-400" />
-                                <span>عرض الفوائد والشرح المختصر للحديث</span>
-                                <ArrowLeft className="w-4 h-4" />
+                                <span>{isEn ? 'View Hadith Explanation & Benefits' : 'عرض الفوائد والشرح المختصر للحديث'}</span>
+                                {isEn ? <ArrowRight className="w-4 h-4" /> : <ArrowLeft className="w-4 h-4" />}
                             </button>
                         </div>
                     </div>
@@ -247,8 +287,8 @@ const HadithModal: React.FC<HadithModalProps> = ({
 
                 {/* Tab 2: Explanation & Benefits */}
                 {activeTab === 'explanation' && (
-                    <div className="p-4 sm:p-6 overflow-y-auto flex-1 hide-scrollbar space-y-4">
-                        {explanation ? (
+                    <div className={`p-4 sm:p-6 overflow-y-auto flex-1 hide-scrollbar space-y-4 ${isEn ? 'text-left' : 'text-right'}`}>
+                        {activeExplanation ? (
                             <>
                                 {/* Brief Summary */}
                                 <div 
@@ -258,17 +298,17 @@ const HadithModal: React.FC<HadithModalProps> = ({
                                         borderColor: isDefaultTheme ? '#00000020' : (isBlackTheme ? '#333333' : theme.palette[0] + '30')
                                     }}
                                 >
-                                    <div className="flex items-center gap-2 mb-2 font-bold text-sm sm:text-base" style={{ color: isDefaultTheme ? '#000000' : (isBlackTheme ? '#FFFFFF' : theme.palette[0]) }}>
-                                        <BookOpen className="w-5 h-5" />
-                                        <span>الشرح المختصر والميسر</span>
+                                    <div className={`flex items-center gap-2 mb-2 font-bold text-sm sm:text-base ${isEn ? 'flex-row' : 'flex-row'}`} style={{ color: isDefaultTheme ? '#000000' : (isBlackTheme ? '#FFFFFF' : theme.palette[0]) }}>
+                                        <BookOpen className="w-5 h-5 shrink-0" />
+                                        <span>{isEn ? 'Brief & Simplified Explanation' : 'الشرح المختصر والميسر'}</span>
                                     </div>
                                     <p className="text-xs sm:text-sm leading-relaxed text-gray-700 dark:text-gray-300">
-                                        {explanation.summary}
+                                        {activeExplanation.summary}
                                     </p>
                                 </div>
 
                                 {/* Creed Benefits */}
-                                {explanation.creedBenefits?.length > 0 && (
+                                {activeExplanation.creedBenefits?.length > 0 && (
                                     <div 
                                         className="p-4 sm:p-5 rounded-2xl border shadow-sm"
                                         style={{
@@ -277,12 +317,12 @@ const HadithModal: React.FC<HadithModalProps> = ({
                                         }}
                                     >
                                         <div className="flex items-center gap-2 mb-3 font-bold text-sm sm:text-base text-blue-600 dark:text-blue-400">
-                                            <ShieldCheck className="w-5 h-5" />
-                                            <span>الفوائد العقدية والإيمانية</span>
+                                            <ShieldCheck className="w-5 h-5 shrink-0" />
+                                            <span>{isEn ? 'Creed & Faith Benefits' : 'الفوائد العقدية والإيمانية'}</span>
                                         </div>
                                         <ul className="space-y-2 text-xs sm:text-sm leading-relaxed text-gray-700 dark:text-gray-300">
-                                            {explanation.creedBenefits.map((item, idx) => (
-                                                <li key={idx} className="flex items-start gap-2">
+                                            {activeExplanation.creedBenefits.map((item, idx) => (
+                                                <li key={idx} className={`flex items-start gap-2 ${isEn ? 'flex-row' : 'flex-row'}`}>
                                                     <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 shrink-0"></span>
                                                     <span>{item}</span>
                                                 </li>
@@ -292,7 +332,7 @@ const HadithModal: React.FC<HadithModalProps> = ({
                                 )}
 
                                 {/* Fiqh Benefits */}
-                                {explanation.fiqhBenefits?.length > 0 && (
+                                {activeExplanation.fiqhBenefits?.length > 0 && (
                                     <div 
                                         className="p-4 sm:p-5 rounded-2xl border shadow-sm"
                                         style={{
@@ -301,12 +341,12 @@ const HadithModal: React.FC<HadithModalProps> = ({
                                         }}
                                     >
                                         <div className="flex items-center gap-2 mb-3 font-bold text-sm sm:text-base text-emerald-600 dark:text-emerald-400">
-                                            <Scale className="w-5 h-5" />
-                                            <span>الفوائد الفقهية والعملية</span>
+                                            <Scale className="w-5 h-5 shrink-0" />
+                                            <span>{isEn ? 'Jurisprudential & Practical Benefits' : 'الفوائد الفقهية والعملية'}</span>
                                         </div>
                                         <ul className="space-y-2 text-xs sm:text-sm leading-relaxed text-gray-700 dark:text-gray-300">
-                                            {explanation.fiqhBenefits.map((item, idx) => (
-                                                <li key={idx} className="flex items-start gap-2">
+                                            {activeExplanation.fiqhBenefits.map((item, idx) => (
+                                                <li key={idx} className={`flex items-start gap-2 ${isEn ? 'flex-row' : 'flex-row'}`}>
                                                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-2 shrink-0"></span>
                                                     <span>{item}</span>
                                                 </li>
@@ -316,7 +356,7 @@ const HadithModal: React.FC<HadithModalProps> = ({
                                 )}
 
                                 {/* Values Benefits */}
-                                {explanation.valuesBenefits?.length > 0 && (
+                                {activeExplanation.valuesBenefits?.length > 0 && (
                                     <div 
                                         className="p-4 sm:p-5 rounded-2xl border shadow-sm"
                                         style={{
@@ -325,12 +365,12 @@ const HadithModal: React.FC<HadithModalProps> = ({
                                         }}
                                     >
                                         <div className="flex items-center gap-2 mb-3 font-bold text-sm sm:text-base text-amber-600 dark:text-amber-400">
-                                            <HeartHandshake className="w-5 h-5" />
-                                            <span>الفوائد التربوية والسلوكية</span>
+                                            <HeartHandshake className="w-5 h-5 shrink-0" />
+                                            <span>{isEn ? 'Educational & Behavioral Benefits' : 'الفوائد التربوية والسلوكية'}</span>
                                         </div>
                                         <ul className="space-y-2 text-xs sm:text-sm leading-relaxed text-gray-700 dark:text-gray-300">
-                                            {explanation.valuesBenefits.map((item, idx) => (
-                                                <li key={idx} className="flex items-start gap-2">
+                                            {activeExplanation.valuesBenefits.map((item, idx) => (
+                                                <li key={idx} className={`flex items-start gap-2 ${isEn ? 'flex-row' : 'flex-row'}`}>
                                                     <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-2 shrink-0"></span>
                                                     <span>{item}</span>
                                                 </li>
@@ -341,7 +381,7 @@ const HadithModal: React.FC<HadithModalProps> = ({
                             </>
                         ) : (
                             <div className="text-center py-12 text-gray-500 text-sm">
-                                جاري تحميل شرح هذا الحديث...
+                                {isEn ? 'Loading explanation...' : 'جاري تحميل شرح هذا الحديث...'}
                             </div>
                         )}
                     </div>
@@ -353,7 +393,7 @@ const HadithModal: React.FC<HadithModalProps> = ({
                         <button 
                             type="button"
                             onClick={(e) => toggleFavorite(hadith.id, e)} 
-                            className="w-10 h-10 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors"
+                            className="w-10 h-10 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors cursor-pointer"
                         >
                             <i className={`fa-heart ${favorites.includes(hadith.id) ? 'fa-solid text-red-500' : 'fa-regular text-gray-500'}`}></i>
                         </button>
@@ -363,9 +403,9 @@ const HadithModal: React.FC<HadithModalProps> = ({
                                 <button 
                                     type="button"
                                     onClick={increaseFontSize}
-                                    className="w-10 h-10 rounded-full flex items-center justify-center transition bg-black/5 dark:bg-white/5 hover:bg-black/10"
+                                    className="w-10 h-10 rounded-full flex items-center justify-center transition bg-black/5 dark:bg-white/5 hover:bg-black/10 cursor-pointer"
                                     style={{ color: 'var(--modal-text)' }}
-                                    title="تكبير النص"
+                                    title={isEn ? "Zoom In Font" : "تكبير النص"}
                                 >
                                     <ZoomIn className="w-4 h-4" />
                                 </button>
@@ -373,18 +413,18 @@ const HadithModal: React.FC<HadithModalProps> = ({
 
                             <button 
                                 type="button"
-                                onClick={activeTab === 'hadith' ? (e) => handleCopy(hadith.hadith, e) : handleCopyExplanation} 
-                                className="w-10 h-10 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors text-gray-600 dark:text-gray-300" 
-                                title="نسخ"
+                                onClick={activeTab === 'hadith' ? (e) => handleCopy(activeHadithText, e) : handleCopyExplanation} 
+                                className="w-10 h-10 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors text-gray-600 dark:text-gray-300 cursor-pointer" 
+                                title={isEn ? "Copy" : "نسخ"}
                             >
                                 <Copy className="w-4 h-4" />
                             </button>
 
                             <button 
                                 type="button"
-                                onClick={activeTab === 'hadith' ? (e) => handleShare(hadith, e) : handleShareExplanation} 
-                                className="w-10 h-10 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors text-gray-600 dark:text-gray-300" 
-                                title="مشاركة كصورة"
+                                onClick={activeTab === 'hadith' ? (e) => handleShare(isEn ? hadithEn : hadith, e) : handleShareExplanation} 
+                                className="w-10 h-10 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors text-gray-600 dark:text-gray-300 cursor-pointer" 
+                                title={isEn ? "Share as Image" : "مشاركة كصورة"}
                             >
                                 <Share2 className="w-4 h-4" />
                             </button>
@@ -392,9 +432,9 @@ const HadithModal: React.FC<HadithModalProps> = ({
                             <button 
                                 type="button"
                                 onClick={handlePlayAudio} 
-                                className="w-10 h-10 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors text-gray-600 dark:text-gray-300" 
+                                className="w-10 h-10 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors text-gray-600 dark:text-gray-300 cursor-pointer" 
                                 style={{ color: (isHadithPlaying || isExplanationPlaying) ? '#ef4444' : 'inherit' }}
-                                title={(isHadithPlaying || isExplanationPlaying) ? "إيقاف الاستماع" : "استماع صوتي"}
+                                title={(isHadithPlaying || isExplanationPlaying) ? (isEn ? "Stop Audio" : "إيقاف الاستماع") : (isEn ? "Play Audio" : "استماع صوتي")}
                             >
                                 <Volume2 className={`w-4 h-4 ${(isHadithPlaying || isExplanationPlaying) ? 'text-red-500 animate-pulse' : ''}`} />
                             </button>
@@ -406,30 +446,30 @@ const HadithModal: React.FC<HadithModalProps> = ({
                             <button 
                                 type="button"
                                 onClick={() => setActiveTab('hadith')} 
-                                className="flex-1 py-2.5 rounded-xl font-bold transition hover:opacity-90 bg-gray-200 dark:bg-gray-800 text-xs sm:text-sm flex items-center justify-center gap-1.5"
+                                className="flex-1 py-2.5 rounded-xl font-bold transition hover:opacity-90 bg-gray-200 dark:bg-gray-800 text-xs sm:text-sm flex items-center justify-center gap-1.5 cursor-pointer"
                                 style={{ color: 'var(--modal-text)' }}
                             >
                                 <BookOpen className="w-4 h-4" />
-                                <span>العودة لنص الحديث</span>
+                                <span>{isEn ? 'Back to Hadith Text' : 'العودة لنص الحديث'}</span>
                             </button>
                         ) : (
                             <button 
                                 type="button"
                                 onClick={() => setActiveTab('explanation')} 
-                                className="flex-1 py-2.5 rounded-xl font-bold transition hover:opacity-90 bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-xs sm:text-sm flex items-center justify-center gap-1.5"
+                                className="flex-1 py-2.5 rounded-xl font-bold transition hover:opacity-90 bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-xs sm:text-sm flex items-center justify-center gap-1.5 cursor-pointer"
                             >
                                 <Lightbulb className="w-4 h-4" />
-                                <span>عرض الفوائد والشرح</span>
+                                <span>{isEn ? 'View Explanation & Benefits' : 'عرض الفوائد والشرح'}</span>
                             </button>
                         )}
 
                         <button 
                             type="button"
                             onClick={onClose} 
-                            className="px-6 py-2.5 rounded-xl font-bold transition hover:opacity-90 bg-gray-200 dark:bg-gray-700 text-xs sm:text-sm" 
+                            className="px-6 py-2.5 rounded-xl font-bold transition hover:opacity-90 bg-gray-200 dark:bg-gray-700 text-xs sm:text-sm cursor-pointer" 
                             style={{ color: 'var(--modal-text)' }}
                         >
-                            إغلاق
+                            {isEn ? 'Close' : 'إغلاق'}
                         </button>
                     </div>
                 </div>
@@ -440,6 +480,9 @@ const HadithModal: React.FC<HadithModalProps> = ({
 
 const Nawawi = ({ onBack, onNavigate }: { onBack: () => void; onNavigate?: (id: string, params?: any) => void }) => {
     const { theme, themeKey } = useTheme();
+    const { language } = useLanguage();
+    const isEn = language === 'en';
+
     const [selectedHadith, setSelectedHadith] = useState<typeof NAWAWI_DATA[0] | null>(null);
     const [modalInitialTab, setModalInitialTab] = useState<'hadith' | 'explanation'>('hadith');
     const [favorites, setFavorites] = useState<number[]>([]);
@@ -452,68 +495,34 @@ const Nawawi = ({ onBack, onNavigate }: { onBack: () => void; onNavigate?: (id: 
             ? '#FFFFFF' 
             : (theme.palette?.[0] || '#000000'));
 
-    useEffect(() => {
-        try {
-            const savedFavorites = localStorage.getItem('nawawi_favorites');
-            if (savedFavorites) {
-                setFavorites(JSON.parse(savedFavorites));
-            }
-        } catch (e) {}
-    }, []);
-
-    useEffect(() => {
-        const interceptor = () => {
-            if (selectedHadith) {
-                setSelectedHadith(null);
-                return true;
-            }
-            return false;
-        };
-        const unregister = registerBackInterceptor(interceptor);
-        return unregister;
-    }, [selectedHadith]);
-
-    const toggleFavorite = (id: number, e: React.MouseEvent) => {
-        e.stopPropagation();
-        setFavorites(prev => {
-            const isFav = prev.includes(id);
-            const newFavs = isFav ? prev.filter(f => f !== id) : [...prev, id];
-            try {
-                localStorage.setItem('nawawi_favorites', JSON.stringify(newFavs));
-            } catch (err) {}
-            return newFavs;
-        });
-    };
-
     const handleCopy = (text: string, e: React.MouseEvent) => {
         e.stopPropagation();
-        navigator.clipboard.writeText(text).then(() => {
-            setToastMessage('تم النسخ إلى الحافظة بنجاح 📋');
-            setTimeout(() => setToastMessage(''), 2000);
-        });
+        navigator.clipboard.writeText(text);
+        setToastMessage(isEn ? 'Copied to clipboard successfully!' : 'تم النسخ بنجاح');
+        setTimeout(() => setToastMessage(''), 2500);
     };
 
-    const handleShare = async (hadith: any, e: React.MouseEvent) => {
+    const handleShare = async (item: any, e: React.MouseEvent) => {
         e.stopPropagation();
         await shareAsImage({
-            text: hadith.hadith,
-            source: 'الأربعون النووية',
-            category: hadith.title,
+            text: item.hadith,
+            source: isEn ? "Al-Nawawi's 40 Hadith" : 'الأربعون النووية',
+            category: item.title,
             theme,
             setToastMessage
         });
     };
 
-    const handleHomeClick = () => {
-        if (selectedHadith) {
-            setSelectedHadith(null);
+    const toggleFavorite = (id: number, e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (favorites.includes(id)) {
+            setFavorites(favorites.filter(favId => favId !== id));
+            setToastMessage(isEn ? 'Removed from favorites' : 'تمت الإزالة من المفضلة');
         } else {
-            onBack();
+            setFavorites([...favorites, id]);
+            setToastMessage(isEn ? 'Added to favorites' : 'تمت الإضافة للمفضلة');
         }
-    };
-
-    const toArabicDigits = (num: number) => {
-        return num.toString().replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[parseInt(d)]);
+        setTimeout(() => setToastMessage(''), 2000);
     };
 
     const cleanTitle = (title: string) => {
@@ -524,37 +533,37 @@ const Nawawi = ({ onBack, onNavigate }: { onBack: () => void; onNavigate?: (id: 
     };
 
     return (
-        <div className="h-screen flex flex-col overflow-hidden" style={{ backgroundColor: 'transparent', color: theme.textColor, fontFamily: theme.font }}>
+        <div className="h-screen flex flex-col overflow-hidden" style={{ backgroundColor: 'transparent', color: theme.textColor, fontFamily: theme.font }} dir={isEn ? 'ltr' : 'rtl'}>
             <header className="app-top-bar">
                 <div className="app-top-bar__inner">
-                    <div className="relative flex items-center justify-center w-full min-h-[44px]">
-                        {/* سهم الرجوع للخلف على يمين النص */}
-                        <div className="absolute right-0 flex items-center">
+                    <div className="relative flex items-center justify-between w-full min-h-[44px]">
+                        {/* Back / House buttons based on language direction */}
+                        <div className={`flex items-center ${isEn ? 'order-1' : 'order-3'} gap-1`}>
                             <button
                                 onClick={onBack}
                                 className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
-                                title="رجوع للخلف"
-                                aria-label="رجوع للخلف"
+                                title={isEn ? "Back" : "رجوع للخلف"}
+                                aria-label={isEn ? "Back" : "رجوع للخلف"}
                             >
-                                <i className="fa-solid fa-arrow-right text-xl"></i>
+                                <i className={`fa-solid ${isEn ? 'fa-arrow-left' : 'fa-arrow-right'} text-xl`}></i>
                             </button>
                         </div>
 
-                        {/* عنوان الصفحة في الوسط */}
-                        <div className="text-center px-12 min-w-0">
+                        {/* Title */}
+                        <div className="text-center px-2 flex-1 order-2 min-w-0">
                             <h1 className="app-top-bar__title text-lg sm:text-xl font-kufi truncate">
-                                الأربعون النووية
+                                {isEn ? "Al-Nawawi's 40 Hadith" : "الأربعون النووية"}
                             </h1>
                         </div>
 
-                        {/* أيقونة المنزل على يسار النص للعودة إلى الصفحة الرئيسية */}
-                        <div className="absolute left-0 flex items-center gap-1">
+                        {/* Home / Lock */}
+                        <div className={`flex items-center gap-1 ${isEn ? 'order-3' : 'order-1'}`}>
                             <ThemePageLock />
                             <button
                                 onClick={() => onNavigate ? onNavigate('home') : onBack()}
                                 className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
-                                title="الصفحة الرئيسية"
-                                aria-label="الصفحة الرئيسية"
+                                title={isEn ? "Home" : "الصفحة الرئيسية"}
+                                aria-label={isEn ? "Home" : "الصفحة الرئيسية"}
                             >
                                 <i className="fa-solid fa-house text-xl"></i>
                             </button>
@@ -563,10 +572,12 @@ const Nawawi = ({ onBack, onNavigate }: { onBack: () => void; onNavigate?: (id: 
                 </div>
             </header>
 
-            <main className="flex-1 overflow-y-auto hide-scrollbar px-4 pb-4">
+            <main className="flex-1 overflow-y-auto hide-scrollbar px-4 pt-2 pb-4">
                 <div className="grid grid-cols-2 gap-4">
                     {NAWAWI_DATA.map((hadith, index) => {
+                        const hadithEn = NAWAWI_DATA_EN[index];
                         const color = theme.palette[index % theme.palette.length];
+                        const displayTitle = isEn ? hadithEn.title : hadith.title;
                         return (
                             <div 
                                 key={hadith.id} 
@@ -602,12 +613,12 @@ const Nawawi = ({ onBack, onNavigate }: { onBack: () => void; onNavigate?: (id: 
                                         }}
                                     >
                                         <span className="text-xl font-bold" style={{ fontFamily: theme.font }}>
-                                            {toArabicDigits(hadith.id)}
+                                            {isEn ? hadith.id : toArabicDigits(hadith.id)}
                                         </span>
                                     </div>
                                     
                                     <h2 className="font-bold text-xs sm:text-sm leading-snug text-gray-800 dark:text-gray-100 line-clamp-2" style={{ fontFamily: theme.font }}>
-                                        {cleanTitle(hadith.title)}
+                                        {cleanTitle(displayTitle)}
                                     </h2>
 
                                     {/* Action Button: Explanation & Benefits */}
@@ -619,18 +630,22 @@ const Nawawi = ({ onBack, onNavigate }: { onBack: () => void; onNavigate?: (id: 
                                                 setSelectedHadith(hadith);
                                                 setModalInitialTab('explanation');
                                             }}
-                                            className="flex-1 py-1 px-2 rounded-xl text-[10px] sm:text-xs font-bold transition-all flex items-center justify-center gap-1 hover:scale-105 active:scale-95"
+                                            className="flex-1 py-1 px-2 rounded-xl text-[10px] sm:text-xs font-bold transition-all flex items-center justify-center gap-1 hover:scale-105 active:scale-95 cursor-pointer"
                                             style={{
                                                 backgroundColor: isDefaultTheme ? '#00000010' : (isBlackTheme ? 'rgba(255, 255, 255, 0.12)' : (color + '15')),
                                                 color: isDefaultTheme ? '#000000' : (isBlackTheme ? '#FFFFFF' : color)
                                             }}
-                                            title="عرض الفوائد والشرح"
+                                            title={isEn ? "View Explanation & Benefits" : "عرض الفوائد والشرح"}
                                         >
-                                            <Lightbulb className="w-3 h-3 text-amber-500" />
-                                            <span>الفوائد والشرح</span>
+                                            <Lightbulb className="w-3 h-3 text-amber-500 shrink-0" />
+                                            <span className="truncate">{isEn ? 'Explanation' : 'الفوائد والشرح'}</span>
                                         </button>
                                         <div className="w-5 h-5 flex items-center justify-center opacity-60 group-hover:opacity-100 transition-opacity">
-                                            <ArrowLeft className="w-3 h-3" style={{ color: isDefaultTheme ? '#000000' : (isBlackTheme ? '#FFFFFF' : color) }} />
+                                            {isEn ? (
+                                                <ArrowRight className="w-3 h-3" style={{ color: isDefaultTheme ? '#000000' : (isBlackTheme ? '#FFFFFF' : color) }} />
+                                            ) : (
+                                                <ArrowLeft className="w-3 h-3" style={{ color: isDefaultTheme ? '#000000' : (isBlackTheme ? '#FFFFFF' : color) }} />
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -644,6 +659,7 @@ const Nawawi = ({ onBack, onNavigate }: { onBack: () => void; onNavigate?: (id: 
             {selectedHadith && (
                 <HadithModal 
                     hadith={selectedHadith} 
+                    hadithEn={NAWAWI_DATA_EN[selectedHadith.id - 1]}
                     initialTab={modalInitialTab}
                     onClose={() => setSelectedHadith(null)} 
                     favorites={favorites}
@@ -651,6 +667,7 @@ const Nawawi = ({ onBack, onNavigate }: { onBack: () => void; onNavigate?: (id: 
                     handleCopy={handleCopy}
                     handleShare={handleShare}
                     setToastMessage={setToastMessage}
+                    isEn={isEn}
                 />
             )}
 

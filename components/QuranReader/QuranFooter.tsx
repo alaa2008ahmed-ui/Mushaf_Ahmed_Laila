@@ -20,6 +20,7 @@ interface QuranFooterProps {
     handleAutoScrollButtonPointerLeave: () => void;
     autoScrollState: { isActive: boolean; isPaused: boolean; elapsedTime: number };
     onBack: () => void;
+    isEn?: boolean;
 }
 
 const QuranFooter: React.FC<QuranFooterProps> = React.memo(({
@@ -39,7 +40,8 @@ const QuranFooter: React.FC<QuranFooterProps> = React.memo(({
     handleAutoScrollButtonPointerUp,
     handleAutoScrollButtonPointerLeave,
     autoScrollState,
-    onBack
+    onBack,
+    isEn = false
 }) => {
     return (
         <footer id="bottom-bar" className={`footer-default flex-none border shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-50 flex justify-evenly items-center py-1 w-full ${isAnyMenuOpen ? 'pointer-events-none opacity-50' : ''}`} style={getToolbarStyle('bottom-toolbar', currentTheme.barBg, currentTheme.barText, currentTheme.barBorder)}>
@@ -49,7 +51,7 @@ const QuranFooter: React.FC<QuranFooterProps> = React.memo(({
                     onClick={() => openModal('share-ayah')} 
                     className={`bottom-bar-button btn-green !rounded-full !w-12 !h-12 !p-0 flex items-center justify-center mx-1 shadow-sm ${isAnyMenuOpen ? 'pointer-events-none' : 'pointer-events-auto'}`} 
                     style={getToolbarStyle('btn-share', currentTheme.btnBg, currentTheme.btnText, currentTheme.btnBorder || currentTheme.btnBg)}
-                    title="مشاركة"
+                    title={isEn ? "Share" : "مشاركة"}
                 >
                     <Share2 size={24} />
                 </button>
@@ -64,7 +66,7 @@ const QuranFooter: React.FC<QuranFooterProps> = React.memo(({
                 onTouchCancel={handleBookmarkButtonPointerLeave}
                 className="bottom-bar-button btn-green !rounded-full !w-12 !h-12 !p-0 flex items-center justify-center mx-1 shadow-sm" 
                 style={{...getToolbarStyle('btn-bookmark', currentTheme.btnBg, currentTheme.btnText, currentTheme.btnBorder || currentTheme.btnBg), touchAction: 'none'}}
-                title="حفظ العلامة"
+                title={isEn ? "Save Bookmark" : "حفظ العلامة"}
             >
                 <Bookmark size={24} />
             </button>
@@ -79,7 +81,7 @@ const QuranFooter: React.FC<QuranFooterProps> = React.memo(({
                     onTouchCancel={handleAutoScrollButtonPointerLeave}
                     className="bottom-bar-button btn-purple !rounded-full !w-12 !h-12 !p-0 flex items-center justify-center mx-1 shadow-sm" 
                     style={{...getToolbarStyle('btn-autoscroll', currentTheme.btnBg, currentTheme.btnText, currentTheme.btnBorder || currentTheme.btnBg), touchAction: 'none'}}
-                    title="التمرير التلقائي"
+                    title={isEn ? "Auto-scroll" : "التمرير التلقائي"}
                 >
                     {autoScrollState.isActive ? <Pause size={24} /> : <ChevronDown size={24} />}
                 </button>
@@ -89,7 +91,7 @@ const QuranFooter: React.FC<QuranFooterProps> = React.memo(({
                 onClick={onBack} 
                 className="bottom-bar-button btn-green !rounded-full !w-12 !h-12 !p-0 flex items-center justify-center mx-1 shadow-sm" 
                 style={getToolbarStyle('btn-home', currentTheme.btnBg, currentTheme.btnText, currentTheme.btnBorder || currentTheme.btnBg)}
-                title="الرئيسية"
+                title={isEn ? "Home" : "الرئيسية"}
             >
                 <Home size={24} />
             </button>
