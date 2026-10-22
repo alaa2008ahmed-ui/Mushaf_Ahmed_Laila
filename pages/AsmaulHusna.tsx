@@ -305,7 +305,6 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                         title={isEn ? "Grid View" : "عرض شبكي"}
                     >
                         <LayoutGrid size={15} />
-                        <span className="hidden sm:inline">{isEn ? 'Grid' : 'الشبكة'}</span>
                     </button>
                     <button
                         type="button"
@@ -315,11 +314,9 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                             backgroundColor: isBlackTheme ? '#FFFFFF' : theme.palette[0],
                             color: isBlackTheme ? '#000000' : '#ffffff'
                         } : { color: 'var(--text-color)' }}
-                        title={isEn ? "Explanation List" : "قائمة شرح الأسماء"}
-                    >
-                        <ListFilter size={15} />
-                        <span>{isEn ? 'List' : 'قائمة الشرح'}</span>
-                    </button>
+                        >
+                            <ListFilter size={15} />
+                        </button>
                 </div>
             </div>
 

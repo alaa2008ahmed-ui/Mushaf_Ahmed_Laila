@@ -18,6 +18,8 @@ import {
   Home, Phone, ExternalLink, Tent, Ban, ShieldAlert, SlidersHorizontal, ZoomIn
 } from 'lucide-react';
 import { ButtonExplanationData } from './ButtonExplanationModal';
+import { useLanguage } from '../../context/LanguageContext';
+import { translateExplanationData, translateTree, tGuide } from './pageGuideTranslations';
 
 interface PageMockupProps {
   onInspect: (data: ButtonExplanationData) => void;
@@ -39,13 +41,17 @@ export const Hotspot: React.FC<{
   className?: string;
   title?: string;
 }> = ({ onClick, children, className = '', title }) => {
+  const { language } = useLanguage();
+  const defaultTitle = language === 'en' ? "Tap to view button explanation" : "اضغط لعرض شرح هذا الزر";
+  const finalTitle = title ? (language === 'en' ? tGuide(title, 'en') : title) : defaultTitle;
+
   return (
     <div
       onClick={(e) => {
         e.stopPropagation();
         onClick();
       }}
-      title={title || "اضغط لعرض شرح هذا الزر"}
+      title={finalTitle}
       className={`cursor-pointer transition-all duration-150 hover:opacity-90 active:scale-[0.98] select-none ${className}`}
     >
       {children}
@@ -3536,60 +3542,120 @@ export const PageMockupDispatcher: React.FC<{
   cardBg: string;
   cardBorderColor: string;
 }> = (props) => {
+  const { language } = useLanguage();
+  const isEn = language === 'en';
+
+  // Wrap onInspect so any data passed from any mockup is translated if in English
+  const localizedOnInspect = (data: ButtonExplanationData) => {
+    if (isEn) {
+      props.onInspect(translateExplanationData(data, 'en'));
+    } else {
+      props.onInspect(data);
+    }
+  };
+
+  const localizedProps = {
+    ...props,
+    onInspect: localizedOnInspect,
+  };
+
+  let MockupComponent: React.FC<PageMockupProps>;
   switch (props.pageId) {
     case 'tasbeeh':
-      return <TasbeehMockup {...props} />;
+      MockupComponent = TasbeehMockup;
+      break;
     case 'community':
     case 'side-community':
-      return <CommunityMockup {...props} />;
+      MockupComponent = CommunityMockup;
+      break;
     case 'adia':
-      return <AdiaMockup {...props} />;
+      MockupComponent = AdiaMockup;
+      break;
     case 'salah-adhkar':
-      return <AthkarAlSalahMockup {...props} />;
+      MockupComponent = AthkarAlSalahMockup;
+      break;
     case 'hisn-muslim':
-      return <HisnAlmuslimMockup {...props} />;
+      MockupComponent = HisnAlmuslimMockup;
+      break;
     case 'calendar':
-      return <CalendarMockup {...props} />;
+      MockupComponent = CalendarMockup;
+      break;
     case 'sabah-masaa':
-      return <SabahMasaaMockup {...props} />;
+      MockupComponent = SabahMasaaMockup;
+      break;
     case 'prayer-times':
-      return <PrayerTimesMockup {...props} />;
+      MockupComponent = PrayerTimesMockup;
+      break;
     case 'qibla':
-      return <QiblaMockup {...props} />;
+      MockupComponent = QiblaMockup;
+      break;
     case 'listen':
-      return <ListenQuranMockup {...props} />;
+      MockupComponent = ListenQuranMockup;
+      break;
     case 'ahl-al-quran':
     case 'side-ahl-al-quran':
-      return <AhlAlQuranMockup {...props} />;
+      MockupComponent = AhlAlQuranMockup;
+      break;
     case 'quran':
-      return <QuranReaderMockup {...props} />;
+      MockupComponent = QuranReaderMockup;
+      break;
     case 'hajj-umrah':
-      return <HajjUmrahMockup {...props} />;
+      MockupComponent = HajjUmrahMockup;
+      break;
     case 'daily-wird':
-      return <DailyWirdMockup {...props} />;
+      MockupComponent = DailyWirdMockup;
+      break;
     case 'memorization':
-      return <MemorizationMockup {...props} />;
+      MockupComponent = MemorizationMockup;
+      break;
     case 'habit-tracker':
-      return <HabitTrackerMockup {...props} />;
+      MockupComponent = HabitTrackerMockup;
+      break;
     case 'others':
-      return <OthersMockup {...props} />;
+      MockupComponent = OthersMockup;
+      break;
     case 'prophetic-seerah':
-      return <PropheticSeerahMockup {...props} />;
+      MockupComponent = PropheticSeerahMockup;
+      break;
     case 'islamic-sites':
-      return <IslamicSitesMockup {...props} />;
+      MockupComponent = IslamicSitesMockup;
+      break;
     case 'nawawi':
-      return <NawawiMockup {...props} />;
+      MockupComponent = NawawiMockup;
+      break;
     case 'calculators':
-      return <CalculatorsMockup {...props} />;
+      MockupComponent = CalculatorsMockup;
+      break;
     case 'voice-control':
     case 'side-voice':
-      return <VoiceControlMockup {...props} />;
+      MockupComponent = VoiceControlMockup;
+      break;
     case 'asmaul-husna':
-      return <AsmaulHusnaMockup {...props} />;
+      MockupComponent = AsmaulHusnaMockup;
+      break;
     case 'side-whatsapp':
-      return <WhatsAppMockup {...props} />;
+      MockupComponent = WhatsAppMockup;
+      break;
     default:
-      return <TasbeehMockup {...props} />;
+      MockupComponent = TasbeehMockup;
+      break;
   }
+
+  // Directly call the mockup component to get its real JSX elements
+  const rawElement = MockupComponent(localizedProps) as React.ReactElement;
+
+  if (isEn) {
+    return (
+      <div dir="ltr" className="w-full font-sans">
+        {translateTree(rawElement, 'en')}
+      </div>
+    );
+  }
+
+  return (
+    <div dir="rtl" className="w-full font-kufi">
+      {rawElement}
+    </div>
+  );
 };
 

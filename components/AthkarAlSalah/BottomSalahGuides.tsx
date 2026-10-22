@@ -108,12 +108,11 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
     `;
 
     // --- Content for Sujood As-Sahw (سهو الصلاة) ---
-    const sahwTitle = isEn ? 'Forgetfulness in Prayer (Sujood As-Sahw)' : 'سهو الصلاة (أحكام سجود السهو بالتفصيل)';
+    const sahwTitle = isEn ? 'Sujood As-Sahw' : 'سهو الصلاة';
     const sahwSummary = isEn ? 'Comprehensive Guide, Timings & Rulings' : 'أسبابه ومواضعه وأحكامه بالتفصيل';
     
     const sahwHtmlAr = `
         <div class="space-y-6 text-right font-amiri text-lg md:text-xl leading-relaxed" dir="rtl">
-            <!-- تعريف -->
             <div class="bg-black/5 dark:bg-white/5 p-4 rounded-xl border-r-4" style="border-right-color: ${theme.palette[0]};">
                 <h4 class="font-bold text-xl mb-1" style="color: ${theme.palette[0]};">ما هو سجود السهو وحكمه؟</h4>
                 <p class="opacity-90 leading-relaxed">
@@ -121,7 +120,6 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                 </p>
             </div>
 
-            <!-- أسباب سجود السهو الثلاثة -->
             <div class="space-y-3">
                 <h4 class="font-bold text-xl" style="color: ${theme.palette[1]};">الأسباب الثلاثة لسجود السهو:</h4>
                 
@@ -158,7 +156,6 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                 </div>
             </div>
 
-            <!-- القاعدة الذهبية الميسرة -->
             <div class="p-4 rounded-xl border-2" style="border-color: ${theme.palette[0]}50; background: linear-gradient(to bottom, ${theme.palette[0]}10, transparent);">
                 <h4 class="font-bold text-xl text-center mb-3" style="color: ${theme.palette[0]};">⭐ القاعدة الذهبية: متى يكون قبل السلام ومتى بعده؟</h4>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-base">
@@ -180,7 +177,6 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                 </div>
             </div>
 
-            <!-- كيفية السجود وما يقال فيه -->
             <div class="p-4 rounded-xl bg-black/5 dark:bg-white/5">
                 <h4 class="font-bold text-xl mb-2" style="color: ${theme.palette[1]};">كيفية سجوده وما يقال فيه:</h4>
                 <p class="text-base opacity-90 leading-relaxed">
@@ -190,7 +186,6 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                 </p>
             </div>
 
-            <!-- مسائل وفتاوى شائعة -->
             <div class="space-y-2 text-base">
                 <h4 class="font-bold text-xl mb-1" style="color: ${theme.palette[0]};">مسائل وفتاوى شائعة:</h4>
                 <div class="p-2.5 rounded-lg bg-card-bg-hover">
@@ -208,7 +203,6 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
 
     const sahwHtmlEn = `
         <div class="space-y-6 text-left text-base md:text-lg leading-relaxed font-sans" dir="ltr">
-            <!-- Definition -->
             <div class="bg-black/5 dark:bg-white/5 p-4 rounded-xl border-l-4" style="border-left-color: ${theme.palette[0]};">
                 <h4 class="font-bold text-lg mb-1" style="color: ${theme.palette[0]};">What is Sujood As-Sahw?</h4>
                 <p class="opacity-90 leading-relaxed">
@@ -216,7 +210,6 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                 </p>
             </div>
 
-            <!-- Three Main Causes -->
             <div class="space-y-3">
                 <h4 class="font-bold text-lg" style="color: ${theme.palette[1]};">The Three Causes of Sujood As-Sahw:</h4>
                 <div class="p-3.5 rounded-xl bg-card-bg-hover border border-black/5 dark:border-white/10">
@@ -241,7 +234,6 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                 </div>
             </div>
 
-            <!-- Golden Rule -->
             <div class="p-4 rounded-xl border-2" style="border-color: ${theme.palette[0]}50; background: linear-gradient(to bottom, ${theme.palette[0]}10, transparent);">
                 <h4 class="font-bold text-lg text-center mb-2" style="color: ${theme.palette[0]};">⭐ Golden Rule: Before or After Tasleem?</h4>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
@@ -263,7 +255,6 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                 </div>
             </div>
 
-            <!-- How to Perform -->
             <div class="p-4 rounded-xl bg-black/5 dark:bg-white/5">
                 <h4 class="font-bold text-lg mb-1" style="color: ${theme.palette[1]};">How to Perform & What to Say:</h4>
                 <p class="text-sm opacity-90 leading-relaxed">
@@ -312,7 +303,7 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                     borderTopColor: theme.palette[0]
                 }}
             >
-                {/* Header (Accordion Toggle) */}
+                {/* Header (Accordion Toggle) - No arrows */}
                 <button
                     onClick={() => toggleCard('sunan')}
                     className="w-full p-4 flex items-center justify-between gap-3 text-right cursor-pointer select-none transition-colors hover:bg-black/5 dark:hover:bg-white/5"
@@ -341,17 +332,11 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
 
                     <div className="flex items-center gap-2 shrink-0">
                         <span
-                            className="text-[11px] font-bold px-2 py-0.5 rounded-full hidden sm:inline-block"
+                            className="text-[11px] font-bold px-2.5 py-1 rounded-lg"
                             style={{ backgroundColor: `${theme.palette[0]}15`, color: theme.palette[0] }}
                         >
-                            {openCards['sunan'] ? (isEn ? 'Click to fold' : 'مطوية عند النقر') : (isEn ? 'Click to expand' : 'انقر للعرض')}
+                            {openCards['sunan'] ? (isEn ? 'Hide' : 'إخفاء') : (isEn ? 'View' : 'عرض')}
                         </span>
-                        <div
-                            className="w-8 h-8 rounded-full flex items-center justify-center transition-transform duration-300"
-                            style={{ transform: openCards['sunan'] ? 'rotate(180deg)' : 'rotate(0deg)' }}
-                        >
-                            <i className="fa-solid fa-chevron-down text-xs themed-text-muted"></i>
-                        </div>
                     </div>
                 </button>
 
@@ -443,7 +428,7 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                     borderTopColor: theme.palette[1]
                 }}
             >
-                {/* Header (Accordion Toggle) */}
+                {/* Header (Accordion Toggle) - No arrows */}
                 <button
                     onClick={() => toggleCard('hadiths')}
                     className="w-full p-4 flex items-center justify-between gap-3 text-right cursor-pointer select-none transition-colors hover:bg-black/5 dark:hover:bg-white/5"
@@ -472,17 +457,11 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
 
                     <div className="flex items-center gap-2 shrink-0">
                         <span
-                            className="text-[11px] font-bold px-2 py-0.5 rounded-full hidden sm:inline-block"
+                            className="text-[11px] font-bold px-2.5 py-1 rounded-lg"
                             style={{ backgroundColor: `${theme.palette[1]}15`, color: theme.palette[1] }}
                         >
-                            {openCards['hadiths'] ? (isEn ? 'Click to fold' : 'مطوية عند النقر') : (isEn ? 'Click to expand' : 'انقر للعرض')}
+                            {openCards['hadiths'] ? (isEn ? 'Hide' : 'إخفاء') : (isEn ? 'View' : 'عرض')}
                         </span>
-                        <div
-                            className="w-8 h-8 rounded-full flex items-center justify-center transition-transform duration-300"
-                            style={{ transform: openCards['hadiths'] ? 'rotate(180deg)' : 'rotate(0deg)' }}
-                        >
-                            <i className="fa-solid fa-chevron-down text-xs themed-text-muted"></i>
-                        </div>
                     </div>
                 </button>
 
@@ -594,7 +573,7 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                     borderTopColor: isBlackTheme ? '#FFFFFF' : (theme.palette[2] || theme.palette[0])
                 }}
             >
-                {/* Header (Accordion Toggle) */}
+                {/* Header (Accordion Toggle) - No arrows */}
                 <button
                     onClick={() => toggleCard('sahw')}
                     className="w-full p-4 flex items-center justify-between gap-3 text-right cursor-pointer select-none transition-colors hover:bg-black/5 dark:hover:bg-white/5"
@@ -623,17 +602,11 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
 
                     <div className="flex items-center gap-2 shrink-0">
                         <span
-                            className="text-[11px] font-bold px-2 py-0.5 rounded-full hidden sm:inline-block"
+                            className="text-[11px] font-bold px-2.5 py-1 rounded-lg"
                             style={{ backgroundColor: `${theme.palette[0]}15`, color: theme.palette[0] }}
                         >
-                            {openCards['sahw'] ? (isEn ? 'Click to fold' : 'مطوية عند النقر') : (isEn ? 'Click to expand' : 'انقر للعرض')}
+                            {openCards['sahw'] ? (isEn ? 'Hide' : 'إخفاء') : (isEn ? 'View' : 'عرض')}
                         </span>
-                        <div
-                            className="w-8 h-8 rounded-full flex items-center justify-center transition-transform duration-300"
-                            style={{ transform: openCards['sahw'] ? 'rotate(180deg)' : 'rotate(0deg)' }}
-                        >
-                            <i className="fa-solid fa-chevron-down text-xs themed-text-muted"></i>
-                        </div>
                     </div>
                 </button>
 
@@ -648,7 +621,6 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                             className="overflow-hidden border-t border-black/5 dark:border-white/10"
                         >
                             <div className="p-4 sm:p-5">
-                                {/* Formatted Sahw Body */}
                                 <div 
                                     dangerouslySetInnerHTML={{ __html: isEn ? sahwHtmlEn : sahwHtmlAr }}
                                 />

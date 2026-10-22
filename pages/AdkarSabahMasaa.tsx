@@ -9,6 +9,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useHabitTracker } from '../hooks/useHabitTracker';
 import { motion, AnimatePresence } from 'framer-motion';
+import { LayoutGrid, ListFilter } from 'lucide-react';
 
 const ADHKAR_STATUS_KEY = 'sabah_masaa_status_v1';
 
@@ -30,6 +31,7 @@ function AdkarSabahMasaa({ onBack, onNavigate }: AdkarSabahMasaaProps) {
             : (theme.palette?.[0] || '#000000'));
 
     const [adhkarTab, setAdhkarTab] = useState<'morning' | 'evening' | 'favorites'>('morning');
+    const [activeTabMode, setActiveTabMode] = useState<'grid' | 'list'>('list');
     const [favorites, setFavorites] = useState<string[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -224,11 +226,11 @@ function AdkarSabahMasaa({ onBack, onNavigate }: AdkarSabahMasaaProps) {
                 onHome={handleGoHome}
             />
 
-            <main ref={mainRef} className="w-full flex-1 flex flex-col items-center overflow-hidden px-4 pt-2 pb-4 relative">
-                {/* Search bar */}
-                <div className="w-full max-w-lg mb-3">
+            <main ref={mainRef} className="w-full flex-1 overflow-y-auto px-4 pt-2 pb-4">
+                {/* Search bar and View Mode Switch */}
+                <div className="mb-6 max-w-3xl mx-auto flex items-center gap-2">
                     <div 
-                        className="relative w-full border-2 rounded-2xl overflow-hidden focus-within:ring-2 transition-all shadow-sm" 
+                        className="relative flex-1 border-2 rounded-2xl overflow-hidden focus-within:ring-2 transition-all shadow-sm" 
                         style={{ borderColor: cardBorderColor, ...(themeKey === 'default' ? { focusRingColor: '#000'} : { focusRingColor: theme.palette[0]}) }}
                     >
                         <input 
@@ -236,17 +238,59 @@ function AdkarSabahMasaa({ onBack, onNavigate }: AdkarSabahMasaaProps) {
                             placeholder={isEn ? "Search remembrances..." : "ابحث في الأذكار..."} 
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className={`w-full bg-black/5 dark:bg-white/5 py-2.5 ${isEn ? 'pl-11 pr-4 text-left font-sans' : 'pr-11 pl-4 text-right font-kufi'} focus:outline-none placeholder-gray-500 dark:placeholder-gray-400 text-sm`}
+                            className={`w-full bg-black/5 dark:bg-white/5 py-2.5 ${isEn ? 'pl-11 pr-10 text-left font-sans' : 'pr-11 pl-10 text-right font-kufi'} focus:outline-none placeholder-gray-500 dark:placeholder-gray-400 text-sm`}
                             style={{ color: 'var(--text-color)' }}
                         />
                         <i 
                             className={`fa-solid fa-search absolute ${isEn ? 'left-3.5' : 'right-3.5'} top-1/2 transform -translate-y-1/2 opacity-50 text-sm`} 
                             style={{ color: 'var(--text-color)' }}
                         ></i>
+                        {searchQuery && (
+                            <button
+                                onClick={() => setSearchQuery('')}
+                                className={`absolute inset-y-0 ${isEn ? 'right-3.5' : 'left-3.5'} flex items-center text-gray-400 hover:text-gray-600`}
+                            >
+                                <i className="fa-solid fa-times text-xs"></i>
+                            </button>
+                        )}
+                    </div>
+
+                    {/* View Mode Switch */}
+                    <div 
+                        className="flex items-center p-1 rounded-2xl border shrink-0 shadow-sm"
+                        style={{
+                            backgroundColor: isBlackTheme ? '#111111' : (theme.isDark ? '#1e293b' : '#ffffff'),
+                            borderColor: cardBorderColor
+                        }}
+                    >
+                        <button
+                            type="button"
+                            onClick={() => setActiveTabMode('grid')}
+                            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTabMode === 'grid' ? 'shadow-sm' : 'opacity-60 hover:opacity-100'}`}
+                            style={activeTabMode === 'grid' ? {
+                                backgroundColor: isBlackTheme ? '#FFFFFF' : theme.palette[0],
+                                color: isBlackTheme ? '#000000' : '#ffffff'
+                            } : { color: 'var(--text-color)' }}
+                            title={isEn ? "Grid View" : "عرض شبكي"}
+                        >
+                            <LayoutGrid size={15} />
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setActiveTabMode('list')}
+                            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTabMode === 'list' ? 'shadow-sm' : 'opacity-60 hover:opacity-100'}`}
+                            style={activeTabMode === 'list' ? {
+                                backgroundColor: isBlackTheme ? '#FFFFFF' : theme.palette[0],
+                                color: isBlackTheme ? '#000000' : '#ffffff'
+                            } : { color: 'var(--text-color)' }}
+                            title={isEn ? "List View" : "قائمة الشرح"}
+                        >
+                            <ListFilter size={15} />
+                        </button>
                     </div>
                 </div>
 
-                <div className="w-full max-w-lg flex-1 overflow-y-auto hide-scrollbar mt-0 space-y-3 pb-4">
+                <div className={activeTabMode === 'grid' ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-3xl mx-auto pb-4" : "space-y-4 max-w-3xl mx-auto pb-4"}>
                     {filteredAdhkar.length > 0 ? (
                         filteredAdhkar.map((dhikr) => {
                             const currentCount = adhkarCounts[dhikr.globalIndex] ?? dhikr.count;
@@ -266,7 +310,7 @@ function AdkarSabahMasaa({ onBack, onNavigate }: AdkarSabahMasaaProps) {
                             );
                         })
                     ) : (
-                        <div className="flex flex-col items-center justify-center py-20 opacity-50 text-center">
+                        <div className="flex flex-col items-center justify-center py-20 opacity-50 text-center col-span-full">
                             <i className={`fa-solid ${searchQuery ? 'fa-search' : (adhkarTab === 'favorites' ? 'fa-heart' : 'fa-moon')} text-5xl mb-4`}></i>
                             <p className="font-bold">
                                 {searchQuery 
@@ -275,7 +319,7 @@ function AdkarSabahMasaa({ onBack, onNavigate }: AdkarSabahMasaaProps) {
                             </p>
                         </div>
                     )}
-                    <div className="shrink-0 w-full h-32"></div>
+                    <div className="shrink-0 w-full h-32 col-span-full"></div>
                 </div>
             </main>
             

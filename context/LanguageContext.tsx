@@ -55,11 +55,11 @@ export const ISLAMIC_TRANSLATIONS: Translations = {
   },
   'menu.salah_adhkar': {
     ar: 'أذكار الصلاة',
-    en: 'Salah Remembrances'
+    en: 'Salah Adhkar'
   },
   'menu.hisn_muslim': {
     ar: 'حصن المسلم',
-    en: 'Fortress of the Muslim'
+    en: 'Hisn Al-Muslim'
   },
   'menu.tasbeeh': {
     ar: 'السبحة',
@@ -1109,8 +1109,8 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
       'prayer-times': 'Prayer Times',
       'adia': 'Supplications',
       'sabah-masaa': 'Daily Adhkar',
-      'salah-adhkar': 'Salah Remembrances',
-      'hisn-muslim': 'Fortress of the Muslim',
+      'salah-adhkar': 'Salah Adhkar',
+      'hisn-muslim': 'Hisn Al-Muslim',
       'tasbeeh': 'Electronic Tasbeeh',
       'calendar': 'Islamic Calendar',
       'qibla': 'Qibla Direction',
