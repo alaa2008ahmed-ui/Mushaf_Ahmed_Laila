@@ -1499,7 +1499,7 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
     // 5. Surah & Juz modal guide: triggers only when surah/juz modal is opened
     useEffect(() => {
         const isSurahModalOpen = activeModals.includes('surah-modal') || activeModals.includes('juz-modal');
-        if (isSurahModalOpen && !getQuranGuideSeen('surah_juz_modal')) {
+        if (isSurahModalOpen && !getQuranGuideSeen('surah_juz_modal_v2')) {
             const timer = setTimeout(() => {
                 setIsSurahJuzGuideOpen(true);
             }, 350);
@@ -2284,6 +2284,7 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
 
     const openModal = useCallback((modalName: string, params?: any) => { 
         stopAudio(); 
+        setIsFloatingMenuOpen(false);
         setModalParams(params);
         if (modalName === 'search-modal' && params?.target) {
             setInitialSearchQuery(params.target);
@@ -2314,14 +2315,19 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
                 page: 0, 
                 wasAutoscrolling: wasScrolling, 
                 wasPlaying: false,
-                openedFromMenu: isFloatingMenuOpen
+                openedFromMenu: isFloatingMenuOpenRef.current
             });
         } else {
             setActiveModals(p => [...p.filter(m => m !== modalName), modalName]); 
         }
-    }, [stopAudio, isFloatingMenuOpen]);
+    }, [stopAudio]);
+
+    const handledNavParamsRef = useRef<any>(null);
 
     useEffect(() => {
+        if (!navParams || handledNavParamsRef.current === navParams) return;
+        handledNavParamsRef.current = navParams;
+
         if (navParams?.openSidebar || navParams?.openFloatingMenu || navParams?.openMenu) {
             setIsFloatingMenuOpen(true);
         }
@@ -3486,7 +3492,8 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
             const distance = Math.hypot(touch1.clientX - touch2.clientX, touch1.clientY - touch2.clientY);
             
             const scaleFactor = distance / initialPinchDistanceRef.current;
-            const newFontSize = Math.min(Math.max(initialPinchFontSizeRef.current * scaleFactor, 1.0), 5.0);
+            const rawFontSize = Math.min(Math.max(initialPinchFontSizeRef.current * scaleFactor, 0.5), 5.0);
+            const newFontSize = parseFloat(rawFontSize.toFixed(2));
             
             setSettings(prev => ({ ...prev, fontSize: newFontSize }));
         }
@@ -3494,7 +3501,10 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
 
     const handleTouchEnd = () => {
         if (initialPinchDistanceRef.current !== null) {
-             localStorage.setItem('quran_settings' + themeSuffix, JSON.stringify(settingsRef.current));
+             const roundedFontSize = parseFloat(Number(settingsRef.current.fontSize || 1).toFixed(2));
+             const updated = { ...settingsRef.current, fontSize: roundedFontSize };
+             setSettings(updated);
+             localStorage.setItem('quran_settings' + themeSuffix, JSON.stringify(updated));
              window.dispatchEvent(new Event('settings-change'));
         }
         initialPinchDistanceRef.current = null;
@@ -3828,8 +3838,26 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
         const handleGlobalCaptureGhostEvents = (event: MouseEvent | TouchEvent) => {
             if (Date.now() - lastFloatingMenuCloseTimeRef.current < 500) {
                 const target = event.target as HTMLElement | null;
-                // Allow interactions with the menu toggle buttons
-                if (target && (target.closest('#btn-menu-header') || target.closest('#btn-menu-footer') || (menuButtonRef.current && menuButtonRef.current.contains(target)))) {
+                // Allow interactions with the menu toggle buttons, modals, cards, dialogs, and interactive elements
+                if (target && (
+                    target.closest('#btn-menu-header') || 
+                    target.closest('#btn-menu-footer') || 
+                    (menuButtonRef.current && menuButtonRef.current.contains(target)) ||
+                    target.closest('.modal-skinned') ||
+                    target.closest('[role="dialog"]') ||
+                    target.closest('.fixed.z-\\[1100\\]') ||
+                    target.closest('.fixed.z-\\[1200\\]') ||
+                    target.closest('.fixed.z-\\[1000\\]') ||
+                    target.closest('.fixed.z-50') ||
+                    target.closest('button') ||
+                    target.closest('input') ||
+                    target.closest('select') ||
+                    target.closest('label') ||
+                    target.closest('.cursor-pointer') ||
+                    target.closest('#font-controls-row') ||
+                    target.closest('#reciter-tafseer-row') ||
+                    target.closest('.themed-card-bg')
+                )) {
                     return;
                 }
                 event.preventDefault();
@@ -3870,6 +3898,43 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
             }
             const headerBtn = document.getElementById('btn-menu-header');
             if (headerBtn && headerBtn.contains(target)) {
+                return;
+            }
+
+            const el = target as HTMLElement;
+
+            // CRITICAL: NEVER close floating menu if a spotlight guide is active or if tapping inside spotlight guide / modal!
+            if (
+                document.querySelector('.quran-spotlight-guide') ||
+                document.getElementById('quran-spotlight-guide-root') ||
+                (el && el.closest && (
+                    el.closest('.quran-spotlight-guide') ||
+                    el.closest('[data-guide-card]') ||
+                    el.closest('.fixed.z-\\[100000\\]') ||
+                    el.closest('.z-\\[100001\\]') ||
+                    el.closest('.z-\\[100002\\]') ||
+                    el.closest('[id^="spotlight-"]') ||
+                    el.closest('svg')
+                ))
+            ) {
+                return;
+            }
+
+            // If tapping inside any modal, dialog, or settings card, close floating menu smoothly WITHOUT destroying the click event
+            if (el && el.closest && (
+                el.closest('.modal-skinned') ||
+                el.closest('[role="dialog"]') ||
+                el.closest('.fixed.z-\\[1100\\]') ||
+                el.closest('.fixed.z-\\[1200\\]') ||
+                el.closest('.fixed.z-\\[1000\\]') ||
+                el.closest('.fixed.z-50') ||
+                el.closest('#reciter-tafseer-row') ||
+                el.closest('#font-controls-row') ||
+                el.closest('.themed-card-bg') ||
+                el.closest('button') ||
+                el.closest('input')
+            )) {
+                setIsFloatingMenuOpen(false);
                 return;
             }
 
@@ -4248,8 +4313,35 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
                 isEn={isEn}
             />
         )}
-        {activeModals.includes('surah-modal') && <SurahJuzModal type="surah" quranData={quranData} currentTheme={currentTheme} onSelect={(s, a) => { closeModal('surah-modal'); jumpToAyah(s, a, true); }} onClose={() => closeModal('surah-modal')} isLandscape={isLandscape} currentSelection={currentAyah.s} currentAyah={currentAyah} readingMode={readingMode} />}
-            {activeModals.includes('juz-modal') && <SurahJuzModal type="juz" quranData={quranData} currentTheme={currentTheme} onSelect={(s, a) => { closeModal('juz-modal'); jumpToAyah(s, a, true); }} onClose={() => closeModal('juz-modal')} isLandscape={isLandscape} currentSelection={juz} currentAyah={currentAyah} />}
+        {activeModals.includes('surah-modal') && (
+            <SurahJuzModal 
+                type="surah" 
+                quranData={quranData} 
+                currentTheme={currentTheme} 
+                onSelect={(s, a) => { closeModal('surah-modal'); jumpToAyah(s, a, true); }} 
+                onClose={() => closeModal('surah-modal')} 
+                isLandscape={isLandscape} 
+                currentSelection={currentAyah.s} 
+                currentAyah={currentAyah} 
+                readingMode={readingMode} 
+                onOpenGuide={() => setIsSurahJuzGuideOpen(true)}
+                isGuideOpen={isSurahJuzGuideOpen}
+            />
+        )}
+        {activeModals.includes('juz-modal') && (
+            <SurahJuzModal 
+                type="juz" 
+                quranData={quranData} 
+                currentTheme={currentTheme} 
+                onSelect={(s, a) => { closeModal('juz-modal'); jumpToAyah(s, a, true); }} 
+                onClose={() => closeModal('juz-modal')} 
+                isLandscape={isLandscape} 
+                currentSelection={juz} 
+                currentAyah={currentAyah} 
+                onOpenGuide={() => setIsSurahJuzGuideOpen(true)}
+                isGuideOpen={isSurahJuzGuideOpen}
+            />
+        )}
             {activeModals.includes('bookmarks-modal') && (
                 <BookmarksModal 
                     bookmarks={bookmarks} 
@@ -4584,7 +4676,7 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
                 isEn={isEn}
             />
             <QuranSpotlightGuide
-                guideKey="surah_juz_modal"
+                guideKey="surah_juz_modal_v2"
                 steps={QURAN_SURAH_JUZ_STEPS}
                 isOpen={isSurahJuzGuideOpen}
                 onClose={() => setIsSurahJuzGuideOpen(false)}

@@ -23,9 +23,18 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, sho
         onClose();
     };
 
+    const formatFontSize = (val: any) => {
+        const num = parseFloat(val);
+        if (isNaN(num)) return "1.00";
+        return num.toFixed(2);
+    };
+
     const [settings, setSettings] = useState(() => {
         const saved = localStorage.getItem('quran_settings' + modeSuffix);
         const baseSettings = saved ? JSON.parse(saved) : {};
+        if (baseSettings.fontSize !== undefined) {
+            baseSettings.fontSize = parseFloat(Number(baseSettings.fontSize).toFixed(2));
+        }
         return { ...DEFAULT_SETTINGS, ...baseSettings };
     });
     
@@ -33,6 +42,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, sho
         const handleSettingsUpdate = () => {
             const saved = localStorage.getItem('quran_settings' + modeSuffix);
             const baseSettings = saved ? JSON.parse(saved) : {};
+            if (baseSettings.fontSize !== undefined) {
+                baseSettings.fontSize = parseFloat(Number(baseSettings.fontSize).toFixed(2));
+            }
             setSettings({ ...DEFAULT_SETTINGS, ...baseSettings });
         };
         window.addEventListener('theme-change', handleSettingsUpdate);
@@ -153,15 +165,15 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, sho
                             <div id="font-size-section" className="col-span-6 flex flex-col justify-center">
                                 <div className="flex items-center justify-between mb-1">
                                     <label className="text-xs font-bold opacity-80">{isEn ? "Font Size" : "حجم الخط"}</label>
-                                    <span className="text-[11px] px-1.5 py-0.2 rounded border border-gray-200 dark:border-gray-600 font-bold bg-white/50 dark:bg-gray-800/50">{settings.fontSize}</span>
+                                    <span className="text-[11px] px-1.5 py-0.2 rounded border border-gray-200 dark:border-gray-600 font-bold bg-white/50 dark:bg-gray-800/50">{formatFontSize(settings.fontSize)}</span>
                                 </div>
                                 <input 
                                     type="range" 
                                     min="0.5" 
                                     max="4.5" 
-                                    step="0.1" 
-                                    value={settings.fontSize} 
-                                    onChange={(e) => updateSetting('fontSize', parseFloat(e.target.value))} 
+                                    step="0.05" 
+                                    value={parseFloat(formatFontSize(settings.fontSize))} 
+                                    onChange={(e) => updateSetting('fontSize', parseFloat(parseFloat(e.target.value).toFixed(2)))} 
                                     className="w-full h-1.5 bg-gray-300 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer" 
                                     style={{ accentColor: 'var(--qr-accent)' }} 
                                 />
@@ -337,11 +349,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, sho
                             <button 
                                 type="button"
                                 onClick={() => onOpenModal('surah-design-picker')} 
-                                className="w-full themed-card-bg rounded-xl border-2 p-1.5 transition-all relative overflow-hidden active:scale-[0.98] hover:border-indigo-400 group flex items-center justify-between"
+                                className="w-full themed-card-bg rounded-xl border-2 p-1.5 transition-all relative overflow-hidden active:scale-[0.98] hover:border-indigo-400 group flex items-center justify-center"
                                 style={{ borderColor: 'var(--qr-accent)' }}
                                 title={isEn ? "Choose Surah Header Design" : "اختيار تصميم رأس السورة"}
                             >
-                                <div className="pointer-events-none flex-1 w-full">
+                                <div className="pointer-events-none w-full">
                                     <SurahHeader 
                                         surahNumber={1}
                                         surahName="الفاتحة"
@@ -351,9 +363,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, sho
                                         design={currentDesign}
                                         compact={true}
                                     />
-                                </div>
-                                <div className="shrink-0 px-2 flex items-center justify-center text-xs opacity-50 group-hover:opacity-100 transition-opacity">
-                                    <i className="fa-solid fa-chevron-left"></i>
                                 </div>
                             </button>
                         </div>

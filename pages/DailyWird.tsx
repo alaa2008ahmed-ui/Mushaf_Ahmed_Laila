@@ -536,29 +536,31 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
         </div>
 
         {/* Current Wird */}
-        <div id="wird-today-container" className="rounded-2xl p-4 shadow-lg border text-center" style={{ backgroundColor: isDefaultTheme ? '#FFFFFF' : 'var(--card-bg)', borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid', color: isDefaultTheme ? '#000000' : 'inherit' }}>
-          <h3 className={`text-lg font-bold mb-3 ${isDefaultTheme ? 'text-black' : 'text-emerald-600 dark:text-emerald-400'}`}>
-            {isEn ? `Today's Wird (${settings.currentDay})` : `ورد اليوم (${settings.currentDay})`}
-          </h3>
-          
-          <div className="flex justify-center items-center gap-3 mb-4">
-            {hasPages ? (
-              <>
+        <div id="wird-today-card" className="rounded-2xl p-4 shadow-lg border text-center" style={{ backgroundColor: isDefaultTheme ? '#FFFFFF' : 'var(--card-bg)', borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid', color: isDefaultTheme ? '#000000' : 'inherit' }}>
+          <div id="wird-today-container">
+            <h3 className={`text-lg font-bold mb-3 ${isDefaultTheme ? 'text-black' : 'text-emerald-600 dark:text-emerald-400'}`}>
+              {isEn ? `Today's Wird (${settings.currentDay})` : `ورد اليوم (${settings.currentDay})`}
+            </h3>
+            
+            <div className="flex justify-center items-center gap-3 mb-4">
+              {hasPages ? (
+                <>
+                  <div className="p-3 rounded-xl flex-1 border" style={{ backgroundColor: isDefaultTheme ? '#f9fafb' : (theme.isDark ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.05)'), borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
+                    <p className="text-xs opacity-80 mb-1">{isEn ? 'From Page' : 'من صفحة'}</p>
+                    <p className="text-2xl font-bold">{startPage}</p>
+                  </div>
+                  <span className="text-xl opacity-50">-</span>
+                  <div className="p-3 rounded-xl flex-1 border" style={{ backgroundColor: isDefaultTheme ? '#f9fafb' : (theme.isDark ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.05)'), borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
+                    <p className="text-xs opacity-80 mb-1">{isEn ? 'To Page' : 'إلى صفحة'}</p>
+                    <p className="text-2xl font-bold">{endPage}</p>
+                  </div>
+                </>
+              ) : (
                 <div className="p-3 rounded-xl flex-1 border" style={{ backgroundColor: isDefaultTheme ? '#f9fafb' : (theme.isDark ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.05)'), borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
-                  <p className="text-xs opacity-80 mb-1">{isEn ? 'From Page' : 'من صفحة'}</p>
-                  <p className="text-2xl font-bold">{startPage}</p>
+                  <p className="text-lg font-bold">{isEn ? 'You have completed all pages!' : 'لقد أكملت جميع الصفحات!'}</p>
                 </div>
-                <span className="text-xl opacity-50">-</span>
-                <div className="p-3 rounded-xl flex-1 border" style={{ backgroundColor: isDefaultTheme ? '#f9fafb' : (theme.isDark ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.05)'), borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
-                  <p className="text-xs opacity-80 mb-1">{isEn ? 'To Page' : 'إلى صفحة'}</p>
-                  <p className="text-2xl font-bold">{endPage}</p>
-                </div>
-              </>
-            ) : (
-              <div className="p-3 rounded-xl flex-1 border" style={{ backgroundColor: isDefaultTheme ? '#f9fafb' : (theme.isDark ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.05)'), borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
-                <p className="text-lg font-bold">{isEn ? 'You have completed all pages!' : 'لقد أكملت جميع الصفحات!'}</p>
-              </div>
-            )}
+              )}
+            </div>
           </div>
 
           <div className="flex flex-col gap-2" id="wird-actions-container">

@@ -1,12 +1,12 @@
 {
-  "projectId": "sweet-water-company-ltd",
-  "appId": "1:903816597633:web:cfa17c168a106d45877d80",
-  "apiKey": "AIzaSyAa3rqutBamvjjVzS89mOQA1DTP7UaZVnM",
-  "authDomain": "sweet-water-company-ltd.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-quran127-cd074806-c4ff-4488-9daf-45b479ad18a4",
-  "storageBucket": "sweet-water-company-ltd.firebasestorage.app",
-  "messagingSenderId": "903816597633",
+  "projectId": "gen-lang-client-0624067707",
+  "appId": "1:680654593139:web:0c8627cfde2637c5819e06",
+  "apiKey": "AIzaSyBowTbTqRSgT9QNRXTDPwZ7NwpYjdo77Rc",
+  "authDomain": "gen-lang-client-0624067707.firebaseapp.com",
+  "firestoreDatabaseId": "ai-studio-remixremixremixr-fe3f4648-aff1-4a13-9c88-899b5bd855cc",
+  "storageBucket": "gen-lang-client-0624067707.firebasestorage.app",
+  "messagingSenderId": "680654593139",
   "measurementId": "",
-  "oAuthClientId": "903816597633-1ph0t287hi7as4astptibanphv4dfp47.apps.googleusercontent.com",
+  "oAuthClientId": "680654593139-paus4k66mslqhjtmg7tuevbjn408boi3.apps.googleusercontent.com",
   "recaptchaSiteKey": ""
 }

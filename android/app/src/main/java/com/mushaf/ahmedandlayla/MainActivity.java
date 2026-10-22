@@ -23,6 +23,7 @@ public class MainActivity extends BridgeActivity {
         // Preserve all Capacitor BridgeWebChromeClient capabilities (file chooser, camera, photo gallery)
         // while ensuring native Android permissions are requested if not already granted.
         if (this.bridge != null && this.bridge.getWebView() != null) {
+            this.bridge.getWebView().getSettings().setMediaPlaybackRequiresUserGesture(false);
             this.bridge.getWebView().setWebChromeClient(new BridgeWebChromeClient(this.bridge) {
                 @Override
                 public void onPermissionRequest(final PermissionRequest request) {

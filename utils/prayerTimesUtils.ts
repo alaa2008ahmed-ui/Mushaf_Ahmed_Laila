@@ -1,4 +1,5 @@
 import { Capacitor } from '@capacitor/core';
+import { playNativeTone, stopNativeTone } from './silentMode';
 
 export const checkSupportsDST = (combinedCode: string, fullCountry: string) => {
     if (!combinedCode && !fullCountry) return false;
@@ -75,6 +76,7 @@ export const getMediaURL = (s: string) => {
 
 // Global audio instance for playing and previewing tones
 let previewAudio: HTMLAudioElement | null = null;
+let activeBufferSource: AudioBufferSourceNode | null = null;
 let currentAudioSource: string | null = null;
 let lastPlayTimestamp = 0;
 let audioContext: AudioContext | null = null;
@@ -140,7 +142,7 @@ export const playSyntheticChime = () => {
     }
 };
 
-export const playNotificationSound = (source: string, force: boolean = false) => {
+export const playNotificationSound = async (source: string, force: boolean = false) => {
     if (!source || source === 'none') return;
 
     const now = Date.now();
@@ -157,14 +159,70 @@ export const playNotificationSound = (source: string, force: boolean = false) =>
         }
     }
 
-    const mediaUrl = getMediaURL(source);
-    
     // Stop and fully unload any currently playing audio cleanly before starting new one
     stopNotificationSound();
 
     lastPlayTimestamp = now;
     currentAudioSource = source;
 
+    // 1. Android Native APK Playback (Highest fidelity & 100% reliable for bundled res/raw & file URIs):
+    if (Capacitor.isNativePlatform()) {
+        try {
+            const played = await playNativeTone(source);
+            if (played) {
+                console.log(`[playNotificationSound] Played natively via Android MediaPlayer: ${source}`);
+                return;
+            }
+        } catch (nativeErr) {
+            console.warn('[playNotificationSound] Native player returned error, attempting web fallback:', nativeErr);
+        }
+    }
+
+    const mediaUrl = getMediaURL(source);
+
+    // 2. Web Audio API with fetch (Completely avoids Chromium Range-request bug in Android WebViews):
+    try {
+        const ctx = getAudioContext();
+        if (ctx) {
+            if (ctx.state === 'suspended') {
+                await ctx.resume().catch(() => {});
+            }
+
+            const response = await fetch(mediaUrl);
+            if (response.ok) {
+                const arrayBuffer = await response.arrayBuffer();
+                const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+
+                if (activeBufferSource) {
+                    try { activeBufferSource.stop(); activeBufferSource.disconnect(); } catch (e) {}
+                    activeBufferSource = null;
+                }
+
+                const sourceNode = ctx.createBufferSource();
+                const gainNode = ctx.createGain();
+                gainNode.gain.setValueAtTime(1.0, ctx.currentTime);
+
+                sourceNode.buffer = audioBuffer;
+                sourceNode.connect(gainNode);
+                gainNode.connect(ctx.destination);
+
+                activeBufferSource = sourceNode;
+                sourceNode.onended = () => {
+                    if (activeBufferSource === sourceNode) {
+                        activeBufferSource = null;
+                        currentAudioSource = null;
+                    }
+                };
+
+                sourceNode.start(0);
+                return;
+            }
+        }
+    } catch (webAudioErr) {
+        console.warn('[playNotificationSound] Web Audio API failed, falling back to HTML5 Audio:', webAudioErr);
+    }
+
+    // 3. Fallback to HTML5 Audio element:
     try {
         const audio = new Audio(mediaUrl);
         audio.volume = 1.0;
@@ -180,14 +238,12 @@ export const playNotificationSound = (source: string, force: boolean = false) =>
         const playPromise = audio.play();
         if (playPromise !== undefined) {
             playPromise.catch(e => {
-                // If the audio was interrupted or stopped deliberately via pause(), do NOT execute fallback
                 if (e && (e.name === 'AbortError' || e.message?.includes('interrupted') || e.message?.includes('pause'))) {
                     return;
                 }
 
-                console.warn("Audio play failed on resolved mediaUrl:", e);
+                console.warn("[playNotificationSound] Audio play failed on resolved mediaUrl:", e);
 
-                // Clean up the initial audio element before attempting fallback so two streams never play
                 try {
                     audio.pause();
                     audio.currentTime = 0;
@@ -196,7 +252,6 @@ export const playNotificationSound = (source: string, force: boolean = false) =>
                     audio.load();
                 } catch (ignored) {}
 
-                // Attempt alternative path
                 const altSource = source.startsWith('/') ? source.slice(1) : `/${source}`;
                 try {
                     const fallbackAudio = new Audio(altSource);
@@ -214,7 +269,7 @@ export const playNotificationSound = (source: string, force: boolean = false) =>
                         if (err && (err.name === 'AbortError' || err.message?.includes('interrupted'))) {
                             return;
                         }
-                        console.warn("Audio play fallback failed, using synthetic chime:", err);
+                        console.warn("[playNotificationSound] Fallback audio failed:", err);
                         if (source.includes('chime')) {
                             playSyntheticChime();
                         }
@@ -235,6 +290,21 @@ export const playNotificationSound = (source: string, force: boolean = false) =>
 };
 
 export const stopNotificationSound = () => {
+    // 1. Stop Native Android MediaPlayer
+    if (Capacitor.isNativePlatform()) {
+        stopNativeTone().catch(() => {});
+    }
+
+    // 2. Stop Web Audio buffer source
+    if (activeBufferSource) {
+        try {
+            activeBufferSource.stop();
+            activeBufferSource.disconnect();
+        } catch (e) {}
+        activeBufferSource = null;
+    }
+
+    // 3. Stop HTML5 audio
     if (previewAudio) {
         try {
             previewAudio.pause();
@@ -244,8 +314,13 @@ export const stopNotificationSound = () => {
             previewAudio.load();
         } catch (e) {}
         previewAudio = null;
-        currentAudioSource = null;
     }
+
+    currentAudioSource = null;
+};
+
+export const isNotificationSoundPlaying = () => {
+    return !!currentAudioSource;
 };
 
 export const calculateNightTimes = (maghribTimeStr: string, fajrTimeStr: string) => {

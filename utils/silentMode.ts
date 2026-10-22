@@ -18,6 +18,8 @@ interface AutoSilentPluginInterface {
   setPersistentNotificationEnabled(options: { enabled: boolean }): Promise<{ success: boolean; enabled: boolean }>;
   checkBatteryOptimization(): Promise<{ isIgnoring: boolean }>;
   requestBatteryOptimization(): Promise<void>;
+  playTone(options: { path: string }): Promise<{ success: boolean; fallbackNeeded?: boolean; error?: string }>;
+  stopTone(): Promise<{ success: boolean }>;
 }
 
 export const AutoSilentMode = registerPlugin<AutoSilentPluginInterface>('AutoSilentMode');
@@ -136,5 +138,32 @@ export const requestNativeBatteryOptimization = async (): Promise<void> => {
     await AutoSilentMode.requestBatteryOptimization();
   } catch (e) {
     console.warn('requestNativeBatteryOptimization error:', e);
+  }
+};
+
+/**
+ * Plays a prayer alert tone natively on Android via MediaPlayer from res/raw or file.
+ * Returns true if played natively, false if web fallback should handle it.
+ */
+export const playNativeTone = async (path: string): Promise<boolean> => {
+  if (Capacitor.getPlatform() !== 'android') return false;
+  try {
+    const res = await AutoSilentMode.playTone({ path });
+    return !!res?.success;
+  } catch (e) {
+    console.warn('playNativeTone error:', e);
+    return false;
+  }
+};
+
+/**
+ * Stops any actively playing native tone on Android.
+ */
+export const stopNativeTone = async (): Promise<void> => {
+  if (Capacitor.getPlatform() !== 'android') return;
+  try {
+    await AutoSilentMode.stopTone();
+  } catch (e) {
+    console.warn('stopNativeTone error:', e);
   }
 };

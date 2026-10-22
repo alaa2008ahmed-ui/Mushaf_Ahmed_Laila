@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { Volume2, ChevronDown, Check, X, Music } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Volume2, ChevronDown, Check, X, Music, Play, Square } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { tPrayer, getToneDisplayName } from '../../utils/prayerTimesTranslations';
+import { playNotificationSound, stopNotificationSound } from '../../utils/prayerTimesUtils';
 
 interface ToneSelectorProps {
     currentEditingKey: string | null;
@@ -30,6 +31,13 @@ const ToneSelector: React.FC<ToneSelectorProps> = ({
 }) => {
     const { language, isRTL, dir } = useLanguage();
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [playingTone, setPlayingTone] = useState<string | null>(null);
+
+    useEffect(() => {
+        return () => {
+            stopNotificationSound();
+        };
+    }, []);
 
     if (!currentEditingKey) return null;
     
@@ -66,6 +74,37 @@ const ToneSelector: React.FC<ToneSelectorProps> = ({
         }
     }
 
+    const currentPlayableSource = currentTone?.data && currentTone.data !== 'none'
+        ? currentTone.data
+        : (selectValue !== 'none' && selectValue !== 'custom' ? selectValue : null);
+
+    const handleTogglePreview = (source: string, e?: React.MouseEvent) => {
+        if (e) e.stopPropagation();
+        if (!source || source === 'none') return;
+
+        if (playingTone === source) {
+            stopNotificationSound();
+            setPlayingTone(null);
+        } else {
+            stopNotificationSound();
+            setPlayingTone(source);
+            playNotificationSound(source, true);
+        }
+    };
+
+    const handleSelectTone = (toneValue: string) => {
+        stopNotificationSound();
+        setPlayingTone(null);
+        handleToneSelection({ target: { value: toneValue } });
+        setIsModalOpen(false);
+    };
+
+    const handleCloseModal = () => {
+        stopNotificationSound();
+        setPlayingTone(null);
+        setIsModalOpen(false);
+    };
+
     const itemBorderColor = cardBorderColor || (isDefaultTheme ? '#000000' : (isBlackTheme ? '#FFFFFF' : primaryColor));
 
     const allToneOptions = [
@@ -80,27 +119,59 @@ const ToneSelector: React.FC<ToneSelectorProps> = ({
                 {tPrayer('alertToneLabel', language)}
             </label>
             
-            {/* Clickable Trigger Button that opens the Tone List Modal */}
-            <button
-                type="button"
-                onClick={() => setIsModalOpen(true)}
-                className="w-full flex items-center justify-between themed-bg-alt p-3 rounded-2xl shadow-xs transition-all cursor-pointer font-bold text-xs sm:text-sm hover:opacity-90"
-                style={{ 
-                    border: `2px solid ${itemBorderColor}`,
-                    color: isBlackTheme ? '#FFFFFF' : primaryColor
-                }}
-            >
-                <div className="flex items-center gap-2.5 min-w-0">
-                    <Volume2 className="w-4 h-4 shrink-0" style={{ color: isBlackTheme ? '#FFFFFF' : primaryColor }} />
-                    <span className="truncate">{getToneDisplayName(selectedName, language)}</span>
-                </div>
-                <div className="flex items-center gap-1.5 shrink-0 opacity-70">
-                    <span className="text-[10px] font-medium hidden sm:inline" style={{ color: isBlackTheme ? '#FFFFFF' : undefined }}>
-                        {tPrayer('changeTone', language)}
-                    </span>
-                    <ChevronDown className="w-4 h-4" style={{ color: isBlackTheme ? '#FFFFFF' : undefined }} />
-                </div>
-            </button>
+            {/* Tone Selector Row: Modal Trigger Button + Live Audition/Preview Button */}
+            <div className="flex items-center gap-2">
+                <button
+                    type="button"
+                    onClick={() => {
+                        stopNotificationSound();
+                        setPlayingTone(null);
+                        setIsModalOpen(true);
+                    }}
+                    className="flex-1 flex items-center justify-between themed-bg-alt p-3 rounded-2xl shadow-xs transition-all cursor-pointer font-bold text-xs sm:text-sm hover:opacity-90"
+                    style={{ 
+                        border: `2px solid ${itemBorderColor}`,
+                        color: isBlackTheme ? '#FFFFFF' : primaryColor
+                    }}
+                >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                        <Volume2 className="w-4 h-4 shrink-0" style={{ color: isBlackTheme ? '#FFFFFF' : primaryColor }} />
+                        <span className="truncate">{getToneDisplayName(selectedName, language)}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0 opacity-70">
+                        <span className="text-[10px] font-medium hidden sm:inline" style={{ color: isBlackTheme ? '#FFFFFF' : undefined }}>
+                            {tPrayer('changeTone', language)}
+                        </span>
+                        <ChevronDown className="w-4 h-4" style={{ color: isBlackTheme ? '#FFFFFF' : undefined }} />
+                    </div>
+                </button>
+
+                {/* Live Preview Button for Currently Selected Tone */}
+                {currentPlayableSource && (
+                    <button
+                        type="button"
+                        onClick={(e) => handleTogglePreview(currentPlayableSource, e)}
+                        className="p-3 rounded-2xl flex items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-all shadow-xs"
+                        style={{
+                            border: `2px solid ${itemBorderColor}`,
+                            backgroundColor: playingTone === currentPlayableSource
+                                ? (isDefaultTheme ? '#000000' : (isBlackTheme ? '#FFFFFF' : primaryColor))
+                                : 'var(--card-bg, #ffffff)',
+                            color: playingTone === currentPlayableSource
+                                ? (isDefaultTheme ? '#ffffff' : (isBlackTheme ? '#000000' : '#ffffff'))
+                                : (isBlackTheme ? '#ffffff' : primaryColor)
+                        }}
+                        title={playingTone === currentPlayableSource ? (language === 'ar' ? 'إيقاف المعاينة' : 'Stop Preview') : (language === 'ar' ? 'معاينة النغمة' : 'Preview Tone')}
+                        aria-label={playingTone === currentPlayableSource ? 'Stop' : 'Play'}
+                    >
+                        {playingTone === currentPlayableSource ? (
+                            <Square className="w-4 h-4 fill-current animate-pulse" />
+                        ) : (
+                            <Play className="w-4 h-4 fill-current" />
+                        )}
+                    </button>
+                )}
+            </div>
 
             {/* Hidden File Input for Custom Tones */}
             <input 
@@ -121,7 +192,7 @@ const ToneSelector: React.FC<ToneSelectorProps> = ({
             {isModalOpen && (
                 <div 
                     className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[70] flex items-center justify-center p-4"
-                    onClick={() => setIsModalOpen(false)}
+                    onClick={handleCloseModal}
                     dir={dir}
                 >
                     <div 
@@ -146,7 +217,7 @@ const ToneSelector: React.FC<ToneSelectorProps> = ({
                             </div>
                             <button 
                                 type="button"
-                                onClick={() => setIsModalOpen(false)} 
+                                onClick={handleCloseModal} 
                                 className="hover:text-red-500 transition-colors cursor-pointer p-1 rounded-full"
                                 style={{ color: isBlackTheme ? '#FFFFFF' : secondaryColor }}
                                 title={tPrayer('close', language)}
@@ -156,36 +227,65 @@ const ToneSelector: React.FC<ToneSelectorProps> = ({
                             </button>
                         </div>
 
-                        {/* Tone List as Rounded Framed Buttons (Matching User's Image) */}
+                        {/* Tone List as Rounded Framed Items with Direct Audition */}
                         <div className="space-y-2 overflow-y-auto max-h-[62vh] py-1 px-1 no-scrollbar">
                             {allToneOptions.map((tone) => {
                                 const isSelected = selectValue === tone.value;
+                                const isPlayable = tone.value !== 'none' && tone.value !== 'custom';
+                                const isTonePlaying = playingTone === tone.value;
+
                                 return (
-                                    <button
+                                    <div
                                         key={tone.value}
-                                        type="button"
-                                        onClick={() => {
-                                            handleToneSelection({ target: { value: tone.value } });
-                                            setIsModalOpen(false);
-                                        }}
-                                        className="w-full py-2.5 px-4 rounded-2xl text-center font-bold text-xs sm:text-sm transition-transform active:scale-95 flex items-center justify-center relative cursor-pointer"
-                                        style={{
-                                            border: `2px solid ${itemBorderColor}`,
-                                            backgroundColor: isSelected 
-                                                ? (isDefaultTheme ? '#000000' : (isBlackTheme ? '#FFFFFF' : primaryColor)) 
-                                                : 'var(--card-bg, #ffffff)',
-                                            color: isSelected 
-                                                ? (isDefaultTheme ? '#ffffff' : (isBlackTheme ? '#000000' : '#ffffff')) 
-                                                : (isBlackTheme ? '#ffffff' : '#000000')
-                                        }}
+                                        className="w-full flex items-center gap-2"
                                     >
-                                        <span className="font-bold">{getToneDisplayName(tone.name, language)}</span>
-                                        {isSelected && (
-                                            <Check className={`w-4 h-4 absolute ${isRTL ? 'left-3.5' : 'right-3.5'} ${
-                                                isDefaultTheme ? 'text-white' : (isBlackTheme ? 'text-black' : 'text-white')
-                                            }`} />
+                                        <button
+                                            type="button"
+                                            onClick={() => handleSelectTone(tone.value)}
+                                            className="flex-1 py-2.5 px-4 rounded-2xl text-center font-bold text-xs sm:text-sm transition-transform active:scale-95 flex items-center justify-between relative cursor-pointer"
+                                            style={{
+                                                border: `2px solid ${itemBorderColor}`,
+                                                backgroundColor: isSelected 
+                                                    ? (isDefaultTheme ? '#000000' : (isBlackTheme ? '#FFFFFF' : primaryColor)) 
+                                                    : 'var(--card-bg, #ffffff)',
+                                                color: isSelected 
+                                                    ? (isDefaultTheme ? '#ffffff' : (isBlackTheme ? '#000000' : '#ffffff')) 
+                                                    : (isBlackTheme ? '#ffffff' : '#000000')
+                                            }}
+                                        >
+                                            <span className="font-bold truncate">{getToneDisplayName(tone.name, language)}</span>
+                                            {isSelected && (
+                                                <Check className={`w-4 h-4 shrink-0 ${
+                                                    isDefaultTheme ? 'text-white' : (isBlackTheme ? 'text-black' : 'text-white')
+                                                }`} />
+                                            )}
+                                        </button>
+
+                                        {isPlayable && (
+                                            <button
+                                                type="button"
+                                                onClick={(e) => handleTogglePreview(tone.value, e)}
+                                                className="p-2.5 rounded-2xl flex items-center justify-center shrink-0 cursor-pointer active:scale-90 transition-all shadow-xs"
+                                                style={{
+                                                    border: `2px solid ${itemBorderColor}`,
+                                                    backgroundColor: isTonePlaying
+                                                        ? (isDefaultTheme ? '#000000' : (isBlackTheme ? '#FFFFFF' : primaryColor))
+                                                        : 'var(--card-bg, #ffffff)',
+                                                    color: isTonePlaying
+                                                        ? (isDefaultTheme ? '#ffffff' : (isBlackTheme ? '#000000' : '#ffffff'))
+                                                        : (isBlackTheme ? '#ffffff' : primaryColor)
+                                                }}
+                                                title={isTonePlaying ? (language === 'ar' ? 'إيقاف' : 'Stop') : (language === 'ar' ? 'معاينة' : 'Preview')}
+                                                aria-label={isTonePlaying ? 'Stop' : 'Preview'}
+                                            >
+                                                {isTonePlaying ? (
+                                                    <Square className="w-3.5 h-3.5 fill-current animate-pulse" />
+                                                ) : (
+                                                    <Play className="w-3.5 h-3.5 fill-current" />
+                                                )}
+                                            </button>
                                         )}
-                                    </button>
+                                    </div>
                                 );
                             })}
                         </div>

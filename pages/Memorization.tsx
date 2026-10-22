@@ -363,7 +363,7 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                     </div>
                 </header>
 
-                <main className="flex-1 overflow-y-auto p-3 space-y-4 hide-scrollbar relative z-10">
+                <main id="memorization-scroll-container" className="flex-1 overflow-y-auto p-3 space-y-4 hide-scrollbar relative z-10">
                     {/* Tabs */}
                     <div id="memorization-tabs-container" className="flex p-1 rounded-2xl bg-black/5 border mb-2" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                         <button 
@@ -644,7 +644,7 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                                 </div>
 
                                 {memorizedRanges.length === 0 ? (
-                                    <div className="p-8 text-center rounded-3xl border border-dashed space-y-3 shadow-sm" style={{ backgroundColor: 'var(--card-bg)', borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
+                                    <div id="memorization-review-empty" className="p-8 text-center rounded-3xl border border-dashed space-y-3 shadow-sm" style={{ backgroundColor: 'var(--card-bg)', borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                                         <Calendar size={48} className="mx-auto text-emerald-500/40" />
                                         <h4 className="font-bold text-sm" style={{ color: 'var(--text-color)' }}>
                                             {isEn ? 'No memorized ranges in review schedule currently' : 'لا توجد محفوظات في جدول المراجعة حالياً'}
@@ -663,11 +663,12 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                                         </button>
                                     </div>
                                 ) : (
-                                    memorizedRanges.map((range) => {
+                                    memorizedRanges.map((range, idx) => {
                                         const isDue = (range.nextReviewDate || 0) <= Date.now();
                                         return (
                                             <div 
                                                 key={range.id} 
+                                                id={idx === 0 ? "first-review-card" : undefined}
                                                 className="p-4 rounded-2xl border space-y-3 relative overflow-hidden shadow-sm transition-all"
                                                 style={{ 
                                                     backgroundColor: 'var(--card-bg)', 

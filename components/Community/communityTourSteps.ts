@@ -307,12 +307,12 @@ export const TAB_CHATS_STEPS: SpotlightStep[] = [
   {
     id: 'tab_chats_list',
     targetSelector: '#community-chats-section',
-    titleAr: 'قائمة محادثات الأصدقاء',
-    titleEn: 'Conversations List',
-    descAr: 'اضغط على أي صديق لفتح المحادثة الفورية، مشاركة الآيات برسم المصحف، إرسال تلاوات صوتية، أو السحب لحذف المحادثة.',
-    descEn: 'Tap any friend to open instant chat, share Uthmani verses, send voice notes, or swipe to remove conversation.',
-    badgeAr: 'المحادثات • Chats',
-    badgeEn: 'Chat List',
+    titleAr: 'قائمة الاصدقاء والدعم الفنى',
+    titleEn: 'Friends & Technical Support List',
+    descAr: 'التواصل مع الدعم الفنى ويظهر اسفل الدعم الفنى قائمه بالاصدقاء للتواصل معهم',
+    descEn: 'Connect with Technical Support, and below Technical Support appears a list of friends to connect with.',
+    badgeAr: 'الأصدقاء والدعم الفني',
+    badgeEn: 'Friends & Support',
     iconName: 'action',
     accentColor: '#10b981',
     gradient: 'from-emerald-500 to-teal-600'
@@ -1016,7 +1016,7 @@ export const MEMORIZATION_REVIEW_STEPS: SpotlightStep[] = [
   },
   {
     id: 'rev_list',
-    targetSelector: '#memorization-review-list',
+    targetSelector: '#first-review-card, #memorization-review-empty, #memorization-review-list',
     titleAr: 'قائمة المحفوظات للمراجعة',
     titleEn: 'Review Schedule List',
     descAr: 'يعرض جميع مقاطعك المحفوظة مع تواريخ مراجعتها؛ يمكنك الضغط على زر «بدء جلسة المراجعة والتثبيت» للانطلاق فوراً في تثبيتها، أو حذفها.',

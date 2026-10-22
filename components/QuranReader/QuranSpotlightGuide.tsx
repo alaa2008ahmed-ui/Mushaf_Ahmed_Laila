@@ -55,6 +55,7 @@ export const resetQuranGuides = (): void => {
       'main_reader',
       'sidebar_menu',
       'surah_juz_modal',
+      'surah_juz_modal_v2',
       'bookmarks_modal',
       'ayah_action_menu'
     ];
@@ -105,6 +106,8 @@ const renderStepIcon = (type?: string, accentColor?: string) => {
     case 'star':
     case 'sparkles':
       return <Sparkles {...iconProps} />;
+    case 'info':
+      return <HelpCircle {...iconProps} />;
     default:
       return <BookOpen {...iconProps} />;
   }
@@ -191,16 +194,54 @@ export const QuranSpotlightGuide: React.FC<QuranSpotlightGuideProps> = ({
         });
 
         if (visibleElements.length > 0) {
-          let chosen = visibleElements[0];
-          // If this step targets Surah Header, prioritize Surah Al-Fatihah on Page 1
-          if (step.id === 'surah_header_style') {
-            const fatihahEl = visibleElements.find(el => el.closest('#page-1'));
-            if (fatihahEl) chosen = fatihahEl;
-          }
-          const finalRect = chosen.getBoundingClientRect();
-          if (finalRect.width > 0 && finalRect.height > 0) {
-            setTargetRect(finalRect);
-            return;
+          const isSingleTargetStep =
+            visibleElements.length === 1 ||
+            step.id === 'surah_header_style' ||
+            step.id === 'ayah_text_touch' ||
+            step.id === 'verse_num_bracket';
+
+          if (isSingleTargetStep) {
+            let chosen = visibleElements[0];
+            // If this step targets Surah Header, prioritize Surah Al-Fatihah on Page 1
+            if (step.id === 'surah_header_style') {
+              const fatihahEl = visibleElements.find(el => el.closest('#page-1'));
+              if (fatihahEl) chosen = fatihahEl;
+            } else if (step.id === 'ayah_text_touch') {
+              // Prioritize Ayah 1 of Al-Fatihah on Page 1 or the first visible verse
+              const page1Ayah = visibleElements.find(el => el.id === 'ayah-1-1') ||
+                visibleElements.find(el => el.closest('#page-1'));
+              if (page1Ayah) chosen = page1Ayah;
+            } else if (step.id === 'verse_num_bracket') {
+              // Prioritize the verse number bracket of Ayah 1 of Al-Fatihah on Page 1
+              const page1VerseNum = visibleElements.find(el => el.closest('#ayah-1-1')) ||
+                visibleElements.find(el => el.closest('#page-1'));
+              if (page1VerseNum) chosen = page1VerseNum;
+            }
+
+            const finalRect = chosen.getBoundingClientRect();
+            if (finalRect.width > 0 && finalRect.height > 0) {
+              setTargetRect(finalRect);
+              return;
+            }
+          } else {
+            // Multi-element target (e.g., all 4 items spanning the selected row)
+            let minLeft = Infinity;
+            let minTop = Infinity;
+            let maxRight = -Infinity;
+            let maxBottom = -Infinity;
+
+            for (const el of visibleElements) {
+              const r = el.getBoundingClientRect();
+              if (r.left < minLeft) minLeft = r.left;
+              if (r.top < minTop) minTop = r.top;
+              if (r.right > maxRight) maxRight = r.right;
+              if (r.bottom > maxBottom) maxBottom = r.bottom;
+            }
+
+            if (minLeft < Infinity && maxRight > -Infinity && maxRight > minLeft && maxBottom > minTop) {
+              setTargetRect(new DOMRect(minLeft, minTop, maxRight - minLeft, maxBottom - minTop));
+              return;
+            }
           }
         }
       }
@@ -214,7 +255,7 @@ export const QuranSpotlightGuide: React.FC<QuranSpotlightGuideProps> = ({
     try {
       const scrollParent = findScrollParent(chosen);
       if (scrollParent) {
-        const isSidebarGuide = guideKey === 'sidebar_menu' || scrollParent.id === 'floating-menu-scroll-container';
+        const isSidebarGuide = guideKey.startsWith('sidebar_menu') || scrollParent.id === 'floating-menu-scroll-container';
 
         // Step 0 in sidebar menu: reset to top
         if (isSidebarGuide && currentStepIndex === 0) {
@@ -276,7 +317,18 @@ export const QuranSpotlightGuide: React.FC<QuranSpotlightGuideProps> = ({
         return r.width > 0 && r.height > 0 && s.display !== 'none' && s.visibility !== 'hidden' && s.opacity !== '0';
       });
       if (visible.length > 0) {
-        scrollToTarget(visible[0]);
+        let toScroll = visible[0];
+        if (step.id === 'surah_header_style') {
+          const fatihahEl = visible.find(el => el.closest('#page-1'));
+          if (fatihahEl) toScroll = fatihahEl;
+        } else if (step.id === 'ayah_text_touch') {
+          const page1Ayah = visible.find(el => el.id === 'ayah-1-1') || visible.find(el => el.closest('#page-1'));
+          if (page1Ayah) toScroll = page1Ayah;
+        } else if (step.id === 'verse_num_bracket') {
+          const page1VerseNum = visible.find(el => el.closest('#ayah-1-1')) || visible.find(el => el.closest('#page-1'));
+          if (page1VerseNum) toScroll = page1VerseNum;
+        }
+        scrollToTarget(toScroll);
       }
     } catch (e) {}
 
@@ -402,14 +454,45 @@ export const QuranSpotlightGuide: React.FC<QuranSpotlightGuideProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-[100000] pointer-events-none select-none font-sans"
+      id="quran-spotlight-guide-root"
+      className="quran-spotlight-guide fixed inset-0 z-[100000] pointer-events-none select-none font-sans"
       dir={isEn ? 'ltr' : 'rtl'}
     >
-      {/* Subtle, crystal-clear dismiss backdrop */}
-      <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-[1px] pointer-events-auto transition-opacity"
-        onClick={handleSkip}
-      />
+      {/* Subtle, crystal-clear dismiss backdrop with spotlight mask cutout */}
+      {targetRect ? (
+        <svg
+          className="absolute inset-0 w-full h-full pointer-events-auto transition-opacity duration-300"
+          onClick={handleSkip}
+        >
+          <defs>
+            <mask id={`spotlight-mask-${step.id}`}>
+              <rect x="0" y="0" width="100%" height="100%" fill="white" />
+              <rect
+                x={Math.max(0, targetRect.left - 4)}
+                y={Math.max(0, targetRect.top - 4)}
+                width={targetRect.width + 8}
+                height={targetRect.height + 8}
+                rx="16"
+                ry="16"
+                fill="black"
+              />
+            </mask>
+          </defs>
+          <rect
+            x="0"
+            y="0"
+            width="100%"
+            height="100%"
+            fill="rgba(0, 0, 0, 0.45)"
+            mask={`url(#spotlight-mask-${step.id})`}
+          />
+        </svg>
+      ) : (
+        <div
+          className="absolute inset-0 bg-black/45 backdrop-blur-[1px] pointer-events-auto transition-opacity"
+          onClick={handleSkip}
+        />
+      )}
 
       {/* Target Element Luminous Spotlight Highlight Frame */}
       {targetRect && (
@@ -453,6 +536,7 @@ export const QuranSpotlightGuide: React.FC<QuranSpotlightGuideProps> = ({
       <motion.div
         key={`card-${step.id}`}
         ref={cardRef}
+        data-guide-card="true"
         initial={{ opacity: 0, scale: 0.93, y: pointerPlacement === 'top' ? -12 : (pointerPlacement === 'bottom' ? 12 : 0) }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.93 }}
@@ -464,6 +548,10 @@ export const QuranSpotlightGuide: React.FC<QuranSpotlightGuideProps> = ({
           boxShadow: `0 20px 50px -10px ${currentAccent}45, 0 0 0 1px ${currentAccent}60`
         }}
         onClick={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
+        onTouchStart={(e) => e.stopPropagation()}
+        onTouchEnd={(e) => e.stopPropagation()}
+        onPointerDown={(e) => e.stopPropagation()}
       >
         {/* Pointer Beak */}
         {pointerPlacement === 'top' && (

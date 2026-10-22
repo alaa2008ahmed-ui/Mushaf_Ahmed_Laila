@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   Search, MessageSquare, Users, Ban, User, Edit3, 
   Sparkles, Globe, Shield, CheckCircle2, UserX, RefreshCw, Trash2, KeyRound, Copy,
-  Check, X, EyeOff, UserPlus, Clock, ShieldCheck, HelpCircle
+  Check, X, EyeOff, UserPlus, Clock, ShieldCheck, HelpCircle, Pin, MessageCircle
 } from 'lucide-react';
 import { communityService, CommunityUser, ChatConversation, GroupChat, ADMIN_USER_ID } from '../services/communityService';
 import { 
@@ -235,6 +235,8 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
     window.addEventListener('community_user_updated', handleUpdate);
     window.addEventListener('community_messages_updated', handleUpdate);
     window.addEventListener('community_groups_updated', handleUpdate);
+    window.addEventListener('community_group_messages_updated', handleUpdate);
+    window.addEventListener('community_group_read_updated', handleUpdate);
     window.addEventListener('community_contacts_updated', handleUpdate);
     window.addEventListener('community_block_updated', handleUpdate);
 
@@ -243,6 +245,8 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
       window.removeEventListener('community_user_updated', handleUpdate);
       window.removeEventListener('community_messages_updated', handleUpdate);
       window.removeEventListener('community_groups_updated', handleUpdate);
+      window.removeEventListener('community_group_messages_updated', handleUpdate);
+      window.removeEventListener('community_group_read_updated', handleUpdate);
       window.removeEventListener('community_contacts_updated', handleUpdate);
       window.removeEventListener('community_block_updated', handleUpdate);
     };
@@ -439,6 +443,10 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
     });
   }, [pendingInvitations]);
 
+  const totalUnreadGroupsCount = useMemo(() => {
+    return communityService.getTotalUnreadGroupMessagesCount(currentUser.userId);
+  }, [groups, currentUser.userId]);
+
   const filteredGroups = useMemo(() => {
     const pendingIds = new Set(uniquePendingInvitations.map(p => p.groupId));
     const pendingNames = new Set(uniquePendingInvitations.map(p => (p.name || '').trim().toLowerCase()));
@@ -452,9 +460,19 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
       return !hasPendingInvite;
     });
 
-    if (!searchQuery.trim()) return activeGroups;
+    // Pinned groups ("مجلس الذكر وتدبر القرآن" and "حلقة أهل القرآن العامة") must always stay strictly at the very top
+    const sorted = [...activeGroups].sort((a, b) => {
+      const rankA = communityService.getPinnedGroupRank(a);
+      const rankB = communityService.getPinnedGroupRank(b);
+      if (rankA > 0 && rankB > 0) return rankA - rankB;
+      if (rankA > 0) return -1;
+      if (rankB > 0) return 1;
+      return new Date(b.lastMessageTime || b.createdAt || 0).getTime() - new Date(a.lastMessageTime || a.createdAt || 0).getTime();
+    });
+
+    if (!searchQuery.trim()) return sorted;
     const q = searchQuery.toLowerCase().trim();
-    return activeGroups.filter((g) => {
+    return sorted.filter((g) => {
       const name = (g.name || '').toLowerCase();
       const desc = (g.description || '').toLowerCase();
       const lastMsg = (g.lastMessage || '').toLowerCase();
@@ -581,6 +599,7 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
 
   return (
     <div 
+      id="community-page-container"
       className="h-screen max-h-screen h-[100dvh] w-full flex flex-col overflow-y-auto overscroll-contain transition-colors bg-transparent relative" 
       dir={isEn ? 'ltr' : 'rtl'}
       style={{ 
@@ -742,14 +761,21 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
             }}
           >
             <span>{isEn ? 'Community' : 'المجتمع'}</span>
-            {uniquePendingInvitations.length > 0 && (
+            {totalUnreadGroupsCount > 0 ? (
+              <span 
+                className="px-1.5 py-0.5 min-w-[18px] h-[18px] rounded-full bg-rose-500 text-white text-[10px] font-extrabold flex items-center justify-center leading-none shadow-sm animate-pulse"
+                title={isEn ? `${totalUnreadGroupsCount} unread message(s)` : `${totalUnreadGroupsCount} رسائل غير مقروءة`}
+              >
+                {totalUnreadGroupsCount > 99 ? '+99' : totalUnreadGroupsCount}
+              </span>
+            ) : uniquePendingInvitations.length > 0 ? (
               <span 
                 className="px-1.5 py-0.5 min-w-[18px] h-[18px] rounded-full bg-amber-500 text-white text-[10px] font-extrabold flex items-center justify-center leading-none shadow-sm animate-pulse"
                 title={isEn ? `${uniquePendingInvitations.length} new invite(s)` : `${uniquePendingInvitations.length} دعوة جديدة`}
               >
                 {uniquePendingInvitations.length}
               </span>
-            )}
+            ) : null}
           </button>
 
           <button
@@ -1402,7 +1428,7 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
                         </p>
 
                         <div className="text-[10px] mt-1" style={{ color: textMuted }}>
-                          {isEn ? `Current members: ${invitation.members?.length || 1}` : `الأعضاء الحاليون: ${invitation.members?.length || 1}`}
+                          {isEn ? `Current members: ${communityService.getGroupMembersCount(invitation)}` : `الأعضاء الحاليون: ${communityService.getGroupMembersCount(invitation)}`}
                         </div>
                       </div>
                     </div>
@@ -1479,49 +1505,108 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
               </div>
             ) : (
               <div id="community-groups-section" className="grid grid-cols-1 gap-2.5">
-                {filteredGroups.map(grp => (
-                  <div
-                    key={grp.groupId}
-                    onClick={() => handleStartGroupChat(grp.groupId)}
-                    className="border rounded-2xl p-3 sm:p-3.5 flex items-center justify-between gap-3 cursor-pointer transition-all shadow-xs hover:shadow-md active:scale-[0.99] group"
-                    style={{
-                      backgroundColor: cardBg,
-                      borderColor: cardBorder,
-                      borderWidth: '1.5px',
-                      borderStyle: 'solid'
-                    }}
-                    title={cleanGroupName(formatGroupName(grp, isEn))}
-                  >
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                      <div 
-                        className="w-11 h-11 rounded-2xl font-bold flex items-center justify-center border overflow-hidden flex-shrink-0 text-xl shadow-inner group-hover:scale-105 transition-transform"
-                        style={{
-                          backgroundColor: `${primaryColor}15`,
-                          borderColor: `${primaryColor}30`,
-                          color: primaryColor
-                        }}
-                      >
-                        {renderGroupAvatar(grp)}
+                {filteredGroups.map(grp => {
+                  const isPinned = communityService.isPinnedGroup(grp);
+                  const unreadCount = communityService.getGroupUnreadCount(grp.groupId, currentUser.userId);
+                  const lastMsgTime = grp.lastMessageTime ? new Date(grp.lastMessageTime).toLocaleTimeString(isEn ? 'en-US' : 'ar-EG', { hour: '2-digit', minute: '2-digit' }) : '';
+
+                  return (
+                    <div
+                      key={grp.groupId}
+                      onClick={() => handleStartGroupChat(grp.groupId)}
+                      className="border rounded-2xl p-3 sm:p-3.5 flex items-center justify-between gap-3 cursor-pointer transition-all shadow-xs hover:shadow-md active:scale-[0.99] group relative"
+                      style={{
+                        backgroundColor: isPinned ? `${primaryColor}08` : cardBg,
+                        borderColor: isPinned ? `${primaryColor}60` : cardBorder,
+                        borderWidth: isPinned ? '2px' : '1.5px',
+                        borderStyle: 'solid'
+                      }}
+                      title={cleanGroupName(formatGroupName(grp, isEn))}
+                    >
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <div className="relative flex-shrink-0">
+                          <div 
+                            className="w-11 h-11 rounded-2xl font-bold flex items-center justify-center border overflow-hidden text-xl shadow-inner group-hover:scale-105 transition-transform"
+                            style={{
+                              backgroundColor: `${primaryColor}15`,
+                              borderColor: `${primaryColor}30`,
+                              color: primaryColor
+                            }}
+                          >
+                            {renderGroupAvatar(grp)}
+                          </div>
+                          {unreadCount > 0 && (
+                            <div 
+                              className={`absolute -top-1.5 ${isEn ? '-right-1.5' : '-left-1.5'} bg-rose-500 text-white text-[10px] font-extrabold min-w-[20px] h-5 px-1 rounded-full flex items-center justify-center border-2 border-white dark:border-slate-900 shadow-sm animate-pulse z-10`}
+                              title={isEn ? `${unreadCount} unread message(s)` : `${unreadCount} رسائل غير مقروءة`}
+                            >
+                              {unreadCount > 99 ? '99+' : unreadCount}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <h3 className="font-bold text-xs sm:text-sm truncate leading-snug" style={{ color: textColor }}>
+                              {cleanGroupName(formatGroupName(grp, isEn))}
+                            </h3>
+                            {isPinned && (
+                              <span 
+                                className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-bold border shadow-2xs select-none"
+                                style={{
+                                  backgroundColor: `${primaryColor}18`,
+                                  borderColor: `${primaryColor}40`,
+                                  color: primaryColor
+                                }}
+                              >
+                                <Pin size={10} className="rotate-45" />
+                                <span>{isEn ? 'Pinned' : 'مثبتة'}</span>
+                              </span>
+                            )}
+                          </div>
+                          {grp.description && (
+                            <p className="text-[11px] truncate mt-0.5" style={{ color: textMuted }}>
+                              {formatGroupDescription(grp, isEn)}
+                            </p>
+                          )}
+                          <div className="flex items-center gap-2 mt-0.5 text-[10px] font-medium" style={{ color: textMuted }}>
+                            <span>
+                              {(() => {
+                                const count = communityService.getGroupMembersCount(grp);
+                                return isEn 
+                                  ? `${count} member${count > 1 ? 's' : ''}` 
+                                  : `${count} عضو`;
+                              })()}
+                            </span>
+                            {grp.lastMessage && (
+                              <>
+                                <span>•</span>
+                                <span className="truncate max-w-[130px] sm:max-w-[200px]">
+                                  {grp.lastMessage}
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        </div>
                       </div>
 
-                      <div className="min-w-0 flex-1">
-                        <h3 className="font-bold text-xs sm:text-sm truncate leading-snug" style={{ color: textColor }}>
-                          {cleanGroupName(formatGroupName(grp, isEn))}
-                        </h3>
-                        {grp.description && (
-                          <p className="text-[11px] truncate mt-0.5" style={{ color: textMuted }}>
-                            {formatGroupDescription(grp, isEn)}
-                          </p>
+                      {/* Right side: unread count badge & last message timestamp */}
+                      <div className="flex flex-col items-end gap-1 shrink-0 select-none">
+                        {unreadCount > 0 && (
+                          <div className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-500 text-white font-extrabold text-[11px] shadow-sm animate-pulse">
+                            <MessageCircle size={11} />
+                            <span>{unreadCount > 99 ? '99+' : unreadCount}</span>
+                          </div>
                         )}
-                        <p className="text-[10px] mt-0.5 font-medium" style={{ color: textMuted }}>
-                          {isEn 
-                            ? `${grp.members?.length || 1} member${(grp.members?.length || 1) > 1 ? 's' : ''}` 
-                            : `${grp.members?.length || 1} عضو`}
-                        </p>
+                        {lastMsgTime && (
+                          <span className="text-[10px] font-medium" style={{ color: textMuted }}>
+                            {lastMsgTime}
+                          </span>
+                        )}
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

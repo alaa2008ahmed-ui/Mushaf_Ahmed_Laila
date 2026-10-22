@@ -535,7 +535,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
       setCurrentView(initialView as MenuView);
       setIsAddModalOpen(false);
 
-      if (!getQuranGuideSeen("sidebar_menu")) {
+      if (!getQuranGuideSeen("sidebar_menu_v2")) {
         const timer = setTimeout(() => {
           setIsSidebarGuideOpen(true);
         }, 400);
@@ -1185,7 +1185,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
   return (
     <>
       {/* Backdrop to block interaction with background and close menu on click */}
-      {isFloatingMenuOpen && (
+      {isFloatingMenuOpen && !isSidebarGuideOpen && (
         <div
           className="fixed inset-0 z-[1050] bg-black/[0.02] pointer-events-auto select-none"
           style={{ touchAction: 'none', WebkitTapHighlightColor: 'transparent' }}
@@ -2929,7 +2929,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
         </div>
       </div>
       <QuranSpotlightGuide
-        guideKey="sidebar_menu"
+        guideKey="sidebar_menu_v2"
         steps={QURAN_SIDEBAR_STEPS}
         isOpen={isSidebarGuideOpen}
         onClose={() => setIsSidebarGuideOpen(false)}

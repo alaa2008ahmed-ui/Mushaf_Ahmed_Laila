@@ -113,6 +113,7 @@ export const CommunitySpotlightGuide: React.FC<CommunitySpotlightGuideProps> = (
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
+  const rafRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -124,39 +125,210 @@ export const CommunitySpotlightGuide: React.FC<CommunitySpotlightGuideProps> = (
 
   const step = steps[currentStepIndex];
 
-  // Update target bounding box
+  useEffect(() => {
+    if (isOpen && step && onStepChange) {
+      onStepChange(currentStepIndex);
+    }
+  }, [isOpen, currentStepIndex, step, onStepChange]);
+
+  // Helper to find scrollable parent container
+  const findScrollParent = useCallback((el: HTMLElement): HTMLElement | null => {
+    const namedContainer = el.closest('#memorization-scroll-container, #wird-scroll-container, #chat-messages-container, #direct-chat-messages-container, main, #app-scroll-container') as HTMLElement | null;
+    if (namedContainer) return namedContainer;
+
+    let p = el.parentElement;
+    while (p && p !== document.body && p !== document.documentElement) {
+      const s = window.getComputedStyle(p);
+      const isScrollable = (s.overflowY === 'auto' || s.overflowY === 'scroll');
+      if (isScrollable || p.tagName === 'MAIN') {
+        return p;
+      }
+      p = p.parentElement;
+    }
+    return null;
+  }, []);
+
+  // Update target bounding box with crystal clarity & multi-element support
   const updateRect = useCallback(() => {
     if (!step?.targetSelector) {
       setTargetRect(null);
       return;
     }
 
-    const el = document.querySelector(step.targetSelector);
-    if (el) {
-      // Scroll into view if needed
-      try {
-        el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
-      } catch (e) {}
+    try {
+      const elements = Array.from(document.querySelectorAll(step.targetSelector)) as HTMLElement[];
+      if (elements && elements.length > 0) {
+        const visibleElements = elements.filter(el => {
+          const r = el.getBoundingClientRect();
+          const s = window.getComputedStyle(el);
+          return (
+            r.width > 0 &&
+            r.height > 0 &&
+            s.display !== 'none' &&
+            s.visibility !== 'hidden' &&
+            s.opacity !== '0'
+          );
+        });
 
-      const rect = el.getBoundingClientRect();
-      // Ensure target has width & height
-      if (rect.width > 0 && rect.height > 0) {
-        setTargetRect(rect);
-        return;
+        if (visibleElements.length > 0) {
+          let chosen = visibleElements[0];
+
+          // If the step is targeting a community list or section, isolate the representative first card/item
+          if (
+            (step.id === 'tab_chats_list' ||
+             step.id === 'tab_comm_list' ||
+             step.id === 'tab_users_actions' ||
+             step.id === 'tab_blocked_info') &&
+            chosen.children && chosen.children.length > 0
+          ) {
+            const childCandidates = Array.from(chosen.children) as HTMLElement[];
+            const firstValidChild = childCandidates.find(c => {
+              const cr = c.getBoundingClientRect();
+              return cr.width > 50 && cr.height > 20;
+            });
+            if (firstValidChild) {
+              chosen = firstValidChild;
+            }
+          }
+
+          if (visibleElements.length === 1 || chosen !== visibleElements[0]) {
+            const finalRect = chosen.getBoundingClientRect();
+            if (finalRect.width > 0 && finalRect.height > 0) {
+              setTargetRect(finalRect);
+              return;
+            }
+          } else {
+            // Multi-element target (e.g. tabs or row controls)
+            let minLeft = Infinity;
+            let minTop = Infinity;
+            let maxRight = -Infinity;
+            let maxBottom = -Infinity;
+
+            for (const el of visibleElements) {
+              const r = el.getBoundingClientRect();
+              if (r.left < minLeft) minLeft = r.left;
+              if (r.top < minTop) minTop = r.top;
+              if (r.right > maxRight) maxRight = r.right;
+              if (r.bottom > maxBottom) maxBottom = r.bottom;
+            }
+
+            if (minLeft < Infinity && maxRight > -Infinity && maxRight > minLeft && maxBottom > minTop) {
+              setTargetRect(new DOMRect(minLeft, minTop, maxRight - minLeft, maxBottom - minTop));
+              return;
+            }
+          }
+        }
       }
-    }
+    } catch (e) {}
+
     setTargetRect(null);
   }, [step]);
+
+  // Smoothly scroll the container or window to bring the target element into view
+  const scrollToTarget = useCallback((chosen: HTMLElement, stepIdx?: number) => {
+    try {
+      const scrollParent = findScrollParent(chosen);
+      if (scrollParent) {
+        const effectiveIndex = stepIdx !== undefined ? stepIdx : currentStepIndex;
+
+        // Step 0: Always reset to top smoothly
+        if (effectiveIndex === 0) {
+          scrollParent.scrollTo({ top: 0, behavior: 'smooth' });
+          return;
+        }
+
+        const containerRect = scrollParent.getBoundingClientRect();
+        const elRect = chosen.getBoundingClientRect();
+        const currentScroll = scrollParent.scrollTop;
+        const relativeTop = elRect.top - containerRect.top;
+
+        // Determine if target should be positioned in upper or lower half of container
+        // To leave maximum space for the explanation card without overlapping
+        const isNearEnd = effectiveIndex >= Math.max(1, steps.length - 2) && relativeTop > containerRect.height * 0.45;
+        
+        let desiredRelativeTop: number;
+        if (isNearEnd) {
+          // Leave space above for card
+          desiredRelativeTop = Math.max(60, containerRect.height - elRect.height - 25);
+        } else {
+          // Leave space below for card: place target near top of container
+          desiredRelativeTop = 20;
+        }
+
+        const scrollDiff = relativeTop - desiredRelativeTop;
+        const targetScroll = Math.max(0, currentScroll + scrollDiff);
+
+        if (Math.abs(scrollDiff) > 6) {
+          scrollParent.scrollTo({
+            top: targetScroll,
+            behavior: 'smooth'
+          });
+        }
+      } else {
+        const viewportH = window.innerHeight;
+        const elRect = chosen.getBoundingClientRect();
+        if (elRect.top < 70 || elRect.bottom > viewportH - 70) {
+          try {
+            chosen.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+          } catch (e) {}
+        }
+      }
+    } catch (e) {}
+  }, [findScrollParent, currentStepIndex, steps.length]);
 
   useEffect(() => {
     if (!isOpen || !step) return;
 
-    // Immediate check
+    // 1. Immediately find the target element and trigger smooth auto-scroll
+    try {
+      const elements = Array.from(document.querySelectorAll(step.targetSelector || '')) as HTMLElement[];
+      const visible = elements.filter(el => {
+        const r = el.getBoundingClientRect();
+        const s = window.getComputedStyle(el);
+        return r.width > 0 && r.height > 0 && s.display !== 'none' && s.visibility !== 'hidden' && s.opacity !== '0';
+      });
+      if (visible.length > 0) {
+        let toScroll = visible[0];
+        if (
+          (step.id === 'tab_chats_list' ||
+           step.id === 'tab_comm_list' ||
+           step.id === 'tab_users_actions' ||
+           step.id === 'tab_blocked_info') &&
+          toScroll.children && toScroll.children.length > 0
+        ) {
+          const childCandidates = Array.from(toScroll.children) as HTMLElement[];
+          const firstValidChild = childCandidates.find(c => {
+            const cr = c.getBoundingClientRect();
+            return cr.width > 50 && cr.height > 20;
+          });
+          if (firstValidChild) {
+            toScroll = firstValidChild;
+          }
+        }
+        scrollToTarget(toScroll, currentStepIndex);
+      }
+    } catch (e) {}
+
+    // 2. Perform initial rect computation
     updateRect();
 
-    // Check again shortly in case of animations/layout shifts
-    const timer1 = setTimeout(updateRect, 100);
-    const timer2 = setTimeout(updateRect, 300);
+    // 3. Continuous RAF tracking loop while the smooth scroll animates
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    const startTimestamp = performance.now();
+    const trackAnimation = () => {
+      updateRect();
+      if (performance.now() - startTimestamp < 750) {
+        rafRef.current = requestAnimationFrame(trackAnimation);
+      }
+    };
+    rafRef.current = requestAnimationFrame(trackAnimation);
+
+    // 4. Staggered timers as reliable fallbacks
+    const t1 = setTimeout(updateRect, 50);
+    const t2 = setTimeout(updateRect, 150);
+    const t3 = setTimeout(updateRect, 300);
+    const t4 = setTimeout(updateRect, 500);
+    const t5 = setTimeout(updateRect, 750);
 
     const handleResizeOrScroll = () => {
       updateRect();
@@ -166,12 +338,16 @@ export const CommunitySpotlightGuide: React.FC<CommunitySpotlightGuideProps> = (
     window.addEventListener('scroll', handleResizeOrScroll, true);
 
     return () => {
-      clearTimeout(timer1);
-      clearTimeout(timer2);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+      clearTimeout(t4);
+      clearTimeout(t5);
       window.removeEventListener('resize', handleResizeOrScroll);
       window.removeEventListener('scroll', handleResizeOrScroll, true);
     };
-  }, [isOpen, step, updateRect]);
+  }, [isOpen, step, currentStepIndex, updateRect, scrollToTarget]);
 
   if (!isOpen || !step) return null;
 
@@ -206,60 +382,68 @@ export const CommunitySpotlightGuide: React.FC<CommunitySpotlightGuideProps> = (
   let cardPositionStyle: React.CSSProperties = {};
   let pointerPlacement: 'top' | 'bottom' | 'center' = 'center';
 
-  const screenHeight = typeof window !== 'undefined' ? window.innerHeight : 640;
-  const screenWidth = typeof window !== 'undefined' ? window.innerWidth : 360;
-  const cardWidthEstimate = Math.min(380, screenWidth - 28);
+  const screenHeight = typeof window !== 'undefined' ? window.innerHeight : 700;
+  const screenWidth = typeof window !== 'undefined' ? window.innerWidth : 380;
+  const cardWidth = Math.min(380, screenWidth - 28);
   const margin = 14;
-  const tooltipHeightEstimate = 240;
+  const cardHeight = cardRef.current?.offsetHeight || 240;
+
+  let beakLeft = Math.round(cardWidth / 2 - 8);
 
   if (targetRect) {
     const targetCenterX = targetRect.left + targetRect.width / 2;
-
-    // Decide whether to place above or below target
     const spaceBelow = screenHeight - targetRect.bottom;
     const spaceAbove = targetRect.top;
 
-    // If target element is large (e.g. chats list or members list spanning > 45% of screen), center the card directly
-    const isTargetLarge = targetRect.height > screenHeight * 0.45;
+    const computedLeft = Math.max(14, Math.min(screenWidth - cardWidth - 14, Math.round(targetCenterX - cardWidth / 2)));
+    beakLeft = Math.max(20, Math.min(cardWidth - 28, Math.round(targetCenterX - computedLeft - 8)));
 
-    const computedLeft = Math.max(14, Math.min(screenWidth - cardWidthEstimate - 14, Math.round(targetCenterX - cardWidthEstimate / 2)));
-
-    if (!isTargetLarge && spaceBelow >= tooltipHeightEstimate + margin) {
-      // Place below target
+    // Smart placement: NEVER place card on top of the target element.
+    // If space below accommodates card comfortably, place below target.
+    // Else if space above accommodates card comfortably, place above target.
+    // Otherwise pick whichever side has more space and strictly clamp outside the target rect.
+    if (spaceBelow >= cardHeight + margin + 4) {
       pointerPlacement = 'top';
       cardPositionStyle = {
-        top: Math.min(targetRect.bottom + margin, screenHeight - tooltipHeightEstimate - 20),
+        top: targetRect.bottom + margin,
         left: computedLeft,
-        width: cardWidthEstimate
+        width: cardWidth
       };
-    } else if (!isTargetLarge && spaceAbove >= tooltipHeightEstimate + margin) {
-      // Place above target
+    } else if (spaceAbove >= cardHeight + margin + 4) {
       pointerPlacement = 'bottom';
       cardPositionStyle = {
-        top: Math.max(14, targetRect.top - tooltipHeightEstimate - margin),
+        top: Math.max(12, targetRect.top - cardHeight - margin),
         left: computedLeft,
-        width: cardWidthEstimate
+        width: cardWidth
+      };
+    } else if (spaceBelow >= spaceAbove) {
+      pointerPlacement = 'top';
+      const availableSpace = Math.max(140, screenHeight - targetRect.bottom - 16);
+      cardPositionStyle = {
+        top: targetRect.bottom + 8,
+        left: computedLeft,
+        width: cardWidth,
+        maxHeight: availableSpace
       };
     } else {
-      // Centered cleanly on the screen (no reliance on CSS transform which framer motion overrides)
-      pointerPlacement = 'center';
-      const centeredLeft = Math.max(14, Math.round((screenWidth - cardWidthEstimate) / 2));
-      const centeredTop = Math.max(14, Math.round((screenHeight - 260) / 2));
+      pointerPlacement = 'bottom';
+      const availableSpace = Math.max(140, targetRect.top - 16);
       cardPositionStyle = {
-        top: centeredTop,
-        left: centeredLeft,
-        width: cardWidthEstimate
+        top: Math.max(12, targetRect.top - Math.min(cardHeight, availableSpace) - 8),
+        left: computedLeft,
+        width: cardWidth,
+        maxHeight: availableSpace
       };
     }
   } else {
-    // Center of screen
+    // Center of screen when no specific target is supplied
     pointerPlacement = 'center';
-    const centeredLeft = Math.max(14, Math.round((screenWidth - cardWidthEstimate) / 2));
-    const centeredTop = Math.max(14, Math.round((screenHeight - 260) / 2));
+    const centeredLeft = Math.max(14, Math.round((screenWidth - cardWidth) / 2));
+    const centeredTop = Math.max(14, Math.round((screenHeight - cardHeight) / 2));
     cardPositionStyle = {
       top: centeredTop,
       left: centeredLeft,
-      width: cardWidthEstimate
+      width: cardWidth
     };
   }
 
@@ -267,30 +451,61 @@ export const CommunitySpotlightGuide: React.FC<CommunitySpotlightGuideProps> = (
 
   return (
     <div 
-      className="fixed inset-0 z-[100001] pointer-events-none select-none"
+      id="community-spotlight-guide-root"
+      className="community-spotlight-guide fixed inset-0 z-[100001] pointer-events-none select-none font-sans"
       dir={isEn ? 'ltr' : 'rtl'}
     >
-      {/* Subtle, crystal-clear dismiss backdrop matching Quran reader */}
-      <div 
-        className="absolute inset-0 bg-black/40 backdrop-blur-[1px] pointer-events-auto transition-opacity"
-        onClick={handleSkip}
-      />
+      {/* Subtle, crystal-clear dismiss backdrop with SVG spotlight mask cutout matching Quran page */}
+      {targetRect ? (
+        <svg
+          className="absolute inset-0 w-full h-full pointer-events-auto transition-opacity duration-300"
+          onClick={handleSkip}
+        >
+          <defs>
+            <mask id={`community-spotlight-mask-${step.id}`}>
+              <rect x="0" y="0" width="100%" height="100%" fill="white" />
+              <rect
+                x={Math.max(0, targetRect.left - 6)}
+                y={Math.max(0, targetRect.top - 6)}
+                width={targetRect.width + 12}
+                height={targetRect.height + 12}
+                rx="18"
+                ry="18"
+                fill="black"
+              />
+            </mask>
+          </defs>
+          <rect
+            x="0"
+            y="0"
+            width="100%"
+            height="100%"
+            fill="rgba(0, 0, 0, 0.45)"
+            mask={`url(#community-spotlight-mask-${step.id})`}
+          />
+        </svg>
+      ) : (
+        <div 
+          className="absolute inset-0 bg-black/45 backdrop-blur-[1px] pointer-events-auto transition-opacity"
+          onClick={handleSkip}
+        />
+      )}
 
-      {/* Target Element Luminous Spotlight Frame - Crisp & 100% Clear with zero dimming */}
+      {/* Target Element Luminous Spotlight Highlight Frame - Crisp & 100% Clear with zero dimming */}
       {targetRect && (
         <motion.div
           key={`spotlight-${step.id}`}
-          initial={{ opacity: 0, scale: 0.96 }}
+          initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.2 }}
           className="absolute pointer-events-none rounded-2xl transition-all duration-300"
           style={{
-            top: Math.max(0, targetRect.top - 4),
-            left: Math.max(0, targetRect.left - 4),
-            width: targetRect.width + 8,
-            height: targetRect.height + 8,
-            boxShadow: `0 0 0 3px ${currentAccent}, 0 0 24px ${currentAccent}90, inset 0 0 12px ${currentAccent}25`,
-            border: `2.5px solid ${currentAccent}`,
+            top: Math.max(0, targetRect.top - 6),
+            left: Math.max(0, targetRect.left - 6),
+            width: targetRect.width + 12,
+            height: targetRect.height + 12,
+            boxShadow: `0 0 0 3px ${currentAccent}, 0 0 32px ${currentAccent}80`,
+            border: `2px solid ${currentAccent}`,
             zIndex: 100002
           }}
         >
@@ -318,31 +533,37 @@ export const CommunitySpotlightGuide: React.FC<CommunitySpotlightGuideProps> = (
       <motion.div
         key={`card-${step.id}`}
         ref={cardRef}
-        initial={{ opacity: 0, scale: 0.92, y: pointerPlacement === 'top' ? -10 : (pointerPlacement === 'bottom' ? 10 : 0) }}
+        data-guide-card="true"
+        initial={{ opacity: 0, scale: 0.93, y: pointerPlacement === 'top' ? -12 : (pointerPlacement === 'bottom' ? 12 : 0) }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.92 }}
+        exit={{ opacity: 0, scale: 0.93 }}
         transition={{ type: 'spring', damping: 25, stiffness: 350 }}
-        className="fixed z-[100003] pointer-events-auto rounded-3xl p-4 sm:p-5 shadow-2xl border-2 flex flex-col bg-slate-900/98 text-white backdrop-blur-xl"
+        className="fixed z-[100003] pointer-events-auto rounded-3xl p-4 sm:p-5 shadow-2xl border-2 flex flex-col bg-slate-900/98 text-white backdrop-blur-xl overflow-y-auto hide-scrollbar"
         style={{
           ...cardPositionStyle,
           borderColor: currentAccent,
-          boxShadow: `0 20px 45px -10px ${currentAccent}50, 0 0 0 1px ${currentAccent}60`
+          boxShadow: `0 20px 50px -10px ${currentAccent}45, 0 0 0 1px ${currentAccent}60`
         }}
         onClick={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
+        onTouchStart={(e) => e.stopPropagation()}
+        onTouchEnd={(e) => e.stopPropagation()}
+        onPointerDown={(e) => e.stopPropagation()}
       >
-        {/* Pointer Beak pointing toward highlighted target */}
+        {/* Pointer Beak pointing dynamically toward highlighted target */}
         {pointerPlacement === 'top' && (
           <div 
-            className="absolute -top-2.5 left-10 w-4 h-4 rotate-45 border-t-2 border-l-2 bg-slate-900"
-            style={{ borderColor: currentAccent }}
+            className="absolute -top-2.5 w-4 h-4 rotate-45 border-t-2 border-l-2 bg-slate-900"
+            style={{ borderColor: currentAccent, left: beakLeft }}
           />
         )}
         {pointerPlacement === 'bottom' && (
           <div 
-            className="absolute -bottom-2.5 left-10 w-4 h-4 rotate-45 border-b-2 border-r-2 bg-slate-900"
-            style={{ borderColor: currentAccent }}
+            className="absolute -bottom-2.5 w-4 h-4 rotate-45 border-b-2 border-r-2 bg-slate-900"
+            style={{ borderColor: currentAccent, left: beakLeft }}
           />
         )}
+
         {/* Colorful Gradient Accent Header Bar */}
         <div 
           className="absolute -top-1.5 inset-x-6 h-1.5 rounded-full bg-gradient-to-r opacity-90 shadow-sm"

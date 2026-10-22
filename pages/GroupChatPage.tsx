@@ -115,10 +115,19 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const unreadDividerRef = useRef<HTMLDivElement>(null);
   const menuContainerRef = useRef<HTMLDivElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const menuDropdownRef = useRef<HTMLDivElement>(null);
   const hasExitedRef = useRef(false);
+
+  // Capture initial first unread message before marking read
+  const [firstUnreadMessageId] = useState<string | null>(() => {
+    const unread = communityService.getFirstUnreadGroupMessage(groupId);
+    return unread?.messageId || null;
+  });
+  const hasInitiallyScrolledRef = useRef(false);
+  const prevMessagesLengthRef = useRef(messages.length);
 
   // Global click & touch outside listeners to automatically dismiss the 3-dots menu when clicking anywhere on screen
   useEffect(() => {
@@ -214,6 +223,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
   const handleBack = () => {
     if (hasExitedRef.current) return;
     hasExitedRef.current = true;
+    communityService.markGroupAsRead(groupId);
     communityService.setActiveTab('community');
     if (onNavigate) {
       onNavigate('community', { initialTab: 'community', returnTab: 'community' });
@@ -222,10 +232,13 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
     }
   };
 
-  // Guarantee that community tab is set to community whenever group chat is open
+  // Guarantee that community tab is set to community and mark group read on unmount
   useEffect(() => {
     communityService.setActiveTab('community');
-  }, []);
+    return () => {
+      communityService.markGroupAsRead(groupId);
+    };
+  }, [groupId]);
 
   const loadGroupData = () => {
     if (hasExitedRef.current) return;
@@ -281,10 +294,46 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
     };
   }, []);
 
-  // Auto-scroll on new message
+  // Smart Initial Scroll & Auto-scroll logic:
+  // 1. If unread messages exist, start at the FIRST unread message!
+  // 2. If NO unread messages, start at the LAST read message (bottom of chat)!
+  // 3. Mark the group as read upon viewing the messages, clearing the unread counter badge!
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages.length]);
+    if (messages.length === 0) return;
+
+    if (!hasInitiallyScrolledRef.current) {
+      hasInitiallyScrolledRef.current = true;
+      if (firstUnreadMessageId) {
+        // Start from first unread message
+        setTimeout(() => {
+          const targetEl = document.getElementById(`msg-${firstUnreadMessageId}`) || unreadDividerRef.current;
+          if (targetEl) {
+            targetEl.scrollIntoView({ behavior: 'auto', block: 'start' });
+          } else {
+            messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+          }
+        }, 150);
+      } else {
+        // Open on last read message (chat end)
+        setTimeout(() => {
+          messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+        }, 80);
+      }
+
+      // Upon viewing messages, mark group read so unread counter is cleared
+      const markTimer = setTimeout(() => {
+        communityService.markGroupAsRead(groupId);
+      }, 500);
+      return () => clearTimeout(markTimer);
+    } else {
+      // New message added/received while inside chat
+      if (messages.length > prevMessagesLengthRef.current) {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        communityService.markGroupAsRead(groupId);
+      }
+    }
+    prevMessagesLengthRef.current = messages.length;
+  }, [messages, firstUnreadMessageId, groupId]);
 
   // Back interceptor
   useEffect(() => {
@@ -684,7 +733,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
   };
 
   const groupDisplayName = cleanGroupName(formatGroupName(group, isEn) || (isEn ? 'Group Chat' : 'محادثة جماعية'));
-  const groupMembersCount = group?.members?.length || 1;
+  const groupMembersCount = communityService.getGroupMembersCount(group);
   const isSystemDefaultGroup = group?.groupId === 'group_default_quran_readers' || group?.groupId === 'group_default_tadabbur';
   const isAdminSession = currentUser.userId === ADMIN_USER_ID;
   const isCreator = Boolean(
@@ -724,21 +773,22 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
     return <Users size={size} />;
   };
 
-  // Resolve all current members
+  // Resolve all current active members (excludes ADMIN_USER_ID and deleted users)
   const currentMembersList = useMemo(() => {
-    if (!group || !Array.isArray(group.members)) return [];
-    return group.members.map(memberId => {
+    if (!group) return [];
+    const cleanMemberIds = communityService.getCleanGroupMembers(group);
+    return cleanMemberIds.map(memberId => {
       const found = communityService.getUserById(memberId);
       if (found) return found;
       return {
         userId: memberId,
-        username: memberId === group.createdBy ? (group.creatorName || 'منشئ المجموعة') : 'عضو بالمجموعة',
+        username: memberId === group.createdBy ? (group.creatorName || (isEn ? 'Group Creator' : 'منشئ المجموعة')) : (isEn ? 'Member' : 'عضو بالمجموعة'),
         country: '🌍',
         isOnline: false,
         createdAt: group.createdAt
       } as CommunityUser;
     });
-  }, [group]);
+  }, [group, isEn]);
 
   // Available users to add (not in members and not current user)
   const availableUsersToAdd = useMemo(() => {
@@ -1124,12 +1174,28 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
           messages.map((msg) => {
             const isMe = msg.senderId === currentUser.userId;
             const timeStr = msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString(isEn ? 'en-US' : 'ar-EG', { hour: '2-digit', minute: '2-digit' }) : '';
+            const isFirstUnread = firstUnreadMessageId === msg.messageId;
 
             return (
-              <div
-                key={msg.messageId}
-                className={`flex items-end gap-2 ${isMe ? 'justify-end' : 'justify-start'}`}
-              >
+              <React.Fragment key={msg.messageId}>
+                {isFirstUnread && (
+                  <div
+                    ref={unreadDividerRef}
+                    id="group-unread-messages-divider"
+                    className="my-3 flex items-center justify-center gap-2 py-1 select-none animate-in fade-in zoom-in-95 duration-200"
+                  >
+                    <div className="h-px bg-rose-500/40 flex-1" />
+                    <div className="px-3 py-1 rounded-full text-[11px] font-bold bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30 flex items-center gap-1.5 shadow-xs">
+                      <MessageCircle size={13} className="text-rose-500" />
+                      <span>{isEn ? 'Unread Messages' : 'رسائل غير مقروءة'}</span>
+                    </div>
+                    <div className="h-px bg-rose-500/40 flex-1" />
+                  </div>
+                )}
+                <div
+                  id={`msg-${msg.messageId}`}
+                  className={`flex items-end gap-2 ${isMe ? 'justify-end' : 'justify-start'}`}
+                >
                 {/* Sender Avatar (Only for others) */}
                 {!isMe && (
                   <button 
@@ -1294,8 +1360,9 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                   )}
                 </div>
               </div>
-            );
-          })
+            </React.Fragment>
+          );
+        })
         )}
         <div ref={messagesEndRef} />
       </div>
@@ -1638,103 +1705,129 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                   )}
                 </div>
 
-                <div 
-                  className="max-h-56 overflow-y-auto space-y-1.5 p-2 rounded-2xl border"
-                  style={{ backgroundColor: secondaryBg, borderColor: cardBorder }}
-                >
-                  {/* Current User */}
+                {isSystemDefaultGroup ? (
                   <div 
-                    onClick={() => handleOpenMemberProfile(currentUser.userId, currentUser.username, currentUser.avatarUrl, currentUser.country)}
-                    className="flex items-center justify-between p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs cursor-pointer hover:bg-emerald-500/15 transition-all"
-                    title={isEn ? "View your profile" : "عرض حسابك الشخصي"}
+                    className="p-4 rounded-2xl border text-center space-y-2"
+                    style={{ backgroundColor: secondaryBg, borderColor: cardBorder }}
                   >
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div className="w-7 h-7 rounded-full bg-emerald-500 text-white font-bold flex items-center justify-center text-xs shrink-0 overflow-hidden">
-                        {currentUser.avatarUrl ? (
-                          <img src={currentUser.avatarUrl} alt={currentUser.username} className="w-full h-full object-cover" />
-                        ) : (
-                          currentUser.username?.charAt(0) || 'أ'
-                        )}
+                    <div className="flex items-center justify-center gap-2">
+                      <div 
+                        className="w-10 h-10 rounded-2xl flex items-center justify-center border font-bold shadow-xs"
+                        style={{ backgroundColor: `${primaryColor}15`, borderColor: `${primaryColor}30`, color: primaryColor }}
+                      >
+                        <Users size={20} />
                       </div>
-                      <div className="min-w-0 flex items-center gap-1.5 truncate">
-                        <span className="font-bold truncate hover:underline" style={{ color: textColor }}>{currentUser.username} {isEn ? '(You)' : '(أنت)'}</span>
-                        {group?.createdBy === currentUser.userId && (
-                          <span className="text-[10px] px-1.5 py-0.2 rounded-md bg-amber-500/20 text-amber-600 dark:text-amber-400 font-bold shrink-0">
-                            {isEn ? 'Creator 👑' : 'منشئ 👑'}
-                          </span>
-                        )}
-                      </div>
+                      <span className="text-sm font-bold" style={{ color: textColor }}>
+                        {isEn 
+                          ? `${groupMembersCount} Community Member${groupMembersCount > 1 ? 's' : ''}` 
+                          : `${groupMembersCount} عضو من قراء المجتمع`}
+                      </span>
                     </div>
-                    <span className="text-[10px] text-emerald-600 font-bold shrink-0">{isEn ? 'Online Member' : 'عضو متصل'}</span>
+                    <p className="text-[11px] leading-relaxed" style={{ color: textMuted }}>
+                      {isEn 
+                        ? 'This is a public community circle open to all readers of the Noble Quran.' 
+                        : 'حلقة إيمانية عامة ومفتوحة لجميع قراء وأعضاء مجتمع المصحف الشريف.'}
+                    </p>
                   </div>
+                ) : (
+                  <div 
+                    className="max-h-56 overflow-y-auto space-y-1.5 p-2 rounded-2xl border"
+                    style={{ backgroundColor: secondaryBg, borderColor: cardBorder }}
+                  >
+                    {/* Current User */}
+                    <div 
+                      onClick={() => handleOpenMemberProfile(currentUser.userId, currentUser.username, currentUser.avatarUrl, currentUser.country)}
+                      className="flex items-center justify-between p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs cursor-pointer hover:bg-emerald-500/15 transition-all"
+                      title={isEn ? "View your profile" : "عرض حسابك الشخصي"}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-7 h-7 rounded-full bg-emerald-500 text-white font-bold flex items-center justify-center text-xs shrink-0 overflow-hidden">
+                          {currentUser.avatarUrl ? (
+                            <img src={currentUser.avatarUrl} alt={currentUser.username} className="w-full h-full object-cover" />
+                          ) : (
+                            currentUser.username?.charAt(0) || 'أ'
+                          )}
+                        </div>
+                        <div className="min-w-0 flex items-center gap-1.5 truncate">
+                          <span className="font-bold truncate hover:underline" style={{ color: textColor }}>{currentUser.username} {isEn ? '(You)' : '(أنت)'}</span>
+                          {group?.createdBy === currentUser.userId && (
+                            <span className="text-[10px] px-1.5 py-0.2 rounded-md bg-amber-500/20 text-amber-600 dark:text-amber-400 font-bold shrink-0">
+                              {isEn ? 'Creator 👑' : 'منشئ 👑'}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <span className="text-[10px] text-emerald-600 font-bold shrink-0">{isEn ? 'Online Member' : 'عضو متصل'}</span>
+                    </div>
 
-                  {/* Other members */}
-                  {currentMembersList
-                    .filter(u => u.userId !== currentUser.userId)
-                    .map(u => {
-                      const isMemberCreator = u.userId === group?.createdBy;
-                      return (
-                        <div 
-                          key={u.userId} 
-                          onClick={() => handleOpenMemberProfile(u.userId, u.username, u.avatarUrl, u.country)}
-                          className="flex items-center justify-between p-2 rounded-xl border text-xs gap-2 cursor-pointer transition-all hover:bg-slate-500/10 active:scale-[0.99]" 
-                          style={{ borderColor: cardBorder }}
-                          title={isEn ? `View profile of ${formatUsername(u, isEn)}` : `عرض بيانات ${u.username}`}
-                        >
-                          <div className="flex items-center gap-2 min-w-0 flex-1">
-                            <div 
-                              className="w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs overflow-hidden shrink-0 border"
-                              style={{ backgroundColor: `${primaryColor}20`, borderColor: `${primaryColor}40`, color: primaryColor }}
-                            >
-                              {u.avatarUrl ? (
-                                <img src={u.avatarUrl} alt={u.username} className="w-full h-full object-cover" />
-                              ) : (
-                                u.username.charAt(0)
-                              )}
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-center gap-1.5 truncate">
-                                <span className="font-bold truncate hover:underline" style={{ color: textColor }}>{formatUsername(u, isEn)}</span>
-                                {isMemberCreator && (
-                                  <span className="text-[10px] px-1.5 py-0.2 rounded-md bg-amber-500/20 text-amber-600 dark:text-amber-400 font-bold shrink-0">
-                                    {isEn ? 'Creator 👑' : 'المنشئ 👑'}
-                                  </span>
+                    {/* Other members */}
+                    {currentMembersList
+                      .filter(u => u.userId !== currentUser.userId)
+                      .map(u => {
+                        const isMemberCreator = u.userId === group?.createdBy;
+                        return (
+                          <div 
+                            key={u.userId} 
+                            onClick={() => handleOpenMemberProfile(u.userId, u.username, u.avatarUrl, u.country)}
+                            className="flex items-center justify-between p-2 rounded-xl border text-xs gap-2 cursor-pointer transition-all hover:bg-slate-500/10 active:scale-[0.99]" 
+                            style={{ borderColor: cardBorder }}
+                            title={isEn ? `View profile of ${formatUsername(u, isEn)}` : `عرض بيانات ${u.username}`}
+                          >
+                            <div className="flex items-center gap-2 min-w-0 flex-1">
+                              <div 
+                                className="w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs overflow-hidden shrink-0 border"
+                                style={{ backgroundColor: `${primaryColor}20`, borderColor: `${primaryColor}40`, color: primaryColor }}
+                              >
+                                {u.avatarUrl ? (
+                                  <img src={u.avatarUrl} alt={u.username} className="w-full h-full object-cover" />
+                                ) : (
+                                  u.username.charAt(0)
                                 )}
                               </div>
-                              <span className="text-[10px] block truncate" style={{ color: textMuted }}>({formatCountryName(u.country, isEn)})</span>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-1.5 truncate">
+                                  <span className="font-bold truncate hover:underline" style={{ color: textColor }}>{formatUsername(u, isEn)}</span>
+                                  {isMemberCreator && (
+                                    <span className="text-[10px] px-1.5 py-0.2 rounded-md bg-amber-500/20 text-amber-600 dark:text-amber-400 font-bold shrink-0">
+                                      {isEn ? 'Creator 👑' : 'المنشئ 👑'}
+                                    </span>
+                                  )}
+                                </div>
+                                <span className="text-[10px] block truncate" style={{ color: textMuted }}>({formatCountryName(u.country, isEn)})</span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span className="text-[10px]" style={{ color: communityService.isUserOnline(u) ? '#10b981' : textMuted }}>
+                                {communityService.isUserOnline(u) ? (isEn ? 'Online' : 'متصل الآن') : (isEn ? 'Member' : 'عضو')}
+                              </span>
+                              {/* Remove member button for Creator */}
+                              {isCreator && !isMemberCreator && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setMemberToRemove({ userId: u.userId, username: u.username });
+                                  }}
+                                  className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-500/15 transition-all cursor-pointer flex items-center gap-1 text-[11px] font-bold"
+                                  title={isEn ? `Remove ${u.username} from group` : `إزالة ${u.username} من المجموعة`}
+                                >
+                                  <UserMinus size={14} />
+                                  <span className="hidden sm:inline">{isEn ? 'Remove' : 'إزالة'}</span>
+                                </button>
+                              )}
                             </div>
                           </div>
+                        );
+                      })}
 
-                          <div className="flex items-center gap-2 shrink-0">
-                            <span className="text-[10px]" style={{ color: communityService.isUserOnline(u) ? '#10b981' : textMuted }}>
-                              {communityService.isUserOnline(u) ? (isEn ? 'Online' : 'متصل الآن') : (isEn ? 'Member' : 'عضو')}
-                            </span>
-                            {/* Remove member button for Creator */}
-                            {isCreator && !isMemberCreator && (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setMemberToRemove({ userId: u.userId, username: u.username });
-                                }}
-                                className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-500/15 transition-all cursor-pointer flex items-center gap-1 text-[11px] font-bold"
-                                title={isEn ? `Remove ${u.username} from group` : `إزالة ${u.username} من المجموعة`}
-                              >
-                                <UserMinus size={14} />
-                                <span className="hidden sm:inline">{isEn ? 'Remove' : 'إزالة'}</span>
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-
-                  {currentMembersList.filter(u => u.userId !== currentUser.userId).length === 0 && (
-                    <p className="text-center py-3 text-xs" style={{ color: textMuted }}>
-                      {isEn ? 'No other members yet. You can invite or add members to the group!' : 'لا يوجد أعضاء آخرين بعد. يمكنك دعوة أو إضافة مستخدمين للمجموعة!'}
-                    </p>
-                  )}
-                </div>
+                    {currentMembersList.filter(u => u.userId !== currentUser.userId).length === 0 && (
+                      <p className="text-center py-3 text-xs" style={{ color: textMuted }}>
+                        {isEn ? 'No other members yet. You can invite or add members to the group!' : 'لا يوجد أعضاء آخرين بعد. يمكنك دعوة أو إضافة مستخدمين للمجموعة!'}
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Creator Zone in Info Modal */}

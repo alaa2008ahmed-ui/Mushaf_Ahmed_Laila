@@ -203,7 +203,7 @@ const AvatarSelector: React.FC<AvatarSelectorProps> = ({
     : AVATAR_OPTIONS.filter(a => a.category === activeCategory);
 
   return (
-    <div className="w-full mt-2.5">
+    <div id="onboarding-reg-avatar" className="w-full mt-2.5">
       <div className="flex items-center justify-between mb-1.5 px-0.5">
         <span className="text-[11px] font-bold" style={{ color: textColor || 'inherit' }}>
           {isEn ? `Choose an avatar (${filteredAvatars.length}):` : `اختر صورة رمزية (${filteredAvatars.length}):`}
@@ -1036,7 +1036,6 @@ const UsernameModal: React.FC<UsernameModalProps> = ({
                 <form onSubmit={handleSaveProfile} className="space-y-3.5">
                   {/* Avatar Section */}
                   <div 
-                    id="onboarding-reg-avatar"
                     className="p-3.5 rounded-2xl flex flex-col items-center justify-center mb-1"
                     style={{
                       backgroundColor: secondaryBg,
@@ -1334,7 +1333,6 @@ const UsernameModal: React.FC<UsernameModalProps> = ({
               <form onSubmit={handleCreateNewAccount} className="space-y-3.5">
                 {/* Avatar Section */}
                 <div 
-                  id="onboarding-reg-avatar"
                   className="p-3.5 rounded-2xl flex flex-col items-center justify-center mb-1"
                   style={{
                     backgroundColor: secondaryBg,
