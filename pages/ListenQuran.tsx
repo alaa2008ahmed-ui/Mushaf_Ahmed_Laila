@@ -220,13 +220,34 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
                 const { savedReciterId, savedSurahNumber, savedContinuousPlay, savedRepeatSurah } = JSON.parse(savedState);
                 if (RECITERS.some(r => r.id === savedReciterId)) setReciterId(savedReciterId);
                 if (SURAH_LIST.some(s => s.number === savedSurahNumber)) setSurahNumber(savedSurahNumber);
-                if (typeof savedContinuousPlay === 'boolean') setIsContinuousPlay(savedContinuousPlay);
-                if (typeof savedRepeatSurah === 'boolean') setIsRepeatSurah(savedRepeatSurah);
+                if (typeof savedRepeatSurah === 'boolean') {
+                    setIsRepeatSurah(savedRepeatSurah);
+                    if (savedRepeatSurah) setIsContinuousPlay(false);
+                }
+                if (typeof savedContinuousPlay === 'boolean' && !savedRepeatSurah) {
+                    setIsContinuousPlay(savedContinuousPlay);
+                }
             }
         } catch (e) {
             console.error("Failed to load state from localStorage", e);
         }
     }, []);
+
+    const handleToggleRepeatSurah = () => {
+        const next = !isRepeatSurah;
+        setIsRepeatSurah(next);
+        if (next) {
+            setIsContinuousPlay(false);
+        }
+    };
+
+    const handleToggleContinuousPlay = () => {
+        const next = !isContinuousPlay;
+        setIsContinuousPlay(next);
+        if (next) {
+            setIsRepeatSurah(false);
+        }
+    };
 
     const handleBack = useCallback(() => {
         if (showReciterModal) { setShowReciterModal(false); }
@@ -752,53 +773,6 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
                         </button>
                     </div>
 
-                    {/* خيارات التحكم السريعة: تكرار نفس السورة والتشغيل المتواصل */}
-                    <div className="flex items-center justify-center gap-2 pt-2 border-t border-gray-200/40 dark:border-gray-700/40">
-                        {/* زر تكرار نفس السورة السريع */}
-                        <button
-                            type="button"
-                            onClick={() => setIsRepeatSurah(prev => !prev)}
-                            className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer border ${isRepeatSurah ? 'shadow-xs scale-[1.02]' : 'opacity-70 hover:opacity-100'}`}
-                            style={{
-                                backgroundColor: isRepeatSurah 
-                                    ? ((themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF25' : '#00000015') : `${theme.palette[0]}25`)
-                                    : 'transparent',
-                                borderColor: isRepeatSurah
-                                    ? ((themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF' : '#000000') : theme.palette[0])
-                                    : 'rgba(150, 150, 150, 0.25)',
-                                color: isRepeatSurah
-                                    ? ((themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF' : '#000000') : theme.palette[0])
-                                    : theme.textColor
-                            }}
-                            title={isRepeatSurah ? tListen('repeatSurahActiveTooltip', language) : tListen('repeatSurahInactiveTooltip', language)}
-                        >
-                            <i className={`fa-solid fa-arrow-rotate-right ${isRepeatSurah ? 'text-emerald-500' : ''}`}></i>
-                            <span>{tListen('repeatSurah', language)} {isRepeatSurah ? '✓' : ''}</span>
-                        </button>
-
-                        {/* زر التشغيل المتواصل السريع */}
-                        <button
-                            type="button"
-                            onClick={() => setIsContinuousPlay(prev => !prev)}
-                            className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer border ${isContinuousPlay ? 'shadow-xs scale-[1.02]' : 'opacity-70 hover:opacity-100'}`}
-                            style={{
-                                backgroundColor: isContinuousPlay 
-                                    ? ((themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF25' : '#00000015') : `${theme.palette[0]}25`)
-                                    : 'transparent',
-                                borderColor: isContinuousPlay
-                                    ? ((themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF' : '#000000') : theme.palette[0])
-                                    : 'rgba(150, 150, 150, 0.25)',
-                                color: isContinuousPlay
-                                    ? ((themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF' : '#000000') : theme.palette[0])
-                                    : theme.textColor
-                            }}
-                            title={isContinuousPlay ? tListen('continuousPlayActiveTooltip', language) : tListen('continuousPlayInactiveTooltip', language)}
-                        >
-                            <i className={`fa-solid fa-forward-step ${isContinuousPlay ? 'text-emerald-500' : ''}`}></i>
-                            <span>{tListen('continuousPlay', language)} {isContinuousPlay ? '✓' : ''}</span>
-                        </button>
-                    </div>
-
                 </div>
 
                 {/* بطاقة مؤقت النوم (Sleep Timer) */}
@@ -1013,7 +987,7 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
                             </label>
                             <button
                                 id="repeat-surah-toggle"
-                                onClick={() => setIsRepeatSurah(prev => !prev)}
+                                onClick={handleToggleRepeatSurah}
                                 className="relative w-12 h-7 rounded-full transition-colors cursor-pointer"
                                 style={{ 
                                     backgroundColor: isRepeatSurah 
@@ -1045,7 +1019,7 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
                             </label>
                             <button
                                 id="continuous-play-toggle"
-                                onClick={() => setIsContinuousPlay(prev => !prev)}
+                                onClick={handleToggleContinuousPlay}
                                 className="relative w-12 h-7 rounded-full transition-colors cursor-pointer"
                                 style={{ 
                                     backgroundColor: isContinuousPlay 

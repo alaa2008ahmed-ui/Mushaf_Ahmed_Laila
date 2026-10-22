@@ -16,13 +16,13 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
     const { language } = useLanguage();
     const isEn = language === 'en';
 
-    const isDefaultTheme = themeKey === 'default' || !themeKey || theme.name?.includes('الافتراضي') || theme.name === 'Default';
+    const isDefaultTheme = themeKey === 'default' || !themeKey || theme.name?.includes('الافتراضي') || theme.name === 'Default' || !!theme.isOriginal;
     const isBlackTheme = theme.bgColor === '#000000' || theme.name === 'أبيض وأسود' || themeKey === 'deep_black';
     const cardBorderColor = isDefaultTheme 
-      ? '#000000' 
-      : (isBlackTheme 
-          ? '#FFFFFF' 
-          : (theme.palette?.[0] || theme.accent || '#000000'));
+        ? '#000000' 
+        : (isBlackTheme 
+            ? 'rgba(255, 255, 255, 0.2)' 
+            : (theme.palette?.[0] + '33' || 'rgba(0, 0, 0, 0.08)'));
 
     const [activeTab, setActiveTab] = useState<'grid' | 'list'>('grid');
     const [searchQuery, setSearchQuery] = useState('');
@@ -257,38 +257,40 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                 </div>
             </header>
 
-            {/* Controls Bar: Switch between Grid and List view + Search */}
-            <div className="px-4 pt-2.5 pb-2 max-w-5xl mx-auto w-full flex items-center justify-between gap-2 z-10 shrink-0">
+            {/* Controls Bar: Switch between Grid and List view + Search - Matches Adia/OthersPage */}
+            <div className="mb-6 px-4 max-w-3xl mx-auto w-full flex items-center gap-2 z-10 shrink-0" dir={isEn ? 'ltr' : 'rtl'}>
                 {/* Search Input */}
-                <div className="relative flex-1">
+                <div 
+                    className="relative flex-1 border-2 rounded-2xl overflow-hidden focus-within:ring-2 transition-all shadow-sm" 
+                    style={{ borderColor: cardBorderColor, ...(isDefaultTheme ? { focusRingColor: '#000'} : { focusRingColor: theme.palette[0]}) }}
+                >
                     <input 
                         type="text"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder={isEn ? "Search by name or meaning..." : "ابحث بالاسم أو المعنى..."}
-                        className={`w-full h-10 rounded-xl text-xs sm:text-sm border focus:outline-none transition-colors ${isEn ? 'pr-8 pl-9' : 'pr-9 pl-8'}`}
-                        style={{
-                            backgroundColor: isBlackTheme ? '#111111' : (theme.isDark ? '#1e293b' : '#ffffff'),
-                            borderColor: cardBorderColor,
-                            color: 'var(--text-color)'
-                        }}
+                        className={`w-full bg-black/5 dark:bg-white/5 py-3 ${isEn ? 'pl-12 pr-10 text-left font-sans' : 'pr-12 pl-10 text-right font-kufi'} focus:outline-none placeholder-gray-500 dark:placeholder-gray-400`}
+                        style={{ color: 'var(--text-color)' }}
                     />
-                    <Search className={`w-4 h-4 absolute top-1/2 -translate-y-1/2 opacity-50 pointer-events-none ${isEn ? 'left-3' : 'right-3'}`} />
+                    <i 
+                        className={`fa-solid fa-search absolute ${isEn ? 'left-4' : 'right-4'} top-1/2 transform -translate-y-1/2 opacity-50`} 
+                        style={{ color: 'var(--text-color)' }}
+                    ></i>
                     {searchQuery && (
                         <button 
                             type="button"
                             onClick={() => setSearchQuery('')}
-                            className={`absolute top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-black/10 dark:bg-white/10 flex items-center justify-center text-xs opacity-70 hover:opacity-100 cursor-pointer ${isEn ? 'right-2.5' : 'left-2.5'}`}
+                            className={`absolute inset-y-0 ${isEn ? 'right-4' : 'left-4'} flex items-center text-gray-400 hover:text-gray-600`}
                             title={isEn ? "Clear search" : "مسح البحث"}
                         >
-                            ×
+                            <i className="fa-solid fa-times text-xs"></i>
                         </button>
                     )}
                 </div>
 
                 {/* View Switcher: Grid vs List */}
                 <div 
-                    className="flex items-center p-1 rounded-xl border shrink-0"
+                    className="flex items-center p-1 rounded-2xl border shrink-0 shadow-sm"
                     style={{
                         backgroundColor: isBlackTheme ? '#111111' : (theme.isDark ? '#1e293b' : '#ffffff'),
                         borderColor: cardBorderColor
@@ -297,26 +299,27 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                     <button
                         type="button"
                         onClick={() => setActiveTab('grid')}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${activeTab === 'grid' ? 'shadow-sm' : 'opacity-60 hover:opacity-100'}`}
+                        className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTab === 'grid' ? 'shadow-sm' : 'opacity-60 hover:opacity-100'}`}
                         style={activeTab === 'grid' ? {
-                            backgroundColor: isBlackTheme ? '#FFFFFF' : theme.palette[0],
+                            backgroundColor: isBlackTheme ? '#FFFFFF' : (isDefaultTheme ? '#000000' : theme.palette[0]),
                             color: isBlackTheme ? '#000000' : '#ffffff'
                         } : { color: 'var(--text-color)' }}
                         title={isEn ? "Grid View" : "عرض شبكي"}
                     >
-                        <LayoutGrid size={15} />
+                        <LayoutGrid size={16} />
                     </button>
                     <button
                         type="button"
                         onClick={() => setActiveTab('list')}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${activeTab === 'list' ? 'shadow-sm' : 'opacity-60 hover:opacity-100'}`}
+                        className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTab === 'list' ? 'shadow-sm' : 'opacity-60 hover:opacity-100'}`}
                         style={activeTab === 'list' ? {
-                            backgroundColor: isBlackTheme ? '#FFFFFF' : theme.palette[0],
+                            backgroundColor: isBlackTheme ? '#FFFFFF' : (isDefaultTheme ? '#000000' : theme.palette[0]),
                             color: isBlackTheme ? '#000000' : '#ffffff'
                         } : { color: 'var(--text-color)' }}
-                        >
-                            <ListFilter size={15} />
-                        </button>
+                        title={isEn ? "List View" : "عرض القوائم"}
+                    >
+                        <ListFilter size={16} />
+                    </button>
                 </div>
             </div>
 
@@ -329,7 +332,7 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                         </div>
                     ) : activeTab === 'grid' ? (
                         /* Grid View */
-                        <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-1.5 sm:gap-2.5 max-w-5xl mx-auto">
+                        <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 max-w-3xl mx-auto">
                             {filteredNames.map((item) => (
                                 <motion.button
                                     key={item.id}
@@ -357,7 +360,7 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                         </div>
                     ) : (
                         /* List View */
-                        <div className="max-w-2xl mx-auto space-y-3.5">
+                        <div className="max-w-3xl mx-auto space-y-4">
                             {filteredNames.map((item) => (
                                 <div
                                     key={item.id}
@@ -379,7 +382,7 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                                         <div 
                                             className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm shadow-xs"
                                             style={
-                                                themeKey === 'default' 
+                                                isDefaultTheme 
                                                 ? { backgroundColor: '#ffffff', color: '#000000', border: '1px solid rgba(0,0,0,0.1)' } 
                                                 : { backgroundImage: `linear-gradient(to bottom right, ${theme.palette[0]}, ${theme.palette[1]})`, color: theme.name === 'اسود' ? '#000000' : '#ffffff' }
                                             }
@@ -407,7 +410,7 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                                     )}
 
                                     <div className="flex justify-between items-center mt-3 pt-2.5 border-t" style={{ borderColor: 'var(--card-border)' }}>
-                                        <span className="text-[11px] font-bold opacity-60" style={{ color: isBlackTheme ? '#FFFFFF' : theme.palette[0] }}>
+                                        <span className="text-[11px] font-bold opacity-60" style={{ color: isBlackTheme ? '#FFFFFF' : (isDefaultTheme ? '#000000' : theme.palette[0]) }}>
                                             {isEn ? 'Beautiful Names of Allah' : 'من أسماء الله الحسنى'}
                                         </span>
                                         {renderActionButtons(item)}

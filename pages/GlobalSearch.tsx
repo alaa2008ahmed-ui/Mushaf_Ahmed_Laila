@@ -102,14 +102,25 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
         loadQuranEnglishTranslation();
     }, []);
 
+    const handleBack = useCallback(() => {
+        if (navParams?.fromSidebar) {
+            onNavigate(navParams?.from || 'quran', { 
+                openSidebar: true, 
+                isWird: navParams?.isWird 
+            });
+        } else {
+            onBack();
+        }
+    }, [navParams, onNavigate, onBack]);
+
     useEffect(() => {
         const interceptor = () => {
-            onBack();
+            handleBack();
             return true;
         };
         const unregister = registerBackInterceptor(interceptor);
         return unregister;
-    }, [onBack]);
+    }, [handleBack]);
 
     useEffect(() => {
         if (Capacitor.isNativePlatform()) {
@@ -1054,7 +1065,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
     };
 
     return (
-        <div className="fixed top-0 left-0 right-0 z-[1500] flex items-center justify-center overflow-hidden" dir={isEn ? "ltr" : "rtl"} onClick={onBack} style={{ backgroundColor: 'rgba(0,0,0,0.5)', height: `${initialHeight}px` }}>
+        <div className="fixed top-0 left-0 right-0 z-[1500] flex items-center justify-center overflow-hidden" dir={isEn ? "ltr" : "rtl"} onClick={handleBack} style={{ backgroundColor: 'rgba(0,0,0,0.5)', height: `${initialHeight}px` }}>
             <div className="w-full h-full max-w-lg overflow-hidden shadow-none relative flex flex-col pointer-events-auto border-[4px]" dir={isEn ? "ltr" : "rtl"} style={{ backgroundColor: theme.bgColor, borderColor: theme.accent || theme.palette[0] }} onClick={e => e.stopPropagation()}>
                 
                 {/* Header */}
@@ -1170,7 +1181,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                 {/* Footer */}
                 <div className="p-3 border-t flex gap-2 shrink-0 z-10" style={{ backgroundColor: theme.bgColor, borderColor: theme.isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }}>
                     <button 
-                        onClick={onBack} 
+                        onClick={handleBack} 
                         className="flex-1 py-4 rounded-xl text-xs font-bold w-full transition-all shadow-md active:scale-95 border-[2px] cursor-pointer"
                         style={{ backgroundColor: theme.btnBg || (theme.text === '#ffffff' ? 'rgba(255,255,255,0.05)' : '#ffffff'), color: theme.btnText || theme.text, borderColor: theme.accent || theme.palette?.[0] || '#000' }}
                     >

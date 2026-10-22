@@ -13,6 +13,8 @@ import Toast from '../components/QuranReader/Toast';
 import { memorizationService, MemorizedRange } from '../services/memorizationService';
 import { getReciterDisplayName } from '../utils/listenQuranTranslations';
 import { useShowNewBadge, markPageAsSeen } from '../utils/badgeManager';
+import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/CommunitySpotlightGuide';
+import { MEMORIZATION_SETUP_STEPS, MEMORIZATION_REVIEW_STEPS } from '../components/Community/communityTourSteps';
 import './QuranReader.css';
 
 export const SURAH_NAMES_EN = [
@@ -77,12 +79,27 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
     const showNewBadge = isNewBadgeEligible && !dismissedLocally;
     const [toast, setToast] = useState<{ show: boolean; message: string }>({ show: false, message: '' });
 
+    // Interactive Spotlight Guides - independent for each tab
+    const [showSetupTour, setShowSetupTour] = useState(() => !getGuideSeen('memorization_setup_tour'));
+    const [showReviewTour, setShowReviewTour] = useState(false);
+
     useEffect(() => {
         if (activeTab === 'review') {
             setDismissedLocally(true);
             markPageAsSeen('memorization_review_tab');
+            if (!getGuideSeen('memorization_review_tour')) {
+                setShowReviewTour(true);
+            }
         }
     }, [activeTab]);
+
+    const handleOpenGuide = () => {
+        if (activeTab === 'setup') {
+            setShowSetupTour(true);
+        } else {
+            setShowReviewTour(true);
+        }
+    };
 
     const showToast = (message: string) => {
         setToast({ show: true, message });
@@ -320,8 +337,18 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                                 </h1>
                             </div>
 
-                            {/* Home / Page Lock icons */}
+                            {/* Guide / Page Lock / Home icons */}
                             <div className={`absolute ${isEn ? 'right-0' : 'left-0'} flex items-center gap-1`}>
+                                <button
+                                    type="button"
+                                    onClick={handleOpenGuide}
+                                    className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                    style={{ color: 'var(--qr-bar-text, var(--top-bar-text, inherit))' }}
+                                    title={isEn ? "Memorization Guide" : "دليل وشرح التحفيظ"}
+                                    aria-label={isEn ? "Memorization Guide" : "دليل وشرح التحفيظ"}
+                                >
+                                    <HelpCircle size={20} />
+                                </button>
                                 <ThemePageLock />
                                 <button
                                     onClick={() => onNavigate('home')}
@@ -338,7 +365,7 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
 
                 <main className="flex-1 overflow-y-auto p-3 space-y-4 hide-scrollbar relative z-10">
                     {/* Tabs */}
-                    <div className="flex p-1 rounded-2xl bg-black/5 border mb-2" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
+                    <div id="memorization-tabs-container" className="flex p-1 rounded-2xl bg-black/5 border mb-2" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                         <button 
                             onClick={() => setActiveTab('setup')}
                             className={`flex-1 py-3.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${activeTab === 'setup' ? 'shadow-md' : 'opacity-60'}`}
@@ -519,7 +546,7 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                             </div>
 
                             {/* Test After Session */}
-                            <div className="flex items-center justify-between p-3 rounded-xl border" style={{ backgroundColor: 'var(--card-bg)', borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
+                            <div id="test-after-session-container" className="flex items-center justify-between p-3 rounded-xl border" style={{ backgroundColor: 'var(--card-bg)', borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                                 <div className="flex items-center gap-2 font-bold text-base" style={{ color: theme.textColor }}>
                                     <CheckSquare size={20} />
                                     <span>{isEn ? 'Test After Session' : 'اختبار بعد الجلسة'}</span>
@@ -547,18 +574,19 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                                         onClick={handleStart}
                                         className={`w-full py-4 rounded-2xl font-bold text-lg shadow-lg transition-all active:scale-95 flex items-center justify-center gap-3 border-b-4 ring-4`}
                                         style={{
-                                            backgroundColor: primaryColor,
-                                            borderColor: (isBlackAndWhite ? '#E5E5E5' : theme.palette[1] || primaryColor),
-                                            color: btnTextColor,
-                                            boxShadow: `0 10px 30px -5px ${primaryColor}80`,
-                                            '--tw-ring-color': `${primaryColor}33`
-                                        } as React.CSSProperties}
+                                             backgroundColor: primaryColor,
+                                             borderColor: (isBlackAndWhite ? '#E5E5E5' : theme.palette[1] || primaryColor),
+                                             color: btnTextColor,
+                                             boxShadow: `0 10px 30px -5px ${primaryColor}80`,
+                                             '--tw-ring-color': `${primaryColor}33`
+                                         } as React.CSSProperties}
                                     >
                                         <Play size={20} fill="currentColor" />
                                         {isEn ? 'Start Memorization Session' : 'ابدأ جلسة التحفيظ'}
                                     </button>
 
                                     <button 
+                                        id="btn-download-reciters"
                                         onClick={() => setShowDownloadModal(true)} 
                                         className="w-full h-12 px-4 flex items-center justify-between transition-all active:scale-[0.98] rounded-2xl border shadow-sm"
                                         style={{ 
@@ -583,7 +611,7 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                     ) : (
                         <div className="space-y-4 animate-fadeIn">
                             {/* Review Stats */}
-                            <div className="grid grid-cols-2 gap-3">
+                            <div id="memorization-review-stats" className="grid grid-cols-2 gap-3">
                                 <div className="p-4 rounded-2xl border text-center shadow-sm" style={{ backgroundColor: 'var(--card-bg)', borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                                     <div className="w-10 h-10 bg-emerald-500/10 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-2">
                                         <Trophy size={20} />
@@ -607,7 +635,7 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                             </div>
 
                             {/* Review List */}
-                            <div className="space-y-3">
+                            <div id="memorization-review-list" className="space-y-3">
                                 <div className="flex items-center justify-between px-1">
                                     <h3 className="font-bold text-base" style={{ color: 'var(--text-color)' }}>
                                         {isEn ? 'Your Memorization Review List' : 'قائمة محفوظاتك للمراجعة'}
@@ -912,6 +940,23 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                 />
             )}
             {toast.show && <Toast show={toast.show} message={toast.message} onClose={() => setToast({ show: false, message: '' })} />}
+
+            {/* Interactive Spotlight Guides */}
+            <CommunitySpotlightGuide
+                guideKey="memorization_setup_tour"
+                steps={MEMORIZATION_SETUP_STEPS}
+                isOpen={showSetupTour && activeTab === 'setup'}
+                onClose={() => setShowSetupTour(false)}
+                isEn={isEn}
+            />
+
+            <CommunitySpotlightGuide
+                guideKey="memorization_review_tour"
+                steps={MEMORIZATION_REVIEW_STEPS}
+                isOpen={showReviewTour && activeTab === 'review'}
+                onClose={() => setShowReviewTour(false)}
+                isEn={isEn}
+            />
         </div>
     );
 };

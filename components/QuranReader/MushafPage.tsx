@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { SAJDAH_LOCATIONS, toArabic, SURAH_INFO, getAyahCountText } from './constants';
+import { SAJDAH_LOCATIONS, toArabic, SURAH_INFO, getAyahCountText, SURAH_NAMES_AR } from './constants';
 import SurahHeader from './SurahHeader';
 
 interface MushafPageProps {
@@ -237,12 +237,12 @@ const MushafPage: React.FC<MushafPageProps> = React.memo(({ pageNum, pageData, h
                     return (
                         <React.Fragment key={id}>
                             {showHeader && ( 
-                                <> 
+                                <div className="surah-header-container-wrapper my-2 sm:my-3 block w-full select-none" onClick={() => onSurahHeaderLongPress && onSurahHeaderLongPress()}> 
                                     <SurahHeader 
                                         surahNumber={ayah.sNum}
-                                        surahName={ayah.sName.replace('سورة', '').trim()}
-                                        surahType={SURAH_INFO[ayah.sNum]?.type}
-                                        ayahCount={SURAH_INFO[ayah.sNum]?.ayahs || 0}
+                                        surahName={ayah.sName ? ayah.sName.replace(/سورة|سُورَةُ|سُورَة/g, '').trim() : (SURAH_NAMES_AR[ayah.sNum - 1] || '')}
+                                        surahType={SURAH_INFO[ayah.sNum]?.type || 'مكية'}
+                                        ayahCount={SURAH_INFO[ayah.sNum]?.ayahs || 7}
                                         currentTheme={currentTheme}
                                         design={settings?.surahHeaderDesign || 1}
                                         onLongPress={onSurahHeaderLongPress}
@@ -250,7 +250,7 @@ const MushafPage: React.FC<MushafPageProps> = React.memo(({ pageNum, pageData, h
                                     {ayah.sNum !== 1 && ayah.sNum !== 9 && (
                                         <div className="bismillah" style={headerStyle}>بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</div>
                                     )} 
-                                 </> 
+                                 </div> 
                             )}
                             <span 
                                 id={id} 

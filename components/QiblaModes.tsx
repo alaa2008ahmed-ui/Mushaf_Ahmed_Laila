@@ -4,6 +4,8 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import SunCalc from 'suncalc';
 import { useLanguage } from '../context/LanguageContext';
+import { InAppPermissionModal } from './InAppPermissionModal';
+import { requestCameraPermission } from '../utils/permissionHelper';
 
 // Fix Leaflet icon issue
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -68,48 +70,53 @@ export const ARQibla = ({ qiblaDirection, heading, isAligned, theme, cardBorderC
     const isEn = language === 'en';
     const videoRef = useRef<HTMLVideoElement>(null);
     const [error, setError] = useState('');
+    const [showCameraPermissionModal, setShowCameraPermissionModal] = useState(false);
     const isDefaultTheme = theme?.key === 'default' || theme?.name === 'الأصلي';
     const isBlackTheme = theme?.bgColor === '#000000' || theme?.name === 'أبيض وأسود';
     const effectiveBorder = cardBorderColor || (isDefaultTheme ? '#000000' : (isBlackTheme ? '#FFFFFF' : (theme?.palette?.[0] || '#000000')));
 
-    useEffect(() => {
-        let stream: MediaStream | null = null;
-        const startCamera = async () => {
-            try {
-                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-                if (videoRef.current) {
-                    videoRef.current.srcObject = stream;
-                    videoRef.current.muted = true;
-                    const startPlay = async () => {
-                        if (!videoRef.current) return;
-                        try {
-                            await videoRef.current.play();
-                        } catch (err: any) {
-                            const isAutoplayError = 
-                                err.name === 'NotAllowedError' || 
-                                (err.message && (
-                                    err.message.includes('user agent') || 
-                                    err.message.includes('platform') || 
-                                    err.message.includes('permission') ||
-                                    err.message.includes('interact')
-                                ));
-
-                            if (err.name !== 'AbortError' && !isAutoplayError) {
-                                console.error('Camera video play failed:', err);
-                            } else if (isAutoplayError) {
-                                console.warn('Camera video autoplay blocked by browser context.');
-                            }
-                        }
-                    };
-                    startPlay();
-                }
-            } catch (err) {
+    const startCamera = async () => {
+        try {
+            setError('');
+            const perm = await requestCameraPermission();
+            if (!perm.granted) {
                 setError(isEn ? 'Unable to access camera. Please grant camera permission.' : 'تعذر الوصول إلى الكاميرا. يرجى منح الصلاحية.');
+                setShowCameraPermissionModal(true);
+                return;
             }
-        };
+
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+            if (videoRef.current) {
+                videoRef.current.srcObject = stream;
+                videoRef.current.muted = true;
+                try {
+                    await videoRef.current.play();
+                } catch (err: any) {
+                    const isAutoplayError = 
+                        err.name === 'NotAllowedError' || 
+                        (err.message && (
+                            err.message.includes('user agent') || 
+                            err.message.includes('platform') || 
+                            err.message.includes('permission') ||
+                            err.message.includes('interact')
+                        ));
+
+                    if (err.name !== 'AbortError' && !isAutoplayError) {
+                        console.error('Camera video play failed:', err);
+                    }
+                }
+            }
+        } catch (err) {
+            setError(isEn ? 'Unable to access camera. Please grant camera permission.' : 'تعذر الوصول إلى الكاميرا. يرجى منح الصلاحية.');
+            setShowCameraPermissionModal(true);
+        }
+    };
+
+    useEffect(() => {
         startCamera();
         return () => {
-            if (stream) {
+            if (videoRef.current && videoRef.current.srcObject) {
+                const stream = videoRef.current.srcObject as MediaStream;
                 stream.getTracks().forEach(track => track.stop());
             }
         };
@@ -120,10 +127,29 @@ export const ARQibla = ({ qiblaDirection, heading, isAligned, theme, cardBorderC
     return (
         <div className="w-full h-full relative rounded-2xl overflow-hidden bg-black flex flex-col items-center justify-center shadow-lg" style={{ borderColor: effectiveBorder, borderWidth: '2px', borderStyle: 'solid' }}>
             {error ? (
-                <p className="text-red-500 p-4 text-center">{error}</p>
+                <div className="p-4 text-center space-y-3 z-10">
+                    <p className="text-red-400 text-xs sm:text-sm font-bold">{error}</p>
+                    <button
+                        type="button"
+                        onClick={() => setShowCameraPermissionModal(true)}
+                        className="px-4 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold shadow-lg active:scale-95 cursor-pointer hover:bg-emerald-700"
+                    >
+                        {isEn ? 'Grant Camera Permission' : 'منح إذن الكاميرا الآن'}
+                    </button>
+                </div>
             ) : (
                 <video ref={videoRef} autoPlay playsInline className="absolute inset-0 w-full h-full object-cover opacity-60" />
             )}
+
+            <InAppPermissionModal
+                isOpen={showCameraPermissionModal}
+                type="camera"
+                onClose={() => setShowCameraPermissionModal(false)}
+                onGranted={() => {
+                    setShowCameraPermissionModal(false);
+                    startCamera();
+                }}
+            />
             
             <div className="relative z-10 flex flex-col items-center justify-center flex-1">
                 <div className="w-64 h-64 rounded-full border-4 flex items-center justify-center transition-all duration-300" 

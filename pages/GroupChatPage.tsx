@@ -6,7 +6,7 @@ import {
   Mic, Volume2, Users, Info, Shield, LogOut, Check, X,
   UserPlus, UserMinus, Search, AlertTriangle, EyeOff, Edit3,
   MessageCircle, UserCheck, Clock, MapPin, Hash, Paperclip, Loader2, Video, FileText,
-  Copy, Mail
+  Copy, Mail, HelpCircle
 } from 'lucide-react';
 import { 
   communityService, 
@@ -17,6 +17,11 @@ import {
   CommunityUser,
   ADMIN_USER_ID 
 } from '../services/communityService';
+import { 
+  CommunitySpotlightGuide, 
+  getGuideSeen 
+} from '../components/Community/CommunitySpotlightGuide';
+import { GROUP_CHAT_STEPS } from '../components/Community/communityTourSteps';
 import { ChatQuranCard, ChatMessageAudioPlayer } from './DirectChatPage';
 import EmojiPicker from '../components/Community/EmojiPicker';
 import QuranVerseModal from '../components/Community/QuranVerseModal';
@@ -24,6 +29,10 @@ import EditGroupModal from '../components/Community/EditGroupModal';
 import { ChatAttachmentView, formatFileSize } from '../components/Community/ChatAttachmentView';
 import { MediaAttachmentPicker } from '../components/Community/MediaAttachmentPicker';
 import { processFileForAttachment } from '../components/Community/mediaPickerUtils';
+import { Capacitor } from '@capacitor/core';
+import { VoiceRecorder } from 'capacitor-voice-recorder';
+import { InAppPermissionModal } from '../components/InAppPermissionModal';
+import { requestMicrophonePermission } from '../utils/permissionHelper';
 import { registerBackInterceptor } from '../hooks/useBackButton';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -70,6 +79,16 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
   const [addMemberSearch, setAddMemberSearch] = useState('');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [playingAudioUrl, setPlayingAudioUrl] = useState<string | null>(null);
+  const [showGroupTour, setShowGroupTour] = useState(() => !getGuideSeen('group_chat_room'));
+
+  const handleGroupTourStepChange = (stepIndex: number) => {
+    const currentStep = GROUP_CHAT_STEPS[stepIndex];
+    if (currentStep && (currentStep.id === 'group_chat_menu_options' || currentStep.id === 'group_chat_menu_admin')) {
+      setShowMenu(true);
+    } else {
+      setShowMenu(false);
+    }
+  };
 
   // Media Attachment state (image, video, file)
   const [showAttachmentPicker, setShowAttachmentPicker] = useState(false);
@@ -88,6 +107,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
   // Voice Recording state
   const [isRecording, setIsRecording] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
+  const [showMicPermissionModal, setShowMicPermissionModal] = useState(false);
   const recordingDurationRef = useRef<number>(0);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -105,6 +125,8 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
     if (!showMenu) return;
 
     const handleGlobalClickOutside = (event: MouseEvent | TouchEvent | PointerEvent) => {
+      // Keep menu open while the group tour is spotlighting the menu steps
+      if (showGroupTour) return;
       const target = event.target as Node;
       // If clicking inside the dropdown menu itself, let the item's onClick handle it
       if (menuDropdownRef.current && menuDropdownRef.current.contains(target)) {
@@ -373,24 +395,126 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
 
   // Handle Voice Recording
   const startRecording = async () => {
+    // 1. Request microphone permission in-app (triggers OS permission prompt directly on screen)
+    const permResult = await requestMicrophonePermission();
+    if (!permResult.granted) {
+      setShowMicPermissionModal(true);
+      return;
+    }
+
+    // 2. Start recording
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      audioChunksRef.current = [];
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data && event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
+      if (Capacitor.isNativePlatform()) {
+        try {
+          const canRecord = await VoiceRecorder.canDeviceVoiceRecord();
+          if (!canRecord.value) {
+            showToast('عفواً، لا يدعم هذا الجهاز تسجيل الصوت حالياً');
+            return;
+          }
+        } catch (e) {
+          console.warn('canDeviceVoiceRecord check ignored:', e);
         }
-      };
 
-      mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-        const durationSecs = recordingDurationRef.current;
-        const reader = new FileReader();
-        reader.onloadend = async () => {
-          const base64Audio = reader.result as string;
+        const startRes = await VoiceRecorder.startRecording();
+        if (startRes.value) {
+          setIsRecording(true);
+          setRecordingDuration(0);
+          recordingDurationRef.current = 0;
+
+          if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+          recordingTimerRef.current = setInterval(() => {
+            setRecordingDuration(prev => {
+              const next = prev + 1;
+              recordingDurationRef.current = next;
+              return next;
+            });
+          }, 1000);
+        } else {
+          setShowMicPermissionModal(true);
+        }
+      } else {
+        // Web / Browser platform fallback
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          showToast('عفواً، تسجيل الصوت غير مدعوم في متصفحك أو هذا الجهاز');
+          return;
+        }
+
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioChunksRef.current = [];
+        const mediaRecorder = new MediaRecorder(stream);
+        mediaRecorderRef.current = mediaRecorder;
+
+        mediaRecorder.ondataavailable = (event) => {
+          if (event.data && event.data.size > 0) {
+            audioChunksRef.current.push(event.data);
+          }
+        };
+
+        mediaRecorder.onstop = async () => {
+          const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+          const durationSecs = recordingDurationRef.current || 1;
+          const reader = new FileReader();
+          reader.onloadend = async () => {
+            const base64Audio = reader.result as string;
+            try {
+              await communityService.sendGroupMessage(
+                groupId,
+                'تسجيل صوتي 🎙️',
+                undefined,
+                base64Audio,
+                durationSecs
+              );
+              loadGroupData();
+              showToast('تم إرسال التسجيل الصوتي بنجاح');
+            } catch (err: any) {
+              showToast(err?.message || 'تعذر إرسال التسجيل الصوتي');
+            }
+          };
+          reader.readAsDataURL(audioBlob);
+
+          stream.getTracks().forEach(track => track.stop());
+        };
+
+        mediaRecorder.start(100);
+        setIsRecording(true);
+        setRecordingDuration(0);
+        recordingDurationRef.current = 0;
+
+        if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+        recordingTimerRef.current = setInterval(() => {
+          setRecordingDuration(prev => {
+            const next = prev + 1;
+            recordingDurationRef.current = next;
+            return next;
+          });
+        }, 1000);
+      }
+    } catch (err) {
+      console.error('Audio recording start error:', err);
+      setShowMicPermissionModal(true);
+    }
+  };
+
+  const stopRecording = async () => {
+    if (!isRecording) return;
+
+    if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+
+    if (Capacitor.isNativePlatform()) {
+      try {
+        const result = await VoiceRecorder.stopRecording();
+        setIsRecording(false);
+
+        if (result.value && result.value.recordDataBase64) {
+          const mimeType = result.value.mimeType || 'audio/aac';
+          const base64Audio = `data:${mimeType};base64,${result.value.recordDataBase64}`;
+          const durationSecs = Math.round((result.value.msDuration || 0) / 1000) || recordingDurationRef.current || 1;
+
+          if (durationSecs < 1 && (!result.value.recordDataBase64 || result.value.recordDataBase64.length < 300)) {
+            showToast('التسجيل قصير جداً');
+            return;
+          }
+
           try {
             await communityService.sendGroupMessage(
               groupId,
@@ -400,53 +524,45 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
               durationSecs
             );
             loadGroupData();
-            showToast('تم إرسال التسجيل الصوتي بنجاح');
+            showToast('تم إرسال التسجيل الصوتي بنجاح 🎙️');
           } catch (err: any) {
             showToast(err?.message || 'تعذر إرسال التسجيل الصوتي');
           }
-        };
-        reader.readAsDataURL(audioBlob);
-
-        stream.getTracks().forEach(track => track.stop());
-      };
-
-      mediaRecorder.start(100);
-      setIsRecording(true);
-      setRecordingDuration(0);
-      recordingDurationRef.current = 0;
-
-      if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
-      recordingTimerRef.current = setInterval(() => {
-        setRecordingDuration(prev => {
-          const next = prev + 1;
-          recordingDurationRef.current = next;
-          return next;
-        });
-      }, 1000);
-    } catch (err) {
-      console.error('Audio recording permission error:', err);
-      showToast('تعذر الوصول إلى الميكروفون، يرجى منح الإذن');
+        } else {
+          showToast('فشل حفظ التسجيل الصوتي');
+        }
+      } catch (err) {
+        console.error('Error stopping native recording:', err);
+        setIsRecording(false);
+        showToast('حدث خطأ أثناء معالجة التسجيل الصوتي');
+      }
+    } else {
+      // Web / Browser MediaRecorder
+      if (mediaRecorderRef.current && isRecording) {
+        mediaRecorderRef.current.stop();
+        setIsRecording(false);
+      }
     }
   };
 
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-      if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
-    }
-  };
+  const cancelRecording = async () => {
+    if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
 
-  const cancelRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
+    if (Capacitor.isNativePlatform()) {
+      try {
+        await VoiceRecorder.stopRecording();
+      } catch (e) {}
+    } else if (mediaRecorderRef.current) {
       if (mediaRecorderRef.current.stream) {
         mediaRecorderRef.current.stream.getTracks().forEach(t => t.stop());
       }
-      setIsRecording(false);
-      if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
-      setRecordingDuration(0);
-      showToast('تم إلغاء التسجيل الصوتي');
     }
+
+    setIsRecording(false);
+    setRecordingDuration(0);
+    recordingDurationRef.current = 0;
+    audioChunksRef.current = [];
+    showToast('تم إلغاء التسجيل الصوتي');
   };
 
   const formatSecs = (s: number) => {
@@ -646,6 +762,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
     >
       {/* Top Header Bar */}
       <div 
+        id="chat-header-bar"
         className="w-full px-3 py-2.5 border-b flex items-center justify-between shadow-xs z-30"
         style={{
           backgroundColor: cardBg,
@@ -701,8 +818,23 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
           </div>
         </div>
 
-        {/* Right Action Icons: Info & More (Delete and Edit are exclusively in the 3-dots menu) */}
+        {/* Right Action Icons: Guide, Info & More */}
         <div className="flex items-center gap-1.5 flex-shrink-0 relative">
+          <button
+            type="button"
+            onClick={() => setShowGroupTour(true)}
+            className="w-9 h-9 rounded-xl flex items-center justify-center border transition-all active:scale-95 cursor-pointer"
+            style={{
+              backgroundColor: secondaryBg,
+              borderColor: cardBorder,
+              color: 'var(--top-bar-text, inherit)'
+            }}
+            title={isEn ? "Group Guide" : "دليل وشرح الحلقة والمجموعة"}
+            aria-label={isEn ? "Group Guide" : "دليل وشرح الحلقة والمجموعة"}
+          >
+            <HelpCircle size={17} />
+          </button>
+
           <button
             type="button"
             onClick={() => setShowInfoModal(true)}
@@ -721,6 +853,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
           <div className="relative" ref={menuContainerRef}>
             <button
               ref={menuButtonRef}
+              id="group-chat-menu-btn"
               type="button"
               onClick={() => setShowMenu(prev => !prev)}
               className="w-9 h-9 rounded-xl flex items-center justify-center border transition-all active:scale-95 cursor-pointer relative z-50"
@@ -747,6 +880,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                   />
                   <motion.div
                     ref={menuDropdownRef}
+                    id="group-chat-menu-dropdown"
                     initial={{ opacity: 0, scale: 0.95, y: -5 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: -5 }}
@@ -916,6 +1050,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
       {/* Messages List Area */}
       <div 
         ref={messagesContainerRef}
+        id="group-chat-messages-area"
         className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3.5 overscroll-contain"
       >
         {/* Welcome Notice Banner */}
@@ -1289,11 +1424,12 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
             )}
           </AnimatePresence>
 
-          <div className="flex items-center gap-1 sm:gap-1.5 w-full max-w-full overflow-hidden">
+          <div id="group-chat-input-row" className="flex items-center gap-1 sm:gap-1.5 w-full max-w-full overflow-hidden">
             {/* Three action buttons clustered tightly with minimal spacing */}
             <div className="flex items-center gap-0 shrink-0">
               {/* Quran Verse Share Button */}
               <button
+                id="chat-btn-verse"
                 type="button"
                 onClick={() => setShowVerseModal(true)}
                 className={`w-7 h-8 sm:w-8 sm:h-8.5 ${isEn ? 'rounded-l-xl rounded-r-none' : 'rounded-r-xl rounded-l-none'} flex items-center justify-center border transition-all active:scale-95 flex-shrink-0 cursor-pointer p-0`}
@@ -1309,6 +1445,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
 
               {/* Paperclip Media Attachment Button */}
               <button
+                id="chat-btn-attach"
                 type="button"
                 onClick={() => setShowAttachmentPicker(true)}
                 className="w-7 h-8 sm:w-8 sm:h-8.5 rounded-none flex items-center justify-center border transition-all active:scale-95 flex-shrink-0 cursor-pointer p-0"
@@ -1324,6 +1461,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
 
               {/* Emoji / Adhkar Picker Button */}
               <button
+                id="chat-btn-emoji"
                 type="button"
                 onClick={() => setShowEmojiPicker(prev => !prev)}
                 className={`w-7 h-8 sm:w-8 sm:h-8.5 ${isEn ? 'rounded-r-xl rounded-l-none' : 'rounded-l-xl rounded-r-none'} flex items-center justify-center border transition-all active:scale-95 flex-shrink-0 cursor-pointer p-0`}
@@ -1341,6 +1479,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
             {/* Text Input */}
             <div className="flex-1 relative min-w-0">
               <input
+                id="chat-input-text"
                 type="text"
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
@@ -1361,34 +1500,36 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
             </div>
 
             {/* Voice Record or Send Button */}
-            {inputText.trim() || stagedAttachment ? (
-              <button
-                type="button"
-                onClick={handleSendMessage}
-                className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl sm:rounded-2xl flex items-center justify-center font-bold text-white shadow-md transition-all active:scale-95 flex-shrink-0 cursor-pointer"
-                style={{
-                  backgroundColor: primaryColor,
-                  color: primaryTextColor
-                }}
-                title={isEn ? "Send" : "إرسال"}
-              >
-                <Send size={16} className={isEn ? "" : "rotate-180"} />
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={startRecording}
-                className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl sm:rounded-2xl flex items-center justify-center border transition-all active:scale-95 flex-shrink-0 cursor-pointer"
-                style={{
-                  backgroundColor: secondaryBg,
-                  borderColor: cardBorder,
-                  color: primaryColor
-                }}
-                title={isEn ? "Record voice message" : "تسجيل رسالة صوتية"}
-              >
-                <Mic size={16} />
-              </button>
-            )}
+            <div id="chat-btn-voice-send" className="shrink-0 flex items-center">
+              {inputText.trim() || stagedAttachment ? (
+                <button
+                  type="button"
+                  onClick={handleSendMessage}
+                  className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl sm:rounded-2xl flex items-center justify-center font-bold text-white shadow-md transition-all active:scale-95 flex-shrink-0 cursor-pointer"
+                  style={{
+                    backgroundColor: primaryColor,
+                    color: primaryTextColor
+                  }}
+                  title={isEn ? "Send" : "إرسال"}
+                >
+                  <Send size={16} className={isEn ? "" : "rotate-180"} />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={startRecording}
+                  className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl sm:rounded-2xl flex items-center justify-center border transition-all active:scale-95 flex-shrink-0 cursor-pointer"
+                  style={{
+                    backgroundColor: secondaryBg,
+                    borderColor: cardBorder,
+                    color: primaryColor
+                  }}
+                  title={isEn ? "Record voice message" : "تسجيل رسالة صوتية"}
+                >
+                  <Mic size={16} />
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -2161,6 +2302,17 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
         </div>
       )}
 
+      {/* In-App Microphone Permission Modal */}
+      <InAppPermissionModal
+        isOpen={showMicPermissionModal}
+        type="microphone"
+        onClose={() => setShowMicPermissionModal(false)}
+        onGranted={() => {
+          setShowMicPermissionModal(false);
+          startRecording();
+        }}
+      />
+
       {/* Toast Notification */}
       <AnimatePresence>
         {toastMessage && (
@@ -2175,6 +2327,19 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Interactive Group Chat Spotlight Tour */}
+      <CommunitySpotlightGuide
+        guideKey="group_chat_room"
+        steps={GROUP_CHAT_STEPS}
+        isOpen={showGroupTour}
+        onStepChange={handleGroupTourStepChange}
+        onClose={() => {
+          setShowGroupTour(false);
+          setShowMenu(false);
+        }}
+        isEn={isEn}
+      />
     </div>
   );
 };

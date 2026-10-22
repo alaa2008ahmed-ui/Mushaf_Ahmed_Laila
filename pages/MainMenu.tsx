@@ -12,7 +12,7 @@ import VerseSection from '../components/MainMenu/VerseSection';
 import TitleSection from '../components/MainMenu/TitleSection';
 import GridSection from '../components/MainMenu/GridSection';
 import VerseContextMenu from '../components/MainMenu/VerseContextMenu';
-import { Palette, Globe, HelpCircle } from 'lucide-react';
+import { Palette } from 'lucide-react';
 import { useVoiceControl } from '../context/VoiceControlContext';
 import { usePrayerTimes } from '../context/PrayerTimesContext';
 import { prayerNamesAr } from '../data/prayerTimesData';
@@ -49,18 +49,39 @@ const GREGORIAN_MONTHS = ["يناير", "فبراير", "مارس", "أبريل"
 const APP_SHARE_TEXT_EN = `🕋✨ Major Update: "Mushaf Ahmed & Laila"! ✨🕋
 (Your Comprehensive Faith Companion — Offline & 100% Ad-Free)
 
-We are delighted to present an exceptional, fully refined release crafted for seamless, beautiful, and swift spiritual daily routines:
+We are delighted to present an exceptional and brand-new release, completely redesigned across all pages and user interface for smoother, faster, and more beautiful experience, featuring exclusive new faith tools:
 
-🚀 Key Features in this Edition:
-📜 Prophetic Seerah: Inspiring interactive timeline of the Prophet's life ﷺ with detailed historical stations and expeditions.
-🏆 Ahl Al-Quran: Live recitation statistics and leaderboard honouring Quran readers.
-💬 Faith Community: Brotherhood discussions, verified Islamic quotes, and daily reflections.
-🕋 Tawaf & Sa'i Counter: Live circuit tracker with authentic supplications.
-📊 Habit Tracker: Comprehensive tracker for daily obligatory & sunnah prayers and adhkar.
-⭐ Fortress of the Muslim (Hisn Al-Muslim), Tajweed Rules, Audio Quran, and more.
+🚀 Key Highlights in this Major Update:
 
-Explore & Share:
-https://mushaf-ahmed-laila.vercel.app/`;
+🌍 Full Arabic & English Bilingual Support:
+A seamless bilingual experience with full Arabic and English language support across all app sections and interfaces.
+
+📜 Prophetic Seerah (New):
+An inspiring and interactive journey through the life of the Prophet ﷺ with a detailed timeline of key milestones and events.
+
+🏆 Ahl Al-Quran (New):
+Honor board and virtuous competition to track recitation statistics and celebrate Quran readers monthly and cumulatively.
+
+💬 Community Hub (New):
+Spiritual brotherly connection, sharing wisdom and reflections, and purposeful group discussions.
+
+🛡️ Comprehensive Ruqyah (New):
+Complete authentic Ruqyah Shariah from the Holy Quran and Prophetic Sunnah for protection and peace of mind.
+
+🌐 Islamic Platforms & Directory (New):
+Integrated interactive guide to trusted Islamic platforms for Fatwa, Quranic studies, and Islamic knowledge.
+
+🎨 Complete Interface & Design Overhaul:
+Fresh modern design for all pages to elevate reading experience, typography, themes, and navigation speed.
+
+🌟 Alongside Your Favorite Core Features:
+(Complete Holy Quran with multiple recitations & exegesis • Fortress of the Muslim (Hisn Al-Muslim) & Daily Adhkar • Accurate Prayer Times & Qibla • Daily Recitation Wird & Memorization • Smart Voice Control • Habit Tracker • Zakat & Inheritance Calculators • An-Nawawi's Forty Hadiths).
+
+📥 Download or update for free on Google Play:
+👉 https://play.google.com/store/apps/details?id=com.AhmedLaila.Quran
+
+🤍 Share with your family and loved ones..
+"The one who guides to good is like the one who does it." 🤲🌱`;
 
 const APP_SHARE_TEXT = `🕋✨ التحديث الأكبر لتطبيق "مصحف أحمد وليلى"! ✨🕋
 (رفيقك الإيماني الشامل — يعمل بدون إنترنت وبدون إعلانات)
@@ -69,19 +90,22 @@ const APP_SHARE_TEXT = `🕋✨ التحديث الأكبر لتطبيق "مصح
 
 🚀 أبرز ما تم إضافته وتطويره في هذا التحديث:
 
+🌍 دعم اللغتين العربية والإنجليزية بالكامل:
+تجربة متكاملة تدعم اللغتين العربية والإنجليزية بشكل كامل لكافة أقسام وواجهات التطبيق ومحتواه.
+
 📜 صفحة السيرة النبوية (جديد):
 رحلة ملهمة وتفاعلية في سيرة خير الأنام ﷺ عبر خط زمني مفصل يوثق أهم المحطات والغزوات والأحداث النبوية الشريفة بأسلوب عصري وميسر.
 
-🏆 صفحة أهل القرآن:
+🏆 صفحة أهل القرآن (جديد):
 لوحة المتصدرين وتنافس إيماني مبارك؛ لمتابعة إحصائيات تلاوتك وتكريم قرّاء القرآن الكريم شهرياً وتراكمياً.
 
-💬 صفحة مجتمع التواصل:
+💬 صفحة مجتمع التواصل (جديد):
 ملتقى إيماني للتواصل الأخوي، ونشر الفوائد والخواطر، ومجموعات النقاش الهادف والتواصي بالحق.
 
-🛡️ صفحة الرقية الشرعية:
+🛡️ صفحة الرقية الشرعية (جديد):
 رقية شرعية كاملة وشاملة وميسرة من القرآن الكريم والسنة النبوية للتحصين والشفاء والسكينة.
 
-🌐 صفحة مواقع ومنصات إسلامية:
+🌐 صفحة مواقع ومنصات إسلامية (جديد):
 دليل تفاعلي متكامل لأوثق المواقع الإسلامية للفتوى والبحث الشرعي وعلوم القرآن.
 
 🎨 تحديث شامل للواجهة ولكافة الصفحات:
@@ -188,6 +212,8 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
   });
   const { theme, themeKey } = useTheme();
   const isBlackTheme = themeKey === 'deep_black' || theme.bgColor === '#000000' || theme.name === 'اسود' || theme.name === 'black';
+  const isDarkTheme = isBlackTheme || theme.isDark || theme.bgColor === '#000000' || (theme.textColor && theme.textColor.toLowerCase() === '#ffffff');
+  const quickMenuIconBorderColor = isDarkTheme ? '#FFFFFF' : '#000000';
   const cardHeaderColor = isBlackTheme ? '#FFFFFF' : theme.palette[0];
   const cardBorderColor = isBlackTheme ? '#FFFFFF' : theme.palette[0];
   const cardButtonColor = isBlackTheme ? '#000000' : theme.palette[0];
@@ -289,12 +315,8 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
   useEffect(() => {
     const handleResize = () => {
       setIsLandscape(window.innerWidth > window.innerHeight);
-      const guideBtn = document.getElementById('guide-help-btn');
       const themesBtn = document.getElementById('themes-btn');
-      if (guideBtn) {
-        const gRect = guideBtn.getBoundingClientRect();
-        if (gRect.height > 0) buttonThresholdRef.current = gRect.bottom + 6;
-      } else if (themesBtn) {
+      if (themesBtn) {
         const tRect = themesBtn.getBoundingClientRect();
         if (tRect.height > 0) buttonThresholdRef.current = tRect.bottom + 32;
       }
@@ -759,7 +781,7 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
         </svg>
       </button>
 
-      {/* القائمة المنسدلة الرأسية بالثلاث أزرار تحت بعض */}
+      {/* القائمة المنسدلة الرأسية بالثلاث أزرار تحت بعض داخل إطار موحد يتغير لونه مع الثيم وبدون إطار حول كل زر منفصل */}
       <AnimatePresence>
         {isQuickMenuOpen && !isThemesSidebarOpen && (
           <motion.div
@@ -767,14 +789,18 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.85, y: -6 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
-            className={`absolute top-full mt-2 ${dir === 'ltr' ? 'left-0' : 'right-0'} z-[1150] flex flex-col items-center gap-2 p-1.5 rounded-2xl shadow-2xl border backdrop-blur-xl`}
-              style={{
-                backgroundColor: isBlackTheme ? 'rgba(20, 20, 20, 0.96)' : (theme.isDark ? 'rgba(30, 30, 30, 0.96)' : 'rgba(255, 255, 255, 0.97)'),
-                borderColor: isBlackTheme ? 'rgba(255, 255, 255, 0.2)' : (theme.isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.1)'),
-                boxShadow: isBlackTheme ? '0 12px 36px rgba(0,0,0,0.85)' : '0 12px 36px rgba(0,0,0,0.16)'
-              }}
-              onClick={(e) => e.stopPropagation()}
-            >
+            className={`absolute top-full mt-2 ${dir === 'ltr' ? 'left-0' : 'right-0'} z-[1150] flex flex-col items-center gap-1.5 p-1 rounded-full shadow-lg backdrop-blur-md`}
+            style={{
+              backgroundColor: isBlackTheme
+                ? 'rgba(15, 23, 42, 0.92)'
+                : (isDarkTheme ? 'rgba(30, 41, 59, 0.92)' : (theme.cardBg || 'rgba(255, 255, 255, 0.95)')),
+              border: `2px solid ${isBlackTheme ? '#FFFFFF' : (theme.accent || theme.palette?.[0] || '#10b981')}`,
+              boxShadow: isDarkTheme
+                ? '0 6px 20px rgba(0, 0, 0, 0.6)'
+                : '0 6px 20px rgba(0, 0, 0, 0.15)'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
               {/* 1. زر الثيمات */}
               <button
                 type="button"
@@ -783,10 +809,10 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
                   setIsQuickMenuOpen(false);
                   setIsThemesSidebarOpen(true);
                 }}
-                className="w-9 h-9 rounded-full flex items-center justify-center transition-all duration-150 active:scale-90 hover:scale-110 cursor-pointer shadow-sm select-none"
+                className="w-9 h-9 rounded-full flex items-center justify-center transition-all duration-150 active:scale-90 hover:scale-110 cursor-pointer select-none"
                 style={{ 
-                  backgroundColor: (isBlackTheme || theme.isDark) ? 'rgba(255,255,255,0.18)' : `${theme.palette[0]}18`,
-                  color: (isBlackTheme || theme.isDark) ? '#FFFFFF' : (theme.accent || theme.palette[0])
+                  backgroundColor: isDarkTheme ? 'rgba(255,255,255,0.15)' : `${theme.palette?.[0] || '#10b981'}18`,
+                  color: isDarkTheme ? '#FFFFFF' : (theme.accent || theme.palette?.[0] || '#10b981')
                 }}
                 title={language === 'en' ? 'Themes' : 'الثيمات والمظهر'}
                 aria-label={language === 'en' ? 'Themes' : 'الثيمات والمظهر'}
@@ -802,10 +828,10 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
                   toggleLanguage();
                   setIsQuickMenuOpen(false);
                 }}
-                className="w-9 h-9 rounded-full flex items-center justify-center transition-all duration-150 active:scale-90 hover:scale-110 cursor-pointer shadow-sm select-none"
+                className="w-9 h-9 rounded-full flex items-center justify-center transition-all duration-150 active:scale-90 hover:scale-110 cursor-pointer select-none"
                 style={{ 
-                  backgroundColor: (isBlackTheme || theme.isDark) ? 'rgba(255,255,255,0.18)' : `${theme.palette[0]}18`,
-                  color: (isBlackTheme || theme.isDark) ? '#FFFFFF' : (theme.accent || theme.palette[0])
+                  backgroundColor: isDarkTheme ? 'rgba(255,255,255,0.15)' : `${theme.palette?.[0] || '#10b981'}18`,
+                  color: isDarkTheme ? '#FFFFFF' : (theme.accent || theme.palette?.[0] || '#10b981')
                 }}
                 title={language === 'ar' ? 'English' : 'اللغة العربية'}
                 aria-label={language === 'ar' ? 'English' : 'اللغة العربية'}
@@ -813,25 +839,6 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
                 <span className="text-xs font-bold font-mono pointer-events-none">
                   {language === 'ar' ? 'En' : 'Ar'}
                 </span>
-              </button>
-
-              {/* 3. زر دليل الصفحات */}
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsQuickMenuOpen(false);
-                  onNavigate('page-guide');
-                }}
-                className="w-9 h-9 rounded-full flex items-center justify-center transition-all duration-150 active:scale-90 hover:scale-110 cursor-pointer shadow-sm select-none"
-                style={{ 
-                  backgroundColor: (isBlackTheme || theme.isDark) ? 'rgba(255,255,255,0.18)' : `${theme.palette[0]}18`,
-                  color: (isBlackTheme || theme.isDark) ? '#FFFFFF' : (theme.accent || theme.palette[0])
-                }}
-                title={language === 'en' ? 'Pages Guide' : 'دليل صفحات التطبيق'}
-                aria-label={language === 'en' ? 'Pages Guide' : 'دليل صفحات التطبيق'}
-              >
-                <HelpCircle className="w-[18px] h-[18px] pointer-events-none" />
               </button>
             </motion.div>
         )}
@@ -867,17 +874,10 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
             const quranRowEl = document.getElementById('menu-item-quran') || document.querySelector('[data-item-id="quran"]') || document.getElementById('grid-section');
             if (quranRowEl) {
               const rect = quranRowEl.getBoundingClientRect();
-              const guideBtn = document.getElementById('guide-help-btn');
-              const themesBtn = document.getElementById('themes-btn');
-
               // حفظ موقع الأزرار قبل الاختفاء لتفادي تأثر القياس بالتصغير scale-0
+              const themesBtn = document.getElementById('themes-btn');
               if (!hideIconsOnScroll) {
-                if (guideBtn) {
-                  const gRect = guideBtn.getBoundingClientRect();
-                  if (gRect.height > 0) {
-                    buttonThresholdRef.current = gRect.bottom + 6;
-                  }
-                } else if (themesBtn) {
+                if (themesBtn) {
                   const tRect = themesBtn.getBoundingClientRect();
                   if (tRect.height > 0) {
                     buttonThresholdRef.current = tRect.bottom + 32;

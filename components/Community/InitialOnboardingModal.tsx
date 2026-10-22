@@ -1,10 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { motion } from 'motion/react';
-import { User, Lock, Globe, Check, Eye, EyeOff, Loader2, LogIn, UserPlus } from 'lucide-react';
-import { communityService } from '../../services/communityService';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTheme } from '../../context/ThemeContext';
-import { formatCountryName } from './communityLanguageUtils';
 
 interface InitialOnboardingModalProps {
   isOpen: boolean;
@@ -12,521 +9,181 @@ interface InitialOnboardingModalProps {
   onNavigate: (pageId: string) => void;
 }
 
-const COUNTRIES = [
-  'السعودية 🇸🇦',
-  'مصر 🇪🇬',
-  'الإمارات 🇦🇪',
-  'الكويت 🇰🇼',
-  'قطر 🇶🇦',
-  'عُمان 🇴🇲',
-  'البحرين 🇧🇭',
-  'الأردن 🇯🇴',
-  'فلسطين 🇵🇸',
-  'العراق 🇮🇶',
-  'سوريا 🇸🇾',
-  'لبنان 🇱🇧',
-  'اليمن 🇾🇪',
-  'المغرب 🇲🇦',
-  'الجزائر 🇩🇿',
-  'تونس 🇹🇳',
-  'ليبيا 🇱🇾',
-  'السودان 🇸🇩',
-  'موريتانيا 🇲🇷',
-  'الصومال 🇸🇴',
-  'جيبوتي 🇩🇯',
-  'جزر القمر 🇰🇲',
-  'تركيا 🇹🇷',
-  'إندونيسيا 🇮🇩',
-  'ماليزيا 🇲🇾',
-  'باكستان 🇵🇰',
-  'بنغلاديش 🇧🇩',
-  'المملكة المتحدة 🇬🇧',
-  'الولايات المتحدة 🇺🇸',
-  'فرنسا 🇫🇷',
-  'ألمانيا 🇩🇪',
-  'كندا 🇨🇦',
-  'دولة أخرى 🌍'
-];
-
 export const InitialOnboardingModal: React.FC<InitialOnboardingModalProps> = ({
   isOpen,
   onClose,
   onNavigate
 }) => {
-  const { language, setLanguage } = useLanguage();
+  const { setLanguage } = useLanguage();
   const { theme, themeKey } = useTheme();
   const isBlackTheme = themeKey === 'deep_black' || theme?.bgColor === '#000000';
 
-  // Modal active language - initialized from language context
-  const [modalLang, setModalLang] = useState<'ar' | 'en'>(() => language || 'ar');
-  const isEn = modalLang === 'en';
-
-  // Synchronize with external language context updates if any
-  useEffect(() => {
-    if (language) {
-      setModalLang(language);
-    }
-  }, [language]);
-
-  // Active tab: 'register' or 'restore'
-  const [activeTab, setActiveTab] = useState<'register' | 'restore'>('register');
-
-  // Register form state
-  const [regUsername, setRegUsername] = useState('');
-  const [regCountry, setRegCountry] = useState('مصر 🇪🇬');
-  const [regPasscode, setRegPasscode] = useState('');
-  const [showRegPasscode, setShowRegPasscode] = useState(false);
-
-  // Restore form state (Country selection removed as requested)
-  const [restoreUsername, setRestoreUsername] = useState('');
-  const [restorePasscode, setRestorePasscode] = useState('');
-  const [showRestorePasscode, setShowRestorePasscode] = useState(false);
-
-  // UI state
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-
   if (!isOpen) return null;
 
-  // Language switcher handler
-  const handleLanguageChange = (lang: 'ar' | 'en') => {
-    setModalLang(lang);
-    setLanguage(lang);
-    setError('');
-  };
-
-  // Handle Cancel action:
-  // Shows modal once more on next app launch, but never after 2 cancels or if registered
-  const handleCancel = () => {
+  const handleSelectLanguage = (lang: 'ar' | 'en') => {
     try {
-      const currentCancelCount = parseInt(localStorage.getItem('initial_onboarding_cancel_count') || '0', 10);
-      const newCancelCount = currentCancelCount + 1;
-      localStorage.setItem('initial_onboarding_cancel_count', newCancelCount.toString());
-      if (newCancelCount >= 2) {
-        // User has cancelled twice (initial time + the 1 additional time), so mark permanently completed
-        localStorage.setItem('initial_community_onboarding_completed', 'true');
-      }
+      setLanguage(lang);
+      localStorage.setItem('initial_community_onboarding_completed', 'true');
     } catch (e) {}
-
     onClose();
     onNavigate('home');
   };
 
-  // Handle Register action
-  const handleRegister = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    const username = regUsername.trim();
-    const passcode = regPasscode.trim();
-
-    if (!username) {
-      setError(isEn ? 'Please enter your username.' : 'يرجى كتابة اسم المستخدم.');
-      return;
-    }
-    if (username.length < 2) {
-      setError(isEn ? 'Username must be at least 2 characters.' : 'يجب أن يكون اسم المستخدم حرفين على الأقل.');
-      return;
-    }
-    if (!passcode) {
-      setError(isEn ? 'Please enter a PIN / Password.' : 'يرجى كتابة الرقم السري.');
-      return;
-    }
-    if (passcode.length < 4) {
-      setError(isEn ? 'Password/PIN must be at least 4 digits/characters.' : 'يجب أن يتكون الرقم السري من 4 خانات على الأقل.');
-      return;
-    }
-
-    setLoading(true);
-    setError('');
-
-    try {
-      await communityService.createNewAccount(
-        username,
-        regCountry || 'دولة أخرى 🌍',
-        '',
-        '',
-        passcode
-      );
-
-      try {
-        localStorage.setItem('initial_community_onboarding_completed', 'true');
-      } catch (e) {}
-
-      // Keep chosen language active
-      setLanguage(modalLang);
-      onClose();
-      onNavigate('home');
-    } catch (err: any) {
-      console.error('Registration failed:', err);
-      setError(err?.message || (isEn ? 'Failed to create account. Please try again.' : 'تعذر إنشاء الحساب، يرجى المحاولة مرة أخرى.'));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Handle Restore action (country not needed, verified via username/code + passcode)
-  const handleRestore = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    const username = restoreUsername.trim();
-    const passcode = restorePasscode.trim();
-
-    if (!username) {
-      setError(isEn ? 'Please enter your username or account code.' : 'يرجى إدخال اسم المستخدم أو كود الحساب.');
-      return;
-    }
-    if (!passcode) {
-      setError(isEn ? 'Please enter your password / PIN.' : 'يرجى كتابة الرقم السري.');
-      return;
-    }
-
-    setLoading(true);
-    setError('');
-
-    try {
-      await communityService.restoreAccount(
-        username,
-        passcode
-      );
-
-      try {
-        localStorage.setItem('initial_community_onboarding_completed', 'true');
-      } catch (e) {}
-
-      // Keep chosen language active
-      setLanguage(modalLang);
-      onClose();
-      onNavigate('home');
-    } catch (err: any) {
-      console.error('Restore failed:', err);
-      setError(err?.message || (isEn ? 'Account not found or invalid PIN.' : 'تعذر استعادة الحساب، تأكد من صحة البيانات.'));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const primaryAccent = isBlackTheme ? '#FFFFFF' : (theme.palette?.[0] || '#10b981');
-  const cardBg = isBlackTheme ? '#111111' : (theme.cardBg || '#ffffff');
-  const textColor = isBlackTheme ? '#ffffff' : (theme.textColor || '#1f2937');
-  const inputBg = isBlackTheme ? '#1e1e1e' : 'rgba(0, 0, 0, 0.04)';
-  const borderColor = isBlackTheme ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.12)';
+  const bgColor = isBlackTheme ? '#0b111e' : '#ffffff';
+  const textColor = isBlackTheme ? '#ffffff' : '#1f2937';
+  const primaryBrandColor = isBlackTheme ? '#10b981' : (theme?.palette?.[0] || '#059669');
 
   return (
     <div 
-      className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/75 backdrop-blur-md overflow-y-auto animate-fadeIn"
-      dir={isEn ? 'ltr' : 'rtl'}
+      className="fixed inset-0 z-[1400] flex flex-col justify-between items-center overflow-hidden select-none"
+      style={{ backgroundColor: bgColor, color: textColor }}
+      dir="rtl"
     >
-      <motion.div 
-        initial={{ scale: 0.9, opacity: 0, y: 15 }}
-        animate={{ scale: 1, opacity: 1, y: 0 }}
-        exit={{ scale: 0.9, opacity: 0, y: 15 }}
-        transition={{ type: 'spring', damping: 25, stiffness: 350 }}
-        className="relative w-full max-w-sm rounded-[2rem] p-5 sm:p-6 shadow-2xl border flex flex-col my-auto"
-        style={{ 
-          backgroundColor: cardBg,
-          color: textColor,
-          borderColor: borderColor
-        }}
-        onClick={(e) => e.stopPropagation()}
+      {/* خلفية الزخارف الهندسية الإسلامية الهادئة والفخمة */}
+      <svg 
+        className="absolute inset-0 w-full h-full pointer-events-none opacity-[0.035] dark:opacity-[0.045] text-emerald-900 dark:text-emerald-100" 
+        xmlns="http://www.w3.org/2000/svg"
       >
-        {/* Header: App Name */}
-        <div className="text-center mb-3">
-          <h2 className="text-xl sm:text-2xl font-black font-kufi tracking-tight mb-1" style={{ color: primaryAccent }}>
-            {isEn ? 'Mushaf Ahmed & Layla' : 'مصحف أحمد وليلى'}
-          </h2>
-          <p className="text-[11px] font-bold opacity-70">
-            {isEn ? 'Faith Community Registration' : 'التسجيل في مجتمع التواصل'}
-          </p>
-        </div>
+        <defs>
+          <pattern id="islamic-splash-pattern" width="80" height="80" patternUnits="userSpaceOnUse">
+            {/* زخرفة النجمة الثمانية والخطوط الهندسية المتشابكة */}
+            <path 
+              d="M40 8 L48 24 L64 16 L56 32 L72 40 L56 48 L64 64 L48 56 L40 72 L32 56 L16 64 L24 48 L8 40 L24 32 L16 16 L32 24 Z" 
+              fill="none" 
+              stroke="currentColor" 
+              strokeWidth="1.2" 
+            />
+            <circle cx="40" cy="40" r="10" fill="none" stroke="currentColor" strokeWidth="1" />
+            <circle cx="40" cy="40" r="28" fill="none" stroke="currentColor" strokeWidth="0.8" strokeDasharray="3,3" />
+            <path d="M0 0 L20 20 M80 0 L60 20 M80 80 L60 60 M0 80 L20 60" stroke="currentColor" strokeWidth="1" />
+            <rect x="0.5" y="0.5" width="79" height="79" fill="none" stroke="currentColor" strokeWidth="0.6" strokeDasharray="2,4" />
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#islamic-splash-pattern)" />
+      </svg>
 
-        {/* Language Selection Buttons under App Name */}
-        <div className="flex items-center justify-center gap-2 mb-4 p-1 rounded-2xl bg-black/5 dark:bg-white/10 border border-black/10 dark:border-white/15">
-          <button
-            type="button"
-            onClick={() => handleLanguageChange('ar')}
-            className={`flex-1 py-1.5 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-              !isEn 
-                ? 'shadow-md scale-100' 
-                : 'opacity-70 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/5'
-            }`}
-            style={{
-              backgroundColor: !isEn ? (isBlackTheme ? '#FFFFFF' : primaryAccent) : 'transparent',
-              color: !isEn ? (isBlackTheme ? '#000000' : '#FFFFFF') : undefined
-            }}
-          >
-            {!isEn && <Check size={14} className="stroke-[3]" />}
-            <span>العربية</span>
-          </button>
+      {/* توهج هادئ خفيف في أعلى وخلفية الشاشة */}
+      <div 
+        className="absolute top-0 left-1/2 -translate-x-1/2 w-[340px] sm:w-[480px] h-[340px] rounded-full blur-3xl pointer-events-none -z-10 opacity-25"
+        style={{
+          background: isBlackTheme 
+            ? 'radial-gradient(circle, rgba(16,185,129,0.18) 0%, transparent 70%)' 
+            : 'radial-gradient(circle, rgba(5,150,105,0.15) 0%, transparent 70%)'
+        }}
+      />
 
-          <button
-            type="button"
-            onClick={() => handleLanguageChange('en')}
-            className={`flex-1 py-1.5 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-              isEn 
-                ? 'shadow-md scale-100' 
-                : 'opacity-70 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/5'
-            }`}
-            style={{
-              backgroundColor: isEn ? (isBlackTheme ? '#FFFFFF' : primaryAccent) : 'transparent',
-              color: isEn ? (isBlackTheme ? '#000000' : '#FFFFFF') : undefined
-            }}
-          >
-            {isEn && <Check size={14} className="stroke-[3]" />}
-            <span>English</span>
-          </button>
-        </div>
+      {/* الرأس: فراغ متناسق للتوسيط */}
+      <div className="w-full pt-8 sm:pt-12 px-6 flex justify-center items-center relative z-10">
+        <p className="text-xs sm:text-sm font-amiri tracking-widest text-emerald-800/60 dark:text-emerald-400/60">
+          بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
+        </p>
+      </div>
 
-        {/* Tabs: Register / Restore */}
-        <div className="grid grid-cols-2 gap-1 mb-4 border-b border-black/10 dark:border-white/10 pb-2">
-          <button
-            type="button"
-            onClick={() => { setActiveTab('register'); setError(''); }}
-            className={`py-2 text-xs sm:text-sm font-black flex items-center justify-center gap-1.5 border-b-2 transition-all cursor-pointer ${
-              activeTab === 'register' 
-                ? 'border-emerald-500' 
-                : 'border-transparent opacity-60 hover:opacity-100'
-            }`}
+      {/* المحتوى الرئيسي المركزي: الشعار البارز والعناوين */}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: 'easeOut' }}
+        className="w-full max-w-sm sm:max-w-md px-6 flex flex-col items-center text-center relative z-10"
+      >
+        {/* إطار الشعار البارز الكبير لتعزيز الهوية البصرية */}
+        <div className="relative mb-6">
+          <div 
+            className="w-28 h-28 sm:w-36 sm:h-36 rounded-3xl p-1.5 flex items-center justify-center shadow-2xl transition-transform duration-300 hover:scale-105"
             style={{ 
-              borderColor: activeTab === 'register' ? primaryAccent : 'transparent',
-              color: activeTab === 'register' ? primaryAccent : undefined
+              background: isBlackTheme 
+                ? 'linear-gradient(135deg, rgba(16,185,129,0.25) 0%, rgba(255,255,255,0.05) 100%)' 
+                : 'linear-gradient(135deg, rgba(5,150,105,0.18) 0%, rgba(243,244,246,0.9) 100%)',
+              border: isBlackTheme 
+                ? '2px solid rgba(16,185,129,0.35)' 
+                : '2px solid rgba(5,150,105,0.25)',
+              boxShadow: isBlackTheme
+                ? '0 20px 40px -15px rgba(0,0,0,0.7), 0 0 25px rgba(16,185,129,0.15)'
+                : '0 20px 40px -15px rgba(5,150,105,0.2), 0 4px 15px rgba(0,0,0,0.06)'
             }}
           >
-            <UserPlus size={15} />
-            <span>{isEn ? 'Register' : 'تسجيل جديد'}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => { setActiveTab('restore'); setError(''); }}
-            className={`py-2 text-xs sm:text-sm font-black flex items-center justify-center gap-1.5 border-b-2 transition-all cursor-pointer ${
-              activeTab === 'restore' 
-                ? 'border-emerald-500' 
-                : 'border-transparent opacity-60 hover:opacity-100'
-            }`}
-            style={{ 
-              borderColor: activeTab === 'restore' ? primaryAccent : 'transparent',
-              color: activeTab === 'restore' ? primaryAccent : undefined
-            }}
-          >
-            <LogIn size={15} />
-            <span>{isEn ? 'Restore Account' : 'استعادة الحساب'}</span>
-          </button>
-        </div>
-
-        {/* Error message */}
-        {error && (
-          <div className="mb-3 p-2.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 text-xs font-bold text-center animate-shake">
-            {error}
+            <img 
+              src="/app_icon.png" 
+              alt="Mushaf Logo" 
+              className="w-full h-full object-contain rounded-2xl drop-shadow-md"
+              onError={(e) => {
+                (e.currentTarget as HTMLElement).style.display = 'none';
+              }} 
+            />
           </div>
-        )}
+        </div>
 
-        {/* Tab 1: New Registration (with Country Selection) */}
-        {activeTab === 'register' && (
-          <form onSubmit={handleRegister} className="space-y-3">
-            <div>
-              <label className="block text-xs font-black mb-1 opacity-90 flex items-center gap-1">
-                <User size={13} style={{ color: primaryAccent }} />
-                <span>{isEn ? 'Username' : 'اسم المستخدم'}</span>
-              </label>
-              <input
-                type="text"
-                value={regUsername}
-                onChange={(e) => setRegUsername(e.target.value)}
-                placeholder={isEn ? 'Enter your name or nickname...' : 'اكتب اسمك أو لقبك هنا...'}
-                className="w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold border transition-colors outline-none focus:ring-2 focus:ring-emerald-500"
-                style={{ 
-                  backgroundColor: inputBg, 
-                  borderColor: borderColor,
-                  color: textColor
-                }}
-                disabled={loading}
-                autoFocus
-              />
-            </div>
+        {/* اسم التطبيق بالعربية */}
+        <h1 
+          className="text-2xl sm:text-3xl font-black font-kufi tracking-tight mb-1.5"
+          style={{ color: primaryBrandColor }}
+        >
+          مصحف أحمد وليلى
+        </h1>
 
-            {/* Country Selection Section */}
-            <div>
-              <label className="block text-xs font-black mb-1 opacity-90 flex items-center gap-1">
-                <Globe size={13} style={{ color: primaryAccent }} />
-                <span>{isEn ? 'Country' : 'الدولة'}</span>
-              </label>
-              <select
-                value={regCountry}
-                onChange={(e) => setRegCountry(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold border transition-colors outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
-                style={{ 
-                  backgroundColor: inputBg, 
-                  borderColor: borderColor,
-                  color: textColor
-                }}
-                disabled={loading}
-              >
-                {COUNTRIES.map((c) => (
-                  <option key={c} value={c} className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
-                    {formatCountryName(c, isEn)}
-                  </option>
-                ))}
-              </select>
-            </div>
+        {/* اسم التطبيق بالإنجليزية مع التنسيق الصحيح المحدث: Mushaf Ahmed & Laila */}
+        <h2 
+          className="text-base sm:text-lg font-bold font-sans tracking-wide mb-6"
+          style={{ color: isBlackTheme ? '#D1D5DB' : '#4B5563' }}
+        >
+          Mushaf Ahmed &amp; Laila
+        </h2>
 
-            <div>
-              <label className="block text-xs font-black mb-1 opacity-90 flex items-center gap-1">
-                <Lock size={13} style={{ color: primaryAccent }} />
-                <span>{isEn ? 'Password / PIN' : 'الرقم السري'}</span>
-              </label>
-              <div className="relative flex items-center">
-                <input
-                  type={showRegPasscode ? 'text' : 'password'}
-                  value={regPasscode}
-                  onChange={(e) => setRegPasscode(e.target.value)}
-                  placeholder={isEn ? 'Enter 4-12 digits/letters PIN...' : 'أدخل رقم سري لحماية حسابك (4-12 خانة)...'}
-                  className="w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold border transition-colors outline-none focus:ring-2 focus:ring-emerald-500"
-                  style={{ 
-                    backgroundColor: inputBg, 
-                    borderColor: borderColor,
-                    color: textColor
-                  }}
-                  disabled={loading}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowRegPasscode(!showRegPasscode)}
-                  className={`absolute ${isEn ? 'right-3' : 'left-3'} opacity-60 hover:opacity-100 p-1 cursor-pointer`}
-                  title={showRegPasscode ? (isEn ? 'Hide' : 'إخفاء') : (isEn ? 'Show' : 'إظهار')}
-                >
-                  {showRegPasscode ? <EyeOff size={15} /> : <Eye size={15} />}
-                </button>
-              </div>
-            </div>
+        {/* فاصل زخرفي هادئ */}
+        <div className="flex items-center justify-center gap-3 w-48 mb-6">
+          <span className="h-[1px] flex-1 bg-gradient-to-r from-transparent via-emerald-600/30 to-transparent" />
+          <span className="w-1.5 h-1.5 rotate-45 bg-emerald-600/40 rounded-[1px]" />
+          <span className="h-[1px] flex-1 bg-gradient-to-r from-transparent via-emerald-600/30 to-transparent" />
+        </div>
 
-            {/* Action Buttons: Register & Cancel */}
-            <div className="grid grid-cols-2 gap-2 pt-2">
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-2.5 px-4 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-all cursor-pointer"
-                style={{
-                  backgroundColor: isBlackTheme ? '#FFFFFF' : primaryAccent,
-                  color: isBlackTheme ? '#000000' : '#FFFFFF'
-                }}
-              >
-                {loading ? (
-                  <Loader2 size={16} className="animate-spin" />
-                ) : (
-                  <>
-                    <Check size={16} className="stroke-[3]" />
-                    <span>{isEn ? 'Register' : 'تسجيل'}</span>
-                  </>
-                )}
-              </button>
+        {/* اختيار اللغة */}
+        <div className="w-full">
+          <p className="text-xs sm:text-sm font-bold mb-4 opacity-80 tracking-tight text-emerald-950 dark:text-emerald-200">
+            اختر لغة التطبيق / Choose App Language
+          </p>
 
-              <button
-                type="button"
-                onClick={handleCancel}
-                disabled={loading}
-                className="w-full py-2.5 px-4 rounded-xl font-bold text-xs sm:text-sm border opacity-80 hover:opacity-100 active:scale-95 transition-all cursor-pointer text-center"
-                style={{
-                  borderColor: borderColor,
-                  backgroundColor: 'transparent',
-                  color: textColor
-                }}
-              >
-                {isEn ? 'Cancel' : 'إلغاء'}
-              </button>
-            </div>
-          </form>
-        )}
+          <div className="w-full space-y-3.5">
+            {/* زر اللغة العربية: أخضر إسلامي فاخر */}
+            <button
+              onClick={() => handleSelectLanguage('ar')}
+              className="w-full py-4 px-6 rounded-2xl font-black text-base sm:text-lg flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition-all cursor-pointer bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-500/50"
+              style={{
+                boxShadow: '0 8px 20px -6px rgba(5,150,105,0.45)'
+              }}
+            >
+              <span>العربية</span>
+            </button>
 
-        {/* Tab 2: Restore Account (Country section deleted) */}
-        {activeTab === 'restore' && (
-          <form onSubmit={handleRestore} className="space-y-3">
-            <div>
-              <label className="block text-xs font-black mb-1 opacity-90 flex items-center gap-1">
-                <User size={13} style={{ color: primaryAccent }} />
-                <span>{isEn ? 'Username or Account Code' : 'اسم المستخدم أو كود الحساب'}</span>
-              </label>
-              <input
-                type="text"
-                value={restoreUsername}
-                onChange={(e) => setRestoreUsername(e.target.value)}
-                placeholder={isEn ? 'Username or MQ-XXXXX code...' : 'اسم المستخدم أو كود MQ-XXXXX...'}
-                className="w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold border transition-colors outline-none focus:ring-2 focus:ring-emerald-500"
-                style={{ 
-                  backgroundColor: inputBg, 
-                  borderColor: borderColor,
-                  color: textColor
-                }}
-                disabled={loading}
-                autoFocus
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-black mb-1 opacity-90 flex items-center gap-1">
-                <Lock size={13} style={{ color: primaryAccent }} />
-                <span>{isEn ? 'Password / PIN' : 'الرقم السري'}</span>
-              </label>
-              <div className="relative flex items-center">
-                <input
-                  type={showRestorePasscode ? 'text' : 'password'}
-                  value={restorePasscode}
-                  onChange={(e) => setRestorePasscode(e.target.value)}
-                  placeholder={isEn ? 'Your account password / PIN...' : 'الرقم السري الخاص بحسابك...'}
-                  className="w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold border transition-colors outline-none focus:ring-2 focus:ring-emerald-500"
-                  style={{ 
-                    backgroundColor: inputBg, 
-                    borderColor: borderColor,
-                    color: textColor
-                  }}
-                  disabled={loading}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowRestorePasscode(!showRestorePasscode)}
-                  className={`absolute ${isEn ? 'right-3' : 'left-3'} opacity-60 hover:opacity-100 p-1 cursor-pointer`}
-                  title={showRestorePasscode ? (isEn ? 'Hide' : 'إخفاء') : (isEn ? 'Show' : 'إظهار')}
-                >
-                  {showRestorePasscode ? <EyeOff size={15} /> : <Eye size={15} />}
-                </button>
-              </div>
-            </div>
-
-            {/* Action Buttons: Restore & Cancel */}
-            <div className="grid grid-cols-2 gap-2 pt-2">
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-2.5 px-4 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-all cursor-pointer"
-                style={{
-                  backgroundColor: isBlackTheme ? '#FFFFFF' : primaryAccent,
-                  color: isBlackTheme ? '#000000' : '#FFFFFF'
-                }}
-              >
-                {loading ? (
-                  <Loader2 size={16} className="animate-spin" />
-                ) : (
-                  <>
-                    <LogIn size={16} />
-                    <span>{isEn ? 'Restore' : 'استعادة الحساب'}</span>
-                  </>
-                )}
-              </button>
-
-              <button
-                type="button"
-                onClick={handleCancel}
-                disabled={loading}
-                className="w-full py-2.5 px-4 rounded-xl font-bold text-xs sm:text-sm border opacity-80 hover:opacity-100 active:scale-95 transition-all cursor-pointer text-center"
-                style={{
-                  borderColor: borderColor,
-                  backgroundColor: 'transparent',
-                  color: textColor
-                }}
-              >
-                {isEn ? 'Cancel' : 'إلغاء'}
-              </button>
-            </div>
-          </form>
-        )}
+            {/* زر اللغة الإنجليزية: Outlined Button بإطار أخضر أنيق متناسق كلياً مع الطابع الإسلامي */}
+            <button
+              onClick={() => handleSelectLanguage('en')}
+              className="w-full py-3.5 px-6 rounded-2xl font-bold text-base sm:text-lg flex items-center justify-center gap-2 border-2 active:scale-[0.98] transition-all cursor-pointer"
+              style={{
+                borderColor: isBlackTheme ? '#10b981' : '#059669',
+                backgroundColor: isBlackTheme ? 'rgba(16,185,129,0.08)' : '#ffffff',
+                color: isBlackTheme ? '#34d399' : '#047857',
+                boxShadow: isBlackTheme ? 'none' : '0 4px 12px -2px rgba(5,150,105,0.08)'
+              }}
+            >
+              <span>English</span>
+            </button>
+          </div>
+        </div>
       </motion.div>
+
+      {/* أسفل الشاشة: الوقف الخيري وحقوق التصميم والتطوير */}
+      <div className="w-full pb-6 sm:pb-8 px-4 flex flex-col items-center justify-center gap-1.5 text-center relative z-10">
+        <p className="text-xs sm:text-sm font-extrabold text-gray-800 dark:text-gray-100 tracking-wide flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5">
+          <span className="font-extrabold">وقف خيري لوجه الله تعالى</span>
+          <span className="opacity-40 font-bold">|</span>
+          <span className="font-sans font-extrabold">Charitable Endowment for the Sake of Allah</span>
+        </p>
+        <p className="text-[11px] sm:text-xs font-semibold text-gray-400 dark:text-gray-500 tracking-wider flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5">
+          <span>تصميم وتطوير: علاء أحمد</span>
+          <span className="opacity-40">|</span>
+          <span className="font-sans">Designed & Developed by Alaa Ahmed</span>
+        </p>
+      </div>
     </div>
   );
 };

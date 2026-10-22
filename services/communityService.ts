@@ -65,6 +65,7 @@ export interface ChatMessage {
   text: string;
   verseData?: QuranVerseAttachment;
   audioUrl?: string;
+  audioDuration?: number;
   attachment?: ChatAttachment;
   isRead: boolean;
   isViolationReport?: boolean;
@@ -1631,7 +1632,8 @@ class CommunityService {
     text: string, 
     verseData?: QuranVerseAttachment, 
     audioUrl?: string,
-    attachment?: ChatAttachment
+    attachment?: ChatAttachment,
+    audioDuration?: number
   ): Promise<ChatMessage> {
     const current = this.getCurrentUser();
     if (!this.isProfileComplete()) {
@@ -1721,6 +1723,7 @@ class CommunityService {
       text: text.trim(),
       verseData,
       audioUrl,
+      audioDuration,
       attachment,
       isRead: false,
       createdAt: new Date().toISOString()

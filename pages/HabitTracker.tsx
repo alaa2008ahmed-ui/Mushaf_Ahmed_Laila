@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronRight, ChevronLeft, CheckCircle, Clock, Heart, BookOpen, Plus, Minus, Medal, Award, Star, Trash2, Sparkles, Share2, Calendar, RotateCcw } from 'lucide-react';
+import { ChevronRight, ChevronLeft, CheckCircle, Clock, Heart, BookOpen, Plus, Minus, Medal, Award, Star, Trash2, Sparkles, Share2, Calendar, RotateCcw, Check } from 'lucide-react';
 import moment from 'moment-hijri';
 import { useHabitTracker, DailyRecord, HabitCategory, defaultRecord, CustomHabit } from '../hooks/useHabitTracker';
 import { useTheme } from '../context/ThemeContext';
@@ -525,8 +525,46 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack , onNavigate }) => {
                       </h1>
                   </div>
 
-                  {/* أيقونة المنزل على يسار النص للعودة إلى الصفحة الرئيسية */}
-                  <div className={`absolute ${isEn ? 'right-0' : 'left-0'} flex items-center gap-1`}>
+                  {/* أيقونة المنزل وزر الربط التلقائي للعبادات */}
+                  <div className={`absolute ${isEn ? 'right-0' : 'left-0'} flex items-center gap-1.5`}>
+                      <button
+                          type="button"
+                          onClick={() => {
+                              const next = !autoSyncEnabled;
+                              setAutoSyncEnabled(next);
+                              if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                                  try { navigator.vibrate(30); } catch {}
+                              }
+                              showTrackerToast(
+                                  next 
+                                      ? (isEn ? 'Auto-Sync enabled ⚡' : 'تم تفعيل الربط التلقائي للعبادات ⚡') 
+                                      : (isEn ? 'Auto-Sync disabled 🔒' : 'تم تعطيل الربط التلقائي للعبادات 🔒')
+                              );
+                          }}
+                          className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                          title={
+                              isEn 
+                                  ? (autoSyncEnabled ? 'Auto-Sync Worship: Enabled (Click to disable)' : 'Auto-Sync Worship: Disabled (Click to enable)') 
+                                  : (autoSyncEnabled ? 'الربط التلقائي للعبادات: مفعّل (اضغط للتعطيل)' : 'الربط التلقائي للعبادات: معطّل (اضغط للتفعيل)')
+                          }
+                          aria-label={
+                              isEn 
+                                  ? (autoSyncEnabled ? 'Auto-Sync Worship: Enabled' : 'Auto-Sync Worship: Disabled') 
+                                  : (autoSyncEnabled ? 'الربط التلقائي للعبادات: مفعّل' : 'الربط التلقائي للعبادات: معطّل')
+                          }
+                      >
+                          <div className={`w-[19px] h-[19px] rounded-full border-[1.5px] border-white/90 dark:border-white/80 shadow-xs transition-all duration-300 flex items-center justify-center ${
+                              autoSyncEnabled 
+                                  ? 'bg-gradient-to-tr from-emerald-600 via-emerald-500 to-emerald-400 text-white shadow-emerald-500/30 ring-1.5 ring-emerald-500/25' 
+                                  : 'bg-gradient-to-tr from-red-600 via-red-500 to-rose-400 text-white shadow-red-500/30 ring-1.5 ring-red-500/25'
+                          }`}>
+                              {autoSyncEnabled ? (
+                                  <Check className="w-2.5 h-2.5 stroke-[3]" />
+                              ) : (
+                                  <span className="w-1.5 h-0.5 bg-white/95 rounded-full" />
+                              )}
+                          </div>
+                      </button>
                       <ThemePageLock />
                       <button
                           onClick={() => onNavigate('home')}
@@ -942,66 +980,7 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack , onNavigate }) => {
           </motion.button>
         </div>
 
-        {/* 2. Auto-Sync Enable/Disable Switch Card (Moved to bottom) */}
-        <div 
-          className="bg-white/85 dark:bg-gray-800/85 backdrop-blur-md rounded-2xl p-2.5 px-3.5 shadow-sm border mb-4 flex items-center justify-between gap-3"
-          style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
-        >
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div 
-              className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors shadow-sm ${
-                autoSyncEnabled 
-                  ? 'bg-emerald-500 text-white dark:bg-emerald-600' 
-                  : 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-400'
-              }`}
-            >
-              <Sparkles className="w-4 h-4" />
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-bold text-xs sm:text-sm text-gray-900 dark:text-white">
-                  {isEn ? 'Auto-Sync Worship' : 'الربط التلقائي للعبادات'}
-                </span>
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                  autoSyncEnabled 
-                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300' 
-                    : 'bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
-                }`}>
-                  {autoSyncEnabled ? (isEn ? 'Enabled ⚡' : 'مفعّل ⚡') : (isEn ? 'Disabled 🔒' : 'معطّل 🔒')}
-                </span>
-              </div>
-              <p className="text-[10px] text-gray-500 dark:text-gray-400 truncate mt-0.5">
-                {autoSyncEnabled 
-                  ? (isEn ? 'Auto-links Quran, Adhkar, and Du\'a' : 'يربط صفحات المصحف والأذكار والأدعية تلقائياً') 
-                  : (isEn ? 'Sync disabled (Manual recording only)' : 'تم فك الربط (التسجيل والتعديل يدوي فقط)')}
-              </p>
-            </div>
-          </div>
 
-          {/* Small Toggle Switch */}
-          <button
-            type="button"
-            role="switch"
-            aria-checked={autoSyncEnabled}
-            onClick={() => {
-              const next = !autoSyncEnabled;
-              setAutoSyncEnabled(next);
-              showTrackerToast(next ? (isEn ? 'Auto-Sync enabled' : 'تم تفعيل الربط التلقائي مع القرآن والأذكار والأدعية ⚡') : (isEn ? 'Auto-Sync disabled' : 'تم تعطيل وفك الربط بين الصفحات 🔒'));
-            }}
-            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-              autoSyncEnabled ? (isBlackTheme ? 'bg-white' : 'bg-emerald-600') : 'bg-gray-300 dark:bg-gray-600'
-            }`}
-            title={autoSyncEnabled ? (isEn ? 'Click to disable' : 'انقر لتعطيل الربط التلقائي') : (isEn ? 'Click to enable' : 'انقر لتفعيل الربط التلقائي')}
-          >
-            <span
-              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full shadow-md ring-0 transition duration-200 ease-in-out ${
-                autoSyncEnabled 
-                  ? 'translate-x-0 bg-white dark:bg-gray-900' 
-                  : '-translate-x-5 bg-white dark:bg-gray-200'
-              } ${isBlackTheme && autoSyncEnabled ? '!bg-black' : ''}`}
-            />
-          </button>
-        </div>
 
         {/* Footer Sentence */}
         <div className="text-center pb-0 pt-4 px-6 border-t border-gray-200 dark:border-gray-700">

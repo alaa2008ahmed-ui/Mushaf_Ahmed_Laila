@@ -54,9 +54,9 @@ const VoiceControlPage: React.FC<{ onBack: () => void, onNavigate: (pageId: stri
         <div className="h-screen flex flex-col bg-transparent overflow-hidden" dir={isEn ? 'ltr' : 'rtl'}>
             <header className="app-top-bar">
                 <div className="app-top-bar__inner">
-                    <div className="relative flex items-center justify-between w-full min-h-[44px]">
+                    <div className="relative flex items-center justify-center w-full min-h-[44px]">
                         {/* Back button */}
-                        <div className={`flex items-center ${isEn ? 'order-1' : 'order-3'} gap-1`}>
+                        <div className={`absolute ${isEn ? 'left-0' : 'right-0'} flex items-center`}>
                             <button
                                 onClick={onBack}
                                 className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
@@ -68,14 +68,14 @@ const VoiceControlPage: React.FC<{ onBack: () => void, onNavigate: (pageId: stri
                         </div>
 
                         {/* Title */}
-                        <div className="text-center px-2 flex-1 order-2 min-w-0">
+                        <div className="text-center px-12 min-w-0">
                             <h1 className="app-top-bar__title text-lg sm:text-xl font-kufi truncate">
                                 {isEn ? 'Voice Control' : 'التحكم الصوتي'}
                             </h1>
                         </div>
 
                         {/* Home / Lock */}
-                        <div className={`flex items-center gap-1 ${isEn ? 'order-3' : 'order-1'}`}>
+                        <div className={`absolute ${isEn ? 'right-0' : 'left-0'} flex items-center gap-1`}>
                             <ThemePageLock />
                             <button
                                 onClick={() => onNavigate('home')}

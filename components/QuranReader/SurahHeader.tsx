@@ -1,13 +1,13 @@
 import React, { useRef } from 'react';
-import { toArabic, getAyahCountText, SURAH_INFO, SURAH_NAMES_EN } from './constants';
+import { toArabic, getAyahCountText, SURAH_INFO, SURAH_NAMES_EN, SURAH_NAMES_AR } from './constants';
 import { useLanguage } from '../../context/LanguageContext';
 
 interface SurahHeaderProps {
     surahNumber: number;
     surahName: string;
-    surahType: string;
-    ayahCount: number;
-    currentTheme: any;
+    surahType?: string;
+    ayahCount?: number;
+    currentTheme?: any;
     design?: number;
     onLongPress?: () => void;
     compact?: boolean;
@@ -60,68 +60,71 @@ const SurahHeader: React.FC<SurahHeaderProps> = ({
             longPressTimer.current = null;
         }
     };
+
+    const numericDesign = Number(design) || 1;
     const isDarkGroup = currentTheme?.id === 'deep_black' || currentTheme?.id?.startsWith('i_');
-    const isDefaultTheme = currentTheme?.id === 'black';
-    const isDesign1 = design === 1 || !design; // Handle cases where design might be undefined or 1
+    const isDefaultTheme = currentTheme?.id === 'black' || !currentTheme?.id;
+    const isDesign1 = numericDesign === 1;
     
     // Improved color logic for better contrast and vibrancy across all themes
-    // For light themes, we use the accent color as the background to make it stand out
-    // EXCEPT for the default theme where the user wants a specific minimalist black & white look for Design 1
-    const headerBg = (isDefaultTheme && isDesign1) ? '#ffffff' : (isDarkGroup ? (currentTheme?.headerBg || '#000000') : (currentTheme?.accent || '#22c55e'));
+    const themeAccent = currentTheme?.accent || '#10b981';
+    const headerBg = (isDefaultTheme && isDesign1) ? '#ffffff' : (isDarkGroup ? (currentTheme?.headerBg || '#000000') : themeAccent);
     const headerText = (isDefaultTheme && isDesign1) ? '#000000' : '#ffffff'; 
-    const headerBorder = (isDefaultTheme && isDesign1) ? '#000000' : (isDarkGroup ? '#ffffff' : 'rgba(255,255,255,0.6)');
+    const headerBorder = (isDefaultTheme && isDesign1) ? '#000000' : (isDarkGroup ? '#ffffff' : (currentTheme?.barBorder || 'rgba(255,255,255,0.6)'));
     
     // Cartouche (the inner box for the surah name)
     const cartoucheBg = isDarkGroup ? (currentTheme?.bg || '#000000') : '#ffffff';
     const cartoucheText = (isDefaultTheme && isDesign1) ? '#000000' : (isDarkGroup ? (currentTheme?.accent || '#ffffff') : (currentTheme?.accent || '#14532d'));
 
-    // Ensure "Surah" is not repeated
-    const cleanSurahName = surahName.replace(/سورة|سُورَةُ|سُورَة/g, '').trim();
+    // Ensure "Surah" is not repeated safely
+    const cleanSurahName = (surahName || '').replace(/سورة|سُورَةُ|سُورَة/g, '').trim() || (surahNumber > 0 ? (SURAH_NAMES_AR[surahNumber - 1] || '') : '');
     const englishSurahName = SURAH_NAMES_EN[surahNumber - 1] || cleanSurahName;
     
     const fullSurahName = (isEn || isBilingualMode)
         ? `Surah ${englishSurahName}`
         : `سُورَةُ ${cleanSurahName}`;
 
-    const rawSurahType = surahType.includes('مدن') || surahType.includes('Medin') ? 'Medinan' : 'Meccan';
+    const safeSurahType = surahType || (surahNumber > 0 && SURAH_INFO[surahNumber]?.type) || 'مكية';
+    const rawSurahType = safeSurahType.includes('مدن') || safeSurahType.includes('Medin') ? 'Medinan' : 'Meccan';
     const displaySurahType = (isEn || isBilingualMode)
         ? rawSurahType
-        : surahType;
+        : safeSurahType;
 
+    const safeAyahCount = typeof ayahCount === 'number' ? ayahCount : (SURAH_INFO[surahNumber]?.ayahs || 7);
     const displayAyahCount = (isEn || isBilingualMode)
-        ? `${ayahCount} Verses`
-        : getAyahCountText(ayahCount);
+        ? `${safeAyahCount} Verses`
+        : getAyahCountText(safeAyahCount);
 
     const quranFont = isEn ? 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' : 'var(--font-amiri-quran)';
     const hafsFont = isEn ? 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' : 'var(--font-hafs)';
 
     const renderDesign = () => {
-        switch (design) {
+        switch (numericDesign) {
             case 1: // Design 1 (Current)
                 return (
-                    <div className={`surah-header-visual relative h-14 w-full flex items-center justify-between ${compact ? 'px-1' : 'px-2 sm:px-6'} rounded-md border-[3px] overflow-hidden`}
+                    <div className={`surah-header-visual relative h-14 w-full flex items-center justify-between ${compact ? 'px-1' : 'px-2 sm:px-6'} rounded-md border-[2.5px] overflow-hidden`}
                          style={{ 
                              background: headerBg,
                              borderColor: headerBorder,
                              boxShadow: isDefaultTheme ? 'none' : '0 4px 6px -1px rgba(0, 0, 0, 0.2)'
                          }}>
-                        <div className={`font-bold text-sm sm:text-lg z-10 ${isDefaultTheme ? '' : 'drop-shadow-md'} whitespace-nowrap`} style={{ color: headerText }}>
+                        <div className={`font-bold text-sm sm:text-lg z-10 ${isDefaultTheme ? '' : 'drop-shadow-md'} whitespace-nowrap`} style={{ color: headerText, fontFamily: hafsFont }}>
                             {displayAyahCount}
                         </div>
                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                            <div className="relative h-10 px-6 sm:px-12 flex items-center justify-center border-2 shadow-inner max-w-[50%] sm:max-w-none"
+                            <div className="relative h-10 px-6 sm:px-12 flex items-center justify-center border-2 shadow-inner max-w-[55%] sm:max-w-none"
                                  style={{ 
                                      borderRadius: '50px / 50px', 
                                      minWidth: '140px',
                                      backgroundColor: cartoucheBg,
                                      borderColor: headerBorder
                                  }}>
-                                <h2 className="text-base sm:text-xl font-bold whitespace-nowrap w-full text-center mb-0" style={{ color: cartoucheText, transform: 'translateY(-4px)' }}>
+                                <h2 className="text-base sm:text-xl font-bold whitespace-nowrap w-full text-center mb-0" style={{ color: cartoucheText, fontFamily: quranFont, transform: 'translateY(-2px)' }}>
                                     {fullSurahName}
                                 </h2>
                             </div>
                         </div>
-                        <div className={`font-bold text-sm sm:text-lg z-10 ${isDefaultTheme ? '' : 'drop-shadow-md'} whitespace-nowrap`} style={{ color: headerText }}>
+                        <div className={`font-bold text-sm sm:text-lg z-10 ${isDefaultTheme ? '' : 'drop-shadow-md'} whitespace-nowrap`} style={{ color: headerText, fontFamily: hafsFont }}>
                             {displaySurahType}
                         </div>
                     </div>
@@ -412,7 +415,7 @@ const SurahHeader: React.FC<SurahHeaderProps> = ({
     };
 
     return (
-        <div id="surah-header-container" className={`surah-header-container-wrapper ${compact ? 'px-0 pt-1 pb-0' : 'px-0 pt-4 pb-0'}`}
+        <div id="surah-header-container" data-tour="surah-header" className={`surah-header-container surah-header surah-header-container-wrapper w-full block ${compact ? 'px-0 pt-1 pb-0' : 'px-0 pt-2 pb-0'}`}
              onMouseDown={handleMouseDown}
              onMouseUp={handleMouseUp}
              onMouseLeave={handleMouseUp}

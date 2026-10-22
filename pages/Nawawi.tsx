@@ -13,7 +13,7 @@ import { playTTS, stopTTS, subscribeTTS } from '../utils/ttsEngine';
 import { 
     BookOpen, Sparkles, Lightbulb, Scale, ShieldCheck, 
     HeartHandshake, Copy, Share2, Volume2, ZoomIn, 
-    X, Check, ArrowRight, ArrowLeft 
+    X, Check, ArrowRight, ArrowLeft, LayoutGrid, ListFilter 
 } from 'lucide-react';
 
 interface HadithModalProps {
@@ -487,13 +487,21 @@ const Nawawi = ({ onBack, onNavigate }: { onBack: () => void; onNavigate?: (id: 
     const [modalInitialTab, setModalInitialTab] = useState<'hadith' | 'explanation'>('hadith');
     const [favorites, setFavorites] = useState<number[]>([]);
     const [toastMessage, setToastMessage] = useState('');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [activeTabMode, setActiveTabMode] = useState<'grid' | 'list'>('grid');
+    const [playingText, setPlayingText] = useState<string | null>(null);
+
     const isBlackTheme = theme.bgColor === '#000000';
-    const isDefaultTheme = themeKey === 'default';
-    const cardBorderColor = isDefaultTheme 
-        ? '#000000' 
-        : (isBlackTheme 
-            ? '#FFFFFF' 
-            : (theme.palette?.[0] || '#000000'));
+    const isDefaultTheme = themeKey === 'default' || theme.name === 'الافتراضي' || !!theme.isOriginal || !themeKey;
+    const cardBorderColor = isBlackTheme ? '#222222' : (theme.isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)');
+
+    useEffect(() => {
+        const unsubscribe = subscribeTTS(setPlayingText);
+        return () => {
+            unsubscribe();
+            stopTTS();
+        };
+    }, []);
 
     const handleCopy = (text: string, e: React.MouseEvent) => {
         e.stopPropagation();
@@ -532,13 +540,66 @@ const Nawawi = ({ onBack, onNavigate }: { onBack: () => void; onNavigate?: (id: 
         return title;
     };
 
+    const handlePlayHadithAudio = (hadithItem: typeof NAWAWI_DATA[0], hadithItemEn: typeof NAWAWI_DATA_EN[0], e: React.MouseEvent) => {
+        e.stopPropagation();
+        const textToPlay = isEn ? hadithItemEn.hadith : hadithItem.hadith;
+        if (playingText === textToPlay) {
+            stopTTS();
+            setPlayingText(null);
+        } else {
+            playTTS(textToPlay, { hadithId: hadithItem.id });
+        }
+    };
+
+    const filteredHadiths = NAWAWI_DATA.map((hadith, index) => ({
+        hadith,
+        hadithEn: NAWAWI_DATA_EN[index],
+        explanation: NAWAWI_EXPLANATIONS[hadith.id],
+        explanationEn: NAWAWI_EXPLANATIONS_EN[hadith.id],
+        index
+    })).filter(({ hadith, hadithEn, explanation, explanationEn }) => {
+        const q = searchQuery.trim().toLowerCase();
+        if (!q) return true;
+        const idStr = String(hadith.id);
+        const idArabic = toArabicDigits(hadith.id);
+        if (idStr === q || idArabic === q) return true;
+
+        const titleAr = (hadith.title || '').toLowerCase();
+        const titleEn = (hadithEn?.title || '').toLowerCase();
+        const textAr = (hadith.hadith || '').toLowerCase();
+        const textEn = (hadithEn?.hadith || '').toLowerCase();
+        const summaryAr = (explanation?.summary || '').toLowerCase();
+        const summaryEn = (explanationEn?.summary || '').toLowerCase();
+        const benefitsAr = [
+            ...(explanation?.creedBenefits || []),
+            ...(explanation?.fiqhBenefits || []),
+            ...(explanation?.valuesBenefits || [])
+        ].join(' ').toLowerCase();
+        const benefitsEn = [
+            ...(explanationEn?.creedBenefits || []),
+            ...(explanationEn?.fiqhBenefits || []),
+            ...(explanationEn?.valuesBenefits || [])
+        ].join(' ').toLowerCase();
+
+        return (
+            titleAr.includes(q) ||
+            titleEn.includes(q) ||
+            textAr.includes(q) ||
+            textEn.includes(q) ||
+            summaryAr.includes(q) ||
+            summaryEn.includes(q) ||
+            benefitsAr.includes(q) ||
+            benefitsEn.includes(q)
+        );
+    });
+
     return (
         <div className="h-screen flex flex-col overflow-hidden" style={{ backgroundColor: 'transparent', color: theme.textColor, fontFamily: theme.font }} dir={isEn ? 'ltr' : 'rtl'}>
             <header className="app-top-bar">
                 <div className="app-top-bar__inner">
-                    <div className="relative flex items-center justify-between w-full min-h-[44px]">
-                        {/* Back / House buttons based on language direction */}
-                        <div className={`flex items-center ${isEn ? 'order-1' : 'order-3'} gap-1`}>
+                    <div className="relative flex items-center justify-center w-full min-h-[44px]">
+                        {/* Back button */}
+                        <div className={`absolute ${isEn ? 'left-0' : 'right-0'} flex items-center`}>
                             <button
                                 onClick={onBack}
                                 className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
@@ -550,14 +611,14 @@ const Nawawi = ({ onBack, onNavigate }: { onBack: () => void; onNavigate?: (id: 
                         </div>
 
                         {/* Title */}
-                        <div className="text-center px-2 flex-1 order-2 min-w-0">
+                        <div className="text-center px-12 min-w-0">
                             <h1 className="app-top-bar__title text-lg sm:text-xl font-kufi truncate">
                                 {isEn ? "Al-Nawawi's 40 Hadith" : "الأربعون النووية"}
                             </h1>
                         </div>
 
                         {/* Home / Lock */}
-                        <div className={`flex items-center gap-1 ${isEn ? 'order-3' : 'order-1'}`}>
+                        <div className={`absolute ${isEn ? 'right-0' : 'left-0'} flex items-center gap-1`}>
                             <ThemePageLock />
                             <button
                                 onClick={() => onNavigate ? onNavigate('home') : onBack()}
@@ -573,86 +634,332 @@ const Nawawi = ({ onBack, onNavigate }: { onBack: () => void; onNavigate?: (id: 
             </header>
 
             <main className="flex-1 overflow-y-auto hide-scrollbar px-4 pt-2 pb-4">
-                <div className="grid grid-cols-2 gap-4">
-                    {NAWAWI_DATA.map((hadith, index) => {
-                        const hadithEn = NAWAWI_DATA_EN[index];
-                        const color = theme.palette[index % theme.palette.length];
-                        const displayTitle = isEn ? hadithEn.title : hadith.title;
-                        return (
-                            <div 
-                                key={hadith.id} 
-                                onClick={() => {
-                                    setSelectedHadith(hadith);
-                                    setModalInitialTab('hadith');
-                                }} 
-                                className="relative group cursor-pointer active:scale-95 transition-all"
+                {/* Search and View Mode Control - Identical to Adia */}
+                <div className="mb-6 max-w-3xl mx-auto flex items-center gap-2 w-full" dir={isEn ? 'ltr' : 'rtl'}>
+                    <div 
+                        className="relative flex-1 border-2 rounded-2xl overflow-hidden focus-within:ring-2 transition-all shadow-sm" 
+                        style={{ borderColor: cardBorderColor, ...(isDefaultTheme ? { focusRingColor: '#000'} : { focusRingColor: theme.palette[0]}) }}
+                    >
+                        <input 
+                            type="text" 
+                            placeholder={isEn ? "Search hadith, title, explanation..." : "ابحث في الأحاديث والشرح والفوائد..."} 
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className={`w-full bg-black/5 dark:bg-white/5 py-3 ${isEn ? 'pl-12 pr-10 text-left font-sans' : 'pr-12 pl-10 text-right font-kufi'} focus:outline-none placeholder-gray-500 dark:placeholder-gray-400`}
+                            style={{ color: 'var(--text-color)' }}
+                        />
+                        <i 
+                            className={`fa-solid fa-search absolute ${isEn ? 'left-4' : 'right-4'} top-1/2 transform -translate-y-1/2 opacity-50`} 
+                            style={{ color: 'var(--text-color)' }}
+                        ></i>
+                        {searchQuery && (
+                            <button
+                                onClick={() => setSearchQuery('')}
+                                className={`absolute inset-y-0 ${isEn ? 'right-4' : 'left-4'} flex items-center text-gray-400 hover:text-gray-600`}
                             >
-                                <div 
-                                    className="h-full p-4 rounded-3xl themed-card border shadow-sm hover:shadow-md transition-all flex flex-col items-center text-center gap-2.5 overflow-hidden min-h-[175px]" 
-                                    style={{ 
-                                        borderColor: cardBorderColor,
-                                        borderWidth: '1.5px',
-                                        borderStyle: 'solid',
-                                        color: 'var(--text-color)'
-                                    }}
-                                >
-                                    {/* Background hint */}
-                                    <div 
-                                        className="absolute -right-4 -top-4 w-16 h-16 rounded-full opacity-10 blur-xl pointer-events-none"
-                                        style={{ backgroundColor: isDefaultTheme ? '#000000' : color }}
-                                    />
-                                    
-                                    <div 
-                                        className="w-12 h-12 rounded-2xl flex items-center justify-center mb-0.5 group-hover:scale-110 transition-transform duration-300 shadow-inner"
-                                        style={{ 
-                                            backgroundColor: isDefaultTheme ? 'rgba(0,0,0,0.05)' : color + '20',
-                                            color: isDefaultTheme ? '#000000' : color,
-                                            borderColor: cardBorderColor,
-                                            borderWidth: '1.5px',
-                                            borderStyle: 'solid'
-                                        }}
-                                    >
-                                        <span className="text-xl font-bold" style={{ fontFamily: theme.font }}>
-                                            {isEn ? hadith.id : toArabicDigits(hadith.id)}
-                                        </span>
-                                    </div>
-                                    
-                                    <h2 className="font-bold text-xs sm:text-sm leading-snug text-gray-800 dark:text-gray-100 line-clamp-2" style={{ fontFamily: theme.font }}>
-                                        {cleanTitle(displayTitle)}
-                                    </h2>
+                                <i className="fa-solid fa-times text-xs"></i>
+                            </button>
+                        )}
+                    </div>
 
-                                    {/* Action Button: Explanation & Benefits */}
-                                    <div className="mt-auto w-full pt-2 border-t border-black/5 dark:border-white/5 flex items-center justify-between gap-1">
-                                        <button
-                                            type="button"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setSelectedHadith(hadith);
-                                                setModalInitialTab('explanation');
+                    {/* View Mode Switch - Matches Adia page without texts and adapts to every theme */}
+                    <div 
+                        className="flex items-center p-1 rounded-2xl border shrink-0 shadow-sm"
+                        style={{
+                            backgroundColor: isBlackTheme ? '#111111' : (theme.isDark ? '#1e293b' : '#ffffff'),
+                            borderColor: cardBorderColor
+                        }}
+                    >
+                        <button
+                            type="button"
+                            onClick={() => setActiveTabMode('grid')}
+                            className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTabMode === 'grid' ? 'shadow-sm' : 'opacity-60 hover:opacity-100'}`}
+                            style={activeTabMode === 'grid' ? {
+                                backgroundColor: isBlackTheme ? '#FFFFFF' : (isDefaultTheme ? '#000000' : theme.palette[0]),
+                                color: isBlackTheme ? '#000000' : '#ffffff'
+                            } : { color: 'var(--text-color)' }}
+                            title={isEn ? "Grid View" : "عرض شبكي"}
+                        >
+                            <LayoutGrid size={16} />
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setActiveTabMode('list')}
+                            className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTabMode === 'list' ? 'shadow-sm' : 'opacity-60 hover:opacity-100'}`}
+                            style={activeTabMode === 'list' ? {
+                                backgroundColor: isBlackTheme ? '#FFFFFF' : (isDefaultTheme ? '#000000' : theme.palette[0]),
+                                color: isBlackTheme ? '#000000' : '#ffffff'
+                            } : { color: 'var(--text-color)' }}
+                            title={isEn ? "Explanation Lists" : "قوائم الشرح"}
+                        >
+                            <ListFilter size={16} />
+                        </button>
+                    </div>
+                </div>
+
+                {filteredHadiths.length > 0 ? (
+                    activeTabMode === 'grid' ? (
+                        /* Mode 1: Grid Cards (بطاقة الشبكة) */
+                        <div className="grid grid-cols-2 gap-4 max-w-4xl mx-auto">
+                            {filteredHadiths.map(({ hadith, hadithEn, index }) => {
+                                const color = theme.palette[index % theme.palette.length];
+                                const displayTitle = isEn ? hadithEn.title : hadith.title;
+                                return (
+                                    <div 
+                                        key={hadith.id} 
+                                        onClick={() => {
+                                            setSelectedHadith(hadith);
+                                            setModalInitialTab('hadith');
+                                        }} 
+                                        className="relative group cursor-pointer active:scale-95 transition-all"
+                                    >
+                                        <div 
+                                            className="h-full p-4 rounded-3xl themed-card border shadow-sm hover:shadow-md transition-all flex flex-col items-center text-center gap-2.5 overflow-hidden min-h-[175px]" 
+                                            style={{ 
+                                                borderColor: cardBorderColor,
+                                                borderWidth: '1.5px',
+                                                borderStyle: 'solid',
+                                                color: 'var(--text-color)'
                                             }}
-                                            className="flex-1 py-1 px-2 rounded-xl text-[10px] sm:text-xs font-bold transition-all flex items-center justify-center gap-1 hover:scale-105 active:scale-95 cursor-pointer"
-                                            style={{
-                                                backgroundColor: isDefaultTheme ? '#00000010' : (isBlackTheme ? 'rgba(255, 255, 255, 0.12)' : (color + '15')),
-                                                color: isDefaultTheme ? '#000000' : (isBlackTheme ? '#FFFFFF' : color)
-                                            }}
-                                            title={isEn ? "View Explanation & Benefits" : "عرض الفوائد والشرح"}
                                         >
-                                            <Lightbulb className="w-3 h-3 text-amber-500 shrink-0" />
-                                            <span className="truncate">{isEn ? 'Explanation' : 'الفوائد والشرح'}</span>
-                                        </button>
-                                        <div className="w-5 h-5 flex items-center justify-center opacity-60 group-hover:opacity-100 transition-opacity">
-                                            {isEn ? (
-                                                <ArrowRight className="w-3 h-3" style={{ color: isDefaultTheme ? '#000000' : (isBlackTheme ? '#FFFFFF' : color) }} />
-                                            ) : (
-                                                <ArrowLeft className="w-3 h-3" style={{ color: isDefaultTheme ? '#000000' : (isBlackTheme ? '#FFFFFF' : color) }} />
-                                            )}
+                                            {/* Background hint */}
+                                            <div 
+                                                className="absolute -right-4 -top-4 w-16 h-16 rounded-full opacity-10 blur-xl pointer-events-none"
+                                                style={{ backgroundColor: isDefaultTheme ? '#000000' : color }}
+                                            />
+                                            
+                                            <div 
+                                                className="w-12 h-12 rounded-2xl flex items-center justify-center mb-0.5 group-hover:scale-110 transition-transform duration-300 shadow-inner"
+                                                style={{ 
+                                                    backgroundColor: isDefaultTheme ? 'rgba(0,0,0,0.05)' : color + '20',
+                                                    color: isDefaultTheme ? '#000000' : color,
+                                                    borderColor: cardBorderColor,
+                                                    borderWidth: '1.5px',
+                                                    borderStyle: 'solid'
+                                                }}
+                                            >
+                                                <span className="text-xl font-bold" style={{ fontFamily: theme.font }}>
+                                                    {isEn ? hadith.id : toArabicDigits(hadith.id)}
+                                                </span>
+                                            </div>
+                                            
+                                            <h2 className="font-bold text-xs sm:text-sm leading-snug text-gray-800 dark:text-gray-100 line-clamp-2" style={{ fontFamily: theme.font }}>
+                                                {cleanTitle(displayTitle)}
+                                            </h2>
+
+                                            {/* Action Button: Explanation & Benefits */}
+                                            <div className="mt-auto w-full pt-2 border-t border-black/5 dark:border-white/5 flex items-center justify-between gap-1">
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setSelectedHadith(hadith);
+                                                        setModalInitialTab('explanation');
+                                                    }}
+                                                    className="flex-1 py-1 px-2 rounded-xl text-[10px] sm:text-xs font-bold transition-all flex items-center justify-center gap-1 hover:scale-105 active:scale-95 cursor-pointer"
+                                                    style={{
+                                                        backgroundColor: isDefaultTheme ? '#00000010' : (isBlackTheme ? 'rgba(255, 255, 255, 0.12)' : (color + '15')),
+                                                        color: isDefaultTheme ? '#000000' : (isBlackTheme ? '#FFFFFF' : color)
+                                                    }}
+                                                    title={isEn ? "View Explanation & Benefits" : "عرض الفوائد والشرح"}
+                                                >
+                                                    <Lightbulb className="w-3 h-3 text-amber-500 shrink-0" />
+                                                    <span className="truncate">{isEn ? 'Explanation' : 'الفوائد والشرح'}</span>
+                                                </button>
+                                                <div className="w-5 h-5 flex items-center justify-center opacity-60 group-hover:opacity-100 transition-opacity">
+                                                    {isEn ? (
+                                                        <ArrowRight className="w-3 h-3" style={{ color: isDefaultTheme ? '#000000' : (isBlackTheme ? '#FFFFFF' : color) }} />
+                                                    ) : (
+                                                        <ArrowLeft className="w-3 h-3" style={{ color: isDefaultTheme ? '#000000' : (isBlackTheme ? '#FFFFFF' : color) }} />
+                                                    )}
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
+                                );
+                            })}
+                        </div>
+                    ) : (
+                        /* Mode 2: Explanation Lists (قوائم الشرح) */
+                        <div className="space-y-4 max-w-3xl mx-auto">
+                            {filteredHadiths.map(({ hadith, hadithEn, explanation, explanationEn, index }) => {
+                                const color = theme.palette[index % theme.palette.length];
+                                const displayTitle = isEn ? hadithEn.title : hadith.title;
+                                const activeExp = isEn ? explanationEn : explanation;
+                                const activeText = isEn ? hadithEn.hadith : hadith.hadith;
+                                const isHadithPlaying = playingText === activeText;
+
+                                return (
+                                    <div 
+                                        key={hadith.id} 
+                                        className="p-5 rounded-3xl themed-card border shadow-sm flex flex-col justify-between transition-all overflow-hidden" 
+                                        style={{ 
+                                            borderColor: cardBorderColor,
+                                            borderWidth: '1.5px',
+                                            borderStyle: 'solid',
+                                            color: 'var(--text-color)'
+                                        }}
+                                    >
+                                        {/* Top Bar with Number Badge & Title & Favorite */}
+                                        <div className="flex items-center justify-between gap-3 mb-3 pb-3 border-b border-black/5 dark:border-white/5">
+                                            <div className="flex items-center gap-3 min-w-0">
+                                                <div 
+                                                    className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 shadow-inner"
+                                                    style={{ 
+                                                        backgroundColor: isDefaultTheme ? 'rgba(0,0,0,0.05)' : color + '20',
+                                                        color: isDefaultTheme ? '#000000' : color,
+                                                        borderColor: cardBorderColor,
+                                                        borderWidth: '1.5px',
+                                                        borderStyle: 'solid'
+                                                    }}
+                                                >
+                                                    <span className="text-base font-bold" style={{ fontFamily: theme.font }}>
+                                                        {isEn ? hadith.id : toArabicDigits(hadith.id)}
+                                                    </span>
+                                                </div>
+                                                <h2 className="font-bold text-sm sm:text-base text-gray-800 dark:text-gray-100 truncate" style={{ fontFamily: theme.font }}>
+                                                    {cleanTitle(displayTitle)}
+                                                </h2>
+                                            </div>
+
+                                            <button 
+                                                type="button"
+                                                onClick={(e) => toggleFavorite(hadith.id, e)} 
+                                                className="w-8 h-8 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors shrink-0 cursor-pointer"
+                                                title={isEn ? (favorites.includes(hadith.id) ? 'Remove favorite' : 'Add favorite') : (favorites.includes(hadith.id) ? 'إزالة من المفضلة' : 'إضافة للمفضلة')}
+                                            >
+                                                <i className={`fa-heart ${favorites.includes(hadith.id) ? 'fa-solid text-red-500' : 'fa-regular text-gray-500'}`}></i>
+                                            </button>
+                                        </div>
+
+                                        {/* Brief Explanation Summary - Main feature of Explanation List */}
+                                        {activeExp?.summary && (
+                                            <div 
+                                                className="p-3.5 rounded-2xl border mb-3 relative overflow-hidden"
+                                                style={{
+                                                    backgroundColor: isBlackTheme ? '#111111' : (isDefaultTheme ? '#f9fafb' : 'rgba(0,0,0,0.02)'),
+                                                    borderColor: isDefaultTheme ? '#00000015' : (isBlackTheme ? '#333333' : theme.palette[0] + '25')
+                                                }}
+                                            >
+                                                <div className="flex items-center gap-1.5 mb-1.5 font-bold text-xs sm:text-sm" style={{ color: isDefaultTheme ? '#000000' : (isBlackTheme ? '#FFFFFF' : theme.palette[0]) }}>
+                                                    <BookOpen className="w-4 h-4 shrink-0" />
+                                                    <span>{isEn ? 'Brief Explanation:' : 'الشرح المختصر والميسر:'}</span>
+                                                </div>
+                                                <p className="text-xs sm:text-sm leading-relaxed text-gray-700 dark:text-gray-300">
+                                                    {activeExp.summary}
+                                                </p>
+                                            </div>
+                                        )}
+
+                                        {/* Benefits Pills Preview */}
+                                        <div className="flex flex-wrap gap-1.5 mb-4">
+                                            {activeExp?.creedBenefits?.length > 0 && (
+                                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                                                    <ShieldCheck className="w-3 h-3" />
+                                                    <span>{isEn ? `${activeExp.creedBenefits.length} Creed Benefits` : `${toArabicDigits(activeExp.creedBenefits.length)} فوائد عقدية`}</span>
+                                                </span>
+                                            )}
+                                            {activeExp?.fiqhBenefits?.length > 0 && (
+                                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                                    <Scale className="w-3 h-3" />
+                                                    <span>{isEn ? `${activeExp.fiqhBenefits.length} Fiqh Benefits` : `${toArabicDigits(activeExp.fiqhBenefits.length)} فوائد فقهية`}</span>
+                                                </span>
+                                            )}
+                                            {activeExp?.valuesBenefits?.length > 0 && (
+                                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                                                    <HeartHandshake className="w-3 h-3" />
+                                                    <span>{isEn ? `${activeExp.valuesBenefits.length} Value Benefits` : `${toArabicDigits(activeExp.valuesBenefits.length)} فوائد تربوية`}</span>
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        {/* Action Buttons Footer */}
+                                        <div className="mt-auto pt-3 border-t flex flex-wrap items-center justify-between gap-2" style={{ borderColor: 'var(--card-border)' }}>
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setSelectedHadith(hadith);
+                                                        setModalInitialTab('explanation');
+                                                    }}
+                                                    className="px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 hover:scale-105 active:scale-95 cursor-pointer shadow-sm"
+                                                    style={{
+                                                        backgroundColor: isDefaultTheme ? '#00000010' : (isBlackTheme ? 'rgba(255, 255, 255, 0.12)' : (color + '20')),
+                                                        color: isDefaultTheme ? '#000000' : (isBlackTheme ? '#FFFFFF' : color),
+                                                        borderColor: cardBorderColor,
+                                                        borderWidth: '1px'
+                                                    }}
+                                                    title={isEn ? "Full Explanation & Benefits" : "عرض الفوائد والشرح الكامل"}
+                                                >
+                                                    <Lightbulb className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                                                    <span>{isEn ? 'Full Explanation' : 'الفوائد والشرح'}</span>
+                                                </button>
+
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setSelectedHadith(hadith);
+                                                        setModalInitialTab('hadith');
+                                                    }}
+                                                    className="px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 hover:scale-105 active:scale-95 cursor-pointer border bg-black/5 dark:bg-white/5"
+                                                    style={{ borderColor: cardBorderColor }}
+                                                    title={isEn ? "Hadith Text" : "نص الحديث"}
+                                                >
+                                                    <BookOpen className="w-3.5 h-3.5 shrink-0" />
+                                                    <span>{isEn ? 'Hadith Text' : 'نص الحديث'}</span>
+                                                </button>
+                                            </div>
+
+                                            <div className="flex items-center gap-1.5">
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => handleCopy(activeText, e)}
+                                                    className="w-8 h-8 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors text-gray-600 dark:text-gray-300 cursor-pointer"
+                                                    title={isEn ? "Copy Hadith" : "نسخ الحديث"}
+                                                >
+                                                    <Copy className="w-3.5 h-3.5" />
+                                                </button>
+
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => handleShare(isEn ? hadithEn : hadith, e)}
+                                                    className="w-8 h-8 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors text-gray-600 dark:text-gray-300 cursor-pointer"
+                                                    title={isEn ? "Share as Image" : "مشاركة كصورة"}
+                                                >
+                                                    <Share2 className="w-3.5 h-3.5" />
+                                                </button>
+
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => handlePlayHadithAudio(hadith, hadithEn, e)}
+                                                    className="w-8 h-8 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors text-gray-600 dark:text-gray-300 cursor-pointer"
+                                                    style={{ color: isHadithPlaying ? '#ef4444' : 'inherit' }}
+                                                    title={isHadithPlaying ? (isEn ? "Stop Audio" : "إيقاف") : (isEn ? "Play Audio" : "استماع")}
+                                                >
+                                                    <Volume2 className={`w-3.5 h-3.5 ${isHadithPlaying ? 'text-red-500 animate-pulse' : ''}`} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )
+                ) : (
+                    <div className="text-center py-16">
+                        <p className="text-gray-500 font-kufi text-base">
+                            {isEn ? "No hadith found matching your search" : "لا توجد نتائج مطابقة لبحثك في الأربعين النووية"}
+                        </p>
+                        <button
+                            type="button"
+                            onClick={() => setSearchQuery('')}
+                            className="mt-3 px-5 py-2 rounded-xl text-xs font-bold text-white shadow-sm cursor-pointer"
+                            style={{ backgroundColor: isBlackTheme ? '#333333' : (isDefaultTheme ? '#000000' : theme.palette[0]) }}
+                        >
+                            {isEn ? "Clear search" : "مسح البحث"}
+                        </button>
+                    </div>
+                )}
                 <div className="shrink-0 w-full h-6"></div>
             </main>
 

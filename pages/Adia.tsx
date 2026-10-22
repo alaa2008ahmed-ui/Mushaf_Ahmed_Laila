@@ -9,6 +9,7 @@ import { shareAsImage } from '../utils/shareAsImage';
 import { playTTS, stopTTS, subscribeTTS } from '../utils/ttsEngine';
 import { useHabitTracker } from '../hooks/useHabitTracker';
 import { useLanguage } from '../context/LanguageContext';
+import { LayoutGrid, ListFilter } from 'lucide-react';
 
 const ADIA_STATUS_KEY = 'adia_status_v1';
 const toArabicNumerals = (num: number) => String(num).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[+d]);
@@ -23,16 +24,17 @@ function Adia({ onBack, onNavigate }: AdiaProps) {
     const { language } = useLanguage();
     const isEn = language === 'en';
     const isBlackTheme = theme.bgColor === '#000000';
-    const isDefaultTheme = themeKey === 'default';
+    const isDefaultTheme = themeKey === 'default' || theme.name === 'الافتراضي' || !!theme.isOriginal || !themeKey;
     const cardBorderColor = isDefaultTheme 
         ? '#000000' 
         : (isBlackTheme 
-            ? '#FFFFFF' 
-            : (theme.palette?.[0] || '#000000'));
+            ? 'rgba(255, 255, 255, 0.2)' 
+            : (theme.palette?.[0] + '33' || 'rgba(0, 0, 0, 0.08)'));
     const [zoomedDuaa, setZoomedDuaa] = useState<DuaaItem | null>(null);
     const [activeCategory, setActiveCategory] = useState('all');
     const [favorites, setFavorites] = useState<string[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
+    const [activeTab, setActiveTab] = useState<'grid' | 'list'>('grid');
     const [toastMessage, setToastMessage] = useState('');
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [menuOpenDirection, setMenuOpenDirection] = useState<'up' | 'down'>('up');
@@ -284,27 +286,69 @@ function Adia({ onBack, onNavigate }: AdiaProps) {
             </header>
 
             <main ref={mainRef} className="w-full flex-1 overflow-y-auto px-4 pt-2 pb-4">
-                <div className="mb-6">
+                <div className="mb-6 max-w-3xl mx-auto flex items-center gap-2 w-full" dir={isEn ? 'ltr' : 'rtl'}>
                     <div 
-                        className="relative max-w-2xl mx-auto border-2 rounded-2xl overflow-hidden focus-within:ring-2 transition-all shadow-sm" 
-                        style={{ borderColor: cardBorderColor, ...(themeKey === 'default' ? { focusRingColor: '#000'} : { focusRingColor: theme.palette[0]}) }}
+                        className="relative flex-1 border-2 rounded-2xl overflow-hidden focus-within:ring-2 transition-all shadow-sm" 
+                        style={{ borderColor: cardBorderColor, ...(isDefaultTheme ? { focusRingColor: '#000'} : { focusRingColor: theme.palette[0]}) }}
                     >
                         <input 
                             type="text" 
                             placeholder={isEn ? "Search supplications..." : "ابحث في الأدعية..."} 
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className={`w-full bg-black/5 dark:bg-white/5 py-3 ${isEn ? 'pl-12 pr-4 text-left font-sans' : 'pr-12 pl-4 text-right font-kufi'} focus:outline-none placeholder-gray-500 dark:placeholder-gray-400`}
+                            className={`w-full bg-black/5 dark:bg-white/5 py-3 ${isEn ? 'pl-12 pr-10 text-left font-sans' : 'pr-12 pl-10 text-right font-kufi'} focus:outline-none placeholder-gray-500 dark:placeholder-gray-400`}
                             style={{ color: 'var(--text-color)' }}
                         />
                         <i 
                             className={`fa-solid fa-search absolute ${isEn ? 'left-4' : 'right-4'} top-1/2 transform -translate-y-1/2 opacity-50`} 
                             style={{ color: 'var(--text-color)' }}
                         ></i>
+                        {searchQuery && (
+                            <button
+                                onClick={() => setSearchQuery('')}
+                                className={`absolute inset-y-0 ${isEn ? 'right-4' : 'left-4'} flex items-center text-gray-400 hover:text-gray-600`}
+                            >
+                                <i className="fa-solid fa-times text-xs"></i>
+                            </button>
+                        )}
+                    </div>
+
+                    {/* View Mode Switch */}
+                    <div 
+                        className="flex items-center p-1 rounded-2xl border shrink-0 shadow-sm"
+                        style={{
+                            backgroundColor: isBlackTheme ? '#111111' : (theme.isDark ? '#1e293b' : '#ffffff'),
+                            borderColor: cardBorderColor
+                        }}
+                    >
+                        <button
+                            type="button"
+                            onClick={() => setActiveTab('grid')}
+                            className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTab === 'grid' ? 'shadow-sm' : 'opacity-60 hover:opacity-100'}`}
+                            style={activeTab === 'grid' ? {
+                                backgroundColor: isBlackTheme ? '#FFFFFF' : (isDefaultTheme ? '#000000' : theme.palette[0]),
+                                color: isBlackTheme ? '#000000' : '#ffffff'
+                            } : { color: 'var(--text-color)' }}
+                            title={isEn ? "Grid View" : "عرض شبكي"}
+                        >
+                            <LayoutGrid size={16} />
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setActiveTab('list')}
+                            className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTab === 'list' ? 'shadow-sm' : 'opacity-60 hover:opacity-100'}`}
+                            style={activeTab === 'list' ? {
+                                backgroundColor: isBlackTheme ? '#FFFFFF' : (isDefaultTheme ? '#000000' : theme.palette[0]),
+                                color: isBlackTheme ? '#000000' : '#ffffff'
+                            } : { color: 'var(--text-color)' }}
+                            title={isEn ? "List View" : "عرض القوائم"}
+                        >
+                            <ListFilter size={16} />
+                        </button>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className={activeTab === 'grid' ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" : "space-y-4 max-w-3xl mx-auto"}>
                     {filteredDuaa.length > 0 ? (
                         filteredDuaa.map((duaa) => {
                             const initialCount = duaa.count || 1;

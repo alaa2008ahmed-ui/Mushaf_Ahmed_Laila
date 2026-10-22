@@ -23,12 +23,12 @@ function AdkarSabahMasaa({ onBack, onNavigate }: AdkarSabahMasaaProps) {
     const { language } = useLanguage();
     const isEn = language === 'en';
     const isBlackTheme = theme.bgColor === '#000000';
-    const isDefaultTheme = themeKey === 'default';
+    const isDefaultTheme = themeKey === 'default' || theme.name === 'الافتراضي' || !!theme.isOriginal || !themeKey;
     const cardBorderColor = isDefaultTheme 
         ? '#000000' 
         : (isBlackTheme 
-            ? '#FFFFFF' 
-            : (theme.palette?.[0] || '#000000'));
+            ? 'rgba(255, 255, 255, 0.2)' 
+            : (theme.palette?.[0] + '33' || 'rgba(0, 0, 0, 0.08)'));
 
     const [adhkarTab, setAdhkarTab] = useState<'morning' | 'evening' | 'favorites'>('morning');
     const [activeTabMode, setActiveTabMode] = useState<'grid' | 'list'>('list');
@@ -228,27 +228,27 @@ function AdkarSabahMasaa({ onBack, onNavigate }: AdkarSabahMasaaProps) {
 
             <main ref={mainRef} className="w-full flex-1 overflow-y-auto px-4 pt-2 pb-4">
                 {/* Search bar and View Mode Switch */}
-                <div className="mb-6 max-w-3xl mx-auto flex items-center gap-2">
+                <div className="mb-6 max-w-3xl mx-auto flex items-center gap-2 w-full" dir={isEn ? 'ltr' : 'rtl'}>
                     <div 
                         className="relative flex-1 border-2 rounded-2xl overflow-hidden focus-within:ring-2 transition-all shadow-sm" 
-                        style={{ borderColor: cardBorderColor, ...(themeKey === 'default' ? { focusRingColor: '#000'} : { focusRingColor: theme.palette[0]}) }}
+                        style={{ borderColor: cardBorderColor, ...(isDefaultTheme ? { focusRingColor: '#000'} : { focusRingColor: theme.palette[0]}) }}
                     >
                         <input 
                             type="text" 
                             placeholder={isEn ? "Search remembrances..." : "ابحث في الأذكار..."} 
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className={`w-full bg-black/5 dark:bg-white/5 py-2.5 ${isEn ? 'pl-11 pr-10 text-left font-sans' : 'pr-11 pl-10 text-right font-kufi'} focus:outline-none placeholder-gray-500 dark:placeholder-gray-400 text-sm`}
+                            className={`w-full bg-black/5 dark:bg-white/5 py-3 ${isEn ? 'pl-12 pr-10 text-left font-sans' : 'pr-12 pl-10 text-right font-kufi'} focus:outline-none placeholder-gray-500 dark:placeholder-gray-400`}
                             style={{ color: 'var(--text-color)' }}
                         />
                         <i 
-                            className={`fa-solid fa-search absolute ${isEn ? 'left-3.5' : 'right-3.5'} top-1/2 transform -translate-y-1/2 opacity-50 text-sm`} 
+                            className={`fa-solid fa-search absolute ${isEn ? 'left-4' : 'right-4'} top-1/2 transform -translate-y-1/2 opacity-50`} 
                             style={{ color: 'var(--text-color)' }}
                         ></i>
                         {searchQuery && (
                             <button
                                 onClick={() => setSearchQuery('')}
-                                className={`absolute inset-y-0 ${isEn ? 'right-3.5' : 'left-3.5'} flex items-center text-gray-400 hover:text-gray-600`}
+                                className={`absolute inset-y-0 ${isEn ? 'right-4' : 'left-4'} flex items-center text-gray-400 hover:text-gray-600`}
                             >
                                 <i className="fa-solid fa-times text-xs"></i>
                             </button>
@@ -266,26 +266,26 @@ function AdkarSabahMasaa({ onBack, onNavigate }: AdkarSabahMasaaProps) {
                         <button
                             type="button"
                             onClick={() => setActiveTabMode('grid')}
-                            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTabMode === 'grid' ? 'shadow-sm' : 'opacity-60 hover:opacity-100'}`}
+                            className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTabMode === 'grid' ? 'shadow-sm' : 'opacity-60 hover:opacity-100'}`}
                             style={activeTabMode === 'grid' ? {
-                                backgroundColor: isBlackTheme ? '#FFFFFF' : theme.palette[0],
+                                backgroundColor: isBlackTheme ? '#FFFFFF' : (isDefaultTheme ? '#000000' : theme.palette[0]),
                                 color: isBlackTheme ? '#000000' : '#ffffff'
                             } : { color: 'var(--text-color)' }}
                             title={isEn ? "Grid View" : "عرض شبكي"}
                         >
-                            <LayoutGrid size={15} />
+                            <LayoutGrid size={16} />
                         </button>
                         <button
                             type="button"
                             onClick={() => setActiveTabMode('list')}
-                            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTabMode === 'list' ? 'shadow-sm' : 'opacity-60 hover:opacity-100'}`}
+                            className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTabMode === 'list' ? 'shadow-sm' : 'opacity-60 hover:opacity-100'}`}
                             style={activeTabMode === 'list' ? {
-                                backgroundColor: isBlackTheme ? '#FFFFFF' : theme.palette[0],
+                                backgroundColor: isBlackTheme ? '#FFFFFF' : (isDefaultTheme ? '#000000' : theme.palette[0]),
                                 color: isBlackTheme ? '#000000' : '#ffffff'
                             } : { color: 'var(--text-color)' }}
-                            title={isEn ? "List View" : "قائمة الشرح"}
+                            title={isEn ? "List View" : "عرض القوائم"}
                         >
-                            <ListFilter size={15} />
+                            <ListFilter size={16} />
                         </button>
                     </div>
                 </div>

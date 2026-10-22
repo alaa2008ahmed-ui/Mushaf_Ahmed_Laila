@@ -39,6 +39,7 @@
     <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <uses-feature android:name="android.hardware.microphone" android:required="false" />
 
     <application
@@ -91,6 +92,7 @@
             <intent-filter>
                 <action android:name="com.mushaf.ahmedandlayla.ACTION_START_SILENT" />
                 <action android:name="com.mushaf.ahmedandlayla.ACTION_END_SILENT" />
+                <action android:name="com.mushaf.ahmedandlayla.ACTION_RESTORE_NOTIFICATION" />
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>

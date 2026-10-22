@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { registerBackInterceptor } from '../hooks/useBackButton';
 import { motion, AnimatePresence } from 'framer-motion';
+import { LayoutGrid, ListFilter } from 'lucide-react';
 import ThemePageLock from '../components/ThemePageLock';
 import { useTheme } from '../context/ThemeContext';
 import { shareAsImage } from '../utils/shareAsImage';
@@ -21,14 +22,12 @@ const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, onOpenTheme
   const isEn = language === 'en';
 
   const isBlackTheme = theme.bgColor === '#000000';
-  const isDefaultTheme = themeKey === 'default';
-  const cardBorderColor = isDefaultTheme 
-    ? '#000000' 
-    : (isBlackTheme 
-      ? '#FFFFFF' 
-      : (theme.palette?.[0] || '#000000'));
+  const isDefaultTheme = themeKey === 'default' || theme.name === 'الافتراضي' || !!theme.isOriginal || !themeKey;
+  const cardBorderColor = isBlackTheme ? '#222222' : (theme.isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)');
       
-  const [activeTab, setActiveTab] = useState<'all' | 'quran' | 'sunnah' | 'favorites' | 'guide'>('quran');
+  const [activeTab, setActiveTab] = useState<'all' | 'quran' | 'sunnah' | 'favorites' | 'guide'>('all');
+  const [activeTabMode, setActiveTabMode] = useState<'grid' | 'list'>('grid');
+  const [searchQuery, setSearchQuery] = useState('');
   const [toastMessage, setToastMessage] = useState<string>('');
   const [playingText, setPlayingText] = useState<string | null>(null);
   const [favorites, setFavorites] = useState<string[]>([]);
@@ -219,7 +218,17 @@ const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, onOpenTheme
     return [];
   };
 
-  const filteredItems = getFilteredItems();
+  const filteredItems = getFilteredItems().filter(item => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return true;
+    const text = (item.text || '').toLowerCase();
+    const textEn = (item.textEn || '').toLowerCase();
+    const source = (item.source || '').toLowerCase();
+    const sourceEn = (item.sourceEn || '').toLowerCase();
+    const title = (item.title || '').toLowerCase();
+    const titleEn = (item.titleEn || '').toLowerCase();
+    return text.includes(q) || textEn.includes(q) || source.includes(q) || sourceEn.includes(q) || title.includes(q) || titleEn.includes(q);
+  });
 
   return (
     <div 
@@ -266,37 +275,73 @@ const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, onOpenTheme
         </div>
       </header>
 
-      {/* Main Tabs Control */}
-      <div className="px-4 py-2 z-20 shrink-0 max-w-2xl mx-auto w-full" dir={isEn ? 'ltr' : 'rtl'}>
-        <div className="flex rounded-xl p-1 bg-black/5 dark:bg-white/5 border border-black/5 gap-1">
-          <button 
-            onClick={() => switchTab('quran')}
-            className="flex-1 py-2.5 rounded-lg text-xs font-black transition-all duration-300 border"
-            style={getTabStyle(activeTab === 'quran')}
-          >
-            {isEn ? "The Noble Qur'an" : "القرآن الكريم"}
-          </button>
-          <button 
-            onClick={() => switchTab('sunnah')}
-            className="flex-1 py-2.5 rounded-lg text-xs font-black transition-all duration-300 border"
-            style={getTabStyle(activeTab === 'sunnah')}
-          >
-            {isEn ? "Prophetic Sunnah" : "السنة النبوية"}
-          </button>
-          <button 
-            onClick={() => switchTab('guide')}
-            className="flex-1 py-2.5 rounded-lg text-xs font-black transition-all duration-300 border"
-            style={getTabStyle(activeTab === 'guide')}
-          >
-            {isEn ? "Ruqyah Guide" : "دليل الرقية"}
-          </button>
-        </div>
-      </div>
-
       {/* Main Container */}
       <main className="w-full flex-1 overflow-y-auto px-4 pt-2 pb-4">
+        {/* Search and View Mode Control - Identical to Adia */}
+        <div className="mb-6 max-w-3xl mx-auto flex items-center gap-2 w-full" dir={isEn ? 'ltr' : 'rtl'}>
+          <div 
+            className="relative flex-1 border-2 rounded-2xl overflow-hidden focus-within:ring-2 transition-all shadow-sm" 
+            style={{ borderColor: cardBorderColor, ...(isDefaultTheme ? { focusRingColor: '#000'} : { focusRingColor: theme.palette[0]}) }}
+          >
+            <input 
+              type="text" 
+              placeholder={isEn ? "Search Ruqyah..." : "ابحث في الرقية الشرعية..."} 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className={`w-full bg-black/5 dark:bg-white/5 py-3 ${isEn ? 'pl-12 pr-10 text-left font-sans' : 'pr-12 pl-10 text-right font-kufi'} focus:outline-none placeholder-gray-500 dark:placeholder-gray-400`}
+              style={{ color: 'var(--text-color)' }}
+            />
+            <i 
+              className={`fa-solid fa-search absolute ${isEn ? 'left-4' : 'right-4'} top-1/2 transform -translate-y-1/2 opacity-50`} 
+              style={{ color: 'var(--text-color)' }}
+            ></i>
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className={`absolute inset-y-0 ${isEn ? 'right-4' : 'left-4'} flex items-center text-gray-400 hover:text-gray-600`}
+              >
+                <i className="fa-solid fa-times text-xs"></i>
+              </button>
+            )}
+          </div>
+
+          {/* View Mode Switch - Matches Adia page and adapts to every theme */}
+          <div 
+            className="flex items-center p-1 rounded-2xl border shrink-0 shadow-sm"
+            style={{
+              backgroundColor: isBlackTheme ? '#111111' : (theme.isDark ? '#1e293b' : '#ffffff'),
+              borderColor: cardBorderColor
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setActiveTabMode('grid')}
+              className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTabMode === 'grid' ? 'shadow-sm' : 'opacity-60 hover:opacity-100'}`}
+              style={activeTabMode === 'grid' ? {
+                backgroundColor: isBlackTheme ? '#FFFFFF' : (isDefaultTheme ? '#000000' : theme.palette[0]),
+                color: isBlackTheme ? '#000000' : '#ffffff'
+              } : { color: 'var(--text-color)' }}
+              title={isEn ? "Grid View" : "عرض شبكي"}
+            >
+              <LayoutGrid size={16} />
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTabMode('list')}
+              className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTabMode === 'list' ? 'shadow-sm' : 'opacity-60 hover:opacity-100'}`}
+              style={activeTabMode === 'list' ? {
+                backgroundColor: isBlackTheme ? '#FFFFFF' : (isDefaultTheme ? '#000000' : theme.palette[0]),
+                color: isBlackTheme ? '#000000' : '#ffffff'
+              } : { color: 'var(--text-color)' }}
+              title={isEn ? "List View" : "عرض القوائم"}
+            >
+              <ListFilter size={16} />
+            </button>
+          </div>
+        </div>
+
         <div 
-          className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2 pb-6 ${isEn ? 'text-left' : 'text-right'}`}
+          className={`${activeTabMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'space-y-4'} max-w-3xl mx-auto gap-4 pt-2 pb-6 ${isEn ? 'text-left' : 'text-right'}`}
           dir={isEn ? 'ltr' : 'rtl'}
         >
           <AnimatePresence mode="wait">

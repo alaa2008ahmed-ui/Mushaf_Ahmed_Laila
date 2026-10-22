@@ -9,6 +9,7 @@ import { playTTS, stopTTS, subscribeTTS } from '../utils/ttsEngine';
 import { useHabitTracker } from '../hooks/useHabitTracker';
 import { useLanguage } from '../context/LanguageContext';
 import { BottomSalahGuides } from '../components/AthkarAlSalah/BottomSalahGuides';
+import { LayoutGrid, ListFilter, Search } from 'lucide-react';
 
 const SalahZikrCard = ({ 
     zikr, 
@@ -32,12 +33,12 @@ const SalahZikrCard = ({
     const { language } = useLanguage();
     const isEn = language === 'en';
     const isBlackTheme = theme.bgColor === '#000000';
-    const isDefaultTheme = themeKey === 'default';
+    const isDefaultTheme = themeKey === 'default' || theme.name === 'الافتراضي' || !!theme.isOriginal || !themeKey;
     const cardBorderColor = isDefaultTheme 
         ? '#000000' 
         : (isBlackTheme 
-            ? '#FFFFFF' 
-            : (theme.palette?.[0] || '#000000'));
+            ? 'rgba(255, 255, 255, 0.2)' 
+            : (theme.palette?.[0] + '33' || 'rgba(0, 0, 0, 0.08)'));
     const [isFav, setIsFav] = useState(false);
     const [playingText, setPlayingText] = useState<string | null>(null);
     const isFinished = zikr.currentCount === 0;
@@ -150,7 +151,10 @@ const SalahZikrCard = ({
                     style={
                         isFinished 
                         ? { backgroundColor: 'var(--badge-finished-bg)', color: 'var(--badge-finished-text)' } 
-                        : { backgroundImage: `linear-gradient(to bottom right, ${theme.palette[0]}, ${theme.palette[1]})`, color: theme.textColor }
+                        : (isDefaultTheme 
+                            ? { backgroundColor: '#ffffff', color: '#000000', border: '1px solid rgba(0,0,0,0.1)' } 
+                            : { backgroundImage: `linear-gradient(to bottom right, ${theme.palette[0]}, ${theme.palette[1]})`, color: theme.name === 'اسود' ? '#000000' : '#ffffff' }
+                        )
                     }
                 >
                     {isFinished ? <i className="fa-solid fa-check"></i> : zikr.currentCount}
@@ -235,12 +239,8 @@ function AthkarAlSalah({ onBack, onNavigate }: AthkarAlSalahProps) {
     const { language } = useLanguage();
     const isEn = language === 'en';
     const isBlackTheme = theme.bgColor === '#000000';
-    const isDefaultTheme = themeKey === 'default';
-    const cardBorderColor = isDefaultTheme 
-        ? '#000000' 
-        : (isBlackTheme 
-            ? '#FFFFFF' 
-            : (theme.palette?.[0] || '#000000'));
+    const isDefaultTheme = themeKey === 'default' || theme.name === 'الافتراضي' || !!theme.isOriginal || !themeKey;
+    const cardBorderColor = isBlackTheme ? '#222222' : (theme.isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)');
     const [currentPrayer, setCurrentPrayer] = useState<{ id: string; title: string; titleEn?: string } | null>(null);
     const [athkarList, setAthkarList] = useState<any[]>([]);
     const [zoomedZikr, setZoomedZikr] = useState<any>(null);
@@ -249,6 +249,8 @@ function AthkarAlSalah({ onBack, onNavigate }: AthkarAlSalahProps) {
     const [favorites, setFavorites] = useState<string[]>([]);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [menuOpenDirection, setMenuOpenDirection] = useState<'up' | 'down'>('up');
+    const [activeTab, setActiveTab] = useState<'grid' | 'list'>('list');
+    const [searchQuery, setSearchQuery] = useState('');
     const fabRef = useRef<HTMLButtonElement>(null);
     const fabContainerRef = useRef<HTMLDivElement>(null);
 
@@ -299,6 +301,7 @@ function AthkarAlSalah({ onBack, onNavigate }: AthkarAlSalahProps) {
     };
 
     const openPrayer = (prayerId: string, titleText: string, titleEnText?: string) => {
+        setSearchQuery('');
         let currentAthkarData: SalahDhikrItem[] = JSON.parse(JSON.stringify(baseAthkar));
 
         // Handle common Fajr/Maghrib changes
@@ -351,6 +354,7 @@ function AthkarAlSalah({ onBack, onNavigate }: AthkarAlSalahProps) {
     };
 
     const handleBack = () => {
+        setSearchQuery('');
         if (zoomedZikr) {
             setZoomedZikr(null);
         } else if (isFavoritesView) {
@@ -363,6 +367,7 @@ function AthkarAlSalah({ onBack, onNavigate }: AthkarAlSalahProps) {
     };
 
     const handleGoHome = () => {
+        setSearchQuery('');
         if (zoomedZikr) setZoomedZikr(null);
         if (isFavoritesView) setIsFavoritesView(false);
         if (currentPrayer) setCurrentPrayer(null);
@@ -378,6 +383,30 @@ function AthkarAlSalah({ onBack, onNavigate }: AthkarAlSalahProps) {
     const favoriteAthkar = allPossibleAthkar
         .filter(z => favorites.includes(z.text))
         .map(z => ({ ...z, currentCount: z.count }));
+
+    const filteredPrayerOptions = prayerOptions.filter(prayer =>
+        !searchQuery ||
+        prayer.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        prayer.titleEn.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    const filteredAthkarList = athkarList.filter(zikr =>
+        !searchQuery ||
+        zikr.text.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (zikr.title && zikr.title.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (zikr.note && zikr.note.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (zikr.textEn && zikr.textEn.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (zikr.titleEn && zikr.titleEn.toLowerCase().includes(searchQuery.toLowerCase()))
+    );
+
+    const filteredFavoriteAthkar = favoriteAthkar.filter(zikr =>
+        !searchQuery ||
+        zikr.text.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (zikr.title && zikr.title.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (zikr.note && zikr.note.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (zikr.textEn && zikr.textEn.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (zikr.titleEn && zikr.titleEn.toLowerCase().includes(searchQuery.toLowerCase()))
+    );
 
     const pageTitle = currentPrayer 
         ? (isEn ? (currentPrayer.titleEn || currentPrayer.title) : currentPrayer.title) 
@@ -425,12 +454,76 @@ function AthkarAlSalah({ onBack, onNavigate }: AthkarAlSalahProps) {
                 </div>
             </header>
 
-            <main className="flex-1 overflow-y-auto hide-scrollbar relative max-w-md mx-auto w-full px-4 pt-2 pb-4 flex flex-col">
+            <main className="flex-1 overflow-y-auto hide-scrollbar relative max-w-3xl mx-auto w-full px-4 pt-2 pb-4 flex flex-col">
+                {/* Controls Bar: Search and View Mode Switch - Matches Adia/OthersPage */}
+                <div className="mb-6 max-w-3xl mx-auto w-full flex items-center gap-2 z-10 shrink-0" dir={isEn ? 'ltr' : 'rtl'}>
+                    {/* Search Input */}
+                    <div 
+                        className="relative flex-1 border-2 rounded-2xl overflow-hidden focus-within:ring-2 transition-all shadow-sm" 
+                        style={{ borderColor: cardBorderColor, ...(isDefaultTheme ? { focusRingColor: '#000'} : { focusRingColor: theme.palette[0]}) }}
+                    >
+                        <input 
+                            type="text" 
+                            placeholder={isEn ? "Search prayer remembrances..." : "ابحث في أذكار الصلاة..."} 
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className={`w-full bg-black/5 dark:bg-white/5 py-3 ${isEn ? 'pl-12 pr-10 text-left font-sans' : 'pr-12 pl-10 text-right font-kufi'} focus:outline-none placeholder-gray-500 dark:placeholder-gray-400`}
+                            style={{ color: 'var(--text-color)' }}
+                        />
+                        <i 
+                            className={`fa-solid fa-search absolute ${isEn ? 'left-4' : 'right-4'} top-1/2 transform -translate-y-1/2 opacity-50`} 
+                            style={{ color: 'var(--text-color)' }}
+                        ></i>
+                        {searchQuery && (
+                            <button
+                                onClick={() => setSearchQuery('')}
+                                className={`absolute inset-y-0 ${isEn ? 'right-4' : 'left-4'} flex items-center text-gray-400 hover:text-gray-600`}
+                            >
+                                <i className="fa-solid fa-times text-xs"></i>
+                            </button>
+                        )}
+                    </div>
+
+                    {/* View Mode Switch */}
+                    <div 
+                        className="flex items-center p-1 rounded-2xl border shrink-0 shadow-sm"
+                        style={{
+                            backgroundColor: isBlackTheme ? '#111111' : (theme.isDark ? '#1e293b' : '#ffffff'),
+                            borderColor: cardBorderColor
+                        }}
+                    >
+                        <button
+                            type="button"
+                            onClick={() => setActiveTab('grid')}
+                            className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTab === 'grid' ? 'shadow-sm' : 'opacity-60 hover:opacity-100'}`}
+                            style={activeTab === 'grid' ? {
+                                backgroundColor: isBlackTheme ? '#FFFFFF' : (isDefaultTheme ? '#000000' : theme.palette[0]),
+                                color: isBlackTheme ? '#000000' : '#ffffff'
+                            } : { color: 'var(--text-color)' }}
+                            title={isEn ? "Grid View" : "عرض شبكي"}
+                        >
+                            <LayoutGrid size={16} />
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setActiveTab('list')}
+                            className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTab === 'list' ? 'shadow-sm' : 'opacity-60 hover:opacity-100'}`}
+                            style={activeTab === 'list' ? {
+                                backgroundColor: isBlackTheme ? '#FFFFFF' : (isDefaultTheme ? '#000000' : theme.palette[0]),
+                                color: isBlackTheme ? '#000000' : '#ffffff'
+                            } : { color: 'var(--text-color)' }}
+                            title={isEn ? "List View" : "عرض القوائم"}
+                        >
+                            <ListFilter size={16} />
+                        </button>
+                    </div>
+                </div>
+
                 {isFavoritesView ? (
-                    <div className="space-y-4">
-                        {favoriteAthkar.length > 0 ? (
+                    <div className={activeTab === 'grid' ? "grid grid-cols-1 sm:grid-cols-2 gap-4" : "space-y-4"}>
+                        {filteredFavoriteAthkar.length > 0 ? (
                             <>
-                                {favoriteAthkar.map(zikr => (
+                                {filteredFavoriteAthkar.map(zikr => (
                                     <SalahZikrCard 
                                         key={zikr.id} 
                                         zikr={zikr} 
@@ -445,7 +538,7 @@ function AthkarAlSalah({ onBack, onNavigate }: AthkarAlSalahProps) {
                                 ))}
                             </>
                         ) : (
-                            <div className="flex flex-col items-center justify-center py-20 opacity-50 text-center">
+                            <div className="flex flex-col items-center justify-center py-20 opacity-50 text-center col-span-full">
                                 <i className="fa-solid fa-heart text-5xl mb-4"></i>
                                 <p className="font-bold">
                                     {isEn ? 'No favorite adhkar to display currently' : 'لا توجد أذكار مفضلة لعرضها حالياً'}
@@ -455,8 +548,8 @@ function AthkarAlSalah({ onBack, onNavigate }: AthkarAlSalahProps) {
                     </div>
                 ) : !currentPrayer ? (
                     <>
-                        <div id="prayersMenu" className="space-y-4">
-                            {prayerOptions.map(prayer => (
+                        <div id="prayersMenu" className={activeTab === 'grid' ? "grid grid-cols-2 gap-3.5" : "space-y-4"}>
+                            {filteredPrayerOptions.map(prayer => (
                                  <div 
                                       key={prayer.id} 
                                       onClick={() => openPrayer(
@@ -464,21 +557,21 @@ function AthkarAlSalah({ onBack, onNavigate }: AthkarAlSalahProps) {
                                           `أذكار ${prayer.title}`, 
                                           `${prayer.titleEn} Adhkar`
                                       )} 
-                                      className={`themed-card p-4 rounded-xl shadow-sm border flex items-center justify-between cursor-pointer active:scale-95 transition`}
+                                      className={`themed-card p-4 rounded-xl shadow-sm border flex ${activeTab === 'grid' ? 'flex-col items-center text-center justify-center py-6 gap-3' : 'items-center justify-between'} cursor-pointer active:scale-95 transition`}
                                       style={{ 
                                           borderColor: cardBorderColor,
                                           borderWidth: '1.5px',
                                           borderStyle: 'solid',
-                                          ...(isEn ? {
+                                          ...(activeTab === 'grid' ? {} : (isEn ? {
                                               borderLeftWidth: '4px',
-                                              borderLeftColor: prayer.color === 'primary' ? theme.palette[0] : theme.palette[1]
+                                              borderLeftColor: prayer.color === 'primary' ? (isDefaultTheme ? '#000000' : theme.palette[0]) : theme.palette[1]
                                           } : {
                                               borderRightWidth: '4px',
-                                              borderRightColor: prayer.color === 'primary' ? theme.palette[0] : theme.palette[1]
-                                          })
+                                              borderRightColor: prayer.color === 'primary' ? (isDefaultTheme ? '#000000' : theme.palette[0]) : theme.palette[1]
+                                          }))
                                       }}
                                  >
-                                    <div className="flex items-center gap-4">
+                                    <div className={`flex ${activeTab === 'grid' ? 'flex-col items-center gap-3' : 'items-center gap-4'}`}>
                                         <div 
                                              className={`w-12 h-12 rounded-full flex items-center justify-center ${themeKey === 'default' ? 'shadow-inner border border-black/5' : ''}`} 
                                              style={{
@@ -489,12 +582,11 @@ function AthkarAlSalah({ onBack, onNavigate }: AthkarAlSalahProps) {
                                             <i className={`fa-solid ${prayer.icon} text-xl`}></i>
                                         </div>
                                         <div>
-                                            <h2 className="font-bold text-lg">
+                                            <h2 className="font-bold text-base sm:text-lg">
                                                 {isEn ? prayer.titleEn : prayer.title}
                                             </h2>
                                         </div>
                                     </div>
-                                    <i className={`fa-solid ${isEn ? 'fa-angle-right' : 'fa-angle-left'} themed-text-muted`}></i>
                                 </div>
                             ))}
                         </div>
@@ -509,8 +601,8 @@ function AthkarAlSalah({ onBack, onNavigate }: AthkarAlSalahProps) {
                         />
                     </>
                 ) : (
-                    <div id="athkarDetails" className="space-y-4">
-                        {athkarList.map(zikr => (
+                    <div id="athkarDetails" className={activeTab === 'grid' ? "grid grid-cols-1 sm:grid-cols-2 gap-4" : "space-y-4"}>
+                        {filteredAthkarList.map(zikr => (
                             <SalahZikrCard 
                                 key={zikr.id} 
                                 zikr={zikr} 
@@ -523,15 +615,17 @@ function AthkarAlSalah({ onBack, onNavigate }: AthkarAlSalahProps) {
                                 setToastMessage={setToastMessage}
                             />
                         ))}
-                        <BottomSalahGuides 
-                            theme={theme}
-                            themeKey={themeKey}
-                            cardBorderColor={cardBorderColor}
-                            isBlackTheme={isBlackTheme}
-                            isEn={isEn}
-                            onZoom={setZoomedZikr}
-                            setToastMessage={setToastMessage}
-                        />
+                        <div className="col-span-full">
+                            <BottomSalahGuides 
+                                theme={theme}
+                                themeKey={themeKey}
+                                cardBorderColor={cardBorderColor}
+                                isBlackTheme={isBlackTheme}
+                                isEn={isEn}
+                                onZoom={setZoomedZikr}
+                                setToastMessage={setToastMessage}
+                            />
+                        </div>
                     </div>
                 )}
                 <div className="shrink-0 w-full h-32"></div>

@@ -21,17 +21,41 @@ public class MainActivity extends BridgeActivity {
         createAdhanNotificationChannels();
 
         // Preserve all Capacitor BridgeWebChromeClient capabilities (file chooser, camera, photo gallery)
-        // while auto-granting WebView media recording permissions immediately for WebRTC/MediaRecorder.
+        // while ensuring native Android permissions are requested if not already granted.
         if (this.bridge != null && this.bridge.getWebView() != null) {
             this.bridge.getWebView().setWebChromeClient(new BridgeWebChromeClient(this.bridge) {
                 @Override
                 public void onPermissionRequest(final PermissionRequest request) {
                     runOnUiThread(() -> {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                            String[] resources = request.getResources();
+                            java.util.List<String> neededPermissions = new java.util.ArrayList<>();
+                            for (String res : resources) {
+                                if (PermissionRequest.RESOURCE_AUDIO_CAPTURE.equals(res)) {
+                                    if (checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                                        neededPermissions.add(android.Manifest.permission.RECORD_AUDIO);
+                                    }
+                                } else if (PermissionRequest.RESOURCE_VIDEO_CAPTURE.equals(res)) {
+                                    if (checkSelfPermission(android.Manifest.permission.CAMERA) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                                        neededPermissions.add(android.Manifest.permission.CAMERA);
+                                    }
+                                }
+                            }
+                            if (!neededPermissions.isEmpty()) {
+                                requestPermissions(neededPermissions.toArray(new String[0]), 103);
+                            }
+                        }
                         request.grant(request.getResources());
                     });
                 }
             });
         }
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        PersistentPrayerNotification.update(this);
     }
 
     private void createAdhanNotificationChannels() {

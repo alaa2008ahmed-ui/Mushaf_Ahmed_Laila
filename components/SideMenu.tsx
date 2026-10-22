@@ -53,7 +53,6 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onNavigate, onOpen
     };
 
     const menuItems = [
-        { id: 'page-guide', label: t('sidemenu.page_guide', 'دليل صفحات التطبيق'), icon: HelpCircle, color: '#059669', description: t('sidemenu.page_guide_desc', 'شرح وافٍ ومبسط لجميع خدمات وصفحات ومميزات التطبيق.') },
         { id: 'community', label: t('menu.community', 'مجتمع التواصل'), icon: MessageCircle, color: '#10b981', description: t('sidemenu.community_desc', 'التواصل والمحادثات مع القراء والحفاظ من جميع أنحاء العالم.') },
         { id: 'ahl-al-quran', label: t('menu.ahl_al_quran', 'أهل القرآن (لوحة الشرف)'), icon: Trophy, color: '#f59e0b', description: t('sidemenu.ahl_al_quran_desc', 'لوحة صدارة وتنافس محمود لقراء القرآن الكريم مع تحديث شهري للأجزاء والختمات.') },
         { id: 'prophetic-seerah', label: t('menu.prophetic_seerah', 'السيرة النبوية'), icon: ScrollText, color: '#f59e0b', description: t('sidemenu.prophetic_seerah_desc', 'خط زمني تفاعلي لمحطات السيرة العطرة والعبر المستفادة.') },
@@ -106,8 +105,9 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onNavigate, onOpen
                                         <BookOpen size={24} color="#fff" />
                                     </div>
                                     <div>
-                                        <h2 className="font-bold text-lg leading-tight">{t('app.name', 'مصحف أحمد وليلى')}</h2>
-                                        <p className="text-xs opacity-60">{t('app.version', 'الإصدار 1.13')}</p>
+                                        <h2 className="font-bold text-base leading-tight">{t('app.name', 'مصحف أحمد وليلى')}</h2>
+                                        <p className="text-xs font-semibold opacity-75">Mushaf Ahmed & Laila</p>
+                                        <p className="text-[10px] opacity-50">{t('app.version', 'الإصدار 1.13')}</p>
                                     </div>
                                 </div>
                                 <button onClick={onClose} className="p-2 rounded-full hover:bg-black/5 transition-colors">

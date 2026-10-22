@@ -1,10 +1,19 @@
-import React, { useState } from 'react';
-import { Bell, Check, X, Smartphone, AppWindow, VolumeX, Clock, Shuffle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Bell, Check, X, Smartphone, AppWindow, VolumeX, Clock, Shuffle, ShieldCheck, Zap, BellRing } from 'lucide-react';
 import { toArabic } from './constants';
 import { usePrayerTimes } from '../../context/PrayerTimesContext';
 import { setupNotifications } from '../../utils/notifications';
 import { useNotificationSettings, PhoneNotificationSettings } from '../../hooks/useNotificationSettings';
 import { useLanguage } from '../../context/LanguageContext';
+import { 
+    setNativePersistentNotificationEnabled, 
+    updateNativePersistentNotification, 
+    checkNativeBatteryOptimization, 
+    requestNativeBatteryOptimization 
+} from '../../utils/silentMode';
+import { LocalNotifications } from '@capacitor/local-notifications';
+import { Preferences } from '@capacitor/preferences';
+import { Capacitor } from '@capacitor/core';
 
 interface NotificationSettingsModalProps {
     onClose: () => void;
@@ -40,6 +49,73 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({ o
             general: true
         };
     });
+
+    const [isPersistentNotificationEnabled, setIsPersistentNotificationEnabled] = useState<boolean>(() => {
+        const saved = localStorage.getItem('persistent_prayer_notification_enabled');
+        if (saved !== null) {
+            return saved !== 'false';
+        }
+        return true; // Enabled by default as requested
+    });
+
+    const [isBatteryIgnored, setIsBatteryIgnored] = useState<boolean>(true);
+
+    useEffect(() => {
+        if (Capacitor.getPlatform() === 'android') {
+            checkNativeBatteryOptimization().then(isIgnored => {
+                setIsBatteryIgnored(isIgnored);
+            });
+        }
+    }, []);
+
+    const togglePersistentNotification = async () => {
+        const newState = !isPersistentNotificationEnabled;
+        
+        // If enabling, ensure notification permissions are granted
+        if (newState && Capacitor.isNativePlatform()) {
+            try {
+                const perm = await LocalNotifications.checkPermissions();
+                if (perm.display !== 'granted') {
+                    const req = await LocalNotifications.requestPermissions();
+                    if (req.display !== 'granted') {
+                        showToast(isEn ? 'Notification permission is required' : 'إذن الإشعارات مطلوب لتشغيل الإشعار المستمر');
+                        return;
+                    }
+                }
+            } catch (e) {
+                console.warn('Notification permission check failed:', e);
+            }
+        }
+
+        setIsPersistentNotificationEnabled(newState);
+        localStorage.setItem('persistent_prayer_notification_enabled', newState ? 'true' : 'false');
+        try {
+            await Preferences.set({
+                key: 'persistent_prayer_notification_enabled',
+                value: newState ? 'true' : 'false'
+            });
+        } catch (e) {
+            console.warn('Preferences set error:', e);
+        }
+
+        await setNativePersistentNotificationEnabled(newState);
+        if (newState) {
+            await updateNativePersistentNotification();
+        }
+
+        showToast(newState 
+            ? (isEn ? 'Persistent prayer notification enabled' : 'تم تفعيل الإشعار المستمر لمواقيت الصلاة') 
+            : (isEn ? 'Persistent prayer notification disabled' : 'تم تعطيل الإشعار المستمر لمواقيت الصلاة')
+        );
+    };
+
+    const handleRequestBatteryOptimization = async () => {
+        await requestNativeBatteryOptimization();
+        setTimeout(async () => {
+            const isIgnored = await checkNativeBatteryOptimization();
+            setIsBatteryIgnored(isIgnored);
+        }, 1500);
+    };
 
     const toggleAppSetting = (key: string) => {
         const newSettings = { ...appSettings, [key]: !appSettings[key] };
@@ -285,7 +361,91 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({ o
                                 {isEn ? 'Notifications shown on device screen even when app is closed' : 'إشعارات تظهر على شاشة الهاتف حتى لو كان التطبيق مغلقاً'}
                             </p>
 
+                            {/* Persistent Prayer Times Notification Card */}
                             <div className="space-y-2">
+                                <h4 className="font-bold text-sm mb-1 opacity-90 flex items-center gap-2">
+                                    <BellRing className="w-4 h-4 text-emerald-500" />
+                                    <span>{isEn ? 'Ongoing Prayer Notification' : 'الإشعار المستمر لمواقيت الصلاة'}</span>
+                                    <span className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-normal px-2 py-0.5 rounded-full">
+                                        {isEn ? 'Live Countdown' : 'عد تنازلي لحظي'}
+                                    </span>
+                                </h4>
+
+                                <div 
+                                    onClick={togglePersistentNotification}
+                                    className={`flex items-center justify-between p-3.5 rounded-xl border-2 transition-all cursor-pointer ${
+                                        isPersistentNotificationEnabled 
+                                        ? 'themed-card-bg shadow-sm' 
+                                        : 'bg-black/5 dark:bg-white/10 border-transparent opacity-70'
+                                    }`}
+                                    style={{ borderColor: isPersistentNotificationEnabled ? 'var(--qr-accent)' : undefined }}
+                                >
+                                    <div className="flex flex-col gap-1 pr-2">
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-bold text-sm">
+                                                {isEn ? 'Persistent Lock Screen & Status Bar Alert' : 'تثبيت إشعار الصلاة بشريط الحالة وشاشة القفل'}
+                                            </span>
+                                        </div>
+                                        <span className="text-[11px] opacity-80 leading-relaxed">
+                                            {isEn 
+                                                ? 'Displays next prayer & live countdown without battery drain' 
+                                                : 'إشعار دائم يوضح الصلاة القادمة والوقت المتبقي بدقة حتى عند إغلاق التطبيق وقفل الشاشة'}
+                                        </span>
+                                    </div>
+                                    <div 
+                                        className="w-6 h-6 rounded-full flex items-center justify-center transition-colors flex-shrink-0" 
+                                        style={{ 
+                                            backgroundColor: isPersistentNotificationEnabled ? 'var(--qr-accent)' : 'rgba(0,0,0,0.1)', 
+                                            color: isPersistentNotificationEnabled ? 'var(--qr-accent-text, #fff)' : 'transparent' 
+                                        }}
+                                    >
+                                        {isPersistentNotificationEnabled && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                                    </div>
+                                </div>
+
+                                {/* Battery Optimization Advice (Android only) */}
+                                {Capacitor.getPlatform() === 'android' && isPersistentNotificationEnabled && (
+                                    <div className={`p-3 rounded-xl border flex items-center justify-between gap-3 text-xs ${
+                                        isBatteryIgnored 
+                                        ? 'bg-emerald-50/70 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300' 
+                                        : 'bg-amber-50/80 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300'
+                                    }`}>
+                                        <div className="flex items-start gap-2 flex-1">
+                                            {isBatteryIgnored ? (
+                                                <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 mt-0.5 flex-shrink-0" />
+                                            ) : (
+                                                <Zap className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+                                            )}
+                                            <div className="flex flex-col gap-0.5">
+                                                <span className="font-bold">
+                                                    {isBatteryIgnored 
+                                                        ? (isEn ? 'Background execution: Unrestricted' : 'حالة البطارية: غير مقيد (مثالي)') 
+                                                        : (isEn ? 'Battery optimization active' : 'استثناء من توفير البطارية')}
+                                                </span>
+                                                <span className="text-[10px] opacity-90">
+                                                    {isBatteryIgnored
+                                                        ? (isEn ? 'App is allowed to update prayer countdown smoothly in background' : 'التطبيق مستثنى ويعمل بسلاسة في الخلفية دون أن يوقفه نظام أندرويد')
+                                                        : (isEn ? 'Recommended to allow background running so notification never stops' : 'اضغط لمنح إذن العمل في الخلفية لضمان عدم توقف الإشعار أو مواقيت الصلاة')}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        {!isBatteryIgnored && (
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleRequestBatteryOptimization();
+                                                }}
+                                                className="px-2.5 py-1.5 rounded-lg font-bold text-xs bg-amber-600 hover:bg-amber-700 text-white shadow-sm flex-shrink-0 transition-colors"
+                                            >
+                                                {isEn ? 'Allow' : 'استثناء'}
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="space-y-2 pt-2 border-t border-black/10 dark:border-white/10">
                                 <h4 className="font-bold text-sm mb-2 opacity-90">{isEn ? 'Night Times' : 'أوقات الليل'}</h4>
                                 {[
                                     { 

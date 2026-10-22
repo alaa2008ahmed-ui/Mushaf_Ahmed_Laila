@@ -3,9 +3,21 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   Search, MessageSquare, Users, Ban, User, Edit3, 
   Sparkles, Globe, Shield, CheckCircle2, UserX, RefreshCw, Trash2, KeyRound, Copy,
-  BookOpen, Trophy, Check, X, EyeOff, UserPlus, Clock, ShieldCheck
+  Check, X, EyeOff, UserPlus, Clock, ShieldCheck, HelpCircle
 } from 'lucide-react';
 import { communityService, CommunityUser, ChatConversation, GroupChat, ADMIN_USER_ID } from '../services/communityService';
+import { 
+  CommunitySpotlightGuide, 
+  getGuideSeen,
+  setGuideSeen
+} from '../components/Community/CommunitySpotlightGuide';
+import { 
+  COMMUNITY_HEADER_STEPS, 
+  TAB_CHATS_STEPS, 
+  TAB_COMMUNITY_STEPS, 
+  TAB_USERS_STEPS, 
+  TAB_BLOCKED_STEPS 
+} from '../components/Community/communityTourSteps';
 import { SUPPORT_AVATAR_BASE64 } from '../src/supportAvatarBase64';
 import UsernameModal from '../components/Community/UsernameModal';
 import { AdminDashboardModal } from '../components/Community/AdminDashboardModal';
@@ -15,7 +27,7 @@ import ThemePageLock from '../components/ThemePageLock';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { registerBackInterceptor } from '../hooks/useBackButton';
-import { useShowNewBadge, markPageAsSeen } from '../utils/badgeManager';
+import { markPageAsSeen } from '../utils/badgeManager';
 import { 
   formatCountryName, 
   formatUsername, 
@@ -36,8 +48,6 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
   const { theme, themeKey } = useTheme();
   const { language, dir } = useLanguage();
   const isEn = language === 'en';
-
-  const showAhlQuranBadge = useShowNewBadge('ahl-al-quran');
   const isDefaultTheme = themeKey === 'default' || !themeKey || theme.name?.includes('الافتراضي') || theme.name === 'Default';
   const isDeepBlack = theme.bgColor === '#000000' || theme.name === 'أبيض وأسود' || themeKey === 'deep_black';
   const cardBorderColor = isDefaultTheme 
@@ -84,6 +94,26 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
     setActiveTabState(tab);
     communityService.setActiveTab(tab);
     setTabHistory(prev => [...prev, tab]);
+
+    // Close any previous guide immediately
+    setShowHeaderTour(false);
+    setShowChatsTour(false);
+    setShowCommunityTour(false);
+    setShowUsersTour(false);
+    setShowBlockedTour(false);
+
+    // When switching tabs, trigger the specific tab's guide if not seen before
+    setTimeout(() => {
+      if (tab === 'chats' && !getGuideSeen('tab_chats')) {
+        setShowChatsTour(true);
+      } else if (tab === 'community' && !getGuideSeen('tab_community')) {
+        setShowCommunityTour(true);
+      } else if (tab === 'users' && !getGuideSeen('tab_users')) {
+        setShowUsersTour(true);
+      } else if (tab === 'blocked' && !getGuideSeen('tab_blocked')) {
+        setShowBlockedTour(true);
+      }
+    }, 200);
   };
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -107,6 +137,31 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
   const [groupToHide, setGroupToHide] = useState<GroupChat | null>(null);
   const [groupToEdit, setGroupToEdit] = useState<GroupChat | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Independent Spotlight tour states for header and individual tabs
+  const [showHeaderTour, setShowHeaderTour] = useState(() => !getGuideSeen('community_header'));
+  const [showChatsTour, setShowChatsTour] = useState(false);
+  const [showCommunityTour, setShowCommunityTour] = useState(false);
+  const [showUsersTour, setShowUsersTour] = useState(false);
+  const [showBlockedTour, setShowBlockedTour] = useState(false);
+
+  // If header tour was already seen previously, check if the current active tab needs a tour
+  useEffect(() => {
+    if (getGuideSeen('community_header')) {
+      const timer = setTimeout(() => {
+        if (activeTab === 'chats' && !getGuideSeen('tab_chats')) {
+          setShowChatsTour(true);
+        } else if (activeTab === 'community' && !getGuideSeen('tab_community')) {
+          setShowCommunityTour(true);
+        } else if (activeTab === 'users' && !getGuideSeen('tab_users')) {
+          setShowUsersTour(true);
+        } else if (activeTab === 'blocked' && !getGuideSeen('tab_blocked')) {
+          setShowBlockedTour(true);
+        }
+      }, 350);
+      return () => clearTimeout(timer);
+    }
+  }, []);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -538,8 +593,8 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
       <header className="app-top-bar">
         <div className="app-top-bar__inner">
           <div className="flex items-center justify-between w-full min-h-[44px] gap-2">
-            {/* بداية الشريط (سهم الرجوع للخلف + اختصار القرآن الكريم) */}
-            <div className="flex items-center gap-1.5 flex-shrink-0">
+            {/* بداية الشريط (سهم الرجوع للخلف) */}
+            <div id="community-header-nav" className="flex items-center gap-1.5 flex-shrink-0">
               <button
                 type="button"
                 onClick={handleBack}
@@ -548,18 +603,6 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
                 aria-label={isEn ? "Back" : "رجوع للخلف"}
               >
                 <i className={`fa-solid ${isEn ? 'fa-arrow-left' : 'fa-arrow-right'} text-xl`}></i>
-              </button>
-              <button
-                type="button"
-                onClick={() => onNavigate('quran')}
-                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
-                style={{
-                  color: primaryColor
-                }}
-                title={isEn ? "The Noble Qur'an" : "صفحة القرآن الكريم"}
-                aria-label={isEn ? "The Noble Qur'an" : "صفحة القرآن الكريم"}
-              >
-                <BookOpen size={20} />
               </button>
             </div>
 
@@ -628,44 +671,34 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
               )}
             </div>
 
-            {/* نهاية الشريط: اختصار أهل القرآن الكريم + زر الصفحة الرئيسية */}
-            <div className="flex items-center gap-1.5 flex-shrink-0">
+            {/* نهاية الشريط: زر الدليل والإرشاد + الثيمات + زر الصفحة الرئيسية */}
+            <div id="community-header-right" className="flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
               <button
                 type="button"
                 onClick={() => {
-                  markPageAsSeen('ahl-al-quran');
-                  onNavigate('ahl-al-quran');
+                  if (activeTab === 'chats') setShowChatsTour(true);
+                  else if (activeTab === 'community') setShowCommunityTour(true);
+                  else if (activeTab === 'users') setShowUsersTour(true);
+                  else if (activeTab === 'blocked') setShowBlockedTour(true);
+                  else setShowHeaderTour(true);
                 }}
-                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer relative"
-                style={{
-                  color: '#f59e0b'
-                }}
-                title={isEn ? "Ahl Al-Qur'an Page" : "صفحة أهل القرآن الكريم"}
-                aria-label={isEn ? "Ahl Al-Qur'an Page" : "صفحة أهل القرآن الكريم"}
+                className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                style={{ color: 'var(--top-bar-text, inherit)' }}
+                title={isEn ? "Community Guide" : "دليل وشرح المجتمع"}
+                aria-label={isEn ? "Community Guide" : "دليل وشرح المجتمع"}
               >
-                <Trophy size={20} />
-                {showAhlQuranBadge && (
-                  <span 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      markPageAsSeen('ahl-al-quran');
-                    }}
-                    className={`absolute -top-1.5 ${isEn ? '-right-1' : '-left-1'} bg-yellow-400 text-black text-[9px] font-bold px-1 rounded-full shadow-xs border border-white dark:border-slate-800 animate-bounce cursor-pointer select-none z-30`}
-                    title={isEn ? "New" : "جديد"}
-                  >
-                    {isEn ? "NEW" : "جديد"}
-                  </span>
-                )}
+                <HelpCircle size={19} />
               </button>
+
               <ThemePageLock />
               <button
                 type="button"
                 onClick={handleGoHome}
-                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
                 title={isEn ? "Home" : "الصفحة الرئيسية"}
                 aria-label={isEn ? "Home" : "الصفحة الرئيسية"}
               >
-                <i className="fa-solid fa-house text-xl"></i>
+                <i className="fa-solid fa-house text-lg sm:text-xl"></i>
               </button>
             </div>
           </div>
@@ -676,6 +709,7 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
 
         {/* Navigation Tabs (Equally divided 4 tabs: Chats, Community, Members, Blocked) */}
         <div 
+          id="community-tabs-nav"
           className="grid grid-cols-4 gap-1 sm:gap-1.5 p-1 sm:p-1.5 rounded-2xl border mb-3"
           style={{ backgroundColor: secondaryBg, borderColor: cardBorder, borderWidth: '1.5px', borderStyle: 'solid' }}
         >
@@ -796,7 +830,7 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
 
         {/* Search Input & Refresh Button */}
         {(activeTab === 'chats' || activeTab === 'users' || activeTab === 'community') && (
-          <div className="flex items-center gap-2 mb-4">
+          <div id="community-search-container" className="flex items-center gap-2 mb-4">
             <div className="relative flex-1">
               <Search 
                 size={18} 
@@ -854,7 +888,7 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
 
         {/* Tab 1: Global Users Directory (Excluding current user) */}
         {activeTab === 'users' && (
-          <div className={
+          <div id="community-users-section" className={
             (users.length > 100 || totalUsersCount > 100)
               ? "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-2.5"
               : "grid grid-cols-1 md:grid-cols-2 gap-3"
@@ -1039,7 +1073,7 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
 
         {/* Tab 2: Individual / Direct Chats Only */}
         {activeTab === 'chats' && (
-          <div className="space-y-2.5">
+          <div id="community-chats-section" className="space-y-2.5">
             {/* Quick Banner linking to Community Tab if user has pending group invitations */}
             {uniquePendingInvitations.length > 0 && (
               <div 
@@ -1289,6 +1323,7 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
               </div>
 
               <button
+                id="community-create-group-btn"
                 type="button"
                 onClick={() => {
                   if (!communityService.isProfileComplete()) {
@@ -1443,7 +1478,7 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 gap-2.5">
+              <div id="community-groups-section" className="grid grid-cols-1 gap-2.5">
                 {filteredGroups.map(grp => (
                   <div
                     key={grp.groupId}
@@ -1494,7 +1529,7 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
 
         {/* Tab 4: Blocked Users */}
         {activeTab === 'blocked' && (
-          <div className="space-y-2.5">
+          <div id="community-blocked-section" className="space-y-2.5">
             {blockedUsers.length === 0 ? (
               <div 
                 className="text-center py-12 rounded-3xl border p-6"
@@ -1734,6 +1769,78 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
         onClose={() => setShowAdminModal(false)}
         currentTheme={{ bg: theme.bgColor || '#0D1B2A', text: textColor }}
         onNavigate={onNavigate}
+      />
+
+      {/* --- Interactive Community Spotlight Guides --- */}
+      {/* 1. General Header & Community Tour */}
+      <CommunitySpotlightGuide
+        guideKey="community_header"
+        steps={COMMUNITY_HEADER_STEPS}
+        isOpen={showHeaderTour}
+        onClose={() => {
+          setShowHeaderTour(false);
+          setGuideSeen('community_header');
+          setTimeout(() => {
+            if (activeTab === 'chats' && !getGuideSeen('tab_chats')) {
+              setShowChatsTour(true);
+            } else if (activeTab === 'community' && !getGuideSeen('tab_community')) {
+              setShowCommunityTour(true);
+            } else if (activeTab === 'users' && !getGuideSeen('tab_users')) {
+              setShowUsersTour(true);
+            } else if (activeTab === 'blocked' && !getGuideSeen('tab_blocked')) {
+              setShowBlockedTour(true);
+            }
+          }, 250);
+        }}
+        isEn={isEn}
+      />
+
+      {/* 2. Friends Tab Tour */}
+      <CommunitySpotlightGuide
+        guideKey="tab_chats"
+        steps={TAB_CHATS_STEPS}
+        isOpen={showChatsTour && activeTab === 'chats'}
+        onClose={() => {
+          setShowChatsTour(false);
+          setGuideSeen('tab_chats');
+        }}
+        isEn={isEn}
+      />
+
+      {/* 3. Community Groups Tab Tour */}
+      <CommunitySpotlightGuide
+        guideKey="tab_community"
+        steps={TAB_COMMUNITY_STEPS}
+        isOpen={showCommunityTour && activeTab === 'community'}
+        onClose={() => {
+          setShowCommunityTour(false);
+          setGuideSeen('tab_community');
+        }}
+        isEn={isEn}
+      />
+
+      {/* 4. Members Directory Tab Tour */}
+      <CommunitySpotlightGuide
+        guideKey="tab_users"
+        steps={TAB_USERS_STEPS}
+        isOpen={showUsersTour && activeTab === 'users'}
+        onClose={() => {
+          setShowUsersTour(false);
+          setGuideSeen('tab_users');
+        }}
+        isEn={isEn}
+      />
+
+      {/* 5. Blocked Tab Tour */}
+      <CommunitySpotlightGuide
+        guideKey="tab_blocked"
+        steps={TAB_BLOCKED_STEPS}
+        isOpen={showBlockedTour && activeTab === 'blocked'}
+        onClose={() => {
+          setShowBlockedTour(false);
+          setGuideSeen('tab_blocked');
+        }}
+        isEn={isEn}
       />
     </div>
   );

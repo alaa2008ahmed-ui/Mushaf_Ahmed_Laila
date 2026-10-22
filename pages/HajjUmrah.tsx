@@ -229,19 +229,7 @@ const ChecklistScreen = ({ theme, cardBorderColor, cardTextScale, onZoom }: { th
     return (
         <section className="space-y-4">
             <div className="rounded-2xl p-4 text-center backdrop-blur-sm relative" style={{ backgroundColor: isBlackTheme ? 'rgba(255,255,255,0.05)' : `${theme.palette[0]}15`, borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
-                <button
-                    type="button"
-                    onClick={() => onZoom({
-                        title: tHajj('screenChecklistTitle', language),
-                        text: tHajj('checklistHeader', language)
-                    })}
-                    className="absolute top-3 left-3 p-1.5 rounded-lg opacity-75 hover:opacity-100 hover:bg-black/10 dark:hover:bg-white/10 transition cursor-pointer"
-                    title={isEn ? "Enlarge card text" : "تكبير نص البطاقة"}
-                    style={{ color: 'var(--text-color)' }}
-                >
-                    <ZoomIn className="w-4.5 h-4.5" />
-                </button>
-                <p className="text-sm opacity-90 font-bold px-8" style={{ color: 'var(--text-color)', fontSize: `${14 * cardTextScale}px` }}>
+                <p className="text-sm opacity-90 font-bold px-4" style={{ color: 'var(--text-color)', fontSize: `${14 * cardTextScale}px` }}>
                     {tHajj('checklistHeader', language)}
                 </p>
             </div>
@@ -344,23 +332,13 @@ const CountersScreen = ({ theme, cardBorderColor, cardTextScale, onZoom }: { the
         });
     };
 
-    const toggleHomeVisibility = () => {
-        if (typeof navigator !== 'undefined' && navigator.vibrate) {
-            try { navigator.vibrate(30); } catch {}
-        }
-        saveTawafCounterState(prev => ({
-            ...prev,
-            showOnHome: !prev.showOnHome
-        }));
-    };
-
     const switchTab = (tab: 'tawaf' | 'sai') => {
         saveTawafCounterState({ activeTab: tab });
     };
 
     return (
         <section className="space-y-4">
-            {/* Header info & Home toggle button */}
+            {/* Header info */}
             <div 
                 className="backdrop-blur-md rounded-2xl p-4 text-center transition-all relative" 
                 style={{ 
@@ -370,78 +348,13 @@ const CountersScreen = ({ theme, cardBorderColor, cardTextScale, onZoom }: { the
                     borderStyle: 'solid' 
                 }}
             >
-                <button
-                    type="button"
-                    onClick={() => onZoom({
-                        title: tHajj('counterHeaderTitle', language),
-                        text: tHajj('counterHeaderDesc', language)
-                    })}
-                    className="absolute top-3 left-3 p-1.5 rounded-lg opacity-75 hover:opacity-100 hover:bg-black/10 dark:hover:bg-white/10 transition cursor-pointer"
-                    title="تكبير نص البطاقة"
-                    style={{ color: 'var(--text-color)' }}
-                >
-                    <ZoomIn className="w-4.5 h-4.5" />
-                </button>
+
                 <h3 className="font-bold text-base mb-1" style={{ color: isBlackTheme ? '#FFFFFF' : theme.palette[0], fontSize: `${16 * cardTextScale}px` }}>
                     {tHajj('counterHeaderTitle', language)}
                 </h3>
-                <p className="text-xs opacity-80 mb-3 px-6" style={{ color: 'var(--text-color)', fontSize: `${13 * cardTextScale}px` }}>
+                <p className="text-xs opacity-80 px-6" style={{ color: 'var(--text-color)', fontSize: `${13 * cardTextScale}px` }}>
                     {tHajj('counterHeaderDesc', language)}
                 </p>
-
-                {/* Toggle button */}
-                <button
-                    type="button"
-                    onClick={toggleHomeVisibility}
-                    className={`w-full p-3 rounded-xl border-2 flex items-center justify-between transition-all active:scale-[0.98] cursor-pointer ${
-                        state.showOnHome 
-                            ? (isBlackTheme ? 'bg-white/10 border-white' : 'border-emerald-500 bg-emerald-500/10') 
-                            : 'bg-black/5 dark:bg-white/5 border-dashed border-gray-400/40 hover:border-gray-400'
-                    }`}
-                >
-                    <div className="flex items-center gap-2.5 text-start">
-                        <div>
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className="font-bold text-xs md:text-sm" style={{ color: isBlackTheme ? '#FFFFFF' : theme.textColor, fontSize: `${13 * cardTextScale}px` }}>
-                                    {tHajj('counterShowOnHome', language)}
-                                </span>
-                                {state.showOnHome ? (
-                                    <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-500 text-white shadow-sm">
-                                        {tHajj('counterEnabled', language)}
-                                    </span>
-                                ) : (
-                                    <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-gray-400/20 text-gray-500 dark:text-gray-400">
-                                        {tHajj('counterDisabled', language)}
-                                    </span>
-                                )}
-                            </div>
-                            <span className="text-[11px] opacity-70 block text-start mt-0.5" style={{ color: 'var(--text-color)', fontSize: `${11 * cardTextScale}px` }}>
-                                {state.showOnHome 
-                                    ? tHajj('counterHomeActiveDesc', language)
-                                    : tHajj('counterHomeInactiveDesc', language)}
-                            </span>
-                        </div>
-                    </div>
-
-                    {/* Toggle Knob */}
-                    <div 
-                        className={`w-12 h-6.5 rounded-full p-1 transition-all flex items-center shrink-0 ${
-                            state.showOnHome 
-                                ? 'justify-end' 
-                                : 'justify-start bg-gray-300 dark:bg-gray-700'
-                        }`}
-                        style={{
-                            backgroundColor: state.showOnHome ? (isBlackTheme ? '#FFFFFF' : theme.palette[0]) : undefined
-                        }}
-                    >
-                        <div 
-                            className="w-4.5 h-4.5 rounded-full transition-all shadow-md"
-                            style={{
-                                backgroundColor: state.showOnHome && isBlackTheme ? '#000000' : '#FFFFFF'
-                            }}
-                        />
-                    </div>
-                </button>
             </div>
 
             {/* Tawaf vs Sa'i switch */}
@@ -584,6 +497,25 @@ export function HajjUmrah({ onBack, onNavigate }: { onBack: () => void; onNaviga
     const [hajjType, setHajjType] = useState<'tamattu' | 'ifrad' | 'qiran'>('tamattu');
     const [selectedDetail, setSelectedDetail] = useState<any>(null);
     const [openDuaaId, setOpenDuaaId] = useState<number | null>(1);
+    
+    // Tawaf counter on home screen state
+    const [tawafState, setTawafState] = useState(getTawafCounterState());
+
+    useEffect(() => {
+        return subscribeTawafCounter((updated) => {
+            setTawafState(updated);
+        });
+    }, []);
+
+    const toggleTawafHomeVisibility = () => {
+        if (typeof navigator !== 'undefined' && navigator.vibrate) {
+            try { navigator.vibrate(30); } catch {}
+        }
+        saveTawafCounterState(prev => ({
+            ...prev,
+            showOnHome: !prev.showOnHome
+        }));
+    };
     
     // Zoom Modal State for any card in the page
     const [zoomedCard, setZoomedCard] = useState<CardZoomData | null>(null);
@@ -753,8 +685,8 @@ export function HajjUmrah({ onBack, onNavigate }: { onBack: () => void; onNaviga
             <header className="app-top-bar">
                 <div className="app-top-bar__inner">
                     <div className="relative flex items-center justify-center w-full min-h-[44px]">
-                        {/* Back Arrow */}
-                        <div className={`absolute ${isRTL ? 'right-0' : 'left-0'} flex items-center`}>
+                        {/* Back Arrow & Tawaf Home Toggle Indicator */}
+                        <div className={`absolute ${isRTL ? 'right-0' : 'left-0'} flex items-center gap-1.5`}>
                             <button
                                 type="button"
                                 onClick={handleBack}
@@ -764,6 +696,36 @@ export function HajjUmrah({ onBack, onNavigate }: { onBack: () => void; onNaviga
                             >
                                 <i className={`fa-solid ${isRTL ? 'fa-arrow-right' : 'fa-arrow-left'} text-xl`}></i>
                             </button>
+
+                            {screen === 'counters' && (
+                                <button
+                                    type="button"
+                                    onClick={toggleTawafHomeVisibility}
+                                    className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                    title={
+                                        isEn 
+                                            ? (tawafState.showOnHome ? 'Tawaf Counter on Home: Enabled (Click to disable)' : 'Tawaf Counter on Home: Disabled (Click to enable)') 
+                                            : (tawafState.showOnHome ? 'ظهور عداد الطواف في الرئيسية: مفعّل (اضغط للتعطيل)' : 'ظهور عداد الطواف في الرئيسية: معطّل (اضغط للتفعيل)')
+                                    }
+                                    aria-label={
+                                        isEn 
+                                            ? (tawafState.showOnHome ? 'Tawaf Counter on Home: Enabled' : 'Tawaf Counter on Home: Disabled') 
+                                            : (tawafState.showOnHome ? 'ظهور عداد الطواف في الرئيسية: مفعّل' : 'ظهور عداد الطواف في الرئيسية: معطّل')
+                                    }
+                                >
+                                    <div className={`w-[19px] h-[19px] rounded-full border-[1.5px] border-white/90 dark:border-white/80 shadow-xs transition-all duration-300 flex items-center justify-center ${
+                                        tawafState.showOnHome 
+                                            ? 'bg-gradient-to-tr from-emerald-600 via-emerald-500 to-emerald-400 text-white shadow-emerald-500/30 ring-1.5 ring-emerald-500/25' 
+                                            : 'bg-gradient-to-tr from-red-600 via-red-500 to-rose-400 text-white shadow-red-500/30 ring-1.5 ring-red-500/25'
+                                    }`}>
+                                        {tawafState.showOnHome ? (
+                                            <Check className="w-2.5 h-2.5 stroke-[3]" />
+                                        ) : (
+                                            <span className="w-1.5 h-0.5 bg-white/95 rounded-full" />
+                                        )}
+                                    </div>
+                                </button>
+                            )}
                         </div>
 
                         {/* Screen Title */}

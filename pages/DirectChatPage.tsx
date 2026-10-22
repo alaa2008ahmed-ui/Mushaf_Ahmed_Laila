@@ -3,9 +3,14 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   ArrowRight, Send, Smile, MoreVertical, Trash2, Check, 
   CheckCheck, Ban, User, Sparkles, AlertCircle, BookOpen, Play, Pause, CheckCircle2,
-  Mic, Volume2, Loader2, UserPlus, Clock, X, Paperclip, Video, FileText
+  Mic, Volume2, Loader2, UserPlus, Clock, X, Paperclip, Video, FileText, HelpCircle
 } from 'lucide-react';
 import { communityService, CommunityUser, ChatMessage, QuranVerseAttachment, ChatAttachment, ADMIN_USER_ID } from '../services/communityService';
+import { 
+  CommunitySpotlightGuide, 
+  getGuideSeen 
+} from '../components/Community/CommunitySpotlightGuide';
+import { CHAT_ROOM_STEPS } from '../components/Community/communityTourSteps';
 import { SUPPORT_AVATAR_BASE64 } from '../src/supportAvatarBase64';
 import EmojiPicker from '../components/Community/EmojiPicker';
 import QuranVerseModal from '../components/Community/QuranVerseModal';
@@ -13,6 +18,9 @@ import { ChatAttachmentView, formatFileSize } from '../components/Community/Chat
 import { MediaAttachmentPicker } from '../components/Community/MediaAttachmentPicker';
 import { processFileForAttachment } from '../components/Community/mediaPickerUtils';
 import { Capacitor } from '@capacitor/core';
+import { VoiceRecorder } from 'capacitor-voice-recorder';
+import { InAppPermissionModal } from '../components/InAppPermissionModal';
+import { requestMicrophonePermission } from '../utils/permissionHelper';
 import { registerBackInterceptor } from '../hooks/useBackButton';
 import { useLanguage } from '../context/LanguageContext';
 import { 
@@ -461,6 +469,7 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
   const [selectedMsgId, setSelectedMsgId] = useState<string | null>(null);
   const [playingAudioUrl, setPlayingAudioUrl] = useState<string | null>(null);
   const [audioPlayer, setAudioPlayer] = useState<HTMLAudioElement | null>(null);
+  const [showChatTour, setShowChatTour] = useState(() => !getGuideSeen('chat_room'));
 
   // Media Attachment state (image, video, file)
   const [showAttachmentPicker, setShowAttachmentPicker] = useState(false);
@@ -471,6 +480,7 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
   const [isRecording, setIsRecording] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [isProcessingAudio, setIsProcessingAudio] = useState(false);
+  const [showMicPermissionModal, setShowMicPermissionModal] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const recordingTimerRef = useRef<any>(null);
@@ -794,122 +804,191 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
   const startRecording = async () => {
     if (isBlocked) return;
 
+    // 1. Request microphone permission in-app (triggers OS permission prompt directly on screen)
+    const permResult = await requestMicrophonePermission();
+    if (!permResult.granted) {
+      setShowMicPermissionModal(true);
+      return;
+    }
+
+    // 2. Start recording
     try {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        showToast('عفواً، تسجيل الصوت غير مدعوم في متصفحك أو هذا الجهاز');
-        return;
-      }
+      if (Capacitor.isNativePlatform()) {
+        try {
+          const canRecord = await VoiceRecorder.canDeviceVoiceRecord();
+          if (!canRecord.value) {
+            showToast('عفواً، لا يدعم هذا الجهاز تسجيل الصوت حالياً');
+            return;
+          }
+        } catch (e) {
+          console.warn('canDeviceVoiceRecord check ignored:', e);
+        }
 
-      let stream: MediaStream | null = null;
+        const startRes = await VoiceRecorder.startRecording();
+        if (startRes.value) {
+          setIsRecording(true);
+          setRecordingDuration(0);
 
-      // Request microphone permission & audio stream directly
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      } catch (e: any) {
-        console.warn('Audio stream request failed:', e?.name || e);
-        const errName = e?.name || '';
-        const errMsg = e?.message?.toLowerCase() || '';
-
-        if (errName === 'NotAllowedError' || errName === 'PermissionDeniedError' || errMsg.includes('denied') || errMsg.includes('not allowed')) {
-          showToast('يرجى السماح بإذن الميكروفون للتطبيق من إعدادات الهاتف (الأذونات -> الميكروفون) 🎙️');
-        } else if (errName === 'NotFoundError' || errMsg.includes('not found')) {
-          showToast('لم يتم العثور على ميكروفون متصل بهذا الجهاز');
+          if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+          recordingTimerRef.current = setInterval(() => {
+            setRecordingDuration(prev => prev + 1);
+          }, 1000);
         } else {
-          showToast('تعذر تشغيل الميكروفون على هذا الجهاز');
+          setShowMicPermissionModal(true);
         }
-        return;
-      }
-
-      if (!stream) return;
-
-      audioChunksRef.current = [];
-      const mimeType = getSupportedMimeType();
-
-      let mediaRecorder: MediaRecorder;
-      try {
-        mediaRecorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
-      } catch (err) {
-        // Fallback without mimeType options if browser/WebView rejects it
-        mediaRecorder = new MediaRecorder(stream);
-      }
-
-      mediaRecorderRef.current = mediaRecorder;
-
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data && e.data.size > 0) {
-          audioChunksRef.current.push(e.data);
+      } else {
+        // Web / Browser platform fallback
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          showToast('عفواً، تسجيل الصوت غير مدعوم في متصفحك أو هذا الجهاز');
+          return;
         }
-      };
 
-      mediaRecorder.start(100);
-      setIsRecording(true);
-      setRecordingDuration(0);
+        let stream: MediaStream | null = null;
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        } catch (e: any) {
+          console.warn('getUserMedia error in web:', e);
+          setShowMicPermissionModal(true);
+          return;
+        }
 
-      if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
-      recordingTimerRef.current = setInterval(() => {
-        setRecordingDuration(prev => prev + 1);
-      }, 1000);
+        if (!stream) return;
+
+        audioChunksRef.current = [];
+        const mimeType = getSupportedMimeType();
+
+        let mediaRecorder: MediaRecorder;
+        try {
+          mediaRecorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+        } catch (err) {
+          mediaRecorder = new MediaRecorder(stream);
+        }
+
+        mediaRecorderRef.current = mediaRecorder;
+
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data && e.data.size > 0) {
+            audioChunksRef.current.push(e.data);
+          }
+        };
+
+        mediaRecorder.start(100);
+        setIsRecording(true);
+        setRecordingDuration(0);
+
+        if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+        recordingTimerRef.current = setInterval(() => {
+          setRecordingDuration(prev => prev + 1);
+        }, 1000);
+      }
     } catch (err) {
       console.warn('Unexpected error starting audio recording:', err);
-      showToast('تعذر بدء التسجيل الصوتي');
+      setShowMicPermissionModal(true);
     }
   };
 
-  const stopAndSendRecording = () => {
-    if (!mediaRecorderRef.current || !isRecording) return;
+  const stopAndSendRecording = async () => {
+    if (!isRecording) return;
     setIsProcessingAudio(true);
 
     if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
 
-    const mediaRecorder = mediaRecorderRef.current;
-
-    mediaRecorder.onstop = async () => {
+    if (Capacitor.isNativePlatform()) {
       try {
-        if (mediaRecorder.stream) {
-          mediaRecorder.stream.getTracks().forEach(track => track.stop());
-        }
+        const result = await VoiceRecorder.stopRecording();
+        if (result.value && result.value.recordDataBase64) {
+          const mimeType = result.value.mimeType || 'audio/aac';
+          const base64Audio = `data:${mimeType};base64,${result.value.recordDataBase64}`;
+          const durationSec = Math.round((result.value.msDuration || 0) / 1000) || recordingDuration || 1;
 
-        const mimeType = mediaRecorder.mimeType || 'audio/webm';
-        const blob = new Blob(audioChunksRef.current, { type: mimeType });
+          if (durationSec < 1 && (!result.value.recordDataBase64 || result.value.recordDataBase64.length < 300)) {
+            showToast('التسجيل قصير جداً');
+            setIsRecording(false);
+            setIsProcessingAudio(false);
+            return;
+          }
 
-        if (blob.size < 200) {
-          showToast('التسجيل قصير جداً');
-          setIsRecording(false);
-          setIsProcessingAudio(false);
-          return;
-        }
-
-        const reader = new FileReader();
-        reader.readAsDataURL(blob);
-        reader.onloadend = async () => {
-          const base64Audio = reader.result as string;
-          await communityService.sendMessage(partnerUserId, '', undefined, base64Audio);
+          await communityService.sendMessage(partnerUserId, '', undefined, base64Audio, undefined, durationSec);
           setIsRecording(false);
           setIsProcessingAudio(false);
           setRecordingDuration(0);
           loadData(true);
           setTimeout(() => scrollToBottom('smooth'), 50);
           showToast('تم إرسال التسجيل الصوتي بنجاح 🎙️');
-        };
+        } else {
+          showToast('فشل حفظ التسجيل الصوتي');
+          setIsRecording(false);
+          setIsProcessingAudio(false);
+        }
       } catch (err) {
-        console.error('Error processing voice message:', err);
+        console.error('Error stopping native recording:', err);
         showToast('حدث خطأ أثناء معالجة التسجيل الصوتي');
         setIsRecording(false);
         setIsProcessingAudio(false);
       }
-    };
+    } else {
+      // Web / Browser MediaRecorder flow
+      if (!mediaRecorderRef.current) {
+        setIsRecording(false);
+        setIsProcessingAudio(false);
+        return;
+      }
 
-    try {
-      mediaRecorder.stop();
-    } catch (e) {
-      setIsRecording(false);
-      setIsProcessingAudio(false);
+      const mediaRecorder = mediaRecorderRef.current;
+
+      mediaRecorder.onstop = async () => {
+        try {
+          if (mediaRecorder.stream) {
+            mediaRecorder.stream.getTracks().forEach(track => track.stop());
+          }
+
+          const mimeType = mediaRecorder.mimeType || 'audio/webm';
+          const blob = new Blob(audioChunksRef.current, { type: mimeType });
+
+          if (blob.size < 200) {
+            showToast('التسجيل قصير جداً');
+            setIsRecording(false);
+            setIsProcessingAudio(false);
+            return;
+          }
+
+          const durationSec = recordingDuration || 1;
+          const reader = new FileReader();
+          reader.readAsDataURL(blob);
+          reader.onloadend = async () => {
+            const base64Audio = reader.result as string;
+            await communityService.sendMessage(partnerUserId, '', undefined, base64Audio, undefined, durationSec);
+            setIsRecording(false);
+            setIsProcessingAudio(false);
+            setRecordingDuration(0);
+            loadData(true);
+            setTimeout(() => scrollToBottom('smooth'), 50);
+            showToast('تم إرسال التسجيل الصوتي بنجاح 🎙️');
+          };
+        } catch (err) {
+          console.error('Error processing voice message:', err);
+          showToast('حدث خطأ أثناء معالجة التسجيل الصوتي');
+          setIsRecording(false);
+          setIsProcessingAudio(false);
+        }
+      };
+
+      try {
+        mediaRecorder.stop();
+      } catch (e) {
+        setIsRecording(false);
+        setIsProcessingAudio(false);
+      }
     }
   };
 
-  const cancelRecording = () => {
+  const cancelRecording = async () => {
     if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
-    if (mediaRecorderRef.current) {
+    if (Capacitor.isNativePlatform()) {
+      try {
+        await VoiceRecorder.stopRecording();
+      } catch (e) {}
+    } else if (mediaRecorderRef.current) {
       try {
         mediaRecorderRef.current.onstop = null;
         if (mediaRecorderRef.current.state !== 'inactive') {
@@ -1016,11 +1095,16 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
 
   return (
     <div className="h-[100dvh] max-h-[100dvh] overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white flex flex-col font-sans" dir={isEn ? "ltr" : "rtl"}>
-      {/* Header */}
+      {/* Header Container with Safe Area */}
       <div 
-        className="shrink-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-4 pb-3.5 flex items-center justify-between shadow-sm"
-        style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1.25rem)' }}
+        className="shrink-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-sm"
+        style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 0.25rem)' }}
       >
+        {/* Application Header Bar Only */}
+        <div 
+          id="chat-header-bar"
+          className="px-4 py-2.5 flex items-center justify-between"
+        >
         <div className="flex items-center gap-3">
           <button
             onClick={onBack}
@@ -1073,16 +1157,28 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
           </div>
         </div>
 
-        {/* Menu Options */}
-        <div className="relative" ref={menuContainerRef}>
+        {/* Menu Options & Help Guide Button */}
+        <div className="flex items-center gap-1">
           <button
-            ref={menuButtonRef}
-            onClick={() => setShowMenu(prev => !prev)}
-            className="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors relative z-50 cursor-pointer"
-            title={isEn ? "More Options" : "خيارات إضافية"}
+            type="button"
+            onClick={() => setShowChatTour(true)}
+            className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+            style={{ color: 'var(--top-bar-text, inherit)' }}
+            title={isEn ? "Chat Guide" : "دليل وشرح المحادثة"}
+            aria-label={isEn ? "Chat Guide" : "دليل وشرح المحادثة"}
           >
-            <MoreVertical size={20} />
+            <HelpCircle size={19} />
           </button>
+
+          <div className="relative" ref={menuContainerRef}>
+            <button
+              ref={menuButtonRef}
+              onClick={() => setShowMenu(prev => !prev)}
+              className="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors relative z-50 cursor-pointer"
+              title={isEn ? "More Options" : "خيارات إضافية"}
+            >
+              <MoreVertical size={20} />
+            </button>
 
           <AnimatePresence>
             {showMenu && (
@@ -1145,6 +1241,8 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
           </AnimatePresence>
         </div>
       </div>
+      </div>
+    </div>
 
       {/* Notice Banner if blocked */}
       {isBlocked && (
@@ -1486,6 +1584,7 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
               {/* Three action buttons clustered tightly with minimal spacing */}
               <div className="flex items-center gap-0 shrink-0">
                 <button
+                  id="chat-btn-verse"
                   type="button"
                   onClick={() => setShowVerseModal(true)}
                   disabled={isBlocked || isIntroMessageSent || (friendship.status === 'none' && partnerUserId !== ADMIN_USER_ID)}
@@ -1496,6 +1595,7 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
                 </button>
 
                 <button
+                  id="chat-btn-attach"
                   type="button"
                   onClick={() => setShowAttachmentPicker(true)}
                   disabled={isBlocked || isIntroMessageSent || (friendship.status === 'none' && partnerUserId !== ADMIN_USER_ID)}
@@ -1506,6 +1606,7 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
                 </button>
 
                 <button
+                  id="chat-btn-emoji"
                   type="button"
                   onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                   disabled={isBlocked || isIntroMessageSent || (friendship.status === 'none' && partnerUserId !== ADMIN_USER_ID)}
@@ -1517,6 +1618,7 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
               </div>
 
               <input
+                id="chat-input-text"
                 type="text"
                 value={inputText}
                 onChange={handleInputChange}
@@ -1538,26 +1640,28 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
               />
 
               {/* Mic recording button when input is empty and no attachment, or Send button when text or attachment exists */}
-              {!inputText.trim() && !stagedAttachment ? (
-                <button
-                  type="button"
-                  onClick={startRecording}
-                  disabled={isBlocked || isIntroMessageSent || (friendship.status === 'none' && partnerUserId !== ADMIN_USER_ID)}
-                  className="w-8 h-8 sm:w-9 sm:h-9 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl sm:rounded-2xl shadow-md active:scale-95 transition-all flex items-center justify-center shrink-0 disabled:opacity-40 cursor-pointer"
-                  title={isEn ? "Record voice message" : "تسجيل صوتي"}
-                >
-                  <Mic size={16} />
-                </button>
-              ) : (
-                <button
-                  type="submit"
-                  disabled={(!inputText.trim() && !stagedAttachment) || isBlocked || isIntroMessageSent || (friendship.status === 'none' && partnerUserId !== ADMIN_USER_ID)}
-                  className="w-8 h-8 sm:w-9 sm:h-9 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white rounded-xl sm:rounded-2xl shadow-md active:scale-95 transition-all flex items-center justify-center shrink-0 cursor-pointer"
-                  title={isEn ? "Send" : "إرسال"}
-                >
-                  <Send size={16} className={isEn ? "" : "rotate-180"} />
-                </button>
-              )}
+              <div id="chat-btn-voice-send" className="shrink-0 flex items-center">
+                {!inputText.trim() && !stagedAttachment ? (
+                  <button
+                    type="button"
+                    onClick={startRecording}
+                    disabled={isBlocked || isIntroMessageSent || (friendship.status === 'none' && partnerUserId !== ADMIN_USER_ID)}
+                    className="w-8 h-8 sm:w-9 sm:h-9 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl sm:rounded-2xl shadow-md active:scale-95 transition-all flex items-center justify-center shrink-0 disabled:opacity-40 cursor-pointer"
+                    title={isEn ? "Record voice message" : "تسجيل صوتي"}
+                  >
+                    <Mic size={16} />
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    disabled={(!inputText.trim() && !stagedAttachment) || isBlocked || isIntroMessageSent || (friendship.status === 'none' && partnerUserId !== ADMIN_USER_ID)}
+                    className="w-8 h-8 sm:w-9 sm:h-9 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white rounded-xl sm:rounded-2xl shadow-md active:scale-95 transition-all flex items-center justify-center shrink-0 cursor-pointer"
+                    title={isEn ? "Send" : "إرسال"}
+                  >
+                    <Send size={16} className={isEn ? "" : "rotate-180"} />
+                  </button>
+                )}
+              </div>
             </form>
           )}
         </div>
@@ -1727,6 +1831,17 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
         )}
       </AnimatePresence>
 
+      {/* In-App Microphone Permission Modal */}
+      <InAppPermissionModal
+        isOpen={showMicPermissionModal}
+        type="microphone"
+        onClose={() => setShowMicPermissionModal(false)}
+        onGranted={() => {
+          setShowMicPermissionModal(false);
+          startRecording();
+        }}
+      />
+
       {/* Floating In-App Toast Notification */}
       <AnimatePresence>
         {toastMessage && (
@@ -1741,6 +1856,15 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Interactive Chat Room Spotlight Tour */}
+      <CommunitySpotlightGuide
+        guideKey="chat_room"
+        steps={CHAT_ROOM_STEPS}
+        isOpen={showChatTour}
+        onClose={() => setShowChatTour(false)}
+        isEn={isEn}
+      />
     </div>
   );
 };

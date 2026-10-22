@@ -28,7 +28,6 @@ import AhlAlQuranPage from '../pages/AhlAlQuranPage';
 import OthersPage from '../pages/OthersPage';
 import IslamicSitesPage from '../pages/IslamicSitesPage';
 import PropheticSeerahPage from '../pages/PropheticSeerahPage';
-import PageGuide from '../pages/PageGuide';
 
 interface AppRouterProps {
     page: string;
@@ -99,8 +98,6 @@ const AppRouter: React.FC<AppRouterProps> = ({ page, onBack, onNavigate, onOpenT
         return <IslamicSitesPage onBack={onBack} onNavigate={onNavigate} />;
       case 'prophetic-seerah':
         return <PropheticSeerahPage onBack={onBack} onNavigate={onNavigate} navParams={navParams} />;
-      case 'page-guide':
-        return <PageGuide onBack={onBack} onNavigate={onNavigate} initialPageKey={navParams?.initialPageKey} />;
       case 'home':
       default:
         return <MainMenu onNavigate={onNavigate} onOpenThemes={onOpenThemes} onOpenSideMenu={onOpenSideMenu} />;

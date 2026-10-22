@@ -1,7 +1,8 @@
 import React, { useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { RotateCcw, Image, Sparkles } from 'lucide-react';
+import { RotateCcw, Image } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { presetThemes } from '../../context/themes';
 
 interface ThemesSidebarProps {
@@ -45,6 +46,8 @@ const getThemeCircleColor = (key: string, t: any) => {
 
 export const ThemesSidebar: React.FC<ThemesSidebarProps> = ({ isOpen, onClose }) => {
   const { theme, themeKey, applyPresetTheme, setCustomBackground, resetBackground } = useTheme();
+  const { isRTL, language } = useLanguage();
+  const isEn = language === 'en';
   const fileInputRef = useRef<HTMLInputElement>(null);
   const asideRef = useRef<HTMLElement>(null);
 
@@ -74,20 +77,25 @@ export const ThemesSidebar: React.FC<ThemesSidebarProps> = ({ isOpen, onClose })
             style={{ position: 'fixed' }}
           />
 
-          {/* Narrow Sidebar Drawer stuck to the right edge with permanent white background */}
+          {/* Narrow Sidebar Drawer: stuck to right in RTL, and left in LTR/English */}
           <motion.aside
             ref={asideRef}
-            initial={{ x: '100%' }}
+            initial={{ x: isRTL ? '100%' : '-100%' }}
             animate={{ x: 0 }}
-            exit={{ x: '100%' }}
+            exit={{ x: isRTL ? '100%' : '-100%' }}
             transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-            className="w-[88px] sm:w-[98px] shadow-2xl flex flex-col rounded-l-2xl rounded-r-none border-y-2 border-l-2 border-r-0 overflow-hidden"
-            dir="rtl"
+            className={`w-[88px] sm:w-[98px] shadow-2xl flex flex-col ${
+              isRTL 
+                ? 'rounded-l-2xl rounded-r-none border-y-2 border-l-2 border-r-0' 
+                : 'rounded-r-2xl rounded-l-none border-y-2 border-r-2 border-l-0'
+            } overflow-hidden`}
+            dir={isRTL ? "rtl" : "ltr"}
             style={{
               position: 'fixed',
               top: 'calc(env(safe-area-inset-top, 0px) + 1cm)',
               bottom: 'calc(env(safe-area-inset-bottom, 0px) + 1cm)',
-              right: 0,
+              right: isRTL ? 0 : 'auto',
+              left: isRTL ? 'auto' : 0,
               zIndex: 1250,
               backgroundColor: '#FFFFFF',
               color: '#1e293b',
@@ -97,15 +105,15 @@ export const ThemesSidebar: React.FC<ThemesSidebarProps> = ({ isOpen, onClose })
           >
             {/* Quick Actions Row */}
             <div 
-              className="p-1.5 border-b grid grid-cols-3 gap-1 shrink-0 bg-slate-50 relative z-10"
+              className="p-1.5 border-b grid grid-cols-2 gap-1 shrink-0 bg-slate-50 relative z-10"
               style={{ borderBottomColor: `${themeBorderColor}25` }}
             >
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 className="py-2 px-1 rounded-lg flex items-center justify-center transition-all active:scale-90 hover:bg-slate-200/60 cursor-pointer"
-                title="تخصيص خلفية مخصصة"
-                aria-label="تخصيص خلفية مخصصة"
+                title={isEn ? "Custom Background" : "تخصيص خلفية مخصصة"}
+                aria-label={isEn ? "Custom Background" : "تخصيص خلفية مخصصة"}
               >
                 <Image className="w-4 h-4 text-blue-600 font-bold" />
               </button>
@@ -114,20 +122,10 @@ export const ThemesSidebar: React.FC<ThemesSidebarProps> = ({ isOpen, onClose })
                 type="button"
                 onClick={() => resetBackground()}
                 className="py-2 px-1 rounded-lg flex items-center justify-center transition-all active:scale-90 hover:bg-slate-200/60 cursor-pointer"
-                title="استعادة الخلفية"
-                aria-label="استعادة الخلفية"
+                title={isEn ? "Reset Background" : "استعادة الخلفية"}
+                aria-label={isEn ? "Reset Background" : "استعادة الخلفية"}
               >
                 <RotateCcw className="w-4 h-4 text-amber-600 font-bold" />
-              </button>
-
-              <button
-                type="button"
-                onClick={() => applyPresetTheme('default')}
-                className="py-2 px-1 rounded-lg flex items-center justify-center transition-all active:scale-90 hover:bg-slate-200/60 cursor-pointer"
-                title="الثيم الافتراضي"
-                aria-label="الثيم الافتراضي"
-              >
-                <Sparkles className="w-4 h-4 text-emerald-600 font-bold" />
               </button>
             </div>
 

@@ -20,6 +20,7 @@ import androidx.core.app.NotificationCompat;
 public class PrayerSilentReceiver extends BroadcastReceiver {
     public static final String ACTION_START_SILENT = "com.mushaf.ahmedandlayla.ACTION_START_SILENT";
     public static final String ACTION_END_SILENT = "com.mushaf.ahmedandlayla.ACTION_END_SILENT";
+    public static final String ACTION_RESTORE_NOTIFICATION = "com.mushaf.ahmedandlayla.ACTION_RESTORE_NOTIFICATION";
     public static final String EXTRA_PRAYER_NAME = "prayer_name";
     public static final String EXTRA_DURATION = "duration";
     public static final String EXTRA_WINDOW_ID = "window_id";
@@ -47,6 +48,11 @@ public class PrayerSilentReceiver extends BroadcastReceiver {
         if (audioManager == null) return;
 
         SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        if (Intent.ACTION_BOOT_COMPLETED.equals(action) || "android.intent.action.BOOT_COMPLETED".equals(action) || ACTION_RESTORE_NOTIFICATION.equals(action)) {
+            PersistentPrayerNotification.update(context);
+            return;
+        }
+
         String prayerName = intent.getStringExtra(EXTRA_PRAYER_NAME);
         if (prayerName == null || prayerName.isEmpty()) {
             prayerName = "الصلاة";
@@ -61,11 +67,13 @@ public class PrayerSilentReceiver extends BroadcastReceiver {
 
             // Apply Silent Mode
             applySilentMode(context, audioManager);
+            PersistentPrayerNotification.update(context);
 
         } else if (ACTION_END_SILENT.equals(action)) {
             // Restore original ringer mode
             int originalMode = prefs.getInt(KEY_ORIGINAL_RINGER_MODE, AudioManager.RINGER_MODE_NORMAL);
             restoreRingerMode(context, audioManager, originalMode);
+            PersistentPrayerNotification.update(context);
         }
     }
 
