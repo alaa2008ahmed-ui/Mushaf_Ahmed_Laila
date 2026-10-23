@@ -1,9 +1,16 @@
 import React, { useEffect, useRef } from 'react';
 import { useTheme } from '../context/ThemeContext';
+import { Theme } from '../context/themes';
 
-const InteractiveBackground: React.FC = () => {
+interface InteractiveBackgroundProps {
+    className?: string;
+    themeOverride?: Theme;
+}
+
+const InteractiveBackground: React.FC<InteractiveBackgroundProps> = ({ className, themeOverride }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const { theme } = useTheme();
+    const { theme: contextTheme } = useTheme();
+    const activeTheme = themeOverride || contextTheme;
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -36,10 +43,10 @@ const InteractiveBackground: React.FC = () => {
         };
 
         const themeColors = [
-            hexToRgb(theme.palette[0]),
-            hexToRgb(theme.palette[1]),
-            hexToRgb(theme.palette[2] || theme.palette[0]),
-            hexToRgb(theme.textColor)
+            hexToRgb(activeTheme.palette[0]),
+            hexToRgb(activeTheme.palette[1]),
+            hexToRgb(activeTheme.palette[2] || activeTheme.palette[0]),
+            hexToRgb(activeTheme.textColor)
         ];
 
         class Particle {
@@ -158,13 +165,13 @@ const InteractiveBackground: React.FC = () => {
             window.removeEventListener('touchend', handleMouseLeave);
             cancelAnimationFrame(animationFrameId);
         };
-    }, [theme]);
+    }, [activeTheme]);
 
     return (
         <canvas
             ref={canvasRef}
-            className="fixed inset-0 z-[-1] pointer-events-none"
-            style={{ opacity: theme.isGlass ? 1.0 : 0.8 }}
+            className={className || "fixed inset-0 z-[-1] pointer-events-none"}
+            style={{ opacity: activeTheme.isGlass ? 1.0 : 0.8 }}
         />
     );
 };

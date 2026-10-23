@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect, useLayoutEffect, useCallback } from
 import ThemePageLock from '../ThemePageLock';
 import { useLanguage } from '../../context/LanguageContext';
 import { tPrayer, getLocalizedLocationName } from '../../utils/prayerTimesTranslations';
+import { HelpCircle } from 'lucide-react';
 
 interface PrayerTimesHeaderProps {
     handleRefreshLocation: () => void;
@@ -12,6 +13,7 @@ interface PrayerTimesHeaderProps {
     topBarTextColor: string;
     onBack?: () => void;
     onHome?: () => void;
+    onOpenGuide?: () => void;
 }
 
 // Helper to calculate initial font size based on text length to prevent flicker
@@ -55,7 +57,8 @@ const PrayerTimesHeader: React.FC<PrayerTimesHeaderProps> = ({
     combinedCode,
     topBarTextColor,
     onBack,
-    onHome
+    onHome,
+    onOpenGuide
 }) => {
     const { language, isRTL, dir } = useLanguage();
     const centerContainerRef = useRef<HTMLDivElement>(null);
@@ -224,6 +227,18 @@ const PrayerTimesHeader: React.FC<PrayerTimesHeaderProps> = ({
 
                     {/* أيقونات قفل الثيم والإعدادات والصفحة الرئيسية */}
                     <div className="flex items-center gap-0.5 sm:gap-1 shrink-0 z-10" style={{ color: topBarTextColor || undefined }}>
+                        {onOpenGuide && (
+                            <button
+                                type="button"
+                                onClick={onOpenGuide}
+                                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                style={{ color: topBarTextColor || undefined }}
+                                title={language === 'en' ? "Prayer Times Guide" : "دليل وشرح مواقيت الصلاة"}
+                                aria-label={language === 'en' ? "Prayer Times Guide" : "دليل وشرح مواقيت الصلاة"}
+                            >
+                                <HelpCircle size={19} />
+                            </button>
+                        )}
                         <ThemePageLock />
                         <button
                             onClick={onOpenNotifications}

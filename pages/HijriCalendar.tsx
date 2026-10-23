@@ -16,9 +16,12 @@ import {
     ISLAMIC_EVENTS_TRANSLATED,
     HistoricalEventLocalized
 } from '../utils/calendarTranslations';
-import { ChevronRight, ChevronLeft, Calendar as CalendarIcon, RefreshCw, ZoomIn, Copy, Share2 } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Calendar as CalendarIcon, RefreshCw, ZoomIn, Copy, Share2, HelpCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { shareAsImage } from '../utils/shareAsImage';
+import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/CommunitySpotlightGuide';
+import { CALENDAR_PAGE_STEPS } from '../components/Community/communityTourSteps';
+import { markPageAsSeen } from '../utils/badgeManager';
 
 // Convert Gregorian to Hijri for a given date
 function getHijriDetails(date: Date) {
@@ -306,8 +309,13 @@ function HijriCalendar({ onBack, onNavigate }: { onBack: () => void, onNavigate:
     });
     const [convResult, setConvResult] = useState('');
     const [convMessage, setConvMessage] = useState('');
+    const [showGuide, setShowGuide] = useState(false);
 
     useEffect(() => {
+        markPageAsSeen('hijri_calendar');
+        if (!getGuideSeen('hijri_calendar_page_spotlight')) {
+            setShowGuide(true);
+        }
         const randomIndex = Math.floor(Math.random() * HISTORICAL_EVENTS_TRANSLATED.length);
         setHistoricalEvent(HISTORICAL_EVENTS_TRANSLATED[randomIndex]);
     }, []);
@@ -509,8 +517,18 @@ function HijriCalendar({ onBack, onNavigate }: { onBack: () => void, onNavigate:
                             </h1>
                         </div>
 
-                        {/* Home button & Theme Lock */}
+                        {/* Guide, Home button & Theme Lock */}
                         <div className="absolute left-0 flex items-center gap-1 rtl:left-0 rtl:right-auto ltr:left-auto ltr:right-0">
+                            <button
+                                type="button"
+                                onClick={() => setShowGuide(true)}
+                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                style={{ color: 'var(--top-bar-text, inherit)' }}
+                                title={language === 'en' ? "Calendar Guide" : "دليل التقويم"}
+                                aria-label={language === 'en' ? "Calendar Guide" : "دليل التقويم"}
+                            >
+                                <HelpCircle size={19} />
+                            </button>
                             <ThemePageLock />
                             <button
                                 onClick={handleGoHome}
@@ -935,6 +953,15 @@ function HijriCalendar({ onBack, onNavigate }: { onBack: () => void, onNavigate:
                     </div>
                 </div>
             )}
+
+            {/* Spotlight Guide */}
+            <CommunitySpotlightGuide 
+                guideKey="hijri_calendar_page_spotlight"
+                steps={CALENDAR_PAGE_STEPS}
+                isOpen={showGuide}
+                onClose={() => setShowGuide(false)}
+                isEn={language === 'en'}
+            />
         </div>
     );
 }

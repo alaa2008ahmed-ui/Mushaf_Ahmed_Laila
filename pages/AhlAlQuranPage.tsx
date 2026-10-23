@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Trophy, BookOpen, Crown, Medal, User, Calendar, 
   Eye, EyeOff, Shield, RefreshCw, ChevronDown, CheckCircle2,
-  Sparkles, Info, Award, Trash2, AlertTriangle
+  Sparkles, Info, Award, Trash2, AlertTriangle, HelpCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTheme } from '../context/ThemeContext';
@@ -17,6 +17,15 @@ import { communityService } from '../services/communityService';
 import UsernameModal from '../components/Community/UsernameModal';
 import ThemePageLock from '../components/ThemePageLock';
 import { markPageAsSeen } from '../utils/badgeManager';
+import { 
+  CommunitySpotlightGuide, 
+  getGuideSeen 
+} from '../components/Community/CommunitySpotlightGuide';
+import { 
+  AHL_QURAN_LEADERBOARD_STEPS, 
+  AHL_QURAN_STATS_STEPS, 
+  AHL_QURAN_PRIVACY_STEPS 
+} from '../components/Community/communityTourSteps';
 
 interface AhlAlQuranPageProps {
   onBack: () => void;
@@ -57,6 +66,21 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
   const [selectedMonthKey, setSelectedMonthKey] = useState<string>('');
   const [isArchiveDropdownOpen, setIsArchiveDropdownOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'leaderboard' | 'my_stats' | 'privacy'>('leaderboard');
+
+  // Spotlight tour states
+  const [showLeaderboardTour, setShowLeaderboardTour] = useState(false);
+  const [showStatsTour, setShowStatsTour] = useState(false);
+  const [showPrivacyTour, setShowPrivacyTour] = useState(false);
+
+  useEffect(() => {
+    if (activeTab === 'leaderboard' && !getGuideSeen('ahl_quran_leaderboard')) {
+      setShowLeaderboardTour(true);
+    } else if (activeTab === 'my_stats' && !getGuideSeen('ahl_quran_mystats')) {
+      setShowStatsTour(true);
+    } else if (activeTab === 'privacy' && !getGuideSeen('ahl_quran_privacy')) {
+      setShowPrivacyTour(true);
+    }
+  }, [activeTab]);
 
   useEffect(() => {
     markPageAsSeen('ahl-al-quran');
@@ -220,22 +244,27 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
             {/* Title in center */}
             <div className="text-center px-16 sm:px-20 min-w-0">
               <h1 className="app-top-bar__title text-lg sm:text-xl font-kufi truncate">
-                {isEn ? "People of the Qur'an" : "أهل القرآن الكريم"}
+                {isEn ? "People of the Qur'an" : "أهل القرآن"}
               </h1>
             </div>
 
             {/* Quran page & Home icons */}
             <div className={`absolute ${isEn ? 'right-0' : 'left-0'} flex items-center gap-1`}>
-              <ThemePageLock />
               <button
                 type="button"
-                onClick={() => onNavigate('quran')}
+                onClick={() => {
+                  if (activeTab === 'leaderboard') setShowLeaderboardTour(true);
+                  else if (activeTab === 'my_stats') setShowStatsTour(true);
+                  else if (activeTab === 'privacy') setShowPrivacyTour(true);
+                }}
                 className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
-                title={isEn ? "Noble Qur'an Page (Reading)" : "صفحة القرآن الكريم (القراءة)"}
-                aria-label={isEn ? "Noble Qur'an Page" : "صفحة القرآن الكريم"}
+                style={{ color: 'var(--top-bar-text, inherit)' }}
+                title={isEn ? "Ahl Al-Qur'an Guide" : "دليل وشرح أهل القرآن"}
+                aria-label={isEn ? "Ahl Al-Qur'an Guide" : "دليل وشرح أهل القرآن"}
               >
-                <BookOpen size={20} />
+                <HelpCircle size={19} />
               </button>
+              <ThemePageLock />
               <button
                 type="button"
                 onClick={() => onNavigate('home')}
@@ -366,7 +395,7 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
               </div>
 
               {/* Archive Selector */}
-              <div className="relative shrink-0">
+              <div id="ahl-archive-selector" className="relative shrink-0">
                 <button
                   onClick={() => setIsArchiveDropdownOpen(prev => !prev)}
                   className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl text-xs font-bold transition-all cursor-pointer"
@@ -510,7 +539,7 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
                 </button>
               </div>
             ) : (
-              <div className="space-y-2.5">
+              <div id="ahl-leaderboard-list" className="space-y-2.5">
                 {leaderboard.map((item) => {
                   const isTop1 = item.rank === 1;
                   const isTop2 = item.rank === 2;
@@ -664,6 +693,7 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
           <div className="space-y-4">
             {/* Quick Profile Overview Card */}
             <div 
+              id="ahl-stats-overview"
               className="rounded-3xl p-5 shadow-xs text-center"
               style={{ backgroundColor: cardBg, borderColor: cardBorder, borderWidth: '1.5px', borderStyle: 'solid' }}
             >
@@ -763,6 +793,7 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
           <div className="space-y-4">
             {/* Calendar Selection Card */}
             <div 
+              id="ahl-privacy-calendar"
               className="rounded-3xl p-5 shadow-xs"
               style={{ backgroundColor: cardBg, borderColor: cardBorder, borderWidth: '1.5px', borderStyle: 'solid' }}
             >
@@ -811,6 +842,7 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
 
             {/* Visibility Mode Options Card */}
             <div 
+              id="ahl-privacy-options"
               className="rounded-3xl p-5 shadow-xs space-y-3"
               style={{ backgroundColor: cardBg, borderColor: cardBorder, borderWidth: '1.5px', borderStyle: 'solid' }}
             >
@@ -1009,6 +1041,31 @@ const AhlAlQuranPage: React.FC<AhlAlQuranPageProps> = ({ onBack, onNavigate }) =
           setCurrentUser(communityService.getCurrentUser());
           showToast(isEn ? "Welcome! Your account was registered successfully and you are now among Ahl Al-Quran 🌸" : 'مرحباً بك! تم تسجيل حسابك بنجاح وأصبحت الآن ضمن أهل القرآن 🌸');
         }}
+      />
+
+      {/* Interactive Spotlight Guides */}
+      <CommunitySpotlightGuide
+        guideKey="ahl_quran_leaderboard"
+        steps={AHL_QURAN_LEADERBOARD_STEPS}
+        isOpen={showLeaderboardTour && activeTab === 'leaderboard'}
+        onClose={() => setShowLeaderboardTour(false)}
+        isEn={isEn}
+      />
+
+      <CommunitySpotlightGuide
+        guideKey="ahl_quran_mystats"
+        steps={AHL_QURAN_STATS_STEPS}
+        isOpen={showStatsTour && activeTab === 'my_stats'}
+        onClose={() => setShowStatsTour(false)}
+        isEn={isEn}
+      />
+
+      <CommunitySpotlightGuide
+        guideKey="ahl_quran_privacy"
+        steps={AHL_QURAN_PRIVACY_STEPS}
+        isOpen={showPrivacyTour && activeTab === 'privacy'}
+        onClose={() => setShowPrivacyTour(false)}
+        isEn={isEn}
       />
     </div>
   );

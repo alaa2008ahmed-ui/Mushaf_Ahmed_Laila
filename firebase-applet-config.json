@@ -1,12 +1,12 @@
 {
-  "projectId": "gen-lang-client-0271095818",
-  "appId": "1:245814295876:web:b3443c1f34781d0e7beb11",
-  "apiKey": "AIzaSyBOOi1shTd0gdtF2rpmmRzSsErrjVQW6K8",
-  "authDomain": "gen-lang-client-0271095818.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-remixremixquran1-b23d217c-a91b-4f1f-9b7b-bda818e5b15d",
-  "storageBucket": "gen-lang-client-0271095818.firebasestorage.app",
-  "messagingSenderId": "245814295876",
-  "measurementId": "",
-  "oAuthClientId": "245814295876-jnv8cbhbdd9mc0bv9ta8bqd312lhjd57.apps.googleusercontent.com",
+  "projectId": "moshaf-ahmed-laila",
+  "appId": "1:820638063534:web:599513548b6001ae69c63f",
+  "apiKey": "AIzaSyDfe1Z37eOw6IuhrCw9cvwH1ATmxi_PHUU",
+  "authDomain": "moshaf-ahmed-laila.firebaseapp.com",
+  "firestoreDatabaseId": "(default)",
+  "storageBucket": "moshaf-ahmed-laila.firebasestorage.app",
+  "messagingSenderId": "820638063534",
+  "measurementId": "G-2FV41RK6VW",
+  "oAuthClientId": "",
   "recaptchaSiteKey": ""
 }

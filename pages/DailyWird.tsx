@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { motion } from 'motion/react';
-import { CheckCircle, BookOpen, RotateCcw, Play, Settings, X, User, Plus, Trash2, ChevronDown, Edit2, Home } from 'lucide-react';
+import { CheckCircle, BookOpen, RotateCcw, Play, Settings, X, User, Plus, Trash2, ChevronDown, Edit2, Home, HelpCircle } from 'lucide-react';
 import ThemePageLock from '../components/ThemePageLock';
 import ResetConfirmModal from '../components/DailyWird/ResetConfirmModal';
+import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/CommunitySpotlightGuide';
+import { DAILY_SETTINGS_STEPS, DAILY_PROGRESS_STEPS } from '../components/Community/communityTourSteps';
 
 interface WirdSettings {
   id: string;
@@ -54,6 +56,22 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
   const [isInputFocused, setIsInputFocused] = useState(false);
 
   const settings = allSettings.find(s => s.id === activeId) || null;
+  const [showSettingsTour, setShowSettingsTour] = useState(() => !settings && !getGuideSeen('daily_wird_settings_tour'));
+  const [showProgressTour, setShowProgressTour] = useState(false);
+
+  useEffect(() => {
+    if (settings && !showSettings && !getGuideSeen('daily_wird_progress_tour') && !showSettingsTour) {
+      setShowProgressTour(true);
+    }
+  }, [settings, showSettings, showSettingsTour]);
+
+  const handleOpenGuide = useCallback(() => {
+    if (showSettings || !settings) {
+      setShowSettingsTour(true);
+    } else {
+      setShowProgressTour(true);
+    }
+  }, [showSettings, settings]);
 
   const toEnglishDigits = (str: string) => {
     return str.replace(/[٠-٩]/g, (d) => (d.charCodeAt(0) - 1632).toString())
@@ -518,29 +536,31 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
         </div>
 
         {/* Current Wird */}
-        <div id="wird-today-container" className="rounded-2xl p-4 shadow-lg border text-center" style={{ backgroundColor: isDefaultTheme ? '#FFFFFF' : 'var(--card-bg)', borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid', color: isDefaultTheme ? '#000000' : 'inherit' }}>
-          <h3 className={`text-lg font-bold mb-3 ${isDefaultTheme ? 'text-black' : 'text-emerald-600 dark:text-emerald-400'}`}>
-            {isEn ? `Today's Wird (${settings.currentDay})` : `ورد اليوم (${settings.currentDay})`}
-          </h3>
-          
-          <div className="flex justify-center items-center gap-3 mb-4">
-            {hasPages ? (
-              <>
+        <div id="wird-today-card" className="rounded-2xl p-4 shadow-lg border text-center" style={{ backgroundColor: isDefaultTheme ? '#FFFFFF' : 'var(--card-bg)', borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid', color: isDefaultTheme ? '#000000' : 'inherit' }}>
+          <div id="wird-today-container">
+            <h3 className={`text-lg font-bold mb-3 ${isDefaultTheme ? 'text-black' : 'text-emerald-600 dark:text-emerald-400'}`}>
+              {isEn ? `Today's Wird (${settings.currentDay})` : `ورد اليوم (${settings.currentDay})`}
+            </h3>
+            
+            <div className="flex justify-center items-center gap-3 mb-4">
+              {hasPages ? (
+                <>
+                  <div className="p-3 rounded-xl flex-1 border" style={{ backgroundColor: isDefaultTheme ? '#f9fafb' : (theme.isDark ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.05)'), borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
+                    <p className="text-xs opacity-80 mb-1">{isEn ? 'From Page' : 'من صفحة'}</p>
+                    <p className="text-2xl font-bold">{startPage}</p>
+                  </div>
+                  <span className="text-xl opacity-50">-</span>
+                  <div className="p-3 rounded-xl flex-1 border" style={{ backgroundColor: isDefaultTheme ? '#f9fafb' : (theme.isDark ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.05)'), borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
+                    <p className="text-xs opacity-80 mb-1">{isEn ? 'To Page' : 'إلى صفحة'}</p>
+                    <p className="text-2xl font-bold">{endPage}</p>
+                  </div>
+                </>
+              ) : (
                 <div className="p-3 rounded-xl flex-1 border" style={{ backgroundColor: isDefaultTheme ? '#f9fafb' : (theme.isDark ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.05)'), borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
-                  <p className="text-xs opacity-80 mb-1">{isEn ? 'From Page' : 'من صفحة'}</p>
-                  <p className="text-2xl font-bold">{startPage}</p>
+                  <p className="text-lg font-bold">{isEn ? 'You have completed all pages!' : 'لقد أكملت جميع الصفحات!'}</p>
                 </div>
-                <span className="text-xl opacity-50">-</span>
-                <div className="p-3 rounded-xl flex-1 border" style={{ backgroundColor: isDefaultTheme ? '#f9fafb' : (theme.isDark ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.05)'), borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
-                  <p className="text-xs opacity-80 mb-1">{isEn ? 'To Page' : 'إلى صفحة'}</p>
-                  <p className="text-2xl font-bold">{endPage}</p>
-                </div>
-              </>
-            ) : (
-              <div className="p-3 rounded-xl flex-1 border" style={{ backgroundColor: isDefaultTheme ? '#f9fafb' : (theme.isDark ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.05)'), borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
-                <p className="text-lg font-bold">{isEn ? 'You have completed all pages!' : 'لقد أكملت جميع الصفحات!'}</p>
-              </div>
-            )}
+              )}
+            </div>
           </div>
 
           <div className="flex flex-col gap-2" id="wird-actions-container">
@@ -675,6 +695,7 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
     return (
       <div className="relative mb-3">
         <button 
+          id="wird-profile-selector"
           onClick={() => setShowProfileMenu(!showProfileMenu)}
           className="w-full p-4 rounded-2xl border flex items-center justify-between transition-all"
           style={{ 
@@ -904,8 +925,18 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
               </h1>
             </div>
 
-            {/* Home / Page Lock icons */}
+            {/* Home / Page Lock / Guide icons */}
             <div className={`absolute ${isEn ? 'right-0' : 'left-0'} flex items-center gap-1`}>
+              <button
+                type="button"
+                onClick={handleOpenGuide}
+                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                style={{ color: 'var(--top-bar-text, inherit)' }}
+                title={isEn ? "Daily Wird Guide" : "دليل الورد اليومي"}
+                aria-label={isEn ? "Daily Wird Guide" : "دليل الورد اليومي"}
+              >
+                <HelpCircle size={19} />
+              </button>
               <ThemePageLock />
               <button
                 onClick={() => onNavigate('home')}
@@ -934,6 +965,22 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
         isOpen={showResetConfirm}
         onClose={() => setShowResetConfirm(false)}
         onConfirm={confirmReset}
+      />
+
+      <CommunitySpotlightGuide
+        guideKey="daily_wird_settings_tour"
+        steps={DAILY_SETTINGS_STEPS}
+        isOpen={showSettingsTour}
+        onClose={() => setShowSettingsTour(false)}
+        isEn={isEn}
+      />
+
+      <CommunitySpotlightGuide
+        guideKey="daily_wird_progress_tour"
+        steps={DAILY_PROGRESS_STEPS}
+        isOpen={showProgressTour}
+        onClose={() => setShowProgressTour(false)}
+        isEn={isEn}
       />
     </div>
   );

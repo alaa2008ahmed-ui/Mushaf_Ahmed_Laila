@@ -3,9 +3,21 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   Search, MessageSquare, Users, Ban, User, Edit3, 
   Sparkles, Globe, Shield, CheckCircle2, UserX, RefreshCw, Trash2, KeyRound, Copy,
-  BookOpen, Trophy, Check, X, EyeOff, UserPlus, Clock, ShieldCheck
+  Check, X, EyeOff, UserPlus, Clock, ShieldCheck, HelpCircle, Pin, MessageCircle
 } from 'lucide-react';
 import { communityService, CommunityUser, ChatConversation, GroupChat, ADMIN_USER_ID } from '../services/communityService';
+import { 
+  CommunitySpotlightGuide, 
+  getGuideSeen,
+  setGuideSeen
+} from '../components/Community/CommunitySpotlightGuide';
+import { 
+  COMMUNITY_HEADER_STEPS, 
+  TAB_CHATS_STEPS, 
+  TAB_COMMUNITY_STEPS, 
+  TAB_USERS_STEPS, 
+  TAB_BLOCKED_STEPS 
+} from '../components/Community/communityTourSteps';
 import { SUPPORT_AVATAR_BASE64 } from '../src/supportAvatarBase64';
 import UsernameModal from '../components/Community/UsernameModal';
 import { AdminDashboardModal } from '../components/Community/AdminDashboardModal';
@@ -15,7 +27,7 @@ import ThemePageLock from '../components/ThemePageLock';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { registerBackInterceptor } from '../hooks/useBackButton';
-import { useShowNewBadge, markPageAsSeen } from '../utils/badgeManager';
+import { markPageAsSeen } from '../utils/badgeManager';
 import { 
   formatCountryName, 
   formatUsername, 
@@ -36,8 +48,6 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
   const { theme, themeKey } = useTheme();
   const { language, dir } = useLanguage();
   const isEn = language === 'en';
-
-  const showAhlQuranBadge = useShowNewBadge('ahl-al-quran');
   const isDefaultTheme = themeKey === 'default' || !themeKey || theme.name?.includes('الافتراضي') || theme.name === 'Default';
   const isDeepBlack = theme.bgColor === '#000000' || theme.name === 'أبيض وأسود' || themeKey === 'deep_black';
   const cardBorderColor = isDefaultTheme 
@@ -84,6 +94,26 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
     setActiveTabState(tab);
     communityService.setActiveTab(tab);
     setTabHistory(prev => [...prev, tab]);
+
+    // Close any previous guide immediately
+    setShowHeaderTour(false);
+    setShowChatsTour(false);
+    setShowCommunityTour(false);
+    setShowUsersTour(false);
+    setShowBlockedTour(false);
+
+    // When switching tabs, trigger the specific tab's guide if not seen before
+    setTimeout(() => {
+      if (tab === 'chats' && !getGuideSeen('tab_chats')) {
+        setShowChatsTour(true);
+      } else if (tab === 'community' && !getGuideSeen('tab_community')) {
+        setShowCommunityTour(true);
+      } else if (tab === 'users' && !getGuideSeen('tab_users')) {
+        setShowUsersTour(true);
+      } else if (tab === 'blocked' && !getGuideSeen('tab_blocked')) {
+        setShowBlockedTour(true);
+      }
+    }, 200);
   };
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -107,6 +137,31 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
   const [groupToHide, setGroupToHide] = useState<GroupChat | null>(null);
   const [groupToEdit, setGroupToEdit] = useState<GroupChat | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Independent Spotlight tour states for header and individual tabs
+  const [showHeaderTour, setShowHeaderTour] = useState(() => !getGuideSeen('community_header'));
+  const [showChatsTour, setShowChatsTour] = useState(false);
+  const [showCommunityTour, setShowCommunityTour] = useState(false);
+  const [showUsersTour, setShowUsersTour] = useState(false);
+  const [showBlockedTour, setShowBlockedTour] = useState(false);
+
+  // If header tour was already seen previously, check if the current active tab needs a tour
+  useEffect(() => {
+    if (getGuideSeen('community_header')) {
+      const timer = setTimeout(() => {
+        if (activeTab === 'chats' && !getGuideSeen('tab_chats')) {
+          setShowChatsTour(true);
+        } else if (activeTab === 'community' && !getGuideSeen('tab_community')) {
+          setShowCommunityTour(true);
+        } else if (activeTab === 'users' && !getGuideSeen('tab_users')) {
+          setShowUsersTour(true);
+        } else if (activeTab === 'blocked' && !getGuideSeen('tab_blocked')) {
+          setShowBlockedTour(true);
+        }
+      }, 350);
+      return () => clearTimeout(timer);
+    }
+  }, []);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -140,7 +195,9 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
     await Promise.all([
       communityService.fetchLatestUsers(),
       communityService.fetchLatestGroups(),
-      communityService.fetchLatestMessages()
+      communityService.fetchLatestMessages(),
+      communityService.fetchLatestGroupMessages(),
+      communityService.fetchServerReadStates()
     ]);
     loadData();
     setTimeout(() => setIsRefreshing(false), 500);
@@ -152,11 +209,19 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
     }
 
     // Active fetch on load
+    communityService.fetchServerReadStates().then(() => {
+      loadData();
+    });
+
     communityService.fetchLatestUsers().then(() => {
       loadData();
     });
 
     communityService.fetchLatestGroups().then(() => {
+      loadData();
+    });
+
+    communityService.fetchLatestGroupMessages().then(() => {
       loadData();
     });
 
@@ -180,6 +245,8 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
     window.addEventListener('community_user_updated', handleUpdate);
     window.addEventListener('community_messages_updated', handleUpdate);
     window.addEventListener('community_groups_updated', handleUpdate);
+    window.addEventListener('community_group_messages_updated', handleUpdate);
+    window.addEventListener('community_group_read_updated', handleUpdate);
     window.addEventListener('community_contacts_updated', handleUpdate);
     window.addEventListener('community_block_updated', handleUpdate);
 
@@ -188,6 +255,8 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
       window.removeEventListener('community_user_updated', handleUpdate);
       window.removeEventListener('community_messages_updated', handleUpdate);
       window.removeEventListener('community_groups_updated', handleUpdate);
+      window.removeEventListener('community_group_messages_updated', handleUpdate);
+      window.removeEventListener('community_group_read_updated', handleUpdate);
       window.removeEventListener('community_contacts_updated', handleUpdate);
       window.removeEventListener('community_block_updated', handleUpdate);
     };
@@ -232,6 +301,7 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
         return;
       }
     }
+    communityService.markMessagesAsRead(partnerUserId);
     communityService.setActiveTab(activeTab);
     onNavigate('direct-chat', { partnerUserId, returnTab: activeTab });
   };
@@ -282,6 +352,7 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
       setShowProfileModal(true);
       return;
     }
+    communityService.markGroupAsRead(groupId);
     communityService.setActiveTab('community');
     onNavigate('group-chat', { groupId, returnTab: 'community', initialTab: 'community' });
   };
@@ -384,6 +455,10 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
     });
   }, [pendingInvitations]);
 
+  const totalUnreadGroupsCount = useMemo(() => {
+    return communityService.getTotalUnreadGroupMessagesCount(currentUser.userId);
+  }, [groups, currentUser.userId]);
+
   const filteredGroups = useMemo(() => {
     const pendingIds = new Set(uniquePendingInvitations.map(p => p.groupId));
     const pendingNames = new Set(uniquePendingInvitations.map(p => (p.name || '').trim().toLowerCase()));
@@ -397,9 +472,19 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
       return !hasPendingInvite;
     });
 
-    if (!searchQuery.trim()) return activeGroups;
+    // Pinned groups ("مجلس الذكر وتدبر القرآن" and "حلقة أهل القرآن العامة") must always stay strictly at the very top
+    const sorted = [...activeGroups].sort((a, b) => {
+      const rankA = communityService.getPinnedGroupRank(a);
+      const rankB = communityService.getPinnedGroupRank(b);
+      if (rankA > 0 && rankB > 0) return rankA - rankB;
+      if (rankA > 0) return -1;
+      if (rankB > 0) return 1;
+      return new Date(b.lastMessageTime || b.createdAt || 0).getTime() - new Date(a.lastMessageTime || a.createdAt || 0).getTime();
+    });
+
+    if (!searchQuery.trim()) return sorted;
     const q = searchQuery.toLowerCase().trim();
-    return activeGroups.filter((g) => {
+    return sorted.filter((g) => {
       const name = (g.name || '').toLowerCase();
       const desc = (g.description || '').toLowerCase();
       const lastMsg = (g.lastMessage || '').toLowerCase();
@@ -526,6 +611,7 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
 
   return (
     <div 
+      id="community-page-container"
       className="h-screen max-h-screen h-[100dvh] w-full flex flex-col overflow-y-auto overscroll-contain transition-colors bg-transparent relative" 
       dir={isEn ? 'ltr' : 'rtl'}
       style={{ 
@@ -538,8 +624,8 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
       <header className="app-top-bar">
         <div className="app-top-bar__inner">
           <div className="flex items-center justify-between w-full min-h-[44px] gap-2">
-            {/* بداية الشريط (سهم الرجوع للخلف + اختصار القرآن الكريم) */}
-            <div className="flex items-center gap-1.5 flex-shrink-0">
+            {/* بداية الشريط (سهم الرجوع للخلف) */}
+            <div id="community-header-nav" className="flex items-center gap-1.5 flex-shrink-0">
               <button
                 type="button"
                 onClick={handleBack}
@@ -548,18 +634,6 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
                 aria-label={isEn ? "Back" : "رجوع للخلف"}
               >
                 <i className={`fa-solid ${isEn ? 'fa-arrow-left' : 'fa-arrow-right'} text-xl`}></i>
-              </button>
-              <button
-                type="button"
-                onClick={() => onNavigate('quran')}
-                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
-                style={{
-                  color: primaryColor
-                }}
-                title={isEn ? "The Noble Qur'an" : "صفحة القرآن الكريم"}
-                aria-label={isEn ? "The Noble Qur'an" : "صفحة القرآن الكريم"}
-              >
-                <BookOpen size={20} />
               </button>
             </div>
 
@@ -628,44 +702,34 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
               )}
             </div>
 
-            {/* نهاية الشريط: اختصار أهل القرآن الكريم + زر الصفحة الرئيسية */}
-            <div className="flex items-center gap-1.5 flex-shrink-0">
+            {/* نهاية الشريط: زر الدليل والإرشاد + الثيمات + زر الصفحة الرئيسية */}
+            <div id="community-header-right" className="flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
               <button
                 type="button"
                 onClick={() => {
-                  markPageAsSeen('ahl-al-quran');
-                  onNavigate('ahl-al-quran');
+                  if (activeTab === 'chats') setShowChatsTour(true);
+                  else if (activeTab === 'community') setShowCommunityTour(true);
+                  else if (activeTab === 'users') setShowUsersTour(true);
+                  else if (activeTab === 'blocked') setShowBlockedTour(true);
+                  else setShowHeaderTour(true);
                 }}
-                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer relative"
-                style={{
-                  color: '#f59e0b'
-                }}
-                title={isEn ? "Ahl Al-Qur'an Page" : "صفحة أهل القرآن الكريم"}
-                aria-label={isEn ? "Ahl Al-Qur'an Page" : "صفحة أهل القرآن الكريم"}
+                className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                style={{ color: 'var(--top-bar-text, inherit)' }}
+                title={isEn ? "Community Guide" : "دليل وشرح المجتمع"}
+                aria-label={isEn ? "Community Guide" : "دليل وشرح المجتمع"}
               >
-                <Trophy size={20} />
-                {showAhlQuranBadge && (
-                  <span 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      markPageAsSeen('ahl-al-quran');
-                    }}
-                    className={`absolute -top-1.5 ${isEn ? '-right-1' : '-left-1'} bg-yellow-400 text-black text-[9px] font-bold px-1 rounded-full shadow-xs border border-white dark:border-slate-800 animate-bounce cursor-pointer select-none z-30`}
-                    title={isEn ? "New" : "جديد"}
-                  >
-                    {isEn ? "NEW" : "جديد"}
-                  </span>
-                )}
+                <HelpCircle size={19} />
               </button>
+
               <ThemePageLock />
               <button
                 type="button"
                 onClick={handleGoHome}
-                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
                 title={isEn ? "Home" : "الصفحة الرئيسية"}
                 aria-label={isEn ? "Home" : "الصفحة الرئيسية"}
               >
-                <i className="fa-solid fa-house text-xl"></i>
+                <i className="fa-solid fa-house text-lg sm:text-xl"></i>
               </button>
             </div>
           </div>
@@ -676,6 +740,7 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
 
         {/* Navigation Tabs (Equally divided 4 tabs: Chats, Community, Members, Blocked) */}
         <div 
+          id="community-tabs-nav"
           className="grid grid-cols-4 gap-1 sm:gap-1.5 p-1 sm:p-1.5 rounded-2xl border mb-3"
           style={{ backgroundColor: secondaryBg, borderColor: cardBorder, borderWidth: '1.5px', borderStyle: 'solid' }}
         >
@@ -708,14 +773,21 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
             }}
           >
             <span>{isEn ? 'Community' : 'المجتمع'}</span>
-            {uniquePendingInvitations.length > 0 && (
+            {totalUnreadGroupsCount > 0 ? (
+              <span 
+                className="px-1.5 py-0.5 min-w-[18px] h-[18px] rounded-full bg-rose-500 text-white text-[10px] font-extrabold flex items-center justify-center leading-none shadow-sm animate-pulse"
+                title={isEn ? `${totalUnreadGroupsCount} unread message(s)` : `${totalUnreadGroupsCount} رسائل غير مقروءة`}
+              >
+                {totalUnreadGroupsCount > 99 ? '+99' : totalUnreadGroupsCount}
+              </span>
+            ) : uniquePendingInvitations.length > 0 ? (
               <span 
                 className="px-1.5 py-0.5 min-w-[18px] h-[18px] rounded-full bg-amber-500 text-white text-[10px] font-extrabold flex items-center justify-center leading-none shadow-sm animate-pulse"
                 title={isEn ? `${uniquePendingInvitations.length} new invite(s)` : `${uniquePendingInvitations.length} دعوة جديدة`}
               >
                 {uniquePendingInvitations.length}
               </span>
-            )}
+            ) : null}
           </button>
 
           <button
@@ -796,7 +868,7 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
 
         {/* Search Input & Refresh Button */}
         {(activeTab === 'chats' || activeTab === 'users' || activeTab === 'community') && (
-          <div className="flex items-center gap-2 mb-4">
+          <div id="community-search-container" className="flex items-center gap-2 mb-4">
             <div className="relative flex-1">
               <Search 
                 size={18} 
@@ -854,7 +926,7 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
 
         {/* Tab 1: Global Users Directory (Excluding current user) */}
         {activeTab === 'users' && (
-          <div className={
+          <div id="community-users-section" className={
             (users.length > 100 || totalUsersCount > 100)
               ? "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-2.5"
               : "grid grid-cols-1 md:grid-cols-2 gap-3"
@@ -1039,7 +1111,7 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
 
         {/* Tab 2: Individual / Direct Chats Only */}
         {activeTab === 'chats' && (
-          <div className="space-y-2.5">
+          <div id="community-chats-section" className="space-y-2.5">
             {/* Quick Banner linking to Community Tab if user has pending group invitations */}
             {uniquePendingInvitations.length > 0 && (
               <div 
@@ -1289,6 +1361,7 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
               </div>
 
               <button
+                id="community-create-group-btn"
                 type="button"
                 onClick={() => {
                   if (!communityService.isProfileComplete()) {
@@ -1362,12 +1435,14 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
 
                         <p className="text-[11px] mt-0.5 truncate" style={{ color: textMuted }}>
                           {isEn ? 'Invited by: ' : 'تمت دعوتك بواسطة: '}
-                          <span className="font-bold" style={{ color: primaryColor }}>{invitation.creatorName || (isEn ? 'App User' : 'مستخدم المصحف')}</span>
+                          <span className="font-bold" style={{ color: primaryColor }}>
+                            {communityService.getUserById(invitation.createdBy)?.username || invitation.creatorName || (isEn ? 'App User' : 'مستخدم المصحف')}
+                          </span>
                           {invitation.description ? ` • ${formatGroupDescription(invitation, isEn)}` : ''}
                         </p>
 
                         <div className="text-[10px] mt-1" style={{ color: textMuted }}>
-                          {isEn ? `Current members: ${invitation.members?.length || 1}` : `الأعضاء الحاليون: ${invitation.members?.length || 1}`}
+                          {isEn ? `Current members: ${communityService.getGroupMembersCount(invitation)}` : `الأعضاء الحاليون: ${communityService.getGroupMembersCount(invitation)}`}
                         </div>
                       </div>
                     </div>
@@ -1443,50 +1518,110 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 gap-2.5">
-                {filteredGroups.map(grp => (
-                  <div
-                    key={grp.groupId}
-                    onClick={() => handleStartGroupChat(grp.groupId)}
-                    className="border rounded-2xl p-3 sm:p-3.5 flex items-center justify-between gap-3 cursor-pointer transition-all shadow-xs hover:shadow-md active:scale-[0.99] group"
-                    style={{
-                      backgroundColor: cardBg,
-                      borderColor: cardBorder,
-                      borderWidth: '1.5px',
-                      borderStyle: 'solid'
-                    }}
-                    title={cleanGroupName(formatGroupName(grp, isEn))}
-                  >
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                      <div 
-                        className="w-11 h-11 rounded-2xl font-bold flex items-center justify-center border overflow-hidden flex-shrink-0 text-xl shadow-inner group-hover:scale-105 transition-transform"
-                        style={{
-                          backgroundColor: `${primaryColor}15`,
-                          borderColor: `${primaryColor}30`,
-                          color: primaryColor
-                        }}
-                      >
-                        {renderGroupAvatar(grp)}
+              <div id="community-groups-section" className="grid grid-cols-1 gap-2.5">
+                {filteredGroups.map(grp => {
+                  const isPinned = communityService.isPinnedGroup(grp);
+                  const displayInfo = communityService.getGroupDisplayInfo(grp, currentUser.userId);
+                  const unreadCount = displayInfo.unreadCount;
+                  const lastMsgTime = displayInfo.lastMessageTime ? new Date(displayInfo.lastMessageTime).toLocaleTimeString(isEn ? 'en-US' : 'ar-EG', { hour: '2-digit', minute: '2-digit' }) : '';
+
+                  return (
+                    <div
+                      key={grp.groupId}
+                      onClick={() => handleStartGroupChat(grp.groupId)}
+                      className="border rounded-2xl p-3 sm:p-3.5 flex items-center justify-between gap-3 cursor-pointer transition-all shadow-xs hover:shadow-md active:scale-[0.99] group relative"
+                      style={{
+                        backgroundColor: isPinned ? `${primaryColor}08` : cardBg,
+                        borderColor: isPinned ? `${primaryColor}60` : cardBorder,
+                        borderWidth: isPinned ? '2px' : '1.5px',
+                        borderStyle: 'solid'
+                      }}
+                      title={cleanGroupName(formatGroupName(grp, isEn))}
+                    >
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <div className="relative flex-shrink-0">
+                          <div 
+                            className="w-11 h-11 rounded-2xl font-bold flex items-center justify-center border overflow-hidden text-xl shadow-inner group-hover:scale-105 transition-transform"
+                            style={{
+                              backgroundColor: `${primaryColor}15`,
+                              borderColor: `${primaryColor}30`,
+                              color: primaryColor
+                            }}
+                          >
+                            {renderGroupAvatar(grp)}
+                          </div>
+                          {unreadCount > 0 && (
+                            <div 
+                              className={`absolute -top-1.5 ${isEn ? '-right-1.5' : '-left-1.5'} bg-rose-500 text-white text-[10px] font-extrabold min-w-[20px] h-5 px-1 rounded-full flex items-center justify-center border-2 border-white dark:border-slate-900 shadow-sm animate-pulse z-10`}
+                              title={isEn ? `${unreadCount} unread message(s)` : `${unreadCount} رسائل غير مقروءة`}
+                            >
+                              {unreadCount > 99 ? '99+' : unreadCount}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <h3 className="font-bold text-xs sm:text-sm truncate leading-snug" style={{ color: textColor }}>
+                              {cleanGroupName(formatGroupName(grp, isEn))}
+                            </h3>
+                            {isPinned && (
+                              <span 
+                                className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-bold border shadow-2xs select-none"
+                                style={{
+                                  backgroundColor: `${primaryColor}18`,
+                                  borderColor: `${primaryColor}40`,
+                                  color: primaryColor
+                                }}
+                              >
+                                <Pin size={10} className="rotate-45" />
+                                <span>{isEn ? 'Pinned' : 'مثبتة'}</span>
+                              </span>
+                            )}
+                          </div>
+                          {grp.description && (
+                            <p className="text-[11px] truncate mt-0.5" style={{ color: textMuted }}>
+                              {formatGroupDescription(grp, isEn)}
+                            </p>
+                          )}
+                          <div className="flex items-center gap-2 mt-0.5 text-[10px] font-medium" style={{ color: textMuted }}>
+                            <span>
+                              {(() => {
+                                const count = communityService.getGroupMembersCount(grp);
+                                return isEn 
+                                  ? `${count} member${count > 1 ? 's' : ''}` 
+                                  : `${count} عضو`;
+                              })()}
+                            </span>
+                            {displayInfo.lastMessage && (
+                              <>
+                                <span>•</span>
+                                <span className="truncate max-w-[130px] sm:max-w-[200px]">
+                                  {displayInfo.lastMessage}
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        </div>
                       </div>
 
-                      <div className="min-w-0 flex-1">
-                        <h3 className="font-bold text-xs sm:text-sm truncate leading-snug" style={{ color: textColor }}>
-                          {cleanGroupName(formatGroupName(grp, isEn))}
-                        </h3>
-                        {grp.description && (
-                          <p className="text-[11px] truncate mt-0.5" style={{ color: textMuted }}>
-                            {formatGroupDescription(grp, isEn)}
-                          </p>
+                      {/* Right side: unread count badge & last message timestamp */}
+                      <div className="flex flex-col items-end gap-1 shrink-0 select-none">
+                        {unreadCount > 0 && (
+                          <div className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-500 text-white font-extrabold text-[11px] shadow-sm animate-pulse">
+                            <MessageCircle size={11} />
+                            <span>{unreadCount > 99 ? '99+' : unreadCount}</span>
+                          </div>
                         )}
-                        <p className="text-[10px] mt-0.5 font-medium" style={{ color: textMuted }}>
-                          {isEn 
-                            ? `${grp.members?.length || 1} member${(grp.members?.length || 1) > 1 ? 's' : ''}` 
-                            : `${grp.members?.length || 1} عضو`}
-                        </p>
+                        {lastMsgTime && (
+                          <span className="text-[10px] font-medium" style={{ color: textMuted }}>
+                            {lastMsgTime}
+                          </span>
+                        )}
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -1494,7 +1629,7 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
 
         {/* Tab 4: Blocked Users */}
         {activeTab === 'blocked' && (
-          <div className="space-y-2.5">
+          <div id="community-blocked-section" className="space-y-2.5">
             {blockedUsers.length === 0 ? (
               <div 
                 className="text-center py-12 rounded-3xl border p-6"
@@ -1734,6 +1869,78 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
         onClose={() => setShowAdminModal(false)}
         currentTheme={{ bg: theme.bgColor || '#0D1B2A', text: textColor }}
         onNavigate={onNavigate}
+      />
+
+      {/* --- Interactive Community Spotlight Guides --- */}
+      {/* 1. General Header & Community Tour */}
+      <CommunitySpotlightGuide
+        guideKey="community_header"
+        steps={COMMUNITY_HEADER_STEPS}
+        isOpen={showHeaderTour}
+        onClose={() => {
+          setShowHeaderTour(false);
+          setGuideSeen('community_header');
+          setTimeout(() => {
+            if (activeTab === 'chats' && !getGuideSeen('tab_chats')) {
+              setShowChatsTour(true);
+            } else if (activeTab === 'community' && !getGuideSeen('tab_community')) {
+              setShowCommunityTour(true);
+            } else if (activeTab === 'users' && !getGuideSeen('tab_users')) {
+              setShowUsersTour(true);
+            } else if (activeTab === 'blocked' && !getGuideSeen('tab_blocked')) {
+              setShowBlockedTour(true);
+            }
+          }, 250);
+        }}
+        isEn={isEn}
+      />
+
+      {/* 2. Friends Tab Tour */}
+      <CommunitySpotlightGuide
+        guideKey="tab_chats"
+        steps={TAB_CHATS_STEPS}
+        isOpen={showChatsTour && activeTab === 'chats'}
+        onClose={() => {
+          setShowChatsTour(false);
+          setGuideSeen('tab_chats');
+        }}
+        isEn={isEn}
+      />
+
+      {/* 3. Community Groups Tab Tour */}
+      <CommunitySpotlightGuide
+        guideKey="tab_community"
+        steps={TAB_COMMUNITY_STEPS}
+        isOpen={showCommunityTour && activeTab === 'community'}
+        onClose={() => {
+          setShowCommunityTour(false);
+          setGuideSeen('tab_community');
+        }}
+        isEn={isEn}
+      />
+
+      {/* 4. Members Directory Tab Tour */}
+      <CommunitySpotlightGuide
+        guideKey="tab_users"
+        steps={TAB_USERS_STEPS}
+        isOpen={showUsersTour && activeTab === 'users'}
+        onClose={() => {
+          setShowUsersTour(false);
+          setGuideSeen('tab_users');
+        }}
+        isEn={isEn}
+      />
+
+      {/* 5. Blocked Tab Tour */}
+      <CommunitySpotlightGuide
+        guideKey="tab_blocked"
+        steps={TAB_BLOCKED_STEPS}
+        isOpen={showBlockedTour && activeTab === 'blocked'}
+        onClose={() => {
+          setShowBlockedTour(false);
+          setGuideSeen('tab_blocked');
+        }}
+        isEn={isEn}
       />
     </div>
   );

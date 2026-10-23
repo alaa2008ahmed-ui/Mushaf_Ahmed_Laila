@@ -6,7 +6,7 @@ import {
   Mic, Volume2, Users, Info, Shield, LogOut, Check, X,
   UserPlus, UserMinus, Search, AlertTriangle, EyeOff, Edit3,
   MessageCircle, UserCheck, Clock, MapPin, Hash, Paperclip, Loader2, Video, FileText,
-  Copy, Mail
+  Copy, Mail, HelpCircle, Reply
 } from 'lucide-react';
 import { 
   communityService, 
@@ -17,13 +17,30 @@ import {
   CommunityUser,
   ADMIN_USER_ID 
 } from '../services/communityService';
+import { 
+  CommunitySpotlightGuide, 
+  getGuideSeen 
+} from '../components/Community/CommunitySpotlightGuide';
+import { GROUP_CHAT_STEPS } from '../components/Community/communityTourSteps';
 import { ChatQuranCard, ChatMessageAudioPlayer } from './DirectChatPage';
+import {
+  MessageReactionsBar,
+  MessageReactionBadge,
+  SwipeableMessageWrapper,
+  ReplyPreviewBar,
+  QuotedMessageBlock,
+  QuotedReplyMessage
+} from '../components/Community/WhatsAppMessageComponents';
 import EmojiPicker from '../components/Community/EmojiPicker';
 import QuranVerseModal from '../components/Community/QuranVerseModal';
 import EditGroupModal from '../components/Community/EditGroupModal';
 import { ChatAttachmentView, formatFileSize } from '../components/Community/ChatAttachmentView';
 import { MediaAttachmentPicker } from '../components/Community/MediaAttachmentPicker';
 import { processFileForAttachment } from '../components/Community/mediaPickerUtils';
+import { Capacitor } from '@capacitor/core';
+import { VoiceRecorder } from 'capacitor-voice-recorder';
+import { InAppPermissionModal } from '../components/InAppPermissionModal';
+import { requestMicrophonePermission } from '../utils/permissionHelper';
 import { registerBackInterceptor } from '../hooks/useBackButton';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -54,7 +71,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
   const textColor = theme.textColor || (theme.isDark ? '#ffffff' : '#000000');
   const textMuted = isBlackTheme ? '#9ca3af' : (theme.isDark ? '#94a3b8' : '#64748b');
 
-  const currentUser = communityService.getCurrentUser();
+  const [currentUser, setCurrentUser] = useState<CommunityUser>(() => communityService.getCurrentUser());
   const [group, setGroup] = useState<GroupChat | null>(() => communityService.getGroupById(groupId) || null);
   const [messages, setMessages] = useState<GroupMessage[]>(() => communityService.getGroupMessages(groupId));
   const [inputText, setInputText] = useState('');
@@ -70,11 +87,27 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
   const [addMemberSearch, setAddMemberSearch] = useState('');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [playingAudioUrl, setPlayingAudioUrl] = useState<string | null>(null);
+  const [showGroupTour, setShowGroupTour] = useState(() => !getGuideSeen('group_chat_room'));
+
+  const handleGroupTourStepChange = (stepIndex: number) => {
+    const currentStep = GROUP_CHAT_STEPS[stepIndex];
+    if (currentStep && (currentStep.id === 'group_chat_menu_options' || currentStep.id === 'group_chat_menu_admin')) {
+      setShowMenu(true);
+    } else {
+      setShowMenu(false);
+    }
+  };
 
   // Media Attachment state (image, video, file)
   const [showAttachmentPicker, setShowAttachmentPicker] = useState(false);
   const [stagedAttachment, setStagedAttachment] = useState<ChatAttachment | null>(null);
   const [isProcessingMedia, setIsProcessingMedia] = useState(false);
+
+  // WhatsApp Reactions & Swipe-to-reply states
+  const [reactionMenuMsgId, setReactionMenuMsgId] = useState<string | null>(null);
+  const [moreEmojiPickerMsgId, setMoreEmojiPickerMsgId] = useState<string | null>(null);
+  const [activeReplyTo, setActiveReplyTo] = useState<QuotedReplyMessage | null>(null);
+  const [highlightedMsgId, setHighlightedMsgId] = useState<string | null>(null);
 
   // Selected Member Profile Modal State
   const [selectedMember, setSelectedMember] = useState<CommunityUser | null>(null);
@@ -88,6 +121,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
   // Voice Recording state
   const [isRecording, setIsRecording] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
+  const [showMicPermissionModal, setShowMicPermissionModal] = useState(false);
   const recordingDurationRef = useRef<number>(0);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -95,27 +129,44 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const unreadDividerRef = useRef<HTMLDivElement>(null);
   const menuContainerRef = useRef<HTMLDivElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const menuDropdownRef = useRef<HTMLDivElement>(null);
   const hasExitedRef = useRef(false);
 
-  // Global click & touch outside listeners to automatically dismiss the 3-dots menu when clicking anywhere on screen
-  useEffect(() => {
-    if (!showMenu) return;
+  // Capture initial first unread message before marking read
+  const [firstUnreadMessageId] = useState<string | null>(() => {
+    const curUser = communityService.getCurrentUser();
+    const unread = communityService.getFirstUnreadGroupMessage(groupId, curUser?.userId);
+    return unread?.messageId || null;
+  });
+  const hasInitiallyScrolledRef = useRef(false);
+  const prevMessagesLengthRef = useRef(messages.length);
 
+  // Global click & touch outside listeners to automatically dismiss the 3-dots menu & reactions when clicking anywhere on screen
+  useEffect(() => {
     const handleGlobalClickOutside = (event: MouseEvent | TouchEvent | PointerEvent) => {
       const target = event.target as Node;
-      // If clicking inside the dropdown menu itself, let the item's onClick handle it
-      if (menuDropdownRef.current && menuDropdownRef.current.contains(target)) {
-        return;
+      if (reactionMenuMsgId) {
+        setReactionMenuMsgId(null);
       }
-      // If clicking the 3-dots button itself, toggle behavior is handled by button's onClick
-      if (menuButtonRef.current && menuButtonRef.current.contains(target)) {
-        return;
+      if (moreEmojiPickerMsgId) {
+        setMoreEmojiPickerMsgId(null);
       }
-      // Any other click or touch anywhere on the screen immediately dismisses the menu
-      setShowMenu(false);
+      if (showMenu) {
+        // Keep menu open while the group tour is spotlighting the menu steps
+        if (showGroupTour) return;
+        // If clicking inside the dropdown menu itself, let the item's onClick handle it
+        if (menuDropdownRef.current && menuDropdownRef.current.contains(target)) {
+          return;
+        }
+        // If clicking the 3-dots button itself, toggle behavior is handled by button's onClick
+        if (menuButtonRef.current && menuButtonRef.current.contains(target)) {
+          return;
+        }
+        setShowMenu(false);
+      }
     };
 
     document.addEventListener('pointerdown', handleGlobalClickOutside, true);
@@ -127,7 +178,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
       document.removeEventListener('touchstart', handleGlobalClickOutside, true);
       document.removeEventListener('mousedown', handleGlobalClickOutside, true);
     };
-  }, [showMenu]);
+  }, [showMenu, showGroupTour, reactionMenuMsgId, moreEmojiPickerMsgId]);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -135,15 +186,23 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
   };
 
   const handleOpenMemberProfile = (userId: string, fallbackName?: string, fallbackAvatar?: string, fallbackCountry?: string, msg?: GroupMessage) => {
+    const profile = communityService.getSenderProfile(userId, fallbackName, fallbackAvatar, fallbackCountry);
     let user = communityService.getUserById(userId);
     if (!user) {
       user = {
         userId,
-        username: fallbackName || 'قارئ',
-        avatarUrl: fallbackAvatar,
-        country: fallbackCountry || 'غير محدد',
+        username: profile.username || 'قارئ',
+        avatarUrl: profile.avatarUrl,
+        country: profile.country || 'غير محدد',
         isOnline: false,
         createdAt: new Date().toISOString()
+      };
+    } else {
+      user = {
+        ...user,
+        username: profile.username || user.username,
+        avatarUrl: profile.avatarUrl !== undefined ? profile.avatarUrl : user.avatarUrl,
+        country: profile.country || user.country
       };
     }
     setSelectedMember(user);
@@ -192,6 +251,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
   const handleBack = () => {
     if (hasExitedRef.current) return;
     hasExitedRef.current = true;
+    communityService.markGroupAsRead(groupId);
     communityService.setActiveTab('community');
     if (onNavigate) {
       onNavigate('community', { initialTab: 'community', returnTab: 'community' });
@@ -200,10 +260,13 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
     }
   };
 
-  // Guarantee that community tab is set to community whenever group chat is open
+  // Guarantee that community tab is set to community and mark group read on unmount
   useEffect(() => {
     communityService.setActiveTab('community');
-  }, []);
+    return () => {
+      communityService.markGroupAsRead(groupId);
+    };
+  }, [groupId]);
 
   const loadGroupData = () => {
     if (hasExitedRef.current) return;
@@ -221,12 +284,13 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
     }
     setGroup(g);
     const cur = communityService.getCurrentUser();
+    setCurrentUser(cur);
     const isStarterDefaultGroup = g.groupId === 'group_default_quran_readers' || g.groupId === 'group_default_tadabbur';
     if (isStarterDefaultGroup && cur?.userId && !g.members?.includes(cur.userId)) {
       communityService.joinGroup(groupId);
     }
-    const msgs = communityService.getGroupMessages(groupId);
-    setMessages(msgs);
+    const msgs = communityService.getGroupMessages(groupId, cur?.userId);
+    setMessages([...msgs]);
   };
 
   // Load group data & listen for updates
@@ -240,10 +304,12 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
 
     window.addEventListener('community_groups_updated', handleUpdate);
     window.addEventListener('community_group_messages_updated', handleUpdate);
+    window.addEventListener('community_user_updated', handleUpdate);
 
     return () => {
       window.removeEventListener('community_groups_updated', handleUpdate);
       window.removeEventListener('community_group_messages_updated', handleUpdate);
+      window.removeEventListener('community_user_updated', handleUpdate);
     };
   }, [groupId]);
 
@@ -259,14 +325,59 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
     };
   }, []);
 
-  // Auto-scroll on new message
+  // Smart Initial Scroll & Auto-scroll logic:
+  // 1. If unread messages exist, start at the FIRST unread message!
+  // 2. If NO unread messages, start at the LAST read message (bottom of chat)!
+  // 3. Mark the group as read upon viewing the messages, clearing the unread counter badge!
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages.length]);
+    if (messages.length === 0) return;
+
+    if (!hasInitiallyScrolledRef.current) {
+      hasInitiallyScrolledRef.current = true;
+      if (firstUnreadMessageId) {
+        // Start from first unread message
+        setTimeout(() => {
+          const targetEl = document.getElementById(`msg-${firstUnreadMessageId}`) || unreadDividerRef.current;
+          if (targetEl) {
+            targetEl.scrollIntoView({ behavior: 'auto', block: 'start' });
+          } else {
+            messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+          }
+        }, 150);
+      } else {
+        // Open on last read message (chat end)
+        setTimeout(() => {
+          messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+        }, 80);
+      }
+
+      // Upon viewing messages, mark group read immediately so unread counter is cleared and state persists
+      communityService.markGroupAsRead(groupId);
+    } else {
+      // New message added/received while inside chat
+      if (messages.length > prevMessagesLengthRef.current) {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        communityService.markGroupAsRead(groupId);
+      }
+    }
+    prevMessagesLengthRef.current = messages.length;
+  }, [messages, firstUnreadMessageId, groupId]);
 
   // Back interceptor
   useEffect(() => {
     const interceptor = () => {
+      if (moreEmojiPickerMsgId) {
+        setMoreEmojiPickerMsgId(null);
+        return true;
+      }
+      if (reactionMenuMsgId) {
+        setReactionMenuMsgId(null);
+        return true;
+      }
+      if (activeReplyTo) {
+        setActiveReplyTo(null);
+        return true;
+      }
       if (showAttachmentPicker) {
         setShowAttachmentPicker(false);
         return true;
@@ -307,7 +418,56 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
       return true;
     };
     return registerBackInterceptor(interceptor);
-  }, [showEmojiPicker, showVerseModal, showAddMembersModal, memberToRemove, showDeleteGroupConfirm, showClearConfirm, showInfoModal, showMenu, onBack]);
+  }, [moreEmojiPickerMsgId, reactionMenuMsgId, activeReplyTo, showEmojiPicker, showVerseModal, showAddMembersModal, memberToRemove, showDeleteGroupConfirm, showClearConfirm, showInfoModal, showMenu, onBack]);
+
+  // Initiate reply to any message, photo, audio or verse (matching WhatsApp swipe right)
+  const handleInitiateReply = (msg: GroupMessage) => {
+    const isMe = msg.senderId === currentUser.userId;
+    const authorName = isMe ? (isEn ? 'You' : 'أنت') : (msg.senderName || (isEn ? 'User' : 'مستخدم'));
+    setActiveReplyTo({
+      messageId: msg.messageId,
+      senderId: msg.senderId,
+      senderName: authorName,
+      text: msg.text || undefined,
+      hasAttachment: Boolean(msg.attachment),
+      attachmentType: msg.attachment?.type,
+      attachmentUrl: msg.attachment?.url,
+      hasAudio: Boolean(msg.audioUrl),
+      hasVerse: Boolean(msg.verseData),
+      surahName: msg.verseData?.surahName
+    });
+    setReactionMenuMsgId(null);
+
+    // Focus input
+    const inputEl = document.getElementById('chat-input-text');
+    if (inputEl) inputEl.focus();
+  };
+
+  // Helper to toggle reaction
+  const handleToggleReaction = async (messageId: string, emoji: string) => {
+    setReactionMenuMsgId(null);
+    setMoreEmojiPickerMsgId(null);
+    try {
+      await communityService.toggleGroupMessageReaction(messageId, emoji);
+      loadGroupData();
+    } catch (e) {
+      console.warn('Failed to toggle reaction:', e);
+    }
+  };
+
+  // Helper to scroll to original message on reply click
+  const scrollToOriginalMessage = (targetMsgId: string) => {
+    const el = document.getElementById(`group-msg-${targetMsgId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setHighlightedMsgId(targetMsgId);
+      setTimeout(() => {
+        setHighlightedMsgId(prev => (prev === targetMsgId ? null : prev));
+      }, 2000);
+    } else {
+      showToast(isEn ? 'Original message not found' : 'لم يتم العثور على الرسالة الأصلية');
+    }
+  };
 
   const handleFileSelected = async (file: File) => {
     if (file.size > 15 * 1024 * 1024) {
@@ -335,9 +495,11 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
 
     const textToSend = text;
     const attachmentToSend = stagedAttachment;
+    const replyToSend = activeReplyTo || undefined;
 
     setInputText('');
     setStagedAttachment(null);
+    setActiveReplyTo(null);
     setShowEmojiPicker(false);
 
     try {
@@ -347,7 +509,8 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
         undefined,
         undefined,
         undefined,
-        attachmentToSend || undefined
+        attachmentToSend || undefined,
+        replyToSend
       );
       loadGroupData();
     } catch (err: any) {
@@ -358,11 +521,17 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
   // Handle Send Quran Verse
   const handleSendVerse = async (verseData: QuranVerseAttachment) => {
     setShowVerseModal(false);
+    const replyToSend = activeReplyTo || undefined;
+    setActiveReplyTo(null);
     try {
       await communityService.sendGroupMessage(
         groupId,
         `﴿ ${verseData.text} ﴾`,
-        verseData
+        verseData,
+        undefined,
+        undefined,
+        undefined,
+        replyToSend
       );
       loadGroupData();
       showToast('تمت مشاركة الآية الكريمة في المجموعة');
@@ -373,80 +542,182 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
 
   // Handle Voice Recording
   const startRecording = async () => {
+    // 1. Request microphone permission in-app (triggers OS permission prompt directly on screen)
+    const permResult = await requestMicrophonePermission();
+    if (!permResult.granted) {
+      setShowMicPermissionModal(true);
+      return;
+    }
+
+    // 2. Start recording
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      audioChunksRef.current = [];
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data && event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
+      if (Capacitor.isNativePlatform()) {
+        try {
+          const canRecord = await VoiceRecorder.canDeviceVoiceRecord();
+          if (!canRecord.value) {
+            showToast('عفواً، لا يدعم هذا الجهاز تسجيل الصوت حالياً');
+            return;
+          }
+        } catch (e) {
+          console.warn('canDeviceVoiceRecord check ignored:', e);
         }
-      };
 
-      mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-        const durationSecs = recordingDurationRef.current;
-        const reader = new FileReader();
-        reader.onloadend = async () => {
-          const base64Audio = reader.result as string;
+        const startRes = await VoiceRecorder.startRecording();
+        if (startRes.value) {
+          setIsRecording(true);
+          setRecordingDuration(0);
+          recordingDurationRef.current = 0;
+
+          if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+          recordingTimerRef.current = setInterval(() => {
+            setRecordingDuration(prev => {
+              const next = prev + 1;
+              recordingDurationRef.current = next;
+              return next;
+            });
+          }, 1000);
+        } else {
+          setShowMicPermissionModal(true);
+        }
+      } else {
+        // Web / Browser platform fallback
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          showToast('عفواً، تسجيل الصوت غير مدعوم في متصفحك أو هذا الجهاز');
+          return;
+        }
+
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioChunksRef.current = [];
+        const mediaRecorder = new MediaRecorder(stream);
+        mediaRecorderRef.current = mediaRecorder;
+
+        mediaRecorder.ondataavailable = (event) => {
+          if (event.data && event.data.size > 0) {
+            audioChunksRef.current.push(event.data);
+          }
+        };
+
+        mediaRecorder.onstop = async () => {
+          const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+          const durationSecs = recordingDurationRef.current || 1;
+          const reader = new FileReader();
+          reader.onloadend = async () => {
+            const base64Audio = reader.result as string;
+            const replyToSend = activeReplyTo || undefined;
+            setActiveReplyTo(null);
+            try {
+              await communityService.sendGroupMessage(
+                groupId,
+                'تسجيل صوتي 🎙️',
+                undefined,
+                base64Audio,
+                durationSecs,
+                undefined,
+                replyToSend
+              );
+              loadGroupData();
+              showToast('تم إرسال التسجيل الصوتي بنجاح');
+            } catch (err: any) {
+              showToast(err?.message || 'تعذر إرسال التسجيل الصوتي');
+            }
+          };
+          reader.readAsDataURL(audioBlob);
+
+          stream.getTracks().forEach(track => track.stop());
+        };
+
+        mediaRecorder.start(100);
+        setIsRecording(true);
+        setRecordingDuration(0);
+        recordingDurationRef.current = 0;
+
+        if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+        recordingTimerRef.current = setInterval(() => {
+          setRecordingDuration(prev => {
+            const next = prev + 1;
+            recordingDurationRef.current = next;
+            return next;
+          });
+        }, 1000);
+      }
+    } catch (err) {
+      console.error('Audio recording start error:', err);
+      setShowMicPermissionModal(true);
+    }
+  };
+
+  const stopRecording = async () => {
+    if (!isRecording) return;
+
+    if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+
+    if (Capacitor.isNativePlatform()) {
+      try {
+        const result = await VoiceRecorder.stopRecording();
+        setIsRecording(false);
+
+        if (result.value && result.value.recordDataBase64) {
+          const mimeType = result.value.mimeType || 'audio/aac';
+          const base64Audio = `data:${mimeType};base64,${result.value.recordDataBase64}`;
+          const durationSecs = Math.round((result.value.msDuration || 0) / 1000) || recordingDurationRef.current || 1;
+
+          if (durationSecs < 1 && (!result.value.recordDataBase64 || result.value.recordDataBase64.length < 300)) {
+            showToast('التسجيل قصير جداً');
+            return;
+          }
+
+          const replyToSend = activeReplyTo || undefined;
+          setActiveReplyTo(null);
           try {
             await communityService.sendGroupMessage(
               groupId,
               'تسجيل صوتي 🎙️',
               undefined,
               base64Audio,
-              durationSecs
+              durationSecs,
+              undefined,
+              replyToSend
             );
             loadGroupData();
-            showToast('تم إرسال التسجيل الصوتي بنجاح');
+            showToast('تم إرسال التسجيل الصوتي بنجاح 🎙️');
           } catch (err: any) {
             showToast(err?.message || 'تعذر إرسال التسجيل الصوتي');
           }
-        };
-        reader.readAsDataURL(audioBlob);
-
-        stream.getTracks().forEach(track => track.stop());
-      };
-
-      mediaRecorder.start(100);
-      setIsRecording(true);
-      setRecordingDuration(0);
-      recordingDurationRef.current = 0;
-
-      if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
-      recordingTimerRef.current = setInterval(() => {
-        setRecordingDuration(prev => {
-          const next = prev + 1;
-          recordingDurationRef.current = next;
-          return next;
-        });
-      }, 1000);
-    } catch (err) {
-      console.error('Audio recording permission error:', err);
-      showToast('تعذر الوصول إلى الميكروفون، يرجى منح الإذن');
+        } else {
+          showToast('فشل حفظ التسجيل الصوتي');
+        }
+      } catch (err) {
+        console.error('Error stopping native recording:', err);
+        setIsRecording(false);
+        showToast('حدث خطأ أثناء معالجة التسجيل الصوتي');
+      }
+    } else {
+      // Web / Browser MediaRecorder
+      if (mediaRecorderRef.current && isRecording) {
+        mediaRecorderRef.current.stop();
+        setIsRecording(false);
+      }
     }
   };
 
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-      if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
-    }
-  };
+  const cancelRecording = async () => {
+    if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
 
-  const cancelRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
+    if (Capacitor.isNativePlatform()) {
+      try {
+        await VoiceRecorder.stopRecording();
+      } catch (e) {}
+    } else if (mediaRecorderRef.current) {
       if (mediaRecorderRef.current.stream) {
         mediaRecorderRef.current.stream.getTracks().forEach(t => t.stop());
       }
-      setIsRecording(false);
-      if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
-      setRecordingDuration(0);
-      showToast('تم إلغاء التسجيل الصوتي');
     }
+
+    setIsRecording(false);
+    setRecordingDuration(0);
+    recordingDurationRef.current = 0;
+    audioChunksRef.current = [];
+    showToast('تم إلغاء التسجيل الصوتي');
   };
 
   const formatSecs = (s: number) => {
@@ -568,7 +839,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
   };
 
   const groupDisplayName = cleanGroupName(formatGroupName(group, isEn) || (isEn ? 'Group Chat' : 'محادثة جماعية'));
-  const groupMembersCount = group?.members?.length || 1;
+  const groupMembersCount = communityService.getGroupMembersCount(group);
   const isSystemDefaultGroup = group?.groupId === 'group_default_quran_readers' || group?.groupId === 'group_default_tadabbur';
   const isAdminSession = currentUser.userId === ADMIN_USER_ID;
   const isCreator = Boolean(
@@ -608,21 +879,22 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
     return <Users size={size} />;
   };
 
-  // Resolve all current members
+  // Resolve all current active members (excludes ADMIN_USER_ID and deleted users)
   const currentMembersList = useMemo(() => {
-    if (!group || !Array.isArray(group.members)) return [];
-    return group.members.map(memberId => {
+    if (!group) return [];
+    const cleanMemberIds = communityService.getCleanGroupMembers(group);
+    return cleanMemberIds.map(memberId => {
       const found = communityService.getUserById(memberId);
       if (found) return found;
       return {
         userId: memberId,
-        username: memberId === group.createdBy ? (group.creatorName || 'منشئ المجموعة') : 'عضو بالمجموعة',
+        username: memberId === group.createdBy ? (group.creatorName || (isEn ? 'Group Creator' : 'منشئ المجموعة')) : (isEn ? 'Member' : 'عضو بالمجموعة'),
         country: '🌍',
         isOnline: false,
         createdAt: group.createdAt
       } as CommunityUser;
     });
-  }, [group]);
+  }, [group, isEn]);
 
   // Available users to add (not in members and not current user)
   const availableUsersToAdd = useMemo(() => {
@@ -646,6 +918,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
     >
       {/* Top Header Bar */}
       <div 
+        id="chat-header-bar"
         className="w-full px-3 py-2.5 border-b flex items-center justify-between shadow-xs z-30"
         style={{
           backgroundColor: cardBg,
@@ -701,8 +974,23 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
           </div>
         </div>
 
-        {/* Right Action Icons: Info & More (Delete and Edit are exclusively in the 3-dots menu) */}
+        {/* Right Action Icons: Guide, Info & More */}
         <div className="flex items-center gap-1.5 flex-shrink-0 relative">
+          <button
+            type="button"
+            onClick={() => setShowGroupTour(true)}
+            className="w-9 h-9 rounded-xl flex items-center justify-center border transition-all active:scale-95 cursor-pointer"
+            style={{
+              backgroundColor: secondaryBg,
+              borderColor: cardBorder,
+              color: 'var(--top-bar-text, inherit)'
+            }}
+            title={isEn ? "Group Guide" : "دليل وشرح الحلقة والمجموعة"}
+            aria-label={isEn ? "Group Guide" : "دليل وشرح الحلقة والمجموعة"}
+          >
+            <HelpCircle size={17} />
+          </button>
+
           <button
             type="button"
             onClick={() => setShowInfoModal(true)}
@@ -721,6 +1009,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
           <div className="relative" ref={menuContainerRef}>
             <button
               ref={menuButtonRef}
+              id="group-chat-menu-btn"
               type="button"
               onClick={() => setShowMenu(prev => !prev)}
               className="w-9 h-9 rounded-xl flex items-center justify-center border transition-all active:scale-95 cursor-pointer relative z-50"
@@ -747,6 +1036,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                   />
                   <motion.div
                     ref={menuDropdownRef}
+                    id="group-chat-menu-dropdown"
                     initial={{ opacity: 0, scale: 0.95, y: -5 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: -5 }}
@@ -916,6 +1206,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
       {/* Messages List Area */}
       <div 
         ref={messagesContainerRef}
+        id="group-chat-messages-area"
         className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3.5 overscroll-contain"
       >
         {/* Welcome Notice Banner */}
@@ -989,178 +1280,243 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
           messages.map((msg) => {
             const isMe = msg.senderId === currentUser.userId;
             const timeStr = msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString(isEn ? 'en-US' : 'ar-EG', { hour: '2-digit', minute: '2-digit' }) : '';
+            const isFirstUnread = firstUnreadMessageId === msg.messageId;
+
+            const senderProfile = communityService.getSenderProfile(msg.senderId, msg.senderName, msg.senderAvatarUrl, msg.senderCountry);
+            const currentSenderName = senderProfile.username;
+            const currentSenderAvatar = senderProfile.avatarUrl;
+            const currentSenderCountry = senderProfile.country;
 
             return (
-              <div
-                key={msg.messageId}
-                className={`flex items-end gap-2 ${isMe ? 'justify-end' : 'justify-start'}`}
-              >
-                {/* Sender Avatar (Only for others) */}
-                {!isMe && (
-                  <button 
-                    type="button"
-                    onClick={() => handleOpenMemberProfile(msg.senderId, msg.senderName, msg.senderAvatarUrl, msg.senderCountry, msg)}
-                    className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs border overflow-hidden flex-shrink-0 mb-1 cursor-pointer transition-transform hover:scale-105 active:scale-95"
-                    style={{
-                      backgroundColor: `${primaryColor}20`,
-                      borderColor: `${primaryColor}40`,
-                      color: primaryColor
-                    }}
-                    title={isEn ? `View ${formatUsername({ userId: msg.senderId, username: msg.senderName }, isEn)} profile` : `عرض بيانات ${msg.senderName} والتحكم بالرسالة`}
+              <React.Fragment key={msg.messageId}>
+                {isFirstUnread && (
+                  <div
+                    ref={unreadDividerRef}
+                    id="group-unread-messages-divider"
+                    className="my-3 flex items-center justify-center gap-2 py-1 select-none animate-in fade-in zoom-in-95 duration-200"
                   >
-                    {msg.senderAvatarUrl ? (
-                      <img src={msg.senderAvatarUrl} alt={msg.senderName} className="w-full h-full object-cover" />
-                    ) : (
-                      (msg.senderName || 'ق').charAt(0)
-                    )}
-                  </button>
+                    <div className="h-px bg-rose-500/40 flex-1" />
+                    <div className="px-3 py-1 rounded-full text-[11px] font-bold bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30 flex items-center gap-1.5 shadow-xs">
+                      <MessageCircle size={13} className="text-rose-500" />
+                      <span>{isEn ? 'Unread Messages' : 'رسائل غير مقروءة'}</span>
+                    </div>
+                    <div className="h-px bg-rose-500/40 flex-1" />
+                  </div>
                 )}
-
-                {/* Message Bubble Container */}
-                <div className={`max-w-[85%] sm:max-w-[75%] flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
-                  {/* Sender Name Badge for others */}
-                  {!isMe && (
-                    <button
-                      type="button"
-                      onClick={() => handleOpenMemberProfile(msg.senderId, msg.senderName, msg.senderAvatarUrl, msg.senderCountry, msg)}
-                      className={`flex items-center gap-1.5 mb-1 px-1 text-[11px] font-bold cursor-pointer hover:opacity-80 transition-opacity ${isEn ? 'text-left' : 'text-right'} group`}
-                      title={isEn ? `View ${formatUsername({ userId: msg.senderId, username: msg.senderName }, isEn)} profile` : `عرض بيانات ${msg.senderName} والتحكم بالرسالة`}
-                    >
-                      <span style={{ color: primaryColor }} className="group-hover:underline">
-                        {formatUsername({ userId: msg.senderId, username: msg.senderName }, isEn)}
-                      </span>
-                      {msg.senderCountry && (
-                        <span className="text-[10px] px-1.5 py-0.2 rounded-md" style={{ backgroundColor: secondaryBg, color: textMuted }}>
-                          {formatCountryName(msg.senderCountry, isEn)}
-                        </span>
+                <SwipeableMessageWrapper
+                  onSwipeReply={() => handleInitiateReply(msg)}
+                  onLongPress={() => setReactionMenuMsgId(msg.messageId)}
+                  isMe={isMe}
+                >
+                  <div
+                    id={`group-msg-${msg.messageId}`}
+                    className={`relative flex items-end gap-2 w-full transition-all duration-300 ${isMe ? 'justify-end' : 'justify-start'} ${
+                      highlightedMsgId === msg.messageId ? 'bg-emerald-500/15 ring-2 ring-emerald-500 rounded-2xl p-1 shadow-lg' : ''
+                    }`}
+                  >
+                    {/* WhatsApp Animated Floating Reaction Bar */}
+                    <AnimatePresence>
+                      {reactionMenuMsgId === msg.messageId && (
+                        <MessageReactionsBar
+                          isMe={isMe}
+                          onSelectEmoji={(emoji) => handleToggleReaction(msg.messageId, emoji)}
+                          onOpenMoreEmoji={() => setMoreEmojiPickerMsgId(msg.messageId)}
+                          onClose={() => setReactionMenuMsgId(null)}
+                        />
                       )}
-                    </button>
-                  )}
+                    </AnimatePresence>
 
-                  {/* Quran Card if present */}
-                  {msg.verseData && (
-                    <div 
-                      className="relative group w-full cursor-pointer"
-                      onClick={() => handleOpenMemberProfile(msg.senderId, msg.senderName, msg.senderAvatarUrl, msg.senderCountry, msg)}
-                    >
-                      <ChatQuranCard 
-                        verseData={msg.verseData}
-                        playingAudioUrl={playingAudioUrl}
-                        onToggleAudio={handleToggleAudio}
-                      />
-                      {(isMe || isCreator) && (
-                        <div className="flex items-center justify-end gap-1.5 mt-0.5 text-[9px] px-1" style={{ color: textMuted }}>
-                          <span>{timeStr}</span>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteMessage(msg.messageId);
-                            }}
-                            className="p-0.5 rounded text-rose-400 hover:text-rose-600 transition-colors cursor-pointer"
-                            title={isMe ? (isEn ? "Delete my message" : "حذف رسالتي") : (isEn ? "Delete message (Group creator privilege)" : "حذف الرسالة (صلاحية منشئ المجموعة)")}
-                          >
-                            <Trash2 size={11} />
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Audio Player if present */}
-                  {msg.audioUrl && (
-                    <div className="relative group w-full">
-                      <ChatMessageAudioPlayer 
-                        audioUrl={msg.audioUrl}
-                        isMe={isMe}
-                        audioDuration={msg.audioDuration}
-                        timeStr={timeStr}
-                        isRead={true}
-                      />
-                      {(isMe || isCreator) && (
-                        <div className="flex items-center justify-end gap-1.5 mt-0.5 text-[9px] px-1" style={{ color: textMuted }}>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteMessage(msg.messageId);
-                            }}
-                            className="p-0.5 rounded text-rose-400 hover:text-rose-600 transition-colors cursor-pointer"
-                            title={isMe ? (isEn ? "Delete my recording" : "حذف رسالتي") : (isEn ? "Delete recording (Group creator privilege)" : "حذف التسجيل (صلاحية منشئ المجموعة)")}
-                          >
-                            <Trash2 size={11} />
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Media File / Image / Video Attachment */}
-                  {msg.attachment && (
-                    <div 
-                      className="mb-1.5 w-full cursor-pointer"
-                      onClick={() => handleOpenMemberProfile(msg.senderId, msg.senderName, msg.senderAvatarUrl, msg.senderCountry, msg)}
-                    >
-                      <ChatAttachmentView attachment={msg.attachment} isMe={isMe} />
-                    </div>
-                  )}
-
-                  {/* Text Content */}
-                  {msg.text && !msg.verseData && !msg.audioUrl && (
-                    <div
-                      onClick={() => handleOpenMemberProfile(msg.senderId, msg.senderName, msg.senderAvatarUrl, msg.senderCountry, msg)}
-                      className={`p-3 rounded-2xl text-xs sm:text-sm leading-relaxed shadow-xs relative group cursor-pointer transition-all hover:opacity-95 ${
-                        isMe 
-                          ? (isEn ? 'rounded-br-none text-white' : 'rounded-bl-none text-white')
-                          : (isEn ? 'rounded-bl-none border' : 'rounded-br-none border')
-                      }`}
-                      style={{
-                        backgroundColor: isMe ? primaryColor : cardBg,
-                        color: isMe ? primaryTextColor : textColor,
-                        borderColor: isMe ? 'transparent' : cardBorder
-                      }}
-                      title={isEn ? "Click to view sender profile" : "اضغط لعرض بيانات المرسل"}
-                    >
-                      <p className="whitespace-pre-wrap break-words">{msg.text}</p>
-                      <div className="flex items-center justify-end gap-1.5 mt-1.5 text-[9px] opacity-75">
-                        <span>{timeStr}</span>
-                        {(isMe || isCreator) && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteMessage(msg.messageId);
-                            }}
-                            className="opacity-70 sm:opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded text-rose-400 hover:text-rose-600 cursor-pointer"
-                            title={isMe ? (isEn ? "Delete my message" : "حذف رسالتي") : (isEn ? "Delete message (Group creator privilege)" : "حذف الرسالة (صلاحية منشئ المجموعة)")}
-                          >
-                            <Trash2 size={11} />
-                          </button>
+                    {/* Sender Avatar (Only for others) */}
+                    {!isMe && (
+                      <button 
+                        type="button"
+                        onClick={() => handleOpenMemberProfile(msg.senderId, currentSenderName, currentSenderAvatar, currentSenderCountry, msg)}
+                        className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs border overflow-hidden flex-shrink-0 mb-1 cursor-pointer transition-transform hover:scale-105 active:scale-95"
+                        style={{
+                          backgroundColor: `${primaryColor}20`,
+                          borderColor: `${primaryColor}40`,
+                          color: primaryColor
+                        }}
+                        title={isEn ? `View ${formatUsername({ userId: msg.senderId, username: currentSenderName }, isEn)} profile` : `عرض بيانات ${currentSenderName} والتحكم بالرسالة`}
+                      >
+                        {currentSenderAvatar ? (
+                          <img src={currentSenderAvatar} alt={currentSenderName} className="w-full h-full object-cover" />
+                        ) : (
+                          (currentSenderName || 'ق').charAt(0)
                         )}
-                      </div>
-                    </div>
-                  )}
+                      </button>
+                    )}
 
-                  {/* Attachment without text timestamp & delete button */}
-                  {!msg.text && msg.attachment && (
-                    <div className="flex items-center justify-end gap-1.5 mt-0.5 text-[9px] px-1" style={{ color: textMuted }}>
-                      <span>{timeStr}</span>
-                      {(isMe || isCreator) && (
+                    {/* Message Bubble Container */}
+                    <div className={`max-w-[85%] sm:max-w-[75%] flex flex-col ${isMe ? 'items-end' : 'items-start'} relative`}>
+                      {/* Sender Name Badge for others */}
+                      {!isMe && (
                         <button
                           type="button"
-                          onClick={() => handleDeleteMessage(msg.messageId)}
-                          className="p-0.5 rounded hover:text-rose-500 transition-colors cursor-pointer"
-                          title={isMe ? (isEn ? "Delete my attachment" : "حذف رسالتي") : (isEn ? "Delete attachment (Group creator privilege)" : "حذف المرفق (صلاحية منشئ المجموعة)")}
+                          onClick={() => handleOpenMemberProfile(msg.senderId, currentSenderName, currentSenderAvatar, currentSenderCountry, msg)}
+                          className={`flex items-center gap-1.5 mb-1 px-1 text-[11px] font-bold cursor-pointer hover:opacity-80 transition-opacity ${isEn ? 'text-left' : 'text-right'} group`}
+                          title={isEn ? `View ${formatUsername({ userId: msg.senderId, username: currentSenderName }, isEn)} profile` : `عرض بيانات ${currentSenderName} والتحكم بالرسالة`}
                         >
-                          <Trash2 size={11} />
+                          <span style={{ color: primaryColor }} className="group-hover:underline">
+                            {formatUsername({ userId: msg.senderId, username: currentSenderName }, isEn)}
+                          </span>
+                          {currentSenderCountry && (
+                            <span className="text-[10px] px-1.5 py-0.2 rounded-md" style={{ backgroundColor: secondaryBg, color: textMuted }}>
+                              {formatCountryName(currentSenderCountry, isEn)}
+                            </span>
+                          )}
                         </button>
                       )}
+
+                      {/* Quoted Message Block if replied */}
+                      {msg.replyTo && (
+                        <div className="mb-1 w-full max-w-full">
+                          <QuotedMessageBlock
+                            replyTo={msg.replyTo}
+                            onClick={() => scrollToOriginalMessage(msg.replyTo!.messageId)}
+                            isMe={isMe}
+                            isEn={isEn}
+                          />
+                        </div>
+                      )}
+
+                      {/* Quran Card if present */}
+                      {msg.verseData && (
+                        <div 
+                          className="relative group w-full cursor-pointer"
+                          onClick={() => handleOpenMemberProfile(msg.senderId, currentSenderName, currentSenderAvatar, currentSenderCountry, msg)}
+                        >
+                          <ChatQuranCard 
+                            verseData={msg.verseData}
+                            playingAudioUrl={playingAudioUrl}
+                            onToggleAudio={handleToggleAudio}
+                          />
+                          {(isMe || isCreator) && (
+                            <div className="flex items-center justify-end gap-1.5 mt-0.5 text-[9px] px-1" style={{ color: textMuted }}>
+                              <span>{timeStr}</span>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteMessage(msg.messageId);
+                                }}
+                                className="p-0.5 rounded text-rose-400 hover:text-rose-600 transition-colors cursor-pointer"
+                                title={isMe ? (isEn ? "Delete my message" : "حذف رسالتي") : (isEn ? "Delete message (Group creator privilege)" : "حذف الرسالة (صلاحية منشئ المجموعة)")}
+                              >
+                                <Trash2 size={11} />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Audio Player if present */}
+                      {msg.audioUrl && (
+                        <div className="relative group w-full">
+                          <ChatMessageAudioPlayer 
+                            audioUrl={msg.audioUrl}
+                            isMe={isMe}
+                            audioDuration={msg.audioDuration}
+                            timeStr={timeStr}
+                            isRead={true}
+                          />
+                          {(isMe || isCreator) && (
+                            <div className="flex items-center justify-end gap-1.5 mt-0.5 text-[9px] px-1" style={{ color: textMuted }}>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteMessage(msg.messageId);
+                                }}
+                                className="p-0.5 rounded text-rose-400 hover:text-rose-600 transition-colors cursor-pointer"
+                                title={isMe ? (isEn ? "Delete my recording" : "حذف رسالتي") : (isEn ? "Delete recording (Group creator privilege)" : "حذف التسجيل (صلاحية منشئ المجموعة)")}
+                              >
+                                <Trash2 size={11} />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Media File / Image / Video Attachment */}
+                      {msg.attachment && (
+                        <div className="mb-1.5 w-full">
+                          <ChatAttachmentView attachment={msg.attachment} isMe={isMe} />
+                        </div>
+                      )}
+
+                      {/* Text Content */}
+                      {msg.text && !msg.verseData && !msg.audioUrl && (
+                        <div
+                          onClick={() => handleOpenMemberProfile(msg.senderId, currentSenderName, currentSenderAvatar, currentSenderCountry, msg)}
+                          className={`p-3 rounded-2xl text-xs sm:text-sm leading-relaxed shadow-xs relative group cursor-pointer transition-all hover:opacity-95 ${
+                            isMe 
+                              ? (isEn ? 'rounded-br-none text-white' : 'rounded-bl-none text-white')
+                              : (isEn ? 'rounded-bl-none border' : 'rounded-br-none border')
+                          }`}
+                          style={{
+                            backgroundColor: isMe ? primaryColor : cardBg,
+                            color: isMe ? primaryTextColor : textColor,
+                            borderColor: isMe ? 'transparent' : cardBorder
+                          }}
+                          title={isEn ? "Click to view sender profile" : "اضغط لعرض بيانات المرسل"}
+                        >
+                          <p className="whitespace-pre-wrap break-words">{msg.text}</p>
+                          <div className="flex items-center justify-end gap-1.5 mt-1.5 text-[9px] opacity-75">
+                            <span>{timeStr}</span>
+                            {(isMe || isCreator) && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteMessage(msg.messageId);
+                                }}
+                                className="opacity-70 sm:opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded text-rose-400 hover:text-rose-600 cursor-pointer"
+                                title={isMe ? (isEn ? "Delete my message" : "حذف رسالتي") : (isEn ? "Delete message (Group creator privilege)" : "حذف الرسالة (صلاحية منشئ المجموعة)")}
+                              >
+                                <Trash2 size={11} />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Attachment without text timestamp & delete button */}
+                      {!msg.text && msg.attachment && (
+                        <div className="flex items-center justify-end gap-1.5 mt-0.5 text-[9px] px-1" style={{ color: textMuted }}>
+                          <span>{timeStr}</span>
+                          {(isMe || isCreator) && (
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteMessage(msg.messageId)}
+                              className="p-0.5 rounded hover:text-rose-500 transition-colors cursor-pointer"
+                              title={isMe ? (isEn ? "Delete my attachment" : "حذف رسالتي") : (isEn ? "Delete attachment (Group creator privilege)" : "حذف المرفق (صلاحية منشئ المجموعة)")}
+                            >
+                              <Trash2 size={11} />
+                            </button>
+                          )}
+                        </div>
+                      )}
+
+                      {/* WhatsApp Reaction Badge pinned to bottom corner */}
+                      <MessageReactionBadge
+                        reactions={msg.reactions}
+                        currentUserId={currentUser.userId}
+                        onClick={() => {
+                          if (msg.reactions?.[currentUser.userId]) {
+                            handleToggleReaction(msg.messageId, msg.reactions[currentUser.userId]);
+                          } else {
+                            setReactionMenuMsgId(msg.messageId);
+                          }
+                        }}
+                        isMe={isMe}
+                      />
                     </div>
-                  )}
-                </div>
-              </div>
+                  </div>
+                </SwipeableMessageWrapper>
+              </React.Fragment>
             );
-          })
+        })
         )}
         <div ref={messagesEndRef} />
       </div>
@@ -1270,10 +1626,14 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                   )}
                   <div className="min-w-0">
                     <p className="text-xs font-bold truncate" style={{ color: textColor }}>
-                      {stagedAttachment.fileName || (stagedAttachment.type === 'image' ? (isEn ? 'Selected Image' : 'صورة مختارة') : stagedAttachment.type === 'video' ? (isEn ? 'Video' : 'مقطع مرئي') : (isEn ? 'File' : 'ملف'))}
+                      {stagedAttachment.type === 'image'
+                        ? (isEn ? 'Selected Image' : 'صورة مختارة')
+                        : (stagedAttachment.fileName || (stagedAttachment.type === 'video' ? (isEn ? 'Video' : 'مقطع مرئي') : (isEn ? 'File' : 'ملف')))}
                     </p>
                     <p className="text-[10px]" style={{ color: textMuted }}>
-                      {isEn ? 'Ready to send' : 'جاهز للإرسال والاسترداد'} • {formatFileSize(stagedAttachment.fileSize)}
+                      {stagedAttachment.type === 'image' 
+                        ? (isEn ? 'Ready to send' : 'جاهزة للإرسال')
+                        : `${isEn ? 'Ready to send' : 'جاهز للإرسال'} • ${formatFileSize(stagedAttachment.fileSize)}`}
                     </p>
                   </div>
                 </div>
@@ -1289,11 +1649,23 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
             )}
           </AnimatePresence>
 
-          <div className="flex items-center gap-1 sm:gap-1.5 w-full max-w-full overflow-hidden">
+          {/* WhatsApp Quoted Reply Preview Bar matching Image 02.jpg */}
+          <AnimatePresence>
+            {activeReplyTo && (
+              <ReplyPreviewBar
+                replyTo={activeReplyTo}
+                onCancel={() => setActiveReplyTo(null)}
+                isEn={isEn}
+              />
+            )}
+          </AnimatePresence>
+
+          <div id="group-chat-input-row" className="flex items-center gap-1 sm:gap-1.5 w-full max-w-full overflow-hidden">
             {/* Three action buttons clustered tightly with minimal spacing */}
             <div className="flex items-center gap-0 shrink-0">
               {/* Quran Verse Share Button */}
               <button
+                id="chat-btn-verse"
                 type="button"
                 onClick={() => setShowVerseModal(true)}
                 className={`w-7 h-8 sm:w-8 sm:h-8.5 ${isEn ? 'rounded-l-xl rounded-r-none' : 'rounded-r-xl rounded-l-none'} flex items-center justify-center border transition-all active:scale-95 flex-shrink-0 cursor-pointer p-0`}
@@ -1309,6 +1681,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
 
               {/* Paperclip Media Attachment Button */}
               <button
+                id="chat-btn-attach"
                 type="button"
                 onClick={() => setShowAttachmentPicker(true)}
                 className="w-7 h-8 sm:w-8 sm:h-8.5 rounded-none flex items-center justify-center border transition-all active:scale-95 flex-shrink-0 cursor-pointer p-0"
@@ -1324,6 +1697,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
 
               {/* Emoji / Adhkar Picker Button */}
               <button
+                id="chat-btn-emoji"
                 type="button"
                 onClick={() => setShowEmojiPicker(prev => !prev)}
                 className={`w-7 h-8 sm:w-8 sm:h-8.5 ${isEn ? 'rounded-r-xl rounded-l-none' : 'rounded-l-xl rounded-r-none'} flex items-center justify-center border transition-all active:scale-95 flex-shrink-0 cursor-pointer p-0`}
@@ -1341,6 +1715,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
             {/* Text Input */}
             <div className="flex-1 relative min-w-0">
               <input
+                id="chat-input-text"
                 type="text"
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
@@ -1361,34 +1736,36 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
             </div>
 
             {/* Voice Record or Send Button */}
-            {inputText.trim() || stagedAttachment ? (
-              <button
-                type="button"
-                onClick={handleSendMessage}
-                className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl sm:rounded-2xl flex items-center justify-center font-bold text-white shadow-md transition-all active:scale-95 flex-shrink-0 cursor-pointer"
-                style={{
-                  backgroundColor: primaryColor,
-                  color: primaryTextColor
-                }}
-                title={isEn ? "Send" : "إرسال"}
-              >
-                <Send size={16} className={isEn ? "" : "rotate-180"} />
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={startRecording}
-                className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl sm:rounded-2xl flex items-center justify-center border transition-all active:scale-95 flex-shrink-0 cursor-pointer"
-                style={{
-                  backgroundColor: secondaryBg,
-                  borderColor: cardBorder,
-                  color: primaryColor
-                }}
-                title={isEn ? "Record voice message" : "تسجيل رسالة صوتية"}
-              >
-                <Mic size={16} />
-              </button>
-            )}
+            <div id="chat-btn-voice-send" className="shrink-0 flex items-center">
+              {inputText.trim() || stagedAttachment ? (
+                <button
+                  type="button"
+                  onClick={handleSendMessage}
+                  className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl sm:rounded-2xl flex items-center justify-center font-bold text-white shadow-md transition-all active:scale-95 flex-shrink-0 cursor-pointer"
+                  style={{
+                    backgroundColor: primaryColor,
+                    color: primaryTextColor
+                  }}
+                  title={isEn ? "Send" : "إرسال"}
+                >
+                  <Send size={16} className={isEn ? "" : "rotate-180"} />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={startRecording}
+                  className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl sm:rounded-2xl flex items-center justify-center border transition-all active:scale-95 flex-shrink-0 cursor-pointer"
+                  style={{
+                    backgroundColor: secondaryBg,
+                    borderColor: cardBorder,
+                    color: primaryColor
+                  }}
+                  title={isEn ? "Record voice message" : "تسجيل رسالة صوتية"}
+                >
+                  <Mic size={16} />
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -1497,103 +1874,129 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                   )}
                 </div>
 
-                <div 
-                  className="max-h-56 overflow-y-auto space-y-1.5 p-2 rounded-2xl border"
-                  style={{ backgroundColor: secondaryBg, borderColor: cardBorder }}
-                >
-                  {/* Current User */}
+                {isSystemDefaultGroup ? (
                   <div 
-                    onClick={() => handleOpenMemberProfile(currentUser.userId, currentUser.username, currentUser.avatarUrl, currentUser.country)}
-                    className="flex items-center justify-between p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs cursor-pointer hover:bg-emerald-500/15 transition-all"
-                    title={isEn ? "View your profile" : "عرض حسابك الشخصي"}
+                    className="p-4 rounded-2xl border text-center space-y-2"
+                    style={{ backgroundColor: secondaryBg, borderColor: cardBorder }}
                   >
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div className="w-7 h-7 rounded-full bg-emerald-500 text-white font-bold flex items-center justify-center text-xs shrink-0 overflow-hidden">
-                        {currentUser.avatarUrl ? (
-                          <img src={currentUser.avatarUrl} alt={currentUser.username} className="w-full h-full object-cover" />
-                        ) : (
-                          currentUser.username?.charAt(0) || 'أ'
-                        )}
+                    <div className="flex items-center justify-center gap-2">
+                      <div 
+                        className="w-10 h-10 rounded-2xl flex items-center justify-center border font-bold shadow-xs"
+                        style={{ backgroundColor: `${primaryColor}15`, borderColor: `${primaryColor}30`, color: primaryColor }}
+                      >
+                        <Users size={20} />
                       </div>
-                      <div className="min-w-0 flex items-center gap-1.5 truncate">
-                        <span className="font-bold truncate hover:underline" style={{ color: textColor }}>{currentUser.username} {isEn ? '(You)' : '(أنت)'}</span>
-                        {group?.createdBy === currentUser.userId && (
-                          <span className="text-[10px] px-1.5 py-0.2 rounded-md bg-amber-500/20 text-amber-600 dark:text-amber-400 font-bold shrink-0">
-                            {isEn ? 'Creator 👑' : 'منشئ 👑'}
-                          </span>
-                        )}
-                      </div>
+                      <span className="text-sm font-bold" style={{ color: textColor }}>
+                        {isEn 
+                          ? `${groupMembersCount} Community Member${groupMembersCount > 1 ? 's' : ''}` 
+                          : `${groupMembersCount} عضو من قراء المجتمع`}
+                      </span>
                     </div>
-                    <span className="text-[10px] text-emerald-600 font-bold shrink-0">{isEn ? 'Online Member' : 'عضو متصل'}</span>
+                    <p className="text-[11px] leading-relaxed" style={{ color: textMuted }}>
+                      {isEn 
+                        ? 'This is a public community circle open to all readers of the Noble Quran.' 
+                        : 'حلقة إيمانية عامة ومفتوحة لجميع قراء وأعضاء مجتمع المصحف الشريف.'}
+                    </p>
                   </div>
+                ) : (
+                  <div 
+                    className="max-h-56 overflow-y-auto space-y-1.5 p-2 rounded-2xl border"
+                    style={{ backgroundColor: secondaryBg, borderColor: cardBorder }}
+                  >
+                    {/* Current User */}
+                    <div 
+                      onClick={() => handleOpenMemberProfile(currentUser.userId, currentUser.username, currentUser.avatarUrl, currentUser.country)}
+                      className="flex items-center justify-between p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs cursor-pointer hover:bg-emerald-500/15 transition-all"
+                      title={isEn ? "View your profile" : "عرض حسابك الشخصي"}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-7 h-7 rounded-full bg-emerald-500 text-white font-bold flex items-center justify-center text-xs shrink-0 overflow-hidden">
+                          {currentUser.avatarUrl ? (
+                            <img src={currentUser.avatarUrl} alt={currentUser.username} className="w-full h-full object-cover" />
+                          ) : (
+                            currentUser.username?.charAt(0) || 'أ'
+                          )}
+                        </div>
+                        <div className="min-w-0 flex items-center gap-1.5 truncate">
+                          <span className="font-bold truncate hover:underline" style={{ color: textColor }}>{currentUser.username} {isEn ? '(You)' : '(أنت)'}</span>
+                          {group?.createdBy === currentUser.userId && (
+                            <span className="text-[10px] px-1.5 py-0.2 rounded-md bg-amber-500/20 text-amber-600 dark:text-amber-400 font-bold shrink-0">
+                              {isEn ? 'Creator 👑' : 'منشئ 👑'}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <span className="text-[10px] text-emerald-600 font-bold shrink-0">{isEn ? 'Online Member' : 'عضو متصل'}</span>
+                    </div>
 
-                  {/* Other members */}
-                  {currentMembersList
-                    .filter(u => u.userId !== currentUser.userId)
-                    .map(u => {
-                      const isMemberCreator = u.userId === group?.createdBy;
-                      return (
-                        <div 
-                          key={u.userId} 
-                          onClick={() => handleOpenMemberProfile(u.userId, u.username, u.avatarUrl, u.country)}
-                          className="flex items-center justify-between p-2 rounded-xl border text-xs gap-2 cursor-pointer transition-all hover:bg-slate-500/10 active:scale-[0.99]" 
-                          style={{ borderColor: cardBorder }}
-                          title={isEn ? `View profile of ${formatUsername(u, isEn)}` : `عرض بيانات ${u.username}`}
-                        >
-                          <div className="flex items-center gap-2 min-w-0 flex-1">
-                            <div 
-                              className="w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs overflow-hidden shrink-0 border"
-                              style={{ backgroundColor: `${primaryColor}20`, borderColor: `${primaryColor}40`, color: primaryColor }}
-                            >
-                              {u.avatarUrl ? (
-                                <img src={u.avatarUrl} alt={u.username} className="w-full h-full object-cover" />
-                              ) : (
-                                u.username.charAt(0)
-                              )}
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-center gap-1.5 truncate">
-                                <span className="font-bold truncate hover:underline" style={{ color: textColor }}>{formatUsername(u, isEn)}</span>
-                                {isMemberCreator && (
-                                  <span className="text-[10px] px-1.5 py-0.2 rounded-md bg-amber-500/20 text-amber-600 dark:text-amber-400 font-bold shrink-0">
-                                    {isEn ? 'Creator 👑' : 'المنشئ 👑'}
-                                  </span>
+                    {/* Other members */}
+                    {currentMembersList
+                      .filter(u => u.userId !== currentUser.userId)
+                      .map(u => {
+                        const isMemberCreator = u.userId === group?.createdBy;
+                        return (
+                          <div 
+                            key={u.userId} 
+                            onClick={() => handleOpenMemberProfile(u.userId, u.username, u.avatarUrl, u.country)}
+                            className="flex items-center justify-between p-2 rounded-xl border text-xs gap-2 cursor-pointer transition-all hover:bg-slate-500/10 active:scale-[0.99]" 
+                            style={{ borderColor: cardBorder }}
+                            title={isEn ? `View profile of ${formatUsername(u, isEn)}` : `عرض بيانات ${u.username}`}
+                          >
+                            <div className="flex items-center gap-2 min-w-0 flex-1">
+                              <div 
+                                className="w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs overflow-hidden shrink-0 border"
+                                style={{ backgroundColor: `${primaryColor}20`, borderColor: `${primaryColor}40`, color: primaryColor }}
+                              >
+                                {u.avatarUrl ? (
+                                  <img src={u.avatarUrl} alt={u.username} className="w-full h-full object-cover" />
+                                ) : (
+                                  u.username.charAt(0)
                                 )}
                               </div>
-                              <span className="text-[10px] block truncate" style={{ color: textMuted }}>({formatCountryName(u.country, isEn)})</span>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-1.5 truncate">
+                                  <span className="font-bold truncate hover:underline" style={{ color: textColor }}>{formatUsername(u, isEn)}</span>
+                                  {isMemberCreator && (
+                                    <span className="text-[10px] px-1.5 py-0.2 rounded-md bg-amber-500/20 text-amber-600 dark:text-amber-400 font-bold shrink-0">
+                                      {isEn ? 'Creator 👑' : 'المنشئ 👑'}
+                                    </span>
+                                  )}
+                                </div>
+                                <span className="text-[10px] block truncate" style={{ color: textMuted }}>({formatCountryName(u.country, isEn)})</span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span className="text-[10px]" style={{ color: communityService.isUserOnline(u) ? '#10b981' : textMuted }}>
+                                {communityService.isUserOnline(u) ? (isEn ? 'Online' : 'متصل الآن') : (isEn ? 'Member' : 'عضو')}
+                              </span>
+                              {/* Remove member button for Creator */}
+                              {isCreator && !isMemberCreator && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setMemberToRemove({ userId: u.userId, username: u.username });
+                                  }}
+                                  className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-500/15 transition-all cursor-pointer flex items-center gap-1 text-[11px] font-bold"
+                                  title={isEn ? `Remove ${u.username} from group` : `إزالة ${u.username} من المجموعة`}
+                                >
+                                  <UserMinus size={14} />
+                                  <span className="hidden sm:inline">{isEn ? 'Remove' : 'إزالة'}</span>
+                                </button>
+                              )}
                             </div>
                           </div>
+                        );
+                      })}
 
-                          <div className="flex items-center gap-2 shrink-0">
-                            <span className="text-[10px]" style={{ color: communityService.isUserOnline(u) ? '#10b981' : textMuted }}>
-                              {communityService.isUserOnline(u) ? (isEn ? 'Online' : 'متصل الآن') : (isEn ? 'Member' : 'عضو')}
-                            </span>
-                            {/* Remove member button for Creator */}
-                            {isCreator && !isMemberCreator && (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setMemberToRemove({ userId: u.userId, username: u.username });
-                                }}
-                                className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-500/15 transition-all cursor-pointer flex items-center gap-1 text-[11px] font-bold"
-                                title={isEn ? `Remove ${u.username} from group` : `إزالة ${u.username} من المجموعة`}
-                              >
-                                <UserMinus size={14} />
-                                <span className="hidden sm:inline">{isEn ? 'Remove' : 'إزالة'}</span>
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-
-                  {currentMembersList.filter(u => u.userId !== currentUser.userId).length === 0 && (
-                    <p className="text-center py-3 text-xs" style={{ color: textMuted }}>
-                      {isEn ? 'No other members yet. You can invite or add members to the group!' : 'لا يوجد أعضاء آخرين بعد. يمكنك دعوة أو إضافة مستخدمين للمجموعة!'}
-                    </p>
-                  )}
-                </div>
+                    {currentMembersList.filter(u => u.userId !== currentUser.userId).length === 0 && (
+                      <p className="text-center py-3 text-xs" style={{ color: textMuted }}>
+                        {isEn ? 'No other members yet. You can invite or add members to the group!' : 'لا يوجد أعضاء آخرين بعد. يمكنك دعوة أو إضافة مستخدمين للمجموعة!'}
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Creator Zone in Info Modal */}
@@ -2161,6 +2564,33 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
         </div>
       )}
 
+      {/* In-App Microphone Permission Modal */}
+      <InAppPermissionModal
+        isOpen={showMicPermissionModal}
+        type="microphone"
+        onClose={() => setShowMicPermissionModal(false)}
+        onGranted={() => {
+          setShowMicPermissionModal(false);
+          startRecording();
+        }}
+      />
+
+      {/* More Emoji Picker for Reactions */}
+      <AnimatePresence>
+        {moreEmojiPickerMsgId && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4" onClick={() => setMoreEmojiPickerMsgId(null)}>
+            <div className="relative z-50" onClick={(e) => e.stopPropagation()}>
+              <EmojiPicker
+                onSelectEmoji={(emoji) => {
+                  handleToggleReaction(moreEmojiPickerMsgId, emoji);
+                }}
+                onClose={() => setMoreEmojiPickerMsgId(null)}
+              />
+            </div>
+          </div>
+        )}
+      </AnimatePresence>
+
       {/* Toast Notification */}
       <AnimatePresence>
         {toastMessage && (
@@ -2175,6 +2605,19 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Interactive Group Chat Spotlight Tour */}
+      <CommunitySpotlightGuide
+        guideKey="group_chat_room"
+        steps={GROUP_CHAT_STEPS}
+        isOpen={showGroupTour}
+        onStepChange={handleGroupTourStepChange}
+        onClose={() => {
+          setShowGroupTour(false);
+          setShowMenu(false);
+        }}
+        isEn={isEn}
+      />
     </div>
   );
 };

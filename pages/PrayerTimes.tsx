@@ -13,6 +13,9 @@ import NotificationSettingsModal from '../components/QuranReader/NotificationSet
 import { MapPin, Calendar, Bell } from 'lucide-react';
 import { Browser } from '@capacitor/browser';
 import { Capacitor } from '@capacitor/core';
+import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/CommunitySpotlightGuide';
+import { PRAYER_TIMES_PAGE_STEPS } from '../components/Community/communityTourSteps';
+import { markPageAsSeen } from '../utils/badgeManager';
 import {
     applyOffset,
     formatTime12,
@@ -81,6 +84,14 @@ function PrayerTimes({ onBack, onNavigate }) {
     const [searchInput, setSearchInput] = useState("");
     const searchIconRef = useRef(null);
     const [toastMessage, setToastMessage] = useState('');
+    const [showGuide, setShowGuide] = useState(false);
+
+    useEffect(() => {
+        markPageAsSeen('prayer_times');
+        if (!getGuideSeen('prayer_times_page_spotlight')) {
+            setShowGuide(true);
+        }
+    }, []);
     
     const isAudioMuted = config.audioMutedUntil && Date.now() < config.audioMutedUntil;
     
@@ -315,6 +326,7 @@ function PrayerTimes({ onBack, onNavigate }) {
                 topBarTextColor={topBarTextColor}
                 onBack={handleBack}
                 onHome={handleGoHome}
+                onOpenGuide={() => setShowGuide(true)}
             />
 
             <main className="flex-1 overflow-y-auto hide-scrollbar px-2 pt-2 pb-1">
@@ -553,6 +565,14 @@ function PrayerTimes({ onBack, onNavigate }) {
                     {toastMessage}
                 </div>
             )}
+
+            <CommunitySpotlightGuide
+                guideKey="prayer_times_page_spotlight"
+                steps={PRAYER_TIMES_PAGE_STEPS}
+                isOpen={showGuide}
+                onClose={() => setShowGuide(false)}
+                isEn={language === 'en'}
+            />
         </div>
     );
 }

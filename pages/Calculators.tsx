@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import ThemePageLock from '../components/ThemePageLock';
 import ZakatCalculator from '../components/Calculators/ZakatCalculator';
@@ -6,6 +6,10 @@ import MawarithCalculator from '../components/Calculators/MawarithCalculator';
 import KaffaratCalculator from '../components/Calculators/KaffaratCalculator';
 import FitrAndUdhiyahCalculator from '../components/Calculators/FitrAndUdhiyahCalculator';
 import { useLanguage } from '../context/LanguageContext';
+import { HelpCircle } from 'lucide-react';
+import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/CommunitySpotlightGuide';
+import { CALCULATOR_PAGE_STEPS } from '../components/Community/communityTourSteps';
+import { markPageAsSeen } from '../utils/badgeManager';
 
 interface CalculatorsProps {
     onBack: () => void;
@@ -24,6 +28,14 @@ const Calculators: React.FC<CalculatorsProps> = ({ onBack, onNavigate }) => {
             ? '#FFFFFF' 
             : (theme.palette?.[0] || '#000000'));
     const [activeTab, setActiveTab] = useState<'zakat' | 'mawarith' | 'kaffarat' | 'fitr-udhiyah'>('zakat');
+    const [showGuide, setShowGuide] = useState(false);
+
+    useEffect(() => {
+        markPageAsSeen('calculators');
+        if (!getGuideSeen('calculator_page_spotlight')) {
+            setShowGuide(true);
+        }
+    }, []);
 
     return (
         <div 
@@ -54,8 +66,18 @@ const Calculators: React.FC<CalculatorsProps> = ({ onBack, onNavigate }) => {
                             </h1>
                         </div>
 
-                        {/* أيقونة المنزل على يسار/يمين النص للعودة إلى الصفحة الرئيسية */}
+                        {/* أيقونة الدليل والمنزل على يسار/يمين النص للعودة إلى الصفحة الرئيسية */}
                         <div className={`absolute ${isEn ? 'right-0' : 'left-0'} flex items-center gap-1`}>
+                            <button
+                                type="button"
+                                onClick={() => setShowGuide(true)}
+                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                style={{ color: 'var(--top-bar-text, inherit)' }}
+                                title={isEn ? "Calculator Guide" : "دليل وشرح الحاسبة الشرعية"}
+                                aria-label={isEn ? "Calculator Guide" : "دليل وشرح الحاسبة الشرعية"}
+                            >
+                                <HelpCircle size={19} />
+                            </button>
                             <ThemePageLock />
                             <button
                                 onClick={() => onNavigate('home')}
@@ -114,6 +136,15 @@ const Calculators: React.FC<CalculatorsProps> = ({ onBack, onNavigate }) => {
                 </div>
                 <div className="shrink-0 w-full h-6"></div>
             </main>
+
+            {/* Interactive Spotlight Guide */}
+            <CommunitySpotlightGuide
+                guideKey="calculator_page_spotlight"
+                steps={CALCULATOR_PAGE_STEPS}
+                isOpen={showGuide}
+                onClose={() => setShowGuide(false)}
+                isEn={isEn}
+            />
         </div>
     );
 };

@@ -7,6 +7,9 @@ import { registerBackInterceptor } from '../hooks/useBackButton';
 import { shareAsImage } from '../utils/shareAsImage';
 import { motion, AnimatePresence } from 'framer-motion';
 import { markPageAsSeen } from '../utils/badgeManager';
+import { HelpCircle } from 'lucide-react';
+import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/CommunitySpotlightGuide';
+import { ISLAMIC_SITES_PAGE_STEPS } from '../components/Community/communityTourSteps';
 
 interface IslamicSitesPageProps {
     onBack: () => void;
@@ -21,9 +24,13 @@ const IslamicSitesPage: React.FC<IslamicSitesPageProps> = ({ onBack, onNavigate 
     const [selectedSite, setSelectedSite] = useState<IslamicSite | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [toastMessage, setToastMessage] = useState('');
+    const [showGuide, setShowGuide] = useState(false);
 
     useEffect(() => {
         markPageAsSeen('islamic-sites');
+        if (!getGuideSeen('islamic_sites_page_spotlight')) {
+            setShowGuide(true);
+        }
     }, []);
 
     const isBlackTheme = theme.bgColor === '#000000';
@@ -167,6 +174,16 @@ const IslamicSitesPage: React.FC<IslamicSitesPageProps> = ({ onBack, onNavigate 
 
                         {/* أيقونة المنزل وقفل الصفحة */}
                         <div className={`absolute ${isEn ? 'right-0' : 'left-0'} flex items-center gap-1`}>
+                            <button
+                                type="button"
+                                onClick={() => setShowGuide(true)}
+                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                style={{ color: 'var(--top-bar-text, inherit)' }}
+                                title={isEn ? "Islamic Sites Guide" : "دليل المواقع الإسلامية"}
+                                aria-label={isEn ? "Islamic Sites Guide" : "دليل المواقع الإسلامية"}
+                            >
+                                <HelpCircle size={19} />
+                            </button>
                             <ThemePageLock />
                             <button
                                 onClick={() => onNavigate('home')}
@@ -529,6 +546,17 @@ const IslamicSitesPage: React.FC<IslamicSitesPageProps> = ({ onBack, onNavigate 
                     )}
                 </AnimatePresence>
             </main>
+
+            <CommunitySpotlightGuide
+                isOpen={showGuide}
+                onClose={() => {
+                    setShowGuide(false);
+                    markPageAsSeen('islamic-sites');
+                }}
+                steps={ISLAMIC_SITES_PAGE_STEPS}
+                guideKey="islamic_sites_page_spotlight"
+                isEn={isEn}
+            />
 
             {/* Toast Notification */}
             <AnimatePresence>

@@ -8,9 +8,10 @@ interface HisnHeaderProps {
     showThemePageLock?: boolean;
     onBack?: () => void;
     onHome?: () => void;
+    onOpenGuide?: () => void;
 }
 
-const HisnHeader: React.FC<HisnHeaderProps> = ({ title, subtitle, showThemePageLock = true, onBack, onHome }) => {
+const HisnHeader: React.FC<HisnHeaderProps> = ({ title, subtitle, showThemePageLock = true, onBack, onHome, onOpenGuide }) => {
     const { t, language } = useLanguage();
     const isEn = language === 'en';
     const localizedTitle = (title === 'حصن المسلم' || title === 'أذكار المسلم') ? t('page.hisn_muslim_title', title) : title;
@@ -40,8 +41,20 @@ const HisnHeader: React.FC<HisnHeaderProps> = ({ title, subtitle, showThemePageL
                         </h1>
                     </div>
 
-                    {/* Home and Theme Lock */}
+                    {/* Home, Guide, and Theme Lock */}
                     <div className={`absolute ${isEn ? 'right-0' : 'left-0'} flex items-center gap-1`}>
+                        {onOpenGuide && (
+                            <button
+                                type="button"
+                                onClick={onOpenGuide}
+                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                style={{ color: 'var(--top-bar-text, inherit)' }}
+                                title={isEn ? "Hisn Guide" : "دليل حصن المسلم"}
+                                aria-label={isEn ? "Hisn Guide" : "دليل حصن المسلم"}
+                            >
+                                <i className="fa-solid fa-circle-question text-lg"></i>
+                            </button>
+                        )}
                         {showThemePageLock && <ThemePageLock />}
                         {onHome && (
                             <button

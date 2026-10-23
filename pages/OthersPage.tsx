@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { registerBackInterceptor } from '../hooks/useBackButton';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LayoutGrid, ListFilter } from 'lucide-react';
+import { LayoutGrid, ListFilter, HelpCircle } from 'lucide-react';
 import ThemePageLock from '../components/ThemePageLock';
 import { useTheme } from '../context/ThemeContext';
 import { shareAsImage } from '../utils/shareAsImage';
@@ -9,6 +9,8 @@ import { playTTS, stopTTS, subscribeTTS } from '../utils/ttsEngine';
 import { markPageAsSeen } from '../utils/badgeManager';
 import { useLanguage } from '../context/LanguageContext';
 import { RUQYAH_DATA, RUQYAH_GUIDE_STEPS, RuqyahItem } from '../data/ruqyahData';
+import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/CommunitySpotlightGuide';
+import { RUQYAH_PAGE_STEPS } from '../components/Community/communityTourSteps';
 
 interface OthersPageProps {
   onBack: () => void;
@@ -22,12 +24,8 @@ const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, onOpenTheme
   const isEn = language === 'en';
 
   const isBlackTheme = theme.bgColor === '#000000';
-  const isDefaultTheme = themeKey === 'default';
-  const cardBorderColor = isDefaultTheme 
-    ? '#000000' 
-    : (isBlackTheme 
-      ? '#FFFFFF' 
-      : (theme.palette?.[0] || '#000000'));
+  const isDefaultTheme = themeKey === 'default' || theme.name === 'الافتراضي' || !!theme.isOriginal || !themeKey;
+  const cardBorderColor = isBlackTheme ? '#222222' : (theme.isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)');
       
   const [activeTab, setActiveTab] = useState<'all' | 'quran' | 'sunnah' | 'favorites' | 'guide'>('all');
   const [activeTabMode, setActiveTabMode] = useState<'grid' | 'list'>('grid');
@@ -38,12 +36,16 @@ const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, onOpenTheme
   const [zoomedDuaa, setZoomedDuaa] = useState<RuqyahItem | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [menuOpenDirection, setMenuOpenDirection] = useState<'up' | 'down'>('up');
+  const [showGuide, setShowGuide] = useState(false);
 
   const fabRef = useRef<HTMLButtonElement>(null);
   const fabContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     markPageAsSeen('others');
+    if (!getGuideSeen('ruqyah_page_spotlight')) {
+      setShowGuide(true);
+    }
   }, []);
 
   // Subscribe to TTS playing changes
@@ -161,12 +163,17 @@ const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, onOpenTheme
   // Back interceptor for hardware/device back button
   useEffect(() => {
     const interceptor = () => {
-      // 1. Close zoom modal if open
+      // 1. Close spotlight guide if open
+      if (showGuide) {
+        setShowGuide(false);
+        return true;
+      }
+      // 2. Close zoom modal if open
       if (zoomedDuaa) {
         setZoomedDuaa(null);
         return true;
       }
-      // 2. Close floating quick-menu if open
+      // 3. Close floating quick-menu if open
       if (isMenuOpen) {
         setIsMenuOpen(false);
         return true;
@@ -175,7 +182,7 @@ const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, onOpenTheme
     };
     const unregister = registerBackInterceptor(interceptor);
     return unregister;
-  }, [zoomedDuaa, isMenuOpen]);
+  }, [zoomedDuaa, isMenuOpen, showGuide]);
 
   const getCardStyle = () => {
     return {
@@ -222,9 +229,17 @@ const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, onOpenTheme
     return [];
   };
 
-  const filteredItems = getFilteredItems().filter(item => 
-    (isEn ? (item.textEn || item.text) : item.text).includes(searchQuery)
-  );
+  const filteredItems = getFilteredItems().filter(item => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return true;
+    const text = (item.text || '').toLowerCase();
+    const textEn = (item.textEn || '').toLowerCase();
+    const source = (item.source || '').toLowerCase();
+    const sourceEn = (item.sourceEn || '').toLowerCase();
+    const title = (item.title || '').toLowerCase();
+    const titleEn = (item.titleEn || '').toLowerCase();
+    return text.includes(q) || textEn.includes(q) || source.includes(q) || sourceEn.includes(q) || title.includes(q) || titleEn.includes(q);
+  });
 
   return (
     <div 
@@ -232,8 +247,8 @@ const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, onOpenTheme
       style={{ fontFamily: isEn ? 'inherit' : theme.font }}
       dir={isEn ? 'ltr' : 'rtl'}
     >
-      {/* Top Header with Back Button and Home Button */}
-      <header className="app-top-bar z-20 shrink-0" dir={isEn ? 'ltr' : 'rtl'}>
+      {/* Top Header with Back Button, Guide, Theme Lock, and Home Button */}
+      <header id="ruqyah-header" className="app-top-bar z-20 shrink-0" dir={isEn ? 'ltr' : 'rtl'}>
         <div className="app-top-bar__inner">
           <div className="relative flex items-center justify-center w-full min-h-[44px]">
             {/* Back Button */}
@@ -255,10 +270,21 @@ const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, onOpenTheme
               </h1>
             </div>
 
-            {/* Home Icon and Theme Lock */}
+            {/* Guide Icon, Theme Lock and Home Icon */}
             <div className={`absolute ${isEn ? 'right-0' : 'left-0'} flex items-center gap-1`}>
+              <button
+                type="button"
+                onClick={() => setShowGuide(true)}
+                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                style={{ color: 'var(--top-bar-text, inherit)' }}
+                title={isEn ? "Ruqyah Guide" : "دليل وشرح الرقية الشرعية"}
+                aria-label={isEn ? "Ruqyah Guide" : "دليل وشرح الرقية الشرعية"}
+              >
+                <HelpCircle size={19} />
+              </button>
               <ThemePageLock />
               <button
+                type="button"
                 onClick={() => onNavigate('home')}
                 className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
                 title={isEn ? "Home" : "الصفحة الرئيسية"}
@@ -271,35 +297,73 @@ const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, onOpenTheme
         </div>
       </header>
 
-      {/* Search and View Mode Control */}
-      <div className="px-4 py-2 z-20 shrink-0 max-w-2xl mx-auto w-full flex items-center gap-2" dir={isEn ? 'ltr' : 'rtl'}>
-        <div className="flex-1 relative">
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={isEn ? "Search..." : "بحث..."}
-            className="w-full py-2.5 px-4 rounded-xl bg-black/5 dark:bg-white/5 border border-black/5"
-          />
-        </div>
-        <button
-          onClick={() => setActiveTabMode('grid')}
-          className={`p-2.5 rounded-xl ${activeTabMode === 'grid' ? 'bg-black/10 dark:bg-white/10' : ''}`}
-        >
-          <LayoutGrid size={20} />
-        </button>
-        <button
-          onClick={() => setActiveTabMode('list')}
-          className={`p-2.5 rounded-xl ${activeTabMode === 'list' ? 'bg-black/10 dark:bg-white/10' : ''}`}
-        >
-          <ListFilter size={20} />
-        </button>
-      </div>
-
       {/* Main Container */}
       <main className="w-full flex-1 overflow-y-auto px-4 pt-2 pb-4">
+        {/* Search and View Mode Control - Identical to Adia */}
+        <div className="mb-6 max-w-3xl mx-auto flex items-center gap-2 w-full" dir={isEn ? 'ltr' : 'rtl'}>
+          <div 
+            className="relative flex-1 border-2 rounded-2xl overflow-hidden focus-within:ring-2 transition-all shadow-sm" 
+            style={{ borderColor: cardBorderColor, ...(isDefaultTheme ? { focusRingColor: '#000'} : { focusRingColor: theme.palette[0]}) }}
+          >
+            <input 
+              type="text" 
+              placeholder={isEn ? "Search Ruqyah..." : "ابحث في الرقية الشرعية..."} 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className={`w-full bg-black/5 dark:bg-white/5 py-3 ${isEn ? 'pl-12 pr-10 text-left font-sans' : 'pr-12 pl-10 text-right font-kufi'} focus:outline-none placeholder-gray-500 dark:placeholder-gray-400`}
+              style={{ color: 'var(--text-color)' }}
+            />
+            <i 
+              className={`fa-solid fa-search absolute ${isEn ? 'left-4' : 'right-4'} top-1/2 transform -translate-y-1/2 opacity-50`} 
+              style={{ color: 'var(--text-color)' }}
+            ></i>
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className={`absolute inset-y-0 ${isEn ? 'right-4' : 'left-4'} flex items-center text-gray-400 hover:text-gray-600`}
+              >
+                <i className="fa-solid fa-times text-xs"></i>
+              </button>
+            )}
+          </div>
+
+          {/* View Mode Switch - Matches Adia page and adapts to every theme */}
+          <div 
+            className="flex items-center p-1 rounded-2xl border shrink-0 shadow-sm"
+            style={{
+              backgroundColor: isBlackTheme ? '#111111' : (theme.isDark ? '#1e293b' : '#ffffff'),
+              borderColor: cardBorderColor
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setActiveTabMode('grid')}
+              className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTabMode === 'grid' ? 'shadow-sm' : 'opacity-60 hover:opacity-100'}`}
+              style={activeTabMode === 'grid' ? {
+                backgroundColor: isBlackTheme ? '#FFFFFF' : (isDefaultTheme ? '#000000' : theme.palette[0]),
+                color: isBlackTheme ? '#000000' : '#ffffff'
+              } : { color: 'var(--text-color)' }}
+              title={isEn ? "Grid View" : "عرض شبكي"}
+            >
+              <LayoutGrid size={16} />
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTabMode('list')}
+              className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTabMode === 'list' ? 'shadow-sm' : 'opacity-60 hover:opacity-100'}`}
+              style={activeTabMode === 'list' ? {
+                backgroundColor: isBlackTheme ? '#FFFFFF' : (isDefaultTheme ? '#000000' : theme.palette[0]),
+                color: isBlackTheme ? '#000000' : '#ffffff'
+              } : { color: 'var(--text-color)' }}
+              title={isEn ? "List View" : "عرض القوائم"}
+            >
+              <ListFilter size={16} />
+            </button>
+          </div>
+        </div>
+
         <div 
-          className={`${activeTabMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'flex flex-col'} gap-4 pt-2 pb-6 ${isEn ? 'text-left' : 'text-right'}`}
+          className={`${activeTabMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'space-y-4'} max-w-3xl mx-auto gap-4 pt-2 pb-6 ${isEn ? 'text-left' : 'text-right'}`}
           dir={isEn ? 'ltr' : 'rtl'}
         >
           <AnimatePresence mode="wait">
@@ -647,6 +711,15 @@ const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, onOpenTheme
           </div>
         </div>
       )}
+
+      {/* Ruqyah Page Spotlight Guide */}
+      <CommunitySpotlightGuide
+        guideKey="ruqyah_page_spotlight"
+        steps={RUQYAH_PAGE_STEPS}
+        isOpen={showGuide}
+        onClose={() => setShowGuide(false)}
+        isEn={isEn}
+      />
     </div>
   );
 };

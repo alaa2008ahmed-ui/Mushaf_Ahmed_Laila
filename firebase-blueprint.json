@@ -110,6 +110,34 @@
         "createdAt": { "type": "string" }
       },
       "required": ["messageId", "groupId", "senderId", "senderName"]
+    },
+    "GroupReadRecord": {
+      "title": "Group Read State",
+      "description": "User read position in a group chat room",
+      "type": "object",
+      "properties": {
+        "readId": { "type": "string", "maxLength": 256 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "groupId": { "type": "string", "maxLength": 128 },
+        "lastReadMessageId": { "type": "string", "maxLength": 128 },
+        "lastReadTime": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["readId", "userId", "groupId"]
+    },
+    "DirectReadRecord": {
+      "title": "Direct Read State",
+      "description": "User read position in a direct 1-on-1 chat",
+      "type": "object",
+      "properties": {
+        "readId": { "type": "string", "maxLength": 256 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "partnerId": { "type": "string", "maxLength": 128 },
+        "lastReadMessageId": { "type": "string", "maxLength": 128 },
+        "lastReadTime": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["readId", "userId", "partnerId"]
     }
   },
   "firestore": {
@@ -136,6 +164,14 @@
     "/group_messages/{messageId}": {
       "schema": "GroupMessage",
       "description": "Group chat messages"
+    },
+    "/group_reads/{readId}": {
+      "schema": "GroupReadRecord",
+      "description": "User read synchronization per group"
+    },
+    "/direct_reads/{readId}": {
+      "schema": "DirectReadRecord",
+      "description": "User read synchronization per direct chat"
     },
     "/blockedUsers/{blockId}": {
       "schema": "BlockRecord",

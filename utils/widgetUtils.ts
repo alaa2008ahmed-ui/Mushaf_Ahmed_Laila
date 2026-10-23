@@ -72,7 +72,15 @@ export const updateAndroidWidget = async (data: WidgetData, syncTheme: boolean =
       value: JSON.stringify(finalData)
     });
     
-    console.log('Android Widget data updated successfully');
+    // Also refresh the native persistent prayer notification if enabled
+    try {
+      const { updateNativePersistentNotification } = await import('./silentMode');
+      await updateNativePersistentNotification();
+    } catch (e) {
+      console.warn('Could not update persistent notification:', e);
+    }
+    
+    console.log('Android Widget and Persistent Notification updated successfully');
   } catch (error) {
     console.error('Failed to update Android Widget data:', error);
   }

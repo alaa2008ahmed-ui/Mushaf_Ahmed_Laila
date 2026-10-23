@@ -1,6 +1,9 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronRight, ChevronLeft, CheckCircle, Clock, Heart, BookOpen, Plus, Minus, Medal, Award, Star, Trash2, Sparkles, Share2, Calendar, RotateCcw } from 'lucide-react';
+import { ChevronRight, ChevronLeft, CheckCircle, Clock, Heart, BookOpen, Plus, Minus, Medal, Award, Star, Trash2, Sparkles, Share2, Calendar, RotateCcw, Check, HelpCircle } from 'lucide-react';
+import { markPageAsSeen } from '../utils/badgeManager';
+import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/CommunitySpotlightGuide';
+import { WORSHIP_MENTOR_PAGE_STEPS } from '../components/Community/communityTourSteps';
 import moment from 'moment-hijri';
 import { useHabitTracker, DailyRecord, HabitCategory, defaultRecord, CustomHabit } from '../hooks/useHabitTracker';
 import { useTheme } from '../context/ThemeContext';
@@ -97,6 +100,14 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack , onNavigate }) => {
   const [habitToDelete, setHabitToDelete] = useState<{ id: string; title: string } | null>(null);
   const [trackerToast, setTrackerToast] = useState('');
   const [isSharingDaily, setIsSharingDaily] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
+
+  useEffect(() => {
+    markPageAsSeen('habit-tracker');
+    if (!getGuideSeen('worship_mentor_page_spotlight')) {
+      setShowGuide(true);
+    }
+  }, []);
 
   const showTrackerToast = (msg: string) => {
     setTrackerToast(msg);
@@ -174,6 +185,10 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack , onNavigate }) => {
 
   useEffect(() => {
     const interceptor = () => {
+      if (showGuide) {
+        setShowGuide(false);
+        return true;
+      }
       if (showWeeklyModal) {
         setShowWeeklyModal(false);
         return true;
@@ -506,67 +521,86 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack , onNavigate }) => {
       <header className="app-top-bar shrink-0">
           <div className="app-top-bar__inner">
               <div className="relative flex items-center justify-center w-full min-h-[44px]">
-                  {/* سهم الرجوع للخلف */}
-                  <div className={`absolute ${isEn ? 'left-0' : 'right-0'} flex items-center`}>
-                      <button
-                          onClick={handleHomeClick}
-                          className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
-                          title={isEn ? 'Back' : 'رجوع للخلف'}
-                          aria-label={isEn ? 'Back' : 'رجوع للخلف'}
-                      >
-                          <i className={`fa-solid ${isEn ? 'fa-arrow-left' : 'fa-arrow-right'} text-xl`}></i>
-                      </button>
-                  </div>
+                        {/* سهم الرجوع للخلف وأيقونة التفعيل */}
+                        <div className={`absolute ${isEn ? 'left-0' : 'right-0'} flex items-center gap-1.5`}>
+                            <button
+                                onClick={handleHomeClick}
+                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                title={isEn ? 'Back' : 'رجوع للخلف'}
+                                aria-label={isEn ? 'Back' : 'رجوع للخلف'}
+                            >
+                                <i className={`fa-solid ${isEn ? 'fa-arrow-left' : 'fa-arrow-right'} text-xl`}></i>
+                            </button>
+                            
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    const next = !autoSyncEnabled;
+                                    setAutoSyncEnabled(next);
+                                    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                                        try { navigator.vibrate(30); } catch {}
+                                    }
+                                    showTrackerToast(
+                                        next 
+                                            ? (isEn ? 'Auto-Sync enabled ⚡' : 'تم تفعيل الربط التلقائي للعبادات ⚡') 
+                                            : (isEn ? 'Auto-Sync disabled 🔒' : 'تم تعطيل الربط التلقائي للعبادات 🔒')
+                                    );
+                                }}
+                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                title={
+                                    isEn 
+                                        ? (autoSyncEnabled ? 'Auto-Sync Worship: Enabled (Click to disable)' : 'Auto-Sync Worship: Disabled (Click to enable)') 
+                                        : (autoSyncEnabled ? 'الربط التلقائي للعبادات: مفعّل (اضغط للتعطيل)' : 'الربط التلقائي للعبادات: معطّل (اضغط للتفعيل)')
+                                }
+                                aria-label={
+                                    isEn 
+                                        ? (autoSyncEnabled ? 'Auto-Sync Worship: Enabled' : 'Auto-Sync Worship: Disabled') 
+                                        : (autoSyncEnabled ? 'الربط التلقائي للعبادات: مفعّل' : 'الربط التلقائي للعبادات: معطّل')
+                                }
+                            >
+                                <div className={`w-[19px] h-[19px] rounded-full border-[1.5px] border-white/90 dark:border-white/80 shadow-xs transition-all duration-300 flex items-center justify-center ${
+                                    autoSyncEnabled 
+                                        ? 'bg-gradient-to-tr from-emerald-600 via-emerald-500 to-emerald-400 text-white shadow-emerald-500/30 ring-1.5 ring-emerald-500/25' 
+                                        : 'bg-gradient-to-tr from-red-600 via-red-500 to-rose-400 text-white shadow-red-500/30 ring-1.5 ring-red-500/25'
+                                }`}>
+                                    {autoSyncEnabled ? (
+                                        <Check className="w-2.5 h-2.5 stroke-[3]" />
+                                    ) : (
+                                        <span className="w-1.5 h-0.5 bg-white/95 rounded-full" />
+                                    )}
+                                </div>
+                            </button>
+                        </div>
 
-                  {/* عنوان الصفحة في الوسط */}
-                  <div className="text-center px-12 min-w-0">
-                      <h1 className="app-top-bar__title text-lg sm:text-xl font-kufi truncate">
-                          {isEn ? 'Worship Habit Tracker' : 'مربّي العبادات'}
-                      </h1>
-                  </div>
+                        {/* عنوان الصفحة في الوسط */}
+                        <div className="text-center px-12 min-w-0">
+                            <h1 className="app-top-bar__title text-lg sm:text-xl font-kufi truncate">
+                                {isEn ? 'Worship Habit Tracker' : 'مربّي العبادات'}
+                            </h1>
+                        </div>
 
-                  {/* أيقونة المنزل وزر الربط التلقائي للعبادات */}
-                  <div className={`absolute ${isEn ? 'right-0' : 'left-0'} flex items-center gap-1.5`}>
-                      <button
-                          type="button"
-                          onClick={() => {
-                              const next = !autoSyncEnabled;
-                              setAutoSyncEnabled(next);
-                              if (typeof navigator !== 'undefined' && navigator.vibrate) {
-                                  try { navigator.vibrate(30); } catch {}
-                              }
-                              showTrackerToast(
-                                  next 
-                                      ? (isEn ? 'Auto-Sync enabled ⚡' : 'تم تفعيل الربط التلقائي للعبادات ⚡') 
-                                      : (isEn ? 'Auto-Sync disabled 🔒' : 'تم تعطيل الربط التلقائي للعبادات 🔒')
-                              );
-                          }}
-                          className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full border-2 transition-all shadow-md active:scale-90 cursor-pointer flex items-center justify-center ${
-                              autoSyncEnabled 
-                                  ? 'bg-emerald-500 border-white/80 dark:border-white/60 shadow-emerald-500/50 ring-2 ring-emerald-500/30' 
-                                  : 'bg-red-500 border-white/80 dark:border-white/60 shadow-red-500/50 ring-2 ring-red-500/30'
-                          }`}
-                          title={
-                              isEn 
-                                  ? (autoSyncEnabled ? 'Auto-Sync Worship: Enabled (Click to disable)' : 'Auto-Sync Worship: Disabled (Click to enable)') 
-                                  : (autoSyncEnabled ? 'الربط التلقائي للعبادات: مفعّل (اضغط للتعطيل)' : 'الربط التلقائي للعبادات: معطّل (اضغط للتفعيل)')
-                          }
-                          aria-label={
-                              isEn 
-                                  ? (autoSyncEnabled ? 'Auto-Sync Worship: Enabled' : 'Auto-Sync Worship: Disabled') 
-                                  : (autoSyncEnabled ? 'الربط التلقائي للعبادات: مفعّل' : 'الربط التلقائي للعبادات: معطّل')
-                          }
-                      />
-                      <ThemePageLock />
-                      <button
-                          onClick={() => onNavigate('home')}
-                          className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
-                          title={isEn ? 'Home' : 'الصفحة الرئيسية'}
-                          aria-label={isEn ? 'Home' : 'الصفحة الرئيسية'}
-                      >
-                          <i className="fa-solid fa-house text-xl"></i>
-                      </button>
-                  </div>
+                        {/* أيقونة المنزل */}
+                        <div className={`absolute ${isEn ? 'right-0' : 'left-0'} flex items-center gap-1.5`}>
+                            <button
+                                type="button"
+                                onClick={() => setShowGuide(true)}
+                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                style={{ color: 'var(--top-bar-text, inherit)' }}
+                                title={isEn ? "Worship Mentor Guide" : "دليل وشرح مربي العبادات"}
+                                aria-label={isEn ? "Worship Mentor Guide" : "دليل وشرح مربي العبادات"}
+                            >
+                                <HelpCircle size={19} />
+                            </button>
+                            <ThemePageLock />
+                            <button
+                                onClick={() => onNavigate('home')}
+                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                title={isEn ? 'Home' : 'الصفحة الرئيسية'}
+                                aria-label={isEn ? 'Home' : 'الصفحة الرئيسية'}
+                            >
+                                <i className="fa-solid fa-house text-xl"></i>
+                            </button>
+                        </div>
               </div>
           </div>
       </header>
@@ -1089,6 +1123,14 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack , onNavigate }) => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <CommunitySpotlightGuide
+        guideKey="worship_mentor_page_spotlight"
+        steps={WORSHIP_MENTOR_PAGE_STEPS}
+        isOpen={showGuide}
+        onClose={() => setShowGuide(false)}
+        isEn={isEn}
+      />
     </div>
   );
 };

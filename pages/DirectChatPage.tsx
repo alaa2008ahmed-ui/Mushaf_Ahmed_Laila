@@ -1,11 +1,23 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   ArrowRight, Send, Smile, MoreVertical, Trash2, Check, 
   CheckCheck, Ban, User, Sparkles, AlertCircle, BookOpen, Play, Pause, CheckCircle2,
-  Mic, Volume2, Loader2, UserPlus, Clock, X, Paperclip, Video, FileText
+  Mic, Volume2, Loader2, UserPlus, Clock, X, Paperclip, Video, FileText, HelpCircle, Reply
 } from 'lucide-react';
-import { communityService, CommunityUser, ChatMessage, QuranVerseAttachment, ChatAttachment, ADMIN_USER_ID } from '../services/communityService';
+import { communityService, CommunityUser, ChatMessage, QuranVerseAttachment, ChatAttachment, ADMIN_USER_ID, QuotedReplyMessage } from '../services/communityService';
+import { 
+  MessageReactionsBar, 
+  MessageReactionBadge, 
+  SwipeableMessageWrapper, 
+  ReplyPreviewBar, 
+  QuotedMessageBlock 
+} from '../components/Community/WhatsAppMessageComponents';
+import { 
+  CommunitySpotlightGuide, 
+  getGuideSeen 
+} from '../components/Community/CommunitySpotlightGuide';
+import { CHAT_ROOM_STEPS } from '../components/Community/communityTourSteps';
 import { SUPPORT_AVATAR_BASE64 } from '../src/supportAvatarBase64';
 import EmojiPicker from '../components/Community/EmojiPicker';
 import QuranVerseModal from '../components/Community/QuranVerseModal';
@@ -13,6 +25,9 @@ import { ChatAttachmentView, formatFileSize } from '../components/Community/Chat
 import { MediaAttachmentPicker } from '../components/Community/MediaAttachmentPicker';
 import { processFileForAttachment } from '../components/Community/mediaPickerUtils';
 import { Capacitor } from '@capacitor/core';
+import { VoiceRecorder } from 'capacitor-voice-recorder';
+import { InAppPermissionModal } from '../components/InAppPermissionModal';
+import { requestMicrophonePermission } from '../utils/permissionHelper';
 import { registerBackInterceptor } from '../hooks/useBackButton';
 import { useLanguage } from '../context/LanguageContext';
 import { 
@@ -461,16 +476,24 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
   const [selectedMsgId, setSelectedMsgId] = useState<string | null>(null);
   const [playingAudioUrl, setPlayingAudioUrl] = useState<string | null>(null);
   const [audioPlayer, setAudioPlayer] = useState<HTMLAudioElement | null>(null);
+  const [showChatTour, setShowChatTour] = useState(() => !getGuideSeen('chat_room'));
 
   // Media Attachment state (image, video, file)
   const [showAttachmentPicker, setShowAttachmentPicker] = useState(false);
   const [stagedAttachment, setStagedAttachment] = useState<ChatAttachment | null>(null);
   const [isProcessingMedia, setIsProcessingMedia] = useState(false);
 
+  // WhatsApp Reaction & Reply states
+  const [reactionMenuMsgId, setReactionMenuMsgId] = useState<string | null>(null);
+  const [moreEmojiPickerMsgId, setMoreEmojiPickerMsgId] = useState<string | null>(null);
+  const [activeReplyTo, setActiveReplyTo] = useState<QuotedReplyMessage | null>(null);
+  const [highlightedMsgId, setHighlightedMsgId] = useState<string | null>(null);
+
   // Voice Recording state
   const [isRecording, setIsRecording] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [isProcessingAudio, setIsProcessingAudio] = useState(false);
+  const [showMicPermissionModal, setShowMicPermissionModal] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const recordingTimerRef = useRef<any>(null);
@@ -486,6 +509,56 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
   const userIsNearBottomRef = useRef<boolean>(true);
   const prevMsgCountRef = useRef<number>(0);
 
+  // Helper to start replying to a message
+  const handleInitiateReply = useCallback((msg: ChatMessage) => {
+    const isMe = msg.senderId === currentUser.userId;
+    const senderName = isMe ? (isEn ? 'You' : 'أنت') : (partner?.username || (isEn ? 'User' : 'القارئ'));
+    setActiveReplyTo({
+      messageId: msg.messageId,
+      senderId: msg.senderId,
+      senderName,
+      text: msg.text || undefined,
+      hasAttachment: Boolean(msg.attachment),
+      attachmentType: msg.attachment?.type,
+      attachmentUrl: msg.attachment?.url,
+      hasAudio: Boolean(msg.audioUrl),
+      hasVerse: Boolean(msg.verseData),
+      surahName: msg.verseData?.surahName
+    });
+    setReactionMenuMsgId(null);
+    setSelectedMsgId(null);
+
+    // Focus input
+    const inputEl = document.getElementById('chat-input-text');
+    if (inputEl) inputEl.focus();
+  }, [currentUser.userId, isEn, partner?.username]);
+
+  // Helper to toggle reaction
+  const handleToggleReaction = useCallback(async (messageId: string, emoji: string) => {
+    setReactionMenuMsgId(null);
+    setMoreEmojiPickerMsgId(null);
+    try {
+      await communityService.toggleDirectMessageReaction(messageId, emoji);
+      loadData();
+    } catch (e) {
+      console.warn('Failed to toggle reaction:', e);
+    }
+  }, []);
+
+  // Helper to scroll to original message on reply click
+  const scrollToOriginalMessage = useCallback((targetMsgId: string) => {
+    const el = document.getElementById(`direct-msg-${targetMsgId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setHighlightedMsgId(targetMsgId);
+      setTimeout(() => {
+        setHighlightedMsgId(prev => (prev === targetMsgId ? null : prev));
+      }, 2000);
+    } else {
+      showToast(isEn ? 'Original message not found' : 'لم يتم العثور على الرسالة الأصلية');
+    }
+  }, [isEn]);
+
   // Clean up recording timers & tracks on unmount
   useEffect(() => {
     return () => {
@@ -500,10 +573,11 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
 
   // Global click & touch outside listeners to guarantee immediate closing when tapping or clicking anywhere on screen
   useEffect(() => {
-    if (!showMenu && !showEmojiPicker) return;
-
     const handleGlobalClickOutside = (event: MouseEvent | TouchEvent | PointerEvent) => {
       const target = event.target as Node;
+      if (reactionMenuMsgId) {
+        setReactionMenuMsgId(null);
+      }
       if (showMenu) {
         if (menuDropdownRef.current && menuDropdownRef.current.contains(target)) {
           return;
@@ -516,6 +590,9 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
       if (showEmojiPicker && emojiPickerContainerRef.current && !emojiPickerContainerRef.current.contains(target)) {
         setShowEmojiPicker(false);
       }
+      if (moreEmojiPickerMsgId) {
+        setMoreEmojiPickerMsgId(null);
+      }
     };
 
     document.addEventListener('pointerdown', handleGlobalClickOutside, true);
@@ -527,12 +604,26 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
       document.removeEventListener('touchstart', handleGlobalClickOutside, true);
       document.removeEventListener('mousedown', handleGlobalClickOutside, true);
     };
-  }, [showMenu, showEmojiPicker]);
+  }, [showMenu, showEmojiPicker, reactionMenuMsgId, moreEmojiPickerMsgId]);
 
   // Back interceptor for device/phone back button (Capacitor/Android & browser back)
   useEffect(() => {
     const interceptor = () => {
-      // 0. Close attachment picker
+      // 0. Close reaction picker
+      if (moreEmojiPickerMsgId) {
+        setMoreEmojiPickerMsgId(null);
+        return true;
+      }
+      if (reactionMenuMsgId) {
+        setReactionMenuMsgId(null);
+        return true;
+      }
+      // 0.1 Cancel reply
+      if (activeReplyTo) {
+        setActiveReplyTo(null);
+        return true;
+      }
+      // 0.2 Close attachment picker
       if (showAttachmentPicker) {
         setShowAttachmentPicker(false);
         return true;
@@ -576,7 +667,7 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
 
     const unregister = registerBackInterceptor(interceptor);
     return unregister;
-  }, [showVerseModal, showEmojiPicker, showMenu, showBlockModal, showDeleteReadModal, showClearModal, selectedMsgId, onBack]);
+  }, [showVerseModal, showEmojiPicker, showMenu, showBlockModal, showDeleteReadModal, showClearModal, selectedMsgId, reactionMenuMsgId, moreEmojiPickerMsgId, activeReplyTo, onBack]);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -629,27 +720,18 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
     setFriendship(fStatus);
 
     const chatMsgs = communityService.getMessagesForChat(partnerUserId);
-    
-    setMessages(prev => {
-      // Check if messages actually changed
-      const isDifferent = prev.length !== chatMsgs.length || 
-        (chatMsgs.length > 0 && prev.length > 0 && prev[prev.length - 1]?.messageId !== chatMsgs[chatMsgs.length - 1]?.messageId);
-      
-      if (isDifferent || isFirstLoadRef.current) {
-        if (isFirstLoadRef.current) {
-          setTimeout(() => {
-            scrollToBottom('auto');
-            isFirstLoadRef.current = false;
-          }, 50);
-        } else if (shouldScrollIfNear && userIsNearBottomRef.current) {
-          setTimeout(() => {
-            scrollToBottom('smooth');
-          }, 50);
-        }
-        return chatMsgs;
-      }
-      return prev;
-    });
+    setMessages([...chatMsgs]);
+
+    if (isFirstLoadRef.current) {
+      setTimeout(() => {
+        scrollToBottom('auto');
+        isFirstLoadRef.current = false;
+      }, 50);
+    } else if (shouldScrollIfNear) {
+      setTimeout(() => {
+        scrollToBottom('smooth');
+      }, 50);
+    }
 
     communityService.markMessagesAsRead(partnerUserId);
   };
@@ -675,6 +757,7 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
     window.addEventListener('community_user_updated', handleUpdate);
 
     return () => {
+      communityService.markMessagesAsRead(partnerUserId);
       clearInterval(presenceInterval);
       window.removeEventListener('community_messages_updated', handleUpdate);
       window.removeEventListener('community_block_updated', handleUpdate);
@@ -720,13 +803,16 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
 
     const textToSend = inputText;
     const attachmentToSend = stagedAttachment;
-    // Automatically clear input & attachment immediately
+    const replyToSend = activeReplyTo || undefined;
+
+    // Automatically clear input & attachment & reply immediately
     setInputText('');
     setStagedAttachment(null);
+    setActiveReplyTo(null);
     setShowEmojiPicker(false);
 
     try {
-      await communityService.sendMessage(partnerUserId, textToSend, undefined, undefined, attachmentToSend || undefined);
+      await communityService.sendMessage(partnerUserId, textToSend, undefined, undefined, attachmentToSend || undefined, undefined, replyToSend);
       communityService.setTypingStatus(partnerUserId, false);
       loadData(true);
       setTimeout(() => scrollToBottom('smooth'), 50);
@@ -738,8 +824,10 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
 
   const handleSendVerse = async (verse: QuranVerseAttachment) => {
     if (isBlocked) return;
+    const replyToSend = activeReplyTo || undefined;
+    setActiveReplyTo(null);
     try {
-      await communityService.sendMessage(partnerUserId, '', verse);
+      await communityService.sendMessage(partnerUserId, '', verse, undefined, undefined, undefined, replyToSend);
       setShowVerseModal(false);
       loadData(true);
       setTimeout(() => scrollToBottom('smooth'), 50);
@@ -794,122 +882,195 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
   const startRecording = async () => {
     if (isBlocked) return;
 
+    // 1. Request microphone permission in-app (triggers OS permission prompt directly on screen)
+    const permResult = await requestMicrophonePermission();
+    if (!permResult.granted) {
+      setShowMicPermissionModal(true);
+      return;
+    }
+
+    // 2. Start recording
     try {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        showToast('عفواً، تسجيل الصوت غير مدعوم في متصفحك أو هذا الجهاز');
-        return;
-      }
+      if (Capacitor.isNativePlatform()) {
+        try {
+          const canRecord = await VoiceRecorder.canDeviceVoiceRecord();
+          if (!canRecord.value) {
+            showToast('عفواً، لا يدعم هذا الجهاز تسجيل الصوت حالياً');
+            return;
+          }
+        } catch (e) {
+          console.warn('canDeviceVoiceRecord check ignored:', e);
+        }
 
-      let stream: MediaStream | null = null;
+        const startRes = await VoiceRecorder.startRecording();
+        if (startRes.value) {
+          setIsRecording(true);
+          setRecordingDuration(0);
 
-      // Request microphone permission & audio stream directly
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      } catch (e: any) {
-        console.warn('Audio stream request failed:', e?.name || e);
-        const errName = e?.name || '';
-        const errMsg = e?.message?.toLowerCase() || '';
-
-        if (errName === 'NotAllowedError' || errName === 'PermissionDeniedError' || errMsg.includes('denied') || errMsg.includes('not allowed')) {
-          showToast('يرجى السماح بإذن الميكروفون للتطبيق من إعدادات الهاتف (الأذونات -> الميكروفون) 🎙️');
-        } else if (errName === 'NotFoundError' || errMsg.includes('not found')) {
-          showToast('لم يتم العثور على ميكروفون متصل بهذا الجهاز');
+          if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+          recordingTimerRef.current = setInterval(() => {
+            setRecordingDuration(prev => prev + 1);
+          }, 1000);
         } else {
-          showToast('تعذر تشغيل الميكروفون على هذا الجهاز');
+          setShowMicPermissionModal(true);
         }
-        return;
-      }
-
-      if (!stream) return;
-
-      audioChunksRef.current = [];
-      const mimeType = getSupportedMimeType();
-
-      let mediaRecorder: MediaRecorder;
-      try {
-        mediaRecorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
-      } catch (err) {
-        // Fallback without mimeType options if browser/WebView rejects it
-        mediaRecorder = new MediaRecorder(stream);
-      }
-
-      mediaRecorderRef.current = mediaRecorder;
-
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data && e.data.size > 0) {
-          audioChunksRef.current.push(e.data);
+      } else {
+        // Web / Browser platform fallback
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          showToast('عفواً، تسجيل الصوت غير مدعوم في متصفحك أو هذا الجهاز');
+          return;
         }
-      };
 
-      mediaRecorder.start(100);
-      setIsRecording(true);
-      setRecordingDuration(0);
+        let stream: MediaStream | null = null;
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        } catch (e: any) {
+          console.warn('getUserMedia error in web:', e);
+          setShowMicPermissionModal(true);
+          return;
+        }
 
-      if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
-      recordingTimerRef.current = setInterval(() => {
-        setRecordingDuration(prev => prev + 1);
-      }, 1000);
+        if (!stream) return;
+
+        audioChunksRef.current = [];
+        const mimeType = getSupportedMimeType();
+
+        let mediaRecorder: MediaRecorder;
+        try {
+          mediaRecorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+        } catch (err) {
+          mediaRecorder = new MediaRecorder(stream);
+        }
+
+        mediaRecorderRef.current = mediaRecorder;
+
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data && e.data.size > 0) {
+            audioChunksRef.current.push(e.data);
+          }
+        };
+
+        mediaRecorder.start(100);
+        setIsRecording(true);
+        setRecordingDuration(0);
+
+        if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+        recordingTimerRef.current = setInterval(() => {
+          setRecordingDuration(prev => prev + 1);
+        }, 1000);
+      }
     } catch (err) {
       console.warn('Unexpected error starting audio recording:', err);
-      showToast('تعذر بدء التسجيل الصوتي');
+      setShowMicPermissionModal(true);
     }
   };
 
-  const stopAndSendRecording = () => {
-    if (!mediaRecorderRef.current || !isRecording) return;
+  const stopAndSendRecording = async () => {
+    if (!isRecording) return;
     setIsProcessingAudio(true);
 
     if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
 
-    const mediaRecorder = mediaRecorderRef.current;
-
-    mediaRecorder.onstop = async () => {
+    if (Capacitor.isNativePlatform()) {
       try {
-        if (mediaRecorder.stream) {
-          mediaRecorder.stream.getTracks().forEach(track => track.stop());
-        }
+        const result = await VoiceRecorder.stopRecording();
+        if (result.value && result.value.recordDataBase64) {
+          const mimeType = result.value.mimeType || 'audio/aac';
+          const base64Audio = `data:${mimeType};base64,${result.value.recordDataBase64}`;
+          const durationSec = Math.round((result.value.msDuration || 0) / 1000) || recordingDuration || 1;
 
-        const mimeType = mediaRecorder.mimeType || 'audio/webm';
-        const blob = new Blob(audioChunksRef.current, { type: mimeType });
+          if (durationSec < 1 && (!result.value.recordDataBase64 || result.value.recordDataBase64.length < 300)) {
+            showToast('التسجيل قصير جداً');
+            setIsRecording(false);
+            setIsProcessingAudio(false);
+            return;
+          }
 
-        if (blob.size < 200) {
-          showToast('التسجيل قصير جداً');
-          setIsRecording(false);
-          setIsProcessingAudio(false);
-          return;
-        }
-
-        const reader = new FileReader();
-        reader.readAsDataURL(blob);
-        reader.onloadend = async () => {
-          const base64Audio = reader.result as string;
-          await communityService.sendMessage(partnerUserId, '', undefined, base64Audio);
+          const replyToSend = activeReplyTo || undefined;
+          setActiveReplyTo(null);
+          await communityService.sendMessage(partnerUserId, '', undefined, base64Audio, undefined, durationSec, replyToSend);
           setIsRecording(false);
           setIsProcessingAudio(false);
           setRecordingDuration(0);
           loadData(true);
           setTimeout(() => scrollToBottom('smooth'), 50);
           showToast('تم إرسال التسجيل الصوتي بنجاح 🎙️');
-        };
+        } else {
+          showToast('فشل حفظ التسجيل الصوتي');
+          setIsRecording(false);
+          setIsProcessingAudio(false);
+        }
       } catch (err) {
-        console.error('Error processing voice message:', err);
+        console.error('Error stopping native recording:', err);
         showToast('حدث خطأ أثناء معالجة التسجيل الصوتي');
         setIsRecording(false);
         setIsProcessingAudio(false);
       }
-    };
+    } else {
+      // Web / Browser MediaRecorder flow
+      if (!mediaRecorderRef.current) {
+        setIsRecording(false);
+        setIsProcessingAudio(false);
+        return;
+      }
 
-    try {
-      mediaRecorder.stop();
-    } catch (e) {
-      setIsRecording(false);
-      setIsProcessingAudio(false);
+      const mediaRecorder = mediaRecorderRef.current;
+
+      mediaRecorder.onstop = async () => {
+        try {
+          if (mediaRecorder.stream) {
+            mediaRecorder.stream.getTracks().forEach(track => track.stop());
+          }
+
+          const mimeType = mediaRecorder.mimeType || 'audio/webm';
+          const blob = new Blob(audioChunksRef.current, { type: mimeType });
+
+          if (blob.size < 200) {
+            showToast('التسجيل قصير جداً');
+            setIsRecording(false);
+            setIsProcessingAudio(false);
+            return;
+          }
+
+          const durationSec = recordingDuration || 1;
+          const reader = new FileReader();
+          reader.readAsDataURL(blob);
+          reader.onloadend = async () => {
+            const base64Audio = reader.result as string;
+            const replyToSend = activeReplyTo || undefined;
+            setActiveReplyTo(null);
+            await communityService.sendMessage(partnerUserId, '', undefined, base64Audio, undefined, durationSec, replyToSend);
+            setIsRecording(false);
+            setIsProcessingAudio(false);
+            setRecordingDuration(0);
+            loadData(true);
+            setTimeout(() => scrollToBottom('smooth'), 50);
+            showToast('تم إرسال التسجيل الصوتي بنجاح 🎙️');
+          };
+        } catch (err) {
+          console.error('Error processing voice message:', err);
+          showToast('حدث خطأ أثناء معالجة التسجيل الصوتي');
+          setIsRecording(false);
+          setIsProcessingAudio(false);
+        }
+      };
+
+      try {
+        mediaRecorder.stop();
+      } catch (e) {
+        setIsRecording(false);
+        setIsProcessingAudio(false);
+      }
     }
   };
 
-  const cancelRecording = () => {
+  const cancelRecording = async () => {
     if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
-    if (mediaRecorderRef.current) {
+    if (Capacitor.isNativePlatform()) {
+      try {
+        await VoiceRecorder.stopRecording();
+      } catch (e) {}
+    } else if (mediaRecorderRef.current) {
       try {
         mediaRecorderRef.current.onstop = null;
         if (mediaRecorderRef.current.state !== 'inactive') {
@@ -1016,11 +1177,16 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
 
   return (
     <div className="h-[100dvh] max-h-[100dvh] overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white flex flex-col font-sans" dir={isEn ? "ltr" : "rtl"}>
-      {/* Header */}
+      {/* Header Container with Safe Area */}
       <div 
-        className="shrink-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-4 pb-3.5 flex items-center justify-between shadow-sm"
-        style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1.25rem)' }}
+        className="shrink-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-sm"
+        style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 0.25rem)' }}
       >
+        {/* Application Header Bar Only */}
+        <div 
+          id="chat-header-bar"
+          className="px-4 py-2.5 flex items-center justify-between"
+        >
         <div className="flex items-center gap-3">
           <button
             onClick={onBack}
@@ -1073,16 +1239,28 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
           </div>
         </div>
 
-        {/* Menu Options */}
-        <div className="relative" ref={menuContainerRef}>
+        {/* Menu Options & Help Guide Button */}
+        <div className="flex items-center gap-1">
           <button
-            ref={menuButtonRef}
-            onClick={() => setShowMenu(prev => !prev)}
-            className="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors relative z-50 cursor-pointer"
-            title={isEn ? "More Options" : "خيارات إضافية"}
+            type="button"
+            onClick={() => setShowChatTour(true)}
+            className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+            style={{ color: 'var(--top-bar-text, inherit)' }}
+            title={isEn ? "Chat Guide" : "دليل وشرح المحادثة"}
+            aria-label={isEn ? "Chat Guide" : "دليل وشرح المحادثة"}
           >
-            <MoreVertical size={20} />
+            <HelpCircle size={19} />
           </button>
+
+          <div className="relative" ref={menuContainerRef}>
+            <button
+              ref={menuButtonRef}
+              onClick={() => setShowMenu(prev => !prev)}
+              className="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors relative z-50 cursor-pointer"
+              title={isEn ? "More Options" : "خيارات إضافية"}
+            >
+              <MoreVertical size={20} />
+            </button>
 
           <AnimatePresence>
             {showMenu && (
@@ -1145,6 +1323,8 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
           </AnimatePresence>
         </div>
       </div>
+      </div>
+    </div>
 
       {/* Notice Banner if blocked */}
       {isBlocked && (
@@ -1279,87 +1459,183 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
 
             return (
               <div
+                id={`direct-msg-${msg.messageId}`}
                 key={msg.messageId}
-                className={`flex flex-col ${isMe ? 'items-start' : 'items-end'} relative group`}
+                className="w-full my-1"
               >
-                {isPureAudio ? (
-                  <div onClick={() => setSelectedMsgId(isSelected ? null : msg.messageId)}>
-                    <ChatMessageAudioPlayer
-                      audioUrl={msg.audioUrl!}
-                      isMe={isMe}
-                      timeStr={timeStr}
-                      isRead={msg.isRead}
-                    />
-                  </div>
-                ) : (
-                  <div
-                    onClick={() => setSelectedMsgId(isSelected ? null : msg.messageId)}
-                    className={`max-w-[90%] sm:max-w-[80%] p-3.5 rounded-2xl shadow-sm text-sm font-medium relative cursor-pointer transition-all ${
-                      isMe
-                        ? 'bg-emerald-600 text-white rounded-tr-none'
-                        : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700/60 rounded-tl-none'
-                    }`}
-                  >
-                    {/* Custom Quran Attachment Card with identical preview */}
-                    {msg.verseData && (
-                      <ChatQuranCard
-                        verseData={msg.verseData}
-                        playingAudioUrl={playingAudioUrl}
-                        onToggleAudio={handleToggleAudio}
-                      />
-                    )}
+                <SwipeableMessageWrapper
+                  isMe={isMe}
+                  onSwipeReply={() => handleInitiateReply(msg)}
+                  onLongPress={() => {
+                    setReactionMenuMsgId(prev => prev === msg.messageId ? null : msg.messageId);
+                    setSelectedMsgId(null);
+                  }}
+                >
+                  <div className={`flex flex-col ${isMe ? 'items-start' : 'items-end'} relative group max-w-full`}>
+                    {/* Floating Reaction Bar matching Image 01.jpg */}
+                    <AnimatePresence>
+                      {reactionMenuMsgId === msg.messageId && (
+                        <MessageReactionsBar
+                          onSelectEmoji={(emoji) => handleToggleReaction(msg.messageId, emoji)}
+                          onOpenMoreEmojis={() => {
+                            setMoreEmojiPickerMsgId(msg.messageId);
+                            setReactionMenuMsgId(null);
+                          }}
+                          userReaction={msg.reactions?.[currentUser.userId]}
+                          isMe={isMe}
+                        />
+                      )}
+                    </AnimatePresence>
 
-                    {/* Voice Note Audio Player */}
-                    {msg.audioUrl && (
-                      <ChatMessageAudioPlayer
-                        audioUrl={msg.audioUrl}
-                        isMe={isMe}
-                        timeStr={timeStr}
-                        isRead={msg.isRead}
-                      />
-                    )}
-
-                    {/* Media File / Image / Video Attachment */}
-                    {msg.attachment && (
-                      <ChatAttachmentView attachment={msg.attachment} isMe={isMe} />
-                    )}
-
-                    {msg.text && <p className="whitespace-pre-wrap leading-relaxed">{msg.text}</p>}
-
-                    {!msg.audioUrl && (
-                      <div className={`flex items-center gap-1.5 justify-end mt-1 text-[10px] ${isMe ? 'text-emerald-100' : 'text-slate-400'}`}>
-                        <span>{timeStr}</span>
-                        {isMe && (
-                          msg.isRead ? (
-                            <CheckCheck size={14} className="text-sky-300" />
-                          ) : (
-                            <Check size={14} className="opacity-70" />
-                          )
+                    {isPureAudio ? (
+                      <div 
+                        onClick={() => setSelectedMsgId(isSelected ? null : msg.messageId)}
+                        className={`relative rounded-2xl transition-all duration-300 ${
+                          highlightedMsgId === msg.messageId ? 'ring-3 ring-emerald-500 scale-[1.03] shadow-lg' : ''
+                        }`}
+                      >
+                        {/* Quoted Message Block if replied */}
+                        {msg.replyTo && (
+                          <QuotedMessageBlock
+                            replyTo={msg.replyTo}
+                            onClick={() => scrollToOriginalMessage(msg.replyTo!.messageId)}
+                            isMe={isMe}
+                            isEn={isEn}
+                          />
                         )}
+                        <ChatMessageAudioPlayer
+                          audioUrl={msg.audioUrl!}
+                          isMe={isMe}
+                          timeStr={timeStr}
+                          isRead={msg.isRead}
+                        />
+                        {/* Reaction Badge on Audio Note */}
+                        <MessageReactionBadge
+                          reactions={msg.reactions}
+                          currentUserId={currentUser.userId}
+                          onClick={() => {
+                            if (msg.reactions?.[currentUser.userId]) {
+                              handleToggleReaction(msg.messageId, msg.reactions[currentUser.userId]);
+                            } else {
+                              setReactionMenuMsgId(msg.messageId);
+                            }
+                          }}
+                          isMe={isMe}
+                        />
+                      </div>
+                    ) : (
+                      <div
+                        onClick={() => setSelectedMsgId(isSelected ? null : msg.messageId)}
+                        className={`max-w-[90%] sm:max-w-[80%] p-3.5 rounded-2xl shadow-sm text-sm font-medium relative cursor-pointer transition-all duration-300 ${
+                          isMe
+                            ? 'bg-emerald-600 text-white rounded-tr-none'
+                            : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700/60 rounded-tl-none'
+                        } ${
+                          highlightedMsgId === msg.messageId ? 'ring-3 ring-emerald-500 scale-[1.03] shadow-lg' : ''
+                        }`}
+                      >
+                        {/* Quoted Message Block if replied */}
+                        {msg.replyTo && (
+                          <QuotedMessageBlock
+                            replyTo={msg.replyTo}
+                            onClick={() => scrollToOriginalMessage(msg.replyTo!.messageId)}
+                            isMe={isMe}
+                            isEn={isEn}
+                          />
+                        )}
+
+                        {/* Custom Quran Attachment Card with identical preview */}
+                        {msg.verseData && (
+                          <ChatQuranCard
+                            verseData={msg.verseData}
+                            playingAudioUrl={playingAudioUrl}
+                            onToggleAudio={handleToggleAudio}
+                          />
+                        )}
+
+                        {/* Voice Note Audio Player */}
+                        {msg.audioUrl && (
+                          <ChatMessageAudioPlayer
+                            audioUrl={msg.audioUrl}
+                            isMe={isMe}
+                            timeStr={timeStr}
+                            isRead={msg.isRead}
+                          />
+                        )}
+
+                        {/* Media File / Image / Video Attachment */}
+                        {msg.attachment && (
+                          <ChatAttachmentView attachment={msg.attachment} isMe={isMe} />
+                        )}
+
+                        {msg.text && <p className="whitespace-pre-wrap leading-relaxed">{msg.text}</p>}
+
+                        {!msg.audioUrl && (
+                          <div className={`flex items-center gap-1.5 justify-end mt-1 text-[10px] ${isMe ? 'text-emerald-100' : 'text-slate-400'}`}>
+                            <span>{timeStr}</span>
+                            {isMe && (
+                              msg.isRead ? (
+                                <CheckCheck size={14} className="text-sky-300" />
+                              ) : (
+                                <Check size={14} className="opacity-70" />
+                              )
+                            )}
+                          </div>
+                        )}
+
+                        {/* Reaction Badge on Message Bubble */}
+                        <MessageReactionBadge
+                          reactions={msg.reactions}
+                          currentUserId={currentUser.userId}
+                          onClick={() => {
+                            if (msg.reactions?.[currentUser.userId]) {
+                              handleToggleReaction(msg.messageId, msg.reactions[currentUser.userId]);
+                            } else {
+                              setReactionMenuMsgId(msg.messageId);
+                            }
+                          }}
+                          isMe={isMe}
+                        />
                       </div>
                     )}
-                  </div>
-                )}
 
-                {/* Individual Message Delete Action Popover */}
-                <AnimatePresence>
-                  {isSelected && (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.8 }}
-                      className="mt-1 flex items-center gap-2 bg-slate-900 text-white px-3 py-1.5 rounded-xl shadow-lg text-xs z-20"
-                    >
-                      <button
-                        onClick={() => handleDeleteSingleMessage(msg.messageId)}
-                        className="flex items-center gap-1 hover:text-rose-400 text-rose-300 font-bold cursor-pointer"
-                      >
-                        <Trash2 size={13} />
-                        <span>{isEn ? 'Delete message' : 'حذف الرسالة'}</span>
-                      </button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                    {/* Individual Message Delete & Reply Action Popover */}
+                    <AnimatePresence>
+                      {isSelected && (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.8 }}
+                          className="mt-1 flex items-center gap-3 bg-slate-900 text-white px-3 py-1.5 rounded-xl shadow-lg text-xs z-20"
+                        >
+                          <button
+                            onClick={() => handleInitiateReply(msg)}
+                            className="flex items-center gap-1 hover:text-emerald-400 text-emerald-300 font-bold cursor-pointer"
+                          >
+                            <Reply size={13} className="rotate-180" />
+                            <span>{isEn ? 'Reply' : 'رد'}</span>
+                          </button>
+                          <div className="w-[1px] h-3 bg-slate-700" />
+                          <button
+                            onClick={() => setReactionMenuMsgId(msg.messageId)}
+                            className="flex items-center gap-1 hover:text-amber-400 text-amber-300 font-bold cursor-pointer"
+                          >
+                            <Smile size={13} />
+                            <span>{isEn ? 'React' : 'تفاعل'}</span>
+                          </button>
+                          <div className="w-[1px] h-3 bg-slate-700" />
+                          <button
+                            onClick={() => handleDeleteSingleMessage(msg.messageId)}
+                            className="flex items-center gap-1 hover:text-rose-400 text-rose-300 font-bold cursor-pointer"
+                          >
+                            <Trash2 size={13} />
+                            <span>{isEn ? 'Delete' : 'حذف'}</span>
+                          </button>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </SwipeableMessageWrapper>
               </div>
             );
           })
@@ -1373,6 +1649,17 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
         style={{ paddingBottom: 'max(2rem, calc(env(safe-area-inset-bottom, 0px) + 1.75rem))' }}
       >
         <div className="max-w-3xl mx-auto relative">
+          {/* WhatsApp Quoted Reply Preview Bar matching Image 02.jpg */}
+          <AnimatePresence>
+            {activeReplyTo && (
+              <ReplyPreviewBar
+                replyTo={activeReplyTo}
+                onCancel={() => setActiveReplyTo(null)}
+                isEn={isEn}
+              />
+            )}
+          </AnimatePresence>
+
           <div ref={emojiPickerContainerRef}>
             <AnimatePresence>
               {showEmojiPicker && (
@@ -1486,6 +1773,7 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
               {/* Three action buttons clustered tightly with minimal spacing */}
               <div className="flex items-center gap-0 shrink-0">
                 <button
+                  id="chat-btn-verse"
                   type="button"
                   onClick={() => setShowVerseModal(true)}
                   disabled={isBlocked || isIntroMessageSent || (friendship.status === 'none' && partnerUserId !== ADMIN_USER_ID)}
@@ -1496,6 +1784,7 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
                 </button>
 
                 <button
+                  id="chat-btn-attach"
                   type="button"
                   onClick={() => setShowAttachmentPicker(true)}
                   disabled={isBlocked || isIntroMessageSent || (friendship.status === 'none' && partnerUserId !== ADMIN_USER_ID)}
@@ -1506,6 +1795,7 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
                 </button>
 
                 <button
+                  id="chat-btn-emoji"
                   type="button"
                   onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                   disabled={isBlocked || isIntroMessageSent || (friendship.status === 'none' && partnerUserId !== ADMIN_USER_ID)}
@@ -1517,6 +1807,7 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
               </div>
 
               <input
+                id="chat-input-text"
                 type="text"
                 value={inputText}
                 onChange={handleInputChange}
@@ -1538,26 +1829,28 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
               />
 
               {/* Mic recording button when input is empty and no attachment, or Send button when text or attachment exists */}
-              {!inputText.trim() && !stagedAttachment ? (
-                <button
-                  type="button"
-                  onClick={startRecording}
-                  disabled={isBlocked || isIntroMessageSent || (friendship.status === 'none' && partnerUserId !== ADMIN_USER_ID)}
-                  className="w-8 h-8 sm:w-9 sm:h-9 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl sm:rounded-2xl shadow-md active:scale-95 transition-all flex items-center justify-center shrink-0 disabled:opacity-40 cursor-pointer"
-                  title={isEn ? "Record voice message" : "تسجيل صوتي"}
-                >
-                  <Mic size={16} />
-                </button>
-              ) : (
-                <button
-                  type="submit"
-                  disabled={(!inputText.trim() && !stagedAttachment) || isBlocked || isIntroMessageSent || (friendship.status === 'none' && partnerUserId !== ADMIN_USER_ID)}
-                  className="w-8 h-8 sm:w-9 sm:h-9 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white rounded-xl sm:rounded-2xl shadow-md active:scale-95 transition-all flex items-center justify-center shrink-0 cursor-pointer"
-                  title={isEn ? "Send" : "إرسال"}
-                >
-                  <Send size={16} className={isEn ? "" : "rotate-180"} />
-                </button>
-              )}
+              <div id="chat-btn-voice-send" className="shrink-0 flex items-center">
+                {!inputText.trim() && !stagedAttachment ? (
+                  <button
+                    type="button"
+                    onClick={startRecording}
+                    disabled={isBlocked || isIntroMessageSent || (friendship.status === 'none' && partnerUserId !== ADMIN_USER_ID)}
+                    className="w-8 h-8 sm:w-9 sm:h-9 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl sm:rounded-2xl shadow-md active:scale-95 transition-all flex items-center justify-center shrink-0 disabled:opacity-40 cursor-pointer"
+                    title={isEn ? "Record voice message" : "تسجيل صوتي"}
+                  >
+                    <Mic size={16} />
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    disabled={(!inputText.trim() && !stagedAttachment) || isBlocked || isIntroMessageSent || (friendship.status === 'none' && partnerUserId !== ADMIN_USER_ID)}
+                    className="w-8 h-8 sm:w-9 sm:h-9 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white rounded-xl sm:rounded-2xl shadow-md active:scale-95 transition-all flex items-center justify-center shrink-0 cursor-pointer"
+                    title={isEn ? "Send" : "إرسال"}
+                  >
+                    <Send size={16} className={isEn ? "" : "rotate-180"} />
+                  </button>
+                )}
+              </div>
             </form>
           )}
         </div>
@@ -1727,6 +2020,17 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
         )}
       </AnimatePresence>
 
+      {/* In-App Microphone Permission Modal */}
+      <InAppPermissionModal
+        isOpen={showMicPermissionModal}
+        type="microphone"
+        onClose={() => setShowMicPermissionModal(false)}
+        onGranted={() => {
+          setShowMicPermissionModal(false);
+          startRecording();
+        }}
+      />
+
       {/* Floating In-App Toast Notification */}
       <AnimatePresence>
         {toastMessage && (
@@ -1741,6 +2045,30 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* More Emoji Reaction Picker Modal (Triggered by + on reaction bar) */}
+      <AnimatePresence>
+        {moreEmojiPickerMsgId && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+            <div className="fixed inset-0" onClick={() => setMoreEmojiPickerMsgId(null)} />
+            <div className="relative z-10 max-w-sm w-full">
+              <EmojiPicker
+                onSelectEmoji={(emoji) => handleToggleReaction(moreEmojiPickerMsgId, emoji)}
+                onClose={() => setMoreEmojiPickerMsgId(null)}
+              />
+            </div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Interactive Chat Room Spotlight Tour */}
+      <CommunitySpotlightGuide
+        guideKey="chat_room"
+        steps={CHAT_ROOM_STEPS}
+        isOpen={showChatTour}
+        onClose={() => setShowChatTour(false)}
+        isEn={isEn}
+      />
     </div>
   );
 };

@@ -45,12 +45,24 @@ export const ChatAttachmentView: React.FC<ChatAttachmentViewProps> = ({ attachme
   // 1. Image Attachment
   if (attachment.type === 'image') {
     return (
-      <div className="mt-1.5 mb-1 flex flex-col items-start w-full">
-        <div className="relative group rounded-2xl overflow-hidden border border-black/10 dark:border-white/10 max-w-full sm:max-w-xs shadow-xs">
+      <div 
+        className="mt-1.5 mb-1 flex flex-col items-start w-full"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div 
+          className="relative group rounded-2xl overflow-hidden border border-black/10 dark:border-white/10 max-w-full sm:max-w-xs shadow-xs"
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowLightbox(true);
+          }}
+        >
           <img
             src={attachment.url}
             alt={attachment.fileName || 'صورة مرفقة'}
-            onClick={() => setShowLightbox(true)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowLightbox(true);
+            }}
             className="w-full max-h-64 sm:max-h-72 object-cover cursor-pointer transition-transform duration-200 group-hover:scale-102 active:scale-98"
             loading="lazy"
           />
@@ -59,8 +71,11 @@ export const ChatAttachmentView: React.FC<ChatAttachmentViewProps> = ({ attachme
           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 pointer-events-none">
             <button
               type="button"
-              onClick={() => setShowLightbox(true)}
-              className="p-2 rounded-xl bg-white/90 text-slate-800 shadow-md pointer-events-auto active:scale-95 transition-all"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowLightbox(true);
+              }}
+              className="p-2 rounded-xl bg-white/90 text-slate-800 shadow-md pointer-events-auto active:scale-95 transition-all cursor-pointer"
               title="تكبير الصورة"
             >
               <Maximize2 size={16} />
@@ -68,7 +83,7 @@ export const ChatAttachmentView: React.FC<ChatAttachmentViewProps> = ({ attachme
             <button
               type="button"
               onClick={handleDownload}
-              className="p-2 rounded-xl bg-emerald-600 text-white shadow-md pointer-events-auto active:scale-95 transition-all"
+              className="p-2 rounded-xl bg-emerald-600 text-white shadow-md pointer-events-auto active:scale-95 transition-all cursor-pointer"
               title="استرداد / تنزيل الصورة"
             >
               {downloadSuccess ? <Check size={16} /> : <Download size={16} />}
@@ -77,10 +92,10 @@ export const ChatAttachmentView: React.FC<ChatAttachmentViewProps> = ({ attachme
         </div>
 
         {/* Action bar below image */}
-        <div className="flex items-center justify-between gap-2 w-full mt-1 px-1">
-          <span className="text-[10px] opacity-75 truncate max-w-[140px]">
-            {attachment.fileName || 'صورة'} {attachment.fileSize ? `(${formatFileSize(attachment.fileSize)})` : ''}
-          </span>
+        <div 
+          className="flex items-center justify-end w-full mt-1 px-1"
+          onClick={(e) => e.stopPropagation()}
+        >
           <button
             type="button"
             onClick={handleDownload}
@@ -96,8 +111,11 @@ export const ChatAttachmentView: React.FC<ChatAttachmentViewProps> = ({ attachme
         <AnimatePresence>
           {showLightbox && (
             <div
-              className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md"
-              onClick={() => setShowLightbox(false)}
+              className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowLightbox(false);
+              }}
             >
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
@@ -108,21 +126,25 @@ export const ChatAttachmentView: React.FC<ChatAttachmentViewProps> = ({ attachme
               >
                 <div className="absolute -top-12 left-0 right-0 flex items-center justify-between px-2 text-white">
                   <span className="text-xs font-bold truncate max-w-[200px]">
-                    {attachment.fileName || 'معاينة الصورة'}
+                    معاينة الصورة
                   </span>
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
                       onClick={handleDownload}
-                      className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1 shadow-lg active:scale-95 transition-all"
+                      className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1 shadow-lg active:scale-95 transition-all cursor-pointer"
                     >
                       {downloadSuccess ? <Check size={14} /> : <Download size={14} />}
                       <span>{downloadSuccess ? 'تم الحفظ!' : 'استرداد وتنزيل'}</span>
                     </button>
                     <button
                       type="button"
-                      onClick={() => setShowLightbox(false)}
-                      className="p-1.5 rounded-xl bg-white/20 hover:bg-white/30 text-white transition-all active:scale-95"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowLightbox(false);
+                      }}
+                      className="p-1.5 rounded-xl bg-white/20 hover:bg-white/30 text-white transition-all active:scale-95 cursor-pointer"
+                      title="إغلاق"
                     >
                       <X size={18} />
                     </button>
@@ -145,7 +167,10 @@ export const ChatAttachmentView: React.FC<ChatAttachmentViewProps> = ({ attachme
   // 2. Video Attachment
   if (attachment.type === 'video') {
     return (
-      <div className="mt-1.5 mb-1 flex flex-col items-start w-full">
+      <div 
+        className="mt-1.5 mb-1 flex flex-col items-start w-full"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="rounded-2xl overflow-hidden border border-black/10 dark:border-white/10 max-w-full sm:max-w-xs shadow-xs bg-black">
           <video
             src={attachment.url}
@@ -181,7 +206,10 @@ export const ChatAttachmentView: React.FC<ChatAttachmentViewProps> = ({ attachme
   const isPdf = fileName.endsWith('.pdf');
 
   return (
-    <div className="mt-1.5 mb-1 w-full max-w-full sm:max-w-xs">
+    <div 
+      className="mt-1.5 mb-1 w-full max-w-full sm:max-w-xs"
+      onClick={(e) => e.stopPropagation()}
+    >
       <div 
         onClick={handleDownload}
         className={`p-3 rounded-2xl border flex items-center justify-between gap-3 cursor-pointer transition-all shadow-xs active:scale-98 ${

@@ -1,4 +1,5 @@
 import { initializeApp, setLogLevel } from "firebase/app";
+import { getAnalytics, isSupported } from "firebase/analytics";
 import { 
   initializeFirestore, 
   persistentLocalCache, 
@@ -19,17 +20,17 @@ import firebaseConfig from "../firebase-applet-config.json";
 
 // Mandatory, locked original Firebase server configuration to prevent database separation across accounts
 const MANDATORY_ORIGINAL_CONFIG = {
-  projectId: "dialy-sales",
-  appId: "1:900314310640:web:566a671c9684cbad231f35",
-  apiKey: "AIzaSyBXp4xCa0bpa8ruNmT6DKZDW2qt0KeIMDg",
-  authDomain: "dialy-sales.firebaseapp.com",
-  firestoreDatabaseId: "ai-studio-remixquranlastve-8c0a020f-d488-4d96-b691-211204f62585",
-  storageBucket: "dialy-sales.firebasestorage.app",
-  messagingSenderId: "900314310640",
-  oAuthClientId: "900314310640-aakjat6siqgbgg1ddv54ajh8f30rc34o.apps.googleusercontent.com"
+  apiKey: "AIzaSyDfe1Z37eOw6IuhrCw9cvwH1ATmxi_PHUU",
+  authDomain: "moshaf-ahmed-laila.firebaseapp.com",
+  projectId: "moshaf-ahmed-laila",
+  storageBucket: "moshaf-ahmed-laila.firebasestorage.app",
+  messagingSenderId: "820638063534",
+  appId: "1:820638063534:web:599513548b6001ae69c63f",
+  measurementId: "G-2FV41RK6VW",
+  firestoreDatabaseId: "(default)"
 };
 
-// Enforce original server configuration
+// Enforce original server configuration permanently across AI Studio account transfers
 export const activeFirebaseConfig = {
   ...firebaseConfig,
   ...MANDATORY_ORIGINAL_CONFIG
@@ -86,7 +87,23 @@ if (typeof window !== 'undefined' && window.console) {
 
 export const app = initializeApp(activeFirebaseConfig);
 
+// Initialize Firebase Analytics safely
+export let analytics: any = null;
+if (typeof window !== "undefined") {
+  isSupported().then(supported => {
+    if (supported) {
+      try {
+        analytics = getAnalytics(app);
+      } catch (e) {}
+    }
+  }).catch(() => {});
+}
+
 // Initialize Firestore with modern persistent multi-tab cache and force long-polling for reliable connectivity
+const databaseId = (!activeFirebaseConfig.firestoreDatabaseId || activeFirebaseConfig.firestoreDatabaseId === '(default)')
+  ? undefined 
+  : activeFirebaseConfig.firestoreDatabaseId;
+
 export const db = initializeFirestore(
   app, 
   {
@@ -95,7 +112,7 @@ export const db = initializeFirestore(
     }),
     experimentalForceLongPolling: true
   }, 
-  activeFirebaseConfig.firestoreDatabaseId
+  databaseId
 );
 
 // Initialize Auth

@@ -12,6 +12,9 @@ import TasbeehModals from '../components/Tasbeeh/TasbeehModals';
 import { BarChart3, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { tTasbeeh, getPhraseDisplay } from '../utils/tasbeehTranslations';
+import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/CommunitySpotlightGuide';
+import { TASBEEH_PAGE_STEPS } from '../components/Community/communityTourSteps';
+import { markPageAsSeen } from '../utils/badgeManager';
 
 const PHRASES_STORAGE_KEY = 'mushaf_user_tasbeeh_phrases';
 const SETTINGS_STORAGE_KEY = 'mushaf_tasbeeh_settings';
@@ -92,6 +95,14 @@ export function Tasbeeh({ onBack, onNavigate }: TasbeehProps) {
     });
 
     const [message, setMessage] = useState({ text: '', type: 'green', visible: false });
+    const [showGuide, setShowGuide] = useState(false);
+
+    useEffect(() => {
+        markPageAsSeen('tasbeeh');
+        if (!getGuideSeen('tasbeeh_page_spotlight')) {
+            setShowGuide(true);
+        }
+    }, []);
     
     const targetInputRef = useRef<HTMLInputElement>(null);
     const newPhraseInputRef = useRef<HTMLInputElement>(null);
@@ -355,6 +366,7 @@ export function Tasbeeh({ onBack, onNavigate }: TasbeehProps) {
                 subtitle={tTasbeeh('subtitle', language)} 
                 onBack={handleBack}
                 onHome={handleGoHome}
+                onOpenGuide={() => setShowGuide(true)}
             />
             
             <main 
@@ -471,6 +483,15 @@ export function Tasbeeh({ onBack, onNavigate }: TasbeehProps) {
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            {/* Spotlight Guide */}
+            <CommunitySpotlightGuide 
+                guideKey="tasbeeh_page_spotlight"
+                steps={TASBEEH_PAGE_STEPS}
+                isOpen={showGuide}
+                onClose={() => setShowGuide(false)}
+                isEn={language === 'en'}
+            />
         </div>
     );
 }

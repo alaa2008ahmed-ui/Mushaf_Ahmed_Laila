@@ -7,12 +7,13 @@ interface AdkarHeaderProps {
     subtitle: string;
     onBack?: () => void;
     onHome?: () => void;
+    onOpenGuide?: () => void;
 }
 
-const AdkarHeader: React.FC<AdkarHeaderProps> = ({ title, subtitle, onBack, onHome }) => {
-    const { language } = useLanguage();
+const AdkarHeader: React.FC<AdkarHeaderProps> = ({ title, subtitle, onBack, onHome, onOpenGuide }) => {
+    const { t, language } = useLanguage();
     const isEn = language === 'en';
-
+    
     // Localize title and subtitle if Arabic strings were passed
     let localizedTitle = title;
     if (isEn) {
@@ -35,10 +36,10 @@ const AdkarHeader: React.FC<AdkarHeaderProps> = ({ title, subtitle, onBack, onHo
     return (
         <header className="app-top-bar" dir={isEn ? 'ltr' : 'rtl'}>
             <div className="app-top-bar__inner">
-                <div className="relative flex items-center justify-center w-full min-h-[44px]">
+                <div className="relative flex items-center justify-between w-full min-h-[44px]">
                     {/* Back button: Left in LTR, Right in RTL */}
-                    {onBack && (
-                        <div className={`absolute ${isEn ? 'left-0' : 'right-0'} flex items-center`}>
+                    <div className={`absolute ${isEn ? 'left-0' : 'right-0'} flex items-center`}>
+                        {onBack && (
                             <button
                                 onClick={onBack}
                                 className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
@@ -47,18 +48,30 @@ const AdkarHeader: React.FC<AdkarHeaderProps> = ({ title, subtitle, onBack, onHo
                             >
                                 <i className={`fa-solid ${isEn ? 'fa-arrow-left' : 'fa-arrow-right'} text-xl`}></i>
                             </button>
-                        </div>
-                    )}
+                        )}
+                    </div>
 
                     {/* Page title in center */}
-                    <div className="text-center px-12 min-w-0">
+                    <div className="text-center px-12 w-full min-w-0">
                         <h1 className={`app-top-bar__title text-lg sm:text-xl truncate ${isEn ? 'font-sans font-bold' : 'font-kufi'}`}>
                             {localizedTitle}
                         </h1>
                     </div>
 
-                    {/* Home & Theme lock: Right in LTR, Left in RTL */}
+                    {/* Home, Guide, and Theme lock: Right in LTR, Left in RTL */}
                     <div className={`absolute ${isEn ? 'right-0' : 'left-0'} flex items-center gap-1`}>
+                        {onOpenGuide && (
+                            <button
+                                type="button"
+                                onClick={onOpenGuide}
+                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                style={{ color: 'var(--top-bar-text, inherit)' }}
+                                title={isEn ? "Athkar Guide" : "دليل أذكار الصباح والمساء"}
+                                aria-label={isEn ? "Athkar Guide" : "دليل أذكار الصباح والمساء"}
+                            >
+                                <i className="fa-solid fa-circle-question text-lg"></i>
+                            </button>
+                        )}
                         <ThemePageLock />
                         {onHome && (
                             <button

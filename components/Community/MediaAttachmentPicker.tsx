@@ -2,6 +2,7 @@ import React, { useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Image as ImageIcon, Video, FileText, X } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
+import { requestCameraPermission } from '../../utils/permissionHelper';
 
 interface MediaAttachmentPickerProps {
   isOpen: boolean;
@@ -32,6 +33,13 @@ export const MediaAttachmentPicker: React.FC<MediaAttachmentPickerProps> = ({
       onClose();
     }
     e.target.value = '';
+  };
+
+  const handlePhotoClick = async () => {
+    try {
+      await requestCameraPermission();
+    } catch (e) {}
+    imageInputRef.current?.click();
   };
 
   return (
@@ -104,7 +112,7 @@ export const MediaAttachmentPicker: React.FC<MediaAttachmentPickerProps> = ({
                 {/* 1. Photo */}
                 <button
                   type="button"
-                  onClick={() => imageInputRef.current?.click()}
+                  onClick={handlePhotoClick}
                   className="flex flex-col items-center justify-center p-3.5 rounded-2xl border transition-all active:scale-95 cursor-pointer hover:bg-emerald-500/10 hover:border-emerald-500/30 group"
                   style={{ borderColor: cardBorder }}
                 >

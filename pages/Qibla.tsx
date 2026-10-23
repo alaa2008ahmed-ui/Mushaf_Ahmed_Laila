@@ -6,6 +6,10 @@ import { VisualQibla, ARQibla, SunMoonQibla, ShadowQibla } from '../components/Q
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { Capacitor } from '@capacitor/core';
 import { useLanguage } from '../context/LanguageContext';
+import { HelpCircle } from 'lucide-react';
+import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/CommunitySpotlightGuide';
+import { QIBLA_PAGE_STEPS } from '../components/Community/communityTourSteps';
+import { markPageAsSeen } from '../utils/badgeManager';
 
 // --- Helper Functions ---
 const toRad = (deg: number) => deg * Math.PI / 180;
@@ -29,6 +33,14 @@ function Qibla({ onBack, onNavigate }: { onBack: () => void, onNavigate: (page: 
     const [error, setError] = useState('');
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [activeMode, setActiveMode] = useState('compass'); // compass, visual, ar, sun_moon, shadow
+    const [showGuide, setShowGuide] = useState(false);
+    
+    useEffect(() => {
+        markPageAsSeen('qibla');
+        if (!getGuideSeen('qibla_page_spotlight')) {
+            setShowGuide(true);
+        }
+    }, []);
     
     const compassCircleRef = useRef<HTMLDivElement>(null);
     const qiblaPointerRef = useRef<HTMLDivElement>(null);
@@ -166,8 +178,8 @@ function Qibla({ onBack, onNavigate }: { onBack: () => void, onNavigate: (page: 
             <header className="app-top-bar shrink-0" dir={isEn ? 'ltr' : 'rtl'}>
                 <div className="app-top-bar__inner">
                     <div className="relative flex items-center justify-center w-full min-h-[44px]">
-                        {/* زر الرجوع للخلف: على اليمين في العربي، وعلى اليسار في الإنجليزي مع سهم لليسار */}
-                        <div className={`absolute ${isEn ? 'left-0' : 'right-0'} flex items-center`}>
+                        {/* زر الرجوع للخلف وأيقونة الموقع */}
+                        <div className={`absolute ${isEn ? 'left-0' : 'right-0'} flex items-center gap-1`}>
                             <button
                                 onClick={handleBack}
                                 className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
@@ -175,6 +187,14 @@ function Qibla({ onBack, onNavigate }: { onBack: () => void, onNavigate: (page: 
                                 aria-label={isEn ? 'Go Back' : 'رجوع للخلف'}
                             >
                                 <i className={`fa-solid ${isEn ? 'fa-arrow-left' : 'fa-arrow-right'} text-xl`}></i>
+                            </button>
+                            <button
+                                onClick={handleRefreshLocation}
+                                className="w-9 h-9 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                title={isEn ? "Refresh Location" : "تحديث الموقع"}
+                                aria-label={isEn ? "Refresh Location" : "تحديث الموقع"}
+                            >
+                                <i className={`text-lg ${isRefreshing ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-location-crosshairs active:rotate-180 duration-700'}`} style={{ color: theme.name === 'أبيض وأسود' ? '#ffffff' : theme.palette[0] }}></i>
                             </button>
                         </div>
 
@@ -185,19 +205,21 @@ function Qibla({ onBack, onNavigate }: { onBack: () => void, onNavigate: (page: 
                             </h1>
                         </div>
 
-                        {/* أيقونات الإجراءات (الرئيسية وتحديث الموقع): على اليسار في العربي، وعلى اليمين في الإنجليزي */}
+                        {/* أيقونات الإجراءات (الرئيسية وقفل الثيم): على اليسار في العربي، وعلى اليمين في الإنجليزي */}
                         <div className={`absolute ${isEn ? 'right-0' : 'left-0'} flex items-center gap-1`}>
+                            <button
+                                type="button"
+                                onClick={() => setShowGuide(true)}
+                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                style={{ color: 'var(--top-bar-text, inherit)' }}
+                                title={isEn ? "Qibla Guide" : "دليل اتجاه القبلة"}
+                                aria-label={isEn ? "Qibla Guide" : "دليل اتجاه القبلة"}
+                            >
+                                <HelpCircle size={19} />
+                            </button>
                             {isEn ? (
                                 <>
                                     <ThemePageLock />
-                                    <button
-                                        onClick={handleRefreshLocation}
-                                        className="w-9 h-9 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
-                                        title="Refresh Location"
-                                        aria-label="Refresh Location"
-                                    >
-                                        <i className={`text-lg ${isRefreshing ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-location-crosshairs active:rotate-180 duration-700'}`} style={{ color: theme.name === 'أبيض وأسود' ? '#ffffff' : theme.palette[0] }}></i>
-                                    </button>
                                     <button
                                         onClick={handleGoHome}
                                         className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
@@ -210,14 +232,6 @@ function Qibla({ onBack, onNavigate }: { onBack: () => void, onNavigate: (page: 
                             ) : (
                                 <>
                                     <ThemePageLock />
-                                    <button
-                                        onClick={handleRefreshLocation}
-                                        className="w-9 h-9 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
-                                        title="تحديث الموقع"
-                                        aria-label="تحديث الموقع"
-                                    >
-                                        <i className={`text-lg ${isRefreshing ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-location-crosshairs active:rotate-180 duration-700'}`} style={{ color: theme.name === 'أبيض وأسود' ? '#ffffff' : theme.palette[0] }}></i>
-                                    </button>
                                     <button
                                         onClick={handleGoHome}
                                         className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
@@ -407,6 +421,16 @@ function Qibla({ onBack, onNavigate }: { onBack: () => void, onNavigate: (page: 
                 )}
                 <div className="w-full h-6 shrink-0"></div>
             </main>
+            <CommunitySpotlightGuide
+                isOpen={showGuide}
+                onClose={() => {
+                    setShowGuide(false);
+                    markPageAsSeen('qibla');
+                }}
+                steps={QIBLA_PAGE_STEPS}
+                guideKey="qibla_page_spotlight"
+                isEn={isEn}
+            />
         </div>
     );
 }

@@ -14,9 +14,15 @@ interface AutoSilentPluginInterface {
   setSilentNow(options: { silent: boolean; prayerName?: string }): Promise<{ success: boolean; isSilent: boolean }>;
   scheduleSilentWindows(options: { windows: SilentWindow[] }): Promise<{ success: boolean }>;
   cancelAllSilent(): Promise<{ success: boolean }>;
+  updatePersistentNotification(): Promise<{ success: boolean }>;
+  setPersistentNotificationEnabled(options: { enabled: boolean }): Promise<{ success: boolean; enabled: boolean }>;
+  checkBatteryOptimization(): Promise<{ isIgnoring: boolean }>;
+  requestBatteryOptimization(): Promise<void>;
+  playTone(options: { path: string }): Promise<{ success: boolean; fallbackNeeded?: boolean; error?: string }>;
+  stopTone(): Promise<{ success: boolean }>;
 }
 
-const AutoSilentMode = registerPlugin<AutoSilentPluginInterface>('AutoSilentMode');
+export const AutoSilentMode = registerPlugin<AutoSilentPluginInterface>('AutoSilentMode');
 
 /**
  * Checks if the app has Do Not Disturb (DND) / notification policy access on Android.
@@ -80,5 +86,84 @@ export const cancelAllDeviceSilentWindows = async (): Promise<void> => {
     await AutoSilentMode.cancelAllSilent();
   } catch (e) {
     console.warn('cancelAllDeviceSilentWindows error:', e);
+  }
+};
+
+/**
+ * Triggers native persistent prayer notification update.
+ */
+export const updateNativePersistentNotification = async (): Promise<void> => {
+  if (Capacitor.getPlatform() !== 'android') return;
+  try {
+    await AutoSilentMode.updatePersistentNotification();
+  } catch (e) {
+    console.warn('updateNativePersistentNotification error:', e);
+  }
+};
+
+/**
+ * Enables or disables the native persistent prayer notification.
+ */
+export const setNativePersistentNotificationEnabled = async (enabled: boolean): Promise<boolean> => {
+  if (Capacitor.getPlatform() !== 'android') return false;
+  try {
+    const res = await AutoSilentMode.setPersistentNotificationEnabled({ enabled });
+    return !!res?.success;
+  } catch (e) {
+    console.warn('setNativePersistentNotificationEnabled error:', e);
+    return false;
+  }
+};
+
+/**
+ * Checks whether the app is ignored from battery optimizations (Unrestricted background).
+ */
+export const checkNativeBatteryOptimization = async (): Promise<boolean> => {
+  if (Capacitor.getPlatform() !== 'android') return true;
+  try {
+    const res = await AutoSilentMode.checkBatteryOptimization();
+    return !!res?.isIgnoring;
+  } catch (e) {
+    console.warn('checkNativeBatteryOptimization error:', e);
+    return false;
+  }
+};
+
+/**
+ * Requests the user to ignore battery optimization (allows true background execution).
+ */
+export const requestNativeBatteryOptimization = async (): Promise<void> => {
+  if (Capacitor.getPlatform() !== 'android') return;
+  try {
+    await AutoSilentMode.requestBatteryOptimization();
+  } catch (e) {
+    console.warn('requestNativeBatteryOptimization error:', e);
+  }
+};
+
+/**
+ * Plays a prayer alert tone natively on Android via MediaPlayer from res/raw or file.
+ * Returns true if played natively, false if web fallback should handle it.
+ */
+export const playNativeTone = async (path: string): Promise<boolean> => {
+  if (Capacitor.getPlatform() !== 'android') return false;
+  try {
+    const res = await AutoSilentMode.playTone({ path });
+    return !!res?.success;
+  } catch (e) {
+    console.warn('playNativeTone error:', e);
+    return false;
+  }
+};
+
+/**
+ * Stops any actively playing native tone on Android.
+ */
+export const stopNativeTone = async (): Promise<void> => {
+  if (Capacitor.getPlatform() !== 'android') return;
+  try {
+    await AutoSilentMode.stopTone();
+  } catch (e) {
+    console.warn('stopNativeTone error:', e);
   }
 };

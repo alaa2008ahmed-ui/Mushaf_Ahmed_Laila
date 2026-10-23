@@ -22,7 +22,9 @@ import { shareAsImage } from '../utils/shareAsImage';
 import { sharePropheticLineageImage } from '../utils/lineageShareHelper';
 import { registerBackInterceptor } from '../hooks/useBackButton';
 import { markPageAsSeen } from '../utils/badgeManager';
-import { ZoomIn } from 'lucide-react';
+import { ZoomIn, HelpCircle } from 'lucide-react';
+import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/CommunitySpotlightGuide';
+import { PROPHETIC_SEERAH_PAGE_STEPS } from '../components/Community/communityTourSteps';
 
 interface PropheticSeerahPageProps {
     onBack?: () => void;
@@ -102,8 +104,13 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
         });
     };
 
+    const [showGuide, setShowGuide] = useState(false);
+
     useEffect(() => {
         markPageAsSeen('prophetic-seerah');
+        if (!getGuideSeen('prophetic_seerah_page_spotlight')) {
+            setShowGuide(true);
+        }
     }, []);
 
     // Timeline Filter
@@ -615,8 +622,8 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
             <header className="app-top-bar z-20 shrink-0">
                 <div className="app-top-bar__inner">
                     <div className="relative flex items-center justify-center w-full min-h-[44px]">
-                        {/* Back button */}
-                        <div className={`absolute ${isEn ? 'left-0' : 'right-0'} flex items-center`}>
+                        {/* Back button, Magnifying Glass */}
+                        <div className={`absolute ${isEn ? 'left-0' : 'right-0'} flex items-center gap-1`}>
                             <button
                                 onClick={handleBackClick}
                                 className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
@@ -624,6 +631,22 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                                 aria-label={ui.goBack}
                             >
                                 <i className={`fa-solid ${isEn ? 'fa-arrow-left' : 'fa-arrow-right'} text-xl`}></i>
+                            </button>
+                            
+                            {/* Magnifying Glass to scale text of all cards on the page */}
+                            <button
+                                type="button"
+                                onClick={toggleCardTextScale}
+                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer relative"
+                                title={isEn ? `Enlarge card text (${Math.round(cardTextScale * 100)}%)` : `تكبير نص البطاقات (${Math.round(cardTextScale * 100)}%)`}
+                                aria-label={isEn ? 'Enlarge card text' : 'تكبير نص البطاقات'}
+                            >
+                                <ZoomIn className="w-5 h-5" />
+                                {cardTextScale > 1 && (
+                                    <span className="absolute -top-1 -right-1 text-[9px] font-bold px-1 rounded-full bg-emerald-600 text-white leading-tight shadow" dir="ltr">
+                                        +{Math.round((cardTextScale - 1) * 100)}%
+                                    </span>
+                                )}
                             </button>
                         </div>
 
@@ -646,24 +669,19 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                             </h1>
                         </div>
 
-                        {/* Right Tools: ThemeLock, Magnifying Glass (Enlarge Card Text), & Home Button */}
+                        {/* Right Tools: Guide, ThemeLock & Home Button */}
                         <div className={`absolute ${isEn ? 'right-0' : 'left-0'} flex items-center gap-1`}>
-                            <ThemePageLock />
-                            {/* Magnifying Glass to scale text of all cards on the page */}
                             <button
                                 type="button"
-                                onClick={toggleCardTextScale}
-                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer relative"
-                                title={isEn ? `Enlarge card text (${Math.round(cardTextScale * 100)}%)` : `تكبير نص البطاقات (${Math.round(cardTextScale * 100)}%)`}
-                                aria-label={isEn ? 'Enlarge card text' : 'تكبير نص البطاقات'}
+                                onClick={() => setShowGuide(true)}
+                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                style={{ color: 'var(--top-bar-text, inherit)' }}
+                                title={isEn ? "Seerah Guide" : "دليل السيرة النبوية"}
+                                aria-label={isEn ? "Seerah Guide" : "دليل السيرة النبوية"}
                             >
-                                <ZoomIn className="w-5 h-5" />
-                                {cardTextScale > 1 && (
-                                    <span className="absolute -top-1 -right-1 text-[9px] font-bold px-1 rounded-full bg-emerald-600 text-white leading-tight shadow" dir="ltr">
-                                        +{Math.round((cardTextScale - 1) * 100)}%
-                                    </span>
-                                )}
+                                <HelpCircle size={19} />
                             </button>
+                            <ThemePageLock />
                             <button
                                 onClick={() => onNavigate('home')}
                                 className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
@@ -2501,6 +2519,14 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                     </div>
                 )}
             </AnimatePresence>
+            {/* Interactive Spotlight Guide */}
+            <CommunitySpotlightGuide
+                guideKey="prophetic_seerah_page_spotlight"
+                steps={PROPHETIC_SEERAH_PAGE_STEPS}
+                isOpen={showGuide}
+                onClose={() => setShowGuide(false)}
+                isEn={isEn}
+            />
         </div>
     );
 };

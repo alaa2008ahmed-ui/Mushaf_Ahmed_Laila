@@ -16,7 +16,7 @@ interface EditGroupModalProps {
   onDelete?: () => void;
 }
 
-const compressAvatar = (dataUrl: string, maxDim = 180, quality = 0.8): Promise<string> => {
+const compressAvatar = (dataUrl: string, maxDim = 512, quality = 0.9): Promise<string> => {
   return new Promise((resolve) => {
     if (!dataUrl || !dataUrl.startsWith('data:image')) {
       return resolve(dataUrl);
@@ -39,6 +39,8 @@ const compressAvatar = (dataUrl: string, maxDim = 180, quality = 0.8): Promise<s
       canvas.height = height;
       const ctx = canvas.getContext('2d');
       if (ctx) {
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
         ctx.drawImage(img, 0, 0, width, height);
         resolve(canvas.toDataURL('image/jpeg', quality));
       } else {

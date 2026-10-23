@@ -37,7 +37,7 @@ const GridSection: React.FC<GridSectionProps> = ({
     const { t, translateMenuItem, dir, language } = useLanguage();
     const isEn = language === "en";
     const [unreadCommunityCount, setUnreadCommunityCount] = useState<number>(() => {
-        return communityService.getTotalUnreadCount();
+        return communityService.getTotalCombinedUnreadCount();
     });
     const [userRank, setUserRank] = useState<number | null>(() => {
         return ahlAlQuranService.getCurrentUserRank()?.rank ?? null;
@@ -45,7 +45,7 @@ const GridSection: React.FC<GridSectionProps> = ({
 
     useEffect(() => {
         const updateUnread = () => {
-            setUnreadCommunityCount(communityService.getTotalUnreadCount());
+            setUnreadCommunityCount(communityService.getTotalCombinedUnreadCount());
         };
 
         // Fetch latest messages from server in background to keep counter in sync
@@ -56,12 +56,16 @@ const GridSection: React.FC<GridSectionProps> = ({
         window.addEventListener('community_messages_updated', updateUnread);
         window.addEventListener('community_user_updated', updateUnread);
         window.addEventListener('community_groups_updated', updateUnread);
+        window.addEventListener('community_group_read_updated', updateUnread);
+        window.addEventListener('community_group_messages_updated', updateUnread);
         window.addEventListener('storage', updateUnread);
 
         return () => {
             window.removeEventListener('community_messages_updated', updateUnread);
             window.removeEventListener('community_user_updated', updateUnread);
             window.removeEventListener('community_groups_updated', updateUnread);
+            window.removeEventListener('community_group_read_updated', updateUnread);
+            window.removeEventListener('community_group_messages_updated', updateUnread);
             window.removeEventListener('storage', updateUnread);
         };
     }, []);

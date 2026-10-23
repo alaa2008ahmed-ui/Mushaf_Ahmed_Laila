@@ -306,14 +306,18 @@
 /* Surah Header Styles - Managed by SurahHeader component */
 .surah-header-container-wrapper {
     width: 100%;
+    display: block !important;
 }
 
 .surah-header-visual {
     transition: all 0.3s ease;
 }
 
-/* Hide old styles */
-.surah-header { display: none; }
+/* Ensure surah header is visible */
+.surah-header { 
+    display: block !important; 
+    width: 100% !important; 
+}
 
 .bismillah { 
     text-align: center; margin: 0 auto 15px; font-size: 1.6rem; color: #6d28d9; 

@@ -18,6 +18,10 @@ import { SURAH_INFO } from '../components/QuranReader/constants';
 import { registerBackInterceptor } from '../hooks/useBackButton';
 import { getAvailableSurahsForReader } from '../utils/listenQuranUtils';
 import './QuranReader.css';
+import { HelpCircle } from 'lucide-react';
+import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/CommunitySpotlightGuide';
+import { LISTEN_QURAN_PAGE_STEPS } from '../components/Community/communityTourSteps';
+import { markPageAsSeen } from '../utils/badgeManager';
 
 const STORAGE_KEY = 'listen_quran_state_v7';
 
@@ -70,6 +74,16 @@ interface ListenFavorite {
 function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
     const { theme, themeKey } = useTheme();
     const { language, isRTL, dir } = useLanguage();
+    const isEn = language === 'en';
+    const [showGuide, setShowGuide] = useState(false);
+
+    useEffect(() => {
+        markPageAsSeen('listen_quran');
+        if (!getGuideSeen('listen_quran_page_spotlight')) {
+            setShowGuide(true);
+        }
+    }, []);
+
     const isBlackTheme = theme.bgColor === '#000000';
     const isDefaultTheme = themeKey === 'default' || !themeKey;
     const cardBorderColor = isDefaultTheme 
@@ -676,8 +690,8 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
                 `}</style>
                 <div className="app-top-bar__inner">
                     <div className="relative flex items-center justify-center w-full min-h-[44px]">
-                        {/* زر الرجوع للخلف */}
-                        <div className={`absolute ${isRTL ? 'right-0' : 'left-0'} flex items-center`}>
+                        {/* زر الرجوع للخلف وأيقونة المفضلة */}
+                        <div className={`absolute ${isRTL ? 'right-0' : 'left-0'} flex items-center gap-1`}>
                             <button
                                 onClick={handleBack}
                                 className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
@@ -685,6 +699,15 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
                                 aria-label={tListen('back', language)}
                             >
                                 <i className={`fa-solid ${isRTL ? 'fa-arrow-right' : 'fa-arrow-left'} text-xl`}></i>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleToggleFavorite}
+                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                title={isCurrentFavorite ? tListen('removeFromFavorites', language) : tListen('addToFavorites', language)}
+                                aria-label={tListen('favorites', language)}
+                            >
+                                <i className={`text-xl transition-all ${isCurrentFavorite ? 'fa-solid fa-heart text-red-500 scale-110' : 'fa-regular fa-heart opacity-75 hover:opacity-100 hover:text-red-500'}`} style={isCurrentFavorite ? {} : { color: theme.textColor }}></i>
                             </button>
                         </div>
 
@@ -695,18 +718,19 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
                             </h1>
                         </div>
 
-                        {/* أيقونة المفضلة وقفل الثيم وأيقونة المنزل */}
+                        {/* قفل الثيم وأيقونة المنزل */}
                         <div className={`absolute ${isRTL ? 'left-0' : 'right-0'} flex items-center gap-1`}>
-                            <ThemePageLock />
                             <button
                                 type="button"
-                                onClick={handleToggleFavorite}
+                                onClick={() => setShowGuide(true)}
                                 className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
-                                title={isCurrentFavorite ? tListen('removeFromFavorites', language) : tListen('addToFavorites', language)}
-                                aria-label={tListen('favorites', language)}
+                                style={{ color: 'var(--top-bar-text, inherit)' }}
+                                title={tListen('guide', language)}
+                                aria-label={tListen('guide', language)}
                             >
-                                <i className={`text-xl transition-all ${isCurrentFavorite ? 'fa-solid fa-heart text-red-500 scale-110' : 'fa-regular fa-heart opacity-75 hover:opacity-100 hover:text-red-500'}`} style={isCurrentFavorite ? {} : { color: theme.textColor }}></i>
+                                <HelpCircle size={19} />
                             </button>
+                            <ThemePageLock />
                             <button
                                 onClick={handleGoHome}
                                 className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
@@ -1190,6 +1214,16 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
                     readersList={RECITERS}
                 />
             )}
+            <CommunitySpotlightGuide
+                isOpen={showGuide}
+                onClose={() => {
+                    setShowGuide(false);
+                    markPageAsSeen('listen_quran');
+                }}
+                steps={LISTEN_QURAN_PAGE_STEPS}
+                guideKey="listen_quran_page_spotlight"
+                isEn={isEn}
+            />
         </div>
     );
 }

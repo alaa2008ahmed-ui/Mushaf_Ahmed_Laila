@@ -56,6 +56,19 @@ export interface ChatAttachment {
   mimeType?: string;
 }
 
+export interface QuotedReplyMessage {
+  messageId: string;
+  senderId: string;
+  senderName: string;
+  text?: string;
+  hasAttachment?: boolean;
+  attachmentType?: 'image' | 'video' | 'file';
+  attachmentUrl?: string;
+  hasAudio?: boolean;
+  hasVerse?: boolean;
+  surahName?: string;
+}
+
 export interface ChatMessage {
   messageId: string;
   chatId: string;
@@ -65,11 +78,14 @@ export interface ChatMessage {
   text: string;
   verseData?: QuranVerseAttachment;
   audioUrl?: string;
+  audioDuration?: number;
   attachment?: ChatAttachment;
   isRead: boolean;
   isViolationReport?: boolean;
   isBroadcast?: boolean;
   broadcastBatchId?: string;
+  reactions?: { [userId: string]: string };
+  replyTo?: QuotedReplyMessage;
   createdAt: string;
 }
 
@@ -143,7 +159,27 @@ export interface GroupMessage {
   audioUrl?: string;
   audioDuration?: number;
   attachment?: ChatAttachment;
+  reactions?: { [userId: string]: string };
+  replyTo?: QuotedReplyMessage;
   createdAt: string;
+}
+
+export interface GroupReadRecord {
+  readId: string;
+  userId: string;
+  groupId: string;
+  lastReadMessageId?: string;
+  lastReadTime: string;
+  updatedAt: string;
+}
+
+export interface DirectReadRecord {
+  readId: string;
+  userId: string;
+  partnerId: string;
+  lastReadMessageId?: string;
+  lastReadTime: string;
+  updatedAt: string;
 }
 
 const STORAGE_KEY_USER = 'mushaf_community_current_user_v9';
@@ -155,6 +191,10 @@ const STORAGE_KEY_GROUPS = 'mushaf_community_groups_v9';
 const STORAGE_KEY_GROUP_MESSAGES = 'mushaf_community_group_messages_v9';
 const STORAGE_KEY_HIDDEN_GROUPS = 'mushaf_community_hidden_groups_v9';
 const STORAGE_KEY_GROUP_EXIT_TIMES = 'mushaf_community_group_exit_times_v9';
+const STORAGE_KEY_GROUP_READ_STATE = 'mushaf_community_group_read_state_v9';
+const STORAGE_KEY_DIRECT_READ_STATE = 'mushaf_community_direct_read_state_v9';
+const STORAGE_KEY_READ_MSG_IDS = 'mushaf_community_read_msg_ids_v1';
+const STORAGE_KEY_READ_GROUP_MSG_IDS = 'mushaf_community_read_group_msg_ids_v1';
 
 class CommunityService {
   private currentUser: CommunityUser | null = null;
@@ -167,6 +207,10 @@ class CommunityService {
   private groupMessagesList: GroupMessage[] = [];
   private hiddenGroupsSet: Set<string> = new Set();
   private groupExitTimesMap: Map<string, string> = new Map();
+  private groupReadStateMap: Map<string, { lastReadMessageId?: string; lastReadTime?: string }> = new Map();
+  private directReadsMap: Map<string, { lastReadMessageId?: string; lastReadTime: string }> = new Map();
+  private readMessageIdsSet: Set<string> = new Set();
+  private readGroupMessageIdsSet: Set<string> = new Set();
   private pollInterval: any = null;
   private heartbeatInterval: any = null;
 
@@ -179,6 +223,7 @@ class CommunityService {
     this.fetchLatestUsers();
     this.fetchLatestGroups();
     this.fetchLatestGroupMessages();
+    this.fetchServerReadStates();
     this.startPolling();
   }
 
@@ -274,6 +319,62 @@ class CommunityService {
     } catch (e) {}
   }
 
+  public notifyIncomingGroupMessage(msg: GroupMessage, group: GroupChat) {
+    const user = this.getCurrentUser();
+    const myId = user?.userId;
+    if (!myId || msg.senderId === myId) return;
+
+    // Check membership: only notify if the user is a member of this group
+    const isMember = group && (group.isPublic || (Array.isArray(group.members) && group.members.includes(myId)));
+    if (!isMember) return;
+
+    // In starter public groups: do not notify for any messages sent prior to user's account creation
+    if (this.isStarterPublicGroup(group) && user.createdAt) {
+      const userCreatedMs = new Date(user.createdAt).getTime();
+      const msgCreatedMs = new Date(msg.createdAt).getTime();
+      if (!isNaN(userCreatedMs) && !isNaN(msgCreatedMs) && msgCreatedMs < userCreatedMs) {
+        return;
+      }
+    }
+
+    // 1. Dispatch in-app visual notification event
+    try {
+      window.dispatchEvent(
+        new CustomEvent('community_inapp_notification', {
+          detail: {
+            message: msg,
+            group,
+            type: 'group',
+            sender: {
+              userId: msg.senderId,
+              username: msg.senderName || 'عضو في المجموعة',
+              avatarUrl: msg.senderAvatarUrl,
+              country: msg.senderCountry || '',
+              isOnline: true,
+              createdAt: msg.createdAt || new Date().toISOString()
+            }
+          }
+        })
+      );
+    } catch (e) {}
+
+    // 2. In-App Audio alert (chime)
+    try {
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(587.33, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.15);
+      gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.25);
+    } catch (e) {}
+  }
+
   public generateAccountCode(): string {
     const chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
     let code = '';
@@ -307,6 +408,10 @@ class CommunityService {
             deleteDoc(doc(db, 'users', u.userId)).catch(() => {});
             localStorage.removeItem(STORAGE_KEY_USER);
           } else {
+            if (!u.createdAt) {
+              u.createdAt = new Date().toISOString();
+              localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(u));
+            }
             if (!u.accountCode) {
               u.accountCode = this.generateAccountCode();
               localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(u));
@@ -330,6 +435,10 @@ class CommunityService {
       isOnline: true,
       createdAt: new Date().toISOString()
     };
+    try {
+      localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(this.currentUser));
+    } catch (e) {}
+    this.usersMap.set(randomId, this.currentUser);
     return this.currentUser;
   }
 
@@ -397,22 +506,36 @@ class CommunityService {
       }
     } catch (e) {}
 
-    // Fetch fresh snapshot from Firestore to guarantee we have every registered user
-    try {
-      const snap = await getDocs(collection(db, 'users'));
-      for (const docSnap of snap.docs) {
-        const u = docSnap.data() as CommunityUser;
-        const uid = u.userId || docSnap.id;
-        if (uid !== ADMIN_USER_ID) {
-          const fullUser = { ...u, userId: uid };
-          candidateMap.set(uid, fullUser);
-          this.usersMap.set(uid, fullUser);
+    // Check if matching candidate is already present locally
+    const normInput = this.normalizeUsernameForMatch(rawInput);
+    const cleanInputCodeNoMQ = this.normalizeDigits(rawInput).toUpperCase().replace(/^MQ-?/i, '').replace(/\s+/g, '');
+    const hasLocalMatch = Array.from(candidateMap.values()).some(u => {
+      const uCode = (u.accountCode || '').toUpperCase().replace(/^MQ-?/i, '').replace(/\s+/g, '');
+      const uName = this.normalizeUsernameForMatch(u.username);
+      return (uCode && cleanInputCodeNoMQ && uCode === cleanInputCodeNoMQ) ||
+             (uName && normInput && uName === normInput) ||
+             (u.userId === rawInput);
+    });
+
+    // Only query Firestore if not already found locally, with a fast 2-second timeout
+    if (!hasLocalMatch) {
+      try {
+        const fetchPromise = getDocs(collection(db, 'users'));
+        const timeoutPromise = new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error('Firestore fetch timeout')), 2000)
+        );
+        const snap = await Promise.race([fetchPromise, timeoutPromise]);
+        for (const docSnap of snap.docs) {
+          const u = docSnap.data() as CommunityUser;
+          const uid = u.userId || docSnap.id;
+          if (uid !== ADMIN_USER_ID) {
+            const fullUser = { ...u, userId: uid };
+            candidateMap.set(uid, fullUser);
+            this.usersMap.set(uid, fullUser);
+          }
         }
-      }
-    } catch (e: any) {
-      console.warn('Firestore fetch during restore:', e);
-      if (candidateMap.size === 0) {
-        throw new Error('تعذر الاتصال بقاعدة البيانات. يرجى التأكد من اتصال الإنترنت.');
+      } catch (e: any) {
+        console.warn('Firestore fetch during restore:', e);
       }
     }
 
@@ -553,23 +676,24 @@ class CommunityService {
     } catch (e) {}
     this.saveToLocalStorage();
 
-    // Mark online in Firestore
-    try {
-      await updateDoc(doc(db, 'users', foundUser.userId), {
-        isOnline: true,
-        lastSeen: nowIso
-      });
-    } catch (e) {
+    // Mark online in Firestore in the background
+    updateDoc(doc(db, 'users', foundUser.userId), {
+      isOnline: true,
+      lastSeen: nowIso
+    }).catch(() => {
       try {
-        await setDoc(doc(db, 'users', foundUser.userId), this.cleanPayload(foundUser), { merge: true });
+        setDoc(doc(db, 'users', foundUser.userId), this.cleanPayload(foundUser), { merge: true }).catch(() => {});
       } catch (err) {}
-    }
+    });
 
-    // Fetch messages for restored user
+    // Fetch messages and server read states for restored user
+    this.fetchServerReadStates(foundUser.userId).catch(() => {});
     this.fetchLatestMessages().catch(() => {});
 
     window.dispatchEvent(new CustomEvent('community_user_updated', { detail: foundUser }));
     window.dispatchEvent(new CustomEvent('community_messages_updated'));
+    window.dispatchEvent(new CustomEvent('community_groups_updated'));
+    window.dispatchEvent(new CustomEvent('community_group_read_updated'));
     this.sendHeartbeat();
 
     return foundUser;
@@ -761,7 +885,11 @@ class CommunityService {
     avatarUrl?: string,
     passcode?: string
   ): Promise<CommunityUser> {
+    const isNewRegistration = !this.isProfileComplete();
     const user = this.getCurrentUser();
+    if (isNewRegistration || !user.createdAt) {
+      user.createdAt = new Date().toISOString();
+    }
     user.username = username.trim();
     user.country = country && country.trim() ? country.trim() : 'دولة أخرى 🌍';
     if (bio !== undefined) user.bio = bio;
@@ -790,15 +918,35 @@ class CommunityService {
         localStorage.setItem('initial_community_onboarding_completed', 'true');
       } catch (err) {}
       this.usersMap.set(user.userId, user);
-      
-      const payload = this.cleanPayload(user);
-      await setDoc(doc(db, 'users', user.userId), payload, { merge: true });
 
+      // Immediately propagate updated name, avatar and country to all in-memory group messages
+      this.groupMessagesList.forEach(m => {
+        if (m.senderId === user.userId) {
+          m.senderName = user.username;
+          m.senderAvatarUrl = user.avatarUrl;
+          m.senderCountry = user.country;
+        }
+      });
+      // Propagate to any groups created by this user
+      this.groupsList.forEach(grp => {
+        if (grp.createdBy === user.userId) {
+          grp.creatorName = user.username;
+        }
+      });
+      
       this.saveToLocalStorage();
+      this.cleanupOrphanedGroupData();
       window.dispatchEvent(new CustomEvent('community_user_updated', { detail: user }));
+      window.dispatchEvent(new CustomEvent('community_groups_updated'));
+      window.dispatchEvent(new CustomEvent('community_group_messages_updated'));
+
+      // Non-blocking background sync to Firestore
+      const payload = this.cleanPayload(user);
+      setDoc(doc(db, 'users', user.userId), payload, { merge: true }).catch(err => {
+        console.warn('Background sync user to Firestore:', err);
+      });
     } catch (e: any) {
-      console.error('Error saving user to Firestore:', e);
-      throw new Error(e?.message || 'تعذر حفظ البيانات على الخادم، يرجى التأكد من اتصال الإنترنت.');
+      console.warn('Error saving user locally:', e);
     }
 
     return user;
@@ -845,15 +993,20 @@ class CommunityService {
     } catch (err) {}
 
     try {
-      const payload = this.cleanPayload(newUser);
-      await setDoc(doc(db, 'users', newUser.userId), payload, { merge: true });
-
       this.saveToLocalStorage();
       this.sendHeartbeat();
+      this.cleanupOrphanedGroupData();
       window.dispatchEvent(new CustomEvent('community_user_updated', { detail: newUser }));
+      window.dispatchEvent(new CustomEvent('community_groups_updated'));
+      window.dispatchEvent(new CustomEvent('community_group_messages_updated'));
+
+      // Non-blocking background sync to Firestore
+      const payload = this.cleanPayload(newUser);
+      setDoc(doc(db, 'users', newUser.userId), payload, { merge: true }).catch(err => {
+        console.warn('Background sync new user to Firestore:', err);
+      });
     } catch (e: any) {
-      console.error('Error creating new account in Firestore:', e);
-      throw new Error(e?.message || 'تعذر إنشاء الحساب على الخادم، يرجى التأكد من اتصال الإنترنت.');
+      console.warn('Error creating new account locally:', e);
     }
 
     return newUser;
@@ -872,10 +1025,36 @@ class CommunityService {
       }
       this.usersMap.set(ADMIN_USER_ID, ADMIN_USER);
 
+      const storedReadMsgIds = localStorage.getItem(STORAGE_KEY_READ_MSG_IDS);
+      if (storedReadMsgIds) {
+        try {
+          const parsedIds = JSON.parse(storedReadMsgIds);
+          if (Array.isArray(parsedIds)) {
+            this.readMessageIdsSet = new Set(parsedIds);
+          }
+        } catch (e) {}
+      }
+
+      const storedReadGroupMsgIds = localStorage.getItem(STORAGE_KEY_READ_GROUP_MSG_IDS);
+      if (storedReadGroupMsgIds) {
+        try {
+          const parsedGroupIds = JSON.parse(storedReadGroupMsgIds);
+          if (Array.isArray(parsedGroupIds)) {
+            this.readGroupMessageIdsSet = new Set(parsedGroupIds);
+          }
+        } catch (e) {}
+      }
+
       const storedMsgs = localStorage.getItem(STORAGE_KEY_MESSAGES);
       if (storedMsgs) {
         const parsed: ChatMessage[] = JSON.parse(storedMsgs);
-        this.messagesList = parsed.filter(m => !this.isViolationReportMessage(m));
+        this.messagesList = parsed.filter(m => !this.isViolationReportMessage(m)).map(m => {
+          if (this.readMessageIdsSet.has(m.messageId) || m.isRead) {
+            this.readMessageIdsSet.add(m.messageId);
+            return { ...m, isRead: true };
+          }
+          return m;
+        });
       }
 
       const storedBlocks = localStorage.getItem(STORAGE_KEY_BLOCKS);
@@ -914,6 +1093,22 @@ class CommunityService {
           this.groupExitTimesMap = new Map(Object.entries(parsed));
         } catch (e) {}
       }
+
+      const storedReadState = localStorage.getItem(STORAGE_KEY_GROUP_READ_STATE);
+      if (storedReadState) {
+        try {
+          const parsed = JSON.parse(storedReadState);
+          this.groupReadStateMap = new Map(Object.entries(parsed));
+        } catch (e) {}
+      }
+
+      const storedDirectReads = localStorage.getItem(STORAGE_KEY_DIRECT_READ_STATE);
+      if (storedDirectReads) {
+        try {
+          const parsed = JSON.parse(storedDirectReads);
+          this.directReadsMap = new Map(Object.entries(parsed));
+        } catch (e) {}
+      }
     } catch (e) {}
   }
 
@@ -926,9 +1121,17 @@ class CommunityService {
       localStorage.setItem(STORAGE_KEY_GROUPS, JSON.stringify(this.groupsList));
       localStorage.setItem(STORAGE_KEY_GROUP_MESSAGES, JSON.stringify(this.groupMessagesList));
       localStorage.setItem(STORAGE_KEY_HIDDEN_GROUPS, JSON.stringify(Array.from(this.hiddenGroupsSet)));
+      localStorage.setItem(STORAGE_KEY_READ_MSG_IDS, JSON.stringify(Array.from(this.readMessageIdsSet)));
+      localStorage.setItem(STORAGE_KEY_READ_GROUP_MSG_IDS, JSON.stringify(Array.from(this.readGroupMessageIdsSet)));
       const exitObj: Record<string, string> = {};
       this.groupExitTimesMap.forEach((v, k) => { exitObj[k] = v; });
       localStorage.setItem(STORAGE_KEY_GROUP_EXIT_TIMES, JSON.stringify(exitObj));
+      const readObj: Record<string, { lastReadMessageId?: string; lastReadTime?: string }> = {};
+      this.groupReadStateMap.forEach((v, k) => { readObj[k] = v; });
+      localStorage.setItem(STORAGE_KEY_GROUP_READ_STATE, JSON.stringify(readObj));
+      const directObj: Record<string, { lastReadMessageId?: string; lastReadTime: string }> = {};
+      this.directReadsMap.forEach((v, k) => { directObj[k] = v; });
+      localStorage.setItem(STORAGE_KEY_DIRECT_READ_STATE, JSON.stringify(directObj));
     } catch (e) {}
   }
 
@@ -1069,25 +1272,17 @@ class CommunityService {
     try {
       const snapshot = await getDocs(collection(db, 'users'));
       const currentUid = this.currentUser?.userId;
-      const deletes: Promise<any>[] = [];
 
-      snapshot.forEach((docSnap) => {
+      for (const docSnap of snapshot.docs) {
         const data = docSnap.data() as CommunityUser;
         const uid = data?.userId || docSnap.id;
         if (uid && uid !== ADMIN_USER_ID && this.isUserInactiveExpired(data)) {
           console.log(`Purging inactive user ${uid} (${data.username}) >30 days from server...`);
-          deletes.push(deleteDoc(doc(db, 'users', uid)).catch(() => {}));
-          this.usersMap.delete(uid);
           if (currentUid === uid) {
             this.logoutAccount();
           }
+          await this.deleteUser(uid);
         }
-      });
-
-      if (deletes.length > 0) {
-        await Promise.all(deletes);
-        this.saveToLocalStorage();
-        window.dispatchEvent(new CustomEvent('community_user_updated'));
       }
     } catch (e) {
       console.warn('Error purging inactive users:', e);
@@ -1099,20 +1294,9 @@ class CommunityService {
     // Initial light fetch of contacts once on boot
     this.fetchLatestContacts();
 
-    // Background expiration cleanup after startup, then run periodically
-    setTimeout(() => {
-      this.purgeExpiredServerMessages();
-      this.purgeInactiveUsers();
-    }, 6000);
-
-    // Light background sync interval (every 45s) for presence/heartbeat
+    // Light background heartbeat interval (every 45s)
     this.pollInterval = setInterval(() => {
       this.sendHeartbeat();
-      // Periodically clean expired messages and inactive users (>30 days)
-      if (Math.random() < 0.08) {
-        this.purgeExpiredServerMessages();
-        this.purgeInactiveUsers();
-      }
     }, 45000);
   }
 
@@ -1150,38 +1334,46 @@ class CommunityService {
         }
       });
 
-      // Check if current user was deleted from Firestore (and is not Admin or empty profile)
-      if (currentUid && currentUid !== ADMIN_USER_ID && this.isProfileSetup()) {
+      // Ensure current user is preserved and re-synced if needed (never force logout active account)
+      if (currentUid && currentUid !== ADMIN_USER_ID && this.isProfileSetup() && this.currentUser) {
         const currentUserExistsOnServer = activeIds.has(currentUid);
-        if (!currentUserExistsOnServer && snapshot.size > 0) {
-          console.warn('Current user was deleted from Firestore. Force resetting account...');
-          this.logoutAccount();
-          return Array.from(this.usersMap.values());
+        if (!currentUserExistsOnServer) {
+          activeIds.add(currentUid);
+          this.usersMap.set(currentUid, this.currentUser);
+          try {
+            setDoc(doc(db, 'users', currentUid), this.cleanPayload(this.currentUser), { merge: true }).catch(() => {});
+          } catch (e) {}
         }
       }
 
-      // Remove stale users that are no longer in Firestore (except admin)
-      for (const id of Array.from(this.usersMap.keys())) {
-        if (!activeIds.has(id) && id !== ADMIN_USER_ID) {
-          if (id === currentUid) {
-            this.logoutAccount();
+      // Only purge stale users if Firestore returned an active valid snapshot of multiple users (> 2)
+      // This protects users from being wiped out if Firestore quota is exceeded, offline, or temporarily empty.
+      let hadStaleUsers = false;
+      if (activeIds.size > 2) {
+        for (const id of Array.from(this.usersMap.keys())) {
+          if (!activeIds.has(id) && id !== ADMIN_USER_ID && id !== currentUid) {
+            hadStaleUsers = true;
+            this.purgeUserDataLocally(id);
+            window.dispatchEvent(new CustomEvent('community_user_deleted', { detail: { userId: id } }));
           }
-          this.usersMap.delete(id);
-          window.dispatchEvent(new CustomEvent('community_user_deleted', { detail: { userId: id } }));
         }
       }
 
-      // Ensure current user is in usersMap only if they still exist in activeIds or if activeIds is empty (offline)
+      if (hadStaleUsers) {
+        this.cleanupOrphanedGroupData();
+      }
+
+      // Ensure current user is in usersMap
       if (this.currentUser && this.currentUser.userId && this.currentUser.username && this.currentUser.username.trim()) {
-        if (activeIds.has(this.currentUser.userId) || snapshot.empty) {
-          this.usersMap.set(this.currentUser.userId, this.currentUser);
-        }
+        this.usersMap.set(this.currentUser.userId, this.currentUser);
       }
 
       this.saveToLocalStorage();
       window.dispatchEvent(new CustomEvent('community_user_updated'));
     } catch (e) {
-      console.warn('Firestore fetch users:', e);
+      console.warn('Firestore fetch users (using local cache):', e);
+      // On network failure or quota limit, make sure locally cached users are preserved and signaled to the UI
+      window.dispatchEvent(new CustomEvent('community_user_updated'));
     }
     return Array.from(this.usersMap.values());
   }
@@ -1206,12 +1398,32 @@ class CommunityService {
               return;
             }
 
+            const isAlreadyRead = this.readMessageIdsSet.has(msg.messageId) || 
+              msg.isRead === true || 
+              !this.isDirectMessageUnread(msg, myId);
+            if (isAlreadyRead) {
+              msg.isRead = true;
+              this.readMessageIdsSet.add(msg.messageId);
+            }
+
             const exists = this.messagesList.some(m => m.messageId === msg.messageId);
             if (!exists) {
-              this.messagesList.push(msg);
+              this.messagesList.push({ ...msg, isRead: Boolean(isAlreadyRead || msg.isRead) });
             } else {
               const idx = this.messagesList.findIndex(m => m.messageId === msg.messageId);
-              if (idx >= 0) this.messagesList[idx] = msg;
+              if (idx >= 0) {
+                const prev = this.messagesList[idx];
+                const finalRead = prev.isRead || isAlreadyRead || msg.isRead;
+                this.messagesList[idx] = { ...prev, ...msg, isRead: Boolean(finalRead) };
+                if (finalRead) {
+                  this.readMessageIdsSet.add(msg.messageId);
+                }
+              }
+            }
+
+            // If message was marked read locally on recipient device but Firestore is not updated yet, sync to Firestore
+            if (msg.recipientId === myId && (this.readMessageIdsSet.has(msg.messageId) || isAlreadyRead) && !docSnap.data().isRead) {
+              updateDoc(doc(db, 'messages', docSnap.id), { isRead: true }).catch(() => {});
             }
 
             // Save chatted user contact on server to keep history of who spoke with whom
@@ -1280,8 +1492,14 @@ class CommunityService {
       onSnapshot(collection(db, 'users'), (snapshot) => {
         snapshot.docChanges().forEach((change) => {
           if (change.type === 'removed') {
-            this.usersMap.delete(change.doc.id);
-            window.dispatchEvent(new CustomEvent('community_user_deleted', { detail: { userId: change.doc.id } }));
+            const deletedUid = change.doc.id;
+            this.purgeUserDataLocally(deletedUid);
+            this.cleanupOrphanedGroupData();
+            window.dispatchEvent(new CustomEvent('community_user_deleted', { detail: { userId: deletedUid } }));
+            window.dispatchEvent(new CustomEvent('community_user_updated'));
+            window.dispatchEvent(new CustomEvent('community_messages_updated'));
+            window.dispatchEvent(new CustomEvent('community_groups_updated'));
+            window.dispatchEvent(new CustomEvent('community_group_messages_updated'));
           }
         });
 
@@ -1291,7 +1509,7 @@ class CommunityService {
           if (data && uid && uid !== ADMIN_USER_ID) {
             if (this.isUserInactiveExpired(data)) {
               deleteDoc(doc(db, 'users', uid)).catch(() => {});
-              this.usersMap.delete(uid);
+              this.purgeUserDataLocally(uid);
               return;
             }
             if (data.username && data.username.trim()) {
@@ -1299,11 +1517,27 @@ class CommunityService {
                 ...data,
                 userId: uid
               });
+              // Propagate user changes to any in-memory group messages and groups
+              this.groupMessagesList.forEach(m => {
+                if (m.senderId === uid) {
+                  m.senderName = data.username;
+                  if (data.avatarUrl !== undefined && data.avatarUrl !== '') m.senderAvatarUrl = data.avatarUrl;
+                  if (data.country) m.senderCountry = data.country;
+                }
+              });
+              this.groupsList.forEach(grp => {
+                if (grp.createdBy === uid) {
+                  grp.creatorName = data.username;
+                }
+              });
             }
           }
         });
         this.saveToLocalStorage();
+        this.cleanupOrphanedGroupData();
         window.dispatchEvent(new CustomEvent('community_user_updated'));
+        window.dispatchEvent(new CustomEvent('community_groups_updated'));
+        window.dispatchEvent(new CustomEvent('community_group_messages_updated'));
       }, (err) => console.warn('Firestore Users Listener:', err));
     } catch (e) {}
 
@@ -1326,12 +1560,21 @@ class CommunityService {
           }
 
           if (msg && msg.messageId) {
+            const isAlreadyRead = this.readMessageIdsSet.has(msg.messageId) || 
+              msg.isRead === true || 
+              !this.isDirectMessageUnread(msg, myId);
+
+            if (isAlreadyRead) {
+              msg.isRead = true;
+              this.readMessageIdsSet.add(msg.messageId);
+            }
+
             if (change.type === 'added') {
               if (msg.recipientId === myId || msg.senderId === myId) {
                 const exists = this.messagesList.some(m => m.messageId === msg.messageId);
                 if (!exists) {
-                  this.messagesList.push(msg);
-                  if (msg.recipientId === myId && !msg.isRead) {
+                  this.messagesList.push({ ...msg, isRead: Boolean(isAlreadyRead || msg.isRead) });
+                  if (msg.recipientId === myId && !isAlreadyRead) {
                     const sender = this.usersMap.get(msg.senderId) || {
                       userId: msg.senderId,
                       username: 'مستخدم المصحف',
@@ -1341,6 +1584,14 @@ class CommunityService {
                     };
                     this.notifyIncomingMessage(msg, sender);
                   }
+                } else {
+                  const idx = this.messagesList.findIndex(m => m.messageId === msg.messageId);
+                  if (idx >= 0) {
+                    const prev = this.messagesList[idx];
+                    const finalRead = prev.isRead || isAlreadyRead || msg.isRead;
+                    this.messagesList[idx] = { ...prev, ...msg, isRead: Boolean(finalRead) };
+                    if (finalRead) this.readMessageIdsSet.add(msg.messageId);
+                  }
                 }
 
                 // Save chatted user contact on server to keep history of who spoke with whom
@@ -1349,13 +1600,102 @@ class CommunityService {
               }
             } else if (change.type === 'modified') {
               const idx = this.messagesList.findIndex(m => m.messageId === msg.messageId);
-              if (idx >= 0) this.messagesList[idx] = msg;
+              if (idx >= 0) {
+                const prev = this.messagesList[idx];
+                const finalRead = prev.isRead || isAlreadyRead || msg.isRead;
+                this.messagesList[idx] = { ...prev, ...msg, isRead: Boolean(finalRead) };
+                if (finalRead) this.readMessageIdsSet.add(msg.messageId);
+              } else if (msg.recipientId === myId || msg.senderId === myId) {
+                this.messagesList.push({ ...msg, isRead: Boolean(isAlreadyRead || msg.isRead) });
+                if (isAlreadyRead || msg.isRead) this.readMessageIdsSet.add(msg.messageId);
+              }
             }
           }
         });
         this.saveToLocalStorage();
         window.dispatchEvent(new CustomEvent('community_messages_updated'));
       }, (err) => console.warn('Firestore Messages Listener:', err));
+    } catch (e) {}
+
+    try {
+      onSnapshot(collection(db, 'group_reads'), (snapshot) => {
+        const myId = this.getCurrentUser()?.userId;
+        if (!myId) return;
+
+        let hasChange = false;
+        snapshot.docChanges().forEach((change) => {
+          if (change.type === 'added' || change.type === 'modified') {
+            const data = change.doc.data() as GroupReadRecord;
+            if (data && data.userId === myId && data.groupId) {
+              hasChange = true;
+              const state = {
+                lastReadMessageId: data.lastReadMessageId || '',
+                lastReadTime: data.lastReadTime || ''
+              };
+              this.groupReadStateMap.set(`${data.groupId}_${myId}`, state);
+              this.groupReadStateMap.set(data.groupId, state);
+
+              if (state.lastReadTime) {
+                const timeMs = new Date(state.lastReadTime).getTime();
+                this.groupMessagesList.forEach(gm => {
+                  if (gm.groupId === data.groupId) {
+                    if (gm.messageId === state.lastReadMessageId || new Date(gm.createdAt).getTime() <= timeMs) {
+                      this.readGroupMessageIdsSet.add(gm.messageId);
+                    }
+                  }
+                });
+              }
+            }
+          }
+        });
+
+        if (hasChange) {
+          this.saveToLocalStorage();
+          window.dispatchEvent(new CustomEvent('community_group_read_updated'));
+          window.dispatchEvent(new CustomEvent('community_groups_updated'));
+          window.dispatchEvent(new CustomEvent('community_group_messages_updated'));
+        }
+      }, (err) => console.warn('Firestore Group Reads Listener:', err));
+    } catch (e) {}
+
+    try {
+      onSnapshot(collection(db, 'direct_reads'), (snapshot) => {
+        const myId = this.getCurrentUser()?.userId;
+        if (!myId) return;
+
+        let hasChange = false;
+        snapshot.docChanges().forEach((change) => {
+          if (change.type === 'added' || change.type === 'modified') {
+            const data = change.doc.data() as DirectReadRecord;
+            if (data && data.userId === myId && data.partnerId) {
+              hasChange = true;
+              const state = {
+                lastReadMessageId: data.lastReadMessageId || '',
+                lastReadTime: data.lastReadTime || ''
+              };
+              this.directReadsMap.set(`${myId}_${data.partnerId}`, state);
+              this.directReadsMap.set(data.partnerId, state);
+
+              if (state.lastReadTime) {
+                const timeMs = new Date(state.lastReadTime).getTime();
+                this.messagesList.forEach(m => {
+                  if (m.senderId === data.partnerId && m.recipientId === myId) {
+                    if (m.messageId === state.lastReadMessageId || new Date(m.createdAt).getTime() <= timeMs) {
+                      m.isRead = true;
+                      this.readMessageIdsSet.add(m.messageId);
+                    }
+                  }
+                });
+              }
+            }
+          }
+        });
+
+        if (hasChange) {
+          this.saveToLocalStorage();
+          window.dispatchEvent(new CustomEvent('community_messages_updated'));
+        }
+      }, (err) => console.warn('Firestore Direct Reads Listener:', err));
     } catch (e) {}
 
     try {
@@ -1393,6 +1733,14 @@ class CommunityService {
 
     try {
       onSnapshot(collection(db, 'group_chats'), (snapshot) => {
+        snapshot.docChanges().forEach((change) => {
+          if (change.type === 'removed') {
+            const removedId = change.doc.id;
+            this.groupsList = this.groupsList.filter(g => g.groupId !== removedId);
+            this.groupMessagesList = this.groupMessagesList.filter(m => m.groupId !== removedId);
+          }
+        });
+
         const list: GroupChat[] = [];
         snapshot.forEach((docSnap) => {
           const data = docSnap.data() as GroupChat;
@@ -1411,18 +1759,39 @@ class CommunityService {
 
     try {
       onSnapshot(collection(db, 'group_messages'), (snapshot) => {
+        const myId = this.getCurrentUser()?.userId;
+
         snapshot.docChanges().forEach((change) => {
           const msg = change.doc.data() as GroupMessage;
           const msgId = msg?.messageId || change.doc.id;
           if (change.type === 'removed') {
             this.groupMessagesList = this.groupMessagesList.filter(m => m.messageId !== msgId);
           } else if (msg && msgId) {
+            // Filter only expired deleted user messages (>30 days inactive)
+            if (msg.senderId && msg.senderId !== ADMIN_USER_ID) {
+              const sender = this.usersMap.get(msg.senderId);
+              if (sender && this.isUserInactiveExpired(sender)) {
+                this.groupMessagesList = this.groupMessagesList.filter(m => m.messageId !== msgId);
+                deleteDoc(doc(db, 'group_messages', msgId)).catch(() => {});
+                return;
+              }
+            }
             const cleanMsg = { ...msg, messageId: msgId };
             const idx = this.groupMessagesList.findIndex(m => m.messageId === msgId);
             if (idx >= 0) {
               this.groupMessagesList[idx] = cleanMsg;
             } else {
               this.groupMessagesList.push(cleanMsg);
+              // Trigger in-app notification if new incoming group message from another member
+              if (change.type === 'added' && myId && cleanMsg.senderId && cleanMsg.senderId !== myId) {
+                const isRecent = cleanMsg.createdAt ? (Date.now() - new Date(cleanMsg.createdAt).getTime() < 180000) : false;
+                if (isRecent) {
+                  const grp = this.getGroupById(cleanMsg.groupId);
+                  if (grp) {
+                    this.notifyIncomingGroupMessage(cleanMsg, grp);
+                  }
+                }
+              }
             }
           }
         });
@@ -1631,7 +2000,9 @@ class CommunityService {
     text: string, 
     verseData?: QuranVerseAttachment, 
     audioUrl?: string,
-    attachment?: ChatAttachment
+    attachment?: ChatAttachment,
+    audioDuration?: number,
+    replyTo?: QuotedReplyMessage
   ): Promise<ChatMessage> {
     const current = this.getCurrentUser();
     if (!this.isProfileComplete()) {
@@ -1702,15 +2073,6 @@ class CommunityService {
       if (friendship.status === 'rejected' && friendship.isRequester) {
         throw new Error('تم رفض طلب الإضافة من هذا العضو. لا يمكنك إرسال رسائل.');
       }
-      if (friendship.status === 'none') {
-        throw new Error('يجب إرسال طلب إضافة أولاً قبل إرسال أي رسالة.');
-      }
-      if (friendship.status === 'pending' && friendship.isRequester) {
-        const sentCount = this.getSentMessagesCountToUser(recipientId);
-        if (sentCount >= 1) {
-          throw new Error('لا يمكنك إرسال أكثر من رسالة تعريفية واحدة حتى يتم قبول طلب الإضافة من العضو.');
-        }
-      }
     }
 
     const newMsg: ChatMessage = {
@@ -1721,7 +2083,9 @@ class CommunityService {
       text: text.trim(),
       verseData,
       audioUrl,
+      audioDuration,
       attachment,
+      replyTo,
       isRead: false,
       createdAt: new Date().toISOString()
     };
@@ -1731,54 +2095,128 @@ class CommunityService {
 
     this.setTypingStatus(recipientId, false);
 
-    // Save chatted user contact on server to keep history of who spoke with whom
-    if (recipientId === ADMIN_USER_ID || current.userId === ADMIN_USER_ID) {
-      this.saveChattedUser(current.userId, recipientId);
-      this.saveChattedUser(recipientId, current.userId);
-    } else {
-      const friendship = this.getFriendshipStatus(recipientId);
-      if (friendship.status === 'accepted') {
-        this.saveChattedUser(current.userId, recipientId);
-      } else if (friendship.status === 'pending' && friendship.contact) {
-        friendship.contact.introMessage = text.trim();
-        this.saveToLocalStorage();
-        try {
-          updateDoc(doc(db, 'contacts', friendship.contact.contactId || ''), {
-            introMessage: text.trim(),
-            updatedAt: new Date().toISOString()
-          }).catch(() => {});
-        } catch (e) {}
-      }
-    }
+    // Save chatted user contact on server/local to keep history of who spoke with whom
+    this.saveChattedUser(current.userId, recipientId);
+    this.saveChattedUser(recipientId, current.userId);
 
+    // Dispatch update event immediately so the message appears instantly in chat
+    window.dispatchEvent(new CustomEvent('community_messages_updated'));
+
+    // Non-blocking background sync to Firestore
     try {
       const payload = this.cleanPayload(newMsg);
-      await setDoc(doc(db, 'messages', msgId), payload);
+      setDoc(doc(db, 'messages', msgId), payload).catch((e) => {
+        console.warn('Background sync message to Firestore:', e);
+      });
     } catch (e) {
-      console.error('Error sending message to Firestore:', e);
+      console.warn('Error queuing message to Firestore:', e);
     }
 
     return newMsg;
   }
 
+  public async toggleDirectMessageReaction(messageId: string, emoji: string): Promise<void> {
+    const current = this.getCurrentUser();
+    if (!current?.userId || !messageId || !emoji) return;
+
+    const msg = this.messagesList.find(m => m.messageId === messageId);
+    if (!msg) return;
+
+    const reactions: { [userId: string]: string } = { ...(msg.reactions || {}) };
+    if (reactions[current.userId] === emoji) {
+      delete reactions[current.userId];
+    } else {
+      reactions[current.userId] = emoji;
+    }
+
+    msg.reactions = reactions;
+    this.saveToLocalStorage();
+
+    try {
+      await updateDoc(doc(db, 'messages', messageId), {
+        reactions
+      });
+    } catch (e) {
+      console.warn('Error updating message reaction in Firestore:', e);
+    }
+
+    window.dispatchEvent(new CustomEvent('community_messages_updated'));
+  }
+
   public async markMessagesAsRead(partnerUserId: string) {
     const current = this.getCurrentUser();
-    const chatId = this.getChatId(current.userId, partnerUserId);
+    const uid = current.userId;
+    if (!uid || !partnerUserId) return;
+    const chatId = this.getChatId(uid, partnerUserId);
+    const nowIso = new Date().toISOString();
 
-    let updatedAny = false;
+    let latestMsgId = '';
+    const unreadMessageIdsToUpdate: string[] = [];
+
     this.messagesList.forEach(m => {
-      if (m.chatId === chatId && m.recipientId === current.userId && !m.isRead) {
-        m.isRead = true;
-        updatedAny = true;
-        try {
-          updateDoc(doc(db, 'messages', m.messageId), { isRead: true });
-        } catch (e) {}
+      const isMatch = (m.chatId === chatId || 
+        (m.senderId === partnerUserId && m.recipientId === uid) ||
+        (m.senderId === uid && m.recipientId === partnerUserId)) &&
+        m.recipientId === uid;
+
+      if (isMatch) {
+        if (!m.isRead || !this.readMessageIdsSet.has(m.messageId)) {
+          m.isRead = true;
+          this.readMessageIdsSet.add(m.messageId);
+          unreadMessageIdsToUpdate.push(m.messageId);
+        }
+        latestMsgId = m.messageId;
       }
     });
 
-    if (updatedAny) {
-      this.saveToLocalStorage();
-      window.dispatchEvent(new CustomEvent('community_messages_updated'));
+    const readState = {
+      lastReadMessageId: latestMsgId || '',
+      lastReadTime: nowIso
+    };
+    this.directReadsMap.set(`${uid}_${partnerUserId}`, readState);
+    this.directReadsMap.set(partnerUserId, readState);
+
+    this.saveToLocalStorage();
+    window.dispatchEvent(new CustomEvent('community_messages_updated'));
+
+    // 1. Sync direct_read record to Firestore
+    const directReadId = `${uid}_${partnerUserId}`;
+    setDoc(doc(db, 'direct_reads', directReadId), {
+      readId: directReadId,
+      userId: uid,
+      partnerId: partnerUserId,
+      lastReadMessageId: latestMsgId || '',
+      lastReadTime: nowIso,
+      updatedAt: nowIso
+    }, { merge: true }).catch(err => console.warn('Sync direct read to Firestore:', err));
+
+    // 2. Atomically update isRead: true in Firestore messages
+    try {
+      const idsSet = new Set(unreadMessageIdsToUpdate);
+
+      // Query any unread messages from this partner in Firestore directly to guarantee none were missed
+      const unreadSnap = await getDocs(query(
+        collection(db, 'messages'),
+        where('recipientId', '==', uid),
+        where('senderId', '==', partnerUserId),
+        where('isRead', '==', false)
+      ));
+      unreadSnap.forEach(d => idsSet.add(d.id));
+
+      const allIds = Array.from(idsSet);
+      if (allIds.length > 0) {
+        const CHUNK_SIZE = 400;
+        for (let i = 0; i < allIds.length; i += CHUNK_SIZE) {
+          const batch = writeBatch(db);
+          const chunk = allIds.slice(i, i + CHUNK_SIZE);
+          chunk.forEach(mId => {
+            batch.update(doc(db, 'messages', mId), { isRead: true });
+          });
+          await batch.commit().catch(e => console.warn('Batch mark messages read:', e));
+        }
+      }
+    } catch (e) {
+      console.warn('Error marking messages as read in Firestore:', e);
     }
   }
 
@@ -1948,7 +2386,7 @@ class CommunityService {
       if (this.isBlockedMutually(partnerId)) return;
 
       const existing = partnersMap.get(partnerId);
-      const isUnread = m.recipientId === current.userId && !m.isRead;
+      const isUnread = this.isDirectMessageUnread(m, current.userId);
       const isPinnedAdmin = partnerId === ADMIN_USER_ID;
       const msgTime = m.createdAt;
 
@@ -2003,14 +2441,38 @@ class CommunityService {
     return conversations.sort((a, b) => new Date(b.lastMessageTime || 0).getTime() - new Date(a.lastMessageTime || 0).getTime());
   }
 
+  public isDirectMessageUnread(m: ChatMessage, myId?: string): boolean {
+    const uid = myId || this.getCurrentUser()?.userId;
+    if (!uid || m.recipientId !== uid) return false;
+    if (this.isViolationReportMessage(m)) return false;
+    if (m.isRead) return false;
+    if (this.readMessageIdsSet.has(m.messageId)) return false;
+
+    // Check direct_reads for this partner
+    const partnerId = m.senderId;
+    const directRead = this.directReadsMap.get(`${uid}_${partnerId}`) || this.directReadsMap.get(partnerId);
+    if (directRead) {
+      if (directRead.lastReadMessageId && directRead.lastReadMessageId === m.messageId) {
+        return false;
+      }
+      if (directRead.lastReadTime) {
+        const lastReadMs = new Date(directRead.lastReadTime).getTime();
+        const msgMs = new Date(m.createdAt).getTime();
+        if (!isNaN(lastReadMs) && !isNaN(msgMs) && msgMs <= lastReadMs) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
   public getTotalUnreadCount(): number {
     const current = this.getCurrentUser();
     if (!current || !current.userId) return 0;
 
     let total = 0;
     this.messagesList.forEach(m => {
-      if (this.isViolationReportMessage(m)) return;
-      if (m.recipientId === current.userId && !m.isRead) {
+      if (this.isDirectMessageUnread(m, current.userId)) {
         if (!this.isBlockedMutually(m.senderId)) {
           total += 1;
         }
@@ -2018,6 +2480,11 @@ class CommunityService {
     });
 
     return total;
+  }
+
+  public getTotalCombinedUnreadCount(userId?: string): number {
+    const uid = userId || this.getCurrentUser()?.userId;
+    return this.getTotalUnreadCount() + this.getTotalUnreadGroupMessagesCount(uid);
   }
 
   public getRawContacts(): ServerContact[] {
@@ -2199,19 +2666,64 @@ class CommunityService {
     return list;
   }
 
-  public async deleteUser(userId: string): Promise<void> {
+  /**
+   * Completely purges all local traces of a deleted user across in-memory state & storage:
+   * 1. Removes user from users map
+   * 2. Deletes all direct messages sent or received by user
+   * 3. Deletes all contacts and block records involving user
+   * 4. Deletes all group messages authored by user in any group
+   * 5. Completely deletes all groups created by user (and their messages)
+   * 6. Removes user from all remaining groups (members, invited, left, exit times)
+   */
+  public purgeUserDataLocally(userId: string): void {
     if (!userId) return;
 
-    // 1. Instant Optimistic local state purge across ALL private messages, group messages, groups & contacts
+    // 1. Remove from users map
     this.usersMap.delete(userId);
+
+    // 2. Remove all direct messages sent by or received by this user
     this.messagesList = this.messagesList.filter(m => m.senderId !== userId && m.recipientId !== userId);
-    this.blocksList = this.blocksList.filter(b => b.blockerId !== userId && b.blockedId !== userId);
+    for (const [mId, msg] of Array.from(this.allServerMessagesMap.entries())) {
+      if (msg.senderId === userId || msg.recipientId === userId) {
+        this.allServerMessagesMap.delete(mId);
+      }
+    }
+
+    // 3. Remove all contacts / chatted records involving this user
     this.serverContactsList = this.serverContactsList.filter(c => c.userId !== userId && c.partnerId !== userId);
 
-    // Purge ALL group messages authored by this user from in-memory state
+    // 4. Remove all blocks involving this user
+    this.blocksList = this.blocksList.filter(b => b.blockerId !== userId && b.blockedId !== userId);
+
+    // 5. Remove all group messages authored by this user
     this.groupMessagesList = this.groupMessagesList.filter(gm => gm.senderId !== userId);
 
-    // Remove user from all groups in local memory (members, invited, rejected, left, exitTimes)
+    // 6. COMPLETELY DELETE all groups created by this user (except default starter groups)
+    const userGroups = this.groupsList.filter(g => 
+      g.createdBy === userId && 
+      !this.isPinnedGroup(g) && 
+      g.groupId !== 'group_default_tadabbur' && 
+      g.groupId !== 'group_default_quran_readers'
+    );
+    const userGroupIds = new Set(userGroups.map(g => g.groupId));
+
+    if (userGroupIds.size > 0) {
+      // Remove all messages belonging to these groups
+      this.groupMessagesList = this.groupMessagesList.filter(gm => !userGroupIds.has(gm.groupId));
+      // Remove the groups themselves
+      this.groupsList = this.groupsList.filter(g => !userGroupIds.has(g.groupId));
+      // Clean read states, exit times, hidden set for these groups
+      userGroupIds.forEach(gId => {
+        this.hiddenGroupsSet.delete(`${gId}_${userId}`);
+        for (const key of Array.from(this.groupReadStateMap.keys())) {
+          if (key.startsWith(`${gId}_`)) {
+            this.groupReadStateMap.delete(key);
+          }
+        }
+      });
+    }
+
+    // 7. Remove user from all remaining groups (members, invited, rejected, left, exitTimes)
     this.groupsList.forEach(grp => {
       let modified = false;
       if (Array.isArray(grp.members) && grp.members.includes(userId)) {
@@ -2235,7 +2747,7 @@ class CommunityService {
         delete grp.memberExitTimes[userId];
         modified = true;
       }
-      // If the last message displayed on the group card was from this deleted user, clear or sanitize it
+      // If the last message displayed on the group card was from this deleted user, recalculate
       if (grp.lastMessageSenderName && (grp.lastMessageSenderName === this.getUserById(userId)?.username || grp.createdBy === userId)) {
         const remainingGroupMsgs = this.groupMessagesList
           .filter(m => m.groupId === grp.groupId)
@@ -2257,19 +2769,19 @@ class CommunityService {
       }
     });
 
-    // Purge from allServerMessagesMap cache
-    for (const [mId, msg] of Array.from(this.allServerMessagesMap.entries())) {
-      if (msg.senderId === userId || msg.recipientId === userId) {
-        this.allServerMessagesMap.delete(mId);
+    // 8. Remove any read states of this user
+    for (const key of Array.from(this.groupReadStateMap.keys())) {
+      if (key.endsWith(`_${userId}`)) {
+        this.groupReadStateMap.delete(key);
       }
     }
 
-    // If deleted user was active current user, clear profile
+    // 9. If deleted user was active current user, clear profile
     if (this.currentUser && this.currentUser.userId === userId) {
       this.logoutAccount();
     }
 
-    // If impersonating this user, exit impersonation
+    // 10. If impersonating this user, exit impersonation
     if (this.isImpersonating()) {
       const stored = localStorage.getItem('mushaf_community_original_owner');
       if (stored) {
@@ -2283,6 +2795,13 @@ class CommunityService {
     }
 
     this.saveToLocalStorage();
+  }
+
+  public async deleteUser(userId: string): Promise<void> {
+    if (!userId) return;
+
+    // 1. Instant local state purge across ALL private messages, groups, group messages & contacts
+    this.purgeUserDataLocally(userId);
 
     // 2. High-speed comprehensive targeted parallel queries & batch delete in Firestore
     // Thoroughly deletes:
@@ -2291,9 +2810,10 @@ class CommunityService {
     // - All direct messages sent by the user (messages where senderId == userId)
     // - All direct messages received by the user (messages where recipientId == userId)
     // - All group messages sent by the user in ANY group (group_messages where senderId == userId)
+    // - All groups created by this user (/group_chats where createdBy == userId) and ALL their messages
     // - All contact records (contacts where userId == userId or partnerId == userId)
     // - All block records (blocks where blockerId == userId or blockedId == userId)
-    // - Updates all groups where the user is a member to remove them from members array and recalculate memberCount
+    // - Updates all remaining groups where user was a member to remove them from members array
     try {
       const docRefsToDelete = new Map<string, any>();
 
@@ -2310,7 +2830,8 @@ class CommunityService {
         getDocs(query(collection(db, 'contacts'), where('partnerId', '==', userId))),
         getDocs(query(collection(db, 'blocks'), where('blockerId', '==', userId))),
         getDocs(query(collection(db, 'blocks'), where('blockedId', '==', userId))),
-        getDocs(query(collection(db, 'group_chats'), where('members', 'array-contains', userId)))
+        getDocs(query(collection(db, 'group_chats'), where('members', 'array-contains', userId))),
+        getDocs(query(collection(db, 'group_chats'), where('createdBy', '==', userId)))
       ];
 
       const queryResults = await Promise.allSettled(queries);
@@ -2323,7 +2844,7 @@ class CommunityService {
       if (queryResults[1].status === 'fulfilled' && queryResults[1].value?.docs) {
         queryResults[1].value.docs.forEach((docSnap) => docRefsToDelete.set(docSnap.ref.path, docSnap.ref));
       }
-      // Index 2: group messages sent by user
+      // Index 2: group messages sent by user in any group
       if (queryResults[2].status === 'fulfilled' && queryResults[2].value?.docs) {
         queryResults[2].value.docs.forEach((docSnap) => docRefsToDelete.set(docSnap.ref.path, docSnap.ref));
       }
@@ -2347,6 +2868,7 @@ class CommunityService {
         const groupUpdatePromises = queryResults[7].value.docs.map(async (grpDoc) => {
           try {
             const grpData = grpDoc.data() as GroupChat;
+            if (grpData.createdBy === userId) return; // Will be completely deleted in Index 8
             const updatedMembers = (grpData.members || []).filter(m => m !== userId);
             const updatedInvited = (grpData.invitedMembers || []).filter(m => m !== userId);
             const updatedRejected = (grpData.rejectedMembers || []).filter(m => m !== userId);
@@ -2369,12 +2891,36 @@ class CommunityService {
         await Promise.allSettled(groupUpdatePromises);
       }
 
-      // Also clean any groups where user was the creator or invited in Firestore
+      // Index 8: COMPLETELY DELETE all groups created by this user from Firestore along with their messages
+      if (queryResults[8].status === 'fulfilled' && queryResults[8].value?.docs) {
+        const userCreatedGroups = queryResults[8].value.docs.filter(gDoc => {
+          return gDoc.id !== 'group_default_tadabbur' && gDoc.id !== 'group_default_quran_readers';
+        });
+
+        // 1. Mark group documents for deletion
+        userCreatedGroups.forEach(gDoc => {
+          docRefsToDelete.set(gDoc.ref.path, gDoc.ref);
+        });
+
+        // 2. Query and mark all messages in these created groups for deletion
+        const groupMsgQueries = userCreatedGroups.map(gDoc => 
+          getDocs(query(collection(db, 'group_messages'), where('groupId', '==', gDoc.id)))
+        );
+        const groupMsgResults = await Promise.allSettled(groupMsgQueries);
+        groupMsgResults.forEach(res => {
+          if (res.status === 'fulfilled' && res.value?.docs) {
+            res.value.docs.forEach(docSnap => docRefsToDelete.set(docSnap.ref.path, docSnap.ref));
+          }
+        });
+      }
+
+      // Also clean any groups where user was invited in Firestore
       try {
         const extraGroupsQuery = await getDocs(query(collection(db, 'group_chats'), where('invitedMembers', 'array-contains', userId)));
         const extraPromises = extraGroupsQuery.docs.map(async (gDoc) => {
           try {
             const gData = gDoc.data() as GroupChat;
+            if (gData.createdBy === userId) return;
             const updatedInvited = (gData.invitedMembers || []).filter(m => m !== userId);
             await updateDoc(gDoc.ref, { invitedMembers: updatedInvited });
           } catch (e) {}
@@ -2639,40 +3185,225 @@ class CommunityService {
   public getDefaultStarterGroups(): GroupChat[] {
     return [
       {
-        groupId: 'group_default_quran_readers',
-        name: 'حلقة أهل القرآن العامة 📖',
-        description: 'ملتقى مبارك لمدارسة وتلاوة القرآن الكريم وتبادل الفوائد القرآنية بين جميع أفراد المجتمع.',
+        groupId: 'group_default_tadabbur',
+        name: 'مجلس الذكر وتدبر القرآن 🌿',
+        description: 'مجلس إيماني مبارك لتدبر معاني الآيات الكريمة، وتبادل النفحات والخواطر الإيمانية النافعة.',
         avatarUrl: '',
         createdBy: ADMIN_USER_ID,
         creatorName: 'المشرف العام',
-        members: [ADMIN_USER_ID],
-        memberCount: 256,
+        members: [],
+        memberCount: 0,
         invitedMembers: [],
         rejectedMembers: [],
-        lastMessage: 'مرحباً بكم في حلقة أهل القرآن العامة 📖، نسأل الله أن يجمعنا على كتابه الكريم.',
+        lastMessage: 'أهلاً بكم في مجلس الذكر وتدبر القرآن 🌿، نسأل الله أن يرزقنا تدبر آياته والعمل بها.',
         lastMessageSenderName: 'المشرف العام',
         lastMessageTime: '2025-01-01T00:00:00.000Z',
         createdAt: '2025-01-01T00:00:00.000Z',
         isPublic: true
       },
       {
-        groupId: 'group_default_tadabbur',
-        name: 'مجلس الذكر وتدبر الآيات 🌿',
-        description: 'مجلس إيماني لتدبر معاني الآيات العظيمة، واستنباط الهدايات والخواطر الإيمانية النافعة.',
+        groupId: 'group_default_quran_readers',
+        name: 'حلقة أهل القرآن العامة 📖',
+        description: 'ملتقى مبارك لمدارسة وتلاوة القرآن الكريم وتبادل الفوائد القرآنية بين جميع أفراد المجتمع.',
         avatarUrl: '',
         createdBy: ADMIN_USER_ID,
         creatorName: 'المشرف العام',
-        members: [ADMIN_USER_ID],
-        memberCount: 189,
+        members: [],
+        memberCount: 0,
         invitedMembers: [],
         rejectedMembers: [],
-        lastMessage: 'أهلاً بكم في مجلس الذكر وتدبر الآيات 🌿، شاركونا نفحات وتدبرات كتاب الله.',
+        lastMessage: 'مرحباً بكم في حلقة أهل القرآن العامة 📖، نسأل الله أن يجمعنا وإياكم على كتابه الكريم.',
         lastMessageSenderName: 'المشرف العام',
         lastMessageTime: '2025-01-01T00:00:00.000Z',
         createdAt: '2025-01-01T00:00:00.000Z',
         isPublic: true
       }
     ];
+  }
+
+  public getCleanGroupMembers(group?: GroupChat | null): string[] {
+    if (!group) return [];
+
+    // For the two default starter public groups: ALL registered readers of the app are automatically members!
+    if (group.groupId === 'group_default_tadabbur' || group.groupId === 'group_default_quran_readers') {
+      const allRegisteredUserIds = Array.from(this.usersMap.values())
+        .filter(u => u && u.userId && u.userId !== ADMIN_USER_ID && u.username && u.username.trim().length > 0)
+        .map(u => u.userId);
+      return Array.from(new Set(allRegisteredUserIds));
+    }
+
+    if (!Array.isArray(group.members)) return [];
+    const set = new Set<string>();
+    group.members.forEach(id => {
+      if (!id || id === ADMIN_USER_ID) return;
+      const u = this.usersMap.get(id);
+      if (u && u.username && u.username.trim().length > 0) {
+        set.add(id);
+      }
+    });
+    return Array.from(set);
+  }
+
+  public getGroupMembersCount(group?: GroupChat | null): number {
+    return this.getCleanGroupMembers(group).length;
+  }
+
+  public isValidGroupMessageSender(senderId?: string, fallbackName?: string): boolean {
+    if (!senderId) return false;
+    if (senderId === ADMIN_USER_ID) return true;
+    const sender = this.usersMap.get(senderId);
+    if (sender && sender.username && sender.username.trim().length > 0) return true;
+    if (fallbackName && fallbackName.trim().length > 0) return true;
+    return Boolean(senderId && senderId.trim().length > 0);
+  }
+
+  public getSenderProfile(senderId?: string, fallbackName?: string, fallbackAvatar?: string, fallbackCountry?: string): { username: string; avatarUrl?: string; country?: string } {
+    if (!senderId) {
+      return {
+        username: fallbackName || 'قارئ',
+        avatarUrl: fallbackAvatar,
+        country: fallbackCountry
+      };
+    }
+    if (senderId === ADMIN_USER_ID) {
+      return {
+        username: ADMIN_USER.username,
+        avatarUrl: ADMIN_USER.avatarUrl,
+        country: ADMIN_USER.country
+      };
+    }
+    const cur = this.getCurrentUser();
+    if (cur && cur.userId === senderId) {
+      return {
+        username: cur.username?.trim() || fallbackName || 'أنت',
+        avatarUrl: (cur.avatarUrl !== undefined && cur.avatarUrl !== '') ? cur.avatarUrl : fallbackAvatar,
+        country: cur.country || fallbackCountry
+      };
+    }
+    const user = this.usersMap.get(senderId);
+    if (user && user.username) {
+      return {
+        username: user.username.trim(),
+        avatarUrl: (user.avatarUrl !== undefined && user.avatarUrl !== '') ? user.avatarUrl : fallbackAvatar,
+        country: user.country || fallbackCountry
+      };
+    }
+    return {
+      username: fallbackName || 'قارئ',
+      avatarUrl: fallbackAvatar,
+      country: fallbackCountry
+    };
+  }
+
+  public enrichGroupMessage(msg: GroupMessage): GroupMessage {
+    const profile = this.getSenderProfile(msg.senderId, msg.senderName, msg.senderAvatarUrl, msg.senderCountry);
+    return {
+      ...msg,
+      senderName: profile.username,
+      senderAvatarUrl: profile.avatarUrl,
+      senderCountry: profile.country
+    };
+  }
+
+  public async cleanupOrphanedGroupData(): Promise<void> {
+    try {
+      // 1. Clean in-memory group messages of non-existent/deleted senders
+      const initialCount = this.groupMessagesList.length;
+      this.groupMessagesList = this.groupMessagesList.filter(m => this.isValidGroupMessageSender(m.senderId));
+
+      // 2. Clean each group's members array and sync to Firestore if changed
+      for (const grp of this.groupsList) {
+        const cleanMembers = this.getCleanGroupMembers(grp);
+        const originalMembers = grp.members || [];
+        const needsUpdate = originalMembers.length !== cleanMembers.length || 
+          originalMembers.some(id => !cleanMembers.includes(id)) ||
+          grp.memberCount !== cleanMembers.length;
+
+        if (needsUpdate) {
+          grp.members = cleanMembers;
+          grp.memberCount = cleanMembers.length;
+          updateDoc(doc(db, 'group_chats', grp.groupId), {
+            members: cleanMembers,
+            memberCount: cleanMembers.length
+          }).catch(() => {});
+        }
+      }
+
+      this.saveToLocalStorage();
+      if (this.groupMessagesList.length !== initialCount) {
+        window.dispatchEvent(new CustomEvent('community_group_messages_updated'));
+      }
+      window.dispatchEvent(new CustomEvent('community_groups_updated'));
+    } catch (e) {
+      console.warn('cleanupOrphanedGroupData error:', e);
+    }
+  }
+
+  public getPinnedGroupRank(group?: GroupChat | null): number {
+    if (!group) return 0;
+    if (group.groupId === 'group_default_tadabbur') return 1;
+    if (group.groupId === 'group_default_quran_readers') return 2;
+    const norm = this.normalizeArabicText(group.name || '');
+    if (norm.includes('مجلس الذكر')) return 1;
+    if (norm.includes('اهل القران') || norm.includes('أهل القرآن')) return 2;
+    return 0;
+  }
+
+  public isPinnedGroup(group?: GroupChat | null): boolean {
+    return this.getPinnedGroupRank(group) > 0;
+  }
+
+  public isStarterPublicGroup(groupOrId?: string | GroupChat | null): boolean {
+    if (!groupOrId) return false;
+    const id = typeof groupOrId === 'string' ? groupOrId : groupOrId.groupId;
+    if (id === 'group_default_tadabbur' || id === 'group_default_quran_readers') {
+      return true;
+    }
+    if (typeof groupOrId === 'object' && groupOrId !== null) {
+      return this.getPinnedGroupRank(groupOrId) > 0;
+    }
+    const grp = this.getGroupById(id);
+    return grp ? this.getPinnedGroupRank(grp) > 0 : false;
+  }
+
+  public getGroupDisplayInfo(group: GroupChat, userId?: string): { 
+    lastMessage?: string; 
+    lastMessageSenderName?: string; 
+    lastMessageTime?: string; 
+    unreadCount: number;
+  } {
+    const uid = userId || this.getCurrentUser()?.userId;
+    const isStarter = this.isStarterPublicGroup(group);
+    const unreadCount = this.getGroupUnreadCount(group.groupId, uid);
+
+    if (isStarter) {
+      const visibleMsgs = this.getGroupMessages(group.groupId, uid);
+      if (visibleMsgs.length > 0) {
+        const latest = visibleMsgs[visibleMsgs.length - 1];
+        const lastMsgText = latest.text || (latest.attachment ? (latest.attachment.type === 'image' ? 'صورة 📷' : latest.attachment.type === 'video' ? 'فيديو 🎥' : `ملف: ${latest.attachment.fileName || 'مستند'} 📄`) : (latest.verseData ? `آية من سورة ${latest.verseData.surahName}` : latest.audioUrl ? 'مقطع صوتي 🎙️' : 'رسالة جديدة'));
+        return {
+          lastMessage: lastMsgText,
+          lastMessageSenderName: latest.senderName,
+          lastMessageTime: latest.createdAt,
+          unreadCount
+        };
+      } else {
+        // No messages visible yet to this user after their account creation
+        return {
+          lastMessage: '',
+          lastMessageSenderName: '',
+          lastMessageTime: '',
+          unreadCount: 0
+        };
+      }
+    }
+
+    return {
+      lastMessage: group.lastMessage || '',
+      lastMessageSenderName: group.lastMessageSenderName || '',
+      lastMessageTime: group.lastMessageTime || group.createdAt || '',
+      unreadCount
+    };
   }
 
   public ensureStarterGroupsExist(): void {
@@ -2682,13 +3413,175 @@ class CommunityService {
       if (idx === -1) {
         this.groupsList.push(sg);
       } else {
-        // Ensure name and public flags are preserved
+        // Ensure name, public flags and description are up to date
         this.groupsList[idx].isPublic = true;
-        if (!this.groupsList[idx].name || this.groupsList[idx].name.length < 3) {
-          this.groupsList[idx].name = sg.name;
+        this.groupsList[idx].name = sg.name;
+        if (!this.groupsList[idx].description || this.groupsList[idx].description.length < 5) {
+          this.groupsList[idx].description = sg.description;
+        }
+        // Filter out ADMIN_USER_ID if present in starter group members
+        if (Array.isArray(this.groupsList[idx].members)) {
+          const clean = this.getCleanGroupMembers(this.groupsList[idx]);
+          this.groupsList[idx].members = clean;
+          this.groupsList[idx].memberCount = clean.length;
         }
       }
     });
+  }
+
+  public getGroupLastRead(groupId: string, userId?: string): { lastReadMessageId?: string; lastReadTime?: string } | null {
+    const uid = userId || this.getCurrentUser()?.userId;
+    if (uid && this.groupReadStateMap.has(`${groupId}_${uid}`)) {
+      return this.groupReadStateMap.get(`${groupId}_${uid}`) || null;
+    }
+    if (this.groupReadStateMap.has(groupId)) {
+      return this.groupReadStateMap.get(groupId) || null;
+    }
+    return null;
+  }
+
+  public getGroupUnreadCount(groupId: string, userId?: string): number {
+    const uid = userId || this.getCurrentUser()?.userId;
+    if (!uid) return 0;
+    const msgs = this.getGroupMessages(groupId, uid);
+    if (!msgs || msgs.length === 0) return 0;
+
+    const lastRead = this.getGroupLastRead(groupId, uid);
+
+    if (!lastRead || (!lastRead.lastReadTime && !lastRead.lastReadMessageId)) {
+      // If user has never opened the group, count messages sent by others that have not been read
+      return msgs.filter(m => m.senderId !== uid && !this.readGroupMessageIdsSet.has(m.messageId)).length;
+    }
+
+    const latestMsg = msgs[msgs.length - 1];
+    // If the latest message in the group is already marked as last read, unread count is definitively 0
+    if (lastRead.lastReadMessageId && latestMsg.messageId === lastRead.lastReadMessageId) {
+      return 0;
+    }
+
+    const lastReadTimeMs = lastRead.lastReadTime ? new Date(lastRead.lastReadTime).getTime() : 0;
+    let lastReadIdx = -1;
+    if (lastRead.lastReadMessageId) {
+      lastReadIdx = msgs.findIndex(m => m.messageId === lastRead.lastReadMessageId);
+    }
+
+    const unread = msgs.filter((m, idx) => {
+      if (m.senderId === uid) return false;
+      if (this.readGroupMessageIdsSet.has(m.messageId)) return false;
+      if (lastReadIdx !== -1 && idx <= lastReadIdx) return false;
+      if (lastReadTimeMs > 0) {
+        const msgTimeMs = new Date(m.createdAt).getTime();
+        if (msgTimeMs <= lastReadTimeMs) return false;
+      }
+      return true;
+    });
+
+    return unread.length;
+  }
+
+  public getFirstUnreadGroupMessage(groupId: string, userId?: string): GroupMessage | null {
+    const uid = userId || this.getCurrentUser()?.userId;
+    if (!uid) return null;
+    const msgs = this.getGroupMessages(groupId, uid);
+    if (!msgs || msgs.length === 0) return null;
+
+    const lastRead = this.getGroupLastRead(groupId, uid);
+
+    if (!lastRead || (!lastRead.lastReadTime && !lastRead.lastReadMessageId)) {
+      return msgs.find(m => m.senderId !== uid && !this.readGroupMessageIdsSet.has(m.messageId)) || null;
+    }
+
+    if (lastRead.lastReadMessageId) {
+      const idx = msgs.findIndex(m => m.messageId === lastRead.lastReadMessageId);
+      if (idx !== -1) {
+        return msgs.slice(idx + 1).find(m => m.senderId !== uid && !this.readGroupMessageIdsSet.has(m.messageId)) || null;
+      }
+    }
+
+    if (lastRead.lastReadTime) {
+      const lastReadTimeMs = new Date(lastRead.lastReadTime).getTime();
+      return msgs.find(m => {
+        if (m.senderId === uid) return false;
+        if (this.readGroupMessageIdsSet.has(m.messageId)) return false;
+        const msgTimeMs = new Date(m.createdAt).getTime();
+        return msgTimeMs > lastReadTimeMs;
+      }) || null;
+    }
+
+    return null;
+  }
+
+  public getLastReadGroupMessage(groupId: string, userId?: string): GroupMessage | null {
+    const uid = userId || this.getCurrentUser()?.userId;
+    if (!uid) return null;
+    const msgs = this.getGroupMessages(groupId, uid);
+    if (!msgs || msgs.length === 0) return null;
+
+    const lastRead = this.getGroupLastRead(groupId, uid);
+    if (lastRead?.lastReadMessageId) {
+      const found = msgs.find(m => m.messageId === lastRead.lastReadMessageId);
+      if (found) return found;
+    }
+
+    // Default to the latest message in the group
+    return msgs[msgs.length - 1];
+  }
+
+  public markGroupAsRead(groupId: string, lastMessageId?: string, lastMessageTime?: string): void {
+    const uid = this.getCurrentUser()?.userId;
+    if (!uid) return;
+    const msgs = this.getGroupMessages(groupId, uid);
+
+    // Record every current message in this group into the persistent read set
+    msgs.forEach(m => {
+      if (m.messageId) {
+        this.readGroupMessageIdsSet.add(m.messageId);
+      }
+    });
+
+    this.groupMessagesList.forEach(m => {
+      if (m.groupId === groupId && m.messageId) {
+        this.readGroupMessageIdsSet.add(m.messageId);
+      }
+    });
+
+    const latestMsg = msgs.length > 0 ? msgs[msgs.length - 1] : null;
+    const targetMsgId = lastMessageId || latestMsg?.messageId || '';
+    const latestTimeMs = latestMsg?.createdAt ? new Date(latestMsg.createdAt).getTime() : 0;
+    const nowMs = Date.now();
+    const safeReadTime = new Date(Math.max(nowMs, latestTimeMs + 5000)).toISOString();
+    const targetTime = lastMessageTime || safeReadTime;
+
+    const readState = {
+      lastReadMessageId: targetMsgId,
+      lastReadTime: targetTime
+    };
+
+    this.groupReadStateMap.set(`${groupId}_${uid}`, readState);
+    this.groupReadStateMap.set(groupId, readState);
+
+    this.saveToLocalStorage();
+    window.dispatchEvent(new CustomEvent('community_group_read_updated', { detail: { groupId } }));
+    window.dispatchEvent(new CustomEvent('community_groups_updated'));
+    window.dispatchEvent(new CustomEvent('community_group_messages_updated'));
+
+    // Sync group read position to Firestore for instant cross-device synchronization
+    const readDocId = `${uid}_${groupId}`;
+    setDoc(doc(db, 'group_reads', readDocId), {
+      readId: readDocId,
+      userId: uid,
+      groupId: groupId,
+      lastReadMessageId: targetMsgId || '',
+      lastReadTime: targetTime,
+      updatedAt: new Date().toISOString()
+    }, { merge: true }).catch(err => console.warn('Sync group read to Firestore:', err));
+  }
+
+  public getTotalUnreadGroupMessagesCount(userId?: string): number {
+    const uid = userId || this.getCurrentUser()?.userId;
+    if (!uid) return 0;
+    const allGroups = this.getGroups();
+    return allGroups.reduce((acc, g) => acc + this.getGroupUnreadCount(g.groupId, uid), 0);
   }
 
   public async fetchLatestGroups(): Promise<GroupChat[]> {
@@ -2727,17 +3620,93 @@ class CommunityService {
       snapshot.forEach((docSnap) => {
         const data = docSnap.data() as GroupMessage;
         if (data && (data.messageId || docSnap.id) && data.groupId) {
-          list.push({ ...data, messageId: data.messageId || docSnap.id });
+          const msgId = data.messageId || docSnap.id;
+          // Filter only expired deleted users (>30 days inactive)
+          if (data.senderId !== ADMIN_USER_ID) {
+            const sender = this.usersMap.get(data.senderId);
+            if (sender && this.isUserInactiveExpired(sender)) {
+              deleteDoc(doc(db, 'group_messages', msgId)).catch(() => {});
+              return;
+            }
+          }
+          list.push({ ...data, messageId: msgId });
         }
       });
 
       this.groupMessagesList = list;
       this.saveToLocalStorage();
       window.dispatchEvent(new CustomEvent('community_group_messages_updated', { detail: { groupId } }));
+      window.dispatchEvent(new CustomEvent('community_groups_updated'));
     } catch (e) {
       console.warn('Error fetching group messages:', e);
     }
     return groupId ? this.getGroupMessages(groupId) : this.groupMessagesList;
+  }
+
+  public async fetchServerReadStates(targetUserId?: string): Promise<void> {
+    const uid = targetUserId || this.getCurrentUser()?.userId;
+    if (!uid) return;
+
+    try {
+      // 1. Fetch group reads for this user
+      const grpSnap = await getDocs(query(collection(db, 'group_reads'), where('userId', '==', uid)));
+      grpSnap.forEach((docSnap) => {
+        const data = docSnap.data() as GroupReadRecord;
+        if (data && data.groupId) {
+          const state = {
+            lastReadMessageId: data.lastReadMessageId || '',
+            lastReadTime: data.lastReadTime || ''
+          };
+          this.groupReadStateMap.set(`${data.groupId}_${uid}`, state);
+          this.groupReadStateMap.set(data.groupId, state);
+
+          if (state.lastReadTime) {
+            const timeMs = new Date(state.lastReadTime).getTime();
+            this.groupMessagesList.forEach(gm => {
+              if (gm.groupId === data.groupId) {
+                if (gm.messageId === state.lastReadMessageId || new Date(gm.createdAt).getTime() <= timeMs) {
+                  this.readGroupMessageIdsSet.add(gm.messageId);
+                }
+              }
+            });
+          }
+        }
+      });
+
+      // 2. Fetch direct reads for this user
+      const dirSnap = await getDocs(query(collection(db, 'direct_reads'), where('userId', '==', uid)));
+      dirSnap.forEach((docSnap) => {
+        const data = docSnap.data() as DirectReadRecord;
+        if (data && data.partnerId) {
+          const state = {
+            lastReadMessageId: data.lastReadMessageId || '',
+            lastReadTime: data.lastReadTime || ''
+          };
+          this.directReadsMap.set(`${uid}_${data.partnerId}`, state);
+          this.directReadsMap.set(data.partnerId, state);
+
+          if (state.lastReadTime) {
+            const timeMs = new Date(state.lastReadTime).getTime();
+            this.messagesList.forEach(m => {
+              if (m.senderId === data.partnerId && m.recipientId === uid) {
+                if (m.messageId === state.lastReadMessageId || new Date(m.createdAt).getTime() <= timeMs) {
+                  m.isRead = true;
+                  this.readMessageIdsSet.add(m.messageId);
+                }
+              }
+            });
+          }
+        }
+      });
+
+      this.saveToLocalStorage();
+      window.dispatchEvent(new CustomEvent('community_messages_updated'));
+      window.dispatchEvent(new CustomEvent('community_groups_updated'));
+      window.dispatchEvent(new CustomEvent('community_group_read_updated'));
+      window.dispatchEvent(new CustomEvent('community_group_messages_updated'));
+    } catch (e) {
+      console.warn('Error fetching server read states:', e);
+    }
   }
 
   public recordExitTime(groupId: string, userId: string, exitTimeIso?: string): void {
@@ -2782,7 +3751,7 @@ class CommunityService {
   }
 
   public hideGroupFromMyPage(groupId: string): void {
-    if (groupId === 'group_default_quran_readers' || groupId === 'group_default_tadabbur') {
+    if (groupId === 'group_default_quran_readers' || groupId === 'group_default_tadabbur' || this.isPinnedGroup(this.getGroupById(groupId))) {
       return; // Starter groups CAN NEVER be hidden!
     }
     const current = this.getCurrentUser();
@@ -2817,7 +3786,7 @@ class CommunityService {
 
     return this.groupsList.filter(g => {
       // 1. Starter public groups ALWAYS appear for ALL members - NEVER HIDDEN!
-      if (g.groupId === 'group_default_quran_readers' || g.groupId === 'group_default_tadabbur') {
+      if (this.isPinnedGroup(g) || g.groupId === 'group_default_quran_readers' || g.groupId === 'group_default_tadabbur') {
         return true;
       }
 
@@ -2849,7 +3818,16 @@ class CommunityService {
       if (g.isPublic) return true;
 
       return isCreator || isMember || hasLeftOrRemoved;
-    }).sort((a, b) => new Date(b.lastMessageTime || b.createdAt || 0).getTime() - new Date(a.lastMessageTime || a.createdAt || 0).getTime());
+    }).sort((a, b) => {
+      // Strict Pinned Group Sorting:
+      // rank 1 (مجلس الذكر وتدبر القرآن) and rank 2 (حلقة أهل القرآن العامة) always stay at the very top!
+      const rankA = this.getPinnedGroupRank(a);
+      const rankB = this.getPinnedGroupRank(b);
+      if (rankA > 0 && rankB > 0) return rankA - rankB;
+      if (rankA > 0) return -1;
+      if (rankB > 0) return 1;
+      return new Date(b.lastMessageTime || b.createdAt || 0).getTime() - new Date(a.lastMessageTime || a.createdAt || 0).getTime();
+    });
   }
 
   public getGroupById(groupId: string): GroupChat | undefined {
@@ -3158,7 +4136,8 @@ class CommunityService {
     }
 
     const members = new Set<string>(group.members || []);
-    if (!members.has(current.userId)) {
+    members.delete(ADMIN_USER_ID);
+    if (current.userId !== ADMIN_USER_ID && !members.has(current.userId)) {
       members.add(current.userId);
       group.members = Array.from(members);
       group.memberCount = members.size;
@@ -3642,19 +4621,31 @@ class CommunityService {
     window.dispatchEvent(new CustomEvent('community_group_messages_updated', { detail: { groupId } }));
   }
 
-  public getGroupMessages(groupId: string): GroupMessage[] {
-    // 1. Starter public groups: ALWAYS accessible to ALL users with ALL messages!
-    if (groupId === 'group_default_quran_readers' || groupId === 'group_default_tadabbur') {
-      return this.groupMessagesList
-        .filter(m => m.groupId === groupId)
+  public getGroupMessages(groupId: string, targetUserId?: string): GroupMessage[] {
+    const uid = targetUserId || this.getCurrentUser()?.userId;
+    const current = (uid && uid === this.getCurrentUser()?.userId) ? this.getCurrentUser() : (uid ? this.getUserById(uid) : this.getCurrentUser());
+    const isAdmin = this.isCurrentUserAdmin() || this.isUserAdminSession() || (uid === ADMIN_USER_ID);
+
+    // 1. Starter public groups: ALWAYS accessible to ALL users with valid messages!
+    // But for regular users: strictly filter out any messages sent prior to account creation (current.createdAt)!
+    if (this.isStarterPublicGroup(groupId)) {
+      const allMsgs = this.groupMessagesList
+        .filter(m => m.groupId === groupId && this.isValidGroupMessageSender(m.senderId, m.senderName))
+        .map(m => this.enrichGroupMessage(m))
         .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+
+      // Administrators view all messages unconditionally for moderation
+      if (isAdmin) {
+        return allMsgs;
+      }
+
+      return allMsgs;
     }
 
-    const current = this.getCurrentUser();
     const group = this.getGroupById(groupId);
 
     // If user has left or was removed from this custom group:
-    if (current?.userId && group && !this.isGroupCreator(group, current) && current.userId !== ADMIN_USER_ID) {
+    if (current?.userId && group && !this.isGroupCreator(group, current) && !isAdmin) {
       const isMember = Array.isArray(group.members) && group.members.includes(current.userId);
       if (!isMember) {
         let exitTime = this.getMemberExitTime(groupId, current.userId);
@@ -3667,16 +4658,19 @@ class CommunityService {
         return this.groupMessagesList
           .filter(m => {
             if (m.groupId !== groupId) return false;
+            if (!this.isValidGroupMessageSender(m.senderId, m.senderName)) return false;
             // Do NOT show any messages sent AFTER exit time!
             const msgTime = new Date(m.createdAt).getTime();
             return msgTime <= exitTimeMs;
           })
+          .map(m => this.enrichGroupMessage(m))
           .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
       }
     }
 
     return this.groupMessagesList
-      .filter(m => m.groupId === groupId)
+      .filter(m => m.groupId === groupId && this.isValidGroupMessageSender(m.senderId, m.senderName))
+      .map(m => this.enrichGroupMessage(m))
       .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
   }
 
@@ -3686,7 +4680,8 @@ class CommunityService {
     verseData?: QuranVerseAttachment,
     audioUrl?: string,
     audioDuration?: number,
-    attachment?: ChatAttachment
+    attachment?: ChatAttachment,
+    replyTo?: QuotedReplyMessage
   ): Promise<GroupMessage> {
     const current = this.getCurrentUser();
     if (!this.isProfileComplete()) {
@@ -3722,6 +4717,7 @@ class CommunityService {
       audioUrl,
       audioDuration,
       attachment,
+      replyTo,
       createdAt: new Date().toISOString()
     };
 
@@ -3732,20 +4728,29 @@ class CommunityService {
       group.lastMessageSenderName = current.username;
       group.lastMessageTime = newMsg.createdAt;
       if (!group.members) group.members = [];
-      if (!group.members.includes(current.userId)) {
+      group.members = group.members.filter(m => m !== ADMIN_USER_ID);
+      if (current.userId !== ADMIN_USER_ID && !group.members.includes(current.userId)) {
         group.members.push(current.userId);
         group.memberCount = group.members.length;
       }
     }
 
     this.saveToLocalStorage();
+    this.markGroupAsRead(groupId, newMsg.messageId, newMsg.createdAt);
 
+    // Immediately dispatch events so the message appears in the group chat instantaneously
+    window.dispatchEvent(new CustomEvent('community_group_messages_updated', { detail: { groupId } }));
+    window.dispatchEvent(new CustomEvent('community_groups_updated'));
+
+    // Non-blocking background sync to Firestore
     try {
       const payload = this.cleanPayload(newMsg);
-      await setDoc(doc(db, 'group_messages', messageId), payload);
+      setDoc(doc(db, 'group_messages', messageId), payload).catch((e) => {
+        console.warn('Background sync group message to Firestore:', e);
+      });
 
       if (group) {
-        await updateDoc(doc(db, 'group_chats', groupId), {
+        updateDoc(doc(db, 'group_chats', groupId), {
           lastMessage: group.lastMessage,
           lastMessageSenderName: group.lastMessageSenderName,
           lastMessageTime: group.lastMessageTime,
@@ -3754,13 +4759,38 @@ class CommunityService {
         }).catch(() => {});
       }
     } catch (e) {
-      console.warn('Error sending group message to Firestore:', e);
+      console.warn('Error queuing group message to Firestore:', e);
     }
 
-    window.dispatchEvent(new CustomEvent('community_group_messages_updated', { detail: { groupId } }));
-    window.dispatchEvent(new CustomEvent('community_groups_updated'));
-
     return newMsg;
+  }
+
+  public async toggleGroupMessageReaction(messageId: string, emoji: string): Promise<void> {
+    const current = this.getCurrentUser();
+    if (!current?.userId || !messageId || !emoji) return;
+
+    const msg = this.groupMessagesList.find(m => m.messageId === messageId);
+    if (!msg) return;
+
+    const reactions: { [userId: string]: string } = { ...(msg.reactions || {}) };
+    if (reactions[current.userId] === emoji) {
+      delete reactions[current.userId];
+    } else {
+      reactions[current.userId] = emoji;
+    }
+
+    msg.reactions = reactions;
+    this.saveToLocalStorage();
+
+    try {
+      await updateDoc(doc(db, 'group_messages', messageId), {
+        reactions
+      });
+    } catch (e) {
+      console.warn('Error updating group message reaction in Firestore:', e);
+    }
+
+    window.dispatchEvent(new CustomEvent('community_group_messages_updated', { detail: { groupId: msg.groupId } }));
   }
 
   public async deleteGroupMessage(messageId: string, currentUserId?: string): Promise<void> {

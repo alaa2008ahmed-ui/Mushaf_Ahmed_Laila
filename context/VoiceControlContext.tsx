@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useRef, useCallb
 import { App as CapacitorApp } from '@capacitor/app';
 import { parseVoiceCommand, normalizeArabic } from '../utils/voiceParser';
 import { SURAH_NAMES_AR } from '../components/QuranReader/constants';
+import { requestMicrophonePermission } from '../utils/permissionHelper';
 
 export interface VoiceCommand {
     id: string;
@@ -321,8 +322,9 @@ export const VoiceControlProvider: React.FC<{ children: React.ReactNode, onActio
             
             console.log('Voice Recognition Started. Active phrases:', commands.map(c => c.phrase));
             
-            // 1. Safely check and request permissions without blocking
+            // 1. Safely check and request permissions in-app without blocking
             try {
+                await requestMicrophonePermission();
                 const checkPerm = await SpeechRecognition.checkPermissions();
                 if (checkPerm.speechRecognition !== 'granted') {
                     await SpeechRecognition.requestPermissions();

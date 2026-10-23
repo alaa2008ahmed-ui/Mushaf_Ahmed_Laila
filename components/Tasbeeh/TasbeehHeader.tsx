@@ -2,15 +2,17 @@ import React from 'react';
 import ThemePageLock from '../ThemePageLock';
 import { useLanguage } from '../../context/LanguageContext';
 import { tTasbeeh } from '../../utils/tasbeehTranslations';
+import { HelpCircle } from 'lucide-react';
 
 interface TasbeehHeaderProps {
     title?: string;
     subtitle?: string;
     onBack?: () => void;
     onHome?: () => void;
+    onOpenGuide?: () => void;
 }
 
-const TasbeehHeader: React.FC<TasbeehHeaderProps> = ({ onBack, onHome }) => {
+const TasbeehHeader: React.FC<TasbeehHeaderProps> = ({ onBack, onHome, onOpenGuide }) => {
     const { language, isRTL } = useLanguage();
     const localizedTitle = tTasbeeh('title', language);
 
@@ -39,8 +41,20 @@ const TasbeehHeader: React.FC<TasbeehHeaderProps> = ({ onBack, onHome }) => {
                         </h1>
                     </div>
 
-                    {/* Home icon & Theme Lock on left/right */}
+                    {/* Guide, Home icon & Theme Lock on left/right */}
                     <div className="absolute left-0 flex items-center gap-1 rtl:left-0 rtl:right-auto ltr:left-auto ltr:right-0">
+                        {onOpenGuide && (
+                            <button
+                                type="button"
+                                onClick={onOpenGuide}
+                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                style={{ color: 'var(--top-bar-text, inherit)' }}
+                                title={language === 'en' ? "Tasbeeh Guide" : "دليل السبحة"}
+                                aria-label={language === 'en' ? "Tasbeeh Guide" : "دليل السبحة"}
+                            >
+                                <HelpCircle size={19} />
+                            </button>
+                        )}
                         <ThemePageLock />
                         {onHome && (
                             <button

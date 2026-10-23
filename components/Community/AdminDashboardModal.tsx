@@ -270,7 +270,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
         setIsLoadingGroupMessages(true);
         try {
             await communityService.fetchLatestGroupMessages(group.groupId);
-            const msgs = communityService.getGroupMessages(group.groupId);
+            const msgs = communityService.getGroupMessages(group.groupId, ADMIN_USER_ID);
             setGroupMessages(msgs);
         } catch (e) {
             console.error('Error loading group messages:', e);
@@ -393,7 +393,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
             await communityService.adminSendGroupMessage(selectedGroup.groupId, adminGroupMessageText.trim());
             setAdminGroupMessageText('');
             showAdminToast('تم إرسال الرسالة إلى المجموعة بنجاح 🛡️');
-            const refreshed = communityService.getGroupMessages(selectedGroup.groupId);
+            const refreshed = communityService.getGroupMessages(selectedGroup.groupId, ADMIN_USER_ID);
             setGroupMessages(refreshed);
         } catch (e) {
             console.error('Error sending group message:', e);
@@ -619,8 +619,9 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
             const targetUid = userToDeleteConfirm.userId;
             const uName = userToDeleteConfirm.username || 'القارئ';
 
-            // Optimistically remove user and messages from modal state immediately (0ms delay)
+            // Optimistically remove user, their groups, and messages from modal state immediately (0ms delay)
             setUsers(prev => prev.filter(u => u.userId !== targetUid));
+            setGroups(prev => prev.filter(g => g.createdBy !== targetUid));
             setServerMessages(prev => prev.filter(m => m.senderId !== targetUid && m.recipientId !== targetUid));
             setGroupMessages(prev => prev.filter(m => m.senderId !== targetUid));
             setUserToDeleteConfirm(null);
@@ -630,7 +631,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
             // Execute high-speed comprehensive batch deletion in Firestore
             await communityService.deleteUser(targetUid);
-            showAdminToast(`تم حذف حساب القارئ "${uName}" ومسح جميع رسائله الخاصة وبالمجموعات نهائياً ✅`);
+            showAdminToast(`تم حذف حساب القارئ "${uName}" ومجموعاته وجميع رسائله نهائياً من التطبيق والسيرفر ✅`);
             loadData(false);
         } catch (e) {
             console.error('Error deleting user:', e);
@@ -2438,7 +2439,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                                                             </p>
                                                         )}
                                                         <p className="text-[10px] text-slate-400 truncate mt-0.5 font-medium">
-                                                            {grp.members?.length || 1} عضو
+                                                            {communityService.getGroupMembersCount(grp)} عضو
                                                         </p>
                                                     </div>
                                                 </div>
@@ -2485,7 +2486,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                                                 {cleanGroupName(selectedGroup.name)}
                                             </h3>
                                             <p className="text-[11px] text-slate-400 truncate flex items-center gap-1.5 font-medium">
-                                                <span>{selectedGroup.members?.length || 1} عضو</span>
+                                                <span>{communityService.getGroupMembersCount(selectedGroup)} عضو</span>
                                                 <span>•</span>
                                                 <span>{groupMessages.length} رسالة</span>
                                             </p>
@@ -2936,8 +2937,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
                         {/* Modal 2: Manage Group Members Modal */}
                         {showManageMembersModal && selectedGroup && (() => {
-                            const membersList = (selectedGroup.members || []).map(mId => {
-                                const u = users.find(usr => usr.userId === mId);
+                            const membersList = communityService.getCleanGroupMembers(selectedGroup).map(mId => {
+                                const u = users.find(usr => usr.userId === mId) || communityService.getUserById(mId);
                                 return u || {
                                     userId: mId,
                                     username: 'عضو',
@@ -2963,7 +2964,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                                         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2.5">
                                             <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900 dark:text-white">
                                                 <Users size={16} className="text-indigo-600 dark:text-indigo-400" />
-                                                <span>أعضاء المجموعة ({selectedGroup.members?.length || 1})</span>
+                                                <span>أعضاء المجموعة ({communityService.getGroupMembersCount(selectedGroup)})</span>
                                             </div>
                                             <button
                                                 type="button"

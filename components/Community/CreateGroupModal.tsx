@@ -26,7 +26,7 @@ export const PRESET_GROUP_IMAGES = [
 
 export const PRESET_ICONS = ['📖', '🌿', '🕌', '🕋', '💫', '🌸', '🤍', '🌟', '🌙', '🕊️'];
 
-const compressAvatar = (dataUrl: string, maxDim = 180, quality = 0.8): Promise<string> => {
+const compressAvatar = (dataUrl: string, maxDim = 512, quality = 0.90): Promise<string> => {
   return new Promise((resolve) => {
     if (!dataUrl || !dataUrl.startsWith('data:image')) {
       return resolve(dataUrl);

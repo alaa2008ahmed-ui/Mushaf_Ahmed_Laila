@@ -22,6 +22,12 @@ service cloud.firestore {
     match /group_messages/{messageId} {
       allow read, write: if true;
     }
+    match /group_reads/{readId} {
+      allow read, write: if true;
+    }
+    match /direct_reads/{readId} {
+      allow read, write: if true;
+    }
     match /{document=**} {
       allow read, write: if true;
     }

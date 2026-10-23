@@ -9,7 +9,10 @@ import { shareAsImage } from '../utils/shareAsImage';
 import { playTTS, stopTTS, subscribeTTS } from '../utils/ttsEngine';
 import { useHabitTracker } from '../hooks/useHabitTracker';
 import { useLanguage } from '../context/LanguageContext';
-import { LayoutGrid, ListFilter } from 'lucide-react';
+import { LayoutGrid, ListFilter, HelpCircle } from 'lucide-react';
+import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/CommunitySpotlightGuide';
+import { ADIA_PAGE_STEPS } from '../components/Community/communityTourSteps';
+import { markPageAsSeen } from '../utils/badgeManager';
 
 const ADIA_STATUS_KEY = 'adia_status_v1';
 const toArabicNumerals = (num: number) => String(num).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[+d]);
@@ -24,12 +27,12 @@ function Adia({ onBack, onNavigate }: AdiaProps) {
     const { language } = useLanguage();
     const isEn = language === 'en';
     const isBlackTheme = theme.bgColor === '#000000';
-    const isDefaultTheme = themeKey === 'default';
+    const isDefaultTheme = themeKey === 'default' || theme.name === 'الافتراضي' || !!theme.isOriginal || !themeKey;
     const cardBorderColor = isDefaultTheme 
         ? '#000000' 
         : (isBlackTheme 
-            ? '#FFFFFF' 
-            : (theme.palette?.[0] || '#000000'));
+            ? 'rgba(255, 255, 255, 0.2)' 
+            : (theme.palette?.[0] + '33' || 'rgba(0, 0, 0, 0.08)'));
     const [zoomedDuaa, setZoomedDuaa] = useState<DuaaItem | null>(null);
     const [activeCategory, setActiveCategory] = useState('all');
     const [favorites, setFavorites] = useState<string[]>([]);
@@ -37,6 +40,14 @@ function Adia({ onBack, onNavigate }: AdiaProps) {
     const [activeTab, setActiveTab] = useState<'grid' | 'list'>('grid');
     const [toastMessage, setToastMessage] = useState('');
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [showGuide, setShowGuide] = useState(false);
+    
+    useEffect(() => {
+        markPageAsSeen('adia');
+        if (!getGuideSeen('adia_page_spotlight')) {
+            setShowGuide(true);
+        }
+    }, []);
     const [menuOpenDirection, setMenuOpenDirection] = useState<'up' | 'down'>('up');
     const [playingText, setPlayingText] = useState<string | null>(null);
     const fabRef = useRef<HTMLButtonElement>(null);
@@ -271,6 +282,16 @@ function Adia({ onBack, onNavigate }: AdiaProps) {
 
                         {/* أيقونة المنزل: على اليسار في العربي، وعلى اليمين في الإنجليزي */}
                         <div className={`absolute ${isEn ? 'right-0' : 'left-0'} flex items-center gap-1`}>
+                            <button
+                                type="button"
+                                onClick={() => setShowGuide(true)}
+                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                style={{ color: 'var(--top-bar-text, inherit)' }}
+                                title={isEn ? "Adia Guide" : "دليل الأدعية"}
+                                aria-label={isEn ? "Adia Guide" : "دليل الأدعية"}
+                            >
+                                <HelpCircle size={19} />
+                            </button>
                             <ThemePageLock />
                             <button
                                 onClick={handleGoHome}
@@ -286,10 +307,10 @@ function Adia({ onBack, onNavigate }: AdiaProps) {
             </header>
 
             <main ref={mainRef} className="w-full flex-1 overflow-y-auto px-4 pt-2 pb-4">
-                <div className="mb-6 max-w-3xl mx-auto flex items-center gap-2">
+                <div className="mb-6 max-w-3xl mx-auto flex items-center gap-2 w-full" dir={isEn ? 'ltr' : 'rtl'}>
                     <div 
                         className="relative flex-1 border-2 rounded-2xl overflow-hidden focus-within:ring-2 transition-all shadow-sm" 
-                        style={{ borderColor: cardBorderColor, ...(themeKey === 'default' ? { focusRingColor: '#000'} : { focusRingColor: theme.palette[0]}) }}
+                        style={{ borderColor: cardBorderColor, ...(isDefaultTheme ? { focusRingColor: '#000'} : { focusRingColor: theme.palette[0]}) }}
                     >
                         <input 
                             type="text" 
@@ -326,7 +347,7 @@ function Adia({ onBack, onNavigate }: AdiaProps) {
                             onClick={() => setActiveTab('grid')}
                             className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTab === 'grid' ? 'shadow-sm' : 'opacity-60 hover:opacity-100'}`}
                             style={activeTab === 'grid' ? {
-                                backgroundColor: isBlackTheme ? '#FFFFFF' : theme.palette[0],
+                                backgroundColor: isBlackTheme ? '#FFFFFF' : (isDefaultTheme ? '#000000' : theme.palette[0]),
                                 color: isBlackTheme ? '#000000' : '#ffffff'
                             } : { color: 'var(--text-color)' }}
                             title={isEn ? "Grid View" : "عرض شبكي"}
@@ -338,12 +359,13 @@ function Adia({ onBack, onNavigate }: AdiaProps) {
                             onClick={() => setActiveTab('list')}
                             className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTab === 'list' ? 'shadow-sm' : 'opacity-60 hover:opacity-100'}`}
                             style={activeTab === 'list' ? {
-                                backgroundColor: isBlackTheme ? '#FFFFFF' : theme.palette[0],
+                                backgroundColor: isBlackTheme ? '#FFFFFF' : (isDefaultTheme ? '#000000' : theme.palette[0]),
                                 color: isBlackTheme ? '#000000' : '#ffffff'
                             } : { color: 'var(--text-color)' }}
-                            >
-                                <ListFilter size={16} />
-                            </button>
+                            title={isEn ? "List View" : "عرض القوائم"}
+                        >
+                            <ListFilter size={16} />
+                        </button>
                     </div>
                 </div>
 
@@ -658,6 +680,16 @@ function Adia({ onBack, onNavigate }: AdiaProps) {
                     </div>
                 </div>
             )}
+            <CommunitySpotlightGuide
+                isOpen={showGuide}
+                onClose={() => {
+                    setShowGuide(false);
+                    markPageAsSeen('adia');
+                }}
+                steps={ADIA_PAGE_STEPS}
+                guideKey="adia_page_spotlight"
+                isEn={isEn}
+            />
         </div>
     );
 }

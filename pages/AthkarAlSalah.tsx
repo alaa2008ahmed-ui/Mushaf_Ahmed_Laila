@@ -9,7 +9,10 @@ import { playTTS, stopTTS, subscribeTTS } from '../utils/ttsEngine';
 import { useHabitTracker } from '../hooks/useHabitTracker';
 import { useLanguage } from '../context/LanguageContext';
 import { BottomSalahGuides } from '../components/AthkarAlSalah/BottomSalahGuides';
-import { LayoutGrid, ListFilter, Search } from 'lucide-react';
+import { LayoutGrid, ListFilter, Search, HelpCircle } from 'lucide-react';
+import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/CommunitySpotlightGuide';
+import { ATHKAR_SALAH_PAGE_STEPS } from '../components/Community/communityTourSteps';
+import { markPageAsSeen } from '../utils/badgeManager';
 
 const SalahZikrCard = ({ 
     zikr, 
@@ -33,12 +36,12 @@ const SalahZikrCard = ({
     const { language } = useLanguage();
     const isEn = language === 'en';
     const isBlackTheme = theme.bgColor === '#000000';
-    const isDefaultTheme = themeKey === 'default';
+    const isDefaultTheme = themeKey === 'default' || theme.name === 'الافتراضي' || !!theme.isOriginal || !themeKey;
     const cardBorderColor = isDefaultTheme 
         ? '#000000' 
         : (isBlackTheme 
-            ? '#FFFFFF' 
-            : (theme.palette?.[0] || '#000000'));
+            ? 'rgba(255, 255, 255, 0.2)' 
+            : (theme.palette?.[0] + '33' || 'rgba(0, 0, 0, 0.08)'));
     const [isFav, setIsFav] = useState(false);
     const [playingText, setPlayingText] = useState<string | null>(null);
     const isFinished = zikr.currentCount === 0;
@@ -151,7 +154,10 @@ const SalahZikrCard = ({
                     style={
                         isFinished 
                         ? { backgroundColor: 'var(--badge-finished-bg)', color: 'var(--badge-finished-text)' } 
-                        : { backgroundImage: `linear-gradient(to bottom right, ${theme.palette[0]}, ${theme.palette[1]})`, color: theme.textColor }
+                        : (isDefaultTheme 
+                            ? { backgroundColor: '#ffffff', color: '#000000', border: '1px solid rgba(0,0,0,0.1)' } 
+                            : { backgroundImage: `linear-gradient(to bottom right, ${theme.palette[0]}, ${theme.palette[1]})`, color: theme.name === 'اسود' ? '#000000' : '#ffffff' }
+                        )
                     }
                 >
                     {isFinished ? <i className="fa-solid fa-check"></i> : zikr.currentCount}
@@ -236,12 +242,8 @@ function AthkarAlSalah({ onBack, onNavigate }: AthkarAlSalahProps) {
     const { language } = useLanguage();
     const isEn = language === 'en';
     const isBlackTheme = theme.bgColor === '#000000';
-    const isDefaultTheme = themeKey === 'default';
-    const cardBorderColor = isDefaultTheme 
-        ? '#000000' 
-        : (isBlackTheme 
-            ? '#FFFFFF' 
-            : (theme.palette?.[0] || '#000000'));
+    const isDefaultTheme = themeKey === 'default' || theme.name === 'الافتراضي' || !!theme.isOriginal || !themeKey;
+    const cardBorderColor = isBlackTheme ? '#222222' : (theme.isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)');
     const [currentPrayer, setCurrentPrayer] = useState<{ id: string; title: string; titleEn?: string } | null>(null);
     const [athkarList, setAthkarList] = useState<any[]>([]);
     const [zoomedZikr, setZoomedZikr] = useState<any>(null);
@@ -249,6 +251,14 @@ function AthkarAlSalah({ onBack, onNavigate }: AthkarAlSalahProps) {
     const [isFavoritesView, setIsFavoritesView] = useState(false);
     const [favorites, setFavorites] = useState<string[]>([]);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [showGuide, setShowGuide] = useState(false);
+
+    useEffect(() => {
+        markPageAsSeen('athkar_salah');
+        if (!getGuideSeen('athkar_salah_page_spotlight')) {
+            setShowGuide(true);
+        }
+    }, []);
     const [menuOpenDirection, setMenuOpenDirection] = useState<'up' | 'down'>('up');
     const [activeTab, setActiveTab] = useState<'grid' | 'list'>('list');
     const [searchQuery, setSearchQuery] = useState('');
@@ -441,6 +451,16 @@ function AthkarAlSalah({ onBack, onNavigate }: AthkarAlSalahProps) {
 
                         {/* زر الهوم: على اليسار في العربي، وعلى اليمين في الإنجليزي */}
                         <div className={`absolute ${isEn ? 'right-0' : 'left-0'} flex items-center gap-1`}>
+                            <button
+                                type="button"
+                                onClick={() => setShowGuide(true)}
+                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                style={{ color: 'var(--top-bar-text, inherit)' }}
+                                title={isEn ? "Athkar Guide" : "دليل أذكار الصلاة"}
+                                aria-label={isEn ? "Athkar Guide" : "دليل أذكار الصلاة"}
+                            >
+                                <HelpCircle size={19} />
+                            </button>
                             <ThemePageLock />
                             <button
                                 onClick={handleGoHome}
@@ -455,30 +475,30 @@ function AthkarAlSalah({ onBack, onNavigate }: AthkarAlSalahProps) {
                 </div>
             </header>
 
-            <main className="flex-1 overflow-y-auto hide-scrollbar relative max-w-2xl mx-auto w-full px-4 pt-2 pb-4 flex flex-col">
-                {/* Controls Bar: Search and View Mode Switch */}
-                <div className="pt-1 pb-3 w-full flex items-center justify-between gap-2 z-10 shrink-0">
+            <main className="flex-1 overflow-y-auto hide-scrollbar relative max-w-3xl mx-auto w-full px-4 pt-2 pb-4 flex flex-col">
+                {/* Controls Bar: Search and View Mode Switch - Matches Adia/OthersPage */}
+                <div className="mb-6 max-w-3xl mx-auto w-full flex items-center gap-2 z-10 shrink-0" dir={isEn ? 'ltr' : 'rtl'}>
                     {/* Search Input */}
-                    <div className="relative flex-1">
-                        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-400">
-                            <Search size={16} />
-                        </div>
-                        <input
-                            type="text"
+                    <div 
+                        className="relative flex-1 border-2 rounded-2xl overflow-hidden focus-within:ring-2 transition-all shadow-sm" 
+                        style={{ borderColor: cardBorderColor, ...(isDefaultTheme ? { focusRingColor: '#000'} : { focusRingColor: theme.palette[0]}) }}
+                    >
+                        <input 
+                            type="text" 
+                            placeholder={isEn ? "Search prayer remembrances..." : "ابحث في أذكار الصلاة..."} 
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder={isEn ? "Search by name or meaning..." : "ابحث بالاسم أو المعنى..."}
-                            className="w-full pr-9 pl-4 py-2 rounded-xl text-xs sm:text-sm border shadow-sm outline-none transition-all"
-                            style={{
-                                backgroundColor: isBlackTheme ? '#111111' : (theme.isDark ? '#1e293b' : '#ffffff'),
-                                borderColor: cardBorderColor,
-                                color: 'var(--text-color)'
-                            }}
+                            className={`w-full bg-black/5 dark:bg-white/5 py-3 ${isEn ? 'pl-12 pr-10 text-left font-sans' : 'pr-12 pl-10 text-right font-kufi'} focus:outline-none placeholder-gray-500 dark:placeholder-gray-400`}
+                            style={{ color: 'var(--text-color)' }}
                         />
+                        <i 
+                            className={`fa-solid fa-search absolute ${isEn ? 'left-4' : 'right-4'} top-1/2 transform -translate-y-1/2 opacity-50`} 
+                            style={{ color: 'var(--text-color)' }}
+                        ></i>
                         {searchQuery && (
                             <button
                                 onClick={() => setSearchQuery('')}
-                                className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400 hover:text-gray-600"
+                                className={`absolute inset-y-0 ${isEn ? 'right-4' : 'left-4'} flex items-center text-gray-400 hover:text-gray-600`}
                             >
                                 <i className="fa-solid fa-times text-xs"></i>
                             </button>
@@ -487,7 +507,7 @@ function AthkarAlSalah({ onBack, onNavigate }: AthkarAlSalahProps) {
 
                     {/* View Mode Switch */}
                     <div 
-                        className="flex items-center p-1 rounded-xl border shrink-0 shadow-sm"
+                        className="flex items-center p-1 rounded-2xl border shrink-0 shadow-sm"
                         style={{
                             backgroundColor: isBlackTheme ? '#111111' : (theme.isDark ? '#1e293b' : '#ffffff'),
                             borderColor: cardBorderColor
@@ -496,26 +516,27 @@ function AthkarAlSalah({ onBack, onNavigate }: AthkarAlSalahProps) {
                         <button
                             type="button"
                             onClick={() => setActiveTab('grid')}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${activeTab === 'grid' ? 'shadow-sm' : 'opacity-60 hover:opacity-100'}`}
+                            className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTab === 'grid' ? 'shadow-sm' : 'opacity-60 hover:opacity-100'}`}
                             style={activeTab === 'grid' ? {
-                                backgroundColor: isBlackTheme ? '#FFFFFF' : theme.palette[0],
+                                backgroundColor: isBlackTheme ? '#FFFFFF' : (isDefaultTheme ? '#000000' : theme.palette[0]),
                                 color: isBlackTheme ? '#000000' : '#ffffff'
                             } : { color: 'var(--text-color)' }}
                             title={isEn ? "Grid View" : "عرض شبكي"}
                         >
-                            <LayoutGrid size={15} />
+                            <LayoutGrid size={16} />
                         </button>
                         <button
                             type="button"
                             onClick={() => setActiveTab('list')}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${activeTab === 'list' ? 'shadow-sm' : 'opacity-60 hover:opacity-100'}`}
+                            className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTab === 'list' ? 'shadow-sm' : 'opacity-60 hover:opacity-100'}`}
                             style={activeTab === 'list' ? {
-                                backgroundColor: isBlackTheme ? '#FFFFFF' : theme.palette[0],
+                                backgroundColor: isBlackTheme ? '#FFFFFF' : (isDefaultTheme ? '#000000' : theme.palette[0]),
                                 color: isBlackTheme ? '#000000' : '#ffffff'
                             } : { color: 'var(--text-color)' }}
-                            >
-                                <ListFilter size={15} />
-                            </button>
+                            title={isEn ? "List View" : "عرض القوائم"}
+                        >
+                            <ListFilter size={16} />
+                        </button>
                     </div>
                 </div>
 
@@ -564,10 +585,10 @@ function AthkarAlSalah({ onBack, onNavigate }: AthkarAlSalahProps) {
                                           borderStyle: 'solid',
                                           ...(activeTab === 'grid' ? {} : (isEn ? {
                                               borderLeftWidth: '4px',
-                                              borderLeftColor: prayer.color === 'primary' ? theme.palette[0] : theme.palette[1]
+                                              borderLeftColor: prayer.color === 'primary' ? (isDefaultTheme ? '#000000' : theme.palette[0]) : theme.palette[1]
                                           } : {
                                               borderRightWidth: '4px',
-                                              borderRightColor: prayer.color === 'primary' ? theme.palette[0] : theme.palette[1]
+                                              borderRightColor: prayer.color === 'primary' ? (isDefaultTheme ? '#000000' : theme.palette[0]) : theme.palette[1]
                                           }))
                                       }}
                                  >
@@ -792,6 +813,16 @@ function AthkarAlSalah({ onBack, onNavigate }: AthkarAlSalahProps) {
                     </motion.div>
                 )}
             </AnimatePresence>
+            <CommunitySpotlightGuide
+                isOpen={showGuide}
+                onClose={() => {
+                    setShowGuide(false);
+                    markPageAsSeen('athkar_salah');
+                }}
+                steps={ATHKAR_SALAH_PAGE_STEPS}
+                guideKey="athkar_salah_page_spotlight"
+                isEn={isEn}
+            />
         </div>
     );
 }

@@ -18,13 +18,16 @@ import {
     ChevronLeft, ChevronRight, ChevronDown, ChevronUp,
     Plus, Minus, RotateCcw,
     ZoomIn, ZoomOut,
-    Copy, Check
+    Copy, Check, HelpCircle
 } from 'lucide-react';
 import { getTawafCounterState, saveTawafCounterState, subscribeTawafCounter } from '../utils/tawafCounterStorage';
 import { 
     tHajj, getDuaaEnglish, CHECKLIST_ITEMS_EN, 
     DUAA_CATEGORY_TITLES_EN, HOME_ADDITIONS_EN 
 } from '../utils/hajjUmrahTranslations';
+import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/CommunitySpotlightGuide';
+import { HAJJ_UMRAH_PAGE_STEPS } from '../components/Community/communityTourSteps';
+import { markPageAsSeen } from '../utils/badgeManager';
 
 export interface CardZoomData {
     title: string;
@@ -522,6 +525,14 @@ export function HajjUmrah({ onBack, onNavigate }: { onBack: () => void; onNaviga
     const [currentDuaaIdx, setCurrentDuaaIdx] = useState<number>(0);
     const [zoomFontSize, setZoomFontSize] = useState<number>(24);
     const [copySuccess, setCopySuccess] = useState(false);
+    const [showGuide, setShowGuide] = useState(false);
+
+    useEffect(() => {
+        markPageAsSeen('hajj_umrah');
+        if (!getGuideSeen('hajj_umrah_page_spotlight')) {
+            setShowGuide(true);
+        }
+    }, []);
 
     // Global in-page card font scaling
     const [cardTextScale, setCardTextScale] = useState<number>(() => {
@@ -685,7 +696,7 @@ export function HajjUmrah({ onBack, onNavigate }: { onBack: () => void; onNaviga
             <header className="app-top-bar">
                 <div className="app-top-bar__inner">
                     <div className="relative flex items-center justify-center w-full min-h-[44px]">
-                        {/* Back Arrow & Tawaf Home Toggle Indicator */}
+                        {/* Back Arrow, Tawaf Home Toggle Indicator & Magnifying Glass */}
                         <div className={`absolute ${isRTL ? 'right-0' : 'left-0'} flex items-center gap-1.5`}>
                             <button
                                 type="button"
@@ -697,38 +708,6 @@ export function HajjUmrah({ onBack, onNavigate }: { onBack: () => void; onNaviga
                                 <i className={`fa-solid ${isRTL ? 'fa-arrow-right' : 'fa-arrow-left'} text-xl`}></i>
                             </button>
 
-                            {screen === 'counters' && (
-                                <button
-                                    type="button"
-                                    onClick={toggleTawafHomeVisibility}
-                                    className={`w-6 h-6 rounded-full border-2 transition-all shadow-md active:scale-90 cursor-pointer flex items-center justify-center ${
-                                        tawafState.showOnHome 
-                                            ? 'bg-emerald-500 border-white/80 dark:border-white/60 shadow-emerald-500/50 ring-2 ring-emerald-500/30' 
-                                            : 'bg-red-500 border-white/80 dark:border-white/60 shadow-red-500/50 ring-2 ring-red-500/30'
-                                    }`}
-                                    title={
-                                        isEn 
-                                            ? (tawafState.showOnHome ? 'Tawaf Counter on Home: Enabled (Click to disable)' : 'Tawaf Counter on Home: Disabled (Click to enable)') 
-                                            : (tawafState.showOnHome ? 'ظهور عداد الطواف في الرئيسية: مفعّل (اضغط للتعطيل)' : 'ظهور عداد الطواف في الرئيسية: معطّل (اضغط للتفعيل)')
-                                    }
-                                    aria-label={
-                                        isEn 
-                                            ? (tawafState.showOnHome ? 'Tawaf Counter on Home: Enabled' : 'Tawaf Counter on Home: Disabled') 
-                                            : (tawafState.showOnHome ? 'ظهور عداد الطواف في الرئيسية: مفعّل' : 'ظهور عداد الطواف في الرئيسية: معطّل')
-                                    }
-                                />
-                            )}
-                        </div>
-
-                        {/* Screen Title */}
-                        <div className="text-center px-16 min-w-0">
-                            <h1 className="app-top-bar__title text-lg sm:text-xl font-kufi truncate">
-                                {getScreenTitle()}
-                            </h1>
-                        </div>
-
-                        {/* Right Tools: Magnifying Glass (Enlarge Card Text) & Home Button */}
-                        <div className={`absolute ${isRTL ? 'left-0' : 'right-0'} flex items-center gap-1`}>
                             {/* Magnifying Glass to scale text of all cards on the page */}
                             <button
                                 type="button"
@@ -743,6 +722,57 @@ export function HajjUmrah({ onBack, onNavigate }: { onBack: () => void; onNaviga
                                         +{Math.round((cardTextScale - 1) * 100)}%
                                     </span>
                                 )}
+                            </button>
+
+                            {screen === 'counters' && (
+                                <button
+                                    type="button"
+                                    onClick={toggleTawafHomeVisibility}
+                                    className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                    title={
+                                        isEn 
+                                            ? (tawafState.showOnHome ? 'Tawaf Counter on Home: Enabled (Click to disable)' : 'Tawaf Counter on Home: Disabled (Click to enable)') 
+                                            : (tawafState.showOnHome ? 'ظهور عداد الطواف في الرئيسية: مفعّل (اضغط للتعطيل)' : 'ظهور عداد الطواف في الرئيسية: معطّل (اضغط للتفعيل)')
+                                    }
+                                    aria-label={
+                                        isEn 
+                                            ? (tawafState.showOnHome ? 'Tawaf Counter on Home: Enabled' : 'Tawaf Counter on Home: Disabled') 
+                                            : (tawafState.showOnHome ? 'ظهور عداد الطواف في الرئيسية: مفعّل' : 'ظهور عداد الطواف في الرئيسية: معطّل')
+                                    }
+                                >
+                                    <div className={`w-[19px] h-[19px] rounded-full border-[1.5px] border-white/90 dark:border-white/80 shadow-xs transition-all duration-300 flex items-center justify-center ${
+                                        tawafState.showOnHome 
+                                            ? 'bg-gradient-to-tr from-emerald-600 via-emerald-500 to-emerald-400 text-white shadow-emerald-500/30 ring-1.5 ring-emerald-500/25' 
+                                            : 'bg-gradient-to-tr from-red-600 via-red-500 to-rose-400 text-white shadow-red-500/30 ring-1.5 ring-red-500/25'
+                                    }`}>
+                                        {tawafState.showOnHome ? (
+                                            <Check className="w-2.5 h-2.5 stroke-[3]" />
+                                        ) : (
+                                            <span className="w-1.5 h-0.5 bg-white/95 rounded-full" />
+                                        )}
+                                    </div>
+                                </button>
+                            )}
+                        </div>
+
+                        {/* Screen Title */}
+                        <div className="text-center px-16 min-w-0">
+                            <h1 className="app-top-bar__title text-lg sm:text-xl font-kufi truncate">
+                                {getScreenTitle()}
+                            </h1>
+                        </div>
+
+                        {/* Right Tools: Guide & Home Button */}
+                        <div className={`absolute ${isRTL ? 'left-0' : 'right-0'} flex items-center gap-1`}>
+                            <button
+                                type="button"
+                                onClick={() => setShowGuide(true)}
+                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                style={{ color: 'var(--top-bar-text, inherit)' }}
+                                title={isEn ? "Hajj & Umrah Guide" : "دليل الحج والعمرة"}
+                                aria-label={isEn ? "Hajj & Umrah Guide" : "دليل الحج والعمرة"}
+                            >
+                                <HelpCircle size={19} />
                             </button>
 
                             {screen === 'home' && <ThemePageLock />}
@@ -1197,6 +1227,15 @@ export function HajjUmrah({ onBack, onNavigate }: { onBack: () => void; onNaviga
                     </div>
                 </div>
             )}
+
+            {/* Spotlight Guide */}
+            <CommunitySpotlightGuide 
+                guideKey="hajj_umrah_page_spotlight"
+                steps={HAJJ_UMRAH_PAGE_STEPS}
+                isOpen={showGuide}
+                onClose={() => setShowGuide(false)}
+                isEn={isEn}
+            />
         </div>
     );
 }
