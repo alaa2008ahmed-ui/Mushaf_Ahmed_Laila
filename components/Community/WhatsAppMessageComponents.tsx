@@ -37,6 +37,7 @@ export const MessageReactionsBar: React.FC<MessageReactionsBarProps> = ({
       exit={{ scale: 0.5, opacity: 0, y: 8 }}
       transition={{ type: 'spring', damping: 22, stiffness: 350 }}
       className={`absolute bottom-full mb-2.5 ${isMe ? 'right-0' : 'left-0'} z-50 flex items-center gap-1.5 bg-white dark:bg-slate-800 rounded-full px-2 py-1.5 shadow-2xl border border-slate-200/90 dark:border-slate-700 select-none backdrop-blur-md`}
+      data-reaction-bar="true"
       onClick={(e) => e.stopPropagation()}
       dir="ltr"
     >
@@ -133,13 +134,13 @@ export const MessageReactionBadge: React.FC<MessageReactionBadgeProps> = ({
       title={myReaction ? `تفاعلت بـ ${myReaction} (اضغط للإلغاء)` : 'تفاعلات الأعضاء'}
       dir="ltr"
     >
-      <div className="flex items-center -space-x-1">
+      <div className="flex items-center gap-1">
         {uniqueEmojis.slice(0, 3).map((emoji, idx) => (
-          <span key={idx} className="text-sm leading-none drop-shadow-xs">{emoji}</span>
+          <span key={idx} className="text-xs sm:text-sm leading-none drop-shadow-xs max-w-[130px] truncate">{emoji}</span>
         ))}
       </div>
       {totalCount > 1 && (
-        <span className="text-[11px] font-bold opacity-80 pl-0.5">{totalCount}</span>
+        <span className="text-[11px] font-bold opacity-80 shrink-0">{totalCount}</span>
       )}
     </motion.button>
   );
@@ -238,6 +239,11 @@ export const SwipeableMessageWrapper: React.FC<SwipeableMessageWrapperProps> = (
     setDragX(0);
     setIsSwiping(false);
     thresholdPassedRef.current = false;
+
+    // Reset long-press flag after click event propagation window
+    setTimeout(() => {
+      isLongPressTriggeredRef.current = false;
+    }, 350);
   };
 
   // Mouse handlers for desktop support
@@ -290,6 +296,10 @@ export const SwipeableMessageWrapper: React.FC<SwipeableMessageWrapperProps> = (
     setDragX(0);
     setIsSwiping(false);
     thresholdPassedRef.current = false;
+
+    setTimeout(() => {
+      isLongPressTriggeredRef.current = false;
+    }, 350);
   };
 
   const swipeProgress = Math.min(dragX / 45, 1);
@@ -304,6 +314,12 @@ export const SwipeableMessageWrapper: React.FC<SwipeableMessageWrapperProps> = (
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
+      onClickCapture={(e) => {
+        if (isLongPressTriggeredRef.current) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      }}
       onContextMenu={(e) => {
         // Desktop right-click triggers reaction bar
         e.preventDefault();

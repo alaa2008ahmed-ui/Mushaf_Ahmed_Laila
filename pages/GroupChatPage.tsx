@@ -295,6 +295,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
 
   // Load group data & listen for updates
   useEffect(() => {
+    loadGroupData();
     communityService.fetchLatestGroups().then(() => loadGroupData());
     communityService.fetchLatestGroupMessages(groupId).then(() => loadGroupData());
 
@@ -1317,12 +1318,33 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                     {/* WhatsApp Animated Floating Reaction Bar */}
                     <AnimatePresence>
                       {reactionMenuMsgId === msg.messageId && (
-                        <MessageReactionsBar
-                          isMe={isMe}
-                          onSelectEmoji={(emoji) => handleToggleReaction(msg.messageId, emoji)}
-                          onOpenMoreEmoji={() => setMoreEmojiPickerMsgId(msg.messageId)}
-                          onClose={() => setReactionMenuMsgId(null)}
-                        />
+                        <>
+                          <div 
+                            className="fixed inset-0 z-40 bg-transparent cursor-default"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setReactionMenuMsgId(null);
+                            }}
+                            onTouchStart={(e) => {
+                              e.stopPropagation();
+                              setReactionMenuMsgId(null);
+                            }}
+                          />
+                          <MessageReactionsBar
+                            isMe={isMe}
+                            onSelectEmoji={(emoji) => handleToggleReaction(msg.messageId, emoji)}
+                            onOpenMoreEmoji={() => {
+                              setReactionMenuMsgId(null);
+                              setMoreEmojiPickerMsgId(msg.messageId);
+                            }}
+                            onOpenMoreEmojis={() => {
+                              setReactionMenuMsgId(null);
+                              setMoreEmojiPickerMsgId(msg.messageId);
+                            }}
+                            userReaction={msg.reactions?.[currentUser.userId]}
+                            onClose={() => setReactionMenuMsgId(null)}
+                          />
+                        </>
                       )}
                     </AnimatePresence>
 
@@ -1331,7 +1353,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                       <button 
                         type="button"
                         onClick={() => handleOpenMemberProfile(msg.senderId, currentSenderName, currentSenderAvatar, currentSenderCountry, msg)}
-                        className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs border overflow-hidden flex-shrink-0 mb-1 cursor-pointer transition-transform hover:scale-105 active:scale-95"
+                        className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs border overflow-hidden flex-shrink-0 mb-1 cursor-pointer transition-transform hover:scale-105 active:scale-95 shadow-xs"
                         style={{
                           backgroundColor: `${primaryColor}20`,
                           borderColor: `${primaryColor}40`,
@@ -1350,7 +1372,7 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                     {/* Message Bubble Container */}
                     <div className={`max-w-[85%] sm:max-w-[75%] flex flex-col ${isMe ? 'items-end' : 'items-start'} relative`}>
                       {/* Sender Name Badge for others */}
-                      {!isMe && (
+                      {!isMe ? (
                         <button
                           type="button"
                           onClick={() => handleOpenMemberProfile(msg.senderId, currentSenderName, currentSenderAvatar, currentSenderCountry, msg)}
@@ -1366,6 +1388,15 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                             </span>
                           )}
                         </button>
+                      ) : (
+                        <div className={`flex items-center gap-1.5 mb-1 px-1 text-[11px] font-bold ${isEn ? 'text-right' : 'text-left'}`}>
+                          <span style={{ color: primaryColor }}>
+                            {currentUser.username || (isEn ? 'You' : 'أنت')}
+                          </span>
+                          <span className="text-[10px] px-1.5 py-0.2 rounded-md font-normal" style={{ backgroundColor: secondaryBg, color: textMuted }}>
+                            {isEn ? 'You' : 'أنت'}
+                          </span>
+                        </div>
                       )}
 
                       {/* Quoted Message Block if replied */}
@@ -1512,6 +1543,25 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
                         isMe={isMe}
                       />
                     </div>
+
+                    {/* Current User Avatar (Shown on their side) */}
+                    {isMe && (
+                      <div
+                        className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs border overflow-hidden flex-shrink-0 mb-1 shadow-xs cursor-pointer select-none"
+                        style={{
+                          backgroundColor: `${primaryColor}20`,
+                          borderColor: `${primaryColor}60`,
+                          color: primaryColor
+                        }}
+                        title={isEn ? "Your Profile" : "ملفك الشخصي"}
+                      >
+                        {currentUser.avatarUrl ? (
+                          <img src={currentUser.avatarUrl} alt={currentUser.username} className="w-full h-full object-cover" />
+                        ) : (
+                          (currentUser.username || (isEn ? 'Y' : 'أ')).charAt(0)
+                        )}
+                      </div>
+                    )}
                   </div>
                 </SwipeableMessageWrapper>
               </React.Fragment>
@@ -2579,10 +2629,13 @@ const GroupChatPage: React.FC<GroupChatPageProps> = ({ groupId, onBack, onNaviga
       <AnimatePresence>
         {moreEmojiPickerMsgId && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4" onClick={() => setMoreEmojiPickerMsgId(null)}>
-            <div className="relative z-50" onClick={(e) => e.stopPropagation()}>
+            <div id="more-emoji-modal-card" className="relative z-50 max-w-sm w-full" onClick={(e) => e.stopPropagation()}>
               <EmojiPicker
+                isReactionPicker={true}
+                title={isEn ? "Select reaction for card" : "اختر تفاعلاً لإضافته للبطاقة"}
                 onSelectEmoji={(emoji) => {
                   handleToggleReaction(moreEmojiPickerMsgId, emoji);
+                  setMoreEmojiPickerMsgId(null);
                 }}
                 onClose={() => setMoreEmojiPickerMsgId(null)}
               />

@@ -213,6 +213,9 @@ class CommunityService {
   private readGroupMessageIdsSet: Set<string> = new Set();
   private pollInterval: any = null;
   private heartbeatInterval: any = null;
+  private lastHeartbeatSentAt: number = 0;
+  private lastTypingSentAt: number = 0;
+  private currentTypingPartner: string | null = null;
 
   constructor() {
     this.initCurrentUser();
@@ -220,10 +223,6 @@ class CommunityService {
     this.purgeLegacyGoogleData();
     this.setupFirestoreListeners();
     this.setupPresenceLifecycle();
-    this.fetchLatestUsers();
-    this.fetchLatestGroups();
-    this.fetchLatestGroupMessages();
-    this.fetchServerReadStates();
     this.startPolling();
   }
 
@@ -719,18 +718,18 @@ class CommunityService {
     if (typeof window === 'undefined') return;
 
     if (this.heartbeatInterval) clearInterval(this.heartbeatInterval);
-    // Send heartbeat every 15 seconds while app is open
+    // Refresh presence at most once every 10 minutes while app stays active in foreground
     this.heartbeatInterval = setInterval(() => {
-      this.sendHeartbeat();
-    }, 15000);
+      this.sendHeartbeat(true);
+    }, 600000);
 
-    // Initial heartbeat on boot
-    this.sendHeartbeat();
+    // Initial heartbeat on boot (throttled)
+    this.sendHeartbeat(false);
 
     // 1. Web visibilitychange - offline when minimized or hidden, online when visible
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') {
-        this.sendHeartbeat();
+        this.sendHeartbeat(true);
       } else {
         this.setOfflineStatusSync();
       }
@@ -738,7 +737,7 @@ class CommunityService {
 
     // 2. Window focus & blur
     window.addEventListener('focus', () => {
-      this.sendHeartbeat();
+      this.sendHeartbeat(false);
     });
 
     window.addEventListener('blur', () => {
@@ -759,7 +758,7 @@ class CommunityService {
       import('@capacitor/app').then(({ App }) => {
         App.addListener('appStateChange', (state) => {
           if (state.isActive) {
-            this.sendHeartbeat();
+            this.sendHeartbeat(true);
           } else {
             this.setOfflineStatusSync();
           }
@@ -773,13 +772,21 @@ class CommunityService {
     return this.usersMap.get(userId);
   }
 
-  public async sendHeartbeat() {
+  public async sendHeartbeat(force: boolean = false) {
     const user = this.currentUser;
     if (!user || !user.userId || !this.isProfileComplete()) return;
+    const now = Date.now();
     const nowIso = new Date().toISOString();
     user.isOnline = true;
     user.lastSeen = nowIso;
     this.usersMap.set(user.userId, user);
+
+    // Throttle writes: Only write presence to Firestore at most once every 10 minutes (600,000ms),
+    // or if explicitly forced (e.g., app becoming active from background or new login)
+    if (!force && this.lastHeartbeatSentAt && (now - this.lastHeartbeatSentAt < 600000)) {
+      return;
+    }
+    this.lastHeartbeatSentAt = now;
 
     try {
       await updateDoc(doc(db, 'users', user.userId), {
@@ -799,10 +806,14 @@ class CommunityService {
   public async setOfflineStatusSync() {
     const user = this.currentUser;
     if (!user || !user.userId || !this.isProfileComplete()) return;
+    // If already marked offline and not active, skip redundant writes
+    if (!user.isOnline && this.lastHeartbeatSentAt === 0) return;
+
     const nowIso = new Date().toISOString();
     user.isOnline = false;
     user.lastSeen = nowIso;
     this.usersMap.set(user.userId, user);
+    this.lastHeartbeatSentAt = 0;
 
     try {
       await updateDoc(doc(db, 'users', user.userId), {
@@ -822,8 +833,14 @@ class CommunityService {
   public async updateLastSeen() {
     const user = this.currentUser;
     if (!user || !user.userId || !this.isProfileComplete()) return;
+    const now = Date.now();
     const nowIso = new Date().toISOString();
     user.lastSeen = nowIso;
+    // Throttle lastSeen updates to at most once every 10 minutes
+    if (this.lastHeartbeatSentAt && (now - this.lastHeartbeatSentAt < 600000)) {
+      return;
+    }
+    this.lastHeartbeatSentAt = now;
     try {
       await updateDoc(doc(db, 'users', user.userId), {
         lastSeen: nowIso
@@ -843,9 +860,9 @@ class CommunityService {
     const lastSeenTime = new Date(user.lastSeen).getTime();
     if (isNaN(lastSeenTime)) return false;
 
-    // Heartbeat is sent every 15s. A user is online if heartbeat was within last 70 seconds
+    // A user is considered online if last seen within the last 15 minutes
     const diffSeconds = (Date.now() - lastSeenTime) / 1000;
-    return diffSeconds >= -70 && diffSeconds <= 70;
+    return diffSeconds >= -60 && diffSeconds <= 900;
   }
 
   public getUserStatusText(user?: CommunityUser | null): string {
@@ -1290,17 +1307,16 @@ class CommunityService {
   }
 
   private startPolling() {
-    if (this.pollInterval) clearInterval(this.pollInterval);
-    // Initial light fetch of contacts once on boot
-    this.fetchLatestContacts();
-
-    // Light background heartbeat interval (every 45s)
-    this.pollInterval = setInterval(() => {
-      this.sendHeartbeat();
-    }, 45000);
+    if (this.pollInterval) {
+      clearInterval(this.pollInterval);
+      this.pollInterval = null;
+    }
   }
 
-  public async fetchLatestUsers(): Promise<CommunityUser[]> {
+  public async fetchLatestUsers(force: boolean = false): Promise<CommunityUser[]> {
+    if (!force && this.usersMap.size > 1) {
+      return Array.from(this.usersMap.values());
+    }
     try {
       const snapshot = await getDocs(collection(db, 'users'));
       const activeIds = new Set<string>();
@@ -1378,7 +1394,10 @@ class CommunityService {
     return Array.from(this.usersMap.values());
   }
 
-  public async fetchLatestMessages(): Promise<ChatMessage[]> {
+  public async fetchLatestMessages(force: boolean = false): Promise<ChatMessage[]> {
+    if (!force && this.messagesList.length > 0) {
+      return this.messagesList;
+    }
     try {
       const myId = this.getCurrentUser().userId;
       const cutoffTime = Date.now() - (24 * 60 * 60 * 1000);
@@ -1803,14 +1822,38 @@ class CommunityService {
 
   public async setTypingStatus(partnerUserId: string, isTyping: boolean) {
     const user = this.getCurrentUser();
-    user.typingToUserId = isTyping ? partnerUserId : undefined;
-    this.usersMap.set(user.userId, user);
+    if (!user || !user.userId) return;
 
-    try {
-      await updateDoc(doc(db, 'users', user.userId), {
-        typingToUserId: isTyping ? partnerUserId : null
-      });
-    } catch (e) {}
+    if (isTyping) {
+      const now = Date.now();
+      // Throttle: don't write to Firestore more than once every 10 seconds while typing
+      if (this.currentTypingPartner === partnerUserId && (now - this.lastTypingSentAt < 10000)) {
+        return;
+      }
+      this.currentTypingPartner = partnerUserId;
+      this.lastTypingSentAt = now;
+      user.typingToUserId = partnerUserId;
+      this.usersMap.set(user.userId, user);
+
+      try {
+        await updateDoc(doc(db, 'users', user.userId), {
+          typingToUserId: partnerUserId
+        });
+      } catch (e) {}
+    } else {
+      if (this.currentTypingPartner === null && !user.typingToUserId) {
+        return;
+      }
+      this.currentTypingPartner = null;
+      user.typingToUserId = undefined;
+      this.usersMap.set(user.userId, user);
+
+      try {
+        await updateDoc(doc(db, 'users', user.userId), {
+          typingToUserId: null
+        });
+      } catch (e) {}
+    }
   }
 
   public getBlocks(): BlockRecord[] {
@@ -2145,87 +2188,83 @@ class CommunityService {
 
   public async markMessagesAsRead(partnerUserId: string) {
     const current = this.getCurrentUser();
-    const uid = current.userId;
-    if (!uid || !partnerUserId) return;
-    const chatId = this.getChatId(uid, partnerUserId);
+    const uid = current?.userId;
+    if (!uid || typeof uid !== 'string' || !uid.trim() || uid === 'undefined') return;
+    if (!partnerUserId || typeof partnerUserId !== 'string' || !partnerUserId.trim() || partnerUserId === 'undefined') return;
+
+    const cleanUid = uid.trim().replace(/\//g, '_');
+    const cleanPartnerId = partnerUserId.trim().replace(/\//g, '_');
+    const chatId = this.getChatId(cleanUid, cleanPartnerId);
     const nowIso = new Date().toISOString();
 
     let latestMsgId = '';
     const unreadMessageIdsToUpdate: string[] = [];
+    let hasUnreadChanged = false;
 
     this.messagesList.forEach(m => {
       const isMatch = (m.chatId === chatId || 
-        (m.senderId === partnerUserId && m.recipientId === uid) ||
-        (m.senderId === uid && m.recipientId === partnerUserId)) &&
-        m.recipientId === uid;
+        (m.senderId === cleanPartnerId && m.recipientId === cleanUid) ||
+        (m.senderId === cleanUid && m.recipientId === cleanPartnerId)) &&
+        m.recipientId === cleanUid;
 
       if (isMatch) {
         if (!m.isRead || !this.readMessageIdsSet.has(m.messageId)) {
           m.isRead = true;
           this.readMessageIdsSet.add(m.messageId);
-          unreadMessageIdsToUpdate.push(m.messageId);
+          if (m.messageId && typeof m.messageId === 'string' && m.messageId.trim() && !m.messageId.includes('/')) {
+            unreadMessageIdsToUpdate.push(m.messageId.trim());
+          }
+          hasUnreadChanged = true;
         }
         latestMsgId = m.messageId;
       }
     });
 
+    const directReadId = `${cleanUid}_${cleanPartnerId}`;
+    const prevRead = this.directReadsMap.get(directReadId);
+
+    // If nothing unread changed and direct read state is already current, skip completely to prevent loops
+    if (!hasUnreadChanged && prevRead && prevRead.lastReadMessageId === (latestMsgId || '')) {
+      return;
+    }
+
     const readState = {
       lastReadMessageId: latestMsgId || '',
       lastReadTime: nowIso
     };
-    this.directReadsMap.set(`${uid}_${partnerUserId}`, readState);
-    this.directReadsMap.set(partnerUserId, readState);
+    this.directReadsMap.set(directReadId, readState);
+    this.directReadsMap.set(cleanPartnerId, readState);
 
     this.saveToLocalStorage();
-    window.dispatchEvent(new CustomEvent('community_messages_updated'));
 
     // 1. Sync direct_read record to Firestore
-    const directReadId = `${uid}_${partnerUserId}`;
-    setDoc(doc(db, 'direct_reads', directReadId), {
-      readId: directReadId,
-      userId: uid,
-      partnerId: partnerUserId,
-      lastReadMessageId: latestMsgId || '',
-      lastReadTime: nowIso,
-      updatedAt: nowIso
-    }, { merge: true }).catch(err => console.warn('Sync direct read to Firestore:', err));
-
-    // 2. Atomically update isRead: true in Firestore messages
-    try {
-      const idsSet = new Set(unreadMessageIdsToUpdate);
-
-      // Query any unread messages from this partner in Firestore directly to guarantee none were missed
-      const unreadSnap = await getDocs(query(
-        collection(db, 'messages'),
-        where('recipientId', '==', uid),
-        where('senderId', '==', partnerUserId),
-        where('isRead', '==', false)
-      ));
-      unreadSnap.forEach(d => idsSet.add(d.id));
-
-      const allIds = Array.from(idsSet);
-      if (allIds.length > 0) {
-        const CHUNK_SIZE = 400;
-        for (let i = 0; i < allIds.length; i += CHUNK_SIZE) {
-          const batch = writeBatch(db);
-          const chunk = allIds.slice(i, i + CHUNK_SIZE);
-          chunk.forEach(mId => {
-            batch.update(doc(db, 'messages', mId), { isRead: true });
-          });
-          await batch.commit().catch(e => console.warn('Batch mark messages read:', e));
-        }
+    if (directReadId && !directReadId.includes('/')) {
+      try {
+        setDoc(doc(db, 'direct_reads', directReadId), {
+          readId: directReadId,
+          userId: cleanUid,
+          partnerId: cleanPartnerId,
+          lastReadMessageId: latestMsgId || '',
+          lastReadTime: nowIso,
+          updatedAt: nowIso
+        }, { merge: true }).catch(err => console.warn('Sync direct read to Firestore:', err));
+      } catch (e) {
+        console.warn('Invalid directRead doc path:', e);
       }
-    } catch (e) {
-      console.warn('Error marking messages as read in Firestore:', e);
     }
+
+    // Direct read document in direct_reads collection is already saved above.
+    // The read status of all messages up to lastReadTime is computed automatically via direct_reads.
   }
 
   public async deleteSingleMessage(messageId: string) {
-    this.messagesList = this.messagesList.filter(m => m.messageId !== messageId);
+    if (!messageId || typeof messageId !== 'string' || !messageId.trim() || messageId.includes('/')) return;
+    const cleanId = messageId.trim();
+    this.messagesList = this.messagesList.filter(m => m.messageId !== cleanId);
     this.saveToLocalStorage();
 
     try {
-      await deleteDoc(doc(db, 'messages', messageId));
+      await deleteDoc(doc(db, 'messages', cleanId));
     } catch (e) {}
 
     window.dispatchEvent(new CustomEvent('community_messages_updated'));
@@ -2233,6 +2272,7 @@ class CommunityService {
 
   public async deleteReadMessages(partnerUserId: string) {
     const current = this.getCurrentUser();
+    if (!current?.userId || !partnerUserId) return;
     const chatId = this.getChatId(current.userId, partnerUserId);
 
     const toDelete = this.messagesList.filter(m => m.chatId === chatId && m.isRead);
@@ -2241,7 +2281,9 @@ class CommunityService {
 
     toDelete.forEach(async (m) => {
       try {
-        await deleteDoc(doc(db, 'messages', m.messageId));
+        if (m.messageId && typeof m.messageId === 'string' && m.messageId.trim() && !m.messageId.includes('/')) {
+          await deleteDoc(doc(db, 'messages', m.messageId.trim()));
+        }
       } catch (e) {}
     });
 
@@ -3529,8 +3571,18 @@ class CommunityService {
 
   public markGroupAsRead(groupId: string, lastMessageId?: string, lastMessageTime?: string): void {
     const uid = this.getCurrentUser()?.userId;
-    if (!uid) return;
-    const msgs = this.getGroupMessages(groupId, uid);
+    if (!uid || typeof uid !== 'string' || !uid.trim() || !groupId || typeof groupId !== 'string' || !groupId.trim()) return;
+    const cleanUid = uid.trim().replace(/\//g, '_');
+    const cleanGroupId = groupId.trim().replace(/\//g, '_');
+    const msgs = this.getGroupMessages(cleanGroupId, cleanUid);
+
+    const latestMsg = msgs.length > 0 ? msgs[msgs.length - 1] : null;
+    const targetMsgId = lastMessageId || latestMsg?.messageId || '';
+
+    const currentRead = this.groupReadStateMap.get(`${cleanGroupId}_${cleanUid}`);
+    if (currentRead && targetMsgId && currentRead.lastReadMessageId === targetMsgId) {
+      return;
+    }
 
     // Record every current message in this group into the persistent read set
     msgs.forEach(m => {
@@ -3540,13 +3592,11 @@ class CommunityService {
     });
 
     this.groupMessagesList.forEach(m => {
-      if (m.groupId === groupId && m.messageId) {
+      if (m.groupId === cleanGroupId && m.messageId) {
         this.readGroupMessageIdsSet.add(m.messageId);
       }
     });
 
-    const latestMsg = msgs.length > 0 ? msgs[msgs.length - 1] : null;
-    const targetMsgId = lastMessageId || latestMsg?.messageId || '';
     const latestTimeMs = latestMsg?.createdAt ? new Date(latestMsg.createdAt).getTime() : 0;
     const nowMs = Date.now();
     const safeReadTime = new Date(Math.max(nowMs, latestTimeMs + 5000)).toISOString();
@@ -3557,24 +3607,29 @@ class CommunityService {
       lastReadTime: targetTime
     };
 
-    this.groupReadStateMap.set(`${groupId}_${uid}`, readState);
-    this.groupReadStateMap.set(groupId, readState);
+    this.groupReadStateMap.set(`${cleanGroupId}_${cleanUid}`, readState);
+    this.groupReadStateMap.set(cleanGroupId, readState);
 
     this.saveToLocalStorage();
-    window.dispatchEvent(new CustomEvent('community_group_read_updated', { detail: { groupId } }));
+    window.dispatchEvent(new CustomEvent('community_group_read_updated', { detail: { groupId: cleanGroupId } }));
     window.dispatchEvent(new CustomEvent('community_groups_updated'));
-    window.dispatchEvent(new CustomEvent('community_group_messages_updated'));
 
     // Sync group read position to Firestore for instant cross-device synchronization
-    const readDocId = `${uid}_${groupId}`;
-    setDoc(doc(db, 'group_reads', readDocId), {
-      readId: readDocId,
-      userId: uid,
-      groupId: groupId,
-      lastReadMessageId: targetMsgId || '',
-      lastReadTime: targetTime,
-      updatedAt: new Date().toISOString()
-    }, { merge: true }).catch(err => console.warn('Sync group read to Firestore:', err));
+    const readDocId = `${cleanUid}_${cleanGroupId}`;
+    if (readDocId && !readDocId.includes('/')) {
+      try {
+        setDoc(doc(db, 'group_reads', readDocId), {
+          readId: readDocId,
+          userId: cleanUid,
+          groupId: cleanGroupId,
+          lastReadMessageId: targetMsgId || '',
+          lastReadTime: targetTime,
+          updatedAt: new Date().toISOString()
+        }, { merge: true }).catch(err => console.warn('Sync group read to Firestore:', err));
+      } catch (err) {
+        console.warn('Invalid group_read doc path:', err);
+      }
+    }
   }
 
   public getTotalUnreadGroupMessagesCount(userId?: string): number {
@@ -3584,7 +3639,10 @@ class CommunityService {
     return allGroups.reduce((acc, g) => acc + this.getGroupUnreadCount(g.groupId, uid), 0);
   }
 
-  public async fetchLatestGroups(): Promise<GroupChat[]> {
+  public async fetchLatestGroups(force: boolean = false): Promise<GroupChat[]> {
+    if (!force && this.groupsList.length > 0) {
+      return this.groupsList;
+    }
     try {
       this.ensureStarterGroupsExist();
 
@@ -3613,7 +3671,10 @@ class CommunityService {
     return this.groupsList;
   }
 
-  public async fetchLatestGroupMessages(groupId?: string): Promise<GroupMessage[]> {
+  public async fetchLatestGroupMessages(groupId?: string, force: boolean = false): Promise<GroupMessage[]> {
+    if (!force && this.groupMessagesList.length > 0) {
+      return groupId ? this.getGroupMessages(groupId) : this.groupMessagesList;
+    }
     try {
       const snapshot = await getDocs(collection(db, 'group_messages'));
       const list: GroupMessage[] = [];
@@ -3643,9 +3704,12 @@ class CommunityService {
     return groupId ? this.getGroupMessages(groupId) : this.groupMessagesList;
   }
 
-  public async fetchServerReadStates(targetUserId?: string): Promise<void> {
+  public async fetchServerReadStates(targetUserId?: string, force: boolean = false): Promise<void> {
     const uid = targetUserId || this.getCurrentUser()?.userId;
     if (!uid) return;
+    if (!force && (this.groupReadStateMap.size > 0 || this.directReadsMap.size > 0)) {
+      return;
+    }
 
     try {
       // 1. Fetch group reads for this user

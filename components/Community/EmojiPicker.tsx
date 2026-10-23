@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { Smile, Heart, Hand, Moon, Sparkles, MessageCircle, Sun } from 'lucide-react';
+import { Smile, Heart, Hand, Moon, Sparkles, MessageCircle, Sun, X } from 'lucide-react';
 
 interface EmojiPickerProps {
   onSelectEmoji: (emojiOrText: string) => void;
   onClose: () => void;
+  isReactionPicker?: boolean;
+  title?: string;
+  initialCategory?: string;
 }
 
 interface Category {
@@ -16,6 +19,55 @@ interface Category {
 }
 
 const CATEGORIES: Category[] = [
+  {
+    id: 'feelings',
+    name: 'تعبيرات 😄',
+    icon: Smile,
+    type: 'emoji',
+    items: [
+      '😂', '🤣', '😭', '😢', '😮', '😲', '🤯', '😏',
+      '😄', '😃', '😀', '😊', '😍', '🥰', '😌', '😇',
+      '🤲', '😎', '🤗', '🤩', '🥳', '🥹', '☺️', '😚',
+      '😋', '🧐', '🤓', '🤠', '🤐', '🤫', '🤔', '🫡',
+      '🤤', '😻', '😺', '😽', '😴', '🥺', '💖', '✨'
+    ]
+  },
+  {
+    id: 'reactions',
+    name: 'تفاعلات 👍',
+    icon: Hand,
+    type: 'emoji',
+    items: [
+      '👍', '👎', '👌', '🤝', '👏', '🙌', '🙏', '✌️',
+      '🤟', '🤘', '🤙', '💯', '🔥', '⭐', '🌟', '💎',
+      '🏆', '🎖️', '🎯', '📌', '💫', '🕊️', '👑', '🛡️',
+      '💡', '🏷️', '📢', '🔔', '🎁', '🎉', '💪', '🌱',
+      '🌿', '🌾', '🌴', '🌸', '🌹', '🌷', '💐', '🌺'
+    ]
+  },
+  {
+    id: 'hearts',
+    name: 'قلوب ومشاعر ❤️',
+    icon: Heart,
+    type: 'emoji',
+    items: [
+      '❤️', '💚', '🤍', '💙', '💜', '💛', '🧡', '🤎',
+      '🖤', '💖', '💗', '💓', '💞', '💕', '💘', '💝',
+      '🌹', '🌸', '🌷', '💐', '🌺', '🌻', '🏵️', '🥀',
+      '🌿', '✨', '💫', '🕊️', '💌', '💎', '🎀', '🪄'
+    ]
+  },
+  {
+    id: 'islamic_symbols',
+    name: 'رموز ومصحف 🌙',
+    icon: Sparkles,
+    type: 'emoji',
+    items: [
+      '🕌', '🕋', '📖', '📿', '🌙', '⭐', '🕯️', '📜',
+      '🕊️', '🌴', '🌿', '🌾', '💧', '⛅', '☀️', '🌈',
+      '🏛️', '🗝️', '🪔', '🏮', '🕋', '🤲', '🤍', '✨'
+    ]
+  },
   {
     id: 'islamic_text',
     name: 'أذكار وعبارات 🕌',
@@ -64,58 +116,19 @@ const CATEGORIES: Category[] = [
       'أسعد الله جميع أوقاتكم 🌺',
       'طابت أوقاتكم بكل خير 🌷'
     ]
-  },
-  {
-    id: 'feelings',
-    name: 'تعبيرات 😄',
-    icon: Smile,
-    type: 'emoji',
-    items: [
-      '😄', '😃', '😀', '😊', '😍', '🥰', '😌', '😇',
-      '🤲', '😎', '🤗', '🤩', '🥳', '🥹', '☺️', '😚',
-      '😋', '🧐', '🤓', '🤠', '🤐', '🤫', '🤔', '🫡',
-      '🤤', '😻', '😺', '😽', '😴', '🥺', '💖', '✨'
-    ]
-  },
-  {
-    id: 'reactions',
-    name: 'تفاعلات 👍',
-    icon: Hand,
-    type: 'emoji',
-    items: [
-      '👍', '👌', '🤝', '👏', '🙌', '🙏', '✌️', '🤟',
-      '💯', '🔥', '⭐', '🌟', '💎', '🏆', '🎖️', '🎯',
-      '📌', '💫', '🕊️', '👑', '🛡️', '💡', '🏷️', '📢',
-      '🔔', '🎁', '🎉', '💪', '🌱', '🌿', '🌾', '🌴'
-    ]
-  },
-  {
-    id: 'hearts',
-    name: 'قلوب ومشاعر ❤️',
-    icon: Heart,
-    type: 'emoji',
-    items: [
-      '❤️', '💚', '🤍', '💙', '💜', '💛', '🧡', '🤎',
-      '💖', '💗', '💓', '💞', '💕', '💘', '💝', '🌹',
-      '🌸', '🌷', '💐', '🌺', '🌻', '🏵️', '🥀', '🌿',
-      '✨', '💫', '🕊️', '💌', '💎', '🎀', '🪄', '🔮'
-    ]
-  },
-  {
-    id: 'islamic_symbols',
-    name: 'رموز ومصحف 🌙',
-    icon: Sparkles,
-    type: 'emoji',
-    items: [
-      '🕌', '🕋', '📖', '📿', '🌙', '⭐', '🕯️', '📜',
-      '🕊️', '🌴', '🌿', '🌾', '💧', '⛅', '☀️', '🌈',
-      '🏛️', '🗝️', '🪔', '🏮', '🕋', '🤲', '🤍', '✨'
-    ]
   }
 ];
 
-const EmojiPicker: React.FC<EmojiPickerProps> = ({ onSelectEmoji, onClose }) => {
-  const [activeCategory, setActiveCategory] = useState('islamic_text');
+const EmojiPicker: React.FC<EmojiPickerProps> = ({ 
+  onSelectEmoji, 
+  onClose,
+  isReactionPicker = false,
+  title,
+  initialCategory
+}) => {
+  const [activeCategory, setActiveCategory] = useState(
+    initialCategory || (isReactionPicker ? 'feelings' : 'islamic_text')
+  );
 
   const currentCategory = CATEGORIES.find((c) => c.id === activeCategory) || CATEGORIES[0];
 
@@ -127,6 +140,24 @@ const EmojiPicker: React.FC<EmojiPickerProps> = ({ onSelectEmoji, onClose }) => 
       className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl p-3.5 w-80 sm:w-96 z-50 overflow-hidden"
       dir="rtl"
     >
+      {/* Header bar with title and close button */}
+      <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-slate-100 dark:border-slate-800">
+        <div className="flex items-center gap-2">
+          <span className="text-base sm:text-lg">✨</span>
+          <span className="font-bold text-xs sm:text-sm text-slate-800 dark:text-slate-100">
+            {title || (isReactionPicker ? 'اختر تفاعلاً لإضافته للبطاقة' : 'الرموز والتعبيرات والأذكار')}
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="p-1 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+          title="إغلاق"
+        >
+          <X size={16} />
+        </button>
+      </div>
+
       {/* Category Tabs */}
       <div className="flex items-center gap-1 border-b border-slate-100 dark:border-slate-800 pb-2.5 mb-2.5 overflow-x-auto no-scrollbar">
         {CATEGORIES.map((cat) => {
@@ -156,11 +187,12 @@ const EmojiPicker: React.FC<EmojiPickerProps> = ({ onSelectEmoji, onClose }) => 
             {currentCategory.items.map((item, idx) => (
               <button
                 key={idx}
+                type="button"
                 onClick={() => {
                   onSelectEmoji(item);
                   onClose();
                 }}
-                className="p-2.5 rounded-2xl bg-emerald-50/60 dark:bg-emerald-950/20 hover:bg-emerald-100/80 dark:hover:bg-emerald-900/40 border border-emerald-500/20 text-emerald-900 dark:text-emerald-200 text-xs font-bold text-right transition-all active:scale-95 shadow-sm leading-relaxed"
+                className="p-2.5 rounded-2xl bg-emerald-50/60 dark:bg-emerald-950/20 hover:bg-emerald-100/80 dark:hover:bg-emerald-900/40 border border-emerald-500/20 text-emerald-900 dark:text-emerald-200 text-xs font-bold text-right transition-all active:scale-95 shadow-sm leading-relaxed cursor-pointer"
               >
                 {item}
               </button>
@@ -171,10 +203,12 @@ const EmojiPicker: React.FC<EmojiPickerProps> = ({ onSelectEmoji, onClose }) => 
             {currentCategory.items.map((emoji, idx) => (
               <button
                 key={idx}
+                type="button"
                 onClick={() => {
                   onSelectEmoji(emoji);
+                  onClose();
                 }}
-                className="text-2xl p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl transition-transform active:scale-125 flex items-center justify-center"
+                className="text-2xl p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl transition-transform active:scale-125 flex items-center justify-center cursor-pointer"
               >
                 {emoji}
               </button>

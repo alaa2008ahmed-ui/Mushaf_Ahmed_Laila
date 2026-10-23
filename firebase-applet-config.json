@@ -1,12 +1,12 @@
 {
-  "projectId": "moshaf-ahmed-laila",
-  "appId": "1:820638063534:web:599513548b6001ae69c63f",
-  "apiKey": "AIzaSyDfe1Z37eOw6IuhrCw9cvwH1ATmxi_PHUU",
-  "authDomain": "moshaf-ahmed-laila.firebaseapp.com",
-  "firestoreDatabaseId": "(default)",
-  "storageBucket": "moshaf-ahmed-laila.firebasestorage.app",
-  "messagingSenderId": "820638063534",
-  "measurementId": "G-2FV41RK6VW",
-  "oAuthClientId": "",
+  "projectId": "fresh-edition-blcf1",
+  "appId": "1:732423572490:web:0d719f45538854a4b363f3",
+  "apiKey": "AIzaSyCnaK0DdAyWxUjMDa76-qTm9u8wJZVH5wI",
+  "authDomain": "fresh-edition-blcf1.firebaseapp.com",
+  "firestoreDatabaseId": "ai-studio-remixremixremixr-97630f62-ee77-4ee2-a524-927f0581d088",
+  "storageBucket": "fresh-edition-blcf1.firebasestorage.app",
+  "messagingSenderId": "732423572490",
+  "measurementId": "",
+  "oAuthClientId": "732423572490-cg8j07m6frlv74hdlqrus5s9mncc1jm5.apps.googleusercontent.com",
   "recaptchaSiteKey": ""
 }

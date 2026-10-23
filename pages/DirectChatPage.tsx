@@ -30,6 +30,7 @@ import { InAppPermissionModal } from '../components/InAppPermissionModal';
 import { requestMicrophonePermission } from '../utils/permissionHelper';
 import { registerBackInterceptor } from '../hooks/useBackButton';
 import { useLanguage } from '../context/LanguageContext';
+import { useTheme } from '../context/ThemeContext';
 import { 
   formatCountryName, 
   formatUsername, 
@@ -249,6 +250,13 @@ export const ChatMessageAudioPlayer: React.FC<{
   timeStr?: string;
   isRead?: boolean;
 }> = ({ audioUrl, isMe, audioDuration, timeStr, isRead }) => {
+  const { theme } = useTheme();
+  const isBlackTheme = theme.bgColor === '#000000';
+  const primaryColor = isBlackTheme ? '#FFFFFF' : (theme.palette?.[0] || '#10b981');
+  const primaryTextColor = isBlackTheme ? '#000000' : (theme.btnText || '#FFFFFF');
+  const cardBg = isBlackTheme ? '#111111' : (theme.cardBg || (theme.isDark ? '#1e293b' : '#ffffff'));
+  const cardBorder = isBlackTheme ? '#333333' : (theme.cardBorder || (theme.isDark ? '#334155' : '#e2e8f0'));
+  const textColor = theme.textColor || (theme.isDark ? '#ffffff' : '#000000');
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState<number>(audioDuration || 0);
   const [currentTime, setCurrentTime] = useState<number>(0);
@@ -392,20 +400,25 @@ export const ChatMessageAudioPlayer: React.FC<{
     <div 
       className={`relative flex flex-col p-3 px-3.5 rounded-2xl min-w-[210px] sm:min-w-[240px] max-w-[290px] shadow-sm transition-all cursor-pointer ${
         isMe 
-          ? 'bg-emerald-600 text-white rounded-tr-none' 
-          : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-700/70 rounded-tl-none'
+          ? 'rounded-tr-none' 
+          : 'border rounded-tl-none'
       }`} 
+      style={{
+        backgroundColor: isMe ? primaryColor : cardBg,
+        color: isMe ? primaryTextColor : textColor,
+        borderColor: isMe ? 'transparent' : cardBorder
+      }}
       dir="rtl"
       onClick={(e) => e.stopPropagation()}
     >
       <div className="flex items-center gap-3">
         <button
           onClick={togglePlay}
-          className={`w-10 h-10 rounded-full shrink-0 flex items-center justify-center transition-all active:scale-90 shadow-md ${
-            isMe
-              ? 'bg-white text-emerald-600 hover:bg-slate-100'
-              : 'bg-emerald-600 text-white hover:bg-emerald-700'
-          }`}
+          className="w-10 h-10 rounded-full shrink-0 flex items-center justify-center transition-all active:scale-90 shadow-md"
+          style={{
+            backgroundColor: isMe ? '#ffffff' : primaryColor,
+            color: isMe ? primaryColor : primaryTextColor
+          }}
           title={isPlaying ? 'إيقاف موقت' : 'تشغيل الرسالة الصوتية'}
         >
           {isPlaying ? <Pause size={18} /> : <Play size={18} className="translate-x-[-1px]" />}
@@ -414,7 +427,7 @@ export const ChatMessageAudioPlayer: React.FC<{
         <div className="flex-1 flex flex-col justify-center gap-1.5 min-w-0">
           <div className="flex items-center justify-between text-[11px] font-bold opacity-90">
             <span className="flex items-center gap-1">
-              <Mic size={12} className={isMe ? 'text-emerald-200' : 'text-emerald-500'} />
+              <Mic size={12} style={{ color: isMe ? `${primaryTextColor}cc` : primaryColor }} />
               <span>تسجيل صوتي</span>
             </span>
             <span className="font-mono text-[11px]">
@@ -425,8 +438,11 @@ export const ChatMessageAudioPlayer: React.FC<{
           {/* Progress Bar & Seek Slider */}
           <div className="relative w-full h-2 rounded-full bg-black/15 dark:bg-white/20 overflow-hidden flex items-center">
             <div 
-              className={`h-full rounded-full transition-all ${isMe ? 'bg-white' : 'bg-emerald-500'}`}
-              style={{ width: `${progressPercent}%` }}
+              className="h-full rounded-full transition-all"
+              style={{ 
+                width: `${progressPercent}%`,
+                backgroundColor: isMe ? '#ffffff' : primaryColor
+              }}
             />
             <input
               type="range"
@@ -442,7 +458,10 @@ export const ChatMessageAudioPlayer: React.FC<{
 
       {/* Timestamp and Read Status INSIDE the card */}
       {timeStr && (
-        <div className={`flex items-center gap-1 justify-end mt-1.5 text-[10px] ${isMe ? 'text-emerald-100' : 'text-slate-400'}`}>
+        <div 
+          className="flex items-center gap-1 justify-end mt-1.5 text-[10px]"
+          style={{ color: isMe ? `${primaryTextColor}b3` : (isBlackTheme ? '#9ca3af' : '#64748b') }}
+        >
           <span>{timeStr}</span>
           {isMe && (
             isRead ? (
@@ -458,8 +477,18 @@ export const ChatMessageAudioPlayer: React.FC<{
 };
 
 const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, onNavigate }) => {
+  const { theme } = useTheme();
   const { language } = useLanguage();
   const isEn = language === 'en';
+  const isBlackTheme = theme.bgColor === '#000000';
+  const primaryColor = isBlackTheme ? '#FFFFFF' : (theme.palette?.[0] || '#10b981');
+  const primaryTextColor = isBlackTheme ? '#000000' : (theme.btnText || '#FFFFFF');
+  const cardBg = isBlackTheme ? '#111111' : (theme.cardBg || (theme.isDark ? '#1e293b' : '#ffffff'));
+  const cardBorder = isBlackTheme ? '#333333' : (theme.cardBorder || (theme.isDark ? '#334155' : '#e2e8f0'));
+  const secondaryBg = isBlackTheme ? '#1a1a1a' : (theme.isDark ? '#0f172a' : '#f8fafc');
+  const textColor = theme.textColor || (theme.isDark ? '#ffffff' : '#000000');
+  const textMuted = isBlackTheme ? '#9ca3af' : (theme.isDark ? '#94a3b8' : '#64748b');
+
   const currentUser = communityService.getCurrentUser();
   const [partner, setPartner] = useState<CommunityUser | null>(null);
   const [friendship, setFriendship] = useState(() => communityService.getFriendshipStatus(partnerUserId));
@@ -571,13 +600,12 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
     };
   }, []);
 
-  // Global click & touch outside listeners to guarantee immediate closing when tapping or clicking anywhere on screen
+  // Global click outside listeners for dropdown menu and inline emoji picker
   useEffect(() => {
     const handleGlobalClickOutside = (event: MouseEvent | TouchEvent | PointerEvent) => {
-      const target = event.target as Node;
-      if (reactionMenuMsgId) {
-        setReactionMenuMsgId(null);
-      }
+      const target = event.target as HTMLElement | null;
+      if (!target) return;
+
       if (showMenu) {
         if (menuDropdownRef.current && menuDropdownRef.current.contains(target)) {
           return;
@@ -590,9 +618,6 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
       if (showEmojiPicker && emojiPickerContainerRef.current && !emojiPickerContainerRef.current.contains(target)) {
         setShowEmojiPicker(false);
       }
-      if (moreEmojiPickerMsgId) {
-        setMoreEmojiPickerMsgId(null);
-      }
     };
 
     document.addEventListener('pointerdown', handleGlobalClickOutside, true);
@@ -604,7 +629,7 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
       document.removeEventListener('touchstart', handleGlobalClickOutside, true);
       document.removeEventListener('mousedown', handleGlobalClickOutside, true);
     };
-  }, [showMenu, showEmojiPicker, reactionMenuMsgId, moreEmojiPickerMsgId]);
+  }, [showMenu, showEmojiPicker]);
 
   // Back interceptor for device/phone back button (Capacitor/Android & browser back)
   useEffect(() => {
@@ -693,7 +718,7 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
     userIsNearBottomRef.current = isNear;
   };
 
-  const loadData = (shouldScrollIfNear: boolean = false) => {
+  const loadData = (shouldScrollIfNear: boolean = false, shouldMarkAsRead: boolean = true) => {
     if (!communityService.isProfileComplete()) {
       showToast('عفواً، يجب استكمال بيانات ملفك الشخصي أولاً');
       onBack();
@@ -733,23 +758,30 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
       }, 50);
     }
 
-    communityService.markMessagesAsRead(partnerUserId);
+    if (shouldMarkAsRead) {
+      const current = communityService.getCurrentUser();
+      const hasUnread = chatMsgs.some(m => m.recipientId === current?.userId && !m.isRead);
+      if (hasUnread) {
+        communityService.markMessagesAsRead(partnerUserId);
+      }
+    }
   };
 
   useEffect(() => {
     isFirstLoadRef.current = true;
     userIsNearBottomRef.current = true;
-    loadData(true);
+    loadData(true, true);
 
     const handleUpdate = () => {
-      loadData(true);
+      // Reload messages without re-calling markMessagesAsRead in an infinite loop
+      loadData(true, false);
     };
 
     window.addEventListener('community_contacts_updated', handleUpdate);
 
     const presenceInterval = setInterval(() => {
       // Periodic presence refresh without force scrolling
-      loadData(false);
+      loadData(false, false);
     }, 4000);
 
     window.addEventListener('community_messages_updated', handleUpdate);
@@ -1176,29 +1208,55 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
   }
 
   return (
-    <div className="h-[100dvh] max-h-[100dvh] overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white flex flex-col font-sans" dir={isEn ? "ltr" : "rtl"}>
+    <div 
+      className="h-[100dvh] max-h-[100dvh] overflow-hidden flex flex-col bg-transparent select-none" 
+      dir={isEn ? "ltr" : "rtl"}
+      style={{
+        fontFamily: theme.font,
+        color: textColor,
+        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 0.25rem)',
+        paddingBottom: 'env(safe-area-inset-bottom, 0px)'
+      }}
+    >
       {/* Header Container with Safe Area */}
       <div 
-        className="shrink-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-sm"
-        style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 0.25rem)' }}
+        className="shrink-0 z-40 border-b shadow-xs backdrop-blur-md"
+        style={{
+          backgroundColor: cardBg,
+          borderColor: cardBorder
+        }}
       >
         {/* Application Header Bar Only */}
         <div 
           id="chat-header-bar"
-          className="px-4 py-2.5 flex items-center justify-between"
+          className="px-3 sm:px-4 py-2.5 flex items-center justify-between"
         >
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5 min-w-0 flex-1">
           <button
+            type="button"
             onClick={onBack}
-            className="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+            className="w-9 h-9 rounded-xl flex items-center justify-center border transition-all active:scale-95 flex-shrink-0 cursor-pointer"
+            style={{
+              backgroundColor: secondaryBg,
+              borderColor: cardBorder,
+              color: textColor
+            }}
             title={isEn ? "Back" : "رجوع"}
+            aria-label={isEn ? "Back" : "رجوع"}
           >
-            <ArrowRight size={20} className={isEn ? "rotate-180" : ""} />
+            <ArrowRight size={18} className={isEn ? "rotate-180" : ""} />
           </button>
 
-          <div className="flex items-center gap-2.5">
-            <div className="relative">
-              <div className="w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold flex items-center justify-center border border-emerald-500/20 text-sm overflow-hidden">
+          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+            <div className="relative shrink-0">
+              <div 
+                className="w-10 h-10 rounded-2xl font-bold flex items-center justify-center border text-sm overflow-hidden shadow-inner"
+                style={{
+                  backgroundColor: `${primaryColor}15`,
+                  borderColor: `${primaryColor}30`,
+                  color: primaryColor
+                }}
+              >
                 {(partner?.userId === ADMIN_USER_ID ? SUPPORT_AVATAR_BASE64 : partner?.avatarUrl) ? (
                   <img 
                     src={partner?.userId === ADMIN_USER_ID ? SUPPORT_AVATAR_BASE64 : partner?.avatarUrl} 
@@ -1221,18 +1279,22 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
               )}
             </div>
 
-            <div>
-              <h2 className="font-bold text-sm leading-tight text-slate-900 dark:text-white flex items-center gap-1.5">
-                <span>{formatUsername(partner, isEn)}</span>
-                <span className="text-xs font-normal opacity-70">{formatCountryName(partner?.country, isEn)}</span>
+            <div className="min-w-0 flex-1">
+              <h2 className="font-bold text-xs sm:text-sm leading-tight flex items-center gap-1.5 truncate" style={{ color: textColor }}>
+                <span className="truncate">{formatUsername(partner, isEn)}</span>
+                {partner?.country && (
+                  <span className="text-[10px] px-1.5 py-0.2 rounded-md font-normal shrink-0" style={{ backgroundColor: secondaryBg, color: textMuted }}>
+                    {formatCountryName(partner.country, isEn)}
+                  </span>
+                )}
               </h2>
-              <p className="text-[11px] font-medium">
+              <p className="text-[10px] sm:text-[11px] font-medium truncate mt-0.5" style={{ color: textMuted }}>
                 {isPartnerTyping ? (
                   <span className="animate-pulse text-amber-500 font-bold">{isEn ? 'Typing now... ✍️' : 'جاري الكتابة الآن... ✍️'}</span>
                 ) : communityService.isUserOnline(partner) ? (
                   <span className="text-emerald-500 font-bold">{isEn ? 'Online' : 'متصل الآن'}</span>
                 ) : (
-                  <span className="text-slate-400">{formatUserStatusText(partner, isEn)}</span>
+                  <span>{formatUserStatusText(partner, isEn)}</span>
                 )}
               </p>
             </div>
@@ -1240,26 +1302,36 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
         </div>
 
         {/* Menu Options & Help Guide Button */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5 flex-shrink-0">
           <button
             type="button"
             onClick={() => setShowChatTour(true)}
-            className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-            style={{ color: 'var(--top-bar-text, inherit)' }}
+            className="w-9 h-9 rounded-xl flex items-center justify-center border transition-all active:scale-95 cursor-pointer"
+            style={{
+              backgroundColor: secondaryBg,
+              borderColor: cardBorder,
+              color: 'var(--top-bar-text, inherit)'
+            }}
             title={isEn ? "Chat Guide" : "دليل وشرح المحادثة"}
             aria-label={isEn ? "Chat Guide" : "دليل وشرح المحادثة"}
           >
-            <HelpCircle size={19} />
+            <HelpCircle size={17} />
           </button>
 
           <div className="relative" ref={menuContainerRef}>
             <button
               ref={menuButtonRef}
+              type="button"
               onClick={() => setShowMenu(prev => !prev)}
-              className="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors relative z-50 cursor-pointer"
+              className="w-9 h-9 rounded-xl flex items-center justify-center border transition-all active:scale-95 cursor-pointer relative z-50"
+              style={{
+                backgroundColor: secondaryBg,
+                borderColor: cardBorder,
+                color: textColor
+              }}
               title={isEn ? "More Options" : "خيارات إضافية"}
             >
-              <MoreVertical size={20} />
+              <MoreVertical size={17} />
             </button>
 
           <AnimatePresence>
@@ -1274,45 +1346,54 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
                 />
                 <motion.div
                   ref={menuDropdownRef}
-                  initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                  initial={{ opacity: 0, scale: 0.92, y: -5 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.9, y: 10 }}
-                  className={`absolute ${isEn ? 'right-0' : 'left-0'} mt-2 w-52 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl py-2 z-50 text-xs font-bold`}
+                  exit={{ opacity: 0, scale: 0.92, y: -5 }}
+                  className={`absolute ${isEn ? 'right-0' : 'left-0'} top-11 w-52 rounded-2xl border shadow-xl p-1.5 z-50 text-xs font-bold space-y-1`}
+                  style={{
+                    backgroundColor: cardBg,
+                    borderColor: cardBorder
+                  }}
                 >
                   <button
+                    type="button"
                     onClick={() => {
                       setShowMenu(false);
                       handleDeleteReadMessages();
                     }}
-                    className={`w-full px-4 py-2.5 ${isEn ? 'text-left' : 'text-right'} flex items-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 cursor-pointer`}
+                    className={`w-full p-2 rounded-xl transition-all hover:bg-slate-500/10 ${isEn ? 'text-left' : 'text-right'} flex items-center gap-2 cursor-pointer`}
+                    style={{ color: textColor }}
                   >
-                    <Trash2 size={16} className="text-amber-500" />
+                    <Trash2 size={15} className="text-amber-500" />
                     <span>{isEn ? 'Delete read messages' : 'حذف الرسائل المقروءة'}</span>
                   </button>
 
                   <button
+                    type="button"
                     onClick={() => {
                       setShowMenu(false);
                       handleClearConversation();
                     }}
-                    className={`w-full px-4 py-2.5 ${isEn ? 'text-left' : 'text-right'} flex items-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 cursor-pointer`}
+                    className={`w-full p-2 rounded-xl transition-all hover:bg-slate-500/10 ${isEn ? 'text-left' : 'text-right'} flex items-center gap-2 cursor-pointer`}
+                    style={{ color: textColor }}
                   >
-                    <Trash2 size={16} className="text-rose-500" />
+                    <Trash2 size={15} className="text-rose-500" />
                     <span>{isEn ? 'Delete entire conversation' : 'حذف المحادثة بالكامل'}</span>
                   </button>
 
                   {partnerUserId !== 'usr_admin_official' && (
                     <>
-                      <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
+                      <div className="my-1 border-t" style={{ borderColor: cardBorder }} />
 
                       <button
+                        type="button"
                         onClick={() => {
                           setShowMenu(false);
                           handleBlockUser();
                         }}
-                        className={`w-full px-4 py-2.5 ${isEn ? 'text-left' : 'text-right'} flex items-center gap-2 hover:bg-rose-50 dark:hover:bg-rose-950/30 text-rose-600 dark:text-rose-400 cursor-pointer`}
+                        className={`w-full p-2 rounded-xl transition-all hover:bg-rose-500/10 text-rose-600 dark:text-rose-400 ${isEn ? 'text-left' : 'text-right'} flex items-center gap-2 cursor-pointer`}
                       >
-                        <Ban size={16} />
+                        <Ban size={15} />
                         <span>{isEn ? 'Block user' : 'حظر المستخدم'}</span>
                       </button>
                     </>
@@ -1475,24 +1556,38 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
                     {/* Floating Reaction Bar matching Image 01.jpg */}
                     <AnimatePresence>
                       {reactionMenuMsgId === msg.messageId && (
-                        <MessageReactionsBar
-                          onSelectEmoji={(emoji) => handleToggleReaction(msg.messageId, emoji)}
-                          onOpenMoreEmojis={() => {
-                            setMoreEmojiPickerMsgId(msg.messageId);
-                            setReactionMenuMsgId(null);
-                          }}
-                          userReaction={msg.reactions?.[currentUser.userId]}
-                          isMe={isMe}
-                        />
+                        <>
+                          <div 
+                            className="fixed inset-0 z-40 bg-transparent cursor-default"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setReactionMenuMsgId(null);
+                            }}
+                            onTouchStart={(e) => {
+                              e.stopPropagation();
+                              setReactionMenuMsgId(null);
+                            }}
+                          />
+                          <MessageReactionsBar
+                            onSelectEmoji={(emoji) => handleToggleReaction(msg.messageId, emoji)}
+                            onOpenMoreEmojis={() => {
+                              setMoreEmojiPickerMsgId(msg.messageId);
+                              setReactionMenuMsgId(null);
+                            }}
+                            userReaction={msg.reactions?.[currentUser.userId]}
+                            isMe={isMe}
+                          />
+                        </>
                       )}
                     </AnimatePresence>
 
                     {isPureAudio ? (
                       <div 
                         onClick={() => setSelectedMsgId(isSelected ? null : msg.messageId)}
-                        className={`relative rounded-2xl transition-all duration-300 ${
-                          highlightedMsgId === msg.messageId ? 'ring-3 ring-emerald-500 scale-[1.03] shadow-lg' : ''
-                        }`}
+                        className="relative rounded-2xl transition-all duration-300"
+                        style={{
+                          boxShadow: highlightedMsgId === msg.messageId ? `0 0 0 3px ${primaryColor}` : undefined
+                        }}
                       >
                         {/* Quoted Message Block if replied */}
                         {msg.replyTo && (
@@ -1528,11 +1623,15 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
                         onClick={() => setSelectedMsgId(isSelected ? null : msg.messageId)}
                         className={`max-w-[90%] sm:max-w-[80%] p-3.5 rounded-2xl shadow-sm text-sm font-medium relative cursor-pointer transition-all duration-300 ${
                           isMe
-                            ? 'bg-emerald-600 text-white rounded-tr-none'
-                            : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700/60 rounded-tl-none'
-                        } ${
-                          highlightedMsgId === msg.messageId ? 'ring-3 ring-emerald-500 scale-[1.03] shadow-lg' : ''
+                            ? (isEn ? 'rounded-br-none' : 'rounded-bl-none')
+                            : (isEn ? 'rounded-bl-none border' : 'rounded-br-none border')
                         }`}
+                        style={{
+                          backgroundColor: isMe ? primaryColor : cardBg,
+                          color: isMe ? primaryTextColor : textColor,
+                          borderColor: isMe ? 'transparent' : cardBorder,
+                          boxShadow: highlightedMsgId === msg.messageId ? `0 0 0 3px ${primaryColor}` : undefined
+                        }}
                       >
                         {/* Quoted Message Block if replied */}
                         {msg.replyTo && (
@@ -1571,7 +1670,10 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
                         {msg.text && <p className="whitespace-pre-wrap leading-relaxed">{msg.text}</p>}
 
                         {!msg.audioUrl && (
-                          <div className={`flex items-center gap-1.5 justify-end mt-1 text-[10px] ${isMe ? 'text-emerald-100' : 'text-slate-400'}`}>
+                          <div 
+                            className="flex items-center gap-1.5 justify-end mt-1 text-[10px]"
+                            style={{ color: isMe ? `${primaryTextColor}b3` : textMuted }}
+                          >
                             <span>{timeStr}</span>
                             {isMe && (
                               msg.isRead ? (
@@ -1645,8 +1747,12 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
 
       {/* Input Footer Bar */}
       <div 
-        className="sticky bottom-0 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 px-2 sm:px-4 pt-2 pb-8 sm:pb-3.5 z-30 shadow-md"
-        style={{ paddingBottom: 'max(2rem, calc(env(safe-area-inset-bottom, 0px) + 1.75rem))' }}
+        className="sticky bottom-0 border-t px-2 sm:px-4 pt-2 pb-8 sm:pb-3.5 z-30 shadow-md"
+        style={{ 
+          backgroundColor: cardBg,
+          borderColor: cardBorder,
+          paddingBottom: 'max(2rem, calc(env(safe-area-inset-bottom, 0px) + 1.75rem))' 
+        }}
       >
         <div className="max-w-3xl mx-auto relative">
           {/* WhatsApp Quoted Reply Preview Bar matching Image 02.jpg */}
@@ -1687,11 +1793,15 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 10 }}
-                className="mb-2 p-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-emerald-500/30 flex items-center justify-between gap-3 shadow-xs"
+                className="mb-2 p-2.5 rounded-2xl border flex items-center justify-between gap-3 shadow-xs"
+                style={{
+                  backgroundColor: secondaryBg,
+                  borderColor: `${primaryColor}40`
+                }}
               >
                 <div className="flex items-center gap-2.5 min-w-0">
                   {stagedAttachment.type === 'image' ? (
-                    <img src={stagedAttachment.url} alt={isEn ? "Preview" : "معاينة"} className="w-10 h-10 rounded-xl object-cover border border-slate-200 dark:border-slate-700" />
+                    <img src={stagedAttachment.url} alt={isEn ? "Preview" : "معاينة"} className="w-10 h-10 rounded-xl object-cover border" style={{ borderColor: cardBorder }} />
                   ) : stagedAttachment.type === 'video' ? (
                     <div className="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-500 flex items-center justify-center font-bold">
                       <Video size={18} />
@@ -1702,10 +1812,10 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
                     </div>
                   )}
                   <div className="min-w-0">
-                    <p className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
+                    <p className="text-xs font-bold truncate" style={{ color: textColor }}>
                       {stagedAttachment.fileName || (stagedAttachment.type === 'image' ? (isEn ? 'Selected Image' : 'صورة مختارة') : stagedAttachment.type === 'video' ? (isEn ? 'Video' : 'مقطع مرئي') : (isEn ? 'File' : 'ملف'))}
                     </p>
-                    <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                    <p className="text-[10px]" style={{ color: textMuted }}>
                       {isEn ? 'Ready to send' : 'جاهز للإرسال والاسترداد'} • {formatFileSize(stagedAttachment.fileSize)}
                     </p>
                   </div>
@@ -1724,7 +1834,13 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
 
           {isRecording ? (
             /* Active Voice Recording Panel */
-            <div className="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-500/30 p-2 px-3 rounded-2xl shadow-inner animate-fadeIn">
+            <div 
+              className="flex items-center gap-2 p-2 px-3 rounded-2xl shadow-inner animate-fadeIn border"
+              style={{
+                backgroundColor: secondaryBg,
+                borderColor: cardBorder
+              }}
+            >
               <button
                 type="button"
                 onClick={cancelRecording}
@@ -1739,15 +1855,15 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
                   <span className="w-3 h-3 rounded-full bg-rose-500 animate-ping" />
                   <span className="w-2.5 h-2.5 rounded-full bg-rose-600" />
                 </div>
-                <span className="text-sm font-bold text-emerald-900 dark:text-emerald-200 font-mono">
+                <span className="text-sm font-bold font-mono" style={{ color: primaryColor }}>
                   {formatRecordingTime(recordingDuration)}
                 </span>
                 {/* Waveform visual animation */}
                 <div className="hidden sm:flex items-center gap-1 opacity-75">
-                  <span className="w-1 h-3 bg-emerald-500 rounded-full animate-bounce [animation-delay:0ms]" />
-                  <span className="w-1 h-5 bg-emerald-600 rounded-full animate-bounce [animation-delay:150ms]" />
-                  <span className="w-1 h-2 bg-emerald-500 rounded-full animate-bounce [animation-delay:300ms]" />
-                  <span className="w-1 h-4 bg-emerald-600 rounded-full animate-bounce [animation-delay:450ms]" />
+                  <span className="w-1 h-3 rounded-full animate-bounce [animation-delay:0ms]" style={{ backgroundColor: primaryColor }} />
+                  <span className="w-1 h-5 rounded-full animate-bounce [animation-delay:150ms]" style={{ backgroundColor: primaryColor }} />
+                  <span className="w-1 h-2 rounded-full animate-bounce [animation-delay:300ms]" style={{ backgroundColor: primaryColor }} />
+                  <span className="w-1 h-4 rounded-full animate-bounce [animation-delay:450ms]" style={{ backgroundColor: primaryColor }} />
                 </div>
               </div>
 
@@ -1755,7 +1871,11 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
                 type="button"
                 onClick={stopAndSendRecording}
                 disabled={isProcessingAudio}
-                className="p-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl shadow-lg shadow-emerald-600/20 active:scale-95 transition-all flex items-center justify-center gap-1.5 font-bold text-xs shrink-0 disabled:opacity-50 cursor-pointer"
+                className="p-3 rounded-2xl shadow-lg active:scale-95 transition-all flex items-center justify-center gap-1.5 font-bold text-xs shrink-0 disabled:opacity-50 cursor-pointer"
+                style={{
+                  backgroundColor: primaryColor,
+                  color: primaryTextColor
+                }}
               >
                 {isProcessingAudio ? (
                   <Loader2 size={18} className="animate-spin" />
@@ -1771,13 +1891,17 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
             /* Normal Input Bar with Mic / Send button */
             <form onSubmit={handleSend} className="flex items-center gap-1 sm:gap-1.5 w-full max-w-full overflow-hidden">
               {/* Three action buttons clustered tightly with minimal spacing */}
-              <div className="flex items-center gap-0 shrink-0">
+              <div className="flex items-center gap-0 shrink-0 border rounded-xl overflow-hidden" style={{ borderColor: cardBorder }}>
                 <button
                   id="chat-btn-verse"
                   type="button"
                   onClick={() => setShowVerseModal(true)}
                   disabled={isBlocked || isIntroMessageSent || (friendship.status === 'none' && partnerUserId !== ADMIN_USER_ID)}
-                  className={`w-7 h-8 sm:w-8 sm:h-8.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 ${isEn ? 'rounded-l-xl rounded-r-none' : 'rounded-r-xl rounded-l-none'} transition-colors flex items-center justify-center shrink-0 disabled:opacity-40 cursor-pointer p-0`}
+                  className="w-7 h-8 sm:w-8 sm:h-8.5 transition-colors flex items-center justify-center shrink-0 disabled:opacity-40 cursor-pointer p-0"
+                  style={{
+                    backgroundColor: `${primaryColor}15`,
+                    color: primaryColor
+                  }}
                   title={isEn ? "Share Quran verse" : "مشاركة آية قرآنية"}
                 >
                   <BookOpen size={16} />
@@ -1788,7 +1912,12 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
                   type="button"
                   onClick={() => setShowAttachmentPicker(true)}
                   disabled={isBlocked || isIntroMessageSent || (friendship.status === 'none' && partnerUserId !== ADMIN_USER_ID)}
-                  className="w-7 h-8 sm:w-8 sm:h-8.5 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 rounded-none hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center justify-center shrink-0 disabled:opacity-40 cursor-pointer p-0"
+                  className="w-7 h-8 sm:w-8 sm:h-8.5 transition-colors flex items-center justify-center shrink-0 disabled:opacity-40 cursor-pointer p-0 border-r border-l"
+                  style={{
+                    backgroundColor: secondaryBg,
+                    borderColor: cardBorder,
+                    color: textMuted
+                  }}
                   title={isEn ? "Attach file, photo or video" : "إرفاق واسترداد ملف أو صورة أو فيديو"}
                 >
                   <Paperclip size={16} />
@@ -1799,7 +1928,11 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
                   type="button"
                   onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                   disabled={isBlocked || isIntroMessageSent || (friendship.status === 'none' && partnerUserId !== ADMIN_USER_ID)}
-                  className={`w-7 h-8 sm:w-8 sm:h-8.5 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 ${isEn ? 'rounded-r-xl rounded-l-none' : 'rounded-l-xl rounded-r-none'} hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center justify-center shrink-0 disabled:opacity-40 cursor-pointer p-0`}
+                  className="w-7 h-8 sm:w-8 sm:h-8.5 transition-colors flex items-center justify-center shrink-0 disabled:opacity-40 cursor-pointer p-0"
+                  style={{
+                    backgroundColor: secondaryBg,
+                    color: textMuted
+                  }}
                   title={isEn ? "Insert adhkar and emojis" : "إدراج أذكار وتعبيرات"}
                 >
                   <Smile size={16} />
@@ -1825,7 +1958,12 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
                             ? (isEn ? 'Add a caption (optional)...' : 'أضف تعليقاً مع المرفق (اختياري)...')
                             : (isEn ? 'Type a blessed message...' : 'اكتب رسالة مباركة...')
                 }
-                className="flex-1 min-w-0 px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-white disabled:opacity-50"
+                className="flex-1 min-w-0 px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl border text-xs sm:text-sm font-medium focus:outline-none disabled:opacity-50"
+                style={{
+                  backgroundColor: secondaryBg,
+                  borderColor: cardBorder,
+                  color: textColor
+                }}
               />
 
               {/* Mic recording button when input is empty and no attachment, or Send button when text or attachment exists */}
@@ -1835,7 +1973,11 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
                     type="button"
                     onClick={startRecording}
                     disabled={isBlocked || isIntroMessageSent || (friendship.status === 'none' && partnerUserId !== ADMIN_USER_ID)}
-                    className="w-8 h-8 sm:w-9 sm:h-9 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl sm:rounded-2xl shadow-md active:scale-95 transition-all flex items-center justify-center shrink-0 disabled:opacity-40 cursor-pointer"
+                    className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl sm:rounded-2xl shadow-md active:scale-95 transition-all flex items-center justify-center shrink-0 disabled:opacity-40 cursor-pointer"
+                    style={{
+                      backgroundColor: primaryColor,
+                      color: primaryTextColor
+                    }}
                     title={isEn ? "Record voice message" : "تسجيل صوتي"}
                   >
                     <Mic size={16} />
@@ -1844,7 +1986,11 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
                   <button
                     type="submit"
                     disabled={(!inputText.trim() && !stagedAttachment) || isBlocked || isIntroMessageSent || (friendship.status === 'none' && partnerUserId !== ADMIN_USER_ID)}
-                    className="w-8 h-8 sm:w-9 sm:h-9 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white rounded-xl sm:rounded-2xl shadow-md active:scale-95 transition-all flex items-center justify-center shrink-0 cursor-pointer"
+                    className="w-8 h-8 sm:w-9 sm:h-9 disabled:opacity-40 rounded-xl sm:rounded-2xl shadow-md active:scale-95 transition-all flex items-center justify-center shrink-0 cursor-pointer"
+                    style={{
+                      backgroundColor: primaryColor,
+                      color: primaryTextColor
+                    }}
                     title={isEn ? "Send" : "إرسال"}
                   >
                     <Send size={16} className={isEn ? "" : "rotate-180"} />
@@ -2049,11 +2195,16 @@ const DirectChatPage: React.FC<DirectChatPageProps> = ({ partnerUserId, onBack, 
       {/* More Emoji Reaction Picker Modal (Triggered by + on reaction bar) */}
       <AnimatePresence>
         {moreEmojiPickerMsgId && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
             <div className="fixed inset-0" onClick={() => setMoreEmojiPickerMsgId(null)} />
-            <div className="relative z-10 max-w-sm w-full">
+            <div id="more-emoji-modal-card" className="relative z-10 max-w-sm w-full" onClick={(e) => e.stopPropagation()}>
               <EmojiPicker
-                onSelectEmoji={(emoji) => handleToggleReaction(moreEmojiPickerMsgId, emoji)}
+                isReactionPicker={true}
+                title={isEn ? "Select reaction for card" : "اختر تفاعلاً لإضافته للبطاقة"}
+                onSelectEmoji={(emoji) => {
+                  handleToggleReaction(moreEmojiPickerMsgId, emoji);
+                  setMoreEmojiPickerMsgId(null);
+                }}
                 onClose={() => setMoreEmojiPickerMsgId(null)}
               />
             </div>

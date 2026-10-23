@@ -193,11 +193,11 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
   const handleRefresh = async () => {
     setIsRefreshing(true);
     await Promise.all([
-      communityService.fetchLatestUsers(),
-      communityService.fetchLatestGroups(),
-      communityService.fetchLatestMessages(),
-      communityService.fetchLatestGroupMessages(),
-      communityService.fetchServerReadStates()
+      communityService.fetchLatestUsers(true),
+      communityService.fetchLatestGroups(true),
+      communityService.fetchLatestMessages(true),
+      communityService.fetchLatestGroupMessages(undefined, true),
+      communityService.fetchServerReadStates(undefined, true)
     ]);
     loadData();
     setTimeout(() => setIsRefreshing(false), 500);
@@ -208,31 +208,11 @@ const CommunityPage: React.FC<CommunityPageProps> = ({ onBack, onNavigate, initi
       setShowProfileModal(true);
     }
 
-    // Active fetch on load
-    communityService.fetchServerReadStates().then(() => {
-      loadData();
-    });
-
-    communityService.fetchLatestUsers().then(() => {
-      loadData();
-    });
-
-    communityService.fetchLatestGroups().then(() => {
-      loadData();
-    });
-
-    communityService.fetchLatestGroupMessages().then(() => {
-      loadData();
-    });
-
-    communityService.fetchLatestMessages().then(() => {
-      loadData();
-      if (!initialTab && !userManuallySwitchedTabRef.current && communityService.getActiveTab() !== 'community') {
-        setActiveTabState(communityService.getDefaultTab());
-      }
-    });
-
+    // Load instantly from in-memory snapshot cache (zero database reads)
     loadData();
+    if (!initialTab && !userManuallySwitchedTabRef.current && communityService.getActiveTab() !== 'community') {
+      setActiveTabState(communityService.getDefaultTab());
+    }
 
     const handleUpdate = () => {
       loadData();
