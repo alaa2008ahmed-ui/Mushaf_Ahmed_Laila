@@ -85,12 +85,14 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
                 {prayerKey !== 'Sunrise' ? (
                     <div id={idx === 0 ? "prayer-actions-container" : undefined} className="flex items-center gap-2 pointer-events-auto">
                         <div 
+                            id={idx === 0 ? "prayer-sound-toggle-btn" : undefined}
                             onClick={() => togglePrayerSound(prayerKey)} 
                             className={`toggle-dot ${isMuted ? 'bg-red-500' : (isBlackTheme ? 'bg-white' : (isNextPrayer ? 'bg-emerald-500' : 'bg-green-500'))} cursor-pointer transition-transform active:scale-90`} 
                             style={{borderColor: isBlackTheme ? '#FFFFFF' : activeBorderColor, width: '15px', height: '15px', borderRadius: '50%', borderWidth: '1.5px', borderStyle: 'solid'}}
                             title={isMuted ? tPrayer('alertsMutedTooltip', language) : tPrayer('alertsActiveTooltip', language)}
                         ></div>
                         <button 
+                            id={idx === 0 ? "prayer-settings-btn" : undefined}
                             onClick={() => openSettings(prayerKey)} 
                             className="text-sm opacity-85 hover:opacity-100 p-0.5 transition-opacity cursor-pointer" 
                             style={{ color: isBlackTheme ? '#FFFFFF' : activeTextColor }} 

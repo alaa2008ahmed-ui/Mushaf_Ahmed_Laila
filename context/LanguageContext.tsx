@@ -1,4 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { Preferences } from '@capacitor/preferences';
+import { syncDailyWirdNotifications } from '../utils/dailyWirdNotificationService';
+import { setupNotifications } from '../utils/notifications';
+import { setNativeAppLanguage } from '../utils/silentMode';
 
 export type Language = 'ar' | 'en';
 
@@ -89,14 +93,6 @@ export const ISLAMIC_TRANSLATIONS: Translations = {
     ar: 'أسماء الله الحسنى',
     en: 'Divine Names'
   },
-  'menu.ahl_al_quran': {
-    ar: 'أهل القرآن',
-    en: 'Ahl Al-Qur\'an'
-  },
-  'menu.community': {
-    ar: 'مجتمع التواصل',
-    en: 'Faith Community'
-  },
   'menu.daily_wird': {
     ar: 'الورد اليومي',
     en: 'Daily Wird'
@@ -125,20 +121,20 @@ export const ISLAMIC_TRANSLATIONS: Translations = {
     ar: 'السيرة النبوية',
     en: 'Prophetic Seerah'
   },
+  'menu.ten_promised': {
+    ar: 'العشرة المبشرون',
+    en: 'The Ten Promised Paradise'
+  },
   'menu.tajweed': {
     ar: 'تعليم التجويد',
     en: 'Tajweed Rules'
   },
+  'sidemenu.ten_promised_desc': {
+    ar: 'سير وأحوال وفضائل ومواقف العشرة المبشرين بالجنة.',
+    en: 'Biographies and virtues of the Ten Promised Paradise.'
+  },
 
   // Side Menu Items & Descriptions
-  'sidemenu.community_desc': {
-    ar: 'التواصل والمحادثات مع القراء والحفاظ من جميع أنحاء العالم.',
-    en: 'Brotherly discussions & connection with Qur\'an reciters worldwide.'
-  },
-  'sidemenu.ahl_al_quran_desc': {
-    ar: 'لوحة صدارة وتنافس محمود لقراء القرآن الكريم مع تحديث شهري للأجزاء والختمات.',
-    en: 'Honor leaderboard and inspiring competition for Qur\'an reciters.'
-  },
   'sidemenu.search': {
     ar: 'البحث المتقدم',
     en: 'Advanced Search'
@@ -433,22 +429,6 @@ export const ISLAMIC_TRANSLATIONS: Translations = {
     ar: 'بناء العادات الإيمانية وتتبع الطاعات اليومية',
     en: 'Cultivate spiritual habits and record daily good deeds'
   },
-  'page.community_title': {
-    ar: 'مجتمع التواصل الإيماني',
-    en: 'Faith Community'
-  },
-  'page.community_subtitle': {
-    ar: 'ملتقى القراء والذاكرين والتواصي بالحق',
-    en: 'Gathering of Qur\'an readers, mutual encouragement & discussions'
-  },
-  'page.ahl_al_quran_title': {
-    ar: 'أهل القرآن (لوحة الشرف)',
-    en: 'Ahl Al-Qur\'an Leaderboard'
-  },
-  'page.ahl_al_quran_subtitle': {
-    ar: 'لوحة صدارة وتنافس محمود لقراء كتاب الله',
-    en: 'Honor rankings and blessed competition in Qur\'an recitation'
-  },
   'page.islamic_sites_title': {
     ar: 'مواقع إسلامية موثوقة',
     en: 'Verified Islamic Websites'
@@ -644,60 +624,6 @@ export const ISLAMIC_TRANSLATIONS: Translations = {
   'prayer.isha': {
     ar: 'العشاء',
     en: 'Isha'
-  },
-
-  // Top Leaders Card (متصدرو أهل القرآن)
-  'top_leaders.title': {
-    ar: 'متصدرو أهل القرآن',
-    en: 'Ahl Al-Qur\'an Leaders'
-  },
-  'top_leaders.all_time': {
-    ar: 'الإجمالي التراكمي',
-    en: 'All-Time Total'
-  },
-  'top_leaders.share_tooltip': {
-    ar: 'مشاركة كصورة',
-    en: 'Share as Image'
-  },
-  'top_leaders.register_prompt': {
-    ar: 'سجّل اسمك في مجتمع التواصل لتظهر لك بيانات وتصنيف متصدري أهل القرآن وتشاركهم التنافس الإيماني! 🌟',
-    en: 'Register in the Faith Community to view rankings and participate in the blessed Qur\'an recitation! 🌟'
-  },
-  'top_leaders.register_btn': {
-    ar: 'التسجيل في مجتمع التواصل',
-    en: 'Register in Community'
-  },
-  'top_leaders.you': {
-    ar: 'أنت',
-    en: 'You'
-  },
-  'top_leaders.empty_prompt': {
-    ar: 'كن أول المتصدرين في قراءة القرآن لهذا الشهر! 🌟',
-    en: 'Be the first leader in Qur\'an recitation this month! 🌟'
-  },
-  'top_leaders.start_reading': {
-    ar: 'ابدأ القراءة الآن',
-    en: 'Start Recitation Now'
-  },
-  'top_leaders.first_place': {
-    ar: 'المركز الأول 🥇',
-    en: '1st Place 🥇'
-  },
-  'top_leaders.second_place': {
-    ar: 'المركز الثاني 🥈',
-    en: '2nd Place 🥈'
-  },
-  'top_leaders.third_place': {
-    ar: 'المركز الثالث 🥉',
-    en: '3rd Place 🥉'
-  },
-  'top_leaders.share_title': {
-    ar: '🏆 لوحة شرف متصدري أهل القرآن 🏆',
-    en: '🏆 Ahl Al-Qur\'an Honor Leaderboard 🏆'
-  },
-  'top_leaders.share_verse': {
-    ar: 'قال تعالى: ﴿وَفِي ذَٰلِكَ فَلْيَتَنَافَسِ الْمُتَنَافِسُونَ﴾',
-    en: 'Allah says: "And for this let the competitors compete." [83:26]'
   },
 
   // Habit Tracker Card (مربي العبادات)
@@ -1071,12 +997,34 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
   useEffect(() => {
     try {
       localStorage.setItem('app_language', language);
+      Preferences.set({ key: 'app_language', value: language }).catch(() => {});
     } catch (e) {
       // ignore
     }
     // Update document root attributes
     document.documentElement.setAttribute('lang', language);
     document.documentElement.setAttribute('dir', isRTL ? 'rtl' : 'ltr');
+
+    // Update native Android app locale & notification titles
+    try {
+      setNativeAppLanguage(language).catch(() => {});
+    } catch (e) {
+      // ignore
+    }
+
+    // Sync Daily Wird notifications with the new language
+    try {
+      syncDailyWirdNotifications(language);
+    } catch (e) {
+      // ignore
+    }
+
+    // Sync general Athkar, Duas, Tasbeeh & Occasions notifications with the new language
+    try {
+      setupNotifications(undefined, language).catch(() => {});
+    } catch (e) {
+      // ignore
+    }
   }, [language, isRTL]);
 
   const setLanguage = React.useCallback((lang: Language) => {
@@ -1118,8 +1066,6 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
       'nawawi': 'Forty Hadith',
       'calculators': 'Calculators',
       'asmaul-husna': 'Divine Names',
-      'ahl-al-quran': 'Ahl Al-Qur\'an',
-      'community': 'Faith Community',
       'daily-wird': 'Daily Wird',
       'habit-tracker': 'Habit Tracker',
       'memorization': 'Memorization',
@@ -1127,6 +1073,7 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
       'islamic-sites': 'Islamic Sites',
       'others': 'Al-Ruqyah',
       'prophetic-seerah': 'Prophetic Seerah',
+      'ten-promised': 'The Ten Promised Paradise',
       'tajweed-education': 'Tajweed Rules',
       'quran-download-parent': 'Download Qur\'an',
       'tafseer-download': 'Download Tafseer',

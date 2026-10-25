@@ -3,7 +3,11 @@ package com.mushaf.ahmedandlayla;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.media.AudioAttributes;
 import android.net.Uri;
 import android.os.Build;
@@ -13,12 +17,22 @@ import com.getcapacitor.BridgeActivity;
 import com.getcapacitor.BridgeWebChromeClient;
 
 public class MainActivity extends BridgeActivity {
+    private final BroadcastReceiver timeTickReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            PersistentPrayerNotification.update(context);
+        }
+    };
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         registerPlugin(AutoSilentPlugin.class);
         super.onCreate(savedInstanceState);
+
+        android.content.SharedPreferences prefs = getSharedPreferences("CapacitorStorage", Context.MODE_PRIVATE);
+        String appLang = prefs.getString("app_language", "ar");
+        AutoSilentPlugin.applyAppLocale(this, appLang);
         
-        createAdhanNotificationChannels();
+        createAdhanNotificationChannels("ar".equalsIgnoreCase(appLang));
 
         // Preserve all Capacitor BridgeWebChromeClient capabilities (file chooser, camera, photo gallery)
         // while ensuring native Android permissions are requested if not already granted.
@@ -54,12 +68,40 @@ public class MainActivity extends BridgeActivity {
     }
 
     @Override
+    public void onStart() {
+        super.onStart();
+        try {
+            IntentFilter filter = new IntentFilter();
+            filter.addAction(Intent.ACTION_TIME_TICK);
+            filter.addAction(Intent.ACTION_SCREEN_ON);
+            registerReceiver(timeTickReceiver, filter);
+        } catch (Exception ignored) {}
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        try {
+            unregisterReceiver(timeTickReceiver);
+        } catch (Exception ignored) {}
+    }
+
+    @Override
     public void onResume() {
         super.onResume();
+        android.content.SharedPreferences prefs = getSharedPreferences("CapacitorStorage", Context.MODE_PRIVATE);
+        String appLang = prefs.getString("app_language", "ar");
+        AutoSilentPlugin.applyAppLocale(this, appLang);
         PersistentPrayerNotification.update(this);
     }
 
     private void createAdhanNotificationChannels() {
+        android.content.SharedPreferences prefs = getSharedPreferences("CapacitorStorage", Context.MODE_PRIVATE);
+        String appLang = prefs.getString("app_language", "ar");
+        createAdhanNotificationChannels("ar".equalsIgnoreCase(appLang));
+    }
+
+    private void createAdhanNotificationChannels(boolean isArabic) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationManager nm = getSystemService(NotificationManager.class);
             if (nm == null) return;
@@ -99,25 +141,25 @@ public class MainActivity extends BridgeActivity {
 
             String[][] channels = new String[][]{
                 // Adhan tones (v5)
-                {"adhan_v5_takbeer1", "أذان الصلوات (تكبيرات 1)", "takbeer1"},
-                {"adhan_v5_takbeer2", "أذان الصلوات (تكبيرات 2)", "takbeer2"},
-                {"adhan_v5_takbeer3", "أذان الصلوات (تكبيرات 3)", "takbeer3"},
-                {"adhan_v5_takbeer4", "أذان الصلوات (تكبيرات 4)", "takbeer4"},
-                {"adhan_v5_takbeer5", "أذان الصلوات (تكبيرات 5)", "takbeer5"},
-                {"adhan_v5_takbeer6", "أذان الصلوات (تكبيرات 6)", "takbeer6"},
-                {"adhan_v5_azan1", "أذان الصلوات (أذان 1)", "azan1"},
-                {"adhan_v5_azan2", "أذان الصلوات (أذان 2)", "azan2"},
-                {"adhan_v5_azan3", "أذان الصلوات (أذان 3)", "azan3"},
-                {"adhan_v5_azan4", "أذان الصلوات (أذان 4)", "azan4"},
-                {"adhan_v5_shahadah", "أذان الصلوات (الشهادة)", "shahadah"},
-                {"adhan_v5_salah", "أذان الصلوات (الصلاة)", "salah"},
+                {"adhan_v5_takbeer1", isArabic ? "أذان الصلوات (تكبيرات 1)" : "Prayer Adhan (Takbeer 1)", "takbeer1"},
+                {"adhan_v5_takbeer2", isArabic ? "أذان الصلوات (تكبيرات 2)" : "Prayer Adhan (Takbeer 2)", "takbeer2"},
+                {"adhan_v5_takbeer3", isArabic ? "أذان الصلوات (تكبيرات 3)" : "Prayer Adhan (Takbeer 3)", "takbeer3"},
+                {"adhan_v5_takbeer4", isArabic ? "أذان الصلوات (تكبيرات 4)" : "Prayer Adhan (Takbeer 4)", "takbeer4"},
+                {"adhan_v5_takbeer5", isArabic ? "أذان الصلوات (تكبيرات 5)" : "Prayer Adhan (Takbeer 5)", "takbeer5"},
+                {"adhan_v5_takbeer6", isArabic ? "أذان الصلوات (تكبيرات 6)" : "Prayer Adhan (Takbeer 6)", "takbeer6"},
+                {"adhan_v5_azan1", isArabic ? "أذان الصلوات (أذان 1)" : "Prayer Adhan (Adhan 1)", "azan1"},
+                {"adhan_v5_azan2", isArabic ? "أذان الصلوات (أذان 2)" : "Prayer Adhan (Adhan 2)", "azan2"},
+                {"adhan_v5_azan3", isArabic ? "أذان الصلوات (أذان 3)" : "Prayer Adhan (Adhan 3)", "azan3"},
+                {"adhan_v5_azan4", isArabic ? "أذان الصلوات (أذان 4)" : "Prayer Adhan (Adhan 4)", "azan4"},
+                {"adhan_v5_shahadah", isArabic ? "أذان الصلوات (الشهادة)" : "Prayer Adhan (Shahadah)", "shahadah"},
+                {"adhan_v5_salah", isArabic ? "أذان الصلوات (الصلاة)" : "Prayer Adhan (Salah)", "salah"},
 
                 // Short gentle chime alerts (Preparation, Iqama, Silent Mode, Night, Athkar)
-                {"pre_adhan_v3_chime_channel", "تنبيه الاستعداد للصلاة", "chime"},
-                {"iqama_v4_chime_channel", "تنبيه إقامة الصلاة", "chime"},
-                {"prayer_silent_v3_chime_channel", "الصامت التلقائي للصلاة", "chime"},
-                {"night_times_v3_chime_channel", "تنبيهات أوقات الليل", "chime"},
-                {"athkar_v3_chime_channel", "أذكار وتنبيهات عامة", "chime"}
+                {"pre_adhan_v3_chime_channel", isArabic ? "تنبيه الاستعداد للصلاة" : "Prayer Preparation Alert", "chime"},
+                {"iqama_v4_chime_channel", isArabic ? "تنبيه إقامة الصلاة" : "Prayer Iqama Alert", "chime"},
+                {"prayer_silent_v3_chime_channel", isArabic ? "الصامت التلقائي للصلاة" : "Auto Silent Mode", "chime"},
+                {"night_times_v3_chime_channel", isArabic ? "تنبيهات أوقات الليل" : "Night Times Reminders", "chime"},
+                {"athkar_v3_chime_channel", isArabic ? "أذكار وتنبيهات عامة" : "General Adhkar & Reminders", "chime"}
             };
 
             for (String[] ch : channels) {
@@ -127,7 +169,7 @@ public class MainActivity extends BridgeActivity {
                     String rawSound = ch[2];
 
                     NotificationChannel channel = new NotificationChannel(id, name, NotificationManager.IMPORTANCE_HIGH);
-                    channel.setDescription("تنبيه بصوت مخصص يعمل مع قفل الشاشة");
+                    channel.setDescription(isArabic ? "تنبيه بصوت مخصص يعمل مع قفل الشاشة" : "Custom tone prayer alert");
                     channel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
                     channel.setBypassDnd(true);
                     channel.enableVibration(true);
@@ -147,10 +189,10 @@ public class MainActivity extends BridgeActivity {
             try {
                 NotificationChannel silentChan = new NotificationChannel(
                     "adhan_v5_silent",
-                    "أذان الصلوات (بدون صوت)",
+                    isArabic ? "أذان الصلوات (بدون صوت)" : "Prayer Adhan (Silent)",
                     NotificationManager.IMPORTANCE_HIGH
                 );
-                silentChan.setDescription("إشعار الأذان بدون صوت");
+                silentChan.setDescription(isArabic ? "إشعار الأذان بدون صوت" : "Silent Adhan notification");
                 silentChan.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
                 silentChan.enableVibration(false);
                 nm.createNotificationChannel(silentChan);

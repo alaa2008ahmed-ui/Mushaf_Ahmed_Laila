@@ -26,8 +26,11 @@ const ReciterSelectModal: React.FC<ReciterSelectModalProps> = ({
     const [searchTerm, setSearchTerm] = useState('');
     const selectedRef = useRef<HTMLButtonElement>(null);
 
-    // Strictly filter the available readers based on current reading mode
+    // Strictly filter the available readers based on current reading mode or custom readers list
     const modeReaders = useMemo(() => {
+        if (readersList && readersList !== READERS) {
+            return readersList;
+        }
         return getReadersForMode(readingMode, readersList);
     }, [readingMode, readersList]);
 

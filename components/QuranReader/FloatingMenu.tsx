@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from "react";
 import {
   Monitor,
   Smartphone,
@@ -270,6 +270,21 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
     | "sajdah_list"
     | "sajdah_info";
   const [currentView, setCurrentView] = useState<MenuView>("main");
+  const menuContainerRef = useRef<HTMLDivElement>(null);
+  const [mainSidebarWidth, setMainSidebarWidth] = useState<number | null>(null);
+
+  useLayoutEffect(() => {
+    if (currentView !== "main" || isAddModalOpen) return;
+    const measureMainWidth = () => {
+      const el = menuContainerRef.current;
+      if (el && el.offsetWidth > 0) {
+        setMainSidebarWidth((prev) => (prev === el.offsetWidth ? prev : el.offsetWidth));
+      }
+    };
+    measureMainWidth();
+    window.addEventListener("resize", measureMainWidth);
+    return () => window.removeEventListener("resize", measureMainWidth);
+  }, [currentView, isAddModalOpen, isFloatingMenuOpen, language, isLandscape, readingMode, selectedShortcuts]);
 
   // Initialize selectedReader based on view
   useEffect(() => {
@@ -1062,6 +1077,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
 
   const iconColor = currentTheme.accent || "#000000";
   const sidebarIconColor = currentTheme.id === 'black' ? '#14b8a6' : iconColor;
+  const [, setThemeChangeTick] = useState(0);
 
   const applyTheme = (themeId: string) => {
     const theme = THEMES[themeId as keyof typeof THEMES];
@@ -1178,6 +1194,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
       JSON.stringify(updatedSettings),
     );
 
+    setThemeChangeTick((prev) => prev + 1);
     window.dispatchEvent(new Event("theme-change"));
     showToast(isEn ? `Theme applied: ${THEME_NAMES_EN[themeId] || t(`theme.${themeId}`, theme.name)}` : `تم تطبيق ثيم: ${theme.name}`);
   };
@@ -1224,8 +1241,24 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
         {/* The Main Menu Container */}
         <div
           id="floating-menu"
-          className={`${(currentView === "main" && !isAddModalOpen) ? "w-max max-w-[85vw]" : "w-[200px] max-w-[85vw]"} ${isLandscape ? "rounded-none" : isRTL ? "rounded-l-2xl" : "rounded-r-2xl"} shadow-2xl transition-all duration-300 ${isRTL ? "origin-top-right" : "origin-top-left"} flex flex-col pointer-events-auto h-full ${isFloatingMenuOpen ? "opacity-100 visible scale-100 translate-y-0" : "opacity-0 invisible scale-95 -translate-y-4"}`}
+          ref={menuContainerRef}
+          className={`${
+            currentView === "main" && !isAddModalOpen
+              ? "w-max max-w-[85vw]"
+              : currentView === "themes"
+                ? mainSidebarWidth
+                  ? "max-w-[85vw]"
+                  : "w-[155px] max-w-[85vw]"
+                : "w-[200px] max-w-[85vw]"
+          } ${isLandscape ? "rounded-none" : isRTL ? "rounded-l-2xl" : "rounded-r-2xl"} shadow-2xl transition-all duration-300 ${isRTL ? "origin-top-right" : "origin-top-left"} flex flex-col pointer-events-auto h-full ${isFloatingMenuOpen ? "opacity-100 visible scale-100 translate-y-0" : "opacity-0 invisible scale-95 -translate-y-4"}`}
           style={{
+            ...(currentView === "themes" && mainSidebarWidth
+              ? {
+                  width: `${mainSidebarWidth}px`,
+                  minWidth: `${mainSidebarWidth}px`,
+                  maxWidth: `${mainSidebarWidth}px`,
+                }
+              : {}),
             fontFamily: currentTheme.font || "var(--font-amiri)",
             backgroundColor: currentTheme.bg || "#ffffff",
             color: currentTheme.text || "#000000",
@@ -1338,24 +1371,24 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                 </div>
               </div>
 
-              <div className="flex-grow overflow-y-auto p-3 custom-scrollbar flex flex-col justify-between">
-                <div className="space-y-6">
+              <div className="flex-grow overflow-y-auto overflow-x-hidden p-2.5 custom-scrollbar flex flex-col justify-between">
+                <div className="space-y-5">
                   {/* Toggles Section */}
                   <div
-                    className="space-y-3 p-3 rounded-xl border"
+                    className="space-y-2.5 p-2 rounded-xl border"
                     style={{
                       backgroundColor: `${currentTheme.text}05`,
                       borderColor: `${currentTheme.text}10`,
                     }}
                   >
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-1.5">
                       <label
-                        className="text-[11px] font-bold opacity-80"
+                        className="text-[10px] font-bold opacity-80 leading-tight min-w-0 truncate"
                         style={{ color: currentTheme.text }}
                       >
                         {isEn ? "Lock Highlight Color" : "قفل لون التحديد"}
                       </label>
-                      <div className="relative inline-block w-8 align-middle select-none">
+                      <div className="relative inline-block w-8 shrink-0 align-middle select-none">
                         <input
                           type="checkbox"
                           id="menu-lock-highlight"
@@ -1375,14 +1408,14 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-1.5">
                       <label
-                        className="text-[11px] font-bold opacity-80"
+                        className="text-[10px] font-bold opacity-80 leading-tight min-w-0 truncate"
                         style={{ color: currentTheme.text }}
                       >
                         {isEn ? "Hide Toolbars" : "إخفاء الأشرطة"}
                       </label>
-                      <div className="relative inline-block w-8 align-middle select-none">
+                      <div className="relative inline-block w-8 shrink-0 align-middle select-none">
                         <input
                           type="checkbox"
                           id="menu-hide-toolbars"
@@ -1418,65 +1451,71 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
 
 
                   {/* Themes Grid */}
-                  <div className="grid grid-cols-4 gap-y-5 gap-x-2">
+                  <div className="grid grid-cols-3 gap-y-4 gap-x-1.5">
                     {Object.entries(THEMES).map(
-                      ([id, theme]: [string, any]) => (
-                        <React.Fragment key={id}>
-                          <button
-                            onClick={() => {
-                              applyTheme(id);
-                              setIsFloatingMenuOpen(false);
-                            }}
-                            className="flex flex-col items-center gap-1.5 group"
-                          >
-                            <div
-                              className={`w-[20px] h-[20px] rounded-full border-2 transition-all flex items-center justify-center ${localStorage.getItem("current_theme_id" + (isMemorizationMode ? `_memorization_${isLandscape ? "h" : "v"}` : isWirdMode ? `_wird_${isLandscape ? "h" : "v"}` : readingMode === "mushaf" ? (isLandscape ? "_h" : "_v") : `_${readingMode}_${isLandscape ? "h" : "v"}`)) === id ? "scale-110 border-gray-400 shadow-md" : "border-transparent hover:scale-105"}`}
-                              style={{
-                                backgroundColor:
-                                  id === "black"
-                                    ? "#000000"
-                                    : id === "deep_black"
+                      ([id, theme]: [string, any]) => {
+                        const activeModeSuffix = isMemorizationMode
+                          ? `_memorization_${isLandscape ? "h" : "v"}`
+                          : isWirdMode
+                            ? `_wird_${isLandscape ? "h" : "v"}`
+                            : readingMode === "mushaf"
+                              ? isLandscape
+                                ? "_h"
+                                : "_v"
+                              : `_${readingMode}_${isLandscape ? "h" : "v"}`;
+                        const isActiveTheme =
+                          (localStorage.getItem("current_theme_id" + activeModeSuffix) ||
+                            currentTheme?.id ||
+                            "black") === id;
+
+                        return (
+                          <React.Fragment key={id}>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                applyTheme(id);
+                              }}
+                              className="flex flex-col items-center gap-1.5 group cursor-pointer min-w-0"
+                            >
+                              <div
+                                className={`pointer-events-none w-[20px] h-[20px] rounded-full border-2 transition-all flex items-center justify-center ${isActiveTheme ? "scale-110 border-gray-400 shadow-md" : "border-transparent hover:scale-105"}`}
+                                style={{
+                                  backgroundColor:
+                                    id === "black"
                                       ? "#000000"
-                                      : theme.accent ||
-                                        theme.palette?.[0] ||
-                                        theme.bg ||
-                                        "#ffffff",
-                              }}
-                            >
-                              {localStorage.getItem(
-                                "current_theme_id" +
-                                  (isMemorizationMode
-                                    ? `_memorization_${isLandscape ? "h" : "v"}`
-                                    : isWirdMode
-                                      ? `_wird_${isLandscape ? "h" : "v"}`
-                                      : readingMode === "mushaf"
-                                        ? isLandscape
-                                          ? "_h"
-                                          : "_v"
-                                        : `_${readingMode}_${isLandscape ? "h" : "v"}`),
-                              ) === id && (
-                                <div
-                                  className={`w-1.5 h-1.5 rounded-full shadow-sm ${id === "deep_black" ? "bg-emerald-500" : "bg-white"}`}
-                                ></div>
-                              )}
-                            </div>
-                            <span
-                              className="text-[7px] font-bold opacity-80 truncate w-full text-center leading-tight"
-                              style={{ color: currentTheme.text }}
-                            >
-                              {isEn ? (THEME_NAMES_EN[id] || t(`theme.${id}`, theme.name)) : theme.name}
-                            </span>
-                          </button>
-                          {id === "lime" && (
-                            <div
-                              className="col-span-4 h-px my-1"
-                              style={{
-                                backgroundColor: `${currentTheme.text}15`,
-                              }}
-                            ></div>
-                          )}
-                        </React.Fragment>
-                      ),
+                                      : id === "deep_black"
+                                        ? "#000000"
+                                        : theme.accent ||
+                                          theme.palette?.[0] ||
+                                          theme.bg ||
+                                          "#ffffff",
+                                }}
+                              >
+                                {isActiveTheme && (
+                                  <div
+                                    className={`pointer-events-none w-1.5 h-1.5 rounded-full shadow-sm ${id === "deep_black" ? "bg-emerald-500" : "bg-white"}`}
+                                  ></div>
+                                )}
+                              </div>
+                              <span
+                                className="pointer-events-none text-[7px] font-bold opacity-80 truncate w-full text-center leading-tight"
+                                style={{ color: currentTheme.text }}
+                              >
+                                {isEn ? (THEME_NAMES_EN[id] || t(`theme.${id}`, theme.name)) : theme.name}
+                              </span>
+                            </button>
+                            {id === "lime" && (
+                              <div
+                                className="col-span-3 h-px my-1"
+                                style={{
+                                  backgroundColor: `${currentTheme.text}15`,
+                                }}
+                              ></div>
+                            )}
+                          </React.Fragment>
+                        );
+                      },
                     )}
                   </div>
                 </div>
@@ -2809,7 +2848,12 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                   data-id="menu-item-themes"
                   icon={<Palette size={18} />}
                   label={isEn ? "Themes" : "المظهر"}
-                  onClick={() => setCurrentView("themes")}
+                  onClick={() => {
+                    if (menuContainerRef.current && menuContainerRef.current.offsetWidth > 0) {
+                      setMainSidebarWidth(menuContainerRef.current.offsetWidth);
+                    }
+                    setCurrentView("themes");
+                  }}
                   iconColor={sidebarIconColor}
                   currentTheme={currentTheme}
                   isRTL={isRTL}

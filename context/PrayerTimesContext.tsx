@@ -10,6 +10,8 @@ import { updateAndroidWidget } from '../utils/widgetUtils';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { scheduleDeviceSilentWindows, cancelAllDeviceSilentWindows, setDeviceSilentNow } from '../utils/silentMode';
 import { useTheme } from './ThemeContext';
+import { useLanguage } from './LanguageContext';
+import { PRAYER_NAMES_EN } from '../utils/prayerTimesTranslations';
 
 // --- Types ---
 interface PrayerConfig {
@@ -236,6 +238,8 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
     });
 
     const { themeKey } = useTheme();
+    const { language } = useLanguage();
+    const isEn = language === 'en';
     const [times, setTimes] = useState<Record<string, string>>({});
     const [dates, setDates] = useState({ hijri: "-- -- --", gregorian: "-- -- --" });
     const [nextPrayer, setNextPrayer] = useState<{ key: string; date: Date; name: string } | null>(null);
@@ -304,7 +308,7 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
 
                 if (nowMinutes >= silentStartMin && nowMinutes < silentStartMin + duration) {
                     foundActive = true;
-                    activeName = prayerNamesAr[key] || key;
+                    activeName = isEn ? (PRAYER_NAMES_EN[key] || key) : (prayerNamesAr[key] || key);
                     break;
                 }
             }
@@ -324,7 +328,7 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
         checkSilentStatus();
         const interval = setInterval(checkSilentStatus, 30000);
         return () => clearInterval(interval);
-    }, [config.autoSilent, config.autoSilentDuration, config.prayerAutoSilent, config.mutedPrayers, config.iqamaOffsets, config.iqamaReminder, times, config.prayerOffsets, config.isSummerTime, config.location]);
+    }, [config.autoSilent, config.autoSilentDuration, config.prayerAutoSilent, config.mutedPrayers, config.iqamaOffsets, config.iqamaReminder, times, config.prayerOffsets, config.isSummerTime, config.location, isEn]);
 
     // --- Save Config ---
     useEffect(() => {
@@ -684,7 +688,7 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                             await LocalNotifications.createChannel({
                                 id: chan.id,
                                 name: chan.name,
-                                description: `نغمة إشعار الأذان: ${chan.name}`,
+                                description: isEn ? `Adhan notification tone: ${chan.name}` : `نغمة إشعار الأذان: ${chan.name}`,
                                 importance: 5,
                                 sound: chan.raw || chan.sound,
                                 vibration: true,
@@ -701,8 +705,8 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                     try {
                         await LocalNotifications.createChannel({
                             id: 'adhan_v5_silent',
-                            name: 'أذان الصلوات (بدون صوت)',
-                            description: 'إشعار الأذان بدون صوت تنبيه',
+                            name: isEn ? 'Prayer Adhan (Silent)' : 'أذان الصلوات (بدون صوت)',
+                            description: isEn ? 'Adhan notification without sound' : 'إشعار الأذان بدون صوت تنبيه',
                             importance: 4,
                             vibration: false,
                             visibility: 1
@@ -712,11 +716,31 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
 
                 // Short gentle chime channels for all reminders
                 const alertChannels = [
-                    { id: 'pre_adhan_v3_chime_channel', name: 'تنبيه الاستعداد للصلاة', desc: 'نغمة تنبيه قصيرة وخفيفة للاستعداد والوضوء قبل الأذان' },
-                    { id: 'iqama_v4_chime_channel', name: 'تنبيه إقامة الصلاة', desc: 'نغمة تنبيه وإشعار مرئي عند حلول موعد إقامة الصلاة' },
-                    { id: 'prayer_silent_v3_chime_channel', name: 'الصامت التلقائي للصلاة', desc: 'تنبيه قصير عند تفعيل أو إنهاء وضع الصامت للصلاة' },
-                    { id: 'night_times_v3_chime_channel', name: 'تنبيهات أوقات الليل', desc: 'إشعارات لأوقات أول الليل، منتصف الليل، والثلث الأخير' },
-                    { id: 'athkar_v3_chime_channel', name: 'أذكار وتنبيهات عامة', desc: 'قناة تنبيهات أذكار الصباح والمساء والسنن والأدعية' },
+                    { 
+                        id: 'pre_adhan_v3_chime_channel', 
+                        name: isEn ? 'Prayer Preparation Alert' : 'تنبيه الاستعداد للصلاة', 
+                        desc: isEn ? 'Short gentle chime before Adhan' : 'نغمة تنبيه قصيرة وخفيفة للاستعداد والوضوء قبل الأذان' 
+                    },
+                    { 
+                        id: 'iqama_v4_chime_channel', 
+                        name: isEn ? 'Prayer Iqama Alert' : 'تنبيه إقامة الصلاة', 
+                        desc: isEn ? 'Chime alert when prayer Iqama begins' : 'نغمة تنبيه وإشعار مرئي عند حلول موعد إقامة الصلاة' 
+                    },
+                    { 
+                        id: 'prayer_silent_v3_chime_channel', 
+                        name: isEn ? 'Auto Silent for Prayer' : 'الصامت التلقائي للصلاة', 
+                        desc: isEn ? 'Short alert when silent mode activates or deactivates' : 'تنبيه قصير عند تفعيل أو إنهاء وضع الصامت للصلاة' 
+                    },
+                    { 
+                        id: 'night_times_v3_chime_channel', 
+                        name: isEn ? 'Night Times Reminders' : 'تنبيهات أوقات الليل', 
+                        desc: isEn ? 'Notifications for first third, midnight, and last third' : 'إشعارات لأوقات أول الليل، منتصف الليل، والثلث الأخير' 
+                    },
+                    { 
+                        id: 'athkar_v3_chime_channel', 
+                        name: isEn ? 'Adhkar & Reminders' : 'أذكار وتنبيهات عامة', 
+                        desc: isEn ? 'Reminders for morning, evening, and daily prayers' : 'قناة تنبيهات أذكار الصباح والمساء والسنن والأدعية' 
+                    },
                 ];
 
                 for (const ac of alertChannels) {
@@ -777,6 +801,8 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                 if (config.mutedPrayers?.[key]) {
                     continue;
                 }
+
+                const prayerNameLocal = isEn ? (PRAYER_NAMES_EN[key] || key) : (prayerNamesAr[key] || key);
 
                 // 1. Adhan Notification (scheduled only if not muted)
                 if (!config.mutedPrayers?.[key] && key !== 'Sunrise') {
@@ -863,8 +889,10 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                         const notifId = 1000 + (day * 10) + prayerKeys.indexOf(key) + 1;
                         notificationsToSchedule.push({
                             id: notifId,
-                            title: `حان الآن موعد أذان ${prayerNamesAr[key]}`,
-                            body: 'لا تنس ذكر الله. قال رسول الله ﷺ: "أرحنا بها يا بلال"',
+                            title: isEn ? `It is now time for ${prayerNameLocal} Adhan` : `حان الآن موعد أذان ${prayerNameLocal}`,
+                            body: isEn 
+                                ? 'Remember Allah. The Prophet ﷺ said: "O Bilal, call the Adhan so we may find comfort in prayer."' 
+                                : 'لا تنس ذكر الله. قال رسول الله ﷺ: "أرحنا بها يا بلال"',
                             schedule: { at: prayerDate, allowWhileIdle: true },
                             channelId: chosenChannelId,
                             sound: finalSound,
@@ -897,8 +925,12 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                         const preNotifId = 5000 + (day * 10) + prayerKeys.indexOf(key) + 1;
                         notificationsToSchedule.push({
                             id: preNotifId,
-                            title: `⏰ اقترب موعد أذان ${prayerNamesAr[key]} (بقي ${reminderMinutes} دقيقة)`,
-                            body: `حان وقت الوضوء والاستعداد والذهاب إلى المسجد لأداء صلاة ${prayerNamesAr[key]} 🕌`,
+                            title: isEn 
+                                ? `${prayerNameLocal} Adhan is approaching (${reminderMinutes} minutes left)`
+                                : `اقترب موعد أذان ${prayerNameLocal} (بقي ${reminderMinutes} دقيقة)`,
+                            body: isEn 
+                                ? `Time for wudu, preparation, and proceeding to prayer for ${prayerNameLocal}.`
+                                : `حان وقت الوضوء والاستعداد والذهاب إلى المسجد لأداء صلاة ${prayerNameLocal}`,
                             schedule: { at: prePrayerDate, allowWhileIdle: true },
                             channelId: 'pre_adhan_v3_chime_channel',
                             sound: 'chime.mp3',
@@ -926,8 +958,12 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                         const iqamaNotifId = 6000 + (day * 10) + prayerKeys.indexOf(key) + 1;
                         notificationsToSchedule.push({
                             id: iqamaNotifId,
-                            title: `🕌 حان الآن موعد إقامة صلاة ${prayerNamesAr[key]}`,
-                            body: `أقيمت الصلاة.. استووا وتراصوا واعتدلوا أثابكم الله 🤲`,
+                            title: isEn 
+                                ? `It is now time for ${prayerNameLocal} Iqama`
+                                : `حان الآن موعد إقامة صلاة ${prayerNameLocal}`,
+                            body: isEn 
+                                ? 'Salah has begun. Straighten and close your ranks, may Allah reward you.'
+                                : 'أقيمت الصلاة.. استووا وتراصوا واعتدلوا أثابكم الله',
                             schedule: { at: iqamaPrayerDate, allowWhileIdle: true },
                             channelId: 'iqama_v4_chime_channel',
                             sound: 'chime.mp3',
@@ -966,8 +1002,12 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
 
                         notificationsToSchedule.push({
                             id: silentStartNotifId,
-                            title: `🔕 تم تفعيل وضع الصامت (صلاة ${prayerNamesAr[key]})`,
-                            body: `تم كتم صوت الهاتف تلقائياً لمدة ${silentDuration} دقيقة لأداء صلاة ${prayerNamesAr[key]} 🕌`,
+                            title: isEn 
+                                ? `Silent mode activated (${prayerNameLocal} Prayer)`
+                                : `تم تفعيل وضع الصامت (صلاة ${prayerNameLocal})`,
+                            body: isEn 
+                                ? `Device muted automatically for ${silentDuration} minutes for ${prayerNameLocal} prayer.`
+                                : `تم كتم صوت الهاتف تلقائياً لمدة ${silentDuration} دقيقة لأداء صلاة ${prayerNameLocal}`,
                             schedule: { at: silentStart, allowWhileIdle: true },
                             channelId: shouldPlaySilentChime ? 'prayer_silent_v3_chime_channel' : 'adhan_v5_silent',
                             sound: shouldPlaySilentChime ? 'chime.mp3' : undefined,
@@ -981,8 +1021,12 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                         const silentEndNotifId = 8000 + (day * 10) + prayerKeys.indexOf(key) + 1;
                         notificationsToSchedule.push({
                             id: silentEndNotifId,
-                            title: `🔔 تم إنهاء وضع الصامت (صلاة ${prayerNamesAr[key]})`,
-                            body: `تم إعادة تفعيل صوت الهاتف والوسائط بعد انتهاء صلاة ${prayerNamesAr[key]} تقبل الله منا ومنكم 🤲`,
+                            title: isEn 
+                                ? `Silent mode ended (${prayerNameLocal} Prayer)`
+                                : `تم إنهاء وضع الصامت (صلاة ${prayerNameLocal})`,
+                            body: isEn 
+                                ? `Device sound and media restored after ${prayerNameLocal} prayer. May Allah accept our prayers.`
+                                : `تم إعادة تفعيل صوت الهاتف والوسائط بعد انتهاء صلاة ${prayerNameLocal} تقبل الله منا ومنكم`,
                             schedule: { at: silentEnd, allowWhileIdle: true },
                             channelId: 'prayer_silent_v3_chime_channel',
                             sound: 'chime.mp3',
@@ -996,7 +1040,7 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                         silentWindowsToSchedule.push({
                             id: 7000 + (day * 10) + prayerKeys.indexOf(key) + 1,
                             prayerKey: key,
-                            prayerName: prayerNamesAr[key] || key,
+                            prayerName: prayerNameLocal,
                             startMillis: silentStart.getTime(),
                             durationMinutes: silentDuration
                         });
@@ -1031,8 +1075,10 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
             if (nightNotifs.firstThird && firstThirdDate > new Date()) {
                 notificationsToSchedule.push({
                     id: 2000 + (day * 10) + 1,
-                    title: 'أول الليل',
-                    body: 'قال رسول الله ﷺ: "أفضل الصلاة بعد الفريضة صلاة الليل"',
+                    title: isEn ? 'First Third of the Night' : 'أول الليل',
+                    body: isEn 
+                        ? 'The Prophet ﷺ said: "The best prayer after the obligatory prayers is the night prayer."'
+                        : 'قال رسول الله ﷺ: "أفضل الصلاة بعد الفريضة صلاة الليل"',
                     schedule: { at: firstThirdDate, allowWhileIdle: true },
                     channelId: 'night_times_v3_chime_channel',
                     sound: 'chime.mp3',
@@ -1044,8 +1090,10 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
             if (nightNotifs.midnight && midnightDate > new Date()) {
                 notificationsToSchedule.push({
                     id: 2000 + (day * 10) + 2,
-                    title: 'منتصف الليل',
-                    body: 'قال رسول الله ﷺ: "عليكم بقيام الليل فإنه دأب الصالحين قبلكم، وقربة إلى الله تعالى"',
+                    title: isEn ? 'Islamic Midnight' : 'منتصف الليل',
+                    body: isEn 
+                        ? 'The Prophet ﷺ said: "Observe the night prayer, for it was the habit of the righteous before you."'
+                        : 'قال رسول الله ﷺ: "عليكم بقيام الليل فإنه دأب الصالحين قبلكم، وقربة إلى الله تعالى"',
                     schedule: { at: midnightDate, allowWhileIdle: true },
                     channelId: 'night_times_v3_chime_channel',
                     sound: 'chime.mp3',
@@ -1057,8 +1105,10 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
             if (nightNotifs.lastThird && lastThirdDate > new Date()) {
                 notificationsToSchedule.push({
                     id: 2000 + (day * 10) + 3,
-                    title: 'الثلث الأخير من الليل',
-                    body: 'قال ﷺ: "ينزل ربنا تبارك وتعالى كل ليلة إلى السماء الدنيا حين يبقى ثلث الليل الآخر، فيقول: من يدعوني فأستجيب له..."',
+                    title: isEn ? 'Last Third of the Night' : 'الثلث الأخير من الليل',
+                    body: isEn 
+                        ? 'The Prophet ﷺ said: "Our Lord descends every night to the lowest heaven during the last third of the night, asking: Who is calling upon Me, that I may answer him?"'
+                        : 'قال ﷺ: "ينزل ربنا تبارك وتعالى كل ليلة إلى السماء الدنيا حين يبقى ثلث الليل الآخر، فيقول: من يدعوني فأستجيب له..."',
                     schedule: { at: lastThirdDate, allowWhileIdle: true },
                     channelId: 'night_times_v3_chime_channel',
                     sound: 'chime.mp3',
@@ -1115,9 +1165,9 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                 }
             });
         }
-    }, [config]);
+    }, [config, language, isEn]);
 
-    // Schedule whenever config changes (location, offsets, muted prayers)
+    // Schedule whenever config changes (location, offsets, muted prayers) or language changes
     useEffect(() => {
         scheduleNotifications();
     }, [scheduleNotifications]);
@@ -1158,7 +1208,8 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
         };
         
         const dayNamesAr = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
-        const currentDayName = dayNamesAr[new Date().getDay()];
+        const dayNamesEn = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const currentDayName = isEn ? dayNamesEn[new Date().getDay()] : dayNamesAr[new Date().getDay()];
         
         const getTimestamp = (timeStr: string, offset: number, isTomorrow: boolean = false) => {
             const adjusted = applyOffset(timeStr, offset + (isSummerTimeActive ? 60 : 0));
@@ -1181,17 +1232,22 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
             return Date.now() + (pDate.getTime() - cityNow.getTime());
         };
 
+        const localizedNextName = isEn ? (PRAYER_NAMES_EN[currentNext.key] || currentNext.name) : currentNext.name;
+        const midnightLabel = isEn ? `Midnight: ${to12h(nightTimes.midnight)}` : `منتصف الليل : ${to12h(nightTimes.midnight)}`;
+        const lastThirdLabel = isEn ? `Last Third: ${to12h(nightTimes.lastThird)}` : `الثلث الأخير : ${to12h(nightTimes.lastThird)}`;
+
         updateAndroidWidget({
             hijri: currentDates.hijri,
             gregorian: currentDates.gregorian,
             day: currentDayName,
             city: config.location.cityGov.split(' - ')[0],
-            next_prayer_name: currentNext.name,
+            next_prayer_name: localizedNextName,
             next_prayer_id: currentNext.key.toLowerCase(),
             remaining_time: currentCountdown.split(':').slice(0, 2).join(':'), // HH:MM
             target_time_millis: Date.now() + (currentNext.date.getTime() - currentNext.cityNow.getTime()),
-            midnight: `منتصف الليل : ${to12h(nightTimes.midnight)}`,
-            last_third: `الثلث الأخير : ${to12h(nightTimes.lastThird)}`,
+            midnight: midnightLabel,
+            last_third: lastThirdLabel,
+            app_language: language,
             times: {
                 fajr: formatTime(currentTimes.Fajr, config.prayerOffsets.Fajr || 0),
                 sunrise: formatTime(currentTimes.Sunrise, config.prayerOffsets.Sunrise || 0),
@@ -1223,7 +1279,7 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                 nextIsha: getTimestamp(currentTimes.Isha, config.prayerOffsets.Isha || 0, true)
             }
         }, config.syncWidgetTheme !== false);
-    }, [config.location, config.prayerOffsets, config.isSummerTime, config.syncWidgetTheme]);
+    }, [config.location, config.prayerOffsets, config.isSummerTime, config.syncWidgetTheme, language, isEn]);
 
     // --- Next Prayer & Countdown Logic ---
     useEffect(() => {
@@ -1259,7 +1315,7 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                     pDate.setHours(parseInt(h), parseInt(m), 0, 0);
                     
                     if (pDate > now) {
-                        found = { key, date: pDate, name: prayerNamesAr[key], cityNow: now };
+                        found = { key, date: pDate, name: isEn ? (PRAYER_NAMES_EN[key] || key) : prayerNamesAr[key], cityNow: now };
                         break;
                     }
                 }
@@ -1273,7 +1329,7 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                     const pDate = new Date(now);
                     pDate.setDate(pDate.getDate() + 1);
                     pDate.setHours(parseInt(h), parseInt(m), 0, 0);
-                    found = { key: 'Fajr', date: pDate, name: prayerNamesAr['Fajr'], cityNow: now };
+                    found = { key: 'Fajr', date: pDate, name: isEn ? (PRAYER_NAMES_EN['Fajr'] || 'Fajr') : prayerNamesAr['Fajr'], cityNow: now };
                 }
             }
             return found;
@@ -1389,10 +1445,12 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                                 }
                             }
 
+                            const prayerNameLocal = isEn ? (PRAYER_NAMES_EN[key] || key) : (prayerNamesAr[key] || key);
+
                             // Trigger in-app visual modal alert
                             setActiveAdhanAlert({
                                 prayerKey: key,
-                                prayerName: prayerNamesAr[key] || key,
+                                prayerName: prayerNameLocal,
                                 timeStr: adjustedTime,
                                 soundFileName
                             });
@@ -1400,8 +1458,10 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                             // Trigger web browser Notification if permission is granted
                             if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
                                 try {
-                                    new Notification(`حان الآن موعد أذان ${prayerNamesAr[key]}`, {
-                                        body: 'لا تنس ذكر الله. قال رسول الله ﷺ: "أرحنا بها يا بلال"',
+                                    new Notification(isEn ? `It is now time for ${prayerNameLocal} Adhan` : `حان الآن موعد أذان ${prayerNameLocal}`, {
+                                        body: isEn 
+                                            ? 'Remember Allah. The Prophet ﷺ said: "O Bilal, call the Adhan so we may find comfort in prayer."' 
+                                            : 'لا تنس ذكر الله. قال رسول الله ﷺ: "أرحنا بها يا بلال"',
                                         icon: '/icon.png'
                                     });
                                 } catch (e) {}
@@ -1459,11 +1519,13 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                             console.log(`[Iqama Alert] Playing gentle chime and showing visual alert for ${key}`);
                             // Play audio on all platforms (web + phone foreground)
                             playNotificationSound('/assets/audio/chime.mp3', true);
+                            
+                            const prayerNameLocal = isEn ? (PRAYER_NAMES_EN[key] || key) : (prayerNamesAr[key] || key);
                             // Trigger in-app visual alert
                             const iqamaFormatted = applyOffset(times[key], totalOffset + iqamaMinutes);
                             setActiveIqamaAlert({
                                 prayerKey: key,
-                                prayerName: prayerNamesAr[key] || key,
+                                prayerName: prayerNameLocal,
                                 minutes: iqamaMinutes,
                                 timeStr: iqamaFormatted
                             });
@@ -1497,7 +1559,8 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                                     playNotificationSound('/assets/audio/chime.mp3');
                                 }
                             }
-                            setDeviceSilentNow(true, prayerNamesAr[key] || key);
+                            const prayerNameLocal = isEn ? (PRAYER_NAMES_EN[key] || key) : (prayerNamesAr[key] || key);
+                            setDeviceSilentNow(true, prayerNameLocal);
                         }
                     }
                 }
@@ -1505,7 +1568,7 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
         }, 1000);
 
         return () => clearInterval(timer);
-    }, [times, config.prayerOffsets, config.isSummerTime, config.tones, config.mutedPrayers, config.audioMutedUntil, config.preAthanReminder, config.prayerPreReminders, config.iqamaReminder, config.prayerIqamaReminders, config.autoSilent, config.prayerAutoSilent, config.autoSilentDuration, config.location]);
+    }, [times, config.prayerOffsets, config.isSummerTime, config.tones, config.mutedPrayers, config.audioMutedUntil, config.preAthanReminder, config.prayerPreReminders, config.iqamaReminder, config.prayerIqamaReminders, config.autoSilent, config.prayerAutoSilent, config.autoSilentDuration, config.location, isEn]);
 
     // Update widget when times or next prayer changes (not every second)
     useEffect(() => {

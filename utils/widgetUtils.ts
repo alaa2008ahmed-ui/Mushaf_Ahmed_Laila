@@ -50,6 +50,7 @@ export interface WidgetData {
     bgColor: string;
     textColor: string;
   } | null;
+  app_language?: string;
 }
 
 /**
@@ -61,8 +62,10 @@ export const updateAndroidWidget = async (data: WidgetData, syncTheme: boolean =
   if (Capacitor.getPlatform() !== 'android') return;
 
   try {
+    const appLang = data.app_language || (typeof window !== 'undefined' ? localStorage.getItem('app_language') : null) || 'ar';
     const finalData = {
         ...data,
+        app_language: appLang,
         theme: null // Force null theme to keep default widget design
     };
 
@@ -70,6 +73,12 @@ export const updateAndroidWidget = async (data: WidgetData, syncTheme: boolean =
     await Preferences.set({
       key: 'widget_prayer_data',
       value: JSON.stringify(finalData)
+    });
+
+    // Also persist app_language directly to CapacitorStorage for Android native components
+    await Preferences.set({
+      key: 'app_language',
+      value: appLang
     });
     
     // Also refresh the native persistent prayer notification if enabled
@@ -85,3 +94,4 @@ export const updateAndroidWidget = async (data: WidgetData, syncTheme: boolean =
     console.error('Failed to update Android Widget data:', error);
   }
 };
+

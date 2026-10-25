@@ -341,4 +341,68 @@ public class AutoSilentPlugin extends Plugin {
         }
         call.resolve();
     }
+
+    @PluginMethod
+    public void setAppLanguage(PluginCall call) {
+        String language = call.getString("language", "ar");
+        Context context = getContext();
+        if (context == null) {
+            call.resolve();
+            return;
+        }
+
+        SharedPreferences prefs = context.getSharedPreferences("CapacitorStorage", Context.MODE_PRIVATE);
+        prefs.edit().putString("app_language", language).apply();
+
+        applyAppLocale(context, language);
+
+        // Update persistent notification and widgets immediately
+        PersistentPrayerNotification.update(context);
+        PrayerWidgetProvider.updateAllWidgets(context);
+
+        JSObject ret = new JSObject();
+        ret.put("success", true);
+        ret.put("language", language);
+        call.resolve(ret);
+    }
+
+    public static void applyAppLocale(Context context, String language) {
+        if (context == null || language == null || language.trim().isEmpty()) return;
+        try {
+            java.util.Locale locale = new java.util.Locale(language.trim());
+            java.util.Locale.setDefault(locale);
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                android.app.LocaleManager localeManager = context.getSystemService(android.app.LocaleManager.class);
+                if (localeManager != null) {
+                    localeManager.setApplicationLocales(new android.os.LocaleList(locale));
+                }
+            }
+
+            android.content.res.Resources res = context.getResources();
+            android.content.res.Configuration config = new android.content.res.Configuration(res.getConfiguration());
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+                config.setLocale(locale);
+                config.setLayoutDirection(locale);
+            } else {
+                config.locale = locale;
+            }
+            res.updateConfiguration(config, res.getDisplayMetrics());
+
+            Context appCtx = context.getApplicationContext();
+            if (appCtx != null && appCtx != context) {
+                android.content.res.Resources appRes = appCtx.getResources();
+                android.content.res.Configuration appConfig = new android.content.res.Configuration(appRes.getConfiguration());
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+                    appConfig.setLocale(locale);
+                    appConfig.setLayoutDirection(locale);
+                } else {
+                    appConfig.locale = locale;
+                }
+                appRes.updateConfiguration(appConfig, appRes.getDisplayMetrics());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 }

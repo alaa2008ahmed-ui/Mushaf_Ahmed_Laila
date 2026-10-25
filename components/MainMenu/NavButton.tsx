@@ -1,6 +1,5 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { getAhlAlQuranRankColor } from '../../services/ahlAlQuranService';
 
 interface NavButtonProps {
     label: string;
@@ -15,7 +14,6 @@ interface NavButtonProps {
     showNewBadge?: boolean;
     badgeText?: string;
     unreadBadgeCount?: number;
-    rankBadge?: number | null;
     dataId?: string;
     leftAction?: React.ReactNode;
     rightAction?: React.ReactNode;
@@ -35,14 +33,11 @@ const NavButton: React.FC<NavButtonProps> = ({
     showNewBadge,
     badgeText = 'جديد',
     unreadBadgeCount,
-    rankBadge,
     dataId,
     leftAction,
     rightAction,
     onBadgeClick
 }) => {
-    const rankColor = rankBadge !== undefined && rankBadge !== null ? getAhlAlQuranRankColor(rankBadge) : null;
-
     const isBlackButton = color === '#000000' || color?.toLowerCase() === '#000000' || color === '#111111' || color === '#0a0a0a' || color === '#121212';
 
     return (
@@ -95,20 +90,6 @@ const NavButton: React.FC<NavButtonProps> = ({
                 </div>
             )}
             
-            {/* شارة الترتيب لأهل القرآن */}
-            {rankColor && rankBadge !== null && rankBadge !== undefined && (
-                <div 
-                    className={`absolute -top-2 ${showNewBadge ? '-left-1' : '-right-1'} bg-white text-[11px] sm:text-xs font-black min-w-[20px] h-5 px-1.5 rounded-full z-20 shadow-lg border-2 flex items-center justify-center pointer-events-none`}
-                    style={{ 
-                        color: rankColor.textColor,
-                        borderColor: rankColor.borderColor,
-                        backgroundColor: rankColor.bg,
-                        boxShadow: `0 2px 6px ${rankColor.shadowColor}`
-                    }}
-                >
-                    {rankBadge}
-                </div>
-            )}
 
             {/* شارة الرسائل غير المقروءة لمجتمع التواصل */}
             {unreadBadgeCount !== undefined && unreadBadgeCount > 0 && (

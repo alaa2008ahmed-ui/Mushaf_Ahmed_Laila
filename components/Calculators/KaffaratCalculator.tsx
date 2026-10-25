@@ -42,19 +42,19 @@ const KaffaratCalculator: React.FC<{ cardBorderColor?: string }> = ({ cardBorder
     return (
         <div className="space-y-6 animate-fade-in pb-8" dir={isEn ? 'ltr' : 'rtl'}>
             {/* Header Actions */}
-            <div className="flex justify-between items-center">
+            <div id="kaffarat-header-actions" className="flex justify-between items-center">
                 <h2 className="text-xl font-bold flex items-center gap-2" style={{ color: theme.textColor }}>
                     <i className={`fa-solid fa-hand-holding-heart ${isBlackTheme ? 'text-white' : (isDefaultTheme ? 'text-black' : 'text-primary')}`}></i> 
                     <span>{isEn ? 'Expiations (Kaffarat) Calculator' : 'حساب الكفارات'}</span>
                 </h2>
-                <button onClick={clearAll} className="flex items-center gap-1 text-sm text-red-500 hover:bg-red-500/10 px-3 py-1.5 rounded-lg transition-colors cursor-pointer">
+                <button id="btn-kaffarat-reset" onClick={clearAll} className="flex items-center gap-1 text-sm text-red-500 hover:bg-red-500/10 px-3 py-1.5 rounded-lg transition-colors cursor-pointer">
                     <RefreshCw size={14} /> 
                     <span>{isEn ? 'Reset' : 'إعادة ضبط'}</span>
                 </button>
             </div>
 
             {/* Fidyah */}
-            <div className="themed-card p-5 rounded-xl" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
+            <div id="kaffarat-card-fidyah" className="themed-card p-5 rounded-xl" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                 <h3 className="text-lg font-bold mb-2 flex items-center gap-2" style={{ color: theme.textColor }}>
                     <i className={`fa-solid fa-bowl-food ${isBlackTheme ? 'text-white' : (isDefaultTheme ? 'text-black' : 'text-primary')}`}></i> 
                     <span>{isEn ? 'Fasting Fidyah (Fidyat al-Siyam)' : 'فدية الصيام'}</span>
@@ -115,7 +115,7 @@ const KaffaratCalculator: React.FC<{ cardBorderColor?: string }> = ({ cardBorder
             </div>
 
             {/* Kaffarat Yamin */}
-            <div className="themed-card p-5 rounded-xl" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
+            <div id="kaffarat-card-yamin" className="themed-card p-5 rounded-xl" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                 <h3 className="text-lg font-bold mb-2 flex items-center gap-2" style={{ color: theme.textColor }}>
                     <i className="fa-solid fa-hand-sparkles text-blue-500"></i> 
                     <span>{isEn ? 'Oath Expiation (Kaffarat al-Yamin)' : 'كفارة اليمين'}</span>
@@ -155,7 +155,7 @@ const KaffaratCalculator: React.FC<{ cardBorderColor?: string }> = ({ cardBorder
                 </div>
             </div>
 
-            <div className={`p-4 rounded-xl bg-black/5 dark:bg-white/5 text-xs opacity-70 ${isEn ? 'text-left' : 'text-center'}`} style={{ color: theme.textColor, borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
+            <div id="kaffarat-card-notes" className={`p-4 rounded-xl bg-black/5 dark:bg-white/5 text-xs opacity-70 ${isEn ? 'text-left' : 'text-center'}`} style={{ color: theme.textColor, borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                 {isEn 
                     ? '* Note: The primary Islamic ruling for Kaffarat and Fidyah is to distribute actual staple food (rice, wheat, dates) in the amount of a Mudd or half-Sa\' depending on the school of jurisprudence. Cash value is permitted by a group of scholars to facilitate relief for the poor.' 
                     : '* ملاحظة: الأصل في الكفارات والفدية هو إخراج الطعام عيناً (أرز، قمح، تمر) بمقدار مد أو نصف صاع حسب المذهب، وتجوز القيمة النقدية عند جماعة من أهل العلم تيسيراً على الفقراء.'}

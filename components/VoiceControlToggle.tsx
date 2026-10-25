@@ -16,17 +16,15 @@ const VoiceControlToggle: React.FC<VoiceControlToggleProps> = ({ className, styl
 
   if (!showVoiceIcon) return null;
 
-  // Define colors based on state and theme:
-  // When inactive (!isEnabled): WhatsApp green / theme color (changes according to selected theme)
-  // When active (isEnabled): current red color (#ef4444)
+  // User explicitly requested: "ايقونه الواتساب وايقونه التحكم الصوتى باللون البنفسجى"
   const isBlackTheme = theme.bgColor === '#000000';
-  const themePrimaryColor = isBlackTheme 
+  const themePurpleColor = isBlackTheme 
     ? '#000000' 
-    : (themeKey === 'olive_grove' 
-        ? '#65A30D' 
-        : (theme.palette[0] || '#10b981'));
+    : (themeKey === 'default' 
+        ? '#8B5CF6' 
+        : (theme.palette[1] || '#8B5CF6'));
 
-  let bgColor = themePrimaryColor;
+  let bgColor = themePurpleColor;
   
   if (isEnabled) {
     bgColor = '#ef4444'; // Red when enabled

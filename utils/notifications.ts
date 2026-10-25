@@ -3,19 +3,44 @@ import { Capacitor } from '@capacitor/core';
 import moment from 'moment-hijri';
 import { BASE_ADHKAR_MORNING, BASE_ADHKAR_EVENING } from '../data/adkarSabahMasaaData';
 import { PhoneNotificationSettings } from '../hooks/useNotificationSettings';
+import { syncDailyWirdNotifications, ensureWirdNotificationChannel } from './dailyWirdNotificationService';
 
 const ALL_ATHKAR = [...BASE_ADHKAR_MORNING, ...BASE_ADHKAR_EVENING];
+
+const ALL_ATHKAR_EN = [
+  "Glory be to Allah and all praise is His, according to the number of His creation and the weight of His Throne.",
+  "None has the right to be worshipped except Allah alone, without partner; to Him belongs the dominion and all praise.",
+  "O Allah, by You we enter the morning and by You we enter the evening, by You we live and by You we die, and to You is the return.",
+  "I seek refuge in the perfect words of Allah from the evil of what He has created.",
+  "O Ever-Living, O Sustainer, in Your mercy I seek relief; rectify for me all of my affairs and do not leave me to myself even for a blink of an eye.",
+  "O Allah, I ask You for pardon and well-being in my religion, my worldly life, my family, and my wealth.",
+  "Sufficient for me is Allah; there is no deity except Him. Upon Him I rely, and He is the Lord of the Great Throne.",
+  "O Allah, I seek refuge in You from anxiety and grief, weakness and laziness, miserliness and cowardice.",
+  "O Allah, grant health to my body, grant health to my hearing, and grant health to my sight. None has the right to be worshipped except You.",
+  "I am pleased with Allah as my Lord, with Islam as my religion, and with Muhammad (peace and blessings be upon him) as my Prophet.",
+  "Glory be to Allah, all praise is due to Allah, there is no god but Allah, and Allah is the Greatest.",
+  "There is no power and no strength except with Allah, the Most High, the Most Great."
+];
 
 const getRandomAthkar = () => {
     const randomIndex = Math.floor(Math.random() * ALL_ATHKAR.length);
     return ALL_ATHKAR[randomIndex];
 };
 
-export const setupNotifications = async (settings?: PhoneNotificationSettings) => {
+const getRandomAthkarEn = () => {
+    const randomIndex = Math.floor(Math.random() * ALL_ATHKAR_EN.length);
+    return ALL_ATHKAR_EN[randomIndex];
+};
+
+export const setupNotifications = async (settings?: PhoneNotificationSettings, langOverride?: 'ar' | 'en') => {
   if (!Capacitor.isNativePlatform()) {
     console.log('Local notifications are not supported on the web platform.');
     return;
   }
+
+  // Strictly use app language, never phone locale
+  const lang = langOverride || (typeof window !== 'undefined' && localStorage.getItem('app_language') === 'en' ? 'en' : 'ar');
+  const isEn = lang === 'en';
 
   try {
     // Request permissions
@@ -54,10 +79,10 @@ export const setupNotifications = async (settings?: PhoneNotificationSettings) =
         }
     }
 
-    // Clear ONLY existing athkar/dua notifications (IDs < 1000 or >= 9000)
-    // CRITICAL: NEVER cancel prayer notifications (IDs 1000..8999)!
+    // Clear ONLY existing athkar/dua notifications (IDs < 1000 or >= 9000, excluding Daily Wird IDs 9300..9399)
+    // CRITICAL: NEVER cancel prayer notifications (IDs 1000..8999) or Daily Wird notifications!
     const pending = await LocalNotifications.getPending();
-    const athkarPending = pending.notifications.filter(n => n.id < 1000 || n.id >= 9000);
+    const athkarPending = pending.notifications.filter(n => (n.id < 1000 || n.id >= 9000) && !(n.id >= 9300 && n.id <= 9399));
     if (athkarPending.length > 0) {
         await LocalNotifications.cancel({ notifications: athkarPending });
     }
@@ -74,8 +99,8 @@ export const setupNotifications = async (settings?: PhoneNotificationSettings) =
     try {
       await LocalNotifications.createChannel({
         id: 'athkar_v3_chime_channel',
-        name: 'أذكار وتنبيهات عامة',
-        description: 'قناة تنبيهات أذكار الصباح والمساء والسنن والأدعية بنغمة قصيرة وخفيفة',
+        name: isEn ? 'General Reminders & Adhkar' : 'أذكار وتنبيهات عامة',
+        description: isEn ? 'Morning, evening, and daily remembrances with gentle chime' : 'قناة تنبيهات أذكار الصباح والمساء والسنن والأدعية بنغمة قصيرة وخفيفة',
         importance: 5,
         sound: 'chime.mp3',
         vibration: true,
@@ -84,8 +109,8 @@ export const setupNotifications = async (settings?: PhoneNotificationSettings) =
 
       await LocalNotifications.createChannel({
         id: 'islamic_eid_channel',
-        name: 'تكبيرات وأعياد المسلمين',
-        description: 'قناة تنبيهات عيدي الفطر والأضحى المبارك بصوت تكبيرات العيد',
+        name: isEn ? 'Eid Takbeers & Celebrations' : 'تكبيرات وأعياد المسلمين',
+        description: isEn ? 'Eid Al-Fitr and Eid Al-Adha Takbeer alerts' : 'قناة تنبيهات عيدي الفطر والأضحى المبارك بصوت تكبيرات العيد',
         importance: 5,
         sound: 'takbeer1.mp3',
         vibration: true,
@@ -94,8 +119,8 @@ export const setupNotifications = async (settings?: PhoneNotificationSettings) =
 
       await LocalNotifications.createChannel({
         id: 'islamic_mawlid_channel',
-        name: 'المولد النبوي الشريف',
-        description: 'قناة تنبيهات ذكرى المولد النبوي الشريف بنغمة الصلاة على النبي ﷺ',
+        name: isEn ? "The Prophet's Birthday (Mawlid)" : 'المولد النبوي الشريف',
+        description: isEn ? "Prophet Muhammad's Birthday remembrance" : 'قناة تنبيهات ذكرى المولد النبوي الشريف بنغمة الصلاة على النبي ﷺ',
         importance: 5,
         sound: 'salah.mp3',
         vibration: true,
@@ -104,8 +129,8 @@ export const setupNotifications = async (settings?: PhoneNotificationSettings) =
 
       await LocalNotifications.createChannel({
         id: 'islamic_newyear_channel',
-        name: 'رأس السنة الهجرية',
-        description: 'قناة تنبيهات حلول العام الهجري الجديد',
+        name: isEn ? 'Islamic Hijri New Year' : 'رأس السنة الهجرية',
+        description: isEn ? 'Hijri New Year arrival alert' : 'قناة تنبيهات حلول العام الهجري الجديد',
         importance: 5,
         sound: 'takbeer1.mp3',
         vibration: true,
@@ -114,8 +139,8 @@ export const setupNotifications = async (settings?: PhoneNotificationSettings) =
 
       await LocalNotifications.createChannel({
         id: 'islamic_ramadan_channel',
-        name: 'مناسبات شهر رمضان المبارك',
-        description: 'قناة تنبيهات تهنئة حلول شهر رمضان والعشر الأواخر من رمضان',
+        name: isEn ? 'Blessed Ramadan Occasions' : 'مناسبات شهر رمضان المبارك',
+        description: isEn ? 'Ramadan and Last Ten Days celebrations' : 'قناة تنبيهات تهنئة حلول شهر رمضان والعشر الأواخر من رمضان',
         importance: 5,
         sound: 'takbeer1.mp3',
         vibration: true,
@@ -125,11 +150,36 @@ export const setupNotifications = async (settings?: PhoneNotificationSettings) =
 
     // 1. Regular Notifications
     const regularConfigs = [
-        { key: 'sabah', title: 'أذكار الصباح', page: 'sabah-masaa', id: 1 },
-        { key: 'masaa', title: 'أذكار المساء', page: 'sabah-masaa', id: 2 },
-        { key: 'dua', title: 'وقت الدعاء', page: 'adia', id: 3 },
-        { key: 'tasbeehMorning', title: 'فضل التسبيح', page: 'tasbeeh', id: 4 },
-        { key: 'tasbeehEvening', title: 'وقت التسبيح', page: 'tasbeeh', id: 5 },
+        { 
+            key: 'sabah', 
+            title: isEn ? 'Morning Adhkar' : 'أذكار الصباح', 
+            page: 'sabah-masaa', 
+            id: 1 
+        },
+        { 
+            key: 'masaa', 
+            title: isEn ? 'Evening Adhkar' : 'أذكار المساء', 
+            page: 'sabah-masaa', 
+            id: 2 
+        },
+        { 
+            key: 'dua', 
+            title: isEn ? 'Supplication Time' : 'وقت الدعاء', 
+            page: 'adia', 
+            id: 3 
+        },
+        { 
+            key: 'tasbeehMorning', 
+            title: isEn ? 'Virtue of Tasbeeh' : 'فضل التسبيح', 
+            page: 'tasbeeh', 
+            id: 4 
+        },
+        { 
+            key: 'tasbeehEvening', 
+            title: isEn ? 'Tasbeeh Remembrance' : 'وقت التسبيح', 
+            page: 'tasbeeh', 
+            id: 5 
+        },
     ];
 
     regularConfigs.forEach(conf => {
@@ -140,7 +190,7 @@ export const setupNotifications = async (settings?: PhoneNotificationSettings) =
             // Primary daily recurring schedule
             notificationsToSchedule.push({
                 title: conf.title,
-                body: getRandomAthkar().text,
+                body: isEn ? getRandomAthkarEn() : getRandomAthkar().text,
                 id: conf.id,
                 schedule: { on: { hour, minute }, allowWhileIdle: true, repeats: true },
                 channelId: 'athkar_v3_chime_channel',
@@ -155,8 +205,10 @@ export const setupNotifications = async (settings?: PhoneNotificationSettings) =
     if (activeSettings.kahf && activeSettings.kahf.enabled) {
       const { hour, minute } = parseTime(activeSettings.kahf.time);
       notificationsToSchedule.push({
-        title: 'سورة الكهف',
-        body: 'قال رسول الله ﷺ: "من قرأ سورة الكهف في يوم الجمعة أضاء له من النور ما بين الجمعتين".',
+        title: isEn ? 'Surah Al-Kahf' : 'سورة الكهف',
+        body: isEn 
+          ? 'The Prophet ﷺ said: "Whoever reads Surah Al-Kahf on Friday, light will shine for him between the two Fridays."'
+          : 'قال رسول الله ﷺ: "من قرأ سورة الكهف في يوم الجمعة أضاء له من النور ما بين الجمعتين".',
         id: 6,
         schedule: { on: { weekday: 6, hour, minute }, allowWhileIdle: true, repeats: true }, // Friday is 6
         channelId: 'athkar_v3_chime_channel',
@@ -189,10 +241,9 @@ export const setupNotifications = async (settings?: PhoneNotificationSettings) =
                     scheduleDate.setHours(hour, minute, 0, 0);
 
                     if (scheduleDate > new Date()) {
-                        const athkar = getRandomAthkar();
                         notificationsToSchedule.push({
-                            title: 'ذكر الله',
-                            body: athkar.text,
+                            title: isEn ? 'Remembrance of Allah' : 'ذكر الله',
+                            body: isEn ? getRandomAthkarEn() : getRandomAthkar().text,
                             id: 100 + day * 50 + i, // Offset IDs to avoid collision
                             schedule: { at: scheduleDate, allowWhileIdle: true },
                             channelId: 'athkar_v3_chime_channel',
@@ -221,8 +272,10 @@ export const setupNotifications = async (settings?: PhoneNotificationSettings) =
     try {
       const newYearDate = getNextHijriDate(1, 1, 8, 0);
       notificationsToSchedule.push({
-        title: 'عام هجري جديد مبارك',
-        body: 'كل عام وأنتم بخير بمناسبة حلول العام الهجري الجديد، نسأل الله أن يجعله عام خير وبركة وتوفيق وسلام.',
+        title: isEn ? 'Blessed New Hijri Year' : 'عام هجري جديد مبارك',
+        body: isEn 
+          ? 'Happy Islamic New Year! May Allah make it a year of goodness, blessings, peace, and prosperity.'
+          : 'كل عام وأنتم بخير بمناسبة حلول العام الهجري الجديد، نسأل الله أن يجعله عام خير وبركة وتوفيق وسلام.',
         id: 54,
         schedule: { at: newYearDate, allowWhileIdle: true },
         channelId: 'islamic_newyear_channel',
@@ -236,8 +289,10 @@ export const setupNotifications = async (settings?: PhoneNotificationSettings) =
     try {
       const mawlidDate = getNextHijriDate(3, 12, 8, 0);
       notificationsToSchedule.push({
-        title: 'مولد الهدى ﷺ',
-        body: 'وُلِدَ الهُدى فَالكَائِنَاتُ ضِيَاءُ.. نبارك لكم ذكرى مولد الحبيب المصطفى محمد ﷺ، صلّوا عليه وسلّموا تسليماً.',
+        title: isEn ? "The Prophet's Birthday ﷺ" : 'مولد الهدى ﷺ',
+        body: isEn 
+          ? 'Send peace and blessings upon our beloved Prophet Muhammad ﷺ.'
+          : 'نبارك لكم ذكرى مولد الحبيب المصطفى محمد ﷺ، صلّوا عليه وسلّموا تسليماً.',
         id: 51,
         schedule: { at: mawlidDate, allowWhileIdle: true },
         channelId: 'islamic_mawlid_channel',
@@ -251,8 +306,10 @@ export const setupNotifications = async (settings?: PhoneNotificationSettings) =
     try {
       const eidFitrDate = getNextHijriDate(10, 1, 6, 30);
       notificationsToSchedule.push({
-        title: 'عيد فطر مبارك تقبل الله طاعتكم',
-        body: 'الله أكبر الله أكبر لا إله إلا الله، الله أكبر الله أكبر ولله الحمد.. تقبل الله منا ومنكم صالح الأعمال وكل عام وأنتم بخير.',
+        title: isEn ? 'Blessed Eid Al-Fitr' : 'عيد فطر مبارك تقبل الله طاعتكم',
+        body: isEn 
+          ? 'Allahu Akbar, Allahu Akbar, La ilaha illa Allah.. May Allah accept our good deeds and yours. Eid Mubarak!'
+          : 'الله أكبر الله أكبر لا إله إلا الله، الله أكبر الله أكبر ولله الحمد.. تقبل الله منا ومنكم صالح الأعمال وكل عام وأنتم بخير.',
         id: 52,
         schedule: { at: eidFitrDate, allowWhileIdle: true },
         channelId: 'islamic_eid_channel',
@@ -266,8 +323,10 @@ export const setupNotifications = async (settings?: PhoneNotificationSettings) =
     try {
       const eidAdhaDate = getNextHijriDate(12, 10, 6, 30);
       notificationsToSchedule.push({
-        title: 'عيد أضحى مبارك وكل عام وأنتم بخير',
-        body: 'لبيك اللهم لبيك، لبيك لا شريك لك لبيك.. نسأل الله أن يتقبل منكم صالح الأعمال ويجعل أيامكم كلها أعياداً وبركة وفرحاً.',
+        title: isEn ? 'Blessed Eid Al-Adha' : 'عيد أضحى مبارك وكل عام وأنتم بخير',
+        body: isEn 
+          ? 'Labbayk Allahumma Labbayk.. May Allah accept your worship and fill your days with peace, joy, and blessings.'
+          : 'لبيك اللهم لبيك، لبيك لا شريك لك لبيك.. نسأل الله أن يتقبل منكم صالح الأعمال ويجعل أيامكم كلها أعياداً وبركة وفرحاً.',
         id: 53,
         schedule: { at: eidAdhaDate, allowWhileIdle: true },
         channelId: 'islamic_eid_channel',
@@ -277,12 +336,14 @@ export const setupNotifications = async (settings?: PhoneNotificationSettings) =
       });
     } catch (e) {}
 
-    // 5. تهنئة حلول شهر رمضان المبارك (1 رمضان) - إشعار سنوي للهاتف
+    // 5. تهنئة حلول شهر رمضان المبارك (1 رمضان) - إشعار سنوي للهاتف بدون أيقونات
     try {
       const ramadanDate = getNextHijriDate(9, 1, 8, 0); // 1 رمضان الساعة 08:00 صباحاً
       notificationsToSchedule.push({
-        title: 'أهلاً شهر رمضان المبارك 🌙',
-        body: 'مبارك عليكم شهر رمضان المعظم، شهر القرآن والرحمة والمغفرة والعتق من النار. تقبل الله منا ومنكم الصيام والقيام، وكل عام وأنتم بخير.',
+        title: isEn ? 'Welcome Blessed Month of Ramadan' : 'أهلاً شهر رمضان المبارك',
+        body: isEn 
+          ? 'Ramadan Mubarak! May Allah accept our fasting and prayers in this month of Qur\'an, mercy, and forgiveness.'
+          : 'مبارك عليكم شهر رمضان المعظم، شهر القرآن والرحمة والمغفرة والعتق من النار. تقبل الله منا ومنكم الصيام والقيام، وكل عام وأنتم بخير.',
         id: 55,
         schedule: { at: ramadanDate, allowWhileIdle: true },
         channelId: 'islamic_ramadan_channel',
@@ -292,12 +353,14 @@ export const setupNotifications = async (settings?: PhoneNotificationSettings) =
       });
     } catch (e) {}
 
-    // 6. تنبيه العشر الأواخر من رمضان (20 رمضان) - إشعار سنوي للهاتف
+    // 6. تنبيه العشر الأواخر من رمضان (20 رمضان) - إشعار سنوي للهاتف بدون أيقونات
     try {
       const lastTenDate = getNextHijriDate(9, 20, 8, 0); // 20 رمضان الساعة 08:00 صباحاً
       notificationsToSchedule.push({
-        title: 'العشر الأواخر من رمضان ✨',
-        body: 'بدأت العشر الأواخر وفيها ليلة القدر خير من ألف شهر! شمروا واجتهدوا في القيام والقرآن والدعاء: "اللهم إنك عفو تحب العفو فاعف عني".',
+        title: isEn ? 'The Last Ten Nights of Ramadan' : 'العشر الأواخر من رمضان',
+        body: isEn 
+          ? 'The last ten nights have begun, containing Laylat Al-Qadr! Strive in prayer, Qur\'an, and supplication: "O Allah, You are forgiving and love forgiveness, so forgive me."'
+          : 'بدأت العشر الأواخر وفيها ليلة القدر خير من ألف شهر! شمروا واجتهدوا في القيام والقرآن والدعاء: "اللهم إنك عفو تحب العفو فاعف عني".',
         id: 56,
         schedule: { at: lastTenDate, allowWhileIdle: true },
         channelId: 'islamic_ramadan_channel',
@@ -323,8 +386,10 @@ export const setupNotifications = async (settings?: PhoneNotificationSettings) =
         dayBeforeRamadan.hour(10).minute(0).second(0).millisecond(0);
       }
       notificationsToSchedule.push({
-        title: 'استعد لرمضان!',
-        body: 'غداً أول أيام شهر رمضان المبارك. قم بتجهيز الورد الشهري الخاص بك الآن.',
+        title: isEn ? 'Prepare for Ramadan!' : 'استعد لرمضان!',
+        body: isEn 
+          ? 'Tomorrow is the first day of Ramadan. Prepare your daily Qur\'an portion now.'
+          : 'غداً أول أيام شهر رمضان المبارك. قم بتجهيز الورد الشهري الخاص بك الآن.',
         id: 50,
         schedule: { at: dayBeforeRamadan.toDate(), allowWhileIdle: true },
         channelId: 'athkar_v3_chime_channel',
@@ -337,7 +402,16 @@ export const setupNotifications = async (settings?: PhoneNotificationSettings) =
     if (notificationsToSchedule.length > 0) {
       await LocalNotifications.schedule({ notifications: notificationsToSchedule });
     }
+
+    // Synchronize Daily Wird reminders if active with app language
+    try {
+      await ensureWirdNotificationChannel(lang);
+      await syncDailyWirdNotifications(lang);
+    } catch (e) {
+      console.warn('Error in syncDailyWirdNotifications from setupNotifications:', e);
+    }
   } catch (error) {
     console.error('Error scheduling notifications:', error);
   }
 };
+

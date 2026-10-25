@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useRef } from 'react';
+import React, { useEffect, useLayoutEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronRight, ChevronLeft, CheckCircle, Clock, Heart, BookOpen, Plus, Minus, Medal, Award, Star, Trash2, Sparkles, Share2, Calendar, RotateCcw, Check, HelpCircle } from 'lucide-react';
 import { markPageAsSeen } from '../utils/badgeManager';
@@ -17,6 +17,12 @@ import HabitArchive from '../components/HabitArchive';
 import WeeklyAchievementModal from '../components/WeeklyAchievementModal';
 import CustomHabitModal from '../components/CustomHabitModal';
 import { shareDailyHabitCard } from '../utils/habitShareHelper';
+import { gregorianMonths, hijriMonths } from '../data/calendarData';
+
+const HIJRI_MONTHS_EN = [
+  'Muharram', 'Safar', 'Rabi I', 'Rabi II', 'Jumada I', 'Jumada II',
+  'Rajab', 'Shaban', 'Ramadan', 'Shawwal', 'Dhul Qadah', 'Dhul Hijjah'
+];
 
 const CONFETTI_CONFIG = {
   angle: 90,
@@ -123,12 +129,101 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack , onNavigate }) => {
   const prevDayProgress = getDailyProgress(prevDayStr);
   const diff = progress - prevDayProgress;
 
-  const selectedMoment = moment(selectedDate);
+  const selectedMoment = moment(selectedDate, 'YYYY-MM-DD');
   const selectedDayName = isEn ? selectedMoment.format('dddd') : ARABIC_DAYS[selectedMoment.day()];
   const selectedFormattedDate = selectedMoment.locale(isEn ? 'en' : 'ar').format(isEn ? 'D MMMM YYYY' : 'D MMMM YYYY');
-  const selectedHijriDate = isEn 
-    ? `${selectedMoment.iDate()} ${selectedMoment.locale('en-SA').format('iMMMM')} ${selectedMoment.iYear()}`
-    : `${selectedMoment.iDate()} ${selectedMoment.locale('ar-SA').format('iMMMM')} ${selectedMoment.iYear()} هـ`;
+
+  const { selectedGregorianShort, selectedHijriShort, selectedHijriDate } = useMemo(() => {
+    const [y, m, d] = selectedDate.split('-').map(Number);
+    const localNoon = new Date(y || 2026, (m || 1) - 1, d || 1, 12, 0, 0);
+
+    const gregShort = isEn
+      ? new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(localNoon)
+      : `${d} ${gregorianMonths[(m || 1) - 1]?.name || ''}`;
+
+    let hDay = selectedMoment.iDate();
+    let hMonth = selectedMoment.iMonth() + 1;
+    let hYear = selectedMoment.iYear();
+
+    try {
+      const parts = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', {
+        day: 'numeric',
+        month: 'numeric',
+        year: 'numeric'
+      }).formatToParts(localNoon);
+      const pDay = parseInt(parts.find(p => p.type === 'day')?.value || '0', 10);
+      const pMonth = parseInt(parts.find(p => p.type === 'month')?.value || '0', 10);
+      const pYear = parseInt(parts.find(p => p.type === 'year')?.value || '0', 10);
+      if (pDay > 0 && pMonth >= 1 && pMonth <= 12 && pYear > 0) {
+        hDay = pDay;
+        hMonth = pMonth;
+        hYear = pYear;
+      }
+    } catch {}
+
+    const hijriMonthLabel = isEn
+      ? (HIJRI_MONTHS_EN[hMonth - 1] || '')
+      : (hijriMonths[hMonth - 1]?.name || '');
+
+    return {
+      selectedGregorianShort: isEn ? gregShort : `${gregShort} م`,
+      selectedHijriShort: isEn ? `${hDay} ${hijriMonthLabel}` : `${hDay} ${hijriMonthLabel} هـ`,
+      selectedHijriDate: isEn ? `${hDay} ${hijriMonthLabel} ${hYear}` : `${hDay} ${hijriMonthLabel} ${hYear} هـ`
+    };
+  }, [selectedDate, isEn, selectedMoment]);
+
+  const achievementHeaderRowRef = useRef<HTMLDivElement>(null);
+  const achievementTitleRef = useRef<HTMLHeadingElement>(null);
+  const achievementBadgeRef = useRef<HTMLSpanElement>(null);
+  const [achievementTitleSize, setAchievementTitleSize] = useState<number>(14);
+
+  const fitAchievementHeaderRow = useCallback(() => {
+    const rowEl = achievementHeaderRowRef.current;
+    const titleEl = achievementTitleRef.current;
+    const badgeEl = achievementBadgeRef.current;
+    if (!rowEl || !titleEl) return;
+
+    const badgeWidth = badgeEl ? badgeEl.offsetWidth + 8 : 0;
+    const availableWidth = rowEl.clientWidth - badgeWidth - 2;
+    if (availableWidth <= 0) return;
+
+    const maxSize = typeof window !== 'undefined' && window.innerWidth >= 640 ? 16.5 : 14.5;
+    const minSize = 9.5;
+    let targetSize = maxSize;
+    titleEl.style.fontSize = `${targetSize}px`;
+
+    if (titleEl.scrollWidth > availableWidth) {
+      const ratio = availableWidth / titleEl.scrollWidth;
+      targetSize = Math.max(minSize, Math.floor(targetSize * ratio * 0.97 * 10) / 10);
+      titleEl.style.fontSize = `${targetSize}px`;
+
+      while (titleEl.scrollWidth > availableWidth && targetSize > minSize) {
+        targetSize = Math.max(minSize, Number((targetSize - 0.25).toFixed(2)));
+        titleEl.style.fontSize = `${targetSize}px`;
+      }
+    }
+    setAchievementTitleSize(targetSize);
+  }, [selectedDate, isEn, isSelectedToday, scoreBreakdown.totalEarned, scoreBreakdown.totalAvailable]);
+
+  useLayoutEffect(() => {
+    fitAchievementHeaderRow();
+  }, [fitAchievementHeaderRow, viewMode]);
+
+  useEffect(() => {
+    const rowEl = achievementHeaderRowRef.current;
+    if (!rowEl) return;
+
+    let ro: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== 'undefined') {
+      ro = new ResizeObserver(() => fitAchievementHeaderRow());
+      ro.observe(rowEl);
+    }
+    window.addEventListener('resize', fitAchievementHeaderRow);
+    return () => {
+      if (ro) ro.disconnect();
+      window.removeEventListener('resize', fitAchievementHeaderRow);
+    };
+  }, [fitAchievementHeaderRow, viewMode]);
 
   let comparisonMsg = '';
   let comparisonClass = '';
@@ -640,15 +735,22 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack , onNavigate }) => {
           className="bg-white/80 dark:bg-gray-800/80 rounded-2xl p-3 sm:p-3.5 shadow-sm border mb-3"
           style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
         >
-            {/* Header: Title & Total Points Badge */}
-            <div className="flex items-center justify-between mb-2">
-                <h2 className="text-base sm:text-lg font-bold font-sans dark:text-white flex items-center gap-2">
-                    <span>{isEn ? `Achievement of ${isSelectedToday ? 'Today' : selectedDayName}` : `إنجاز ${isSelectedToday ? 'اليوم' : selectedDayName}`}</span>
-                    <span className="text-base sm:text-lg font-black text-gray-900 dark:text-white">
-                        ({new Intl.DateTimeFormat(isEn ? 'en-US' : 'ar-EG', { month: 'long', day: 'numeric' }).format(new Date(selectedDate))})
+            {/* Header: Title (with Gregorian + Hijri dates on one single row) & Total Points Badge */}
+            <div ref={achievementHeaderRowRef} className="flex items-center justify-between gap-1.5 mb-2 flex-nowrap">
+                <h2
+                    ref={achievementTitleRef}
+                    className="font-bold font-sans dark:text-white flex items-center gap-1 whitespace-nowrap min-w-0 overflow-hidden leading-tight"
+                    style={{ fontSize: `${achievementTitleSize}px` }}
+                >
+                    <span className="shrink-0">{isEn ? `Achievement of ${isSelectedToday ? 'Today' : selectedDayName}` : `إنجاز ${isSelectedToday ? 'اليوم' : selectedDayName}`}</span>
+                    <span className="font-black text-gray-900 dark:text-white shrink-0">
+                        ({selectedGregorianShort} • {selectedHijriShort})
                     </span>
                 </h2>
-                <span className="text-xs font-bold px-2.5 py-1 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-600">
+                <span
+                    ref={achievementBadgeRef}
+                    className="text-[11px] sm:text-xs font-bold px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-600 whitespace-nowrap shrink-0"
+                >
                     {scoreBreakdown.totalEarned} / {scoreBreakdown.totalAvailable} {isEn ? 'pts' : 'نقطة'}
                 </span>
             </div>
@@ -836,13 +938,28 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack , onNavigate }) => {
               <div>
                 <span className="font-semibold text-sm dark:text-gray-200 block">{isEn ? 'Pages Read' : 'الصفحات المقروءة'}</span>
                 <span className="text-[11px] text-gray-500 dark:text-gray-400">
-                  {(currentRecord.quran?.pages || 0) >= 20 ? (isEn ? 'Full Juz or more 🌟' : 'جزء كامل فأكثر 🌟') : 
-                   (currentRecord.quran?.pages || 0) >= 15 ? (isEn ? '15 pages ✨' : '15 صفحة ✨') :
-                   (currentRecord.quran?.pages || 0) >= 10 ? (isEn ? 'Half Juz approx 📖' : 'نصف جزء تقريباً 📖') :
-                   (currentRecord.quran?.pages || 0) >= 5 ? (isEn ? '5 pages 🌿' : '5 صفحات 🌿') :
-                   (currentRecord.quran?.pages || 0) >= 3 ? (isEn ? '3 pages' : '3 صفحات') :
-                   (currentRecord.quran?.pages || 0) >= 1 ? (isEn ? `${currentRecord.quran?.pages} pages` : `${currentRecord.quran?.pages} صفحات`) :
-                   autoSyncEnabled ? (isEn ? 'Auto-calculated, manual edit possible' : 'يتم الاحتساب تلقائياً عند القراءة، مع إمكانية التعديل يدوياً') : (isEn ? 'Enter pages manually' : 'اكتب عدد صفحات القرآن المقروءة يدوياً')}
+                  {(() => {
+                    const p = currentRecord.quran?.pages || 0;
+                    if (p <= 0) {
+                      return autoSyncEnabled
+                        ? (isEn ? 'Auto-calculated during actual reading, manual edit available' : 'يتم الاحتساب تلقائياً وفق معدل القراءة الفعلي، مع إمكانية التعديل يدوياً')
+                        : (isEn ? 'Enter pages manually' : 'اكتب عدد صفحات القرآن المقروءة يدوياً');
+                    }
+                    if (p === 20) return isEn ? 'Full Juz (20 pages) 🌟' : 'جزء كامل (20 صفحة) 🌟';
+                    if (p > 20) {
+                      const juzCount = Math.floor(p / 20);
+                      const rem = p % 20;
+                      return isEn
+                        ? `${p} pages (${juzCount} Juz${rem > 0 ? ` + ${rem}p` : ''}) 🌟`
+                        : `${p} صفحة (${juzCount === 1 ? 'جزء' : juzCount === 2 ? 'جزءان' : `${juzCount} أجزاء`}${rem > 0 ? ` و${rem} ص` : ''}) 🌟`;
+                    }
+                    if (p === 10) return isEn ? 'Half Juz (10 pages) 📖' : 'نصف جزء (10 صفحات) 📖';
+                    if (p > 10) return isEn ? `${p} pages ✨` : `${p} صفحة ✨`;
+                    if (p >= 5) return isEn ? `${p} pages 🌿` : `${p} صفحات 🌿`;
+                    if (p >= 3) return isEn ? `${p} pages` : `${p} صفحات`;
+                    if (p === 2) return isEn ? '2 pages' : 'صفحتان';
+                    return isEn ? '1 page' : 'صفحة واحدة';
+                  })()}
                 </span>
               </div>
               <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 rounded-xl p-1.5">

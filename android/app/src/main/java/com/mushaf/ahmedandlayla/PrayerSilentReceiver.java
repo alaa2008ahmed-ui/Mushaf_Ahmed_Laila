@@ -21,6 +21,7 @@ public class PrayerSilentReceiver extends BroadcastReceiver {
     public static final String ACTION_START_SILENT = "com.mushaf.ahmedandlayla.ACTION_START_SILENT";
     public static final String ACTION_END_SILENT = "com.mushaf.ahmedandlayla.ACTION_END_SILENT";
     public static final String ACTION_RESTORE_NOTIFICATION = "com.mushaf.ahmedandlayla.ACTION_RESTORE_NOTIFICATION";
+    public static final String ACTION_UPDATE_NOTIFICATION = "com.mushaf.ahmedandlayla.ACTION_UPDATE_NOTIFICATION";
     public static final String EXTRA_PRAYER_NAME = "prayer_name";
     public static final String EXTRA_DURATION = "duration";
     public static final String EXTRA_WINDOW_ID = "window_id";
@@ -48,7 +49,10 @@ public class PrayerSilentReceiver extends BroadcastReceiver {
         if (audioManager == null) return;
 
         SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        if (Intent.ACTION_BOOT_COMPLETED.equals(action) || "android.intent.action.BOOT_COMPLETED".equals(action) || ACTION_RESTORE_NOTIFICATION.equals(action)) {
+        if (Intent.ACTION_BOOT_COMPLETED.equals(action) || 
+            "android.intent.action.BOOT_COMPLETED".equals(action) || 
+            ACTION_RESTORE_NOTIFICATION.equals(action) ||
+            ACTION_UPDATE_NOTIFICATION.equals(action)) {
             PersistentPrayerNotification.update(context);
             return;
         }
@@ -164,12 +168,18 @@ public class PrayerSilentReceiver extends BroadcastReceiver {
                 .build();
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                SharedPreferences langPrefs = context.getSharedPreferences("CapacitorStorage", Context.MODE_PRIVATE);
+                String appLang = langPrefs.getString("app_language", "ar");
+                boolean isArabic = !"en".equalsIgnoreCase(appLang);
+
                 NotificationChannel channel = new NotificationChannel(
                     CHANNEL_ID,
-                    "الصامت التلقائي للصلاة",
+                    isArabic ? "الصامت التلقائي للصلاة" : "Auto Silent Mode",
                     NotificationManager.IMPORTANCE_HIGH
                 );
-                channel.setDescription("إشعارات تفعيل وإلغاء وضع الصامت التلقائي أثناء الصلاة");
+                channel.setDescription(isArabic 
+                    ? "إشعارات تفعيل وإلغاء وضع الصامت التلقائي أثناء الصلاة"
+                    : "Notifications for activating and ending auto-silent mode during prayer");
                 channel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
                 channel.setBypassDnd(true);
                 channel.enableVibration(true);

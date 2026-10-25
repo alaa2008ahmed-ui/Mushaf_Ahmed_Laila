@@ -24,7 +24,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Share as CapacitorShare } from '@capacitor/share';
 import { Capacitor } from '@capacitor/core';
 import moment from 'moment-hijri';
-import TopLeadersCard from '../components/MainMenu/TopLeadersCard';
 import HabitTrackerCard from '../components/MainMenu/HabitTrackerCard';
 import TawafCounterCard from '../components/MainMenu/TawafCounterCard';
 import { useLanguage } from '../context/LanguageContext';
@@ -58,9 +57,6 @@ A seamless bilingual experience with full Arabic and English language support ac
 
 📜 Prophetic Seerah (New):
 An inspiring and interactive journey through the life of the Prophet ﷺ with a detailed timeline of key milestones and events.
-
-🏆 Ahl Al-Quran (New):
-Honor board and virtuous competition to track recitation statistics and celebrate Quran readers monthly and cumulatively.
 
 💬 Community Hub (New):
 Spiritual brotherly connection, sharing wisdom and reflections, and purposeful group discussions.
@@ -96,17 +92,14 @@ const APP_SHARE_TEXT = `🕋✨ التحديث الأكبر لتطبيق "مصح
 📜 صفحة السيرة النبوية (جديد):
 رحلة ملهمة وتفاعلية في سيرة خير الأنام ﷺ عبر خط زمني مفصل يوثق أهم المحطات والغزوات والأحداث النبوية الشريفة بأسلوب عصري وميسر.
 
-🏆 صفحة أهل القرآن (جديد):
-لوحة المتصدرين وتنافس إيماني مبارك؛ لمتابعة إحصائيات تلاوتك وتكريم قرّاء القرآن الكريم شهرياً وتراكمياً.
-
-💬 صفحة مجتمع التواصل (جديد):
-ملتقى إيماني للتواصل الأخوي، ونشر الفوائد والخواطر، ومجموعات النقاش الهادف والتواصي بالحق.
-
 🛡️ صفحة الرقية الشرعية (جديد):
 رقية شرعية كاملة وشاملة وميسرة من القرآن الكريم والسنة النبوية للتحصين والشفاء والسكينة.
 
 🌐 صفحة مواقع ومنصات إسلامية (جديد):
 دليل تفاعلي متكامل لأوثق المواقع الإسلامية للفتوى والبحث الشرعي وعلوم القرآن.
+
+🕌 صفحة العشرة المبشرون (جديد):
+تعرف على سير العظماء من أصحاب رسول الله ﷺ الذين بشرهم بالجنة، في صفحة تفاعلية ميسرة.
 
 🎨 تحديث شامل للواجهة ولكافة الصفحات:
 إعادة تصميم وتحديث لجميع صفحات التطبيق دون استثناء؛ لتحسين تجربة القراءة، والخطوط، والسمات المتعددة، وسرعة التصفح والتنقل.
@@ -120,77 +113,76 @@ const APP_SHARE_TEXT = `🕋✨ التحديث الأكبر لتطبيق "مصح
 🤍 شاركه مع أهلك وأحبابك..
 فالدال على الخير كفاعله، واجعله صدقة جارية لك ولوالديك. 🤲🌱`;
 
-const CURRENT_LAYOUT_VERSION = 'v2026_row8_seerah_bar_v5';
+const CURRENT_LAYOUT_VERSION = 'v2026_9rows_layout_v3';
 
 const ALL_POSSIBLE_ITEMS = [
-    // الصف الاول : بطاقه القران الكريم + بطاقه الاستماع للقران باللون الاخضر
-    { id: 'quran', label: "القرآن الكريم", className: "col-span-3 h-11", colorIndex: 0 },
-    { id: 'listen', label: "الاستماع للقرآن", className: "col-span-3 h-11", colorIndex: 0 },
-    // الصف الثانى : بطاقه مواقيت الصلاه + القبله + اذكار الصلاه باللون الاخضر
+    // الصف 1: القرآن الكريم - اللون الأخضر
+    { id: 'quran', label: "القرآن الكريم", className: "col-span-6 h-11", colorIndex: 0 },
+    // الصف 2: الاستماع للقرآن - مواقيت الصلاة - أذكار الصلاة - اللون الأخضر
+    { id: 'listen', label: "الاستماع للقرآن", className: "col-span-2 h-11", colorIndex: 0 },
     { id: 'prayer-times', label: "مواقيت الصلاة", className: "col-span-2 h-11", colorIndex: 0 },
-    { id: 'qibla', label: "القبلة", className: "col-span-2 h-11", colorIndex: 0 },
     { id: 'salah-adhkar', label: "أذكار الصلاة", className: "col-span-2 h-11", colorIndex: 0 },
-    // الصف الثالث : بطاقه الادعيه + حصن المسلم + الاذكار باللون البنفسجى
+    // الصف 3: القبلة - التقويم - السبحة - اللون البنفسجي
+    { id: 'qibla', label: "القبلة", className: "col-span-2 h-11", colorIndex: 1 },
+    { id: 'calendar', label: "التقويم", className: "col-span-2 h-11", colorIndex: 1 },
+    { id: 'tasbeeh', label: "السبحة", className: "col-span-2 h-11", colorIndex: 1 },
+    // الصف 4: الأدعية - حصن المسلم - الأذكار - اللون البنفسجي
     { id: 'adia', label: "الأدعية", className: "col-span-2 h-11", colorIndex: 1 },
     { id: 'hisn-muslim', label: "حصن المسلم", className: "col-span-2 h-11", colorIndex: 1 },
     { id: 'sabah-masaa', label: "الأذكار", className: "col-span-2 h-11", colorIndex: 1 },
-    // الصف الرابع : بطاقه التقويم + الحج والعمرة + السبحه باللون البنفسجى
-    { id: 'calendar', label: "التقويم", className: "col-span-2 h-11", colorIndex: 1 },
-    { id: 'hajj-umrah', label: "الحج والعمرة", className: "col-span-2 h-11", colorIndex: 1 },
-    { id: 'tasbeeh', label: "السبحة", className: "col-span-2 h-11", colorIndex: 1 },
-    // الصف الخامس : مجتمع التواصل + اهل القران باللون الاخضر
-    { id: 'community', label: "مجتمع التواصل", className: "col-span-3 h-11", colorIndex: 0 },
-    { id: 'ahl-al-quran', label: "أهل القرآن", className: "col-span-3 h-11", colorIndex: 0 },
-    // الصف السادس : الورد اليومى + التحفيظ + مربى العبادات باللون البنفسجى
+    // الصف 5: الرقية الشرعية - الحج والعمرة - الأربعون النووية - اللون الأخضر
+    { id: 'others', label: "الرقية الشرعية", className: "col-span-2 h-11", colorIndex: 0 },
+    { id: 'hajj-umrah', label: "الحج والعمرة", className: "col-span-2 h-11", colorIndex: 0 },
+    { id: 'nawawi', label: "الأربعون النووية", className: "col-span-2 h-11", colorIndex: 0 },
+    // الصف 6: السيرة النبوية - العشرة المبشرون - اللون الأخضر
+    { id: 'prophetic-seerah', label: "السيرة النبوية", className: "col-span-3 h-11", colorIndex: 0 },
+    { id: 'ten-promised', label: "العشرة المبشرون", className: "col-span-3 h-11", colorIndex: 0 },
+    // الصف 7: الورد اليومي - التحفيظ - مربي العبادات - اللون البنفسجي
     { id: 'daily-wird', label: "الورد اليومي", className: "col-span-2 h-11", colorIndex: 1 },
     { id: 'memorization', label: "التحفيظ", className: "col-span-2 h-11", colorIndex: 1 },
     { id: 'habit-tracker', label: "مربّي العبادات", className: "col-span-2 h-11", colorIndex: 1 },
-    // الصف السابع : الرقيه الشرعيه + مواقع اسلاميه + الحاسبه الشرعيه باللون البنفسجى
-    { id: 'others', label: "الرقية الشرعية", className: "col-span-2 h-11", colorIndex: 1 },
+    // الصف 8: أسماء الله الحسنى - مواقع إسلامية - الحاسبة الشرعية
+    { id: 'asmaul-husna', label: "أسماء الله الحسنى", className: "col-span-2 h-11", colorIndex: 1 },
     { id: 'islamic-sites', label: "مواقع إسلامية", className: "col-span-2 h-11", colorIndex: 1 },
     { id: 'calculators', label: "الحاسبة الشرعية", className: "col-span-2 h-11", colorIndex: 1 },
-    // الصف الثامن : الاربعون النوويه + التحكم الصوتى + اسماء الله الحسنى باللون الأخضر
-    { id: 'nawawi', label: "الأربعون النووية", className: "col-span-2 h-11", colorIndex: 0 },
-    { id: 'voice-control', label: "التحكم الصوتي", className: "col-span-2 h-11", colorIndex: 0 },
-    { id: 'asmaul-husna', label: "أسماء الله الحسنى", className: "col-span-2 h-11", colorIndex: 0 },
-    // صف السيرة النبوية مع أيقونات مجتمع التواصل وأهل القرآن والواتساب والتحكم الصوتي
-    { id: 'prophetic-seerah', label: "السيرة النبوية", className: "col-span-6 h-10 flex justify-center", colorIndex: 0 },
+    // الصف 9: أيقونة الواتساب بالبنفسجي - التحكم الصوتي بالأخضر - أيقونة التحكم الصوتي بالبنفسجي
+    { id: 'voice-control', label: "التحكم الصوتي", className: "col-span-6 h-10 flex justify-center", colorIndex: 0 },
 ];
 
 const DEFAULT_MENU_ITEMS = [
-    // الصف الاول : بطاقه القران الكريم + بطاقه الاستماع للقران باللون الاخضر
-    { id: 'quran', label: "القرآن الكريم", className: "col-span-3 h-11", colorIndex: 0 },
-    { id: 'listen', label: "الاستماع للقرآن", className: "col-span-3 h-11", colorIndex: 0 },
-    // الصف الثانى : بطاقه مواقيت الصلاه + القبله + اذكار الصلاه باللون الاخضر
+    // الصف 1: القرآن الكريم - اللون الأخضر
+    { id: 'quran', label: "القرآن الكريم", className: "col-span-6 h-11", colorIndex: 0 },
+    // الصف 2: الاستماع للقرآن - مواقيت الصلاة - أذكار الصلاة - اللون الأخضر
+    { id: 'listen', label: "الاستماع للقرآن", className: "col-span-2 h-11", colorIndex: 0 },
     { id: 'prayer-times', label: "مواقيت الصلاة", className: "col-span-2 h-11", colorIndex: 0 },
-    { id: 'qibla', label: "القبلة", className: "col-span-2 h-11", colorIndex: 0 },
     { id: 'salah-adhkar', label: "أذكار الصلاة", className: "col-span-2 h-11", colorIndex: 0 },
-    // الصف الثالث : بطاقه الادعيه + حصن المسلم + الاذكار باللون البنفسجى
+    // الصف 3: القبلة - التقويم - السبحة - اللون البنفسجي
+    { id: 'qibla', label: "القبلة", className: "col-span-2 h-11", colorIndex: 1 },
+    { id: 'calendar', label: "التقويم", className: "col-span-2 h-11", colorIndex: 1 },
+    { id: 'tasbeeh', label: "السبحة", className: "col-span-2 h-11", colorIndex: 1 },
+    // الصف 4: الأدعية - حصن المسلم - الأذكار - اللون البنفسجي
     { id: 'adia', label: "الأدعية", className: "col-span-2 h-11", colorIndex: 1 },
     { id: 'hisn-muslim', label: "حصن المسلم", className: "col-span-2 h-11", colorIndex: 1 },
     { id: 'sabah-masaa', label: "الأذكار", className: "col-span-2 h-11", colorIndex: 1 },
-    // الصف الرابع : بطاقه التقويم + الحج والعمرة + السبحه باللون البنفسجى
-    { id: 'calendar', label: "التقويم", className: "col-span-2 h-11", colorIndex: 1 },
-    { id: 'hajj-umrah', label: "الحج والعمرة", className: "col-span-2 h-11", colorIndex: 1 },
-    { id: 'tasbeeh', label: "السبحة", className: "col-span-2 h-11", colorIndex: 1 },
-    // الصف الخامس : مجتمع التواصل + اهل القران باللون الاخضر
-    { id: 'community', label: "مجتمع التواصل", className: "col-span-3 h-11", colorIndex: 0 },
-    { id: 'ahl-al-quran', label: "أهل القرآن", className: "col-span-3 h-11", colorIndex: 0 },
-    // الصف السادس : الورد اليومى + التحفيظ + مربى العبادات باللون البنفسجى
+    // الصف 5: الرقية الشرعية - الحج والعمرة - الأربعون النووية - اللون الأخضر
+    { id: 'others', label: "الرقية الشرعية", className: "col-span-2 h-11", colorIndex: 0 },
+    { id: 'hajj-umrah', label: "الحج والعمرة", className: "col-span-2 h-11", colorIndex: 0 },
+    { id: 'nawawi', label: "الأربعون النووية", className: "col-span-2 h-11", colorIndex: 0 },
+    // الصف 6: السيرة النبوية - العشرة المبشرون - اللون الأخضر
+    { id: 'prophetic-seerah', label: "السيرة النبوية", className: "col-span-3 h-11", colorIndex: 0 },
+    { id: 'ten-promised', label: "العشرة المبشرون", className: "col-span-3 h-11", colorIndex: 0 },
+    // الصف 7: الورد اليومي - التحفيظ - مربي العبادات - اللون البنفسجي
     { id: 'daily-wird', label: "الورد اليومي", className: "col-span-2 h-11", colorIndex: 1 },
     { id: 'memorization', label: "التحفيظ", className: "col-span-2 h-11", colorIndex: 1 },
     { id: 'habit-tracker', label: "مربّي العبادات", className: "col-span-2 h-11", colorIndex: 1 },
-    // الصف السابع : الرقيه الشرعيه + مواقع اسلاميه + الحاسبه الشرعيه باللون البنفسجى
-    { id: 'others', label: "الرقية الشرعية", className: "col-span-2 h-11", colorIndex: 1 },
+    // الصف 8: أسماء الله الحسنى - مواقع إسلامية - الحاسبة الشرعية
+    { id: 'asmaul-husna', label: "أسماء الله الحسنى", className: "col-span-2 h-11", colorIndex: 1 },
     { id: 'islamic-sites', label: "مواقع إسلامية", className: "col-span-2 h-11", colorIndex: 1 },
     { id: 'calculators', label: "الحاسبة الشرعية", className: "col-span-2 h-11", colorIndex: 1 },
-    // الصف الثامن : الاربعون النوويه + التحكم الصوتى + اسماء الله الحسنى باللون الأخضر
-    { id: 'nawawi', label: "الأربعون النووية", className: "col-span-2 h-11", colorIndex: 0 },
-    { id: 'voice-control', label: "التحكم الصوتي", className: "col-span-2 h-11", colorIndex: 0 },
-    { id: 'asmaul-husna', label: "أسماء الله الحسنى", className: "col-span-2 h-11", colorIndex: 0 },
-    // صف السيرة النبوية مع أيقونات مجتمع التواصل وأهل القرآن والواتساب والتحكم الصوتي باللون الأخضر
-    { id: 'prophetic-seerah', label: "السيرة النبوية", className: "col-span-6 h-10 flex justify-center", colorIndex: 0 },
+    // الصف 9: أيقونة الواتساب بالبنفسجي - التحكم الصوتي بالأخضر - أيقونة التحكم الصوتي بالبنفسجي
+    { id: 'voice-control', label: "التحكم الصوتي", className: "col-span-6 h-10 flex justify-center", colorIndex: 0 },
 ];
+
 
 function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
   const { showVoiceIcon } = useVoiceControl();
@@ -977,12 +969,6 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
                           onNavigate={onNavigate}
                       />
 
-                      {/* بطاقة متصدري أهل القرآن (المراكز الثلاثة الأولى) */}
-                      <TopLeadersCard 
-                          theme={theme}
-                          onNavigate={onNavigate}
-                          setToastMessage={setToastMessage}
-                      />
 
                       {/* بطاقة مربي العبادات (إنجاز اليوم وملخص الأيام السابقة بالنسبة المئوية) */}
                       <HabitTrackerCard

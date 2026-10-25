@@ -14,7 +14,7 @@ import { SURAH_LIST, RECITERS } from '../data/listenQuranData';
 import ReciterSelectModal from '../components/QuranReader/ReciterSelectModal';
 import ListenSurahSelectModal from '../components/QuranReader/ListenSurahSelectModal';
 import { QuranDownloadModal } from '../components/QuranReader/DownloadModals';
-import { SURAH_INFO } from '../components/QuranReader/constants';
+import { SURAH_INFO, ARABIC_READERS } from '../components/QuranReader/constants';
 import { registerBackInterceptor } from '../hooks/useBackButton';
 import { getAvailableSurahsForReader } from '../utils/listenQuranUtils';
 import './QuranReader.css';
@@ -232,7 +232,24 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
             const savedState = localStorage.getItem(STORAGE_KEY);
             if (savedState) {
                 const { savedReciterId, savedSurahNumber, savedContinuousPlay, savedRepeatSurah } = JSON.parse(savedState);
-                if (RECITERS.some(r => r.id === savedReciterId)) setReciterId(savedReciterId);
+                if (savedReciterId) {
+                    const match = RECITERS.find(r => r.id === savedReciterId);
+                    if (match) {
+                        setReciterId(match.id);
+                    } else {
+                        // Check if savedReciterId is an EveryAyah ID or reciter name that can be mapped to RECITERS
+                        const eaReader = ARABIC_READERS.find(r => r.id === savedReciterId);
+                        const targetName = eaReader?.name;
+                        const matchedByName = targetName 
+                            ? RECITERS.find(r => r.name.includes(targetName) || targetName.includes(r.name)) 
+                            : null;
+                        if (matchedByName) {
+                            setReciterId(matchedByName.id);
+                        } else {
+                            setReciterId(RECITERS[0].id);
+                        }
+                    }
+                }
                 if (SURAH_LIST.some(s => s.number === savedSurahNumber)) setSurahNumber(savedSurahNumber);
                 if (typeof savedRepeatSurah === 'boolean') {
                     setIsRepeatSurah(savedRepeatSurah);
@@ -246,6 +263,18 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
             console.error("Failed to load state from localStorage", e);
         }
     }, []);
+
+    // Self-healing: if reciterId in state is not in RECITERS (e.g. from previously corrupted state), immediately heal it
+    useEffect(() => {
+        if (!RECITERS.some(r => r.id === reciterId)) {
+            const eaReader = ARABIC_READERS.find(r => r.id === reciterId);
+            const targetName = eaReader?.name;
+            const matchedByName = targetName 
+                ? RECITERS.find(r => r.name.includes(targetName) || targetName.includes(r.name)) 
+                : null;
+            setReciterId(matchedByName ? matchedByName.id : RECITERS[0].id);
+        }
+    }, [reciterId]);
 
     const handleToggleRepeatSurah = () => {
         const next = !isRepeatSurah;
@@ -521,8 +550,8 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
     }, [favorites, reciterId, surahNumber]);
 
     const handleToggleFavorite = () => {
-        const currentReciter = RECITERS.find(r => r.id === reciterId)?.name || 'غير معروف';
-        const currentSurah = SURAH_LIST.find(s => s.number === surahNumber)?.name || 'غير معروفة';
+        const currentReciter = RECITERS.find(r => r.id === reciterId)?.name || RECITERS[0].name;
+        const currentSurah = SURAH_LIST.find(s => s.number === surahNumber)?.name || SURAH_LIST[0].name;
 
         if (isCurrentFavorite) {
             setFavorites(prev => prev.filter(f => !(f.reciterId === reciterId && f.surahNumber === surahNumber)));
@@ -640,15 +669,24 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
     
     const handlePlayPause = async () => {
         const audio = audioRef.current;
-        if (!audio || !audio.src) return;
+        if (!audio) return;
         setError('');
         if (isPlaying) {
             audio.pause();
         } else {
             try {
+                if (!audio.src || audio.src === window.location.href || audio.src.endsWith('/')) {
+                    const surahFormatted = String(surahNumber).padStart(3, '0');
+                    const baseUrl = reciterId.endsWith('/') ? reciterId.slice(0, -1) : reciterId;
+                    audio.src = `${baseUrl}/${surahFormatted}.mp3`;
+                    audio.load();
+                }
+                setIsLoading(true);
                 await audio.play();
             } catch (err) {
+                console.error("Playback error:", err);
                 setError(tListen('browserPlayError', language));
+                setIsLoading(false);
             }
         }
     };
@@ -661,8 +699,11 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
         }
     };
     
-    const reciterName = RECITERS.find(r => r.id === reciterId)?.name || (language === 'en' ? 'Unknown' : 'غير معروف');
-    const surahName = SURAH_LIST.find(s => s.number === surahNumber)?.name || (language === 'en' ? 'Unknown' : 'غير معروفة');
+    const currentReciter = useMemo(() => {
+        return RECITERS.find(r => r.id === reciterId) || RECITERS[0];
+    }, [reciterId]);
+    const reciterName = currentReciter.name;
+    const surahName = SURAH_LIST.find(s => s.number === surahNumber)?.name || SURAH_LIST[0].name;
 
     return (
         <div dir={dir} className="h-screen flex flex-col font-cairo overflow-hidden" style={{ backgroundColor: 'transparent', color: theme.textColor }}>
@@ -701,6 +742,7 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
                                 <i className={`fa-solid ${isRTL ? 'fa-arrow-right' : 'fa-arrow-left'} text-xl`}></i>
                             </button>
                             <button
+                                id="btn-listen-toggle-fav"
                                 type="button"
                                 onClick={handleToggleFavorite}
                                 className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
@@ -744,10 +786,11 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
                 </div>
             </header>
 
-            <main className="w-full max-w-md mx-auto flex-1 flex flex-col px-4 pb-4 z-10 overflow-y-auto">
+            <main id="listen-scroll-container" className="w-full max-w-md mx-auto flex-1 flex flex-col px-4 pb-4 z-10 overflow-y-auto">
 
                 <div className="space-y-3 flex-shrink-0 py-4">
                     <button 
+                        id="btn-listen-select-reciter"
                         onClick={() => setShowReciterModal(true)} 
                         className="w-full p-3 text-center rounded-xl font-bold themed-card flex justify-between items-center transition-all cursor-pointer"
                         style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
@@ -756,6 +799,7 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
                         <i className="fa-solid fa-chevron-down opacity-50 shrink-0"></i>
                     </button>
                     <button 
+                        id="btn-listen-select-surah"
                         onClick={() => setShowSurahModal(true)} 
                         className="w-full p-3 text-center rounded-xl font-bold themed-card flex justify-between items-center transition-all cursor-pointer"
                         style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
@@ -766,6 +810,7 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
                 </div>
 
                 <div 
+                    id="listen-player-card"
                     className="themed-card rounded-3xl p-6 space-y-5 flex-shrink-0 transition-all"
                     style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
                 >
@@ -802,6 +847,7 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
                 {/* بطاقة مؤقت النوم (Sleep Timer) */}
                 <div className="pt-4 pb-1 flex-shrink-0 space-y-3">
                     <div 
+                        id="listen-sleep-timer-card"
                         className="themed-card rounded-2xl p-4 space-y-3.5 transition-all"
                         style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
                     >
@@ -1000,6 +1046,7 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
 
                 <div className="pt-6 pb-2 flex-shrink-0 space-y-3">
                     <div 
+                        id="listen-options-card"
                         className="themed-card rounded-2xl p-4 space-y-4 transition-all"
                         style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
                     >
@@ -1068,6 +1115,7 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
                         <div className="h-px w-full bg-gray-200 dark:bg-gray-700 opacity-30"></div>
 
                         <button 
+                            id="btn-listen-download"
                             onClick={() => setShowDownloadModal(true)} 
                             className="w-full flex justify-between items-center group cursor-pointer"
                         >
@@ -1083,6 +1131,7 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
                 {/* قسم المفضلات المحفوظة (حتى 10 سور وقراء) */}
                 <div className="pt-2 pb-2 flex-shrink-0 space-y-3">
                     <div 
+                        id="listen-favorites-card"
                         className="themed-card rounded-2xl p-4 space-y-3 transition-all"
                         style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
                     >

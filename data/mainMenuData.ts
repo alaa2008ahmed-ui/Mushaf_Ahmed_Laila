@@ -1,7 +1,7 @@
 
 import {
     QuranIcon, SalahAdhkarIcon, ListenIcon, TasbeehIcon, CalendarIcon, QiblaIcon,
-    HajjIcon, HisnMuslimIcon, PrayerTimesIcon, AdiaIcon, SabahMasaaIcon, RadioIcon, CalculatorIcon, TajweedIcon, HabitTrackerIcon
+    HajjIcon, HisnMuslimIcon, PrayerTimesIcon, AdiaIcon, SabahMasaaIcon, CalculatorIcon, TajweedIcon, HabitTrackerIcon
 } from '../components/Icons';
 
 export const verses = [
@@ -17,7 +17,6 @@ export const verses = [
 
 export const navItems = [
   { id: 'quran', title: "القرآن الكريم", icon: QuranIcon, isFeatured: true },
-  { id: 'community', title: "مجتمع التواصل", icon: RadioIcon },
   { id: 'habit-tracker', title: "مربّي العبادات", icon: HabitTrackerIcon },
   { id: 'sabah-masaa', title: "أذكار الصباح والمساء", icon: SabahMasaaIcon },
   { id: 'adia', title: "الأدعية المأثورة", icon: AdiaIcon },
@@ -32,5 +31,7 @@ export const navItems = [
   { id: 'calendar', title: "التقويم", icon: CalendarIcon },
   { id: 'nawawi', title: 'الأربعون النووية', icon: HisnMuslimIcon },
   { id: 'tajweed-education', title: 'تعليم التجويد', icon: TajweedIcon },
-  { id: 'prophetic-seerah', title: 'السيرة النبوية', icon: HisnMuslimIcon }
+  { id: 'prophetic-seerah', title: 'السيرة النبوية', icon: HisnMuslimIcon },
+  { id: 'ten-promised', title: 'العشرة المبشرون', icon: HisnMuslimIcon }
 ];
+

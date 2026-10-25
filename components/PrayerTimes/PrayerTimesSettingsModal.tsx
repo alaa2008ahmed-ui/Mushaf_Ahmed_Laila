@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShieldAlert } from 'lucide-react';
+import { ShieldAlert, HelpCircle } from 'lucide-react';
 import ToneSelector from './ToneSelector';
 import { Capacitor } from '@capacitor/core';
 import { isDndPermissionGranted, requestDndPermission } from '../../utils/silentMode';
@@ -7,6 +7,8 @@ import { LocalNotifications } from '@capacitor/local-notifications';
 import { playNotificationSound } from '../../utils/prayerTimesUtils';
 import { useLanguage } from '../../context/LanguageContext';
 import { tPrayer, getPrayerDisplayName } from '../../utils/prayerTimesTranslations';
+import { CommunitySpotlightGuide, getGuideSeen } from '../Community/CommunitySpotlightGuide';
+import { PRAYER_SETTINGS_MODAL_STEPS } from '../Community/communityTourSteps';
 
 interface PrayerTimesSettingsModalProps {
     isOpen: boolean;
@@ -90,6 +92,7 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
 }) => {
     const { language, isRTL, dir } = useLanguage();
     const [hasDndPermission, setHasDndPermission] = useState(true);
+    const [showGuide, setShowGuide] = useState(false);
     // Local string state to handle manual typing seamlessly across Android APK and web
     const [offsetInputValue, setOffsetInputValue] = useState<string>(() => String(tempOffset));
 
@@ -98,6 +101,14 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
             isDndPermissionGranted().then(setHasDndPermission);
         }
     }, [isOpen]);
+
+    useEffect(() => {
+        if (isOpen && currentEditingKey) {
+            if (!getGuideSeen('prayer_settings_modal_spotlight')) {
+                setShowGuide(true);
+            }
+        }
+    }, [isOpen, currentEditingKey]);
 
     useEffect(() => {
         setOffsetInputValue(String(tempOffset));
@@ -243,21 +254,33 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
                     <h3 className="font-black text-sm sm:text-base" style={{ color: primaryColor }}>
                         {tPrayer('prayerSettingsTitle', language, { p: getPrayerDisplayName(currentEditingKey, language) })}
                     </h3>
-                    <button 
-                        onClick={closeModal} 
-                        className="hover:text-red-500 transition-colors cursor-pointer" 
-                        style={{ color: secondaryColor }}
-                        title={tPrayer('close', language)}
-                        aria-label={tPrayer('close', language)}
-                    >
-                        <i className="fa-solid fa-circle-xmark text-2xl"></i>
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                        <button 
+                            type="button"
+                            onClick={() => setShowGuide(true)} 
+                            className="w-8 h-8 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer" 
+                            style={{ color: secondaryColor }}
+                            title={language === 'en' ? "Settings Guide" : "دليل إعدادات الصلاة"}
+                            aria-label={language === 'en' ? "Settings Guide" : "دليل إعدادات الصلاة"}
+                        >
+                            <HelpCircle size={19} />
+                        </button>
+                        <button 
+                            onClick={closeModal} 
+                            className="hover:text-red-500 transition-colors cursor-pointer" 
+                            style={{ color: secondaryColor }}
+                            title={tPrayer('close', language)}
+                            aria-label={tPrayer('close', language)}
+                        >
+                            <i className="fa-solid fa-circle-xmark text-2xl"></i>
+                        </button>
+                    </div>
                 </div>
 
                 {/* Scrollable Content */}
-                <div className="space-y-3 overflow-y-auto hide-scrollbar flex-1 pr-0.5">
+                <div id="prayer-settings-scroll-container" className="space-y-3 overflow-y-auto hide-scrollbar flex-1 pr-0.5">
                     {/* تعديل وقت الأذان يدوياً وبالأزرار */}
-                    <div>
+                    <div id="setting-adhan-adjustment">
                         <label className="block text-[10px] font-black mb-1.5 uppercase tracking-widest text-center" style={{ color: secondaryColor }}>
                             {tPrayer('adjustAdhanTime', language)}
                         </label>
@@ -330,22 +353,24 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
                     </div>
 
                     {/* نغمة التنبيه */}
-                    <ToneSelector 
-                        currentEditingKey={currentEditingKey}
-                        configTones={configTones}
-                        internetTones={internetTones}
-                        handleToneSelection={handleToneSelection}
-                        handleToneUpload={handleToneUpload}
-                        secondaryColor={secondaryColor}
-                        primaryColor={primaryColor}
-                        cardBorderColor={cardBorderColor}
-                        isDefaultTheme={isDefaultTheme}
-                        isBlackTheme={isEffectiveBlack}
-                    />
+                    <div id="setting-tone-selector">
+                        <ToneSelector 
+                            currentEditingKey={currentEditingKey}
+                            configTones={configTones}
+                            internetTones={internetTones}
+                            handleToneSelection={handleToneSelection}
+                            handleToneUpload={handleToneUpload}
+                            secondaryColor={secondaryColor}
+                            primaryColor={primaryColor}
+                            cardBorderColor={cardBorderColor}
+                            isDefaultTheme={isDefaultTheme}
+                            isBlackTheme={isEffectiveBlack}
+                        />
+                    </div>
 
                     {/* 1. تنبيه الاستعداد للصلاة */}
                     {!isSunrise && (
-                        <div className="themed-bg-alt p-2.5 rounded-2xl border-2 border-black dark:border-white shadow-xs space-y-1.5 transition-all">
+                        <div id="setting-pre-reminder" className="themed-bg-alt p-2.5 rounded-2xl border-2 border-black dark:border-white shadow-xs space-y-1.5 transition-all">
                             <div className="flex items-center justify-between gap-3">
                                 {/* Toggle Switch */}
                                 <button
@@ -438,7 +463,7 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
 
                     {/* 2. تنبيه الإقامة */}
                     {!isSunrise && (
-                        <div className="themed-bg-alt p-2.5 rounded-2xl border-2 border-black dark:border-white shadow-xs space-y-1.5 transition-all">
+                        <div id="setting-iqama-alert" className="themed-bg-alt p-2.5 rounded-2xl border-2 border-black dark:border-white shadow-xs space-y-1.5 transition-all">
                             <div className="flex items-center justify-between gap-3">
                                 {/* Toggle Switch */}
                                 <button
@@ -542,7 +567,7 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
 
                     {/* 3. الصامت التلقائي */}
                     {!isSunrise && (
-                        <div className="themed-bg-alt p-2.5 rounded-2xl border-2 border-black dark:border-white shadow-xs space-y-1.5 transition-all">
+                        <div id="setting-auto-silent" className="themed-bg-alt p-2.5 rounded-2xl border-2 border-black dark:border-white shadow-xs space-y-1.5 transition-all">
                             <div className="flex items-center justify-between gap-3">
                                 {/* Toggle Switch */}
                                 <button
@@ -660,6 +685,7 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
 
                 {/* Save button */}
                 <button 
+                    id="setting-save-btn"
                     onClick={saveUserConfig} 
                     className="w-full mt-4 text-white py-3 sm:py-3.5 rounded-2xl font-black text-sm shadow-lg active:scale-95 transition-all shrink-0 cursor-pointer" 
                     style={{backgroundColor: isEffectiveBlack ? '#FFFFFF' : primaryColor, color: isEffectiveBlack ? '#000000' : '#FFF'}}
@@ -667,6 +693,15 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
                     {tPrayer('saveChanges', language)}
                 </button>
             </div>
+
+            {/* Spotlight Guidance Tour for Prayer Settings Modal */}
+            <CommunitySpotlightGuide
+                guideKey="prayer_settings_modal_spotlight"
+                steps={PRAYER_SETTINGS_MODAL_STEPS}
+                isOpen={showGuide}
+                onClose={() => setShowGuide(false)}
+                isEn={language === 'en'}
+            />
         </div>
     );
 };

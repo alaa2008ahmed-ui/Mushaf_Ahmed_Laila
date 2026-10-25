@@ -29,7 +29,7 @@ const PrayerTimesDateSearch: React.FC<PrayerTimesDateSearchProps> = ({
     const borderColor = cardBorderColor || (isDefaultTheme ? '#000000' : (isBlackTheme ? '#FFFFFF' : primaryColor));
 
     return (
-        <div dir={dir} className="flex items-center justify-center gap-2 px-1">
+        <div id="prayer-date-search-container" dir={dir} className="flex items-center justify-center gap-2 px-1">
             <button 
                 onClick={handleManualSearch} 
                 className="text-sm font-black px-4 py-3 rounded-xl shadow-xs active:scale-95 transition-all cursor-pointer shrink-0" 

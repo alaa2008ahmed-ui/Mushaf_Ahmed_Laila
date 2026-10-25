@@ -4,8 +4,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
     Home, BookOpen, Headphones, Clock, Calendar, Brain, 
     Mic, Settings, Palette, MessageCircle, X, ChevronLeft, ChevronRight,
-    Menu, Info, HelpCircle, Star, Type, Bell, Compass, Search, Trophy,
-    ScrollText
+    Menu, Info, HelpCircle, Star, Type, Bell, Compass, Search,
+    ScrollText, Award
 } from 'lucide-react';
 import { THEMES } from './QuranReader/constants';
 import { useShowNewBadge, useSeenPages, markPageAsSeen } from '../utils/badgeManager';
@@ -53,8 +53,7 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onNavigate, onOpen
     };
 
     const menuItems = [
-        { id: 'community', label: t('menu.community', 'مجتمع التواصل'), icon: MessageCircle, color: '#10b981', description: t('sidemenu.community_desc', 'التواصل والمحادثات مع القراء والحفاظ من جميع أنحاء العالم.') },
-        { id: 'ahl-al-quran', label: t('menu.ahl_al_quran', 'أهل القرآن (لوحة الشرف)'), icon: Trophy, color: '#f59e0b', description: t('sidemenu.ahl_al_quran_desc', 'لوحة صدارة وتنافس محمود لقراء القرآن الكريم مع تحديث شهري للأجزاء والختمات.') },
+        { id: 'ten-promised', label: t('menu.ten_promised', 'العشرة المبشرون'), icon: Award, color: '#10b981', description: t('sidemenu.ten_promised_desc', 'سير وأحوال وفضائل ومواقف العشرة المبشرين بالجنة.') },
         { id: 'prophetic-seerah', label: t('menu.prophetic_seerah', 'السيرة النبوية'), icon: ScrollText, color: '#f59e0b', description: t('sidemenu.prophetic_seerah_desc', 'خط زمني تفاعلي لمحطات السيرة العطرة والعبر المستفادة.') },
         { id: 'search', label: t('sidemenu.search', 'البحث المتقدم'), icon: Search, color: '#14b8a6', description: t('sidemenu.search_desc', 'البحث عن آية، أو دعاء، أو أذكار.') },
         { id: 'habit-tracker', label: t('menu.habit_tracker', 'مربّي العبادات'), icon: Calendar, color: '#ec4899', description: t('sidemenu.habit_tracker_desc', 'متابعة الصلاة وتلاوة القرآن والأذكار والأهداف اليومية.') },
@@ -141,7 +140,7 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onNavigate, onOpen
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <span className="font-bold text-[15px]">{item.label}</span>
-                                            {showNewBadges && (item.id === 'community' || item.id === 'ahl-al-quran' || item.id === 'prophetic-seerah') && !isPageSeen(item.id) && (
+                                            {showNewBadges && (item.id === 'prophetic-seerah' || item.id === 'ten-promised') && !isPageSeen(item.id) && (
                                                 <span 
                                                     onClick={(e) => {
                                                         e.stopPropagation();

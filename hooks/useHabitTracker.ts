@@ -174,6 +174,59 @@ export interface DailyScoreBreakdown {
   customPoints: number;
 }
 
+/**
+ * المعايير الرسمية لمعدل تلاوة القرآن الكريم وفق طبعة مجمع الملك فهد لطباعة المصحف الشريف بالمدينة المنورة:
+ * - عدد صفحات المصحف الشريف: 604 صفحات (بمعدل 20 صفحة لكل جزء، و15 سطراً للصفحة القياسية بمتوسط ~75 كلمة).
+ * - المعدل الرسمي المعتمد لقراءة الصفحة الواحدة (مرتبة الحدر المتقن): دقيقة واحدة (60 ثانية) للصفحة = 20 دقيقة للجزء.
+ * - النطاق الزمني المعتمد لقراءة الجزء الكامل: يبدأ من 10 دقائق (حدر سريع متقن = 30 ثانية كحد أدنى للصفحة القياسية)
+ *   إلى 20 دقيقة فأكثر (الحدر المعتاد والتدوير والترتيل).
+ */
+export const QURAN_READING_STANDARDS = {
+  TOTAL_MUSHAF_PAGES: 604,
+  PAGES_PER_JUZ: 20,
+  STANDARD_WORDS_PER_PAGE: 75,
+  STANDARD_SECONDS_PER_PAGE: 60,
+  MIN_MINUTES_PER_JUZ: 10,
+  STANDARD_MINUTES_PER_JUZ: 20,
+  MIN_SECONDS_PER_STANDARD_PAGE: 30,
+  MIN_SECONDS_SHORT_PAGE: 15,
+  MIN_AUTO_SCROLL_SECONDS: 3,
+  TRANSIENT_SKIM_RESET_SECONDS: 6,
+} as const;
+
+interface VerifiedQuranSyncData {
+  pages: number[];
+  totalVerifiedSeconds: number;
+}
+
+const getVerifiedSyncKey = (date: string) => `quran_verified_pages_v2_${date}`;
+
+const readVerifiedSyncData = (date: string): VerifiedQuranSyncData => {
+  try {
+    const raw = localStorage.getItem(getVerifiedSyncKey(date));
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && Array.isArray(parsed.pages)) {
+        return {
+          pages: parsed.pages.filter((n: any) => typeof n === 'number' && n >= 1 && n <= 604),
+          totalVerifiedSeconds: Number(parsed.totalVerifiedSeconds) || 0,
+        };
+      }
+    }
+  } catch (e) {}
+  return { pages: [], totalVerifiedSeconds: 0 };
+};
+
+const writeVerifiedSyncData = (date: string, data: VerifiedQuranSyncData) => {
+  try {
+    localStorage.setItem(getVerifiedSyncKey(date), JSON.stringify(data));
+  } catch (e) {}
+};
+
+export const getVerifiedPagesReadForDate = (date: string): number[] => {
+  return readVerifiedSyncData(date).pages;
+};
+
 interface HabitTrackerState {
   records: Record<string, DailyRecord>;
   customHabits: CustomHabit[];
@@ -184,7 +237,7 @@ interface HabitTrackerState {
   toggleHabit: (date: string, category: HabitCategory, habitId: string) => void;
   setHabitStatus: (date: string, category: HabitCategory, habitId: string, status: boolean) => void;
   setQuranPages: (date: string, pages: number) => void;
-  recordQuranPageRead: (pageNum: number) => void;
+  recordQuranPageRead: (pageNum: number, verifiedSeconds?: number, isAutoScroll?: boolean) => void;
   recordAdhkarRead: (type: 'sabah' | 'masaa' | 'salah' | 'istighfar' | 'adia') => void;
   getRecord: (date: string) => DailyRecord;
   getStreak: (category: HabitCategory, habitId: string) => number;
@@ -267,38 +320,51 @@ export const useHabitTracker = create<HabitTrackerState>()(
       },
 
       setQuranPages: (date, pages) => {
+        const clampedPages = Math.max(0, Math.min(QURAN_READING_STANDARDS.TOTAL_MUSHAF_PAGES, Math.floor(Number(pages) || 0)));
+        const syncData = readVerifiedSyncData(date);
+        if (clampedPages === 0) {
+          writeVerifiedSyncData(date, { pages: [], totalVerifiedSeconds: 0 });
+        } else if (clampedPages < syncData.pages.length) {
+          writeVerifiedSyncData(date, {
+            pages: syncData.pages.slice(0, clampedPages),
+            totalVerifiedSeconds: syncData.totalVerifiedSeconds,
+          });
+        }
+
         set((state) => {
           const currentRecord: DailyRecord = state.records[date] 
             ? JSON.parse(JSON.stringify(state.records[date])) 
             : JSON.parse(JSON.stringify(defaultRecord));
           if (!currentRecord.quran) currentRecord.quran = { ...defaultRecord.quran };
-          currentRecord.quran.pages = pages;
-          if (pages > 0) {
-            currentRecord.quran.completed = true;
-          }
+          currentRecord.quran.pages = clampedPages;
+          currentRecord.quran.completed = clampedPages > 0;
           return { records: { ...state.records, [date]: currentRecord } };
         });
       },
 
-      recordQuranPageRead: (pageNum) => {
+      recordQuranPageRead: (pageNum, verifiedSeconds = 0, isAutoScroll = false) => {
         if (!get().autoSyncEnabled) return;
-        if (!pageNum || pageNum < 1 || pageNum > 604) return;
-        const today = moment().format('YYYY-MM-DD');
-        const storageKey = `quran_pages_read_${today}`;
-        let pagesSet: number[] = [];
-        try {
-          const saved = localStorage.getItem(storageKey);
-          if (saved) pagesSet = JSON.parse(saved);
-        } catch (e) {}
+        if (!pageNum || pageNum < 1 || pageNum > QURAN_READING_STANDARDS.TOTAL_MUSHAF_PAGES) return;
+        // في التمرير التلقائي يتم اعتماد كافة أوقات التمرير التلقائي، أما التمرير اليدوي فيشترط حد القراءة الفعلي (10 دقائق فأكثر للجزء)
+        const minAllowedSeconds = isAutoScroll
+          ? QURAN_READING_STANDARDS.MIN_AUTO_SCROLL_SECONDS
+          : QURAN_READING_STANDARDS.MIN_SECONDS_SHORT_PAGE;
+        if (verifiedSeconds < minAllowedSeconds) return;
 
-        if (!pagesSet.includes(pageNum)) {
-          pagesSet.push(pageNum);
-          try {
-            localStorage.setItem(storageKey, JSON.stringify(pagesSet));
-          } catch (e) {}
+        const today = moment().format('YYYY-MM-DD');
+        const syncData = readVerifiedSyncData(today);
+
+        // عدم تكرار احتساب نفس الصفحة في نفس اليوم عند العودة إليها أو التمرير البسيط
+        if (syncData.pages.includes(pageNum)) {
+          return;
         }
 
-        const distinctCount = pagesSet.length;
+        const updatedSync: VerifiedQuranSyncData = {
+          pages: [...syncData.pages, pageNum],
+          totalVerifiedSeconds: syncData.totalVerifiedSeconds + verifiedSeconds,
+        };
+        writeVerifiedSyncData(today, updatedSync);
+
         set((state) => {
           const currentRecord: DailyRecord = state.records[today] 
             ? JSON.parse(JSON.stringify(state.records[today])) 
@@ -306,12 +372,9 @@ export const useHabitTracker = create<HabitTrackerState>()(
           if (!currentRecord.quran) currentRecord.quran = { ...defaultRecord.quran };
           
           const currentPages = currentRecord.quran.pages || 0;
-          if (distinctCount > currentPages) {
-            currentRecord.quran.pages = distinctCount;
-          }
-          if (currentRecord.quran.pages > 0) {
-            currentRecord.quran.completed = true;
-          }
+          const nextPages = Math.min(QURAN_READING_STANDARDS.TOTAL_MUSHAF_PAGES, currentPages + 1);
+          currentRecord.quran.pages = nextPages;
+          currentRecord.quran.completed = nextPages > 0;
           return { records: { ...state.records, [today]: currentRecord } };
         });
       },
@@ -509,6 +572,29 @@ export const useHabitTracker = create<HabitTrackerState>()(
     }),
     {
       name: 'habit-tracker-storage',
+      onRehydrateStorage: () => (state) => {
+        if (!state) return;
+        try {
+          if (localStorage.getItem('quran_sync_migrated_v2') === 'true') return;
+          const today = moment().format('YYYY-MM-DD');
+          const legacyKey = `quran_pages_read_${today}`;
+          const legacyRaw = localStorage.getItem(legacyKey);
+          if (legacyRaw) {
+            const legacyPages = JSON.parse(legacyRaw);
+            const todayRecord = state.records?.[today];
+            // إذا كان عدد صفحات اليوم مطابقاً للعداد التلقائي القديم الخاطئ الناتج عن التمرير السريع، يتم تصفيره لبدء احتساب دقيق
+            if (
+              Array.isArray(legacyPages) &&
+              todayRecord?.quran &&
+              todayRecord.quran.pages === legacyPages.length
+            ) {
+              state.setQuranPages(today, 0);
+            }
+            localStorage.removeItem(legacyKey);
+          }
+          localStorage.setItem('quran_sync_migrated_v2', 'true');
+        } catch (e) {}
+      },
     }
   )
 );

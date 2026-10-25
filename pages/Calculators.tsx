@@ -8,7 +8,13 @@ import FitrAndUdhiyahCalculator from '../components/Calculators/FitrAndUdhiyahCa
 import { useLanguage } from '../context/LanguageContext';
 import { HelpCircle } from 'lucide-react';
 import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/CommunitySpotlightGuide';
-import { CALCULATOR_PAGE_STEPS } from '../components/Community/communityTourSteps';
+import { 
+    CALCULATOR_ZAKAT_STEPS, 
+    CALCULATOR_MAWARITH_STEPS, 
+    CALCULATOR_KAFFARAT_STEPS, 
+    CALCULATOR_FITR_STEPS,
+    CALCULATOR_UDHIYAH_STEPS
+} from '../components/Community/communityTourSteps';
 import { markPageAsSeen } from '../utils/badgeManager';
 
 interface CalculatorsProps {
@@ -28,14 +34,85 @@ const Calculators: React.FC<CalculatorsProps> = ({ onBack, onNavigate }) => {
             ? '#FFFFFF' 
             : (theme.palette?.[0] || '#000000'));
     const [activeTab, setActiveTab] = useState<'zakat' | 'mawarith' | 'kaffarat' | 'fitr-udhiyah'>('zakat');
+    const [fitrUdhiyahSubTab, setFitrUdhiyahSubTab] = useState<'fitr' | 'udhiyah'>('fitr');
     const [showGuide, setShowGuide] = useState(false);
 
+    // Initial check for Zakat guide on first entry
     useEffect(() => {
         markPageAsSeen('calculators');
-        if (!getGuideSeen('calculator_page_spotlight')) {
-            setShowGuide(true);
+        if (!getGuideSeen('calc_tab_zakat_spotlight')) {
+            const timer = setTimeout(() => {
+                setShowGuide(true);
+            }, 300);
+            return () => clearTimeout(timer);
         }
     }, []);
+
+    const getGuideKeyForTab = (tabId: 'zakat' | 'mawarith' | 'kaffarat' | 'fitr-udhiyah', subTab: 'fitr' | 'udhiyah') => {
+        if (tabId === 'fitr-udhiyah') {
+            return subTab === 'udhiyah' ? 'calc_subtab_udhiyah_spotlight' : 'calc_subtab_fitr_spotlight';
+        }
+        return `calc_tab_${tabId}_spotlight`;
+    };
+
+    const handleTabChange = (tabId: 'zakat' | 'mawarith' | 'kaffarat' | 'fitr-udhiyah') => {
+        if (activeTab === tabId) return;
+        setShowGuide(false);
+        setActiveTab(tabId);
+        
+        const guideKey = getGuideKeyForTab(tabId, fitrUdhiyahSubTab);
+        if (!getGuideSeen(guideKey)) {
+            setTimeout(() => {
+                setShowGuide(true);
+            }, 250);
+        }
+    };
+
+    const handleFitrUdhiyahSubTabChange = (sub: 'fitr' | 'udhiyah') => {
+        if (fitrUdhiyahSubTab === sub) return;
+        setShowGuide(false);
+        setFitrUdhiyahSubTab(sub);
+        
+        const guideKey = sub === 'udhiyah' ? 'calc_subtab_udhiyah_spotlight' : 'calc_subtab_fitr_spotlight';
+        if (!getGuideSeen(guideKey)) {
+            setTimeout(() => {
+                setShowGuide(true);
+            }, 250);
+        }
+    };
+
+    const getActiveGuideConfig = () => {
+        switch (activeTab) {
+            case 'zakat':
+                return {
+                    key: 'calc_tab_zakat_spotlight',
+                    steps: CALCULATOR_ZAKAT_STEPS,
+                };
+            case 'mawarith':
+                return {
+                    key: 'calc_tab_mawarith_spotlight',
+                    steps: CALCULATOR_MAWARITH_STEPS,
+                };
+            case 'kaffarat':
+                return {
+                    key: 'calc_tab_kaffarat_spotlight',
+                    steps: CALCULATOR_KAFFARAT_STEPS,
+                };
+            case 'fitr-udhiyah':
+                if (fitrUdhiyahSubTab === 'udhiyah') {
+                    return {
+                        key: 'calc_subtab_udhiyah_spotlight',
+                        steps: CALCULATOR_UDHIYAH_STEPS,
+                    };
+                }
+                return {
+                    key: 'calc_subtab_fitr_spotlight',
+                    steps: CALCULATOR_FITR_STEPS,
+                };
+        }
+    };
+
+    const activeGuide = getActiveGuideConfig();
 
     return (
         <div 
@@ -69,6 +146,7 @@ const Calculators: React.FC<CalculatorsProps> = ({ onBack, onNavigate }) => {
                         {/* أيقونة الدليل والمنزل على يسار/يمين النص للعودة إلى الصفحة الرئيسية */}
                         <div className={`absolute ${isEn ? 'right-0' : 'left-0'} flex items-center gap-1`}>
                             <button
+                                id="btn-calc-help"
                                 type="button"
                                 onClick={() => setShowGuide(true)}
                                 className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
@@ -93,7 +171,7 @@ const Calculators: React.FC<CalculatorsProps> = ({ onBack, onNavigate }) => {
             </header>
 
             {/* Tabs */}
-            <div className="flex px-1.5 sm:px-4 pt-2.5 sm:pt-3 gap-1 sm:gap-2 font-cairo z-10 shrink-0">
+            <div id="calc-tabs-bar" className="flex px-1.5 sm:px-4 pt-2.5 sm:pt-3 gap-1 sm:gap-2 font-cairo z-10 shrink-0">
                 {[
                     { id: 'zakat', label: isEn ? 'Zakat' : 'الزكاة' },
                     { id: 'mawarith', label: isEn ? 'Inheritance' : 'المواريث' },
@@ -102,7 +180,7 @@ const Calculators: React.FC<CalculatorsProps> = ({ onBack, onNavigate }) => {
                 ].map(tab => (
                     <button 
                         key={tab.id}
-                        onClick={() => setActiveTab(tab.id as any)}
+                        onClick={() => handleTabChange(tab.id as any)}
                         className={`flex-1 py-1.5 sm:py-2 px-1 sm:px-2 rounded-t-xl font-bold transition-all duration-300 flex items-center justify-center cursor-pointer text-center
                             ${activeTab === tab.id 
                                 ? (isDefaultTheme 
@@ -127,20 +205,26 @@ const Calculators: React.FC<CalculatorsProps> = ({ onBack, onNavigate }) => {
             </div>
 
             {/* Main Content */}
-            <main className="flex-1 overflow-y-auto px-4 pb-4 hide-scrollbar font-cairo bg-gray-50/50 dark:bg-black/20">
+            <main id="calc-scroll-container" className="flex-1 overflow-y-auto px-4 pb-4 hide-scrollbar font-cairo bg-gray-50/50 dark:bg-black/20">
                 <div className="max-w-3xl mx-auto pt-2">
                     {activeTab === 'zakat' && <ZakatCalculator cardBorderColor={cardBorderColor} />}
                     {activeTab === 'mawarith' && <MawarithCalculator cardBorderColor={cardBorderColor} />}
                     {activeTab === 'kaffarat' && <KaffaratCalculator cardBorderColor={cardBorderColor} />}
-                    {activeTab === 'fitr-udhiyah' && <FitrAndUdhiyahCalculator cardBorderColor={cardBorderColor} />}
+                    {activeTab === 'fitr-udhiyah' && (
+                        <FitrAndUdhiyahCalculator 
+                            cardBorderColor={cardBorderColor}
+                            subTab={fitrUdhiyahSubTab}
+                            onSubTabChange={handleFitrUdhiyahSubTabChange}
+                        />
+                    )}
                 </div>
                 <div className="shrink-0 w-full h-6"></div>
             </main>
 
             {/* Interactive Spotlight Guide */}
             <CommunitySpotlightGuide
-                guideKey="calculator_page_spotlight"
-                steps={CALCULATOR_PAGE_STEPS}
+                guideKey={activeGuide.key}
+                steps={activeGuide.steps}
                 isOpen={showGuide}
                 onClose={() => setShowGuide(false)}
                 isEn={isEn}
@@ -150,3 +234,4 @@ const Calculators: React.FC<CalculatorsProps> = ({ onBack, onNavigate }) => {
 };
 
 export default Calculators;
+

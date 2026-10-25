@@ -28,9 +28,18 @@ import AdhanAlertModal from './components/PrayerTimes/AdhanAlertModal';
 import { ScreenOrientation } from '@capacitor/screen-orientation';
 import { APP_VERSION, REMOTE_VERSION_URL, GOOGLE_PLAY_URL } from './constants';
 import UpdateNotificationModal from './components/UpdateNotificationModal';
-import { InAppChatNotification } from './components/InAppChatNotification';
 import { recordAppLaunch, markPageAsSeen } from './utils/badgeManager';
-import InitialOnboardingModal from './components/Community/InitialOnboardingModal';
+import WirdAlertModal from './components/DailyWird/WirdAlertModal';
+import { 
+  WirdAlertData, 
+  getActiveWirdProfile, 
+  calculateWirdStatus, 
+  getWirdDayRange, 
+  getWirdTotalDays, 
+  buildWirdNotificationContent, 
+  checkWirdAlertOnAppResume, 
+  markWirdAlertShownToday 
+} from './utils/dailyWirdNotificationService';
 
 // --- Main App Component ---
 function App() {
@@ -133,8 +142,8 @@ function App() {
       'home', 'quran', 'quran-landscape', 'quran-download', 'salah-adhkar', 'calendar', 'listen', 'tasbeeh', 
       'hajj-umrah', 'hisn-muslim', 'prayer-times', 'monthly-prayer-times', 'qibla', 
       'sabah-masaa', 'adia', 'nawawi', 'calculators', 'voice-control', 'daily-wird', 'memorization',
-      'phone-notifications', 'search', 'asmaul-husna', 'habit-tracker', 'community', 'direct-chat', 'group-chat', 'ahl-al-quran', 'others', 'islamic-sites',
-      'prophetic-seerah'
+      'phone-notifications', 'search', 'asmaul-husna', 'habit-tracker', 'others', 'islamic-sites',
+      'prophetic-seerah', 'ten-promised'
     ];
 
     if (pageId === 'phone-notifications') {
@@ -164,14 +173,6 @@ function App() {
         const current = prev[prev.length - 1];
         if (current === pageId) return prev;
 
-        // 1. Direct or Group Chat inside Community
-        if (pageId === 'direct-chat' || pageId === 'group-chat') {
-          const communityIdx = prev.lastIndexOf('community');
-          if (communityIdx !== -1) {
-            return [...prev.slice(0, communityIdx + 1), pageId];
-          }
-          return ['home', 'community', pageId];
-        }
 
         // 2. Monthly Prayer Times inside Prayer Times
         if (pageId === 'monthly-prayer-times') {
@@ -272,6 +273,11 @@ function App() {
         const occasionId = extra?.occasionId;
         if (occasionId) {
           window.dispatchEvent(new CustomEvent('show-islamic-occasion-alert', { detail: { occasionId } }));
+        } else if (type === 'daily-wird' || page === 'daily-wird') {
+          handleNavigate('daily-wird');
+          if (!Capacitor.isNativePlatform()) {
+            window.dispatchEvent(new CustomEvent('show-wird-alert', { detail: extra }));
+          }
         } else if (page) {
           handleNavigate(page, params);
         } else if (type === 'iqama') {
@@ -283,6 +289,11 @@ function App() {
         const extra = notification.extra;
         if (extra?.type === 'iqama') {
           playNotificationSound('/assets/audio/chime.mp3', true);
+        } else if (extra?.type === 'daily-wird') {
+          playNotificationSound('/assets/audio/chime.mp3', true);
+          if (!Capacitor.isNativePlatform()) {
+            window.dispatchEvent(new CustomEvent('show-wird-alert', { detail: extra }));
+          }
         } else if (extra?.playSound && extra?.soundFile) {
           playNotificationSound(extra.soundFile, true);
         }
@@ -379,7 +390,6 @@ function App() {
     else if (action === 'open_memorization' || (action === 'ui_click' && params?.label?.includes('تحفيظ'))) handleNavigate('memorization');
     else if (action === 'open_quran' || (action === 'ui_click' && params?.label?.includes('مصحف'))) handleNavigate('quran');
     else if (action === 'open_voice_control' || (action === 'ui_click' && params?.label?.includes('تحكم صوتي'))) handleNavigate('voice-control');
-    else if (action === 'open_ahl_al_quran' || (action === 'ui_click' && params?.label?.includes('اهل القران'))) handleNavigate('ahl-al-quran');
     else if (action === 'set_orientation_horizontal' || action === 'set_orientation_vertical') {
       window.dispatchEvent(new CustomEvent('voice-command', { detail: { action, text, params } }));
     }
@@ -463,6 +473,58 @@ function AppContent({
   const { setCurrentPage: setVoicePage } = useVoiceControl();
   const { theme, themeKey, applyPresetTheme, setCurrentPage: setThemePage } = useTheme();
   const { activeIqamaAlert, dismissIqamaAlert, activeAdhanAlert, dismissAdhanAlert } = usePrayerTimes();
+  const [activeWirdAlert, setActiveWirdAlert] = useState<WirdAlertData | null>(null);
+
+  useEffect(() => {
+    // Only listen for in-app modal alert on web/browser (never in native APK)
+    if (Capacitor.isNativePlatform()) return;
+
+    const handleWirdAlertEvent = (e: any) => {
+      const detail = e.detail;
+      if (detail) {
+        if (detail.title && detail.startPage !== undefined) {
+          setActiveWirdAlert(detail);
+          return;
+        }
+        const profile = getActiveWirdProfile();
+        if (profile) {
+          const status = calculateWirdStatus(profile);
+          const dayNum = detail.dayNumber || status.targetDayNumber;
+          const range = getWirdDayRange(dayNum, profile);
+          const missed = detail.missedCount !== undefined ? detail.missedCount : status.missedDaysCount;
+          const content = buildWirdNotificationContent(profile, dayNum, missed);
+          setActiveWirdAlert({
+            profileId: profile.id,
+            profileName: profile.name,
+            currentDay: dayNum,
+            totalDays: getWirdTotalDays(profile),
+            startPage: range.start,
+            endPage: range.end,
+            missedDaysCount: missed,
+            title: detail.title || content.title,
+            message: detail.message || detail.body || content.body,
+            soundFileName: 'chime.mp3'
+          });
+        }
+      }
+    };
+
+    window.addEventListener('show-wird-alert', handleWirdAlertEvent);
+    return () => window.removeEventListener('show-wird-alert', handleWirdAlertEvent);
+  }, []);
+
+  // Check on app launch/resume for uncompleted wird alert (browser/web only, never in native APK)
+  useEffect(() => {
+    if (Capacitor.isNativePlatform()) return;
+
+    const timer = setTimeout(() => {
+      const alertData = checkWirdAlertOnAppResume();
+      if (alertData) {
+        setActiveWirdAlert(alertData);
+      }
+    }, 2500);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     setVoicePage(page);
@@ -482,47 +544,6 @@ function AppContent({
 
   const [isLandscape, setIsLandscape] = useState(window.innerWidth > window.innerHeight);
 
-  const [showInitialOnboarding, setShowInitialOnboarding] = useState(() => {
-    try {
-      // 1. If user already registered in Community (has a valid username), NEVER show again
-      const savedUserV9 = localStorage.getItem('mushaf_community_current_user_v9');
-      if (savedUserV9) {
-        const parsed = JSON.parse(savedUserV9);
-        if (parsed?.username && parsed.username.trim().length >= 2) {
-          return false;
-        }
-      }
-      const savedUserLegacy = localStorage.getItem('mushaf_community_user');
-      if (savedUserLegacy) {
-        const parsed = JSON.parse(savedUserLegacy);
-        if (parsed?.username && parsed.username.trim().length >= 2) {
-          return false;
-        }
-      }
-
-      // 2. If already marked completed, do not show
-      const completed = localStorage.getItem('initial_community_onboarding_completed');
-      if (completed === 'true') return false;
-
-      // 3. Cancel count check:
-      // If cancelled once before, it appears again "مرة أخرى فقط" (cancelCount === 1).
-      // If cancelled >= 2 times, do not show again.
-      const cancelCount = parseInt(localStorage.getItem('initial_onboarding_cancel_count') || '0', 10);
-      if (cancelCount >= 2) {
-        return false;
-      }
-
-      return true;
-    } catch (e) {
-      return false;
-    }
-  });
-
-  useEffect(() => {
-    const handleOpen = () => setShowInitialOnboarding(true);
-    window.addEventListener('open-initial-onboarding', handleOpen);
-    return () => window.removeEventListener('open-initial-onboarding', handleOpen);
-  }, []);
 
   useEffect(() => {
     const handleResize = () => {
@@ -600,7 +621,6 @@ function AppContent({
       
       <RateUs />
       <MawlidNotification />
-      <InAppChatNotification currentPage={page} navParams={navParams} onNavigate={handleNavigate} />
 
       {activeAdhanAlert && (
         <AdhanAlertModal
@@ -616,13 +636,32 @@ function AppContent({
         />
       )}
 
-      {showInitialOnboarding && (
-        <InitialOnboardingModal 
-          isOpen={showInitialOnboarding}
-          onClose={() => setShowInitialOnboarding(false)}
-          onNavigate={handleNavigate}
+      {!Capacitor.isNativePlatform() && activeWirdAlert && (
+        <WirdAlertModal
+          alert={activeWirdAlert}
+          onDismiss={() => {
+            if (activeWirdAlert?.profileId) {
+              markWirdAlertShownToday(activeWirdAlert.profileId);
+            }
+            setActiveWirdAlert(null);
+          }}
+          onStartReading={(startPage, mode = 'mushaf') => {
+            if (activeWirdAlert?.profileId) {
+              markWirdAlertShownToday(activeWirdAlert.profileId);
+            }
+            setActiveWirdAlert(null);
+            handleNavigate('quran', { page: startPage, isWird: true, readingMode: mode });
+          }}
+          onOpenDailyWird={() => {
+            if (activeWirdAlert?.profileId) {
+              markWirdAlertShownToday(activeWirdAlert.profileId);
+            }
+            setActiveWirdAlert(null);
+            handleNavigate('daily-wird');
+          }}
         />
       )}
+
     </div>
   );
 }

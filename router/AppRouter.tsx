@@ -21,13 +21,10 @@ import Memorization from '../pages/Memorization';
 import GlobalSearch from '../pages/GlobalSearch';
 import AsmaulHusna from '../pages/AsmaulHusna';
 import HabitTracker from '../pages/HabitTracker';
-import CommunityPage from '../pages/CommunityPage';
-import DirectChatPage from '../pages/DirectChatPage';
-import GroupChatPage from '../pages/GroupChatPage';
-import AhlAlQuranPage from '../pages/AhlAlQuranPage';
 import OthersPage from '../pages/OthersPage';
 import IslamicSitesPage from '../pages/IslamicSitesPage';
 import PropheticSeerahPage from '../pages/PropheticSeerahPage';
+import TenPromisedPage from '../pages/TenPromisedPage';
 
 interface AppRouterProps {
     page: string;
@@ -84,20 +81,14 @@ const AppRouter: React.FC<AppRouterProps> = ({ page, onBack, onNavigate, onOpenT
         return <AsmaulHusna onBack={onBack} onNavigate={onNavigate} />;
       case 'habit-tracker':
         return <HabitTracker onBack={onBack} onNavigate={onNavigate} />;
-      case 'community':
-        return <CommunityPage onBack={onBack} onNavigate={onNavigate} initialTab={navParams?.initialTab || navParams?.returnTab} />;
-      case 'direct-chat':
-        return <DirectChatPage partnerUserId={navParams?.partnerUserId || ''} onBack={onBack} onNavigate={onNavigate} />;
-      case 'group-chat':
-        return <GroupChatPage groupId={navParams?.groupId || ''} onBack={onBack} onNavigate={onNavigate} />;
-      case 'ahl-al-quran':
-        return <AhlAlQuranPage onBack={onBack} onNavigate={onNavigate} />;
       case 'others':
         return <OthersPage onBack={onBack} onNavigate={onNavigate} onOpenThemes={onOpenThemes} />;
       case 'islamic-sites':
         return <IslamicSitesPage onBack={onBack} onNavigate={onNavigate} />;
       case 'prophetic-seerah':
         return <PropheticSeerahPage onBack={onBack} onNavigate={onNavigate} navParams={navParams} />;
+      case 'ten-promised':
+        return <TenPromisedPage onBack={onBack} onNavigate={onNavigate} onOpenThemes={onOpenThemes} navParams={navParams} />;
       case 'home':
       default:
         return <MainMenu onNavigate={onNavigate} onOpenThemes={onOpenThemes} onOpenSideMenu={onOpenSideMenu} />;

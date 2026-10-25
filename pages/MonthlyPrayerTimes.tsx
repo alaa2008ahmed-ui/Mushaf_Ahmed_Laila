@@ -13,6 +13,8 @@ import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Capacitor } from '@capacitor/core';
 import { registerBackInterceptor } from '../hooks/useBackButton';
 import { useLanguage } from '../context/LanguageContext';
+import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/CommunitySpotlightGuide';
+import { MONTHLY_PRAYER_TIMES_STEPS } from '../components/Community/communityTourSteps';
 import {
     tPrayer,
     getPrayerDisplayName,
@@ -55,6 +57,7 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
     const [isPickerOpen, setIsPickerOpen] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
     const [isSharing, setIsSharing] = useState(false);
+    const [showGuide, setShowGuide] = useState(false);
     const pdfTableRef = useRef<HTMLDivElement>(null);
     const todayRowRef = useRef<HTMLTableRowElement>(null);
 
@@ -64,6 +67,12 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
     const secondaryColor = isDefaultTheme ? '#000000' : (isBlackAndWhite ? '#FFFFFF' : theme.palette[1]);
     const topBarTextColor = isDefaultTheme ? '#000000' : (theme.topBarText || (isBlackAndWhite ? '#FFFFFF' : theme.palette[0]));
     const tableBorderColor = isDefaultTheme ? '#000000' : (isBlackAndWhite ? '#FFFFFF' : (theme.palette?.[0] || '#000000'));
+
+    useEffect(() => {
+        if (!getGuideSeen('monthly_prayer_times_spotlight')) {
+            setShowGuide(true);
+        }
+    }, []);
 
     useEffect(() => {
         const interceptor = () => {
@@ -328,6 +337,7 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
                                 <i className={`fa-solid ${isRTL ? 'fa-arrow-right' : 'fa-arrow-left'} text-lg sm:text-xl`}></i>
                             </button>
                             <button 
+                                id="btn-monthly-pdf"
                                 onClick={handleExportPDF}
                                 disabled={isExporting}
                                 className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer border"
@@ -353,6 +363,7 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
                         {/* End buttons: Share + ThemeLock + Home */}
                         <div className="flex items-center gap-1 shrink-0 z-10">
                             <button 
+                                id="btn-monthly-share"
                                 onClick={handleShare}
                                 disabled={isSharing}
                                 className="h-8 sm:h-9 px-2 sm:px-2.5 rounded-xl text-xs font-bold flex items-center gap-1 transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer border"
@@ -384,6 +395,7 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
             {/* Month Navigation */}
             <div className={`flex items-center justify-between px-4 py-1.5 ${isDefaultTheme ? 'bg-white' : 'themed-bg-alt'} border-b`} style={{ borderColor: tableBorderColor }} dir={dir}>
                 <button 
+                    id="btn-monthly-prev"
                     onClick={handlePrevMonth} 
                     className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
                     title={language === 'en' ? 'Previous Month' : 'الشهر السابق'}
@@ -392,6 +404,7 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
                 </button>
                 <div className="flex flex-col items-center gap-0.5">
                     <button 
+                        id="btn-monthly-picker"
                         onClick={() => setIsPickerOpen(true)}
                         className="text-base sm:text-lg font-bold flex items-center gap-2 px-3 py-0.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer" 
                         style={{ color: primaryColor }}
@@ -399,7 +412,7 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
                         <span>{monthNameDisplay}</span>
                         <Calendar size={16} />
                     </button>
-                    <div className="flex bg-black/5 dark:bg-white/5 p-0.5 rounded-lg border" style={{ borderColor: tableBorderColor }}>
+                    <div id="btn-monthly-calendar-toggle" className="flex bg-black/5 dark:bg-white/5 p-0.5 rounded-lg border" style={{ borderColor: tableBorderColor }}>
                         <button 
                             onClick={() => setCalendarType('hijri')}
                             className={`px-3 py-0.5 text-[10px] rounded-md transition-all cursor-pointer ${calendarType === 'hijri' ? 'themed-card shadow-sm font-bold' : 'opacity-50'}`}
@@ -417,6 +430,7 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
                     </div>
                 </div>
                 <button 
+                    id="btn-monthly-next"
                     onClick={handleNextMonth} 
                     className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
                     title={language === 'en' ? 'Next Month' : 'الشهر القادم'}
@@ -428,6 +442,7 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
             {/* Table */}
             <main className="flex-1 flex flex-col overflow-hidden p-2" dir={dir}>
                 <div 
+                    id="monthly-table-container"
                     className="max-w-4xl w-full mx-auto overflow-auto rounded-xl shadow-sm" 
                     style={{ 
                         border: `2px solid ${tableBorderColor}`, 
@@ -668,6 +683,14 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
                     </div>
                 </div>
             )}
+
+            <CommunitySpotlightGuide
+                guideKey="monthly_prayer_times_spotlight"
+                steps={MONTHLY_PRAYER_TIMES_STEPS}
+                isOpen={showGuide}
+                onClose={() => setShowGuide(false)}
+                isEn={language === 'en'}
+            />
         </div>
     );
 }

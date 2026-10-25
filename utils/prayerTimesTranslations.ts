@@ -463,8 +463,8 @@ export const PRAYER_TIMES_STRINGS: Record<string, { ar: string; en: string }> = 
   adhanModalTitle: { ar: 'حان الآن موعد أذان {p}', en: 'It is now time for {p} Adhan' },
   timeInfo: { ar: 'الوقت:', en: 'Time:' },
   adhanPropheticReminder: {
-    ar: '«الله أكبر الله أكبر.. لا تنس ذكر الله والصلاة على النبي ﷺ ودعاء الوسيلة» 🤲',
-    en: '«Allahu Akbar, Allahu Akbar.. Remember Allah, send blessings upon the Prophet ﷺ, and recite the supplication» 🤲'
+    ar: '«الله أكبر الله أكبر.. لا تنس ذكر الله والصلاة على النبي ﷺ ودعاء الوسيلة»',
+    en: '«Allahu Akbar, Allahu Akbar.. Remember Allah, send blessings upon the Prophet ﷺ, and recite the supplication»'
   },
   stopSound: { ar: 'إيقاف الصوت', en: 'Stop Audio' },
   doneClose: { ar: 'تم (إغلاق)', en: 'Done (Close)' },
@@ -473,8 +473,8 @@ export const PRAYER_TIMES_STRINGS: Record<string, { ar: string; en: string }> = 
   iqamaModalTitle: { ar: 'حان الآن موعد إقامة صلاة {p}', en: 'It is now time for {p} Iqama' },
   iqamaTimeSuffix: { ar: '(بعد {m} دقيقة من الأذان)', en: '({m} minutes after Adhan)' },
   iqamaPropheticReminder: {
-    ar: '«أُقيمت الصلاة.. استووا وتراصّوا واعتدلوا أثابكم الله» 🤲',
-    en: '«Salah has been established.. Straighten and close your ranks, may Allah reward you» 🤲'
+    ar: '«أُقيمت الصلاة.. استووا وتراصّوا واعتدلوا أثابكم الله»',
+    en: '«Salah has been established.. Straighten and close your ranks, may Allah reward you»'
   },
   replayTone: { ar: 'إعادة النغمة', en: 'Replay Tone' },
   performPrayer: { ar: 'أداء الصلاة', en: 'Perform Prayer' },

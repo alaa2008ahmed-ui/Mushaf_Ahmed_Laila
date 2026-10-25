@@ -5,6 +5,8 @@ import { RefreshCw, Scale, Info, HeartHandshake, ShieldCheck } from 'lucide-reac
 
 interface FitrAndUdhiyahCalculatorProps {
     cardBorderColor?: string;
+    subTab?: 'fitr' | 'udhiyah';
+    onSubTabChange?: (tab: 'fitr' | 'udhiyah') => void;
 }
 
 const GRAIN_TYPES = [
@@ -128,7 +130,11 @@ const DEFECT_CHECKLIST = [
     },
 ];
 
-const FitrAndUdhiyahCalculator: React.FC<FitrAndUdhiyahCalculatorProps> = ({ cardBorderColor: propCardBorderColor }) => {
+const FitrAndUdhiyahCalculator: React.FC<FitrAndUdhiyahCalculatorProps> = ({ 
+    cardBorderColor: propCardBorderColor,
+    subTab: propSubTab,
+    onSubTabChange: propOnSubTabChange
+}) => {
     const { theme, themeKey } = useTheme();
     const { language } = useLanguage();
     const isEn = language === 'en';
@@ -142,7 +148,12 @@ const FitrAndUdhiyahCalculator: React.FC<FitrAndUdhiyahCalculatorProps> = ({ car
             : (theme.palette?.[0] || '#000000')));
 
     // Mode: 'fitr' (Zakat al-Fitr) or 'udhiyah' (Udhiyah & Aqiqah)
-    const [subTab, setSubTab] = useState<'fitr' | 'udhiyah'>('fitr');
+    const [internalSubTab, setInternalSubTab] = useState<'fitr' | 'udhiyah'>('fitr');
+    const subTab = propSubTab !== undefined ? propSubTab : internalSubTab;
+    const setSubTab = (tab: 'fitr' | 'udhiyah') => {
+        if (propOnSubTabChange) propOnSubTabChange(tab);
+        setInternalSubTab(tab);
+    };
 
     // --- 1. Zakat al-Fitr States ---
     const [familyMembers, setFamilyMembers] = useState<string>('4');
@@ -221,7 +232,7 @@ const FitrAndUdhiyahCalculator: React.FC<FitrAndUdhiyahCalculatorProps> = ({ car
     return (
         <div className="space-y-5 animate-fade-in pb-8 font-cairo" dir={isEn ? 'ltr' : 'rtl'}>
             {/* Sub-Tabs Switcher */}
-            <div className="flex gap-2 p-1.5 rounded-2xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10">
+            <div id="fitr-udhiyah-subtabs" className="flex gap-2 p-1.5 rounded-2xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10">
                 <button
                     type="button"
                     onClick={() => setSubTab('fitr')}
@@ -264,6 +275,7 @@ const FitrAndUdhiyahCalculator: React.FC<FitrAndUdhiyahCalculatorProps> = ({ car
                     )}
                 </h2>
                 <button 
+                    id="btn-fitr-udhiyah-reset"
                     type="button"
                     onClick={clearAll} 
                     className="flex items-center gap-1 text-xs text-red-500 hover:bg-red-500/10 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer"
@@ -277,7 +289,7 @@ const FitrAndUdhiyahCalculator: React.FC<FitrAndUdhiyahCalculatorProps> = ({ car
             {subTab === 'fitr' && (
                 <div className="space-y-4">
                     {/* Input Card */}
-                    <div className="themed-card p-4 sm:p-5 rounded-2xl" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
+                    <div id="fitr-card-inputs" className="themed-card p-4 sm:p-5 rounded-2xl" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                         <div className="space-y-4">
                             {/* Family Members Count */}
                             <div>
@@ -400,7 +412,7 @@ const FitrAndUdhiyahCalculator: React.FC<FitrAndUdhiyahCalculatorProps> = ({ car
                     </div>
 
                     {/* Results Card */}
-                    <div className="themed-card p-4 sm:p-5 rounded-2xl bg-amber-500/10 border-amber-500/30" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
+                    <div id="fitr-card-results" className="themed-card p-4 sm:p-5 rounded-2xl bg-amber-500/10 border-amber-500/30" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                         <div className="flex items-center gap-2 mb-3 pb-2 border-b border-black/10 dark:border-white/10">
                             <Scale className="w-5 h-5 text-amber-600" />
                             <h3 className="font-black text-sm sm:text-base" style={{ color: theme.textColor }}>
@@ -469,7 +481,7 @@ const FitrAndUdhiyahCalculator: React.FC<FitrAndUdhiyahCalculatorProps> = ({ car
             {subTab === 'udhiyah' && (
                 <div className="space-y-4">
                     {/* Animal Selection & Shares */}
-                    <div className="themed-card p-4 sm:p-5 rounded-2xl" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
+                    <div id="udhiyah-card-animal" className="themed-card p-4 sm:p-5 rounded-2xl" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                         <h3 className="font-black text-sm mb-2 flex items-center gap-1.5" style={{ color: theme.textColor }}>
                             <i className="fa-solid fa-cow text-emerald-600"></i>
                             <span>{isEn ? '1. Livestock Type & Minimum Age Requirements' : '1. نوع بهيمة الأنعام والشروط السنية'}</span>
@@ -575,7 +587,7 @@ const FitrAndUdhiyahCalculator: React.FC<FitrAndUdhiyahCalculatorProps> = ({ car
                     </div>
 
                     {/* Thirds Distribution Calculator */}
-                    <div className="themed-card p-4 sm:p-5 rounded-2xl" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
+                    <div id="udhiyah-card-division" className="themed-card p-4 sm:p-5 rounded-2xl" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                         <h3 className="font-black text-sm mb-2 flex items-center gap-1.5" style={{ color: theme.textColor }}>
                             <Scale className="w-4 h-4 text-primary" />
                             <span>
@@ -628,7 +640,7 @@ const FitrAndUdhiyahCalculator: React.FC<FitrAndUdhiyahCalculatorProps> = ({ car
                     </div>
 
                     {/* Defect Checklist */}
-                    <div className="themed-card p-4 sm:p-5 rounded-2xl" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
+                    <div id="udhiyah-card-defects" className="themed-card p-4 sm:p-5 rounded-2xl" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                         <div className="flex justify-between items-center mb-2">
                             <h3 className="font-black text-sm flex items-center gap-1.5" style={{ color: theme.textColor }}>
                                 <ShieldCheck className="w-4 h-4 text-emerald-600" />
@@ -673,7 +685,7 @@ const FitrAndUdhiyahCalculator: React.FC<FitrAndUdhiyahCalculatorProps> = ({ car
                     </div>
 
                     {/* Aqiqah Section */}
-                    <div className="themed-card p-4 sm:p-5 rounded-2xl" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
+                    <div id="udhiyah-card-aqiqah" className="themed-card p-4 sm:p-5 rounded-2xl" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                         <h3 className="font-black text-sm mb-2 flex items-center gap-1.5" style={{ color: theme.textColor }}>
                             <HeartHandshake className="w-4 h-4 text-pink-500" />
                             <span>{isEn ? '4. Newborn Aqiqah Calculator' : '4. حاسبة العقيقة عن المواليد'}</span>

@@ -55,7 +55,6 @@
     "cordova-plugin-device": "^3.0.0",
     "cordova-plugin-local-notification": "^1.2.3",
     "dom-to-image-more": "^3.7.2",
-    "firebase": "^12.19.0",
     "framer-motion": "^12.34.3",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.1",

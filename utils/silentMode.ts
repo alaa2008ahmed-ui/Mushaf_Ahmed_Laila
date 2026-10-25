@@ -20,6 +20,7 @@ interface AutoSilentPluginInterface {
   requestBatteryOptimization(): Promise<void>;
   playTone(options: { path: string }): Promise<{ success: boolean; fallbackNeeded?: boolean; error?: string }>;
   stopTone(): Promise<{ success: boolean }>;
+  setAppLanguage?(options: { language: string }): Promise<{ success: boolean; language: string }>;
 }
 
 export const AutoSilentMode = registerPlugin<AutoSilentPluginInterface>('AutoSilentMode');
@@ -167,3 +168,19 @@ export const stopNativeTone = async (): Promise<void> => {
     console.warn('stopNativeTone error:', e);
   }
 };
+
+/**
+ * Sets native application language in Android (updates LocaleManager, SharedPreferences,
+ * PersistentPrayerNotification, and Widgets).
+ */
+export const setNativeAppLanguage = async (language: string): Promise<void> => {
+  if (Capacitor.getPlatform() !== 'android') return;
+  try {
+    if (AutoSilentMode.setAppLanguage) {
+      await AutoSilentMode.setAppLanguage({ language });
+    }
+  } catch (e) {
+    console.warn('setNativeAppLanguage error:', e);
+  }
+};
+

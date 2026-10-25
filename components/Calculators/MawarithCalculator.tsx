@@ -239,19 +239,19 @@ const MawarithCalculator: React.FC<{ cardBorderColor?: string }> = ({ cardBorder
     return (
         <div className="space-y-6 animate-fade-in pb-8" dir={isEn ? 'ltr' : 'rtl'}>
             {/* Header Actions */}
-            <div className="flex justify-between items-center">
+            <div id="mawarith-header-actions" className="flex justify-between items-center">
                 <h2 className="text-xl font-bold flex items-center gap-2" style={{ color: theme.textColor }}>
                     <i className="fa-solid fa-scale-balanced text-primary"></i> 
                     <span>{isEn ? 'Islamic Inheritance Distribution (Mawarith)' : 'توزيع الميراث'}</span>
                 </h2>
-                <button onClick={clearAll} className="flex items-center gap-1 text-sm text-red-500 hover:bg-red-500/10 px-3 py-1.5 rounded-lg transition-colors cursor-pointer">
+                <button id="btn-mawarith-reset" onClick={clearAll} className="flex items-center gap-1 text-sm text-red-500 hover:bg-red-500/10 px-3 py-1.5 rounded-lg transition-colors cursor-pointer">
                     <RefreshCw size={14} /> 
                     <span>{isEn ? 'Reset' : 'إعادة ضبط'}</span>
                 </button>
             </div>
 
             {/* Estate Value */}
-            <div className="themed-card p-4 rounded-xl" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
+            <div id="mawarith-card-estate" className="themed-card p-4 rounded-xl" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                 <div className="flex flex-wrap items-baseline justify-between gap-1 mb-2">
                     <span className="text-sm font-bold opacity-90" style={{ color: theme.textColor }}>
                         {isEn ? 'Total Estate Value' : 'قيمة التركة الإجمالية'}
@@ -273,7 +273,7 @@ const MawarithCalculator: React.FC<{ cardBorderColor?: string }> = ({ cardBorder
             {/* Relatives Inputs */}
             <div className="space-y-4">
                 {/* Parents */}
-                <div className="themed-card p-4 rounded-xl" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
+                <div id="mawarith-card-parents" className="themed-card p-4 rounded-xl" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                     <h3 className="font-bold mb-3 text-sm opacity-80" style={{ color: theme.textColor }}>
                         {isEn ? 'Ascendants (Parents & Grandparents)' : 'الأصول (الآباء والأجداد)'}
                     </h3>
@@ -287,7 +287,7 @@ const MawarithCalculator: React.FC<{ cardBorderColor?: string }> = ({ cardBorder
                 </div>
 
                 {/* Spouses */}
-                <div className="themed-card p-4 rounded-xl" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
+                <div id="mawarith-card-spouses" className="themed-card p-4 rounded-xl" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                     <h3 className="font-bold mb-3 text-sm opacity-80" style={{ color: theme.textColor }}>
                         {isEn ? 'Spouses' : 'الزوج والزوجة'}
                     </h3>
@@ -322,7 +322,7 @@ const MawarithCalculator: React.FC<{ cardBorderColor?: string }> = ({ cardBorder
                 </div>
 
                 {/* Descendants */}
-                <div className="themed-card p-4 rounded-xl" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
+                <div id="mawarith-card-descendants" className="themed-card p-4 rounded-xl" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                     <h3 className="font-bold mb-3 text-sm opacity-80" style={{ color: theme.textColor }}>
                         {isEn ? 'Descendants (Children & Grandchildren)' : 'الفروع (الأبناء وبناتهم)'}
                     </h3>
@@ -340,7 +340,7 @@ const MawarithCalculator: React.FC<{ cardBorderColor?: string }> = ({ cardBorder
 
                 {/* Siblings */}
                 {(showFullSiblings || showPaternalSiblings || showMaternalSiblings) && (
-                    <div className="themed-card p-4 rounded-xl" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
+                    <div id="mawarith-card-siblings" className="themed-card p-4 rounded-xl" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                         <h3 className="font-bold mb-3 text-sm opacity-80" style={{ color: theme.textColor }}>
                             {isEn ? 'Collaterals (Brothers & Sisters)' : 'الحواشي (الإخوة والأخوات)'}
                         </h3>
@@ -368,7 +368,7 @@ const MawarithCalculator: React.FC<{ cardBorderColor?: string }> = ({ cardBorder
 
                 {/* Extended Heirs */}
                 {(showFullNephews || showPaternalNephews || showFullUncles || showPaternalUncles || showFullCousins || showPaternalCousins) && (
-                    <div className="themed-card p-4 rounded-xl" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
+                    <div id="mawarith-card-extended" className="themed-card p-4 rounded-xl" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                         <h3 className="font-bold mb-3 text-sm opacity-80" style={{ color: theme.textColor }}>
                             {isEn ? 'Other Agnatic Heirs (Asabah)' : 'العصبات الأخرى (أبناء الإخوة والأعمام)'}
                         </h3>
@@ -386,7 +386,7 @@ const MawarithCalculator: React.FC<{ cardBorderColor?: string }> = ({ cardBorder
 
             {/* Results Table */}
             {mawarithResults.length > 0 && (
-                <div className="themed-card p-5 rounded-2xl shadow-lg animate-fade-in" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
+                <div id="mawarith-card-results" className="themed-card p-5 rounded-2xl shadow-lg animate-fade-in" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
                     <h3 className="text-lg font-bold mb-4 flex items-center justify-between" style={{ color: theme.textColor }}>
                         <span>{isEn ? 'Inheritance Distribution Table' : 'جدول توزيع الميراث'}</span>
                         <span className="text-xs px-2.5 py-1 rounded-full bg-primary/10 text-primary font-normal">

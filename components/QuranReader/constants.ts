@@ -13,7 +13,6 @@ export const THEMES = {
     maroon: { id: "maroon", name: "نبيتي", bg: "#ffffff", text: "#000000", font: "var(--font-amiri)", barBg: "#ffffff", barText: "#831843", barBorder: "#831843", btnBg: "#ffffff", btnText: "#831843", accent: "#831843", accentText: "#ffffff", modalBg: "#ffffff", modalText: "#000000", headerBg: "#ffffff", headerText: "#831843", cardBg: "#ffffff", cardText: "#000000", cardBorder: "#831843", sajdah: "#d97706", highlightText: "#831843", verseBracket: "#16a34a" },
     olive: { id: "olive", name: "زيتوني", bg: "#ffffff", text: "#000000", font: "var(--font-amiri)", barBg: "#ffffff", barText: "#65a30d", barBorder: "#65a30d", btnBg: "#ffffff", btnText: "#65a30d", accent: "#65a30d", accentText: "#ffffff", modalBg: "#ffffff", modalText: "#000000", headerBg: "#ffffff", headerText: "#65a30d", cardBg: "#ffffff", cardText: "#000000", cardBorder: "#65a30d", sajdah: "#d97706", highlightText: "#65a30d", verseBracket: "#831843" },
     blue: { id: "blue", name: "نيلي فاتح", bg: "#ffffff", text: "#000000", font: "var(--font-amiri)", barBg: "#ffffff", barText: "#4f46e5", barBorder: "#4f46e5", btnBg: "#ffffff", btnText: "#4f46e5", accent: "#4f46e5", accentText: "#ffffff", modalBg: "#ffffff", modalText: "#000000", headerBg: "#ffffff", headerText: "#4f46e5", cardBg: "#ffffff", cardText: "#000000", cardBorder: "#4f46e5", sajdah: "#d97706", highlightText: "#4f46e5", verseBracket: "#ea580c" },
-    brown: { id: "brown", name: "بني", bg: "#ffffff", text: "#000000", font: "var(--font-amiri)", barBg: "#ffffff", barText: "#92400e", barBorder: "#92400e", btnBg: "#ffffff", btnText: "#92400e", accent: "#92400e", accentText: "#ffffff", modalBg: "#ffffff", modalText: "#000000", headerBg: "#ffffff", headerText: "#92400e", cardBg: "#ffffff", cardText: "#000000", cardBorder: "#92400e", sajdah: "#2563eb", highlightText: "#92400e", verseBracket: "#2563eb" },
     purple: { id: "purple", name: "بنفسجي", bg: "#ffffff", text: "#000000", font: "var(--font-amiri)", barBg: "#ffffff", barText: "#9333ea", barBorder: "#9333ea", btnBg: "#ffffff", btnText: "#9333ea", accent: "#9333ea", accentText: "#ffffff", modalBg: "#ffffff", modalText: "#000000", headerBg: "#ffffff", headerText: "#9333ea", cardBg: "#ffffff", cardText: "#000000", cardBorder: "#9333ea", sajdah: "#d97706", highlightText: "#9333ea", verseBracket: "#16a34a" },
     orange: { id: "orange", name: "برتقالي", bg: "#ffffff", text: "#000000", font: "var(--font-amiri)", barBg: "#ffffff", barText: "#ea580c", barBorder: "#ea580c", btnBg: "#ffffff", btnText: "#ea580c", accent: "#ea580c", accentText: "#ffffff", modalBg: "#ffffff", modalText: "#000000", headerBg: "#ffffff", headerText: "#ea580c", cardBg: "#ffffff", cardText: "#000000", cardBorder: "#ea580c", sajdah: "#2563eb", highlightText: "#ea580c", verseBracket: "#2563eb" },
     sky: { id: "sky", name: "سماوي فاتح", bg: "#ffffff", text: "#000000", font: "var(--font-amiri)", barBg: "#ffffff", barText: "#0ea5e9", barBorder: "#0ea5e9", btnBg: "#ffffff", btnText: "#0ea5e9", accent: "#0ea5e9", accentText: "#ffffff", modalBg: "#ffffff", modalText: "#000000", headerBg: "#ffffff", headerText: "#0ea5e9", cardBg: "#ffffff", cardText: "#000000", cardBorder: "#0ea5e9", sajdah: "#d97706", highlightText: "#0ea5e9", verseBracket: "#d97706" },
@@ -34,7 +33,6 @@ export const THEMES = {
     i_sunset_royal: { id: "i_sunset_royal", name: "ملك الغروب", bg: "#280a1e", text: "#ffffff", font: "var(--font-amiri)", barBg: "#280a1e", barText: "#ffffff", barBorder: "#ffffff", btnBg: "#3b102c", btnText: "#ffffff", btnBorder: "#ffffff", accent: "#fbbf24", accentText: "#000000", modalBg: "#280a1e", modalText: "#ffffff", headerBg: "#280a1e", headerText: "#fbbf24", cardBg: "#3b102c", cardText: "#ffffff", cardBorder: "#ffffff", sajdah: "#d97706", highlightText: "#fbbf24", verseBracket: "#fbbf24" },
     i_deep_ocean: { id: "i_deep_ocean", name: "ملك الأعماق", bg: "#041e3a", text: "#ffffff", font: "var(--font-amiri)", barBg: "#041e3a", barText: "#ffffff", barBorder: "#ffffff", btnBg: "#062c54", btnText: "#ffffff", btnBorder: "#ffffff", accent: "#22d3ee", accentText: "#000000", modalBg: "#041e3a", modalText: "#ffffff", headerBg: "#041e3a", headerText: "#22d3ee", cardBg: "#062c54", cardText: "#ffffff", cardBorder: "#ffffff", sajdah: "#d97706", highlightText: "#22d3ee", verseBracket: "#fbbf24" },
     i_brocade: { id: "i_brocade", name: "إستبرق", bg: "#1e1b4b", text: "#ffffff", font: "var(--font-amiri)", barBg: "#1e1b4b", barText: "#ffffff", barBorder: "#ffffff", btnBg: "#312e81", btnText: "#ffffff", btnBorder: "#ffffff", accent: "#eab308", accentText: "#ffffff", modalBg: "#1e1b4b", modalText: "#ffffff", headerBg: "#1e1b4b", headerText: "#eab308", cardBg: "#312e81", cardText: "#ffffff", cardBorder: "#ffffff", sajdah: "#d97706", highlightText: "#eab308", verseBracket: "#60a5fa" },
-    i_musk: { id: "i_musk", name: "مسك", bg: "#1c1917", text: "#ffffff", font: "var(--font-amiri)", barBg: "#1c1917", barText: "#ffffff", barBorder: "#ffffff", btnBg: "#292524", btnText: "#ffffff", btnBorder: "#ffffff", accent: "#fbbf24", accentText: "#000000", modalBg: "#1c1917", modalText: "#ffffff", headerBg: "#1c1917", headerText: "#fbbf24", cardBg: "#292524", cardText: "#ffffff", cardBorder: "#ffffff", sajdah: "#d97706", highlightText: "#fbbf24", verseBracket: "#f87171" },
     i_midnight: { id: "i_midnight", name: "ليل", bg: "#0f172a", text: "#ffffff", font: "var(--font-amiri)", barBg: "#0f172a", barText: "#ffffff", barBorder: "#ffffff", btnBg: "#1e293b", btnText: "#ffffff", btnBorder: "#ffffff", accent: "#38bdf8", accentText: "#ffffff", modalBg: "#0f172a", modalText: "#ffffff", headerBg: "#0f172a", headerText: "#38bdf8", cardBg: "#1e293b", cardText: "#ffffff", cardBorder: "#ffffff", sajdah: "#d97706", highlightText: "#38bdf8", verseBracket: "#fbbf24" },
     i_obsidian: { id: "i_obsidian", name: "بركان", bg: "#09090b", text: "#ffffff", font: "var(--font-amiri)", barBg: "#09090b", barText: "#ffffff", barBorder: "#ffffff", btnBg: "#18181b", btnText: "#ffffff", btnBorder: "#ffffff", accent: "#71717a", accentText: "#ffffff", modalBg: "#09090b", modalText: "#ffffff", headerBg: "#09090b", headerText: "#71717a", cardBg: "#18181b", cardText: "#ffffff", cardBorder: "#ffffff", sajdah: "#d97706", highlightText: "#71717a", verseBracket: "#fbbf24" },
     i_forest: { id: "i_forest", name: "غابة", bg: "#064e3b", text: "#ffffff", font: "var(--font-amiri)", barBg: "#064e3b", barText: "#ffffff", barBorder: "#ffffff", btnBg: "#059669", btnText: "#ffffff", btnBorder: "#ffffff", accent: "#10b981", accentText: "#ffffff", modalBg: "#064e3b", modalText: "#ffffff", headerBg: "#064e3b", headerText: "#10b981", cardBg: "#059669", cardText: "#ffffff", cardBorder: "#ffffff", sajdah: "#d97706", highlightText: "#10b981", verseBracket: "#fbbf24" },
@@ -50,7 +48,6 @@ export const THEME_NAMES_EN: Record<string, string> = {
     maroon: "Maroon",
     olive: "Olive",
     blue: "Light Indigo",
-    brown: "Brown",
     purple: "Purple",
     orange: "Orange",
     sky: "Light Sky",
@@ -69,7 +66,6 @@ export const THEME_NAMES_EN: Record<string, string> = {
     i_sunset_royal: "Royal Sunset",
     i_deep_ocean: "Deep Ocean",
     i_brocade: "Brocade",
-    i_musk: "Musk",
     i_midnight: "Midnight",
     i_obsidian: "Obsidian",
     i_forest: "Forest",
@@ -201,6 +197,10 @@ export const getReadersForMode = (
     }
     if (mode === 'translation') {
         return [TRANSLATION_READER];
+    }
+    // If a custom list of readers is passed (e.g. 250 reciters from ListenQuran), use it
+    if (baseReaders && baseReaders !== READERS) {
+        return baseReaders;
     }
     // For 'mushaf', 'tafseer', 'meanings': ONLY Arabic reciters!
     return ARABIC_READERS;

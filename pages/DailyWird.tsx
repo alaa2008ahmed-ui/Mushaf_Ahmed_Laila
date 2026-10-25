@@ -2,11 +2,12 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { motion } from 'motion/react';
-import { CheckCircle, BookOpen, RotateCcw, Play, Settings, X, User, Plus, Trash2, ChevronDown, Edit2, Home, HelpCircle } from 'lucide-react';
+import { CheckCircle, BookOpen, RotateCcw, Play, Settings, X, User, Plus, Trash2, ChevronDown, Edit2, Home, HelpCircle, Bell, BellOff, Clock, Volume2, Sparkles, Languages, Check } from 'lucide-react';
 import ThemePageLock from '../components/ThemePageLock';
 import ResetConfirmModal from '../components/DailyWird/ResetConfirmModal';
 import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/CommunitySpotlightGuide';
 import { DAILY_SETTINGS_STEPS, DAILY_PROGRESS_STEPS } from '../components/Community/communityTourSteps';
+import { syncDailyWirdNotifications, triggerTestWirdNotification } from '../utils/dailyWirdNotificationService';
 
 interface WirdSettings {
   id: string;
@@ -20,6 +21,9 @@ interface WirdSettings {
   startPage?: number;
   lastPage?: number;
   lastAyah?: { s: number; a: number };
+  reminderEnabled?: boolean;
+  reminderTime?: string; // e.g. "09:00"
+  lastCompletedDate?: string;
 }
 
 const TOTAL_PAGES = 604;
@@ -28,7 +32,7 @@ import { registerBackInterceptor } from '../hooks/useBackButton';
 
 const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, params?: any) => void }> = ({ onBack, onNavigate }) => {
   const { theme, themeKey } = useTheme();
-  const { language } = useLanguage();
+  const { language, isRTL } = useLanguage();
   const isEn = language === 'en';
 
   const isBlackTheme = theme.bgColor === '#000000' || theme.name === 'أبيض وأسود' || themeKey === 'deep_black';
@@ -49,6 +53,8 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
   const [tempMode, setTempMode] = useState<'days' | 'pages'>('days');
   const [tempValue, setTempValue] = useState<string>('30');
   const [tempName, setTempName] = useState<string>('');
+  const [tempReminderEnabled, setTempReminderEnabled] = useState<boolean>(true);
+  const [tempReminderTime, setTempReminderTime] = useState<string>('09:00');
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   const [calcMethod, setCalcMethod] = useState<'remaining' | 'total'>('remaining');
@@ -82,7 +88,10 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
     const saved = localStorage.getItem('dailyWirdSettings_v2');
     if (saved) {
       const parsed = JSON.parse(saved);
-      const profiles = parsed.profiles || [];
+      const profiles = (parsed.profiles || []).map((p: any) => ({
+        ...p,
+        reminderEnabled: p.reminderEnabled !== false
+      }));
       const activeProfileId = parsed.activeId || (profiles.length > 0 ? profiles[0].id : null);
       
       setAllSettings(profiles);
@@ -140,6 +149,13 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
     localStorage.setItem('dailyWirdSettings_v2', JSON.stringify({ profiles, activeId: activeProfileId }));
   };
 
+  useEffect(() => {
+    if (settings) {
+      setTempReminderEnabled(settings.reminderEnabled !== false);
+      setTempReminderTime(settings.reminderTime || '09:00');
+    }
+  }, [settings]);
+
   const handleStart = () => {
     const inputVal = parseInt(tempValue) || (tempMode === 'days' ? 30 : 20);
     let finalValue = inputVal;
@@ -162,12 +178,14 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
       mode: tempMode,
       value: finalValue,
       startDate: settings ? settings.startDate : new Date().toISOString(),
-      currentDay: 1,
-      completedDays: [],
+      currentDay: settings ? settings.currentDay : 1,
+      completedDays: settings ? settings.completedDays : [],
       isActive: true,
       startPage: startPage,
-      lastPage: undefined,
-      lastAyah: undefined
+      lastPage: settings?.lastPage,
+      lastAyah: settings?.lastAyah,
+      reminderEnabled: tempReminderEnabled,
+      reminderTime: tempReminderTime
     };
 
     let newProfiles: WirdSettings[];
@@ -179,12 +197,15 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
 
     saveAllSettings(newProfiles, newWird.id);
     setShowSettings(false);
+    syncDailyWirdNotifications();
   };
 
   const handleAddNew = () => {
     setTempMode('days');
     setTempValue('30');
     setTempName('');
+    setTempReminderEnabled(true);
+    setTempReminderTime('09:00');
     setActiveId(null);
     setShowSettings(true);
   };
@@ -195,6 +216,8 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
     setTempMode(profile.mode);
     setTempValue(profile.value.toString());
     setTempName(profile.name);
+    setTempReminderEnabled(profile.reminderEnabled !== false);
+    setTempReminderTime(profile.reminderTime || '09:00');
     setShowSettings(true);
     setShowProfileMenu(false);
   };
@@ -213,6 +236,7 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
       newActiveId = newProfiles.length > 0 ? newProfiles[0].id : null;
     }
     saveAllSettings(newProfiles, newActiveId);
+    syncDailyWirdNotifications();
     if (newProfiles.length === 0) {
       setShowSettings(true);
     }
@@ -224,6 +248,8 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
       setTempMode(settings.mode);
       setTempValue(settings.value.toString());
       setTempName(settings.name);
+      setTempReminderEnabled(settings.reminderEnabled !== false);
+      setTempReminderTime(settings.reminderTime || '09:00');
       setShowSettings(true);
     }
   };
@@ -248,10 +274,13 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
         currentDay: 1,
         completedDays: [],
         startPage: 1,
-        isActive: true
+        isActive: true,
+        reminderEnabled: tempReminderEnabled,
+        reminderTime: tempReminderTime
       };
       const newProfiles = allSettings.map(p => p.id === settings.id ? resetProfile : p);
       saveAllSettings(newProfiles, settings.id);
+      syncDailyWirdNotifications();
       
       setTempMode('days');
       setTempValue('30');
@@ -269,10 +298,13 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
         currentDay: 1,
         completedDays: [],
         startPage: 1,
-        isActive: true
+        isActive: true,
+        reminderEnabled: tempReminderEnabled,
+        reminderTime: tempReminderTime
       };
       const newProfiles = allSettings.map(p => p.id === settings.id ? resetProfile : p);
       saveAllSettings(newProfiles, settings.id);
+      syncDailyWirdNotifications();
       
       setTempMode(settings.mode);
       setTempValue(settings.value.toString());
@@ -285,15 +317,17 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
   const markDayCompleted = () => {
     if (!settings) return;
     const newCompleted = [...settings.completedDays, settings.currentDay];
-    const newWird = {
+    const newWird: WirdSettings = {
       ...settings,
       completedDays: newCompleted,
       currentDay: settings.currentDay < getTotalDays() ? settings.currentDay + 1 : settings.currentDay,
       lastPage: undefined,
-      lastAyah: undefined
+      lastAyah: undefined,
+      lastCompletedDate: new Date().toISOString()
     };
     const newProfiles = allSettings.map(p => p.id === settings.id ? newWird : p);
     saveAllSettings(newProfiles, settings.id);
+    syncDailyWirdNotifications();
   };
 
   const getTotalDays = () => {
@@ -306,13 +340,18 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
     return settings.mode === 'pages' ? settings.value : Math.ceil(TOTAL_PAGES / settings.value);
   };
 
-  const handleOpenQuran = (page: number, initialAyah?: { s: number; a: number }) => {
+  const handleOpenQuran = (
+    page: number, 
+    initialAyah?: { s: number; a: number }, 
+    readingMode: 'mushaf' | 'translation' = 'mushaf'
+  ) => {
     const targetPage = Math.max(1, page);
     onNavigate('quran', { 
       page: targetPage, 
       surah: initialAyah?.s, 
       ayah: initialAyah?.a, 
-      isWird: true
+      isWird: true,
+      readingMode
     });
   };
 
@@ -449,6 +488,8 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
           </div>
         )}
 
+
+
         <div className="flex gap-3 mt-6" id="wird-start-container">
           <button 
             onClick={handleStart}
@@ -565,28 +606,86 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
 
           <div className="flex flex-col gap-2" id="wird-actions-container">
             {hasPages && (
-              <button 
-                onClick={() => {
-                  if (canContinue) {
-                    handleOpenQuran(settings.lastPage!, settings.lastAyah);
-                  } else {
-                    handleOpenQuran(startPage);
-                  }
-                }}
-                className="w-full py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors text-sm shadow-md border"
-                style={{ 
-                  backgroundColor: isDefaultTheme ? '#FFFFFF' : primaryColor, 
-                  color: isDefaultTheme ? '#000000' : btnTextColor, 
-                  borderColor: cardBorderColor,
-                  borderWidth: '1.5px',
-                  borderStyle: 'solid'
-                }}
-              >
-                <BookOpen size={20} />
-                {canContinue 
-                  ? (isEn ? `Continue Wird (Page ${settings.lastPage})` : `تكملة الورد (صفحة ${settings.lastPage})`) 
-                  : (isEn ? "Open Qur'an to Read" : 'افتح المصحف للقراءة')}
-              </button>
+              isEn ? (
+                <div className="flex flex-col sm:flex-row gap-2 w-full">
+                  {/* Button 1: Open Mushaf */}
+                  <button 
+                    id="btn-wird-mushaf"
+                    onClick={() => {
+                      if (canContinue) {
+                        handleOpenQuran(settings.lastPage!, settings.lastAyah, 'mushaf');
+                      } else {
+                        handleOpenQuran(startPage, undefined, 'mushaf');
+                      }
+                    }}
+                    className="flex-1 py-3 px-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors text-sm shadow-md border cursor-pointer active:scale-98"
+                    style={{ 
+                      backgroundColor: isDefaultTheme ? '#FFFFFF' : primaryColor, 
+                      color: isDefaultTheme ? '#000000' : btnTextColor, 
+                      borderColor: cardBorderColor,
+                      borderWidth: '1.5px',
+                      borderStyle: 'solid'
+                    }}
+                  >
+                    <BookOpen size={18} />
+                    <span>
+                      {canContinue 
+                        ? `Continue in Mushaf (p. ${settings.lastPage})` 
+                        : 'Read in Mushaf'}
+                    </span>
+                  </button>
+
+                  {/* Button 2: Open Translation */}
+                  <button 
+                    id="btn-wird-translation"
+                    onClick={() => {
+                      if (canContinue) {
+                        handleOpenQuran(settings.lastPage!, settings.lastAyah, 'translation');
+                      } else {
+                        handleOpenQuran(startPage, undefined, 'translation');
+                      }
+                    }}
+                    className="flex-1 py-3 px-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors text-sm shadow-md border cursor-pointer active:scale-98"
+                    style={{ 
+                      backgroundColor: isDefaultTheme ? '#F3F4F6' : (theme.isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.06)'), 
+                      color: isDefaultTheme ? '#000000' : (theme.isDark ? '#FFFFFF' : primaryColor), 
+                      borderColor: cardBorderColor,
+                      borderWidth: '1.5px',
+                      borderStyle: 'solid'
+                    }}
+                  >
+                    <Languages size={18} />
+                    <span>
+                      {canContinue 
+                        ? `Continue Translation (p. ${settings.lastPage})` 
+                        : 'Read Translation'}
+                    </span>
+                  </button>
+                </div>
+              ) : (
+                <button 
+                  onClick={() => {
+                    if (canContinue) {
+                      handleOpenQuran(settings.lastPage!, settings.lastAyah, 'mushaf');
+                    } else {
+                      handleOpenQuran(startPage, undefined, 'mushaf');
+                    }
+                  }}
+                  className="w-full py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors text-sm shadow-md border cursor-pointer active:scale-98"
+                  style={{ 
+                    backgroundColor: isDefaultTheme ? '#FFFFFF' : primaryColor, 
+                    color: isDefaultTheme ? '#000000' : btnTextColor, 
+                    borderColor: cardBorderColor,
+                    borderWidth: '1.5px',
+                    borderStyle: 'solid'
+                  }}
+                >
+                  <BookOpen size={20} />
+                  {canContinue 
+                    ? `تكملة الورد (صفحة ${settings.lastPage})` 
+                    : 'افتح المصحف للقراءة'}
+                </button>
+              )
             )}
 
             {!isCompleted ? (
@@ -653,6 +752,8 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
             )}
           </div>
         </div>
+
+
 
         <div className="flex gap-2">
           <button 
@@ -906,8 +1007,8 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
       <header className="app-top-bar">
         <div className="app-top-bar__inner">
           <div className="relative flex items-center justify-center w-full min-h-[44px]">
-            {/* Back button */}
-            <div className={`absolute ${isEn ? 'left-0' : 'right-0'} flex items-center`}>
+            {/* Back button & Notification toggle button */}
+            <div className={`absolute ${isEn ? 'left-0' : 'right-0'} flex items-center gap-1.5`}>
               <button
                 onClick={handleHomeClick}
                 className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
@@ -916,6 +1017,50 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
               >
                 <i className={`fa-solid ${isEn ? 'fa-arrow-left' : 'fa-arrow-right'} text-xl`}></i>
               </button>
+              {!showSettings && settings && (
+                <button
+                  id="wird-notifications-toggle-btn"
+                  type="button"
+                  onClick={() => {
+                    if (!settings) return;
+                    const next = settings.reminderEnabled === false;
+                    const updated = {
+                      ...settings,
+                      reminderEnabled: next,
+                      reminderTime: settings.reminderTime || '09:00'
+                    };
+                    const newProfiles = allSettings.map(p => p.id === settings.id ? updated : p);
+                    saveAllSettings(newProfiles, settings.id);
+                    syncDailyWirdNotifications(language);
+                    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                      try { navigator.vibrate(30); } catch {}
+                    }
+                  }}
+                  className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                  title={
+                    isEn 
+                      ? (settings?.reminderEnabled !== false ? 'Daily Wird Notifications: Enabled (Click to disable)' : 'Daily Wird Notifications: Disabled (Click to enable)') 
+                      : (settings?.reminderEnabled !== false ? 'تنبيهات الورد اليومي: مفعّل (اضغط للتعطيل)' : 'تنبيهات الورد اليومي: معطّل (اضغط للتفعيل)')
+                  }
+                  aria-label={
+                    isEn 
+                      ? (settings?.reminderEnabled !== false ? 'Daily Wird Notifications: Enabled' : 'Daily Wird Notifications: Disabled') 
+                      : (settings?.reminderEnabled !== false ? 'تنبيهات الورد اليومي: مفعّل' : 'تنبيهات الورد اليومي: معطّل')
+                  }
+                >
+                  <div className={`w-[19px] h-[19px] rounded-full border-[1.5px] border-white/90 dark:border-white/80 shadow-xs transition-all duration-300 flex items-center justify-center ${
+                    settings?.reminderEnabled !== false 
+                      ? 'bg-gradient-to-tr from-emerald-600 via-emerald-500 to-emerald-400 text-white shadow-emerald-500/30 ring-1.5 ring-emerald-500/25' 
+                      : 'bg-gradient-to-tr from-red-600 via-red-500 to-rose-400 text-white shadow-red-500/30 ring-1.5 ring-red-500/25'
+                  }`}>
+                    {settings?.reminderEnabled !== false ? (
+                      <Check className="w-2.5 h-2.5 stroke-[3]" />
+                    ) : (
+                      <span className="w-1.5 h-0.5 bg-white/95 rounded-full" />
+                    )}
+                  </div>
+                </button>
+              )}
             </div>
 
             {/* Title in center */}

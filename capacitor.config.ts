@@ -8,8 +8,6 @@ const config: any = {
   server: {
     androidScheme: 'https',
     allowNavigation: [
-      '*.firebaseapp.com',
-      '*.firebase.com',
       '*.google.com',
       'accounts.google.com',
       'ssl.gstatic.com'

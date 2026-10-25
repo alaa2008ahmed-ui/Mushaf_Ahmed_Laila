@@ -70,6 +70,11 @@ function PrayerTimes({ onBack, onNavigate }) {
     };
 
     const nextPrayerBorderColor = getNextPrayerBorderColor();
+    const nextPrayerCardBorderColor = isDefaultTheme
+        ? '#059669'
+        : (isBlackTheme || isBlackAndWhite
+            ? '#FFFFFF'
+            : (theme.palette?.[0] || theme.accent || '#059669'));
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isNotifModalOpen, setIsNotifModalOpen] = useState(false);
@@ -89,7 +94,10 @@ function PrayerTimes({ onBack, onNavigate }) {
     useEffect(() => {
         markPageAsSeen('prayer_times');
         if (!getGuideSeen('prayer_times_page_spotlight')) {
-            setShowGuide(true);
+            const timer = setTimeout(() => {
+                setShowGuide(true);
+            }, 300);
+            return () => clearTimeout(timer);
         }
     }, []);
     
@@ -314,7 +322,7 @@ function PrayerTimes({ onBack, onNavigate }) {
     return (
         <div 
             dir={dir}
-            className="h-screen w-screen flex flex-col" 
+            className="h-[100dvh] w-full flex flex-col" 
             style={{ backgroundColor: isDefaultTheme ? '#FFFFFF' : 'transparent', color: isDefaultTheme ? '#000000' : theme.textColor }}
         >
             <PrayerTimesHeader 
@@ -330,9 +338,9 @@ function PrayerTimes({ onBack, onNavigate }) {
             />
 
             <main className="flex-1 overflow-y-auto hide-scrollbar px-2 pt-2 pb-1">
-                <div className="max-w-md mx-auto flex flex-col h-full">
+                <div className="max-w-md mx-auto flex flex-col">
                     <div 
-                        className={`themed-card ${isDefaultTheme ? 'bg-white' : 'bg-black/5 dark:bg-white/5'} rounded-xl p-2 mb-1.5 shadow-sm`}
+                        className={`themed-card shrink-0 ${isDefaultTheme ? 'bg-white' : 'bg-black/5 dark:bg-white/5'} rounded-xl p-2 mb-1.5 shadow-sm`}
                         style={{
                             border: `1.5px solid ${cardBorderColor}`,
                             backgroundColor: isDefaultTheme ? '#FFFFFF' : undefined
@@ -358,6 +366,7 @@ function PrayerTimes({ onBack, onNavigate }) {
                                         window.open(url, '_blank');
                                     }
                                 }}
+                                id="nearby-mosques-btn"
                                 className={`${isDefaultTheme ? 'bg-white' : 'themed-card'} flex-1 rounded-xl p-3 flex items-center justify-center gap-1.5 shadow-sm font-bold text-[13px] active:scale-95 transition-all hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer`}
                                 style={{ 
                                     color: isBlackTheme ? '#FFFFFF' : primaryColor, 
@@ -433,10 +442,13 @@ function PrayerTimes({ onBack, onNavigate }) {
                                 isBlackAndWhite={isBlackAndWhite}
                                 isDefaultTheme={isDefaultTheme}
                                 isBlackTheme={isBlackTheme}
+                                isDarkTheme={theme.isDark}
+                                themeCardBg={theme.cardBg}
+                                themeTextColor={isBlackTheme ? '#FFFFFF' : (theme.isDark ? theme.textColor : primaryColor)}
                                 themePalette0={theme.palette[0]}
                                 themePalette1={theme.palette[1]}
                                 cardBorderColor={cardBorderColor}
-                                nextPrayerBorderColor={nextPrayerBorderColor}
+                                nextPrayerBorderColor={nextPrayerCardBorderColor}
                                 formatTime12={formatTime12}
                                 applyOffset={applyOffset}
                                 prayerOffset={nextPrayer ? (config.prayerOffsets[nextPrayer.key] || 0) + (isSummerTimeActive ? 60 : 0) : 0}
@@ -557,6 +569,8 @@ function PrayerTimes({ onBack, onNavigate }) {
                     isLandscape={false}
                     modeSuffix="_prayer_times"
                     initialTab="phone"
+                    hideAppTab={true}
+                    phoneTabTitle={language === 'en' ? 'Prayer Settings & Notifications' : 'إعدادات الصلاة والإشعارات'}
                 />
             )}
 

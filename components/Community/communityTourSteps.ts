@@ -1,761 +1,5 @@
 import { SpotlightStep } from './CommunitySpotlightGuide';
 
-// 1. خطوات إرشاد شاشة تسجيل حساب جديد في مجتمع التواصل
-export const ONBOARDING_REGISTER_STEPS: SpotlightStep[] = [
-  {
-    id: 'reg_tabs',
-    targetSelector: '#onboarding-tabs-container',
-    titleAr: 'تبويبات الحساب',
-    titleEn: 'Account Options',
-    descAr: 'اختر "تسجيل جديد" لإنشاء ملف شخصي جديد، أو اضغط "استعادة الحساب" إذا كان لديك حساب سابق.',
-    descEn: 'Select "Register" for a new account, or tap "Restore" if you already have one.',
-    badgeAr: 'التبويبات',
-    badgeEn: 'Tabs',
-    iconName: 'tab',
-    accentColor: '#10b981', // Emerald
-    gradient: 'from-emerald-500 to-teal-600'
-  },
-  {
-    id: 'reg_avatar',
-    targetSelector: '#onboarding-reg-avatar',
-    titleAr: 'اختر صورة رمزية',
-    titleEn: 'Choose an Avatar',
-    descAr: 'اختر صورة رمزية معبّرة لحسابك من بين الصور والأفاتار المتاحة، أو اضغط على أيقونة الكاميرا لاستيراد صورة من هاتفك.',
-    descEn: 'Choose an expressive avatar from presets or tap the camera icon to import a photo from your phone.',
-    badgeAr: 'صورة رمزية',
-    badgeEn: 'Avatar',
-    iconName: 'profile',
-    accentColor: '#0ea5e9', // Sky blue
-    gradient: 'from-sky-500 to-blue-600'
-  },
-  {
-    id: 'reg_username',
-    targetSelector: '#onboarding-reg-username',
-    titleAr: 'اسم المستخدم',
-    titleEn: 'Your Username',
-    descAr: 'اكتب اسمك الحقيقي أو لقبك المفضل الذي سيظهر لجميع الإخوة والأخوات في مجتمع التواصل.',
-    descEn: 'Type your preferred name or nickname that community members will see.',
-    badgeAr: 'الاسم • Name',
-    badgeEn: 'Profile Name',
-    iconName: 'user',
-    accentColor: '#8b5cf6', // Violet
-    gradient: 'from-violet-500 to-purple-600'
-  },
-  {
-    id: 'reg_passcode',
-    targetSelector: '#onboarding-reg-passcode',
-    titleAr: 'الرقم السري الخاص بحسابك',
-    titleEn: 'Account Passcode / PIN',
-    descAr: 'أدخل رمزاً سرياً مكوناً من 4 إلى 12 خانة لحماية حسابك واستعادته في أي وقت ومن أي هاتف.',
-    descEn: 'Enter a 4-12 digit PIN/passcode to protect and recover your account anytime.',
-    badgeAr: 'حماية وأمان',
-    badgeEn: 'Security PIN',
-    iconName: 'lock',
-    accentColor: '#ec4899', // Pink / Rose
-    gradient: 'from-pink-500 to-rose-600'
-  },
-  {
-    id: 'reg_country',
-    targetSelector: '#onboarding-reg-country',
-    titleAr: 'اختيار الدولة',
-    titleEn: 'Your Country',
-    descAr: 'اختر دولتك الكريمة لعرض علمها بجوار اسمك والتعارف على أهل بلدك في حلقات القرآن.',
-    descEn: 'Select your country to display its flag beside your profile name.',
-    badgeAr: 'الدولة • Flag',
-    badgeEn: 'Country Flag',
-    iconName: 'country',
-    accentColor: '#f59e0b', // Amber
-    gradient: 'from-amber-500 to-orange-600'
-  },
-  {
-    id: 'reg_submit',
-    targetSelector: '#onboarding-reg-actions',
-    titleAr: 'بدء التسجيل والدخول',
-    titleEn: 'Complete Registration',
-    descAr: 'اضغط على زر التسجيل لإنشاء حسابك فوراً والانطلاق في رحلة التواصل والتنافس المبارك في حفظ وقراءة القرآن الكريم.',
-    descEn: 'Tap the register button to create your account and start your blessed community journey.',
-    badgeAr: 'انطلاق • Start',
-    badgeEn: 'Get Started',
-    iconName: 'action',
-    accentColor: '#10b981', // Emerald
-    gradient: 'from-emerald-500 to-teal-600'
-  }
-];
-
-// خطوات إرشاد شاشة التسجيل عند بدء تشغيل التطبيق (بدون حقل الصورة الرمزية مع ترتيب الرقم السري بعد الاسم)
-export const INITIAL_ONBOARDING_REGISTER_STEPS: SpotlightStep[] = [
-  {
-    id: 'reg_tabs',
-    targetSelector: '#onboarding-tabs-container',
-    titleAr: 'تبويبات الحساب',
-    titleEn: 'Account Options',
-    descAr: 'اختر "تسجيل جديد" لإنشاء ملف شخصي جديد، أو اضغط "استعادة الحساب" إذا كان لديك حساب سابق.',
-    descEn: 'Select "Register" for a new account, or tap "Restore" if you already have one.',
-    badgeAr: 'التبويبات',
-    badgeEn: 'Tabs',
-    iconName: 'tab',
-    accentColor: '#10b981',
-    gradient: 'from-emerald-500 to-teal-600'
-  },
-  {
-    id: 'reg_username',
-    targetSelector: '#onboarding-reg-username',
-    titleAr: 'اسم المستخدم',
-    titleEn: 'Your Username',
-    descAr: 'اكتب اسمك الحقيقي أو لقبك المفضل الذي سيظهر لجميع الإخوة والأخوات في مجتمع التواصل.',
-    descEn: 'Type your preferred name or nickname that community members will see.',
-    badgeAr: 'الاسم • Name',
-    badgeEn: 'Profile Name',
-    iconName: 'user',
-    accentColor: '#8b5cf6',
-    gradient: 'from-violet-500 to-purple-600'
-  },
-  {
-    id: 'reg_passcode',
-    targetSelector: '#onboarding-reg-passcode',
-    titleAr: 'الرقم السري الخاص بحسابك',
-    titleEn: 'Account Passcode / PIN',
-    descAr: 'أدخل رمزاً سرياً لحماية حسابك واستعادته في أي وقت ومن أي هاتف.',
-    descEn: 'Enter a PIN/passcode to protect and recover your account anytime.',
-    badgeAr: 'حماية وأمان',
-    badgeEn: 'Security PIN',
-    iconName: 'lock',
-    accentColor: '#ec4899',
-    gradient: 'from-pink-500 to-rose-600'
-  },
-  {
-    id: 'reg_country',
-    targetSelector: '#onboarding-reg-country',
-    titleAr: 'اختيار الدولة',
-    titleEn: 'Your Country',
-    descAr: 'اختر دولتك الكريمة لعرض علمها بجوار اسمك والتعارف على أهل بلدك في حلقات القرآن.',
-    descEn: 'Select your country to display its flag beside your profile name.',
-    badgeAr: 'الدولة • Flag',
-    badgeEn: 'Country Flag',
-    iconName: 'country',
-    accentColor: '#f59e0b',
-    gradient: 'from-amber-500 to-orange-600'
-  },
-  {
-    id: 'reg_submit',
-    targetSelector: '#onboarding-reg-actions',
-    titleAr: 'بدء التسجيل والدخول',
-    titleEn: 'Complete Registration',
-    descAr: 'اضغط على زر التسجيل لإنشاء حسابك فوراً والانطلاق في رحلة التواصل والتنافس المبارك في حفظ وقراءة القرآن الكريم.',
-    descEn: 'Tap the register button to create your account and start your blessed community journey.',
-    badgeAr: 'انطلاق • Start',
-    badgeEn: 'Get Started',
-    iconName: 'action',
-    accentColor: '#10b981',
-    gradient: 'from-emerald-500 to-teal-600'
-  }
-];
-
-// 2. خطوات إرشاد شاشة استعادة الحساب السابق
-export const ONBOARDING_RESTORE_STEPS: SpotlightStep[] = [
-  {
-    id: 'res_tab_info',
-    targetSelector: '#onboarding-tabs-container',
-    titleAr: 'استعادة حساب سابق',
-    titleEn: 'Restore Existing Account',
-    descAr: 'هذا القسم مخصص لاسترجاع حسابك السابق ومحادثاتك ومجموعاتك بكل أمان.',
-    descEn: 'This tab allows you to recover your existing profile, chats, and groups securely.',
-    badgeAr: 'استعادة • Restore',
-    badgeEn: 'Recovery Tab',
-    iconName: 'tab',
-    accentColor: '#3b82f6', // Blue
-    gradient: 'from-blue-500 to-indigo-600'
-  },
-  {
-    id: 'res_username',
-    targetSelector: '#onboarding-restore-username',
-    titleAr: 'اسم المستخدم أو كود الحساب',
-    titleEn: 'Username or Account Code',
-    descAr: 'أدخل اسمك المسجل به مسبقاً أو كود حسابك الفريد المكون من حروف وأرقام مثل MQ-XXXXX.',
-    descEn: 'Enter your registered name or your unique code (e.g., MQ-XXXXX).',
-    badgeAr: 'بيانات الحساب',
-    badgeEn: 'Account ID',
-    iconName: 'user',
-    accentColor: '#8b5cf6', // Purple
-    gradient: 'from-purple-500 to-violet-600'
-  },
-  {
-    id: 'res_passcode',
-    targetSelector: '#onboarding-restore-passcode',
-    titleAr: 'الرقم السري للحساب',
-    titleEn: 'Security PIN',
-    descAr: 'اكتب نفس الرقم السري الذي اخترته عند إنشاء الحساب لتأكيد ملكيتك له.',
-    descEn: 'Enter the PIN/password you originally set when creating your profile.',
-    badgeAr: 'كلمة المرور',
-    badgeEn: 'Password',
-    iconName: 'lock',
-    accentColor: '#f59e0b', // Amber
-    gradient: 'from-amber-500 to-yellow-600'
-  },
-  {
-    id: 'res_submit',
-    targetSelector: '#onboarding-restore-actions',
-    titleAr: 'تأكيد الاستعادة',
-    titleEn: 'Confirm Restoration',
-    descAr: 'اضغط على زر "استعادة الحساب" وسيتم جلب كافة بياناتك ورسائلك السابقة فوراً.',
-    descEn: 'Tap "Restore" to fetch all your profile data and chats immediately.',
-    badgeAr: 'دخول الحساب',
-    badgeEn: 'Login Now',
-    iconName: 'action',
-    accentColor: '#10b981', // Emerald
-    gradient: 'from-emerald-500 to-teal-600'
-  }
-];
-
-// 3. خطوات إرشاد الشريط العلوي لصفحة المجتمع
-export const COMMUNITY_HEADER_STEPS: SpotlightStep[] = [
-  {
-    id: 'comm_nav',
-    targetSelector: '#community-header-nav',
-    titleAr: 'زر الرجوع للخلف',
-    titleEn: 'Navigation',
-    descAr: 'يمكنك الرجوع للخلف للشاشات السابقة في أي وقت.',
-    descEn: 'Quickly navigate back to the previous screen at any moment.',
-    badgeAr: 'التصفح • Navigation',
-    badgeEn: 'Quick Navigation',
-    iconName: 'nav',
-    accentColor: '#0ea5e9', // Sky blue
-    gradient: 'from-sky-500 to-blue-600'
-  },
-  {
-    id: 'comm_profile',
-    targetSelector: '#community-profile-pill',
-    titleAr: 'الملف الشخصي وكود الحساب',
-    titleEn: 'Profile & Account Code',
-    descAr: 'اضغط على شريط ملفك لعرض كودك الفريد ومشاركته مع الأصدقاء، وتعديل صورتك وحالتك وكلمة مرورك.',
-    descEn: 'Tap here to view your unique account code, copy it, and edit your profile or avatar.',
-    badgeAr: 'ملفي الشخصي',
-    badgeEn: 'My Profile',
-    iconName: 'profile',
-    accentColor: '#10b981', // Emerald
-    gradient: 'from-emerald-500 to-teal-600'
-  },
-  {
-    id: 'comm_header_right',
-    targetSelector: '#community-header-right',
-    titleAr: 'الدليل والرئيسية',
-    titleEn: 'Guide & Home',
-    descAr: 'زر فتح الدليل الإرشادي للمجتمع، والعودة السريعة إلى الصفحة الرئيسية.',
-    descEn: 'Access the community guide or quickly return to Home.',
-    badgeAr: 'المساعدة والرئيسية',
-    badgeEn: 'Guide & Home',
-    iconName: 'action',
-    accentColor: '#0ea5e9', // Sky blue
-    gradient: 'from-sky-500 to-blue-600'
-  },
-  {
-    id: 'comm_tabs',
-    targetSelector: '#community-tabs-nav',
-    titleAr: 'أقسام وتبويبات المجتمع',
-    titleEn: 'Community Sections',
-    descAr: 'تنقل بين المحادثات المباشرة (الأصدقاء)، وحلقات التدبر (المجتمع)، ودليل المستخدمين (الأعضاء)، وقائمة (الحظر).',
-    descEn: 'Switch between direct chats (Friends), group circles (Community), user directory (Members), and Blocked list.',
-    badgeAr: 'الأقسام الرئيسية',
-    badgeEn: 'Main Tabs',
-    iconName: 'tab',
-    accentColor: '#8b5cf6', // Violet
-    gradient: 'from-violet-500 to-purple-600'
-  },
-  {
-    id: 'comm_search',
-    targetSelector: '#community-search-container',
-    titleAr: 'شريط البحث والتحديث',
-    titleEn: 'Search & Live Refresh',
-    descAr: 'ابحث بالاسم أو الدولة أو كود الحساب، وزر التحديث الدائري لجلب أحدث الرسائل والمجموعات فوراً.',
-    descEn: 'Search users or groups by name/country/code, and refresh instantly for latest data.',
-    badgeAr: 'البحث والتحديث',
-    badgeEn: 'Search Bar',
-    iconName: 'search',
-    accentColor: '#ec4899', // Pink
-    gradient: 'from-pink-500 to-rose-600'
-  }
-];
-
-// 4. خطوات إرشاد تبويب الأصدقاء (المحادثات الخاصة)
-export const TAB_CHATS_STEPS: SpotlightStep[] = [
-  {
-    id: 'tab_chats_item',
-    targetSelector: '#community-tab-chats',
-    titleAr: 'تبويب الأصدقاء والمحادثات الخاصة',
-    titleEn: 'Friends & Direct Chats Tab',
-    descAr: 'يضم هذا التبويب محادثاتك الثنائية الخاصة مع الأصدقاء وقراء القرآن، مع ظهور شارة بعدد الرسائل الجديدة غير المقروءة.',
-    descEn: 'Contains all your 1-on-1 private conversations with friends and Quran readers, showing unread message badges.',
-    badgeAr: 'الأصدقاء • Friends',
-    badgeEn: 'Friends Tab',
-    iconName: 'chat',
-    accentColor: '#0ea5e9',
-    gradient: 'from-sky-500 to-blue-600'
-  },
-  {
-    id: 'tab_chats_search',
-    targetSelector: '#community-search-container',
-    titleAr: 'البحث السريع في المحادثات',
-    titleEn: 'Quick Friend Search',
-    descAr: 'ابحث عن أصدقائك بالاسم أو الدولة أو رمز الحساب للوصول السريع إلى محادثاتك معهم.',
-    descEn: 'Search for friends by name, country, or account ID for rapid conversation access.',
-    badgeAr: 'البحث • Search',
-    badgeEn: 'Search',
-    iconName: 'search',
-    accentColor: '#8b5cf6',
-    gradient: 'from-purple-500 to-indigo-600'
-  },
-  {
-    id: 'tab_chats_list',
-    targetSelector: '#community-chats-section',
-    titleAr: 'قائمة الاصدقاء والدعم الفنى',
-    titleEn: 'Friends & Technical Support List',
-    descAr: 'التواصل مع الدعم الفنى ويظهر اسفل الدعم الفنى قائمه بالاصدقاء للتواصل معهم',
-    descEn: 'Connect with Technical Support, and below Technical Support appears a list of friends to connect with.',
-    badgeAr: 'الأصدقاء والدعم الفني',
-    badgeEn: 'Friends & Support',
-    iconName: 'action',
-    accentColor: '#10b981',
-    gradient: 'from-emerald-500 to-teal-600'
-  }
-];
-
-// 5. خطوات إرشاد تبويب المجتمع (المجموعات والحلقات القرآنية)
-export const TAB_COMMUNITY_STEPS: SpotlightStep[] = [
-  {
-    id: 'tab_comm_tab_item',
-    targetSelector: '#community-tab-groups',
-    titleAr: 'تبويب المجتمع والحلقات القرآنية',
-    titleEn: 'Community & Study Circles Tab',
-    descAr: 'مساحة الحلقات والمجموعات الجماعية لتدارس كتاب الله وتبادل الفوائد والخواطر وتنسيق الختمات المشتركة.',
-    descEn: 'A collective space for Quranic study circles, collective Khatm, and sharing Islamic reflections.',
-    badgeAr: 'المجتمع • Community',
-    badgeEn: 'Community Tab',
-    iconName: 'group',
-    accentColor: '#10b981',
-    gradient: 'from-emerald-500 to-teal-600'
-  },
-  {
-    id: 'tab_comm_create',
-    targetSelector: '#community-create-group-btn',
-    titleAr: 'زر إنشاء حلقة جديدة',
-    titleEn: 'Create New Circle / Group',
-    descAr: 'أسس حلقتك القرآنية الخاصة أو العامة، وحدد اسمها وصورتها وهدفها، ودعُ القراء للانضمام والتدارس.',
-    descEn: 'Found your private or public circle, set its name, icon and purpose, and invite fellow readers.',
-    badgeAr: 'إنشاء حلقة • Create',
-    badgeEn: 'Create Circle',
-    iconName: 'action',
-    accentColor: '#f59e0b',
-    gradient: 'from-amber-500 to-orange-600'
-  },
-  {
-    id: 'tab_comm_list',
-    targetSelector: '#community-groups-section',
-    titleAr: 'قائمة الحلقات والدعوات',
-    titleEn: 'Circles & Pending Invites',
-    descAr: 'تصفح حلقات المجتمع المتاحة، انضم للحلقات العامة، أو تفاعل مع دعوات الانضمام المعلقة المرسلة إليك.',
-    descEn: 'Explore available community circles, join public groups, or accept pending invitations sent to you.',
-    badgeAr: 'المجموعات والحلقات',
-    badgeEn: 'Circles List',
-    iconName: 'tab',
-    accentColor: '#0ea5e9',
-    gradient: 'from-sky-500 to-blue-600'
-  }
-];
-
-// 6. خطوات إرشاد تبويب الأعضاء (دليل مستخدمي المصحف)
-export const TAB_USERS_STEPS: SpotlightStep[] = [
-  {
-    id: 'tab_users_item',
-    targetSelector: '#community-tab-users',
-    titleAr: 'دليل قراء المصحف الشريف',
-    titleEn: 'Holy Quran Readers Directory',
-    descAr: 'دليل عالمي يجمع قراء المصحف من مختلف الدول، يعرض بلدهم وحالة اتصالهم لربط قلوب المسلمين في كتاب الله.',
-    descEn: 'A global directory connecting Quran readers worldwide, displaying country flags and live online status.',
-    badgeAr: 'الأعضاء • Members',
-    badgeEn: 'Directory',
-    iconName: 'user',
-    accentColor: '#8b5cf6',
-    gradient: 'from-violet-500 to-purple-600'
-  },
-  {
-    id: 'tab_users_actions',
-    targetSelector: '#community-users-section',
-    titleAr: 'التواصل والتعارف الإيماني',
-    titleEn: 'Connecting & Adding Friends',
-    descAr: 'اضغط على زر المحادثة لبدء حوار مبارك، أو زر الإضافة لإرسال طلب صداقة، أو اضغط على الملف للاطلاع على بيانات القارئ.',
-    descEn: 'Tap chat to start a direct message, add button to send a friend request, or tap the profile for details.',
-    badgeAr: 'التواصل والتعارف',
-    badgeEn: 'Direct Connection',
-    iconName: 'action',
-    accentColor: '#0ea5e9',
-    gradient: 'from-sky-500 to-blue-600'
-  }
-];
-
-// 7. خطوات إرشاد تبويب الحظر
-export const TAB_BLOCKED_STEPS: SpotlightStep[] = [
-  {
-    id: 'tab_blocked_tab_item',
-    targetSelector: '#community-tab-blocked',
-    titleAr: 'تبويب الحظر والخصوصية',
-    titleEn: 'Block & Privacy Tab',
-    descAr: 'قسم مخصص للتحكم بالخصوصية وضمان أمان تجربتك الإيمانية داخل مجتمع المصحف.',
-    descEn: 'Dedicated section to manage privacy and safeguard your Quranic community experience.',
-    badgeAr: 'الأمان والخصوصية',
-    badgeEn: 'Privacy Tab',
-    iconName: 'block',
-    accentColor: '#ec4899',
-    gradient: 'from-rose-500 to-pink-600'
-  },
-  {
-    id: 'tab_blocked_info',
-    targetSelector: '#community-blocked-section',
-    titleAr: 'إدارة الحسابات المحظورة',
-    titleEn: 'Manage Blocked Accounts',
-    descAr: 'هنا يمكنك مراجعة الأشخاص المحظورين، وإلغاء الحظر عن أي مستخدم بضغطة زر لتعود للتواصل معه متى شئت.',
-    descEn: 'Review blocked users and unblock any user with one tap to resume communication whenever you want.',
-    badgeAr: 'قائمة الحظر',
-    badgeEn: 'Blocked List',
-    iconName: 'action',
-    accentColor: '#ef4444',
-    gradient: 'from-red-500 to-rose-600'
-  }
-];
-
-// 8. خطوات إرشاد شاشة محادثة المجموعة وزر النقاط الثلاثة (Group Chat Room)
-export const GROUP_CHAT_STEPS: SpotlightStep[] = [
-  {
-    id: 'group_chat_header',
-    targetSelector: '#chat-header-bar',
-    titleAr: 'شريط الحلقة ومعلوماتها',
-    titleEn: 'Group Header & Details',
-    descAr: 'يعرض اسم المجموعة وصورتها وعدد أعضائها. يمكنك الضغط على اسم المجموعة في أي وقت لفتح نافذة التفاصيل وقائمة الأعضاء.',
-    descEn: 'Displays the group name, avatar, and total members. Tap the group name anytime to view its details and member list.',
-    badgeAr: 'معلومات الحلقة',
-    badgeEn: 'Group Info',
-    iconName: 'group',
-    accentColor: '#10b981',
-    gradient: 'from-emerald-500 to-teal-600'
-  },
-  {
-    id: 'group_chat_menu_button',
-    targetSelector: '#group-chat-menu-btn',
-    titleAr: 'زر النقاط الثلاثة (الخيارات الإضافية)',
-    titleEn: 'Three-Dots Options Menu',
-    descAr: 'الزر المخصص لفتح القائمة السريعة للتحكم بالمجموعة وإدارتها والوصول لكافة خيارات الحلقة وأوامرها.',
-    descEn: 'The button to open the quick options and group management menu. Access all commands and features here.',
-    badgeAr: 'زر الخيارات • ...',
-    badgeEn: '3-Dots Menu',
-    iconName: 'action',
-    accentColor: '#0ea5e9',
-    gradient: 'from-sky-500 to-blue-600'
-  },
-  {
-    id: 'group_chat_menu_options',
-    targetSelector: '#group-chat-menu-btn',
-    titleAr: 'قوائم زر النقاط: معلومات ونسخ المعرّف',
-    titleEn: 'Menu: Group Info & Copy ID',
-    descAr: '• معلومات المجموعة: فتح بطاقة تعريفية بالحلقة، تاريخ إنشائها، ووصفها، وتصفح قائمة كافة الأعضاء.\n• نسخ معرّف المجموعة: نسخ الرمز التعريفي الفريد لمشاركته ودعوة الأصدقاء للانضمام.',
-    descEn: '• Group Information: Opens full details, circle description, and member roster.\n• Copy Group ID: Copies the unique circle ID to share and invite your friends.',
-    badgeAr: 'المعلومات والمعرّف',
-    badgeEn: 'Info & ID',
-    iconName: 'tab',
-    accentColor: '#8b5cf6',
-    gradient: 'from-purple-500 to-indigo-600'
-  },
-  {
-    id: 'group_chat_menu_admin',
-    targetSelector: '#group-chat-menu-btn',
-    titleAr: 'قوائم زر النقاط: إدارة الحلقة والتحكم',
-    titleEn: 'Menu: Circle Management & Options',
-    descAr: '• تعديل المجموعة (للمنشئ): تغيير اسم الحلقة ووصفها وصورتها.\n• إضافة أعضاء (للمنشئ): دعوة قراء جدد من دليل الأعضاء.\n• مسح الرسائل (للمنشئ): إفراغ سجل المحادثة.\n• مغادرة / حذف المجموعة: للأعضاء لمغادرة الحلقة، أو للمنشئ لحذفها نهائياً.',
-    descEn: '• Edit Group (Creator): Modify name, description, and avatar.\n• Add Members (Creator): Invite new members.\n• Clear Messages (Creator): Clear chat history.\n• Leave / Delete: Leave the circle or delete it permanently.',
-    badgeAr: 'خيارات التحكم والإدارة',
-    badgeEn: 'Management Menus',
-    iconName: 'action',
-    accentColor: '#f59e0b',
-    gradient: 'from-amber-500 to-orange-600'
-  },
-  {
-    id: 'group_chat_feed',
-    targetSelector: '#group-chat-messages-area',
-    titleAr: 'منطقة رسائل وتدارس المجموعة',
-    titleEn: 'Messages & Quranic Study Feed',
-    descAr: 'هنا يجتمع الإخوة لتدارس الآيات وتبادل الفوائد والتسجيلات. يمكنك الضغط على صورة أي عضو لعرض ملفه الشخصي ومراسلته مباشرة أو إرسال طلب صداقة.',
-    descEn: 'Where members gather to study verses and share Islamic wisdom. Tap any member avatar to view their profile, send a friend request, or chat directly.',
-    badgeAr: 'حلقة التدارس',
-    badgeEn: 'Discussion Feed',
-    iconName: 'chat',
-    accentColor: '#3b82f6',
-    gradient: 'from-blue-500 to-indigo-600',
-    preferredPlacement: 'bottom'
-  },
-  {
-    id: 'group_chat_verse',
-    targetSelector: '#chat-btn-verse',
-    titleAr: 'مشاركة آيات القرآن الكريم',
-    titleEn: 'Share Qur’an Verses',
-    descAr: 'ميزة تفاعلية لاختيار أي آية أو مقطع من المصحف بالرسم العثماني الشريف، مع إطارات إسلامية مذهبة وتلاوات صوتية عطرة لمشاركتها فوراً داخل الحلقة.',
-    descEn: 'Interactive feature to select verses in Uthmani script with Islamic ornate frames and recitation audio to share in the circle.',
-    badgeAr: 'آية كريمة • Verse',
-    badgeEn: 'Holy Verse',
-    iconName: 'verse',
-    accentColor: '#10b981',
-    gradient: 'from-emerald-500 to-teal-600'
-  },
-  {
-    id: 'group_chat_attach',
-    targetSelector: '#chat-btn-attach',
-    titleAr: 'إرفاق الوسائط والمستندات',
-    titleEn: 'Media & File Attachments',
-    descAr: 'إمكانية إرسال واسترداد الصور والمقاطع المرئية والمستندات والملفات الصوتية لدعم حلقات الحفظ ونشر الفوائد النافعة.',
-    descEn: 'Send photos, documents, videos, and files to enrich study sessions and lessons within the circle.',
-    badgeAr: 'المرفقات • Attach',
-    badgeEn: 'Attachments',
-    iconName: 'attach',
-    accentColor: '#0ea5e9',
-    gradient: 'from-sky-500 to-blue-600'
-  },
-  {
-    id: 'group_chat_emoji',
-    targetSelector: '#chat-btn-emoji',
-    titleAr: 'أذكار وتعبيرات إسلامية جاهزة',
-    titleEn: 'Adhkar & Islamic Expressions',
-    descAr: 'قائمة سريعة للأذكار والأدعية والتحيات الإسلامية المباركة والرموز التعبيرية لإرسالها بضغطة زر واحدة للتفاعل الإيماني.',
-    descEn: 'Quick picker for blessed Islamic adhkar, greetings, and emojis for instant one-tap responses.',
-    badgeAr: 'أذكار وتعبيرات',
-    badgeEn: 'Adhkar Picker',
-    iconName: 'emoji',
-    accentColor: '#8b5cf6',
-    gradient: 'from-purple-500 to-indigo-600'
-  },
-  {
-    id: 'group_chat_input_voice',
-    targetSelector: '#group-chat-input-row',
-    titleAr: 'الكتابة والتسجيل الصوتي والتلاوة',
-    titleEn: 'Text Input & Audio Recitation',
-    descAr: 'اكتب رسالتك النصية هنا، أو اضغط زر الميكروفون لتسجيل تلاوة صوتية نقية بصوتك ليسمعها إخوانك في الحلقة ويتفاعلوا معها.',
-    descEn: 'Type text messages, or tap the microphone button to record audio recitations with your voice for group members to hear.',
-    badgeAr: 'الكتابة والتسجيل',
-    badgeEn: 'Input & Audio',
-    iconName: 'voice',
-    accentColor: '#ec4899',
-    gradient: 'from-pink-500 to-rose-600'
-  }
-];
-
-// 9. خطوات إرشاد داخل غرفة الدردشة الفردية (Direct Chat)
-export const CHAT_ROOM_STEPS: SpotlightStep[] = [
-  {
-    id: 'chat_header',
-    targetSelector: '#chat-header-bar',
-    titleAr: 'شريط معلومات المحادثة',
-    titleEn: 'Chat Header & Actions',
-    descAr: 'يعرض اسم الطرف الآخر وحالة اتصاله، وقائمة الخيارات (مسح الرسائل، كتم الإشعارات، الحظر، تفاصيل المجموعة).',
-    descEn: 'Displays partner/group info, online status, and options (clear messages, mute, block, group info).',
-    badgeAr: 'الشريط العلوي',
-    badgeEn: 'Top Header',
-    iconName: 'nav',
-    accentColor: '#0ea5e9', // Sky blue
-    gradient: 'from-sky-500 to-blue-600'
-  },
-  {
-    id: 'chat_verse',
-    targetSelector: '#chat-btn-verse',
-    titleAr: 'مشاركة آيات القرآن الكريم',
-    titleEn: 'Share Qur’anic Verses',
-    descAr: 'ميزة فريدة لاختيار أي آية أو مقطع قرآني وتخصيص إطار إسلامي ذهبي وتلاوة صوتية لمشاركتها فوراً.',
-    descEn: 'Select any verse in Uthmani script with Islamic gold frames and audio recitation.',
-    badgeAr: 'آية قرآنية • Qur’an Verse',
-    badgeEn: 'Holy Verse',
-    iconName: 'verse',
-    accentColor: '#10b981', // Emerald
-    gradient: 'from-emerald-500 to-teal-600'
-  },
-  {
-    id: 'chat_attach',
-    targetSelector: '#chat-btn-attach',
-    titleAr: 'إرفاق وسائط ومستندات',
-    titleEn: 'Media & File Attachments',
-    descAr: 'إرسال صور وفيديوهات ومستندات وملفات صوتية بسهولة لدعم حلقات التدارس ونشر الفائدة.',
-    descEn: 'Send photos, videos, PDF documents, and audio files easily within the chat.',
-    badgeAr: 'المرفقات • Attach',
-    badgeEn: 'Attachments',
-    iconName: 'attach',
-    accentColor: '#f59e0b', // Amber
-    gradient: 'from-amber-500 to-orange-600'
-  },
-  {
-    id: 'chat_emoji',
-    targetSelector: '#chat-btn-emoji',
-    titleAr: 'أذكار وتعبيرات إسلامية',
-    titleEn: 'Adhkar & Emojis',
-    descAr: 'قائمة جاهزة لأذكار وأدعية مأثورة (سبحان الله، الحمد لله، جزاك الله خيراً، بارك الله فيك...) والرموز التعبيرية.',
-    descEn: 'Instant Islamic adhkar and greetings (SubhanAllah, JazakAllah Khair...) plus emojis.',
-    badgeAr: 'أذكار وتعبيرات',
-    badgeEn: 'Adhkar Picker',
-    iconName: 'emoji',
-    accentColor: '#8b5cf6', // Violet
-    gradient: 'from-violet-500 to-purple-600'
-  },
-  {
-    id: 'chat_input',
-    targetSelector: '#chat-input-text',
-    titleAr: 'مربع كتابة الرسالة',
-    titleEn: 'Message Input Field',
-    descAr: 'اكتب رسالتك النصية هنا. يدعم لوحة المفاتيح والرموز والروابط القرآنية بكل سلاسة.',
-    descEn: 'Type your text message here. Supports multiline, emojis, and references.',
-    badgeAr: 'كتابة الرسائل',
-    badgeEn: 'Message Box',
-    iconName: 'text',
-    accentColor: '#6366f1', // Indigo
-    gradient: 'from-indigo-500 to-blue-600'
-  },
-  {
-    id: 'chat_voice_send',
-    targetSelector: '#chat-btn-voice-send',
-    titleAr: 'التسجيل الصوتي والإرسال',
-    titleEn: 'Voice Notes & Send',
-    descAr: 'اضغط على الميكروفون لتسجيل تلاوة أو رسالة صوتية نقية، أو اضغط سهم الإرسال بعد كتابة النص.',
-    descEn: 'Tap the mic to record a crystal-clear audio message, or tap Send for text messages.',
-    badgeAr: 'الصوت والإرسال',
-    badgeEn: 'Voice & Send',
-    iconName: 'voice',
-    accentColor: '#ec4899', // Pink
-    gradient: 'from-pink-500 to-rose-600'
-  }
-];
-
-// Ahl Al-Quran Page Tour Steps
-export const AHL_QURAN_HEADER_STEPS: SpotlightStep[] = [
-  {
-    id: 'ahl_header_intro',
-    targetSelector: '.app-top-bar',
-    titleAr: 'مرحباً بك في صفحة أهل القرآن',
-    titleEn: "Welcome to People of the Qur'an",
-    descAr: 'هنا تتنافس قلوب الإخوة والأخوات في تلاوة كتاب الله وختمه، مع لوحة شرف تفاعلية وإحصائيات شخصية دقيقة.',
-    descEn: 'Here hearts compete in reciting and completing the Book of Allah, with an interactive leaderboard and personal stats.',
-    badgeAr: 'أهل القرآن',
-    badgeEn: "People of Qur'an",
-    iconName: 'quran',
-    accentColor: '#f59e0b',
-    gradient: 'from-amber-500 to-yellow-600'
-  }
-];
-
-export const AHL_QURAN_LEADERBOARD_STEPS: SpotlightStep[] = [
-  {
-    id: 'ahl_tabs',
-    targetSelector: '#ahl-tab-leaderboard',
-    titleAr: 'لوحة المتصدرين',
-    titleEn: 'Leaderboard Tab',
-    descAr: 'تستعرض ترتيب القراء الأكابر وأصحاب الختمات والصفحات المسجلة للشهر الحالي أو للأشهر السابقة.',
-    descEn: 'Displays top reciters, khatmas, and recorded pages for current or previous months.',
-    badgeAr: 'المتصدرين',
-    badgeEn: 'Leaderboard',
-    iconName: 'tab',
-    accentColor: '#10b981',
-    gradient: 'from-emerald-500 to-teal-600'
-  },
-  {
-    id: 'ahl_archive',
-    targetSelector: '#ahl-archive-selector',
-    titleAr: 'أرشيف الشهور والإجمالي',
-    titleEn: 'Archive & Cumulative Total',
-    descAr: 'يمكنك تصفح أرشيف الشهور الهجرية أو الميلادية الماضية، أو عرض الإجمالي التراكمي لكل الأوقات.',
-    descEn: 'Browse past Hijri or Gregorian month archives, or view the cumulative lifetime total.',
-    badgeAr: 'الأرشيف • Archive',
-    badgeEn: 'Month Archive',
-    iconName: 'search',
-    accentColor: '#3b82f6',
-    gradient: 'from-blue-500 to-indigo-600'
-  },
-  {
-    id: 'ahl_list',
-    targetSelector: '#ahl-leaderboard-list',
-    titleAr: 'قائمة لوحة الشرف',
-    titleEn: 'Honor Board List',
-    descAr: 'شاهد ترتيبك وأسماء الإخوة والأخوات القراء، مع إمكانية الظهور بأسماء رسمية أو كفاعل خير (مجهول).',
-    descEn: 'See your rank and fellow readers, with options to appear publicly or as an anonymous benefactor.',
-    badgeAr: 'قائمة الشرف',
-    badgeEn: 'Honor List',
-    iconName: 'user',
-    accentColor: '#8b5cf6',
-    gradient: 'from-violet-500 to-purple-600'
-  }
-];
-
-export const AHL_QURAN_STATS_STEPS: SpotlightStep[] = [
-  {
-    id: 'ahl_stats_tab',
-    targetSelector: '#ahl-tab-mystats',
-    titleAr: 'إحصائياتي الشخصية',
-    titleEn: 'My Statistics',
-    descAr: 'تابع بدقة عدد صفحاتك المقروءة، عدد الختمات، وترتيبك الحالي في المجتمع.',
-    descEn: 'Track your read pages count, khatmas, and current rank in the community precisely.',
-    badgeAr: 'إحصائيات',
-    badgeEn: 'Statistics',
-    iconName: 'action',
-    accentColor: '#f59e0b',
-    gradient: 'from-amber-500 to-orange-600'
-  },
-  {
-    id: 'ahl_stats_overview',
-    targetSelector: '#ahl-stats-overview',
-    titleAr: 'ملخص إنجازاتك',
-    titleEn: 'Achievement Summary',
-    descAr: 'بطاقة موجزة تلخص إنجازك القرآني لهذا الشهر ومجمل صفحاتك المختومة.',
-    descEn: 'A concise card summarizing your Qurani achievement for this month and total completed pages.',
-    badgeAr: 'الملخص',
-    badgeEn: 'Overview',
-    iconName: 'quran',
-    accentColor: '#ec4899',
-    gradient: 'from-pink-500 to-rose-600'
-  }
-];
-
-export const AHL_QURAN_PRIVACY_STEPS: SpotlightStep[] = [
-  {
-    id: 'ahl_privacy_tab',
-    targetSelector: '#ahl-tab-privacy',
-    titleAr: 'الخصوصية والظهور',
-    titleEn: 'Privacy & Visibility',
-    descAr: 'تحكم في كيفية ظهورك في لائحة الشرف (علني بالاسم، أو كفاعل خير مجهول، أو مخفي نهائياً).',
-    descEn: 'Control how you appear on the leaderboard (public name, anonymous benefactor, or fully hidden).',
-    badgeAr: 'الخصوصية',
-    badgeEn: 'Privacy',
-    iconName: 'lock',
-    accentColor: '#3b82f6',
-    gradient: 'from-blue-500 to-cyan-600'
-  },
-  {
-    id: 'ahl_privacy_calendar',
-    targetSelector: '#ahl-privacy-calendar',
-    titleAr: 'نوع التقويم المعتمد',
-    titleEn: 'Approved Calendar Type',
-    descAr: 'اختر اعتماد الشهور الهجرية أو الميلادية لتصنيف أداء لوحة المتصدرين.',
-    descEn: 'Choose whether Hijri or Gregorian months govern the leaderboard rankings.',
-    badgeAr: 'التقويم',
-    badgeEn: 'Calendar',
-    iconName: 'search',
-    accentColor: '#10b981',
-    gradient: 'from-emerald-500 to-teal-600'
-  },
-  {
-    id: 'ahl_privacy_options',
-    targetSelector: '#ahl-privacy-options',
-    titleAr: 'خيارات الخصوصية الثلاثة',
-    titleEn: 'Three Privacy Options',
-    descAr: 'اختر النمط الذي يناسبك لحفظ أجر الإخلاص والسر مع الاستمرار في تسجيل صفحاتك.',
-    descEn: 'Pick the mode that suits you to preserve sincerity while continuing to record your pages.',
-    badgeAr: 'التحكم',
-    badgeEn: 'Controls',
-    iconName: 'action',
-    accentColor: '#8b5cf6',
-    gradient: 'from-purple-500 to-indigo-600'
-  }
-];
-
 export const DAILY_SETTINGS_STEPS: SpotlightStep[] = [
   {
     id: 'wird_name',
@@ -812,6 +56,19 @@ export const DAILY_SETTINGS_STEPS: SpotlightStep[] = [
 ];
 
 export const DAILY_PROGRESS_STEPS: SpotlightStep[] = [
+  {
+    id: 'wird_notifications_toggle',
+    targetSelector: '#wird-notifications-toggle-btn',
+    titleAr: 'تفعيل وتعطيل تنبيهات الورد اليومي',
+    titleEn: 'Daily Wird Reminders Toggle',
+    descAr: 'اضغط على هذا الزر لتشغيل أو إيقاف التنبيهات اليومية لتذكيرك بقراءة وردك في الوقت المحدد (أخضر = مفعل / أحمر = معطل).',
+    descEn: 'Tap this button to turn daily wird reminder notifications on or off (Green = Enabled / Red = Disabled).',
+    badgeAr: 'التنبيهات',
+    badgeEn: 'Notifications',
+    iconName: 'bell',
+    accentColor: '#10b981',
+    gradient: 'from-emerald-500 to-teal-600'
+  },
   {
     id: 'wird_profile',
     targetSelector: '#wird-profile-selector',
@@ -1060,20 +317,394 @@ export const WORSHIP_MENTOR_PAGE_STEPS: SpotlightStep[] = [
   }
 ];
 
-export const CALCULATOR_PAGE_STEPS: SpotlightStep[] = [
+// 12. خطوات إرشاد الحاسبة الشرعية - تبويب الزكاة
+export const CALCULATOR_ZAKAT_STEPS: SpotlightStep[] = [
   {
-    id: 'calculator_page_intro',
-    titleAr: 'الحاسبة الشرعية والمالية',
-    titleEn: 'Islamic Legal & Financial Calculator',
-    descAr: 'حاسبة شرعية شاملة لحساب الزكاة والتركات والمواريث والكفارات وزكاة الفطر والأضاحي بدقة تامة وفق أحكام الفقه الإسلامي.',
-    descEn: 'Comprehensive Islamic calculator for Zakat, inheritance, expiations, Fitr, and Udhiyah accurately according to Islamic jurisprudence.',
-    badgeAr: 'فائدة الصفحة',
-    badgeEn: 'Purpose & Benefit',
+    id: 'calc_tabs_bar',
+    targetSelector: '#calc-tabs-bar',
+    titleAr: 'تبويبات الحاسبة الشرعية',
+    titleEn: 'Sharia Calculator Tabs',
+    descAr: 'شريط التبويبات الفقهية: تنقل بسهولة بين حاسبة الزكاة بأنواعها، حاسبة المواريث والتركات، حاسبة الكفارات وفدية الصيام، وحاسبة زكاة الفطر والأضاحي والعقيقة.',
+    descEn: 'Jurisprudence tabs bar: easily switch between Zakat, Inheritance, Expiations & Fidyah, and Fitr, Udhiyah & Aqiqah.',
+    badgeAr: 'الأقسام الفقهية',
+    badgeEn: 'Calculator Tabs',
+    iconName: 'tab',
+    accentColor: '#10b981',
+    gradient: 'from-emerald-500 to-teal-600'
+  },
+  {
+    id: 'zakat_header_actions',
+    targetSelector: '#zakat-header-actions',
+    titleAr: 'شريط النتائج وزر إعادة الضبط',
+    titleEn: 'Total Badge & Reset Action',
+    descAr: 'يعرض شارة إجمالي الزكاة النقدية المستحقة فورياً بمجرد إدخال البيانات، مع زر (إعادة ضبط) لمسح جميع الحقول والبدء بحساب جديد بلمسة واحدة.',
+    descEn: 'Displays the live calculated cash zakat total badge, with a (Reset) button to instantly clear all inputs and start fresh.',
+    badgeAr: 'الإجمالي وإعادة الضبط',
+    badgeEn: 'Total & Reset',
+    iconName: 'action',
+    accentColor: '#059669',
+    gradient: 'from-emerald-600 to-teal-700'
+  },
+  {
+    id: 'zakat_card_cash',
+    targetSelector: '#zakat-card-cash',
+    titleAr: 'بطاقة زكاة النقود والمدخرات',
+    titleEn: 'Cash & Savings Zakat Card',
+    descAr: 'أدخل إجمالي أموالك النقدية الحاضرة ومدخراتك البنكية والودائع التي حال عليها الحول القمري (مرور عام هجري كامل)؛ حيث تجب فيها الزكاة شرعاً بنسبة 2.5% (ربع العُشر) عند بلوغ النصاب.',
+    descEn: 'Enter all your cash in hand and bank savings held for a full lunar year (Hawl); zakat is due at 2.5% upon reaching the Nisab threshold.',
+    badgeAr: 'زكاة النقود',
+    badgeEn: 'Cash & Savings',
+    iconName: 'block',
+    accentColor: '#0ea5e9',
+    gradient: 'from-sky-500 to-blue-600'
+  },
+  {
+    id: 'zakat_card_gold_silver',
+    targetSelector: '#zakat-card-gold-silver',
+    titleAr: 'بطاقة زكاة الذهب والفضة',
+    titleEn: 'Gold & Silver Zakat Card',
+    descAr: 'بطاقة شاملة لحساب زكاة المعادن الثمينة: أدخل الوزن وسعر الجرام الحالي في بلدك لعيار 24 (نصابه 85 جم)، عيار 21 (نصابه 97.14 جم)، عيار 18 (نصابه 113.33 جم)، والفضة (نصابها 595 جم)؛ ليقوم النظام آلياً بضرب الأوزان بالأسعار وتحديد بلوغ النصاب الشرعي واحتساب مقدار الزكاة المستحقة بنسبة 2.5%.',
+    descEn: 'All-in-one precious metals card: enter weight and market price per gram for 24K (Nisab 85g), 21K (Nisab 97.14g), 18K (Nisab 113.33g), and Silver (Nisab 595g); automatically computes values, verifies Nisab, and calculates 2.5% due.',
+    badgeAr: 'الذهب والفضة',
+    badgeEn: 'Gold & Silver',
+    iconName: 'block',
+    accentColor: '#f59e0b',
+    gradient: 'from-amber-500 to-orange-600'
+  },
+  {
+    id: 'zakat_card_trade',
+    targetSelector: '#zakat-card-trade',
+    titleAr: 'بطاقة عروض التجارة والعقارات',
+    titleEn: 'Trade Merchandise & Real Estate Card',
+    descAr: 'تشمل تقييم البضائع المعروضة للبيع والنشاط التجاري بسعر السوق الحالي عند تمام الحول، وإيرادات وغلة العقارات الاستثمارية المؤجرة بعد مرور عام قمري عليها، وتُضم لحساب الوعاء الزكوي بنسبة 2.5%.',
+    descEn: 'Evaluates inventory goods for trade at current market selling prices at the end of Hawl, plus investment rental revenues held for a lunar year, taxed at 2.5%.',
+    badgeAr: 'عروض التجارة',
+    badgeEn: 'Trade & Properties',
+    iconName: 'block',
+    accentColor: '#3b82f6',
+    gradient: 'from-blue-500 to-indigo-600'
+  },
+  {
+    id: 'zakat_card_crops',
+    targetSelector: '#zakat-card-crops',
+    titleAr: 'بطاقة زكاة الزروع والثمار',
+    titleEn: 'Crops & Agricultural Produce Card',
+    descAr: 'لحساب زكاة المحاصيل والثمار يوم حصادها؛ نصابها 5 أوسق (حوالي 653 كجم)، مع تحديد طريقة الري: ري طبيعي بالأمطار والعيون (الواجب 10% - العُشر)، أو ري بآلات ومضخات وتكلفة (الواجب 5% - نصف العُشر)، مع إمكانية إدخال سعر الكيلو لحساب القيمة النقدية المقابلة اختيارياً.',
+    descEn: 'Calculates agricultural zakat at harvest time; Nisab is 5 Awsuq (~653 kg), select irrigation: natural rainfed (10% due) or artificial machinery (5% due), with optional price per kg to compute monetary value.',
+    badgeAr: 'الزروع والثمار',
+    badgeEn: 'Agricultural Zakat',
     iconName: 'block',
     accentColor: '#10b981',
     gradient: 'from-emerald-500 to-teal-600'
+  },
+  {
+    id: 'zakat_card_livestock',
+    targetSelector: '#zakat-card-livestock',
+    titleAr: 'بطاقة زكاة الأنعام والركاز',
+    titleEn: 'Livestock & Rikaz Card',
+    descAr: 'أدخل أعداد الماشية السائمة لحساب زكاتها الشرعية: الإبل (نصابها من 5)، البقر (نصابها من 30)، الغنم والماعز (نصابها من 40) لمعرفة نوع وعدد الرؤوس الواجب إخراجها، بالإضافة لحقل الركاز والمعادن المدفونة التي تجب فيها نسبة الخُمس (20%) فور استخراجها دون اشتراط حول.',
+    descEn: 'Enter grazing livestock counts: camels (Nisab 5), cattle (Nisab 30), sheep/goats (Nisab 40) to determine due animal types, plus buried treasures (Rikaz) and minerals taxed at 20% immediately without Hawl.',
+    badgeAr: 'الأنعام والركاز',
+    badgeEn: 'Livestock & Rikaz',
+    iconName: 'block',
+    accentColor: '#ea580c',
+    gradient: 'from-orange-500 to-amber-600'
+  },
+  {
+    id: 'zakat_card_summary',
+    targetSelector: '#zakat-card-summary',
+    titleAr: 'بطاقة الملخص النهائي للزكاة النقدية',
+    titleEn: 'Final Cash Zakat Summary Card',
+    descAr: 'الملخص الشامل للزكاة؛ يعرض إجمالي المبالغ الواجب إخراجها نقدياً، مع تفصيل نصيب كل قسم (الأموال والتجارة، المحاصيل، الركاز)، وتنبيه فقهي ذكي باللون الأحمر في حال لم يبلغ مجموع المال النصاب الشرعي المحدد.',
+    descEn: 'Comprehensive summary displaying total payable cash zakat, breakdown by category (monetary/trade, crops, rikaz), and alert if wealth is below Nisab.',
+    badgeAr: 'الملخص النهائي',
+    badgeEn: 'Final Summary',
+    iconName: 'action',
+    accentColor: '#059669',
+    gradient: 'from-emerald-600 to-teal-700'
   }
 ];
+
+// خطوات إرشاد الحاسبة الشرعية - تبويب المواريث والتركات
+export const CALCULATOR_MAWARITH_STEPS: SpotlightStep[] = [
+  {
+    id: 'mawarith_header_actions',
+    targetSelector: '#mawarith-header-actions',
+    titleAr: 'شريط المواريث وإعادة الضبط',
+    titleEn: 'Inheritance Header & Reset',
+    descAr: 'عنوان قسم المواريث وحساب التركات، مزود بزر (إعادة ضبط) لمسح جميع بيانات الورثة والتركة والبدء في حل مسألة فقهية جديدة بلمسة واحدة.',
+    descEn: 'Inheritance calculation header equipped with a (Reset) button to instantly clear all heirs and estate figures to start a new case.',
+    badgeAr: 'إدارة المسألة',
+    badgeEn: 'Header & Reset',
+    iconName: 'action',
+    accentColor: '#10b981',
+    gradient: 'from-emerald-500 to-teal-600'
+  },
+  {
+    id: 'mawarith_card_estate',
+    targetSelector: '#mawarith-card-estate',
+    titleAr: 'بطاقة قيمة التركة الإجمالية',
+    titleEn: 'Total Estate Value Card',
+    descAr: 'أدخل المبلغ الصافي للتركة المراد توزيعها على الورثة، وذلك بعد خصم تكاليف تجهيز الميت وتكفينه ودفنه، وسداد جميع ديونه المستحقة للعباد ولله، وإنفاذ وصاياه الشرعية الصحيحة في حدود الثلث لغير وارث.',
+    descEn: 'Enter net estate value after deducting funeral expenses, settling all debts, and executing valid wills within one-third for non-heirs.',
+    badgeAr: 'قيمة التركة',
+    badgeEn: 'Estate Value',
+    iconName: 'block',
+    accentColor: '#0ea5e9',
+    gradient: 'from-sky-500 to-blue-600'
+  },
+  {
+    id: 'mawarith_card_parents',
+    targetSelector: '#mawarith-card-parents',
+    titleAr: 'بطاقة الأصول (الآباء والأجداد)',
+    titleEn: 'Ascendants (Parents & Grandparents) Card',
+    descAr: 'حدد وجود الأب والأم والجد لأب والجدات من الجهتين؛ حيث يرث الأب بالفرض أو التعصيب ويحجب الأجداد والإخوة، وترث الأم الثلث أو السدس مع حجب الجدات، وتتفاعل الخيارات ذاتياً بحسب قواعد الحجب الفقهية.',
+    descEn: 'Select living parents and grandparents; father inherits by quota or Ta\'seeb and blocks grandfathers and siblings, mother inherits 1/3 or 1/6 and blocks grandmothers.',
+    badgeAr: 'الآباء والأجداد',
+    badgeEn: 'Ascendants',
+    iconName: 'user',
+    accentColor: '#8b5cf6',
+    gradient: 'from-violet-500 to-purple-600'
+  },
+  {
+    id: 'mawarith_card_spouses',
+    targetSelector: '#mawarith-card-spouses',
+    titleAr: 'بطاقة الزوج والزوجة',
+    titleEn: 'Spouse Status Card',
+    descAr: 'اختر الحالة الزوجية للمتوفى (زوج يرث النصف أو الربع، أو زوجة ترث الربع أو الثمن بحسب وجود الفرع الوارث)، مع إمكانية تحديد عدد الزوجات (من 1 إلى 4) ليتم اقتسام نصيب الزوجية بينهن بالتساوي.',
+    descEn: 'Select surviving spouse (husband inherits 1/2 or 1/4, or wife inherits 1/4 or 1/8 based on descendants), with wives counter (1-4) sharing the portion equally.',
+    badgeAr: 'الزوجية',
+    badgeEn: 'Spouses',
+    iconName: 'user',
+    accentColor: '#ec4899',
+    gradient: 'from-pink-500 to-rose-600'
+  },
+  {
+    id: 'mawarith_card_descendants',
+    targetSelector: '#mawarith-card-descendants',
+    titleAr: 'بطاقة الفروع (الأبناء وبناتهم)',
+    titleEn: 'Descendants (Children & Grandchildren) Card',
+    descAr: 'أدخل أعداد الأبناء الذكور والإناث، وأولاد الابن (أبناء وبنات الابن) عند عدم وجود ابن مباشر صلب؛ حيث يطبق النظام قاعدة التوريث القرآنية (للذكر مثل حظ الأنثيين) وحساب فروض البنات عند انفرادهن.',
+    descEn: 'Enter counts of sons, daughters, grandsons, and granddaughters (blocked by sons); automatically applies (male gets twice female share) and daughters\' fixed shares.',
+    badgeAr: 'الفروع',
+    badgeEn: 'Descendants',
+    iconName: 'user',
+    accentColor: '#3b82f6',
+    gradient: 'from-blue-500 to-indigo-600'
+  },
+  {
+    id: 'mawarith_card_siblings',
+    targetSelector: '#mawarith-card-siblings',
+    titleAr: 'بطاقة الحواشي (الإخوة والأخوات)',
+    titleEn: 'Collaterals (Brothers & Sisters) Card',
+    descAr: 'أدخل عدد الإخوة والأخوات الأشقاء، ولأب، ولأم؛ وتطبق الحاسبة قواعد الحجب بالفرع الوارث المذكر أو الأب، كما تحسب ميراث الإخوة لأم بالسوية بالتساوي التام بين الذكر والأنثى بنص القرآن الكريم.',
+    descEn: 'Enter counts of full, paternal, and maternal siblings; automatically applies blocking by male descendants or father, and splits maternal siblings\' quota equally between males and females.',
+    badgeAr: 'الحواشي',
+    badgeEn: 'Siblings',
+    iconName: 'group',
+    accentColor: '#f59e0b',
+    gradient: 'from-amber-500 to-orange-600'
+  },
+  {
+    id: 'mawarith_card_extended',
+    targetSelector: '#mawarith-card-extended',
+    titleAr: 'بطاقة العصبات الأخرى (أبناء الإخوة والأعمام)',
+    titleEn: 'Other Agnatic Heirs (Asabah) Card',
+    descAr: 'لحساب أنصبة باقي العصبات بالنفس عند انعدام العصبات الأقرب: أبناء الأخ الشقيق، أبناء الأخ لأب، الأعمام، وأبناء العمومة؛ مع تقديم الأقرب جهة ودرجة وقوة لحيازة ما تبقى من التركة تعصيباً.',
+    descEn: 'Calculates shares for secondary agnatic heirs (nephews, uncles, cousins) when closer agnates are absent, following strict genealogical proximity rules.',
+    badgeAr: 'العصبات',
+    badgeEn: 'Extended Heirs',
+    iconName: 'group',
+    accentColor: '#ea580c',
+    gradient: 'from-orange-500 to-amber-600'
+  },
+  {
+    id: 'mawarith_card_results',
+    targetSelector: '#mawarith-card-results',
+    titleAr: 'بطاقة جدول توزيع الميراث والأنصبة',
+    titleEn: 'Inheritance Distribution Table Card',
+    descAr: 'جدول بياني شامل يعرض قائمة الورثة المستحقين، نوع إرث كل وارث (فرض، تعصيب، عول، رد)، النسبة المئوية الدقيقة من التركة، والمبلغ المالي المستحق لكل فرد أو فئة بالعملة بدقة شرعية وحسابية متناهية.',
+    descEn: 'Detailed distribution table presenting eligible heirs, share type (Fixed, Ta\'seeb, Awl, Radd), exact percentage, and final monetary payout for each heir.',
+    badgeAr: 'جدول الميراث',
+    badgeEn: 'Distribution Table',
+    iconName: 'block',
+    accentColor: '#059669',
+    gradient: 'from-emerald-600 to-teal-700'
+  }
+];
+
+// خطوات إرشاد الحاسبة الشرعية - تبويب الكفارات وفدية الصيام
+export const CALCULATOR_KAFFARAT_STEPS: SpotlightStep[] = [
+  {
+    id: 'kaffarat_header_actions',
+    targetSelector: '#kaffarat-header-actions',
+    titleAr: 'شريط الكفارات وإعادة الضبط',
+    titleEn: 'Expiations Header & Reset',
+    descAr: 'عنوان قسم حساب الكفارات والفدية الشرعية مع زر (إعادة ضبط) لمسح القيم المدخلة وتصفير الحسابات للبدء من جديد بلمسة واحدة.',
+    descEn: 'Expiations and Fidyah calculator toolbar with a (Reset) button to instantly clear all values and restart calculation.',
+    badgeAr: 'إدارة الكفارات',
+    badgeEn: 'Header & Reset',
+    iconName: 'action',
+    accentColor: '#10b981',
+    gradient: 'from-emerald-500 to-teal-600'
+  },
+  {
+    id: 'kaffarat_card_fidyah',
+    targetSelector: '#kaffarat-card-fidyah',
+    titleAr: 'بطاقة فدية الصيام',
+    titleEn: 'Fasting Fidyah Card',
+    descAr: 'تجب على العاجز عن صيام رمضان عجزاً دائماً كالكبير في السن والمريض مرضاً مزمناً؛ أدخل عدد الأيام المفطرة ومتوسط تكلفة وجبة إطعام مسكين واحد ليحسب النظام آلياً إجمالي المبلغ الواجب إخراجه.',
+    descEn: 'Due by those permanently unable to fast Ramadan (elderly or chronically ill); enter missed days and meal cost per needy person to automatically compute total Fidyah.',
+    badgeAr: 'فدية الصيام',
+    badgeEn: 'Fasting Fidyah',
+    iconName: 'block',
+    accentColor: '#0ea5e9',
+    gradient: 'from-sky-500 to-blue-600'
+  },
+  {
+    id: 'kaffarat_card_yamin',
+    targetSelector: '#kaffarat-card-yamin',
+    titleAr: 'بطاقة كفارة اليمين',
+    titleEn: 'Oath Expiation (Kaffarat al-Yamin) Card',
+    descAr: 'تجب عند الحنث في اليمين المعقودة؛ وهي إطعام عشرة مساكين من أوسط ما تطعمون أهليكم؛ أدخل تكلفة الوجبة المشبعة الواحدة ليقوم النظام آلياً بضربها في 10 وإظهار إجمالي كفارة اليمين المستحقة.',
+    descEn: 'Due upon breaking an oath; feeding 10 needy persons; enter cost of one meal to automatically multiply by 10 and display the total expiation amount.',
+    badgeAr: 'كفارة اليمين',
+    badgeEn: 'Oath Expiation',
+    iconName: 'block',
+    accentColor: '#3b82f6',
+    gradient: 'from-blue-500 to-indigo-600'
+  },
+  {
+    id: 'kaffarat_card_notes',
+    targetSelector: '#kaffarat-card-notes',
+    titleAr: 'بطاقة الضوابط الفقهية لإخراج الكفارات',
+    titleEn: 'Jurisprudence Guidelines Card',
+    descAr: 'إيضاح للأحكام الفقهية المعتمدة: الأصل الشرعي في الكفارة والفدية إخراج الطعام عيناً من قوت البلد (مُد أو نصف صاع)، وأجاز جمهور من الفقهاء إخراج القيمة نقداً تيسيراً وسداً لحاجة المسكين.',
+    descEn: 'Jurisprudence notes: the standard Sharia requirement is distributing actual staple food (Mudd or half Sa\'), while paying cash value is permitted by scholars to ease poor relief.',
+    badgeAr: 'ضوابط فقهية',
+    badgeEn: 'Legal Guidelines',
+    iconName: 'block',
+    accentColor: '#8b5cf6',
+    gradient: 'from-purple-500 to-violet-600'
+  }
+];
+
+// خطوات إرشاد الحاسبة الشرعية - تبويب زكاة الفطر
+export const CALCULATOR_FITR_STEPS: SpotlightStep[] = [
+  {
+    id: 'fitr_subtabs',
+    targetSelector: '#fitr-udhiyah-subtabs',
+    titleAr: 'التبديل بين زكاة الفطر والأضحية',
+    titleEn: 'Toggle Fitr & Udhiyah Modes',
+    descAr: 'شريط التبديل السريع بين قسمين: (زكاة الفطر) لحساب صاع الفطر للأفراد والأسرة، و(الأضحية والعقيقة) لحساب بهيمة الأنعام والأسهم وقسمة الأثلاث والعقيقة عن المواليد.',
+    descEn: 'Quick subtab switcher: toggle between (Zakat al-Fitr) for individuals and families, and (Udhiyah & Aqiqah) for livestock, shares, thirds division, and newborn sacrifice.',
+    badgeAr: 'التبويب الفرعي',
+    badgeEn: 'Subtab Toggle',
+    iconName: 'tab',
+    accentColor: '#10b981',
+    gradient: 'from-emerald-500 to-teal-600'
+  },
+  {
+    id: 'fitr_card_inputs',
+    targetSelector: '#fitr-card-inputs',
+    titleAr: 'بطاقة مدخلات زكاة الفطر',
+    titleEn: 'Zakat al-Fitr Inputs Card',
+    descAr: 'بطاقة متكاملة لحساب الفطر: حدد عدد أفراد الأسرة بالأرقام أو الأزرار السريعة، خيار إضافة الجنين في بطن أمه (استحباباً لفعل عثمان رضي الله عنه)، اختيار نوع الصاع من قوت البلد (أرز، قمح، تمر، زبيب، صاع قياسي)، وخيار إدخال القيمة النقدية للفرد بالعملة المحلية.',
+    descEn: 'All-in-one Fitr input card: specify family member count with quick buttons, unborn baby checkbox (recommended), select staple food type (rice, wheat, dates, standard Sa\'), and enter cash equivalent per person.',
+    badgeAr: 'مدخلات الفطر',
+    badgeEn: 'Fitr Inputs',
+    iconName: 'block',
+    accentColor: '#f59e0b',
+    gradient: 'from-amber-500 to-orange-600'
+  },
+  {
+    id: 'fitr_card_results',
+    targetSelector: '#fitr-card-results',
+    titleAr: 'بطاقة نتائج زكاة الفطر وأحكامها',
+    titleEn: 'Zakat al-Fitr Results & Rulings Card',
+    descAr: 'تعرض إجمالي المقدار العيني بالصاع والكيلوجرام، وإجمالي المقدار النقدي المقدر، مع ملخص للأحكام الفقهية: وقت الوجوب بغروب شمس ليلة العيد، وأفضل وقت للإخراج قبل صلاة العيد، ومصارفها المشروعة للمساكين.',
+    descEn: 'Displays total in-kind weight in kg, estimated total cash, and Sharia rulings: time of obligation at Eid eve sunset, best time before Eid prayer, and poor recipients.',
+    badgeAr: 'نتائج وأحكام',
+    badgeEn: 'Fitr Results',
+    iconName: 'block',
+    accentColor: '#059669',
+    gradient: 'from-emerald-600 to-teal-700'
+  }
+];
+
+// خطوات إرشاد الحاسبة الشرعية - تبويب الأضحية والعقيقة
+export const CALCULATOR_UDHIYAH_STEPS: SpotlightStep[] = [
+  {
+    id: 'udhiyah_subtabs',
+    targetSelector: '#fitr-udhiyah-subtabs',
+    titleAr: 'التبديل بين زكاة الفطر والأضحية',
+    titleEn: 'Toggle Fitr & Udhiyah Modes',
+    descAr: 'شريط التبديل السريع بين قسمين: (زكاة الفطر) لحساب صاع الفطر للأفراد والأسرة، و(الأضحية والعقيقة) لحساب بهيمة الأنعام والأسهم وقسمة الأثلاث والعقيقة عن المواليد.',
+    descEn: 'Quick subtab switcher: toggle between (Zakat al-Fitr) for individuals and families, and (Udhiyah & Aqiqah) for livestock, shares, thirds division, and newborn sacrifice.',
+    badgeAr: 'التبويب الفرعي',
+    badgeEn: 'Subtab Toggle',
+    iconName: 'tab',
+    accentColor: '#10b981',
+    gradient: 'from-emerald-500 to-teal-600'
+  },
+  {
+    id: 'udhiyah_card_animal',
+    targetSelector: '#udhiyah-card-animal',
+    titleAr: 'بطاقة بهيمة الأنعام والأسهم والأسعار',
+    titleEn: 'Livestock Type, Age & Shares Card',
+    descAr: 'اختر نوع الأضحية (ضأن، ماعز، بقر، إبل) مع بيان السن الشرعي المجزئ لكل نوع، تحديد عدد أسهمك المشارك بها (تجزئ الشاة عن شخص وأهل بيته، وتجزئ البقرة والبدنة عن 7 أسهم)، وإدخال سعر الذبيحة لحساب قيمة السهم وحصتك بدقة.',
+    descEn: 'Choose animal type (sheep, goat, cattle, camel) with minimum age, select partnership shares (sheep for 1 household, cattle/camels up to 7 shares), and input price to calculate share cost.',
+    badgeAr: 'بهيمة الأنعام',
+    badgeEn: 'Livestock & Shares',
+    iconName: 'block',
+    accentColor: '#0ea5e9',
+    gradient: 'from-sky-500 to-blue-600'
+  },
+  {
+    id: 'udhiyah_card_division',
+    targetSelector: '#udhiyah-card-division',
+    titleAr: 'بطاقة قسمة الأضحية المستحبة (الأثلاث)',
+    titleEn: 'Recommended Thirds Division Card',
+    descAr: 'قسمة الأضحية وفق السنة النبوية الشريفة «فكلوا وأطعموا وادخروا»؛ حيث يقسم النظام وزن اللحم الصافي آلياً إلى ثلاثة أثلاث متساوية: ثلث لأهل البيت، ثلث هدية للأقارب والجيران، وثلث صدقة للفقراء والمساكين.',
+    descEn: 'Divides net meat weight into three equal portions according to the Sunnah: 1/3 for family, 1/3 as gifts for relatives & neighbors, and 1/3 in charity for the needy.',
+    badgeAr: 'قسمة الأثلاث',
+    badgeEn: 'Thirds Division',
+    iconName: 'block',
+    accentColor: '#8b5cf6',
+    gradient: 'from-violet-500 to-purple-600'
+  },
+  {
+    id: 'udhiyah_card_defects',
+    targetSelector: '#udhiyah-card-defects',
+    titleAr: 'بطاقة فحص السلامة من العيوب الأربعة المانعة',
+    titleEn: 'Invalidation Defects Checklist Card',
+    descAr: 'قائمة تفاعلية لفحص سلامة الأضحية من العيوب الأربعة المانعة للإجزاء الواردة في حديث النبي ﷺ (العوراء، المريضة، العرجاء، والعجفاء)، مع مؤشر ذكي يوضح صحة الأضحية وإجزائها شرعاً.',
+    descEn: 'Interactive checklist ensuring the animal is free from the 4 invalidating defects from the Prophetic Hadith (blind, sick, lame, emaciated), with validity badge.',
+    badgeAr: 'فحص العيوب',
+    badgeEn: 'Defect Checklist',
+    iconName: 'block',
+    accentColor: '#ef4444',
+    gradient: 'from-rose-500 to-red-600'
+  },
+  {
+    id: 'udhiyah_card_aqiqah',
+    targetSelector: '#udhiyah-card-aqiqah',
+    titleAr: 'بطاقة حاسبة العقيقة عن المواليد',
+    titleEn: 'Newborn Aqiqah Calculator Card',
+    descAr: 'لحساب العقيقة المسنونة في اليوم السابع للمولود؛ أدخل عدد المواليد الذكور (شاتان عن كل ولد) وعدد الإناث (شاة عن كل بنت)، ليقوم النظام بحساب إجمالي عدد الذبائح المطلوبة للعقيقة.',
+    descEn: 'Calculates Sunnah Aqiqah for the 7th day of newborn; enter number of boys (2 sheep each) and girls (1 sheep each) to compute total required sacrifice animals.',
+    badgeAr: 'حاسبة العقيقة',
+    badgeEn: 'Aqiqah Calculator',
+    iconName: 'block',
+    accentColor: '#ec4899',
+    gradient: 'from-pink-500 to-rose-600'
+  }
+];
+
+export const CALCULATOR_FITR_UDHIYAH_STEPS: SpotlightStep[] = CALCULATOR_FITR_STEPS;
+
+// للتوافق مع أي استدعاء قديم
+export const CALCULATOR_PAGE_STEPS: SpotlightStep[] = CALCULATOR_ZAKAT_STEPS;
 
 export const NAWAWI_PAGE_STEPS: SpotlightStep[] = [
   {
@@ -1090,18 +721,302 @@ export const NAWAWI_PAGE_STEPS: SpotlightStep[] = [
   }
 ];
 
+// 13. خطوات إرشاد صفحة مواقيت الصلاة
 export const PRAYER_TIMES_PAGE_STEPS: SpotlightStep[] = [
   {
-    id: 'prayer_times_page_intro',
-    titleAr: 'مواقيت الصلاة واتجاه القبلة',
-    titleEn: 'Prayer Times & Qibla Direction',
-    descAr: 'حساب مواقيت الصلوات الخمس بدقة تامة حسب موقعك الجغرافي وحسابات الفلك المعتمدة، مع تنبيهات الأذان والإقامة وحساب الثلث الأخير من الليل واتجاه القبلة.',
-    descEn: 'Calculate prayer times accurately based on your location and approved astronomical methods, with Adhan and Iqama alerts, last third of the night, and Qibla direction.',
-    badgeAr: 'فائدة الصفحة',
-    badgeEn: 'Purpose & Benefit',
-    iconName: 'block',
+    id: 'prayer_gps_refresh',
+    targetSelector: '#location-refresh-btn',
+    titleAr: 'تحديث الموقع الجغرافي (GPS)',
+    titleEn: 'Refresh GPS Location',
+    descAr: 'اضغط هنا لتحديث إحداثيات موقعك الحالي بدقة عبر نظام الـ GPS لإعادة حساب مواقيت الأذان والصلوات بدقة تامة لمدينتك.',
+    descEn: 'Tap here to update your current GPS coordinates and recalculate precise prayer times and Qibla direction for your city.',
+    badgeAr: 'الموقع الجغرافي',
+    badgeEn: 'GPS Location',
+    iconName: 'map',
+    accentColor: '#0ea5e9',
+    gradient: 'from-sky-500 to-blue-600'
+  },
+  {
+    id: 'prayer_top_settings_btn',
+    targetSelector: '#prayer-top-bar-settings-btn',
+    titleAr: 'إعدادات الصلاة والإشعارات',
+    titleEn: 'Prayer Settings & Notifications',
+    descAr: 'اضغط هنا لفتح قائمة إعدادات الصلاة والإشعارات: تفعيل الإشعار المستمر لمواقيت الصلاة، كتم التنبيهات الصوتية مؤقتاً، وتنبيهات أذكار قيام الليل واليوم.',
+    descEn: 'Tap here to open prayer settings and notifications: manage persistent prayer notification, temporarily mute audio alerts, and customize night and daily athkar reminders.',
+    badgeAr: 'إعدادات الصلاة',
+    badgeEn: 'Prayer Settings',
+    iconName: 'gear',
+    accentColor: '#8b5cf6',
+    gradient: 'from-violet-500 to-purple-600'
+  },
+  {
+    id: 'prayer_nearby_mosques',
+    targetSelector: '#nearby-mosques-btn',
+    titleAr: 'المساجد القريبة من موقعك',
+    titleEn: 'Nearby Mosques',
+    descAr: 'يفتح لك خرائط جوجل للبحث عن جميع المساجد المحيطة بك وعرض المسافة ومسارات المشي والقيادة للوصول إلى صلاة الجماعة.',
+    descEn: 'Opens Google Maps to locate all mosques surrounding your current position with walking and driving directions.',
+    badgeAr: 'المساجد • Maps',
+    badgeEn: 'Nearby Mosques',
+    iconName: 'map',
     accentColor: '#10b981',
     gradient: 'from-emerald-500 to-teal-600'
+  },
+  {
+    id: 'prayer_monthly_times',
+    targetSelector: '#monthly-times-btn',
+    titleAr: 'جدول مواقيت الشهر بالكامل',
+    titleEn: 'Monthly Timetable',
+    descAr: 'عرض جدول إمساكية ومواقيت الصلاة لكامل الشهر الهجري أو الميلادي مع إمكانية تصديرها كملف PDF أنيق أو مشاركتها كصورة.',
+    descEn: 'View the full monthly prayer timetable for Hijri or Gregorian months with options to export as a formatted PDF or share as an image.',
+    badgeAr: 'إمساكية الشهر',
+    badgeEn: 'Monthly Timetable',
+    iconName: 'calendar',
+    accentColor: '#8b5cf6',
+    gradient: 'from-violet-500 to-purple-600'
+  },
+  {
+    id: 'prayer_search_box',
+    targetSelector: '#prayer-date-search-container',
+    titleAr: 'البحث عن أي مدينة أو تاريخ',
+    titleEn: 'City & Date Search',
+    descAr: 'يمكنك كتابة اسم أي مدينة أو عاصمة في العالم أو اختيار يوم محدد لمعرفة مواقيت الصلاة الفلكية بدقة متناهية دون الحاجة لتواجدك هناك.',
+    descEn: 'Type any city or country worldwide, or pick a specific date to view its exact astronomical prayer times instantly.',
+    badgeAr: 'البحث الذكي',
+    badgeEn: 'Search',
+    iconName: 'search',
+    accentColor: '#f59e0b',
+    gradient: 'from-amber-500 to-orange-600'
+  },
+  {
+    id: 'prayer_next_card',
+    targetSelector: '#next-prayer-countdown-container',
+    titleAr: 'الصلاة القادمة والعد التنازلي الحي',
+    titleEn: 'Next Prayer & Live Countdown',
+    descAr: 'يعرض اسم الصلاة القادمة مع عداد تنازلي دقيق بالثواني والدقائق لموعد رفع الأذان، مع تلوين مميز للبطاقة لتنبيهك بوقت الصلاة.',
+    descEn: 'Displays the next upcoming prayer with an active countdown timer down to the second until the call to prayer.',
+    badgeAr: 'الصلاة القادمة',
+    badgeEn: 'Next Prayer',
+    iconName: 'clock',
+    accentColor: '#059669',
+    gradient: 'from-emerald-600 to-teal-700'
+  },
+  {
+    id: 'prayer_night_times',
+    targetSelector: '#night-times-container',
+    titleAr: 'مواقيت قيام الليل وتنبيهات الأسحار',
+    titleEn: 'Night Times & Tahajjud Reminders',
+    descAr: 'حساب شرعي دقيق للثلث الأول ومنتصف الليل والثلث الأخير المستحب فيه قيام الليل والاستغفار، مع إمكانية تفعيل جرس التنبيه لكل وقت.',
+    descEn: 'Accurate calculations for the first third, midnight, and the blessed last third of the night, with toggleable reminder bells.',
+    badgeAr: 'قيام الليل',
+    badgeEn: 'Night Times',
+    iconName: 'moon',
+    accentColor: '#6366f1',
+    gradient: 'from-indigo-500 to-blue-600'
+  },
+  {
+    id: 'prayer_cards_grid',
+    targetSelector: '#prayer-list',
+    titleAr: 'بطاقات مواقيت الصلوات اليومية',
+    titleEn: 'Daily Prayer Cards Grid',
+    descAr: 'شبكة مواقيت الصلوات الست (الفجر، الشروق، الظهر، العصر، المغرب، العشاء). توضح وقت دخول الصلاة ووقت الإقامة المحدد لكل فرض.',
+    descEn: 'Grid of the six daily prayer cards showing exact adhan times, iqama intervals, and active highlights.',
+    badgeAr: 'أوقات الصلوات',
+    badgeEn: 'Prayer Timings',
+    iconName: 'clock',
+    accentColor: '#3b82f6',
+    gradient: 'from-blue-500 to-indigo-600'
+  },
+  {
+    id: 'prayer_sound_toggle',
+    targetSelector: '#prayer-sound-toggle-btn',
+    titleAr: 'كتم أو تشغيل صوت الأذان للصلاة',
+    titleEn: 'Mute / Unmute Adhan Sound',
+    descAr: 'اضغط على النقطة (خضراء=مفعل / حمراء=مكتوم) لتفعيل أو إيقاف صوت الأذان والتنبيه لكل صلاة على حدة حسب رغبتك.',
+    descEn: 'Tap the status indicator (green=active / red=muted) to toggle adhan sound and notifications independently for each prayer.',
+    badgeAr: 'صوت الأذان',
+    badgeEn: 'Sound Alert',
+    iconName: 'volume',
+    accentColor: '#10b981',
+    gradient: 'from-emerald-500 to-teal-600'
+  },
+  {
+    id: 'prayer_card_settings_btn',
+    targetSelector: '#prayer-settings-btn',
+    titleAr: 'زر تخصيص وإعدادات الصلاة',
+    titleEn: 'Prayer Customization & Settings',
+    descAr: 'اضغط على هذا الزر لفتح قائمة إعدادات الصلاة: ضبط دقائق الأذان، تنبيه الاستعداد، وقت الإقامة، الوضع الصامت التلقائي واختيار نغمة المؤذن.',
+    descEn: 'Tap this button to open the prayer settings menu: calibrate adhan minutes, readiness alert, iqama time, auto-silent mode, and reciter tone.',
+    badgeAr: 'إعدادات الصلاة',
+    badgeEn: 'Settings',
+    iconName: 'gear',
+    accentColor: '#8b5cf6',
+    gradient: 'from-purple-500 to-violet-600'
+  }
+];
+
+// 14. خطوات إرشاد صفحة مواقيت الشهر
+export const MONTHLY_PRAYER_TIMES_STEPS: SpotlightStep[] = [
+  {
+    id: 'monthly_export_pdf',
+    targetSelector: '#btn-monthly-pdf',
+    titleAr: 'تصدير إمساكية الشهر كـ PDF',
+    titleEn: 'Export Timetable as PDF',
+    descAr: 'تصدير جدول مواقيت الصلاة للشهر كاملاً في ملف PDF عالي الجودة ومنسق بعناية للطباعة الورقية أو الحفظ على الهاتف.',
+    descEn: 'Export the complete monthly prayer schedule as a high quality PDF document ready for printing or offline keeping.',
+    badgeAr: 'تصدير PDF',
+    badgeEn: 'Export PDF',
+    iconName: 'file',
+    accentColor: '#ef4444',
+    gradient: 'from-red-500 to-rose-600'
+  },
+  {
+    id: 'monthly_share_image',
+    targetSelector: '#btn-monthly-share',
+    titleAr: 'مشاركة جدول الشهر كصورة',
+    titleEn: 'Share Timetable as Image',
+    descAr: 'إنشاء صورة بتصميم إسلامي أنيق لجدول مواقيت الصلاة ومشاركتها مع العائلة والأصدقاء ومجموعات الواتساب ومواقع التواصل.',
+    descEn: 'Generate an elegant image of the monthly prayer timetable and share it with family and WhatsApp groups.',
+    badgeAr: 'مشاركة كصورة',
+    badgeEn: 'Share Image',
+    iconName: 'share',
+    accentColor: '#10b981',
+    gradient: 'from-emerald-500 to-teal-600'
+  },
+  {
+    id: 'monthly_date_picker',
+    targetSelector: '#btn-monthly-picker',
+    titleAr: 'اختيار الشهر والسنة',
+    titleEn: 'Month & Year Picker',
+    descAr: 'اضغط على اسم الشهر لفتح نافذة اختيار أي شهر وسنة هجرية أو ميلادية والتنقل المباشر لمواقيتها بكل سهولة.',
+    descEn: 'Tap the month name to open a quick selector modal and switch directly to any Hijri or Gregorian month and year.',
+    badgeAr: 'اختيار الشهر',
+    badgeEn: 'Date Picker',
+    iconName: 'calendar',
+    accentColor: '#0ea5e9',
+    gradient: 'from-sky-500 to-blue-600'
+  },
+  {
+    id: 'monthly_calendar_toggle',
+    targetSelector: '#btn-monthly-calendar-toggle',
+    titleAr: 'التبديل بين الهجري والميلادي',
+    titleEn: 'Hijri & Gregorian Toggle',
+    descAr: 'زر التبديل السريع لعرض مواقيت الشهر حسب الأشهر الهجرية الإسلامية (رمضان، شوال..) أو الأشهر الميلادية.',
+    descEn: 'Quick toggle to view the monthly schedule based on Islamic Hijri months or Gregorian calendar months.',
+    badgeAr: 'التقويم',
+    badgeEn: 'Calendar Toggle',
+    iconName: 'tab',
+    accentColor: '#f59e0b',
+    gradient: 'from-amber-500 to-orange-600'
+  },
+  {
+    id: 'monthly_nav_arrows',
+    targetSelector: '#btn-monthly-prev, #btn-monthly-next',
+    titleAr: 'التنقل بين الشهور السابقة والقادمة',
+    titleEn: 'Month Navigation Arrows',
+    descAr: 'استخدم أسهم التنقل للانتقال السريع للشهر التالي أو العودة للشهر السابق بلمسة واحدة.',
+    descEn: 'Use the navigation arrows to advance to the next month or go back to previous months with one tap.',
+    badgeAr: 'تنقل الشهور',
+    badgeEn: 'Navigation',
+    iconName: 'nav',
+    accentColor: '#8b5cf6',
+    gradient: 'from-violet-500 to-purple-600'
+  },
+  {
+    id: 'monthly_table_grid',
+    targetSelector: '#monthly-table-container',
+    preferredPlacement: 'center',
+    titleAr: 'جدول المواقيت وتظليل اليوم الحالي',
+    titleEn: 'Timetable & Today Highlighting',
+    descAr: 'جدول كامل لجميع أيام الشهر مع مواقيت الصلوات الخمس والشروق، ويتم تمييز وتظليل يومك الحالي بلون بارز تلقائياً لسهولة المتابعة.',
+    descEn: 'Full monthly timetable with all five prayers and sunrise times, automatically highlighting today row for easy tracking.',
+    badgeAr: 'جدول الشهر',
+    badgeEn: 'Timetable',
+    iconName: 'clock',
+    accentColor: '#059669',
+    gradient: 'from-emerald-600 to-teal-700'
+  }
+];
+
+// 15. خطوات إرشاد قائمة إعدادات الصلاة
+export const PRAYER_SETTINGS_MODAL_STEPS: SpotlightStep[] = [
+  {
+    id: 'setting_adhan_offset',
+    targetSelector: '#setting-adhan-adjustment',
+    titleAr: 'تقديم أو تأخير وقت الأذان',
+    titleEn: 'Adjust Adhan Timing & Offset',
+    descAr: 'يمكنك زيادة أو إنقاص وقت الأذان بالدقائق عبر زري (+ / -) أو كتابة الرقم يدوياً، أو الضغط على أيقونة الساعة لكتابة الوقت الدقيق لمطابقة مسجد حيك.',
+    descEn: 'Increase or decrease the adhan time in minutes using (+ / -), type the offset manually, or tap the clock icon to enter exact local time.',
+    badgeAr: 'وقت الأذان',
+    badgeEn: 'Adhan Calibration',
+    iconName: 'clock',
+    accentColor: '#0ea5e9',
+    gradient: 'from-sky-500 to-blue-600'
+  },
+  {
+    id: 'setting_tone_selector',
+    targetSelector: '#setting-tone-selector',
+    titleAr: 'نغمة الأذان واختيار المؤذن',
+    titleEn: 'Adhan Tone & Reciter Selection',
+    descAr: 'اختر نغمة وتكبيرات الأذان المفضلة لديك من قائمة المؤذنين المشاهير، أو ارفع ملفك الصوتي الخاص من ذاكرة هاتفك.',
+    descEn: 'Choose your preferred adhan or takbeer from renowned muezzins, or upload your own audio file from your device.',
+    badgeAr: 'صوت الأذان',
+    badgeEn: 'Adhan Reciter',
+    iconName: 'volume',
+    accentColor: '#10b981',
+    gradient: 'from-emerald-500 to-teal-600'
+  },
+  {
+    id: 'setting_pre_reminder',
+    targetSelector: '#setting-pre-reminder',
+    titleAr: 'تنبيه الاستعداد للصلاة قبل الأذان',
+    titleEn: 'Pre-Adhan Readiness Alert',
+    descAr: 'تنبيه لطيف مسبق قبل حلول الأذان بعدة دقائق (10، 15، 20 دقيقة أو تحديد يدوي) للاستعداد والتفرغ والوضوء والذهاب للمسجد.',
+    descEn: 'A preparatory reminder minutes before adhan (10, 15, 20 mins or custom) to prepare, make wudu, and head to prayer.',
+    badgeAr: 'الاستعداد للصلاة',
+    badgeEn: 'Readiness Alert',
+    iconName: 'bell',
+    accentColor: '#f59e0b',
+    gradient: 'from-amber-500 to-orange-600'
+  },
+  {
+    id: 'setting_iqama_alert',
+    targetSelector: '#setting-iqama-alert',
+    titleAr: 'تنبيه وموعد إقامة الصلاة',
+    titleEn: 'Iqama Reminder Alert',
+    descAr: 'تنبيه بصوت رنين عند حلول موعد إقامة الصلاة في المسجد بعدد الدقائق المحدد بعد الأذان (10، 15، 20 دقيقة أو تحديد يدوي).',
+    descEn: 'Chime reminder when the congregation prayer starts after your specified minutes from adhan.',
+    badgeAr: 'وقت الإقامة',
+    badgeEn: 'Iqama Time',
+    iconName: 'bell',
+    accentColor: '#8b5cf6',
+    gradient: 'from-violet-500 to-purple-600'
+  },
+  {
+    id: 'setting_auto_silent',
+    targetSelector: '#setting-auto-silent',
+    titleAr: 'تحويل الهاتف للوضع الصامت تلقائياً',
+    titleEn: 'Automatic Silent Mode in Prayer',
+    descAr: 'كتم صوت الهاتف ونغماته تلقائياً أثناء الصلاة لمنع الإزعاج داخل المسجد، مع إعادته لوضعه الطبيعي تلقائياً بعد انقضاء مدة الصلاة.',
+    descEn: 'Automatically mutes phone ringers during prayer to prevent disturbance, and restores normal volume afterwards.',
+    badgeAr: 'الوضع الصامت',
+    badgeEn: 'Auto Silent',
+    iconName: 'volume',
+    accentColor: '#ec4899',
+    gradient: 'from-pink-500 to-rose-600'
+  },
+  {
+    id: 'setting_save_btn',
+    targetSelector: '#setting-save-btn',
+    titleAr: 'حفظ الإعدادات والتعديلات',
+    titleEn: 'Save Custom Settings',
+    descAr: 'اضغط على زر الحفظ لتطبيق كافة التغييرات على توقيت الصلاة ونغماتها والتنبيهات التلقائية فوراً.',
+    descEn: 'Tap the save button to apply all custom timings, alerts, and silent durations immediately.',
+    badgeAr: 'حفظ التعديلات',
+    badgeEn: 'Save Changes',
+    iconName: 'action',
+    accentColor: '#059669',
+    gradient: 'from-emerald-600 to-teal-700'
   }
 ];
 
@@ -1122,16 +1037,108 @@ export const ASMAUL_HUSNA_PAGE_STEPS: SpotlightStep[] = [
 
 export const LISTEN_QURAN_PAGE_STEPS: SpotlightStep[] = [
   {
-    id: 'listen_quran_page_intro',
-    titleAr: 'استماع القرآن الكريم',
-    titleEn: 'Quran Listening',
-    descAr: 'استمع لتلاوات القرآن الكريم بصوت نخبة من القراء، مع إمكانية اختيار السور والتحكم في التكرار والمؤقت وإمكانية التحميل للاستماع بدون إنترنت.',
-    descEn: 'Listen to Holy Quran recitations by elite reciters, with options to select surahs, control repetition, set sleep timer, and download for offline listening.',
-    badgeAr: 'فائدة الصفحة',
-    badgeEn: 'Purpose & Benefit',
-    iconName: 'block',
+    id: 'listen_top_fav',
+    targetSelector: '#btn-listen-toggle-fav',
+    titleAr: 'إضافة التلاوة للمفضلة',
+    titleEn: 'Add to Favorites',
+    descAr: 'اضغط على رمز القلب لحفظ التلاوة الحالية (السورة مع القارئ المختار) في قائمة مفضلاتك للرجوع إليها والاستماع لها في أي وقت بلمسة واحدة.',
+    descEn: 'Tap the heart icon to save the current recitation (surah & selected reciter) to your favorites for instant playback anytime.',
+    badgeAr: 'المفضلة',
+    badgeEn: 'Favorites',
+    iconName: 'action',
+    accentColor: '#ec4899',
+    gradient: 'from-pink-500 to-rose-600'
+  },
+  {
+    id: 'listen_reciter_select',
+    targetSelector: '#btn-listen-select-reciter',
+    titleAr: 'اختيار القارئ والشيخ',
+    titleEn: 'Select Reciter',
+    descAr: 'اضغط لاختيار قارئك المفضل من بين نخبة من كبار قراء العالم الإسلامي بمختلف الروايات وطرق التلاوة (مرتل ومجود)، مع إمكانية البحث السريع.',
+    descEn: 'Tap to choose your favorite reciter from renowned Islamic reciters across multiple recitation styles, with quick search.',
+    badgeAr: 'القارئ',
+    badgeEn: 'Reciter',
+    iconName: 'user',
     accentColor: '#10b981',
     gradient: 'from-emerald-500 to-teal-600'
+  },
+  {
+    id: 'listen_surah_select',
+    targetSelector: '#btn-listen-select-surah',
+    titleAr: 'اختيار السورة الكريمة',
+    titleEn: 'Select Surah',
+    descAr: 'اضغط لعرض قائمة سور القرآن الكريم المتاحة بصوت القارئ الحالي، مع بيان رقم السورة واسمها ونوعها (مكية أو مدنية).',
+    descEn: 'Tap to browse all available Quranic surahs for this reciter, with surah number, name, and revelation type.',
+    badgeAr: 'السورة',
+    badgeEn: 'Surah',
+    iconName: 'quran',
+    accentColor: '#3b82f6',
+    gradient: 'from-blue-500 to-indigo-600'
+  },
+  {
+    id: 'listen_player_controls',
+    targetSelector: '#listen-player-card',
+    titleAr: 'مشغل التلاوة والتحكم بالصوت',
+    titleEn: 'Audio Player & Controls',
+    descAr: 'مشغل الصوت التفاعلي: شريط تقديم وتأخير التلاوة بالدقائق والثواني، زر التشغيل والإيقاف المؤقت، وزري الانتقال للسورة التالية والسابقة.',
+    descEn: 'Interactive audio player: seekbar to scrub through minutes and seconds, Play/Pause button, and skip to next or previous surah.',
+    badgeAr: 'المشغل',
+    badgeEn: 'Player',
+    iconName: 'volume',
+    accentColor: '#059669',
+    gradient: 'from-emerald-600 to-teal-700'
+  },
+  {
+    id: 'listen_sleep_timer',
+    targetSelector: '#listen-sleep-timer-card',
+    titleAr: 'مؤقت النوم والإيقاف التلقائي',
+    titleEn: 'Sleep Timer & Auto-Stop',
+    descAr: 'حدد موعداً لإيقاف التلاوة تلقائياً عند النوم؛ اختر فترات سريعة (15، 30، 60 دقيقة) أو عند نهاية السورة، أو حدد الدقائق يدوياً بـ (+ / -).',
+    descEn: 'Set a timer to automatically stop playback when sleeping; choose quick presets (15, 30, 60 mins), at the end of the surah, or fine-tune minutes with (+ / -).',
+    badgeAr: 'مؤقت النوم',
+    badgeEn: 'Sleep Timer',
+    iconName: 'moon',
+    accentColor: '#f59e0b',
+    gradient: 'from-amber-500 to-orange-600'
+  },
+  {
+    id: 'listen_playback_options',
+    targetSelector: '#listen-options-card',
+    titleAr: 'خيارات التكرار والتشغيل المتواصل',
+    titleEn: 'Repeat & Continuous Play',
+    descAr: 'خيارات تشغيل ذكية: تفعيل تكرار نفس السورة تلقائياً للحفظ والمراجعة، أو التشغيل المتواصل للانتقال التلقائي للسور التالية تباعاً دون انقطاع.',
+    descEn: 'Smart playback options: repeat the current surah for memorization, or enable continuous play to automatically transition to subsequent surahs.',
+    badgeAr: 'خيارات التشغيل',
+    badgeEn: 'Options',
+    iconName: 'action',
+    accentColor: '#8b5cf6',
+    gradient: 'from-purple-500 to-violet-600'
+  },
+  {
+    id: 'listen_download_surahs',
+    targetSelector: '#btn-listen-download',
+    titleAr: 'تحميل التلاوات بدون إنترنت',
+    titleEn: 'Download for Offline Listening',
+    descAr: 'تحميل سور المصحف الشريف بصوت أي قارئ تريده على ذاكرة هاتفك للاستماع لها في أي وقت ومكان دون الحاجة لاتصال بالإنترنت.',
+    descEn: 'Download holy surahs recited by your favorite reciters to your device storage for offline playback anytime without internet.',
+    badgeAr: 'تحميل التلاوات',
+    badgeEn: 'Offline Download',
+    iconName: 'nav',
+    accentColor: '#0ea5e9',
+    gradient: 'from-sky-500 to-blue-600'
+  },
+  {
+    id: 'listen_saved_favorites',
+    targetSelector: '#listen-favorites-card',
+    titleAr: 'قائمة المفضلات المحفوظة',
+    titleEn: 'Saved Recitations Favorites',
+    descAr: 'بطاقة تجمع تلاواتك المفضلة (حتى 10 تلاوات)؛ اضغط على أي تلاوة لتشغيلها فوراً، أو احذفها بلمسة واحدة متى شئت.',
+    descEn: 'Collection of your favorite recitations (up to 10); tap any item to play it instantly or remove it with one click.',
+    badgeAr: 'المفضلات',
+    badgeEn: 'Favorites List',
+    iconName: 'block',
+    accentColor: '#ef4444',
+    gradient: 'from-rose-500 to-red-600'
   }
 ];
 
@@ -1299,6 +1306,35 @@ export const PROPHETIC_SEERAH_PAGE_STEPS: SpotlightStep[] = [
     gradient: 'from-emerald-500 to-teal-600'
   }
 ];
+
+export const TEN_PROMISED_PAGE_STEPS: SpotlightStep[] = [
+  {
+    id: 'ten_promised_intro',
+    titleAr: 'العشرة المبشرون',
+    titleEn: 'The Ten Promised',
+    descAr: 'سير وبيانات العشرة المبشرين بالجنة رضي الله عنهم: أحوالهم قبل الإسلام، قصة إسلامهم، جهادهم، فضائلهم، ومواقفهم العظيمة مع إمكانية تكبير النصوص ومشاركة البطاقات.',
+    descEn: 'Biographies and historical details of the Ten Promised Paradise: their lives before Islam, embracing the faith, jihad, virtues, and immortal legacy with zoom and card sharing.',
+    badgeAr: 'فائدة الصفحة',
+    badgeEn: 'Page Guide',
+    iconName: 'block',
+    accentColor: '#10b981',
+    gradient: 'from-emerald-500 to-teal-600'
+  },
+  {
+    id: 'ten_promised_companion_card',
+    targetSelector: '#ten-promised-card-1',
+    titleAr: 'بطاقة الصحابي والتفاصيل الكاملة',
+    titleEn: 'Companion Profile & Full Details',
+    descAr: 'اضغط على بطاقة أي صحابي للدخول إلى صفحته المستقلة التي تضم تفاصيل نشأته، إسلامه، غزواته، بشارته بالجنة، وأبرز الدروس والعبر.',
+    descEn: 'Tap any companion card to open their comprehensive profile featuring life before Islam, conversion, battles, virtues, and timeless faith lessons.',
+    badgeAr: 'التصفح',
+    badgeEn: 'Navigation',
+    iconName: 'user',
+    accentColor: '#10b981',
+    gradient: 'from-emerald-500 to-teal-600'
+  }
+];
+
 
 
 

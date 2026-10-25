@@ -396,6 +396,11 @@ public class PrayerWidgetProvider extends AppWidgetProvider {
             } catch (Exception e) {
                 e.printStackTrace();
             }
+
+            // Keep persistent prayer notification in sync with widget updates
+            try {
+                PersistentPrayerNotification.update(context);
+            } catch (Exception ignored) {}
         }
 
         // Handle resizing logic

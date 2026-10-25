@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Sparkles, ChevronRight, ChevronLeft, Check, X, HelpCircle, 
-  Eye, Info, MessageSquare, Users, BookOpen, Send, Mic, Paperclip, Smile
+  Eye, Info, MessageSquare, Users, BookOpen, Send, Mic, Paperclip, Smile,
+  Clock, Bell, Calendar, Volume2, Settings, MapPin, Moon, FileText, Share2, Sliders, Compass
 } from 'lucide-react';
 
 export interface SpotlightStep {
@@ -14,10 +15,10 @@ export interface SpotlightStep {
   descEn: string;
   badgeAr?: string;
   badgeEn?: string;
-  iconName?: 'lang' | 'tab' | 'user' | 'country' | 'lock' | 'action' | 'nav' | 'profile' | 'quran' | 'search' | 'group' | 'block' | 'chat' | 'verse' | 'attach' | 'emoji' | 'text' | 'voice';
+  iconName?: 'lang' | 'tab' | 'user' | 'country' | 'lock' | 'action' | 'nav' | 'profile' | 'quran' | 'search' | 'group' | 'block' | 'chat' | 'verse' | 'attach' | 'emoji' | 'text' | 'voice' | 'clock' | 'bell' | 'calendar' | 'volume' | 'gear' | 'map' | 'moon' | 'file' | 'share' | 'slider' | 'compass';
   accentColor: string; // e.g. '#0284c7', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'
   gradient: string; // e.g. 'from-sky-500 to-blue-600'
-  preferredPlacement?: 'top' | 'bottom';
+  preferredPlacement?: 'top' | 'bottom' | 'center';
 }
 
 interface CommunitySpotlightGuideProps {
@@ -61,7 +62,21 @@ export const resetCommunityGuides = (): void => {
       'hijri_calendar_page_spotlight',
       'hajj_umrah_page_spotlight',
       'tasbeeh_page_spotlight',
-      'prophetic_seerah_page_spotlight'
+      'prophetic_seerah_page_spotlight',
+      'prayer_times_page_spotlight',
+      'monthly_prayer_times_spotlight',
+      'prayer_settings_modal_spotlight',
+      'daily_wird_progress_tour',
+      'daily_wird_settings_tour',
+      'listen_quran_page_spotlight',
+      'calc_tab_zakat_spotlight',
+      'calc_tab_mawarith_spotlight',
+      'calc_tab_kaffarat_spotlight',
+      'calc_subtab_fitr_spotlight',
+      'calc_subtab_udhiyah_spotlight',
+      'calc_tab_fitr_udhiyah_spotlight',
+      'calc_tab_fitr-udhiyah_spotlight',
+      'calculator_page_spotlight'
     ];
     keys.forEach(k => localStorage.removeItem(`guide_seen_${k}`));
   } catch (e) {}
@@ -103,6 +118,28 @@ const renderStepIcon = (iconName: string | undefined, color: string) => {
       return <Smile size={16} />;
     case 'voice':
       return <Mic size={16} />;
+    case 'clock':
+      return <Clock size={16} />;
+    case 'bell':
+      return <Bell size={16} />;
+    case 'calendar':
+      return <Calendar size={16} />;
+    case 'volume':
+      return <Volume2 size={16} />;
+    case 'gear':
+      return <Settings size={16} />;
+    case 'map':
+      return <MapPin size={16} />;
+    case 'moon':
+      return <Moon size={16} />;
+    case 'file':
+      return <FileText size={16} />;
+    case 'share':
+      return <Share2 size={16} />;
+    case 'slider':
+      return <Sliders size={16} />;
+    case 'compass':
+      return <Compass size={16} />;
     default:
       return <Sparkles size={16} />;
   }
@@ -139,7 +176,7 @@ export const CommunitySpotlightGuide: React.FC<CommunitySpotlightGuideProps> = (
 
   // Helper to find scrollable parent container
   const findScrollParent = useCallback((el: HTMLElement): HTMLElement | null => {
-    const namedContainer = el.closest('#memorization-scroll-container, #wird-scroll-container, #chat-messages-container, #direct-chat-messages-container, main, #app-scroll-container') as HTMLElement | null;
+    const namedContainer = el.closest('#calc-scroll-container, #memorization-scroll-container, #wird-scroll-container, #chat-messages-container, #direct-chat-messages-container, #prayer-settings-scroll-container, #listen-scroll-container, main, #app-scroll-container') as HTMLElement | null;
     if (namedContainer) return namedContainer;
 
     let p = el.parentElement;
@@ -406,14 +443,23 @@ export const CommunitySpotlightGuide: React.FC<CommunitySpotlightGuideProps> = (
     const targetCenterX = targetRect.left + targetRect.width / 2;
     const spaceBelow = screenHeight - targetRect.bottom;
     const spaceAbove = targetRect.top;
+    const isTargetVeryLarge = targetRect.height > screenHeight * 0.40;
 
     const computedLeft = Math.max(14, Math.min(screenWidth - cardWidth - 14, Math.round(targetCenterX - cardWidth / 2)));
     beakLeft = Math.max(20, Math.min(cardWidth - 28, Math.round(targetCenterX - computedLeft - 8)));
 
-    // Smart placement: NEVER place card on top of the target element.
-    // If step specifies preferredPlacement or is group_chat_feed, place at bottom or top as specified.
-    // Otherwise pick whichever side has more space and strictly clamp outside the target rect.
-    if (step.preferredPlacement === 'bottom' || step.id === 'group_chat_feed') {
+    // Smart placement: center the card when target is very large, center is requested, or space is cramped
+    if (step.preferredPlacement === 'center' || isTargetVeryLarge) {
+      pointerPlacement = 'center';
+      const centeredLeft = Math.max(14, Math.round((screenWidth - cardWidth) / 2));
+      const centeredTop = Math.max(14, Math.round((screenHeight - cardHeight) / 2));
+      cardPositionStyle = {
+        top: centeredTop,
+        left: centeredLeft,
+        width: cardWidth,
+        maxHeight: Math.max(260, screenHeight - 28)
+      };
+    } else if (step.preferredPlacement === 'bottom' || step.id === 'group_chat_feed') {
       pointerPlacement = 'top';
       cardPositionStyle = {
         bottom: 80,
@@ -429,37 +475,30 @@ export const CommunitySpotlightGuide: React.FC<CommunitySpotlightGuideProps> = (
         width: cardWidth,
         maxHeight: Math.min(cardHeight + 40, screenHeight - 140)
       };
-    } else if (spaceBelow >= cardHeight + margin + 4) {
+    } else if (spaceBelow >= cardHeight + margin + 10) {
       pointerPlacement = 'top';
       cardPositionStyle = {
-        top: targetRect.bottom + margin,
+        top: Math.min(targetRect.bottom + margin, screenHeight - cardHeight - 20),
         left: computedLeft,
         width: cardWidth
       };
-    } else if (spaceAbove >= cardHeight + margin + 4) {
+    } else if (spaceAbove >= cardHeight + margin + 10) {
       pointerPlacement = 'bottom';
       cardPositionStyle = {
         top: Math.max(12, targetRect.top - cardHeight - margin),
         left: computedLeft,
         width: cardWidth
       };
-    } else if (spaceBelow >= spaceAbove) {
-      pointerPlacement = 'top';
-      const availableSpace = Math.max(140, screenHeight - targetRect.bottom - 16);
-      cardPositionStyle = {
-        top: targetRect.bottom + 8,
-        left: computedLeft,
-        width: cardWidth,
-        maxHeight: availableSpace
-      };
     } else {
-      pointerPlacement = 'bottom';
-      const availableSpace = Math.max(140, targetRect.top - 16);
+      // If neither spaceBelow nor spaceAbove can fit the card comfortably, center it in the middle of the screen!
+      pointerPlacement = 'center';
+      const centeredLeft = Math.max(14, Math.round((screenWidth - cardWidth) / 2));
+      const centeredTop = Math.max(14, Math.round((screenHeight - cardHeight) / 2));
       cardPositionStyle = {
-        top: Math.max(12, targetRect.top - Math.min(cardHeight, availableSpace) - 8),
-        left: computedLeft,
+        top: centeredTop,
+        left: centeredLeft,
         width: cardWidth,
-        maxHeight: availableSpace
+        maxHeight: Math.max(260, screenHeight - 28)
       };
     }
   } else {
@@ -470,7 +509,8 @@ export const CommunitySpotlightGuide: React.FC<CommunitySpotlightGuideProps> = (
     cardPositionStyle = {
       top: centeredTop,
       left: centeredLeft,
-      width: cardWidth
+      width: cardWidth,
+      maxHeight: Math.max(260, screenHeight - 28)
     };
   }
 
@@ -651,7 +691,7 @@ export const CommunitySpotlightGuide: React.FC<CommunitySpotlightGuideProps> = (
         </p>
 
         {/* Bottom Bar: Dots Progress & Action Controls */}
-        <div className="flex items-center justify-between gap-2 pt-2 border-t border-white/10">
+        <div className="flex items-center justify-between gap-2 pt-2 border-t border-white/10 shrink-0 mt-auto">
           {/* Progress Dots */}
           <div className="flex items-center gap-1.5">
             {steps.map((_, idx) => (

@@ -93,6 +93,7 @@
                 <action android:name="com.mushaf.ahmedandlayla.ACTION_START_SILENT" />
                 <action android:name="com.mushaf.ahmedandlayla.ACTION_END_SILENT" />
                 <action android:name="com.mushaf.ahmedandlayla.ACTION_RESTORE_NOTIFICATION" />
+                <action android:name="com.mushaf.ahmedandlayla.ACTION_UPDATE_NOTIFICATION" />
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>

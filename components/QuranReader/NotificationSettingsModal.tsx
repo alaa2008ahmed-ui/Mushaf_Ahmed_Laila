@@ -21,14 +21,24 @@ interface NotificationSettingsModalProps {
     isLandscape: boolean;
     modeSuffix: string;
     initialTab?: 'app' | 'phone';
+    hideAppTab?: boolean;
+    phoneTabTitle?: string;
 }
 
-const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({ onClose, showToast, isLandscape, modeSuffix, initialTab }) => {
+const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({ 
+    onClose, 
+    showToast, 
+    isLandscape, 
+    modeSuffix, 
+    initialTab,
+    hideAppTab = false,
+    phoneTabTitle
+}) => {
     const { language, dir, isRTL } = useLanguage();
     const isEn = language === 'en';
     const { config, updateConfig } = usePrayerTimes();
     const { phoneSettings, updateSpecificSetting, updateRandomSettings } = useNotificationSettings();
-    const [activeTab, setActiveTab] = useState<'app' | 'phone'>(initialTab || 'app');
+    const [activeTab, setActiveTab] = useState<'app' | 'phone'>(hideAppTab ? 'phone' : (initialTab || 'app'));
 
     const [appSettings, setAppSettings] = useState(() => {
         const saved = localStorage.getItem('notification_settings' + modeSuffix);
@@ -160,7 +170,7 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({ o
         updateSpecificSetting(key, { enabled: isEnabled });
         
         setTimeout(() => {
-            setupNotifications(newSettings);
+            setupNotifications(newSettings, isEn ? 'en' : 'ar');
         }, 100);
 
         const labelsAr: Record<string, string> = {
@@ -196,7 +206,7 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({ o
         };
         updateSpecificSetting(key, { time });
         setTimeout(() => {
-            setupNotifications(newSettings);
+            setupNotifications(newSettings, isEn ? 'en' : 'ar');
         }, 100);
     };
 
@@ -207,7 +217,7 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({ o
         };
         updateRandomSettings(value);
         setTimeout(() => {
-            setupNotifications(newSettings);
+            setupNotifications(newSettings, isEn ? 'en' : 'ar');
         }, 100);
     };
 
@@ -265,32 +275,49 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({ o
         <div dir={dir} className={`fixed inset-0 bg-black/40 backdrop-blur-sm z-[1200] flex items-center justify-center ${isLandscape ? 'p-0' : 'p-4'} animate-fadeIn`} onClick={onClose}>
             <div className={`modal-skinned w-full ${isLandscape ? 'max-w-4xl h-full rounded-none max-h-screen' : 'max-w-md rounded-2xl max-h-[85vh]'} shadow-2xl overflow-hidden flex flex-col animate-modal-enter`} onClick={e => e.stopPropagation()}>
 
-                <div className="flex border-b border-black/10 dark:border-white/10">
-                    <button 
-                        className="flex-1 py-3 text-sm font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer"
-                        style={{ 
-                            color: activeTab === 'app' ? 'var(--qr-accent)' : 'inherit', 
-                            borderBottom: activeTab === 'app' ? '2px solid var(--qr-accent)' : 'none',
-                            opacity: activeTab === 'app' ? 1 : 0.6
-                        }}
-                        onClick={() => setActiveTab('app')}
-                    >
-                        <AppWindow className="w-4 h-4" />
-                        {isEn ? 'App Notifications' : 'إشعارات التطبيق'}
-                    </button>
-                    <button 
-                        className="flex-1 py-3 text-sm font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer"
-                        style={{ 
-                            color: activeTab === 'phone' ? 'var(--qr-accent)' : 'inherit', 
-                            borderBottom: activeTab === 'phone' ? '2px solid var(--qr-accent)' : 'none',
-                            opacity: activeTab === 'phone' ? 1 : 0.6
-                        }}
-                        onClick={() => setActiveTab('phone')}
-                    >
-                        <Smartphone className="w-4 h-4" />
-                        {isEn ? 'Phone Notifications' : 'إشعارات الهاتف'}
-                    </button>
-                </div>
+                {hideAppTab ? (
+                    <div className="flex items-center justify-between p-3.5 sm:p-4 border-b border-black/10 dark:border-white/10">
+                        <div className="flex items-center gap-2 font-black text-sm sm:text-base" style={{ color: 'var(--qr-accent)' }}>
+                            <Smartphone className="w-5 h-5 shrink-0" />
+                            <span>{phoneTabTitle || (isEn ? 'Prayer Settings & Notifications' : 'إعدادات الصلاة والإشعارات')}</span>
+                        </div>
+                        <button 
+                            type="button"
+                            onClick={onClose}
+                            className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/10 active:scale-95 transition-all cursor-pointer opacity-70 hover:opacity-100"
+                            title={isEn ? "Close" : "إغلاق"}
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
+                    </div>
+                ) : (
+                    <div className="flex border-b border-black/10 dark:border-white/10">
+                        <button 
+                            className="flex-1 py-3 text-sm font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                            style={{ 
+                                color: activeTab === 'app' ? 'var(--qr-accent)' : 'inherit', 
+                                borderBottom: activeTab === 'app' ? '2px solid var(--qr-accent)' : 'none',
+                                opacity: activeTab === 'app' ? 1 : 0.6
+                            }}
+                            onClick={() => setActiveTab('app')}
+                        >
+                            <AppWindow className="w-4 h-4" />
+                            {isEn ? 'App Notifications' : 'إشعارات التطبيق'}
+                        </button>
+                        <button 
+                            className="flex-1 py-3 text-sm font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                            style={{ 
+                                color: activeTab === 'phone' ? 'var(--qr-accent)' : 'inherit', 
+                                borderBottom: activeTab === 'phone' ? '2px solid var(--qr-accent)' : 'none',
+                                opacity: activeTab === 'phone' ? 1 : 0.6
+                            }}
+                            onClick={() => setActiveTab('phone')}
+                        >
+                            <Smartphone className="w-4 h-4" />
+                            {phoneTabTitle || (isEn ? 'Phone Notifications' : 'إشعارات الهاتف')}
+                        </button>
+                    </div>
+                )}
 
                 <div className="p-4 space-y-3 overflow-y-auto flex-1 custom-scrollbar">
                     {activeTab === 'app' ? (
