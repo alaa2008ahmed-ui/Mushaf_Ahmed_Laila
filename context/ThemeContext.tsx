@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useEffect, useLayoutEffect, useMemo, ReactNode } from 'react';
 import { presetThemes, Theme } from './themes';
+import { syncWidgetThemeColors } from '../utils/widgetUtils';
 
 // State to be saved to localStorage
 interface ThemeSettings {
@@ -191,7 +192,16 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
         }
         
         saveSettings(nextSettings);
+
+        const targetTheme = presetThemes[key] || presetThemes.default;
+        syncWidgetThemeColors(key, targetTheme);
     };
+
+    useEffect(() => {
+        if (theme && activeThemeKey) {
+            syncWidgetThemeColors(activeThemeKey, theme);
+        }
+    }, [activeThemeKey, theme]);
 
     const setIsGlobalTheme = (isGlobal: boolean) => {
         saveSettings({ ...settings, isGlobalTheme: isGlobal });
@@ -273,17 +283,14 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
             }
         } else {
             if (videoBg) videoBg.style.display = 'none';
-            document.body.style.backgroundColor = theme.bgColor || '#0D1B2A';
-            
-            const colorLeft = hexToRgb(theme.palette[0]) || '20, 184, 166';
-            const colorRight = hexToRgb(theme.palette[1] || theme.palette[0]) || '124, 58, 237';
-            
             if (pageKey === 'quran') {
-                document.body.style.backgroundImage = `
-                    radial-gradient(circle at 15% 25%, rgba(${colorLeft}, 0.5), transparent 50%),
-                    radial-gradient(circle at 85% 75%, rgba(${colorRight}, 0.5), transparent 50%)
-                `;
+                document.body.style.backgroundImage = 'none';
+                const modeSuffix = (currentPage && currentPage.includes('landscape')) ? '_h' : '_v';
+                const quranThemeId = localStorage.getItem('current_theme_id' + modeSuffix) || 'black';
+                const isDarkQuran = quranThemeId === 'deep_black' || quranThemeId.startsWith('i_');
+                document.body.style.backgroundColor = isDarkQuran ? '#000000' : '#ffffff';
             } else {
+                document.body.style.backgroundColor = theme.bgColor || '#0D1B2A';
                 document.body.style.backgroundImage = 'none';
             }
         }
@@ -305,7 +312,7 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
             document.documentElement.classList.remove('dark');
         }
 
-        root.style.setProperty('--bg-color', theme.bgColor || '#0D1B2A');
+        root.style.setProperty('--bg-color', pageKey === 'quran' ? '#ffffff' : (theme.bgColor || '#0D1B2A'));
         root.style.setProperty('--text-color', isBlackTheme ? '#FFFFFF' : theme.textColor);
         root.style.setProperty('--text-color-muted', isBlackTheme ? '#E2E8F0' : (isDark ? '#94a3b8' : '#64748b'));
 
@@ -351,6 +358,11 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
         root.style.setProperty('--qr-modal-text', isBlackTheme ? '#FFFFFF' : theme.textColor);
         root.style.setProperty('--qr-modal-border', isBlackTheme ? '#FFFFFF' : theme.palette[0]);
     }, [settings.customBg, theme, currentPage]);
+
+    useEffect(() => {
+        // Instantly synchronize home screen theme colors with all widgets
+        syncWidgetThemeColors(activeThemeKey, theme);
+    }, [activeThemeKey, theme]);
 
     const isPageLocked = useMemo(() => {
         const pageKey = currentPage === 'quran' || currentPage === 'quran-landscape' || (currentPage && currentPage.startsWith('quran_')) || currentPage === 'search' ? 'quran' : currentPage;

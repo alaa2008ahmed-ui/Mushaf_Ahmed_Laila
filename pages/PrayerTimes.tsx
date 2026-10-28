@@ -40,41 +40,14 @@ function PrayerTimes({ onBack, onNavigate }) {
     const isDefaultTheme = themeKey === 'default' || !themeKey || theme.name?.includes('الافتراضي') || theme.name === 'Default';
     const isBlackAndWhite = themeKey === 'deep_black' || theme.name === 'اسود';
     const isBlackTheme = theme.bgColor === '#000000' || theme.name === 'أبيض وأسود' || theme.name === 'اسود' || themeKey === 'deep_black';
-    const primaryColor = isBlackTheme ? '#FFFFFF' : (isDefaultTheme ? '#000000' : (isBlackAndWhite ? '#FFFFFF' : theme.palette[0]));
-    const secondaryColor = isBlackTheme ? '#FFFFFF' : (isDefaultTheme ? '#000000' : (isBlackAndWhite ? '#FFFFFF' : theme.palette[1]));
-    const topBarTextColor = isBlackTheme ? '#FFFFFF' : (isDefaultTheme ? '#000000' : (theme.topBarText || (isBlackAndWhite ? '#FFFFFF' : theme.palette[0])));
+    const primaryColor = isBlackTheme ? '#FFFFFF' : (theme.palette?.[0] || theme.accent || theme.btnBg || '#2E7D5E');
+    const secondaryColor = isBlackTheme ? '#A1A1AA' : (theme.palette?.[1] || theme.palette?.[0] || '#4B5563');
+    const pageBgColor = isBlackTheme ? '#000000' : (theme.bgColor || '#F8FAFC');
+    const topBarTextColor = isBlackTheme ? '#FFFFFF' : (theme.topBarText || theme.textColor || '#1E293B');
 
-    const cardBorderColor = isDefaultTheme 
-      ? '#000000' 
-      : (isBlackTheme 
-          ? '#FFFFFF' 
-          : (theme.palette?.[0] || theme.accent || '#000000'));
-
-    const getNextPrayerBorderColor = () => {
-        if (isDefaultTheme) {
-            return '#059669'; // زمردي إسلامي مميز يختلف دائماً عن الأسود
-        }
-        if (isBlackTheme || isBlackAndWhite) {
-            return '#10b981'; // زمردي مضيء يختلف دائماً عن الأبيض
-        }
-        const pal0 = (theme.palette?.[0] || '').toLowerCase();
-        const isGreenTheme = pal0.includes('059669') || pal0.includes('10b981') || pal0.includes('16a34a') || pal0.includes('22c55e') || theme.name?.includes('أخضر') || theme.name?.includes('زيتوني') || theme.name?.includes('الروضة');
-        if (isGreenTheme) {
-            return '#d97706'; // عنبري ذهبي مختلف تماماً عن الأخضر
-        }
-        const isWarmTheme = pal0.includes('d97706') || pal0.includes('f59e0b') || pal0.includes('eab308') || theme.name?.includes('ذهبي') || theme.name?.includes('برتقالي') || theme.name?.includes('غروب');
-        if (isWarmTheme) {
-            return '#059669'; // زمردي مختلف تماماً عن الذهبي والبرتقالي
-        }
-        return '#059669'; // زمردي مميز وفاخر لسائر الثيمات الملونة
-    };
-
-    const nextPrayerBorderColor = getNextPrayerBorderColor();
-    const nextPrayerCardBorderColor = isDefaultTheme
-        ? '#059669'
-        : (isBlackTheme || isBlackAndWhite
-            ? '#FFFFFF'
-            : (theme.palette?.[0] || theme.accent || '#059669'));
+    const cardBorderColor = isBlackTheme ? '#FFFFFF' : 'transparent';
+    const nextPrayerCardBorderColor = primaryColor;
+    const nextPrayerBorderColor = primaryColor;
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isNotifModalOpen, setIsNotifModalOpen] = useState(false);
@@ -322,8 +295,8 @@ function PrayerTimes({ onBack, onNavigate }) {
     return (
         <div 
             dir={dir}
-            className="h-[100dvh] w-full flex flex-col" 
-            style={{ backgroundColor: isDefaultTheme ? '#FFFFFF' : 'transparent', color: isDefaultTheme ? '#000000' : theme.textColor }}
+            className="h-[100dvh] w-full flex flex-col font-cairo select-none" 
+            style={{ backgroundColor: pageBgColor, color: isBlackTheme ? '#FFFFFF' : (theme.textColor || '#1E293B') }}
         >
             <PrayerTimesHeader 
                 handleRefreshLocation={handleRefreshLocation}
@@ -337,16 +310,11 @@ function PrayerTimes({ onBack, onNavigate }) {
                 onOpenGuide={() => setShowGuide(true)}
             />
 
-            <main className="flex-1 overflow-y-auto hide-scrollbar px-2 pt-2 pb-1">
-                <div className="max-w-md mx-auto flex flex-col">
-                    <div 
-                        className={`themed-card shrink-0 ${isDefaultTheme ? 'bg-white' : 'bg-black/5 dark:bg-white/5'} rounded-xl p-2 mb-1.5 shadow-sm`}
-                        style={{
-                            border: `1.5px solid ${cardBorderColor}`,
-                            backgroundColor: isDefaultTheme ? '#FFFFFF' : undefined
-                        }}
-                    >
-                        <div className="flex gap-2 mb-1.5">
+            <main className="flex-1 overflow-y-auto hide-scrollbar px-3 sm:px-4 pt-3 pb-6">
+                <div className="max-w-md mx-auto flex flex-col space-y-3">
+                    {/* Top Action Bar & Date Search */}
+                    <div className="flex flex-col space-y-2.5">
+                        <div className="flex gap-2.5">
                             <button
                                 onClick={async () => {
                                     const lat = config.location?.lat;
@@ -367,30 +335,46 @@ function PrayerTimes({ onBack, onNavigate }) {
                                     }
                                 }}
                                 id="nearby-mosques-btn"
-                                className={`${isDefaultTheme ? 'bg-white' : 'themed-card'} flex-1 rounded-xl p-3 flex items-center justify-center gap-1.5 shadow-sm font-bold text-[13px] active:scale-95 transition-all hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer`}
-                                style={{ 
-                                    color: isBlackTheme ? '#FFFFFF' : primaryColor, 
-                                    border: `1.5px solid ${cardBorderColor}`,
-                                    backgroundColor: isDefaultTheme ? '#FFFFFF' : (isBlackTheme ? '#111111' : undefined) 
-                                }}
+                                className={`flex-1 rounded-2xl p-3 sm:p-3.5 flex items-center justify-center gap-2 font-bold text-xs sm:text-[13px] active:scale-95 transition-all cursor-pointer ${
+                                    isBlackTheme 
+                                        ? 'bg-[#18181b] border border-white/10 text-white shadow-[0_4px_20px_-2px_rgba(0,0,0,0.7)]' 
+                                        : 'bg-white text-slate-800 shadow-[0_4px_20px_-2px_rgba(0,0,0,0.05),0_2px_6px_-1px_rgba(0,0,0,0.02)]'
+                                }`}
+                                style={{ borderRadius: '16px' }}
                             >
-                                <MapPin size={18} className="shrink-0" style={{ color: isBlackTheme ? '#FFFFFF' : primaryColor }} />
-                                <span className="truncate whitespace-nowrap" style={{ color: isBlackTheme ? '#FFFFFF' : primaryColor }}>
+                                <div 
+                                    className="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
+                                    style={{ 
+                                        backgroundColor: isBlackTheme ? 'rgba(255,255,255,0.1)' : `${primaryColor}14`, 
+                                        color: primaryColor 
+                                    }}
+                                >
+                                    <MapPin size={15} />
+                                </div>
+                                <span className="truncate whitespace-nowrap">
                                     {tPrayer('nearbyMosques', language)}
                                 </span>
                             </button>
-                             <button
+                            <button
                                 onClick={() => onNavigate('monthly-prayer-times')}
                                 id="monthly-times-btn"
-                                className={`${isDefaultTheme ? 'bg-white' : 'themed-card'} flex-1 rounded-xl p-3 flex items-center justify-center gap-1.5 shadow-sm font-bold text-[13px] active:scale-95 transition-all hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer`}
-                                style={{ 
-                                    color: isBlackTheme ? '#FFFFFF' : secondaryColor, 
-                                    border: `1.5px solid ${cardBorderColor}`,
-                                    backgroundColor: isDefaultTheme ? '#FFFFFF' : (isBlackTheme ? '#111111' : undefined) 
-                                }}
+                                className={`flex-1 rounded-2xl p-3 sm:p-3.5 flex items-center justify-center gap-2 font-bold text-xs sm:text-[13px] active:scale-95 transition-all cursor-pointer ${
+                                    isBlackTheme 
+                                        ? 'bg-[#18181b] border border-white/10 text-white shadow-[0_4px_20px_-2px_rgba(0,0,0,0.7)]' 
+                                        : 'bg-white text-slate-800 shadow-[0_4px_20px_-2px_rgba(0,0,0,0.05),0_2px_6px_-1px_rgba(0,0,0,0.02)]'
+                                }`}
+                                style={{ borderRadius: '16px' }}
                             >
-                                <Calendar size={18} className="shrink-0" style={{ color: isBlackTheme ? '#FFFFFF' : secondaryColor }} />
-                                <span className="truncate whitespace-nowrap" style={{ color: isBlackTheme ? '#FFFFFF' : secondaryColor }}>
+                                <div 
+                                    className="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
+                                    style={{ 
+                                        backgroundColor: isBlackTheme ? 'rgba(255,255,255,0.1)' : `${primaryColor}14`, 
+                                        color: primaryColor 
+                                    }}
+                                >
+                                    <Calendar size={15} />
+                                </div>
+                                <span className="truncate whitespace-nowrap">
                                     {tPrayer('monthlyTimes', language)}
                                 </span>
                             </button>
@@ -415,7 +399,7 @@ function PrayerTimes({ onBack, onNavigate }) {
                                 <Bell className="w-5 h-5" />
                                 <div className="flex flex-col">
                                     <span className="text-sm font-bold">{tPrayer('audioAlertsPaused', language)}</span>
-                                    <span className="text-xs opacity-80">{tPrayer('untilDate', language)}{new Date(config.audioMutedUntil!).toLocaleDateString(language === 'en' ? 'en-US' : 'ar-SA')}</span>
+                                    <span className="text-xs opacity-80">{tPrayer('untilDate', language)}{new Date(config.audioMutedUntil!).toLocaleDateString(language === 'en' ? 'en-US-u-nu-latn' : 'ar-EG-u-nu-arab')}</span>
                                 </div>
                             </div>
                             <button 
@@ -478,7 +462,7 @@ function PrayerTimes({ onBack, onNavigate }) {
                         </div>
                     )}
 
-                    <div id="prayer-list" className="grid grid-cols-2 gap-2 mt-2">
+                    <div id="prayer-list" className="grid grid-cols-2 gap-2.5 sm:gap-3 mt-1">
                         {['Fajr', 'Sunrise', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'].map((key, idx) => {
                              const totalOffset = (config.prayerOffsets[key] || 0) + (isSummerTimeActive ? 60 : 0);
                              const displayTimeStr = applyOffset(times[key], totalOffset);

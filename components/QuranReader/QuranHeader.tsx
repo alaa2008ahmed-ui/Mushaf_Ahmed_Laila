@@ -160,7 +160,7 @@ const QuranHeader: React.FC<QuranHeaderProps> = React.memo(({
     const enSurahName = SURAH_NAMES_EN[currentAyah.s - 1] || surahName;
 
     return (
-        <header id="header" className={`header-default flex-none z-50 flex items-center justify-between border shadow-xl w-full gap-1 ${isAnyMenuOpen ? 'pointer-events-none opacity-50' : ''}`} style={getToolbarStyle('top-toolbar', currentTheme.barBg, currentTheme.barText, currentTheme.barBorder)}>
+        <header id="header" className={`header-default flex-none z-50 flex items-center justify-between shadow-xl w-full gap-1 border-0 ${isAnyMenuOpen ? 'pointer-events-none opacity-50' : ''}`} style={getToolbarStyle('top-toolbar', currentTheme.barBg, currentTheme.barText, currentTheme.barBorder)}>
             <div className="flex items-center">
                 <button 
                     id="btn-menu-header" 
@@ -169,7 +169,7 @@ const QuranHeader: React.FC<QuranHeaderProps> = React.memo(({
                     style={getToolbarStyle('btn-menu', currentTheme.btnBg, currentTheme.btnText, currentTheme.btnBorder || currentTheme.btnBg)}
                     title={isEn ? "Menu" : "القائمة"}
                 >
-                    <Menu size={20} />
+                    <Menu size={20} className="quran-3d-icon" strokeWidth={2.4} />
                 </button>
                 <div className="mr-1">
                 </div>

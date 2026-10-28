@@ -3,7 +3,9 @@ import React, { useState, useCallback, useEffect } from 'react';
 import ThemeSelector from './components/ThemesModal';
 import ExitConfirmModal from './components/ExitConfirmModal';
 import AppRouter from './router/AppRouter';
+import WelcomeSplash from './components/WelcomeSplash';
 import VideoSplash from './components/VideoSplash';
+import { useLanguage } from './context/LanguageContext';
 import RateUs from './components/RateUs';
 import { useWakeLock } from './hooks/useWakeLock';
 import { useBackButton } from './hooks/useBackButton';
@@ -20,9 +22,9 @@ import { normalizeArabic } from './utils/voiceParser';
 import { usePrayerTimes } from './context/PrayerTimesContext';
 import { setupNotifications } from './utils/notifications';
 import { LocalNotifications } from '@capacitor/local-notifications';
+import { Preferences } from '@capacitor/preferences';
 import { Capacitor } from '@capacitor/core';
 import { clearSearchCache } from './pages/GlobalSearch';
-import { playNotificationSound } from './utils/prayerTimesUtils';
 import IqamaAlertModal from './components/PrayerTimes/IqamaAlertModal';
 import AdhanAlertModal from './components/PrayerTimes/AdhanAlertModal';
 import { ScreenOrientation } from '@capacitor/screen-orientation';
@@ -40,17 +42,80 @@ import {
   checkWirdAlertOnAppResume, 
   markWirdAlertShownToday 
 } from './utils/dailyWirdNotificationService';
+import { getPendingShortcutInfo } from './utils/silentMode';
 
 // --- Main App Component ---
 function App() {
   const { theme, applyPresetTheme, setCurrentPage } = useTheme();
-  const [showSplash, setShowSplash] = useState(true);
+  const { setLanguage } = useLanguage();
 
-  // Track app launch count for "جديد" badge (1 count per launch, max 10 times)
+  // Helper to normalize shortcut targets to application page IDs
+  const normalizeShortcutTarget = useCallback((target: string): string => {
+    if (!target) return 'home';
+    let clean = target.toLowerCase().trim();
+    if (clean.includes('quran')) return 'quran';
+    if (clean.includes('prayer') || clean.includes('salah') || clean.includes('times')) return 'prayer-times';
+    if (clean.includes('qibla')) return 'qibla';
+    if (clean.includes('seerah')) return 'prophetic-seerah';
+    if (clean.includes('hisn') || clean.includes('azkar') || clean.includes('athkar')) return 'hisn-muslim';
+    if (clean.includes('tasbeeh')) return 'tasbeeh';
+    if (clean.includes('calendar')) return 'calendar';
+    return clean;
+  }, []);
+
+  const lastHandledShortcutSeqRef = React.useRef<number>(0);
+
+  // Synchronously check if launched directly from a launcher shortcut or deep link
+  const initialShortcut = React.useMemo(() => {
+    try {
+      const stored = localStorage.getItem('pending_shortcut_target');
+      localStorage.removeItem('pending_shortcut_target');
+      if (typeof window !== 'undefined' && (window as any).__pendingShortcut) {
+        const rawPending = (window as any).__pendingShortcut;
+        delete (window as any).__pendingShortcut;
+        if (typeof rawPending === 'object' && rawPending !== null) {
+          if (typeof rawPending.seq === 'number' && rawPending.seq > 0) {
+            lastHandledShortcutSeqRef.current = rawPending.seq;
+          }
+          if (rawPending.target) {
+            return normalizeShortcutTarget(String(rawPending.target));
+          }
+        } else if (typeof rawPending === 'string' && rawPending.trim()) {
+          return normalizeShortcutTarget(rawPending);
+        }
+      }
+      if (stored && stored.trim()) {
+        return normalizeShortcutTarget(stored);
+      }
+    } catch (e) {}
+    return null;
+  }, [normalizeShortcutTarget]);
+
+  const [splashStage, setSplashStage] = useState<'video' | 'welcome' | 'app'>(() => {
+    if (initialShortcut) return 'app';
+    return 'video';
+  });
+
+  // Track app launch count for "جديد" badge and sync first-time language preference
   useEffect(() => {
     recordAppLaunch();
+    try {
+      Preferences.get({ key: 'has_selected_initial_language' }).then(({ value }) => {
+        if (value === 'true') {
+          try {
+            localStorage.setItem('has_selected_initial_language', 'true');
+          } catch (e) {}
+        }
+      }).catch(() => {});
+    } catch (e) {}
   }, []);
-  const [history, setHistory] = useState(['home']);
+
+  const [history, setHistory] = useState<string[]>(() => {
+    if (initialShortcut) {
+      return ['home', initialShortcut];
+    }
+    return ['home'];
+  });
   const [navParams, setNavParams] = useState<any>(null);
   const [lastMenuPage, setLastMenuPage] = useState('home');
   const [isThemeSelectorOpen, setIsThemeSelectorOpen] = useState(false);
@@ -263,53 +328,27 @@ function App() {
     setupNotifications();
 
     let listener: any = null;
-    let receivedListener: any = null;
     if (Capacitor.isNativePlatform()) {
+      // On native APK, notifications & alerts appear ONLY in the phone's top status bar.
+      // Tapping a notification in the status bar navigates directly without opening any in-app alert modal.
       listener = LocalNotifications.addListener('localNotificationActionPerformed', (notificationAction) => {
         const extra = notificationAction.notification.extra;
         const page = extra?.page;
         const params = extra?.params;
         const type = extra?.type;
-        const occasionId = extra?.occasionId;
-        if (occasionId) {
-          window.dispatchEvent(new CustomEvent('show-islamic-occasion-alert', { detail: { occasionId } }));
-        } else if (type === 'daily-wird' || page === 'daily-wird') {
+        if (type === 'daily-wird' || page === 'daily-wird') {
           handleNavigate('daily-wird');
-          if (!Capacitor.isNativePlatform()) {
-            window.dispatchEvent(new CustomEvent('show-wird-alert', { detail: extra }));
-          }
         } else if (page) {
           handleNavigate(page, params);
         } else if (type === 'iqama') {
           handleNavigate('prayer-times');
         }
       });
-
-      receivedListener = LocalNotifications.addListener('localNotificationReceived', (notification) => {
-        const extra = notification.extra;
-        if (extra?.type === 'iqama') {
-          playNotificationSound('/assets/audio/chime.mp3', true);
-        } else if (extra?.type === 'daily-wird') {
-          playNotificationSound('/assets/audio/chime.mp3', true);
-          if (!Capacitor.isNativePlatform()) {
-            window.dispatchEvent(new CustomEvent('show-wird-alert', { detail: extra }));
-          }
-        } else if (extra?.playSound && extra?.soundFile) {
-          playNotificationSound(extra.soundFile, true);
-        }
-        if (extra?.occasionId) {
-          window.dispatchEvent(new CustomEvent('show-islamic-occasion-alert', { detail: { occasionId: extra.occasionId } }));
-        }
-        console.log('[Notification] Received notification natively:', notification.id, notification.title);
-      });
     }
 
     return () => {
       if (listener) {
         listener.then((l: any) => l.remove());
-      }
-      if (receivedListener) {
-        receivedListener.then((l: any) => l.remove());
       }
     };
   }, [handleNavigate]);
@@ -349,6 +388,138 @@ function App() {
       return (prev.length > 1 ? prev.slice(0, -1) : prev);
     });
   }, [navParams]);
+
+  // --- Deep Linking from Android Widgets, Notifications & App Shortcuts ---
+  useEffect(() => {
+    let isMounted = true;
+
+    const consumeAndNavigate = (target: string, seq?: number) => {
+      if (!target) return;
+      if (typeof seq === 'number' && seq > 0) {
+        if (seq <= lastHandledShortcutSeqRef.current) {
+          return;
+        }
+        lastHandledShortcutSeqRef.current = seq;
+      }
+      try {
+        localStorage.removeItem('pending_shortcut_target');
+        delete (window as any).__pendingShortcut;
+      } catch (e) {}
+      const cleanTarget = normalizeShortcutTarget(target);
+      console.log('[Shortcut] Navigating directly to target:', cleanTarget, 'seq:', seq);
+      setIsThemeSelectorOpen(false);
+      setShowExitConfirm(false);
+      setIsSideMenuOpen(false);
+      setSplashStage('app');
+      handleNavigate(cleanTarget);
+    };
+
+    // Attach global handler directly to window for immediate execution from Android native code (onCreate / onNewIntent)
+    (window as any).handleNativeShortcut = (target: string, seq?: number) => {
+      if (isMounted && target) {
+        consumeAndNavigate(target, seq);
+        return 'handled';
+      }
+      return '';
+    };
+
+    const checkImmediateMemory = () => {
+      try {
+        const stored = localStorage.getItem('pending_shortcut_target');
+        if (stored && stored.trim()) {
+          localStorage.removeItem('pending_shortcut_target');
+          consumeAndNavigate(stored.trim());
+        }
+        const rawPending = (window as any).__pendingShortcut;
+        if (rawPending) {
+          delete (window as any).__pendingShortcut;
+          if (typeof rawPending === 'object' && rawPending !== null && rawPending.target) {
+            consumeAndNavigate(String(rawPending.target), typeof rawPending.seq === 'number' ? rawPending.seq : undefined);
+          } else if (typeof rawPending === 'string' && rawPending.trim()) {
+            consumeAndNavigate(rawPending);
+          }
+        }
+      } catch (e) {}
+    };
+
+    const checkNativePendingShortcut = async () => {
+      checkImmediateMemory();
+
+      if (Capacitor.isNativePlatform()) {
+        try {
+          const launch = await CapacitorApp.getLaunchUrl();
+          if (isMounted && launch && launch.url) {
+            consumeAndNavigate(launch.url);
+          }
+        } catch (e) {}
+      }
+
+      try {
+        const info = await getPendingShortcutInfo();
+        if (isMounted && info && info.target) {
+          consumeAndNavigate(info.target, info.seq);
+        }
+      } catch (e) {}
+
+      try {
+        const { value } = await Preferences.get({ key: 'pending_shortcut_target' });
+        if (isMounted && value && value.trim()) {
+          await Preferences.remove({ key: 'pending_shortcut_target' }).catch(() => {});
+          consumeAndNavigate(value.trim());
+        }
+      } catch (e) {}
+    };
+
+    // 1. Check multiple times as the bridge, preferences, and webview initialize
+    checkNativePendingShortcut();
+    const t1 = setTimeout(checkNativePendingShortcut, 100);
+    const t2 = setTimeout(checkNativePendingShortcut, 350);
+    const t3 = setTimeout(checkNativePendingShortcut, 800);
+    const t4 = setTimeout(checkNativePendingShortcut, 1500);
+
+    // 2. Listen for fresh native shortcut events dispatched on cold start or onNewIntent
+    const onNativeShortcut = (e: any) => {
+      const target = e?.detail?.target;
+      const seq = e?.detail?.seq;
+      if (target) {
+        consumeAndNavigate(target, typeof seq === 'number' ? seq : undefined);
+      }
+    };
+    window.addEventListener('nativeShortcutTriggered', onNativeShortcut);
+
+    // 3. When app resumes from background or receives URL, navigate immediately
+    let urlSub: any = null;
+    let stateSub: any = null;
+    if (Capacitor.isNativePlatform()) {
+      stateSub = CapacitorApp.addListener('appStateChange', (state: any) => {
+        if (state && state.isActive) {
+          checkNativePendingShortcut();
+        }
+      });
+
+      urlSub = CapacitorApp.addListener('appUrlOpen', (data: any) => {
+        if (data && data.url) {
+          consumeAndNavigate(data.url);
+        }
+      });
+    }
+
+    return () => {
+      isMounted = false;
+      delete (window as any).handleNativeShortcut;
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+      clearTimeout(t4);
+      window.removeEventListener('nativeShortcutTriggered', onNativeShortcut);
+      if (urlSub) {
+        urlSub.then((listener: any) => listener.remove()).catch(() => {});
+      }
+      if (stateSub) {
+        stateSub.then((listener: any) => listener.remove()).catch(() => {});
+      }
+    };
+  }, [handleNavigate, normalizeShortcutTarget]);
 
   const handleVoiceAction = useCallback((action: string, text: string, params?: any) => {
     console.log('Voice Action:', action, text, params);
@@ -425,8 +596,39 @@ function App() {
 
   const page = history[history.length - 1];
 
-  if (showSplash) {
-    return <VideoSplash onEnded={() => setShowSplash(false)} />;
+  if (splashStage === 'video') {
+    return (
+      <VideoSplash
+        onEnded={() => {
+          let hasChosenLanguage = false;
+          try {
+            hasChosenLanguage = localStorage.getItem('has_selected_initial_language') === 'true';
+          } catch (e) {
+            hasChosenLanguage = false;
+          }
+          if (hasChosenLanguage) {
+            setSplashStage('app');
+          } else {
+            setSplashStage('welcome');
+          }
+        }}
+      />
+    );
+  }
+
+  if (splashStage === 'welcome') {
+    return (
+      <WelcomeSplash
+        onSelectLanguage={(lang) => {
+          try {
+            localStorage.setItem('has_selected_initial_language', 'true');
+            Preferences.set({ key: 'has_selected_initial_language', value: 'true' }).catch(() => {});
+          } catch (e) {}
+          setLanguage(lang);
+          setSplashStage('app');
+        }}
+      />
+    );
   }
 
   return (
@@ -620,16 +822,16 @@ function AppContent({
       )}
       
       <RateUs />
-      <MawlidNotification />
+      {!Capacitor.isNativePlatform() && <MawlidNotification />}
 
-      {activeAdhanAlert && (
+      {!Capacitor.isNativePlatform() && activeAdhanAlert && (
         <AdhanAlertModal
           alert={activeAdhanAlert}
           onDismiss={dismissAdhanAlert}
         />
       )}
 
-      {activeIqamaAlert && (
+      {!Capacitor.isNativePlatform() && activeIqamaAlert && (
         <IqamaAlertModal
           alert={activeIqamaAlert}
           onDismiss={dismissIqamaAlert}

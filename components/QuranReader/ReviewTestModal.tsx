@@ -136,31 +136,30 @@ const ReviewTestModal: React.FC<ReviewTestModalProps> = ({
 
     return (
         <div className="fixed inset-0 z-[1200] bg-black/60 backdrop-blur-sm flex items-center justify-center p-0 sm:p-4 animate-fadeIn" dir="rtl">
-            <div className="w-full max-w-lg h-full sm:h-auto max-h-[100dvh] sm:max-h-[90vh] bg-white rounded-none sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-modal-enter" style={{ backgroundColor: currentTheme.bg, color: currentTheme.text }}>
+            <div className="w-full max-w-lg h-full sm:h-auto max-h-[100dvh] sm:max-h-[90vh] bg-white rounded-none sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-modal-enter border-0" style={{ backgroundColor: currentTheme.bg, color: currentTheme.text, border: 'none', outline: 'none' }}>
                 {/* Header */}
                 <div 
-                    className="px-4 pb-4 border-b flex items-center justify-between shadow-sm" 
+                    className="px-4 pb-4 border-0 flex items-center justify-between" 
                     style={{ 
-                        borderColor: 'rgba(0,0,0,0.1)',
                         paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1.25rem)'
                     }}
                 >
-                    <button onClick={onClose} className="p-2 hover:bg-black/10 rounded-xl transition-colors text-slate-700 dark:text-slate-200" title="رجوع">
-                        <ArrowRight size={20} />
+                    <button onClick={onClose} className="p-2 quran-raised-btn rounded-xl transition-colors border-0 text-slate-700 dark:text-slate-200" title="رجوع">
+                        <ArrowRight size={20} className="quran-3d-icon" />
                     </button>
                     <div className="text-center flex-1">
                         <div className="font-bold text-sm">اختبار الحفظ</div>
                         <div className="text-[10px] opacity-60">الخطوة {currentStep + 1} من {testAyahs.length}</div>
                     </div>
-                    <button onClick={onClose} className="p-2 hover:bg-black/10 rounded-xl transition-colors text-slate-400" title="إغلاق">
-                        <X size={20} />
+                    <button onClick={onClose} className="p-2 quran-raised-btn rounded-xl transition-colors border-0 text-slate-400" title="إغلاق">
+                        <X size={20} className="quran-3d-icon" />
                     </button>
                 </div>
 
                 {/* Progress Bar */}
-                <div className="h-1 w-full bg-black/5">
+                <div className="h-1.5 w-full bg-black/5">
                     <div 
-                        className="h-full bg-emerald-500 transition-all duration-500" 
+                        className="h-full bg-emerald-500 transition-all duration-500 shadow-sm" 
                         style={{ width: `${((currentStep + 1) / testAyahs.length) * 100}%` }}
                     ></div>
                 </div>
@@ -169,26 +168,26 @@ const ReviewTestModal: React.FC<ReviewTestModalProps> = ({
                     {/* Question Context */}
                     <div className="space-y-4">
                         <div className="flex items-center gap-2 text-emerald-600 font-bold text-sm">
-                            <HelpCircle size={18} />
+                            <HelpCircle size={18} className="quran-3d-icon" />
                             <span>ما هي الآية التالية؟</span>
                         </div>
                         
                         {prevAyah && (
-                            <div className="p-4 rounded-2xl bg-black/5 border border-dashed opacity-60" style={{ borderColor: 'rgba(0,0,0,0.1)' }}>
-                                <div className="text-xs mb-2 opacity-50">الآية السابقة:</div>
+                            <div className="p-4 rounded-2xl quran-raised-card border-0 opacity-80">
+                                <div className="text-xs mb-2 opacity-60 font-bold">الآية السابقة:</div>
                                 <div className="text-lg leading-relaxed font-trad" style={{ fontFamily: 'Amiri' }}>
                                     {stripTajweed(prevAyah.text)}
-                                    <span className="inline-flex items-center justify-center w-6 h-6 mr-2 rounded-full border border-current text-[10px]">
+                                    <span className="inline-flex items-center justify-center w-6 h-6 mr-2 rounded-full border-0 quran-raised-card text-[10px] font-bold">
                                         {toArabic(prevAyah.ayahNumber)}
                                     </span>
                                 </div>
                             </div>
                         )}
 
-                        <div className="p-6 rounded-2xl border-2 border-emerald-500/20 bg-emerald-500/5 text-center">
+                        <div className="p-6 rounded-3xl border-0 quran-raised-card text-center">
                             <div className="text-2xl leading-relaxed font-bold font-trad" style={{ color: currentTheme.accent, fontFamily: 'Amiri' }}>
                                 ؟؟؟
-                                <span className="inline-flex items-center justify-center w-8 h-8 mr-2 rounded-full border border-current text-sm">
+                                <span className="inline-flex items-center justify-center w-9 h-9 mr-2 rounded-full border-0 quran-raised-card text-sm font-bold">
                                     {toArabic(currentAyah?.ayahNumber || 0)}
                                 </span>
                             </div>
@@ -207,20 +206,20 @@ const ReviewTestModal: React.FC<ReviewTestModalProps> = ({
                                     key={index}
                                     disabled={selectedOption !== null}
                                     onClick={() => handleOptionClick(option, index)}
-                                    className={`p-4 rounded-2xl border-2 text-right transition-all duration-300 flex items-center justify-between gap-4 ${
-                                        isCorrectOption ? 'border-emerald-500 bg-emerald-50' : 
-                                        isWrongSelection ? 'border-red-500 bg-red-50' : 
-                                        isSelected ? 'border-blue-500 bg-blue-50' : 
-                                        'border-black/5 hover:border-emerald-500/30'
+                                    className={`p-4 rounded-2xl border-0 text-right transition-all duration-300 flex items-center justify-between gap-4 ${
+                                        isCorrectOption ? 'quran-raised-btn-selected bg-emerald-500 text-white shadow-lg scale-[1.02]' : 
+                                        isWrongSelection ? 'bg-red-500 text-white shadow-lg scale-[1.02]' : 
+                                        isSelected ? 'quran-raised-btn-selected shadow-md' : 
+                                        'quran-raised-btn hover:scale-[1.01]'
                                     }`}
                                 >
                                     <div className="flex-1 text-base leading-relaxed font-medium">
                                         {stripTajweed(option.text)}
                                     </div>
                                     <div className="shrink-0">
-                                        {isCorrectOption ? <CheckCircle2 className="text-emerald-500" size={20} /> : 
-                                         isWrongSelection ? <XCircle className="text-red-500" size={20} /> : 
-                                         <div className="w-5 h-5 rounded-full border-2 border-black/10"></div>}
+                                        {isCorrectOption ? <CheckCircle2 className="text-white" size={22} /> : 
+                                         isWrongSelection ? <XCircle className="text-white" size={22} /> : 
+                                         <div className="w-5 h-5 rounded-full border-0 quran-raised-card"></div>}
                                     </div>
                                 </button>
                             );

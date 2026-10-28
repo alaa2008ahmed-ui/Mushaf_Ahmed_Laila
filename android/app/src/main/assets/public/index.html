@@ -1,0 +1,333 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>مصحف أحمد و ليلى</title>
+    <meta name="description" content="تطبيق إسلامي شامل يعمل بدون انترنت، يحتوي على القرآن الكريم، أذكار، تسبيح، مواقيت الصلاة، وقائمة تطبيقات متنوعة. مصمم ليكون رفيقك اليومي." />
+    <meta property="og:title" content="مصحف أحمد و ليلى" />
+    <meta property="og:description" content="تطبيق إسلامي شامل يعمل بدون انترنت، يحتوي على القرآن الكريم، أذكار، تسبيح، مواقيت الصلاة، وقائمة تطبيقات متنوعة. مصمم ليكون رفيقك اليومي." />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400..900;1,400..900&family=Cinzel+Decorative:wght@700&family=Cinzel:wght@400..900&family=Cormorant+Garamond:ital,wght@0,400..700;1,400..700&family=EB+Garamond:ital,wght@0,400..800;1,400..800&family=Inter:wght@300..800&family=Lora:ital,wght@0,400..700;1,400..700&family=Merriweather:ital,wght@0,300..900;1,300..900&family=Montserrat:ital,wght@0,300..900;1,300..900&family=Outfit:wght@300..800&family=Philosopher:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Poppins:ital,wght@0,300..800;1,300..800&family=Spectral:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
+
+    <script>
+        if (typeof window !== 'undefined') {
+            if (window.location.protocol === 'file:' || window.location.protocol === 'cdv:') {
+                var s = document.createElement('script');
+                s.src = 'cordova.js';
+                document.head.appendChild(s);
+            }
+            if (!window.cordova) {
+                window.cordova = { exec: function() {}, require: function() {}, platformId: 'browser' };
+            }
+            if (!navigator.app) {
+                navigator.app = { exitApp: function() { if (window.close) window.close(); } };
+            }
+            // Prevent React DevTools instrumentation error in restricted environments
+            window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = { isDisabled: true };
+            try {
+                var raw = (window.location.href + ' ' + window.location.hash + ' ' + window.location.search).toLowerCase();
+                if (raw.indexOf('quran') !== -1) window.__pendingShortcut = 'quran';
+                else if (raw.indexOf('prayer') !== -1 || raw.indexOf('salah') !== -1) window.__pendingShortcut = 'prayer-times';
+                else if (raw.indexOf('qibla') !== -1) window.__pendingShortcut = 'qibla';
+                else if (raw.indexOf('seerah') !== -1) window.__pendingShortcut = 'prophetic-seerah';
+                else if (raw.indexOf('hisn') !== -1 || raw.indexOf('azkar') !== -1) window.__pendingShortcut = 'hisn-muslim';
+            } catch (e) {}
+        }
+        document.addEventListener('deviceready', function() { console.log('Device ready - Cordova initialized'); }, false);
+    </script>
+    
+<style>
+      body { background: black; }
+      :root {
+          --font-amiri: 'Amiri', serif;
+          --font-amiri-quran: 'Amiri Quran', serif;
+          --font-scheherazade: 'Scheherazade New', serif;
+          --font-noto: 'Noto Naskh Arabic', serif;
+          --font-lateef: 'Lateef', serif;
+          --font-kufi: 'Reem Kufi', sans-serif;
+          --font-aref: 'Aref Ruqaa', serif;
+          --font-cairo: 'Cairo', sans-serif;
+          --font-messiri: 'El Messiri', sans-serif;
+          --font-lalezar: 'Lalezar', display;
+          --font-rakkas: 'Rakkas', display;
+          --font-gulzar: 'Gulzar', serif; 
+          --font-kufam: 'Kufam', sans-serif; 
+          --font-harmattan: 'Harmattan', serif;
+          --font-changa: 'Changa', sans-serif;
+          --font-katibeh: 'Katibeh', serif;
+          --font-tajawal: 'Tajawal', sans-serif;
+          --font-mirza: 'Mirza', serif;
+          --font-qalam: 'Noto Naskh Arabic', serif;
+          --font-thuluth: 'Reem Kufi', sans-serif;
+          --font-naskh: 'Noto Naskh Arabic', serif;
+          --font-digital: 'Cairo', sans-serif;
+          --font-hafs: 'Amiri Quran', serif;
+          --font-warsh: 'Amiri', serif;
+          --font-default: var(--font-noto);
+          --font-ui: var(--font-cairo);
+      }
+      @keyframes fadeIn { from { opacity: 1; transform: translateY(0); } to { opacity: 1; transform: translateY(0); } }
+      @keyframes fadeInPure { from { opacity: 1; } to { opacity: 1; } }
+      .fade-in { animation: fadeIn 0s ease-out forwards; }
+      html, body, #root { margin: 0; padding: 0; height: 100vh; height: 100dvh; }
+      html { scroll-behavior: smooth; }
+      body {
+        -webkit-tap-highlight-color: transparent;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        overflow: hidden; /* Prevent scrolling on the body for SPA */
+        position: relative;
+        font-family: 'Cairo', sans-serif;
+      }
+      select option {
+        background: #ffffff;
+        color: #1f2937;
+      }
+      .font-amiri { font-family: 'Amiri', serif; }
+      .font-marhey { font-family: 'Marhey', sans-serif; }
+      .font-cairo { font-family: 'Cairo', sans-serif; }
+      .font-kufi { font-family: 'Reem Kufi', sans-serif; }
+      .font-scheherazade { font-family: 'Scheherazade New', serif; }
+      
+      .app-top-bar {
+          background: rgb(var(--top-bar-rgb, 26, 34, 51));
+          color: var(--top-bar-text, var(--text-color, #ffffff)); 
+          border-bottom: 2px solid var(--bottom-bar-border, #334155);
+          position: sticky; top: 0; z-index: 40;
+          padding-top: env(safe-area-inset-top);
+          min-height: 67px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+      }
+      .app-top-bar button i,
+      .app-top-bar button svg,
+      .app-top-bar button,
+      .app-top-bar .fa-solid,
+      .app-top-bar .fas,
+      .app-top-bar .fa-house,
+      .app-top-bar .fa-circle-question {
+          color: #000000 !important;
+      }
+      body.hide-top-bars .app-top-bar { display: none !important; }
+      
+      /* When top bars are hidden in other pages */
+      body.hide-top-bars:not(.quran-context) main:not(.absolute),
+      body.hide-top-bars:not(.quran-context) .app-top-bar + * {
+          padding-top: calc(env(safe-area-inset-top) + 0.5rem) !important;
+      }
+
+      /* Home page layout has its dedicated header which already includes safe-area-inset-top */
+      .main-layout {
+          padding-top: 0 !important;
+      }
+
+      .app-top-bar__inner { 
+          width: 100%;
+          max-width: 900px; 
+          margin: 0 auto; 
+          padding: 0.25rem 1.25rem; 
+          display: flex; 
+          flex-direction: column; 
+          gap: 0.1rem; 
+          text-align: center; 
+          justify-content: center;
+          height: 100%;
+          min-height: 52px;
+      }
+      .app-top-bar__title { 
+          font-weight: 800; 
+          letter-spacing: 0.02em; 
+          font-size: 1.15rem; 
+          line-height: 1.3;
+          max-width: 100%;
+      }
+      @media (min-width: 640px) {
+          .app-top-bar__title {
+              font-size: 1.25rem;
+          }
+      }
+      .app-top-bar__subtitle { font-size: 0.85rem; opacity: 0.9; }
+
+      /* Prayer Times Top Bar resized to match other pages (reduced by 25% to 67px) while retaining subtitle */
+      .app-top-bar.app-top-bar--prayer {
+          min-height: 67px !important;
+      }
+      .app-top-bar.app-top-bar--prayer .app-top-bar__inner {
+          min-height: 52px !important;
+          padding: 0.25rem 1.25rem !important;
+      }
+
+      /* Hide subtitles on all pages except prayer times */
+      .app-top-bar:not(.app-top-bar--prayer) .app-top-bar__subtitle {
+          display: none !important;
+      }
+      .hide-scrollbar::-webkit-scrollbar { display: none; }
+      .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      .app-bottom-bar {
+          position: fixed; bottom: 0; left: 0; right: 0;
+          background-color: var(--bottom-bar-bg, #1e293b);
+          border-top: 1px solid var(--bottom-bar-border, #334155);
+          box-shadow: none; z-index: 50; padding: 0.5rem 1rem calc(0.5rem + env(safe-area-inset-bottom));
+          transition: background-color 0.15s ease, border-top 0.15s ease;
+      }
+      .app-bottom-bar__inner { max-width: 900px; margin: 0 auto; display: flex; justify-content: center; align-items: center; gap: 1rem; }
+      .bar-button { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; font-weight: 700; font-size: 0.95rem; border-radius: 999px; padding: 0.75rem 1rem; transition: all 0.15s ease; box-shadow: 0 5px 15px -3px rgba(0,0,0,0.15); }
+      .themed-card { background-color: var(--card-bg); border: 1px solid var(--card-border); color: var(--text-color); transition: background-color 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease; box-shadow: var(--card-shadow); }
+      .themed-card:hover { background-color: var(--card-bg-hover); }
+      .themed-text { color: var(--text-color); }
+      .themed-text-muted { color: var(--text-color-muted); }
+      .themed-bg-alt { background-color: var(--card-bg); color: var(--text-color); }
+
+      .prayer-card { height: 75px; border-radius: 18px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; padding: 0 14px; transition: all 0.3s ease; position: relative; }
+
+      .toggle-dot { width: 14px; height: 14px; border-radius: 50%; cursor: pointer; transition: all 0.3s ease; border: 2px solid white; }
+      .settings-btn { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; background-color: var(--card-bg-hover); color: var(--text-color); border-radius: 6px; font-size: 10px; border: 1px solid var(--card-border); }
+
+      .time-period { font-size: 0.85rem; font-weight: 800; margin-right: 3px; opacity: 0.95; text-transform: lowercase; }
+      .control-btn {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            transition: all 0.2s;
+            background-color: var(--card-bg);
+            border: 1px solid var(--card-border);
+            box-shadow: var(--card-shadow);
+      }
+      .control-btn:hover { background-color: var(--card-bg-hover); }
+      .control-btn:active { transform: scale(0.9); }
+      .en-digits { font-family: sans-serif; letter-spacing: -0.5px; }
+
+      @keyframes scale-in { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+      .scale-in { animation: scale-in 0.3s cubic-bezier(0.165, 0.84, 0.44, 1) forwards; }
+
+
+      .tasbeeh-counter { background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0) 65%); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.4), inset 0 -10px 15px -5px rgba(0,0,0,0.25); }
+      .tasbeeh-counter:active { transform: scale(0.95); box-shadow: 0 10px 20px -10px rgba(0,0,0,0.3), inset 0 -6px 10px -4px rgba(0,0,0,0.25); }
+      #app-container, #root { width: 100%; height: 100%; position: relative; z-index: 1; }
+      
+      .btn-3d-effect {
+          transition: all 0.15s ease;
+          box-shadow: 0 4px 0 0 rgba(0,0,0,0.2);
+          position: relative; overflow: hidden;
+      }
+      .btn-3d-effect:active { transform: translateY(2px); box-shadow: 0 1px 0 0 rgba(0,0,0,0.2); }
+
+      /* Animation for Theme Selector */
+      @keyframes slideUpFadeIn {
+        from {
+          transform: translateY(80px);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+
+      .theme-selector-container {
+        animation: none;
+      }
+
+      @keyframes marquee-ltr {
+        0% { transform: translateX(-50%); }
+        100% { transform: translateX(0); }
+      }
+
+      .animate-marquee-ltr {
+        animation: marquee-ltr 50s linear infinite;
+      }
+
+      .text-glow {
+        text-shadow: 0 0 5px rgba(0, 255, 255, 0.7), 0 0 10px rgba(0, 255, 255, 0.5), 0 0 15px rgba(0, 255, 255, 0.3);
+      }
+
+      @keyframes bubbleUp {
+        from {
+          transform: translateY(20px) scale(0.9);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0) scale(1);
+          opacity: 1;
+        }
+      }
+
+      .theme-selector-button {
+        opacity: 1;
+        animation: none;
+      }
+
+      @keyframes modal-enter {
+        from {
+          opacity: 0;
+          transform: scale(0.95) translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1) translateY(0);
+        }
+      }
+      .animate-modal-enter {
+        animation: modal-enter 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
+
+      @keyframes modal-exit {
+        from {
+          opacity: 1;
+          transform: scale(1) translateY(0);
+        }
+        to {
+          opacity: 0;
+          transform: scale(0.95) translateY(10px);
+        }
+      }
+      .animate-modal-exit {
+        animation: modal-exit 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
+
+      /* Hide video play button and controls */
+      video::-webkit-media-controls {
+          display:none !important;
+      }
+      video::-webkit-media-controls-start-playback-button {
+          display: none !important;
+          -webkit-appearance: none;
+      }
+      video::-webkit-media-controls-enclosure {
+          display:none !important;
+      }
+    </style>
+<script>
+    (function() {
+        function isInstalledAppMode() {
+            if (typeof window.cordova !== 'undefined') return true;
+            if (window.navigator && window.navigator.standalone) return true;
+            if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) return true;
+            return false;
+        }
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!isInstalledAppMode()) return;
+            try { document.body.classList.add('no-select'); } catch (e) {}
+            document.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+            document.addEventListener('selectstart', function(e){ e.preventDefault(); });
+        });
+    })();
+</script>
+  <script type="module" crossorigin src="/assets/index-C9W7yfkR.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-BW6Yy3Od.css">
+</head>
+<body>
+    <video id="video-background" autoplay muted loop playsinline preload="auto" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: -1; display: none;"></video>
+    <div id="root"></div>
+    <div id="theme-modal-root"></div>
+</body>
+</html>

@@ -27,10 +27,6 @@ export const HISN_CATEGORIES_EN: Record<string, HisnCategoryInfo> = {
         "title": "Supplication When Wearing New Clothes",
         "subtitle": "Supplications and invocations for supplication when wearing new clothes"
     },
-    "hisn_4": {
-        "title": "Supplication for Someone Wearing New Clothes",
-        "subtitle": "Supplications and invocations for supplication for someone wearing new clothes"
-    },
     "hisn_5": {
         "title": "What to Say Before Undressing",
         "subtitle": "Supplications and invocations for what to say before undressing"

@@ -1,0 +1,15 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <!-- Rounded Background Badge (Muslim Pro style) -->
+    <path
+        android:fillColor="#4A154B"
+        android:pathData="M24,4 C36,4 44,12 44,24 C44,36 36,44 24,44 C12,44 4,36 4,24 C4,12 12,4 24,4 Z" />
+    
+    <!-- Prayer Times Clock Glyph -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M24,12 C17.4,12 12,17.4 12,24 C12,30.6 17.4,36 24,36 C30.6,36 36,30.6 36,24 C36,17.4 30.6,12 24,12 Z M24,33.5 C18.8,33.5 14.5,29.2 14.5,24 C14.5,18.8 18.8,14.5 24,14.5 C29.2,14.5 33.5,18.8 33.5,24 C33.5,29.2 29.2,33.5 24,33.5 Z M24.8,17 H23 V24.8 L28.5,28.1 L29.4,26.6 L24.8,23.9 V17 Z" />
+</vector>

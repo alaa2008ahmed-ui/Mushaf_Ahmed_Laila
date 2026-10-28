@@ -1,9 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Plus, Sparkles, Check, ChevronRight } from 'lucide-react';
+import { X, Plus, Sparkles, Check, ChevronRight, HelpCircle } from 'lucide-react';
 import { useHabitTracker } from '../hooks/useHabitTracker';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
+import { CommunitySpotlightGuide, getGuideSeen } from './Community/CommunitySpotlightGuide';
+import { CUSTOM_HABIT_MODAL_STEPS } from './Community/communityTourSteps';
+import { getModernFlatTokens, hexToRgba } from '../utils/flatDesignTokens';
 
 interface CustomHabitModalProps {
   hexColor: string;
@@ -15,7 +18,6 @@ interface CustomHabitModalProps {
 
 const ICONS_LIST = ['🌙', '☀️', '📖', '🤲', '📿', '💧', '🕌', '🤍', '⭐', '🤝', '🌿', '🕊️'];
 
-
 export const CustomHabitModal: React.FC<CustomHabitModalProps> = ({
   hexColor,
   isBlackTheme,
@@ -24,9 +26,19 @@ export const CustomHabitModal: React.FC<CustomHabitModalProps> = ({
   onNavigate
 }) => {
   const { theme, themeKey } = useTheme();
+  const tokens = getModernFlatTokens(theme, themeKey);
   const { language } = useLanguage();
   const isEn = language === 'en';
-  const isDarkBlack = theme.bgColor === '#000000' || theme.name === 'أبيض وأسود' || themeKey === 'deep_black' || isBlackTheme;
+  const [showGuide, setShowGuide] = useState(false);
+
+  useEffect(() => {
+    if (!getGuideSeen('custom_habit_modal_spotlight')) {
+      const timer = setTimeout(() => {
+        setShowGuide(true);
+      }, 400);
+      return () => clearTimeout(timer);
+    }
+  }, []);
 
   const DAYS_LIST = isEn ? [
     { id: 6, label: 'Sat' },
@@ -45,13 +57,6 @@ export const CustomHabitModal: React.FC<CustomHabitModalProps> = ({
     { id: 4, label: 'الخميس' },
     { id: 5, label: 'الجمعة' },
   ];
-
-  const isDefaultTheme = themeKey === 'default' || !themeKey || theme.name?.includes('الافتراضي') || theme.name === 'Default';
-  const cardBorderColor = isDefaultTheme 
-    ? '#000000' 
-    : (isDarkBlack 
-        ? '#FFFFFF' 
-        : (theme.palette?.[0] || '#000000'));
 
   const addCustomHabit = useHabitTracker((state) => state.addCustomHabit);
 
@@ -76,7 +81,7 @@ export const CustomHabitModal: React.FC<CustomHabitModalProps> = ({
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) {
-      setErrorMsg('يرجى كتابة اسم العبادة أولاً');
+      setErrorMsg(isEn ? 'Please enter a habit name' : 'يرجى كتابة اسم العبادة أولاً');
       return;
     }
 
@@ -92,70 +97,65 @@ export const CustomHabitModal: React.FC<CustomHabitModalProps> = ({
   };
 
   return (
-    <AnimatePresence>
+    <div 
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4" 
+      onClick={onClose}
+      dir={isEn ? 'ltr' : 'rtl'}
+    >
       <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex flex-col bg-slate-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100"
-        dir="rtl"
+        initial={{ y: '100%', opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: '100%', opacity: 0 }}
+        transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+        className="w-full max-w-lg rounded-t-[28px] sm:rounded-[24px] overflow-hidden flex flex-col max-h-[90vh] shadow-2xl border-0"
+        style={{ 
+          backgroundColor: tokens.cardBgColor, 
+          color: tokens.textColor,
+          fontFamily: theme.font
+        }}
+        onClick={(e) => e.stopPropagation()}
       >
-        {/* Full Screen Top Header */}
-        <header className="app-top-bar shrink-0">
-          <div className="app-top-bar__inner">
-            <div className="relative flex items-center justify-center w-full min-h-[44px]">
-              {/* سهم الرجوع للخلف على يمين النص */}
-              <div className="absolute right-0 flex items-center">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
-                  title="رجوع للخلف"
-                  aria-label="رجوع للخلف"
-                >
-                  <i className="fa-solid fa-arrow-right text-xl"></i>
-                </button>
-              </div>
+        {/* Top Drag Handle */}
+        <div className="pt-3 pb-1 flex justify-center sm:hidden">
+          <div className="w-12 h-1.5 rounded-full bg-slate-300 dark:bg-zinc-700" />
+        </div>
 
-              {/* عنوان الصفحة في الوسط */}
-              <div className="text-center px-12 min-w-0">
-                <h1 className="app-top-bar__title text-lg sm:text-xl font-kufi truncate">
-                  {isEn ? 'Add Habit' : 'إضافة عبادة'}
-                </h1>
-              </div>
+        {/* Header */}
+        <div className="p-4 sm:p-5 flex items-center justify-between border-b border-slate-100 dark:border-zinc-800">
+          <h2 className="text-base sm:text-lg font-bold" style={{ color: tokens.textColor }}>
+            {isEn ? 'Add Custom Worship' : 'إضافة عبادة أو طاعة'}
+          </h2>
 
-              {/* أيقونة المنزل على يسار النص للعودة إلى الصفحة الرئيسية */}
-              <div className="absolute left-0 flex items-center gap-1">
-                <button
-                  type="button"
-                  onClick={() => {
-                    onClose();
-                    if (onNavigate) onNavigate('home');
-                  }}
-                  className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
-                  title="الصفحة الرئيسية"
-                  aria-label="الصفحة الرئيسية"
-                >
-                  <i className="fa-solid fa-house text-xl"></i>
-                </button>
-              </div>
-            </div>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setShowGuide(true)}
+              className="w-9 h-9 rounded-full flex items-center justify-center transition-all hover:bg-black/5 dark:hover:bg-white/5 active:scale-90 cursor-pointer border-0"
+              title={isEn ? "Guide" : "دليل الإضافة"}
+            >
+              <HelpCircle size={18} style={{ color: tokens.textColor }} />
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-9 h-9 rounded-full flex items-center justify-center transition-all hover:bg-black/5 dark:hover:bg-white/5 active:scale-90 cursor-pointer border-0"
+            >
+              <X size={18} style={{ color: tokens.textColor }} />
+            </button>
           </div>
-        </header>
+        </div>
 
         {/* Scrollable Form Body */}
-        <main 
-          className="flex-1 overflow-y-auto px-4 pt-3 max-w-lg mx-auto w-full overscroll-contain"
-          style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 2rem)' }}
-        >
+        <main className="flex-1 overflow-y-auto px-5 py-4 hide-scrollbar">
           <form onSubmit={handleSave} className="space-y-4">
             
-            {/* Title Input */}
+            {/* Title Input - Flat Surface */}
             <div 
-              className="bg-white dark:bg-gray-800/80 p-3.5 rounded-2xl shadow-xs border"
-              style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+              id="custom-habit-title-box"
+              className="p-4 rounded-[18px] border-0"
+              style={{ backgroundColor: tokens.isDark ? 'rgba(255, 255, 255, 0.04)' : '#F8F9FA' }}
             >
-              <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
+              <label className="block text-xs font-bold mb-2" style={{ color: tokens.textColor }}>
                 {isEn ? 'Habit or Worship Name' : 'اسم العبادة أو الطاعة'} <span className="text-red-500">*</span>
               </label>
               <input
@@ -167,59 +167,73 @@ export const CustomHabitModal: React.FC<CustomHabitModalProps> = ({
                   if (errorMsg) setErrorMsg('');
                 }}
                 placeholder={isEn ? 'e.g. Fasting Mondays and Thursdays, Duha prayer...' : 'مثال: صيام الاثنين والخميس، أو ركعتي الضحى...'}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-sm font-semibold text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full px-4 py-3 rounded-xl bg-white dark:bg-zinc-800 text-sm font-semibold focus:outline-none placeholder-gray-400 border-0 shadow-xs"
+                style={{ color: tokens.textColor }}
               />
               {errorMsg && (
-                <p className="text-xs text-red-500 mt-1 font-semibold">{isEn ? 'Please enter a habit name' : errorMsg}</p>
+                <p className="text-xs text-red-500 mt-1.5 font-semibold">{errorMsg}</p>
               )}
             </div>
 
-            {/* Icon Selector */}
+            {/* Icon Selector - Flat Surface */}
             <div 
-              className="bg-white dark:bg-gray-800/80 p-3.5 rounded-2xl shadow-xs border"
-              style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+              id="custom-habit-icon-box"
+              className="p-4 rounded-[18px] border-0"
+              style={{ backgroundColor: tokens.isDark ? 'rgba(255, 255, 255, 0.04)' : '#F8F9FA' }}
             >
-              <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
+              <label className="block text-xs font-bold mb-2.5" style={{ color: tokens.textColor }}>
                 {isEn ? 'Choose habit icon:' : 'اختر رمز العبادة:'}
               </label>
               <div className="grid grid-cols-6 gap-2">
-                {ICONS_LIST.map((ic) => (
-                  <button
-                    type="button"
-                    key={ic}
-                    onClick={() => setSelectedIcon(ic)}
-                    className={`h-11 rounded-xl flex items-center justify-center text-lg transition-transform ${
-                      selectedIcon === ic
-                        ? 'bg-amber-100 dark:bg-amber-900/40 border-2 border-amber-500 scale-105 shadow-sm'
-                        : 'bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 hover:scale-102'
-                    }`}
-                  >
-                    {ic}
-                  </button>
-                ))}
+                {ICONS_LIST.map((ic) => {
+                  const isSelected = selectedIcon === ic;
+                  return (
+                    <button
+                      type="button"
+                      key={ic}
+                      onClick={() => setSelectedIcon(ic)}
+                      className={`h-11 rounded-xl flex items-center justify-center text-xl transition-all cursor-pointer border-0 ${
+                        isSelected
+                          ? 'shadow-sm scale-105'
+                          : 'hover:scale-105 bg-white dark:bg-zinc-800'
+                      }`}
+                      style={{
+                        backgroundColor: isSelected ? hexToRgba(tokens.primaryColor, 0.15) : undefined,
+                        boxShadow: isSelected ? `0 0 0 2px ${tokens.primaryColor}` : undefined
+                      }}
+                    >
+                      {ic}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
-            {/* Recurrence Mode */}
+            {/* Recurrence Mode - Flat Segmented Control */}
             <div 
-              className="bg-white dark:bg-gray-800/80 p-3.5 rounded-2xl shadow-xs border"
-              style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+              id="custom-habit-recurrence-box"
+              className="p-4 rounded-[18px] border-0"
+              style={{ backgroundColor: tokens.isDark ? 'rgba(255, 255, 255, 0.04)' : '#F8F9FA' }}
             >
-              <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
+              <label className="block text-xs font-bold mb-2.5" style={{ color: tokens.textColor }}>
                 {isEn ? 'Habit frequency:' : 'تكرار العبادة:'}
               </label>
-              <div className="grid grid-cols-2 gap-2 mb-2">
+              <div className="grid grid-cols-2 gap-2 mb-3">
                 <button
                   type="button"
                   onClick={() => {
                     setIsSpecificDays(false);
                     setSelectedDays([]);
                   }}
-                  className={`py-2 px-3 rounded-xl text-xs font-bold border transition-colors ${
+                  className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all border-0 cursor-pointer ${
                     !isSpecificDays
-                      ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
-                      : 'bg-gray-50 dark:bg-gray-900 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700'
+                      ? 'shadow-sm'
+                      : 'opacity-70 bg-white dark:bg-zinc-800'
                   }`}
+                  style={{
+                    backgroundColor: !isSpecificDays ? tokens.primaryColor : undefined,
+                    color: !isSpecificDays ? '#FFFFFF' : tokens.textColor
+                  }}
                 >
                   {isEn ? 'Daily (Every day)' : 'يومياً (كل يوم)'}
                 </button>
@@ -229,11 +243,15 @@ export const CustomHabitModal: React.FC<CustomHabitModalProps> = ({
                     setIsSpecificDays(true);
                     if (selectedDays.length === 0) setSelectedDays([1, 4]);
                   }}
-                  className={`py-2 px-3 rounded-xl text-xs font-bold border transition-colors ${
+                  className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all border-0 cursor-pointer ${
                     isSpecificDays
-                      ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
-                      : 'bg-gray-50 dark:bg-gray-900 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700'
+                      ? 'shadow-sm'
+                      : 'opacity-70 bg-white dark:bg-zinc-800'
                   }`}
+                  style={{
+                    backgroundColor: isSpecificDays ? tokens.primaryColor : undefined,
+                    color: isSpecificDays ? '#FFFFFF' : tokens.textColor
+                  }}
                 >
                   {isEn ? 'Specific days of the week' : 'أيام محددة في الأسبوع'}
                 </button>
@@ -242,32 +260,35 @@ export const CustomHabitModal: React.FC<CustomHabitModalProps> = ({
               {/* Days Selection when Specific */}
               {isSpecificDays && (
                 <div 
-                  className="bg-gray-50 dark:bg-gray-900/70 p-3 rounded-2xl border space-y-2"
-                  style={{ borderColor: cardBorderColor, borderWidth: '1px', borderStyle: 'solid' }}
+                  className="p-3.5 rounded-xl space-y-3 bg-white dark:bg-zinc-800 border-0"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-semibold text-gray-600 dark:text-gray-400">
+                    <span className="text-[11px] font-semibold opacity-80" style={{ color: tokens.subtextColor }}>
                       {isEn ? 'Select scheduled days:' : 'حدد الأيام المجدولة:'}
                     </span>
                     <div className="flex gap-1.5">
                       <button
                         type="button"
                         onClick={() => setSelectedDays([1, 4])}
-                        className="text-[10px] py-0.5 px-2 rounded-lg bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 font-bold"
+                        className="text-[10px] py-1 px-2.5 rounded-lg font-bold border-0 cursor-pointer"
+                        style={{
+                          backgroundColor: hexToRgba(tokens.primaryColor, 0.12),
+                          color: tokens.primaryColor
+                        }}
                       >
                         {isEn ? 'Mon & Thu' : 'الاثنين والخميس'}
                       </button>
                       <button
                         type="button"
                         onClick={() => setSelectedDays([5])}
-                        className="text-[10px] py-0.5 px-2 rounded-lg bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 font-bold"
+                        className="text-[10px] py-1 px-2.5 rounded-lg font-bold border-0 cursor-pointer bg-blue-500/10 text-blue-600 dark:text-blue-400"
                       >
                         {isEn ? 'Friday only' : 'الجمعة فقط'}
                       </button>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-4 sm:grid-cols-7 gap-1">
+                  <div className="grid grid-cols-4 sm:grid-cols-7 gap-1.5">
                     {DAYS_LIST.map((d) => {
                       const isSelected = selectedDays.includes(d.id);
                       return (
@@ -275,11 +296,15 @@ export const CustomHabitModal: React.FC<CustomHabitModalProps> = ({
                           type="button"
                           key={d.id}
                           onClick={() => handleToggleDay(d.id)}
-                          className={`py-1.5 px-1 rounded-xl text-xs font-bold transition-all border ${
+                          className={`py-2 px-1 rounded-xl text-xs font-bold transition-all border-0 cursor-pointer ${
                             isSelected
-                              ? 'bg-emerald-500 text-white border-emerald-500 shadow-sm'
-                              : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700'
+                              ? 'shadow-xs'
+                              : 'bg-slate-100 dark:bg-zinc-700'
                           }`}
+                          style={{
+                            backgroundColor: isSelected ? tokens.primaryColor : undefined,
+                            color: isSelected ? '#FFFFFF' : tokens.textColor
+                          }}
                         >
                           {d.label}
                         </button>
@@ -291,12 +316,13 @@ export const CustomHabitModal: React.FC<CustomHabitModalProps> = ({
             </div>
 
             {/* Action Buttons */}
-            <div className="pt-2 flex gap-2">
+            <div className="pt-2 flex gap-2.5">
               <motion.button
+                id="custom-habit-save-btn"
                 whileTap={{ scale: 0.98 }}
                 type="submit"
-                className={`flex-1 py-3 px-4 rounded-xl font-bold text-sm shadow-md flex items-center justify-center gap-2 ${isDarkBlack ? 'text-black' : 'text-white'}`}
-                style={{ backgroundColor: hexColor }}
+                className="flex-1 py-3.5 px-4 rounded-xl font-bold text-sm shadow-sm flex items-center justify-center gap-2 text-white cursor-pointer border-0"
+                style={{ backgroundColor: tokens.primaryColor }}
               >
                 <Plus className="w-4 h-4" />
                 <span>{isEn ? 'Add Habit' : 'إضافة العبادة للطاعات 🌿'}</span>
@@ -304,15 +330,24 @@ export const CustomHabitModal: React.FC<CustomHabitModalProps> = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="py-3 px-4 rounded-xl font-bold text-sm bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                className="py-3.5 px-5 rounded-xl font-bold text-sm bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 transition-colors cursor-pointer border-0"
+                style={{ color: tokens.textColor }}
               >
                 {isEn ? 'Cancel' : 'إلغاء'}
               </button>
             </div>
           </form>
         </main>
+
+        <CommunitySpotlightGuide
+          guideKey="custom_habit_modal_spotlight"
+          steps={CUSTOM_HABIT_MODAL_STEPS}
+          isOpen={showGuide}
+          onClose={() => setShowGuide(false)}
+          isEn={isEn}
+        />
       </motion.div>
-    </AnimatePresence>
+    </div>
   );
 };
 

@@ -43,11 +43,10 @@ export const TasbeehChartModal: React.FC<TasbeehChartModalProps> = ({
     const [period, setPeriod] = useState<PeriodType>('weekly');
     const [selectedDayIndex, setSelectedDayIndex] = useState<number | null>(null);
 
-    const isBlackTheme = theme.bgColor === '#000000';
-    const isDefaultTheme = themeKey === 'default' || !themeKey;
-    const cardBorderColor = isDefaultTheme ? '#000000' : (isBlackTheme ? '#FFFFFF' : (theme.palette?.[0] || '#000000'));
-    const primaryColor = isDefaultTheme ? '#000000' : (isBlackTheme ? '#FFFFFF' : theme.palette[0]);
-    const secondaryColor = isDefaultTheme ? '#4b5563' : (isBlackTheme ? '#d1d5db' : (theme.palette[1] || theme.palette[0]));
+    const isBlackTheme = theme.bgColor === '#000000' || theme.name === 'اسود' || theme.name === 'black';
+    const primaryColor = isBlackTheme ? '#FFFFFF' : (theme.palette?.[0] || theme.accent || '#2E7D5E');
+    const secondaryColor = isBlackTheme ? '#d1d5db' : (theme.palette?.[1] || '#059669');
+    const cardBorderColor = isBlackTheme ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.06)';
     const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
 
     const isEn = language === 'en';

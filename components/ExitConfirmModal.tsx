@@ -36,7 +36,7 @@ const ExitConfirmModal: React.FC<ExitConfirmModalProps> = ({ isOpen, onClose, on
                         {isEn ? "Confirm Exit" : "تأكيد الخروج"}
                     </h3>
                     <p className="text-center mb-6 font-semibold" style={{ color: modalTextColor, opacity: 0.9 }}>
-                        {isEn ? "Are you sure you want to exit Mushaf Ahmed & Laila?" : "هل تريد الخروج من مصحف احمد وليلى؟"}
+                        {isEn ? "Are you sure you want to exit Mushaf Ahmed & Laila?" : "هل تريد الخروج من مصحف أحمد و ليلى؟"}
                     </p>
                     <div className="flex justify-center gap-3">
                         <button 

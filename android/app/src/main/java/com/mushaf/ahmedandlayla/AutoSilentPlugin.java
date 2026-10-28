@@ -62,6 +62,16 @@ public class AutoSilentPlugin extends Plugin {
     }
 
     @PluginMethod
+    public void syncDailyWird(PluginCall call) {
+        try {
+            DailyWirdAlarmReceiver.scheduleNextAlarms(getContext());
+            call.resolve();
+        } catch (Exception e) {
+            call.reject("Could not sync daily wird alarms: " + e.getMessage());
+        }
+    }
+
+    @PluginMethod
     public void setSilentNow(PluginCall call) {
         boolean silent = call.getBoolean("silent", false);
         String prayerName = call.getString("prayerName", "الصلاة");
@@ -190,6 +200,20 @@ public class AutoSilentPlugin extends Plugin {
     }
 
     @PluginMethod
+    public void updateWidget(PluginCall call) {
+        Context context = getContext();
+        if (context != null) {
+            PrayerWidgetProvider.updateAllWidgets(context);
+            PrayerCompactWidgetProvider.updateAllWidgets(context);
+            PrayerCardWidgetProvider.updateAllWidgets(context);
+            PersistentPrayerNotification.update(context);
+        }
+        JSObject ret = new JSObject();
+        ret.put("success", true);
+        call.resolve(ret);
+    }
+
+    @PluginMethod
     public void updatePersistentNotification(PluginCall call) {
         Context context = getContext();
         PersistentPrayerNotification.update(context);
@@ -227,6 +251,32 @@ public class AutoSilentPlugin extends Plugin {
             ret.put("isIgnoring", true);
         }
         call.resolve(ret);
+    }
+
+    @PluginMethod
+    public void openAppNotificationSettings(PluginCall call) {
+        Context context = getContext();
+        try {
+            Intent intent = new Intent();
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                intent.setAction(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
+                intent.putExtra(Settings.EXTRA_APP_PACKAGE, context.getPackageName());
+            } else {
+                intent.setAction("android.settings.APP_NOTIFICATION_SETTINGS");
+                intent.putExtra("app_package", context.getPackageName());
+                intent.putExtra("app_uid", context.getApplicationInfo().uid);
+            }
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            context.startActivity(intent);
+            JSObject ret = new JSObject();
+            ret.put("success", true);
+            call.resolve(ret);
+        } catch (Exception e) {
+            JSObject ret = new JSObject();
+            ret.put("success", false);
+            ret.put("error", e.getMessage());
+            call.resolve(ret);
+        }
     }
 
     private static MediaPlayer previewMediaPlayer = null;
@@ -356,13 +406,47 @@ public class AutoSilentPlugin extends Plugin {
 
         applyAppLocale(context, language);
 
+        // Update notification channels and app shortcuts to match the new language immediately
+        if (context instanceof MainActivity) {
+            final MainActivity activity = (MainActivity) context;
+            activity.runOnUiThread(() -> {
+                activity.createAdhanNotificationChannels("ar".equalsIgnoreCase(language));
+                activity.updateDynamicShortcuts("ar".equalsIgnoreCase(language));
+            });
+        }
+
         // Update persistent notification and widgets immediately
         PersistentPrayerNotification.update(context);
         PrayerWidgetProvider.updateAllWidgets(context);
+        PrayerCompactWidgetProvider.updateAllWidgets(context);
+        PrayerCardWidgetProvider.updateAllWidgets(context);
 
         JSObject ret = new JSObject();
         ret.put("success", true);
         ret.put("language", language);
+        call.resolve(ret);
+    }
+
+    @PluginMethod
+    public void getPendingShortcut(PluginCall call) {
+        String target = MainActivity.pendingShortcut;
+        long seq = MainActivity.pendingShortcutSeq;
+        MainActivity.pendingShortcut = null;
+        try {
+            SharedPreferences prefs = getContext().getSharedPreferences("CapacitorStorage", Context.MODE_PRIVATE);
+            if (target == null || target.isEmpty()) {
+                target = prefs.getString("pending_shortcut_target", null);
+                seq = prefs.getLong("pending_shortcut_seq", seq);
+            }
+            prefs.edit()
+                    .remove("pending_shortcut_target")
+                    .remove("pending_shortcut_seq")
+                    .apply();
+        } catch (Exception ignored) {}
+
+        JSObject ret = new JSObject();
+        ret.put("target", target != null ? target : "");
+        ret.put("seq", seq);
         call.resolve(ret);
     }
 
@@ -372,12 +456,10 @@ public class AutoSilentPlugin extends Plugin {
             java.util.Locale locale = new java.util.Locale(language.trim());
             java.util.Locale.setDefault(locale);
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                android.app.LocaleManager localeManager = context.getSystemService(android.app.LocaleManager.class);
-                if (localeManager != null) {
-                    localeManager.setApplicationLocales(new android.os.LocaleList(locale));
-                }
-            }
+            // Note: We deliberately avoid calling LocaleManager.setApplicationLocales(...) on Android 13+
+            // because that system API forces the Android OS to recreate the Activity (restarting the app).
+            // By updating default locale, resources configuration, and SharedPreferences directly,
+            // all native notifications and widgets update immediately without reloading the app.
 
             android.content.res.Resources res = context.getResources();
             android.content.res.Configuration config = new android.content.res.Configuration(res.getConfiguration());

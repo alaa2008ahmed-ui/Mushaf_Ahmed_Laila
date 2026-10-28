@@ -51,9 +51,15 @@ public class PrayerSilentReceiver extends BroadcastReceiver {
         SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         if (Intent.ACTION_BOOT_COMPLETED.equals(action) || 
             "android.intent.action.BOOT_COMPLETED".equals(action) || 
+            Intent.ACTION_TIME_CHANGED.equals(action) ||
+            Intent.ACTION_TIMEZONE_CHANGED.equals(action) ||
+            Intent.ACTION_DATE_CHANGED.equals(action) ||
             ACTION_RESTORE_NOTIFICATION.equals(action) ||
             ACTION_UPDATE_NOTIFICATION.equals(action)) {
             PersistentPrayerNotification.update(context);
+            PrayerWidgetProvider.updateAllWidgets(context);
+            PrayerCompactWidgetProvider.updateAllWidgets(context);
+            DailyWirdAlarmReceiver.scheduleNextAlarms(context);
             return;
         }
 
@@ -199,12 +205,16 @@ public class PrayerSilentReceiver extends BroadcastReceiver {
 
             NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_stat_name)
+                .setColor(0xFF2E7D5E)
                 .setContentTitle(title)
                 .setContentText(message)
                 .setAutoCancel(true)
                 .setContentIntent(pendingIntent)
                 .setPriority(NotificationCompat.PRIORITY_MAX)
                 .setCategory(NotificationCompat.CATEGORY_ALARM)
+                .setGroup("com.mushaf.ahmedandlayla.APP_ALERTS_CARD")
+                .setGroupSummary(false)
+                .setSortKey("10_alert")
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC);
 
             if (soundUri != null) {
@@ -219,6 +229,7 @@ public class PrayerSilentReceiver extends BroadcastReceiver {
             } catch (Exception ignored) {}
 
             nm.notify(notifId, builder.build());
+            AlertsGroupHelper.updateGroupSummary(context, nm);
         } catch (Exception ignored) {}
     }
 }

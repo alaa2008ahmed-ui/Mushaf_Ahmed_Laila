@@ -381,7 +381,7 @@ export async function sharePropheticLineageImage(options: PropheticLineageShareO
 
             await Share.share({
                 title: shareTitle,
-                text: `${options.fullName}\n${options.shortChain}\n\nمشارك من تطبيق مصحف أحمد وليلى`,
+                text: `${options.fullName}\n${options.shortChain}\n\nمشارك من تطبيق مصحف أحمد و ليلى`,
                 url: savedFile.uri,
                 dialogTitle: 'مشاركة لوحة النسب النبوي الشريف عبر'
             });

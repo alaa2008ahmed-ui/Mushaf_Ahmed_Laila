@@ -50,21 +50,23 @@ function ThemeSelector({ onClose, isLandscape }: { onClose: () => void, isLandsc
         }
     };
 
+    const isBlackTheme = themeKey === 'deep_black' || theme.bgColor === '#000000';
+
     return (
         <div 
             ref={wrapperRef} 
             className={`theme-selector-container fixed ${isLandscape ? 'inset-0 flex items-center justify-center p-0' : 'bottom-[calc(85px+env(safe-area-inset-bottom,0px))] inset-x-0 mx-auto w-[95%] max-w-md p-0'} z-[100]`}
         >
-            <div className={`themed-card p-4 ${isLandscape ? 'w-full max-w-4xl h-full rounded-none' : 'rounded-3xl'} shadow-2xl !backdrop-blur-md !bg-opacity-95 flex flex-col justify-center border-2`} style={{ backgroundColor: theme.bgColor || '#fff', borderColor: theme.palette[0] + '40' }}>
+            <div className={`themed-card p-4 ${isLandscape ? 'w-full max-w-4xl h-full rounded-none' : 'rounded-3xl'} shadow-2xl !backdrop-blur-md !bg-opacity-95 flex flex-col justify-center border-2`} style={{ backgroundColor: theme.bgColor || '#fff', borderColor: isBlackTheme ? 'rgba(255, 255, 255, 0.25)' : ((theme.palette && theme.palette[0] ? theme.palette[0] : '#10b981') + '40') }}>
                 <div className={isLandscape ? 'max-w-lg mx-auto w-full' : 'w-full'}>
                     <div className="grid grid-cols-3 gap-1.5 mb-4">
-                        <button onClick={() => fileInputRef.current?.click()} className="p-2.5 rounded-xl font-bold flex flex-col items-center justify-center transition-all active:scale-95 shadow-sm" style={{backgroundColor: theme.palette[0] + '20', color: theme.textColor, borderWidth: '1px', borderStyle: 'solid', borderColor: theme.palette[0] + '40'}} title="خلفية">
+                        <button onClick={() => fileInputRef.current?.click()} className="p-2.5 rounded-xl font-bold flex flex-col items-center justify-center transition-all active:scale-95 shadow-sm" style={{backgroundColor: isBlackTheme ? 'rgba(255,255,255,0.1)' : ((theme.palette && theme.palette[0] ? theme.palette[0] : '#10b981') + '20'), color: theme.textColor, borderWidth: '1px', borderStyle: 'solid', borderColor: isBlackTheme ? 'rgba(255,255,255,0.3)' : ((theme.palette && theme.palette[0] ? theme.palette[0] : '#10b981') + '40')}} title="خلفية">
                             <span className="text-xl">🖼️</span>
                         </button>
-                        <button onClick={resetBackground} className="p-2.5 rounded-xl font-bold flex flex-col items-center justify-center transition-all active:scale-95 shadow-sm" style={{backgroundColor: theme.palette[1] + '20', color: theme.textColor, borderWidth: '1px', borderStyle: 'solid', borderColor: theme.palette[1] + '40'}} title="استعادة">
+                        <button onClick={resetBackground} className="p-2.5 rounded-xl font-bold flex flex-col items-center justify-center transition-all active:scale-95 shadow-sm" style={{backgroundColor: isBlackTheme ? 'rgba(255,255,255,0.1)' : ((theme.palette && theme.palette[1] ? theme.palette[1] : '#10b981') + '20'), color: theme.textColor, borderWidth: '1px', borderStyle: 'solid', borderColor: isBlackTheme ? 'rgba(255,255,255,0.3)' : ((theme.palette && theme.palette[1] ? theme.palette[1] : '#10b981') + '40')}} title="استعادة">
                             <span className="text-xl">🔄</span>
                         </button>
-                        <button data-theme-key="default" onClick={() => { applyPresetTheme('default'); onClose(); }} className="p-2.5 rounded-xl font-bold flex flex-col items-center justify-center transition-all active:scale-95 shadow-sm" style={{backgroundColor: theme.palette[2] + '20', color: theme.textColor, borderWidth: '1px', borderStyle: 'solid', borderColor: theme.palette[2] + '40'}} title="الافتراضي">
+                        <button data-theme-key="default" onClick={() => { applyPresetTheme('default'); onClose(); }} className="p-2.5 rounded-xl font-bold flex flex-col items-center justify-center transition-all active:scale-95 shadow-sm" style={{backgroundColor: isBlackTheme ? 'rgba(255,255,255,0.1)' : ((theme.palette && theme.palette[2] ? theme.palette[2] : '#10b981') + '20'), color: theme.textColor, borderWidth: '1px', borderStyle: 'solid', borderColor: isBlackTheme ? 'rgba(255,255,255,0.3)' : ((theme.palette && theme.palette[2] ? theme.palette[2] : '#10b981') + '40')}} title="الافتراضي">
                             <span className="text-xl">🎨</span>
                         </button>
                     </div>
@@ -72,24 +74,29 @@ function ThemeSelector({ onClose, isLandscape }: { onClose: () => void, isLandsc
                     <div className="h-[1px] w-full mb-4 opacity-20" style={{ backgroundColor: theme.textColor }}></div>
 
                     <div className={`flex flex-wrap gap-2.5 justify-center ${isLandscape ? 'max-h-[50vh]' : 'max-h-[160px]'} overflow-y-auto hide-scrollbar pb-2`}>
-                        {Object.entries(presetThemes).filter(([key]) => key !== 'default').map(([key, themeOption], index) => (
-                            <button
-                                key={key}
-                                data-theme-key={key}
-                                onClick={() => { applyPresetTheme(key); onClose(); }}
-                                className="theme-selector-button w-[85px] h-14 rounded-xl border-2 text-[10px] font-bold flex items-center justify-center text-center shadow-sm transition-all active:scale-95 hover:brightness-110"
-                                    style={{
-                                        backgroundColor: themeOption.bgColor || '#fff',
-                                        backgroundSize: 'cover',
-                                        color: themeOption.textColor || '#000',
-                                        borderColor: themeKey === key ? theme.palette[1] : themeOption.palette[0] + '60',
-                                        transform: themeKey === key ? 'scale(1.05)' : 'scale(1)',
-                                        boxShadow: themeKey === key ? `0 0 12px ${theme.palette[1]}40` : 'none'
-                                    }}
-                            >
-                                {themeOption.name}
-                            </button>
-                        ))}
+                        {Object.entries(presetThemes).filter(([key]) => key !== 'default').map(([key, themeOption], index) => {
+                            const isThemeOptionBlack = key === 'deep_black' || themeOption.bgColor === '#000000';
+                            return (
+                                <button
+                                    key={key}
+                                    data-theme-key={key}
+                                    onClick={() => { applyPresetTheme(key); onClose(); }}
+                                    className="theme-selector-button w-[85px] h-14 rounded-xl border-2 text-[10px] font-bold flex items-center justify-center text-center shadow-sm transition-all active:scale-95 hover:brightness-110"
+                                        style={{
+                                            backgroundColor: themeOption.bgColor || '#fff',
+                                            backgroundSize: 'cover',
+                                            color: themeOption.textColor || '#000',
+                                            borderColor: themeKey === key 
+                                                ? (isBlackTheme ? '#10B981' : (theme.palette && theme.palette[1] ? theme.palette[1] : '#10B981')) 
+                                                : (isBlackTheme || isThemeOptionBlack ? 'rgba(255, 255, 255, 0.4)' : ((themeOption.palette && themeOption.palette[0] ? themeOption.palette[0] : '#888') + '60')),
+                                            transform: themeKey === key ? 'scale(1.05)' : 'scale(1)',
+                                            boxShadow: themeKey === key ? `0 0 12px ${isBlackTheme ? '#10B981' : (theme.palette && theme.palette[1] ? theme.palette[1] : '#10B981')}60` : 'none'
+                                        }}
+                                >
+                                    {themeOption.name}
+                                </button>
+                            );
+                        })}
                     </div>
                 </div>
                 <input type="file" ref={fileInputRef} id="bg-upload" accept="image/*,video/*" className="sr-only absolute w-0 h-0 opacity-0 overflow-hidden pointer-events-none" onChange={handleBgUpload} />

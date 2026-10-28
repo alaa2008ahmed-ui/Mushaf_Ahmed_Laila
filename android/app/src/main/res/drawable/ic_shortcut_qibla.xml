@@ -1,0 +1,15 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <!-- Rounded Background Badge (Muslim Pro style) -->
+    <path
+        android:fillColor="#4A154B"
+        android:pathData="M24,4 C36,4 44,12 44,24 C44,36 36,44 24,44 C12,44 4,36 4,24 C4,12 12,4 24,4 Z" />
+    
+    <!-- Qibla Compass Glyph -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M24,12 C17.4,12 12,17.4 12,24 C12,30.6 17.4,36 24,36 C30.6,36 36,30.6 36,24 C36,17.4 30.6,12 24,12 Z M24,14.5 C29.2,14.5 33.5,18.8 33.5,24 C33.5,29.2 29.2,33.5 24,33.5 C18.8,33.5 14.5,29.2 14.5,24 C14.5,18.8 18.8,14.5 24,14.5 Z M28.5,19.5 L18.5,22.8 L21.8,32.8 L31.8,29.5 Z M25,25 C24.4,25.6 23.6,25.6 23,25 C22.4,24.4 22.4,23.6 23,23 C23.6,22.4 24.4,22.4 25,23 C25.6,23.6 25.6,24.4 25,25 Z" />
+</vector>

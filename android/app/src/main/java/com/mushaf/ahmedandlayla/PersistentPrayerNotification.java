@@ -13,7 +13,7 @@ import org.json.JSONObject;
 
 public class PersistentPrayerNotification {
 
-    public static final String CHANNEL_ID = "persistent_prayer_channel_v1";
+    public static final String CHANNEL_ID = "persistent_prayer_channel_v3";
     public static final int NOTIFICATION_ID = 9901;
 
     public static void createChannel(Context context) {
@@ -25,15 +25,22 @@ public class PersistentPrayerNotification {
             NotificationManager nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
             if (nm == null) return;
 
+            try {
+                nm.deleteNotificationChannel("persistent_prayer_channel_v1");
+                nm.deleteNotificationChannel("persistent_prayer_channel_v2");
+            } catch (Exception ignored) {}
+
+            // IMPORTANCE_LOW shows the icon in the status bar beside the clock
+            // while keeping the notification silent without audio interrupts
             NotificationChannel channel = new NotificationChannel(
                 CHANNEL_ID,
                 isArabic ? "إشعار مواقيت الصلاة المستمر" : "Persistent Prayer Notification",
                 NotificationManager.IMPORTANCE_LOW
             );
             channel.setDescription(isArabic
-                ? "يعرض الصلاة القادمة والوقت المتبقي في شريط الإشعارات وشاشة القفل بدون صوت"
-                : "Displays next prayer and remaining time in notification bar silently");
-            channel.setShowBadge(false);
+                ? "يعرض الصلاة القادمة والوقت المتبقي مع إظهار أيقونة التطبيق في الشريط العلوي للهاتف بجوار الساعة"
+                : "Displays next prayer and countdown with app icon in the status bar beside the clock");
+            channel.setShowBadge(true);
             channel.enableVibration(false);
             channel.setSound(null, null);
             channel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
@@ -209,17 +216,17 @@ public class PersistentPrayerNotification {
             StringBuilder summary = new StringBuilder();
             if (times != null) {
                 if (isArabic) {
-                    summary.append("الفجر: ").append(times.optString("fajr", ""))
-                           .append(" • الظهر: ").append(times.optString("dhuhr", ""))
-                           .append(" • العصر: ").append(times.optString("asr", ""))
-                           .append(" • المغرب: ").append(times.optString("maghrib", ""))
-                           .append(" • العشاء: ").append(times.optString("isha", ""));
+                    summary.append("الفجر: ").append(PrayerWidgetProvider.formatNumerals(times.optString("fajr", ""), true))
+                           .append(" • الظهر: ").append(PrayerWidgetProvider.formatNumerals(times.optString("dhuhr", ""), true))
+                           .append(" • العصر: ").append(PrayerWidgetProvider.formatNumerals(times.optString("asr", ""), true))
+                           .append(" • المغرب: ").append(PrayerWidgetProvider.formatNumerals(times.optString("maghrib", ""), true))
+                           .append(" • العشاء: ").append(PrayerWidgetProvider.formatNumerals(times.optString("isha", ""), true));
                 } else {
-                    summary.append("Fajr: ").append(times.optString("fajr", ""))
-                           .append(" • Dhuhr: ").append(times.optString("dhuhr", ""))
-                           .append(" • Asr: ").append(times.optString("asr", ""))
-                           .append(" • Maghrib: ").append(times.optString("maghrib", ""))
-                           .append(" • Isha: ").append(times.optString("isha", ""));
+                    summary.append("Fajr: ").append(PrayerWidgetProvider.formatNumerals(times.optString("fajr", ""), false))
+                           .append(" • Dhuhr: ").append(PrayerWidgetProvider.formatNumerals(times.optString("dhuhr", ""), false))
+                           .append(" • Asr: ").append(PrayerWidgetProvider.formatNumerals(times.optString("asr", ""), false))
+                           .append(" • Maghrib: ").append(PrayerWidgetProvider.formatNumerals(times.optString("maghrib", ""), false))
+                           .append(" • Isha: ").append(PrayerWidgetProvider.formatNumerals(times.optString("isha", ""), false));
                 }
             }
 
@@ -235,7 +242,8 @@ public class PersistentPrayerNotification {
             String prayerLabel = (isArabic ? "الصلاة القادمة: " : "Next Prayer: ") + nextPrayerName;
             String fallbackTitle = prayerLabel;
             if (!remainingFormatted.isEmpty()) {
-                fallbackTitle += " (" + (isArabic ? "متبقي " : "in ") + remainingFormatted + ")";
+                String formattedRem = PrayerWidgetProvider.formatNumerals(remainingFormatted, isArabic);
+                fallbackTitle += " (" + (isArabic ? "متبقي " : "in ") + formattedRem + ")";
             }
 
             // Restore intent: if swiped away while enabled, automatically restore it
@@ -253,7 +261,6 @@ public class PersistentPrayerNotification {
 
             for (android.widget.RemoteViews rv : new android.widget.RemoteViews[]{collapsedView, expandedView}) {
                 rv.setTextViewText(R.id.notif_next_prayer, prayerLabel);
-                rv.setTextViewText(R.id.notif_summary, summary.toString());
 
                 if (targetTimeMillis > now && diffMillis > 0) {
                     rv.setViewVisibility(R.id.notif_remaining_prefix, android.view.View.VISIBLE);
@@ -274,8 +281,25 @@ public class PersistentPrayerNotification {
                 }
             }
 
+            // Collapsed view: hide summary & small time so the big countdown has full width
+            collapsedView.setViewVisibility(R.id.notif_summary, android.view.View.GONE);
+
+            // Expanded view: show small time, big time, and all prayer times
+            expandedView.setViewVisibility(R.id.notif_summary, android.view.View.VISIBLE);
+            expandedView.setTextViewText(R.id.notif_summary, summary.toString());
+            if (targetTimeMillis > now && diffMillis > 0) {
+                expandedView.setViewVisibility(R.id.notif_chronometer_small, android.view.View.VISIBLE);
+                expandedView.setChronometer(R.id.notif_chronometer_small, chronometerBase, null, true);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    expandedView.setChronometerCountDown(R.id.notif_chronometer_small, true);
+                }
+            } else {
+                expandedView.setViewVisibility(R.id.notif_chronometer_small, android.view.View.GONE);
+            }
+
             NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_stat_name)
+                .setColor(0xFF2E7D5E)
                 .setContentTitle(fallbackTitle)
                 .setSubText(isArabic ? "مواقيت الصلاة" : "Prayer Times")
                 .setContentIntent(pendingIntent)
@@ -283,24 +307,14 @@ public class PersistentPrayerNotification {
                 .setOngoing(true)
                 .setAutoCancel(false)
                 .setOnlyAlertOnce(true)
+                .setShowWhen(false)
+                .setUsesChronometer(false)
                 .setPriority(NotificationCompat.PRIORITY_LOW)
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                 .setContentText(summary.toString())
                 .setCustomContentView(collapsedView)
                 .setCustomBigContentView(expandedView)
                 .setStyle(new NotificationCompat.DecoratedCustomViewStyle());
-
-            // Live Chronometer countdown in notification header
-            if (targetTimeMillis > now && diffMillis > 0) {
-                builder.setWhen(targetTimeMillis);
-                builder.setShowWhen(true);
-                builder.setUsesChronometer(true);
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                    builder.setChronometerCountDown(true);
-                }
-            } else {
-                builder.setShowWhen(false);
-            }
 
             Notification notification = builder.build();
             // Critical persistence flags: prevents removal via "Clear all" button and marks as persistent

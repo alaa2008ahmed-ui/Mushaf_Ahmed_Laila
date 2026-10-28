@@ -1,0 +1,15 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <!-- Rounded Background Badge (Muslim Pro style) -->
+    <path
+        android:fillColor="#4A154B"
+        android:pathData="M24,4 C36,4 44,12 44,24 C44,36 36,44 24,44 C12,44 4,36 4,24 C4,12 12,4 24,4 Z" />
+    
+    <!-- Prophetic Seerah / Islamic Mosque Dome & Arch Glyph -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M24,11 C21.8,11 20,12.8 20,15 C20,15.7 20.2,16.3 20.5,16.9 C17.3,18.3 15,21.4 15,25 H33 C33,21.4 30.7,18.3 27.5,16.9 C27.8,16.3 28,15.7 28,15 C28,12.8 26.2,11 24,11 Z M24,13 C25.1,13 26,13.9 26,15 C26,16.1 25.1,17 24,17 C22.9,17 22,16.1 22,15 C22,13.9 22.9,13 24,13 Z M14,27 V35 H34 V27 H14 Z M22,35 V30 C22,28.9 22.9,28 24,28 C25.1,28 26,28.9 26,30 V35 H22 Z" />
+</vector>

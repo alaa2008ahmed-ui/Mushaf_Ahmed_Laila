@@ -10,6 +10,7 @@ import { useHabitTracker } from '../hooks/useHabitTracker';
 import { useLanguage } from '../context/LanguageContext';
 import { BottomSalahGuides } from '../components/AthkarAlSalah/BottomSalahGuides';
 import { LayoutGrid, ListFilter, Search, HelpCircle } from 'lucide-react';
+import ZoomModal from '../components/AthkarAlSalah/ZoomModal';
 import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/CommunitySpotlightGuide';
 import { ATHKAR_SALAH_PAGE_STEPS } from '../components/Community/communityTourSteps';
 import { markPageAsSeen } from '../utils/badgeManager';
@@ -35,13 +36,8 @@ const SalahZikrCard = ({
 }) => {
     const { language } = useLanguage();
     const isEn = language === 'en';
-    const isBlackTheme = theme.bgColor === '#000000';
-    const isDefaultTheme = themeKey === 'default' || theme.name === 'الافتراضي' || !!theme.isOriginal || !themeKey;
-    const cardBorderColor = isDefaultTheme 
-        ? '#000000' 
-        : (isBlackTheme 
-            ? 'rgba(255, 255, 255, 0.2)' 
-            : (theme.palette?.[0] + '33' || 'rgba(0, 0, 0, 0.08)'));
+    const isBlackTheme = theme.bgColor === '#000000' || theme.name === 'أبيض وأسود' || theme.name === 'اسود';
+    const primaryColor = isBlackTheme ? 'rgba(255, 255, 255, 0.22)' : (theme.palette?.[0] || theme.accent || '#2E7D5E');
     const [isFav, setIsFav] = useState(false);
     const [playingText, setPlayingText] = useState<string | null>(null);
     const isFinished = zikr.currentCount === 0;
@@ -137,27 +133,19 @@ const SalahZikrCard = ({
 
     return (
         <div 
-            className={`themed-card p-5 pb-2 rounded-2xl border relative overflow-hidden group mb-4 transition-all duration-300 ${isFinished ? 'opacity-60' : 'cursor-pointer'}`} 
+            className={`bg-white dark:bg-[#1E293B] p-5 pb-3 rounded-2xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05),0_2px_6px_-1px_rgba(0,0,0,0.02)] border border-slate-100/80 dark:border-white/5 relative overflow-hidden group mb-4 transition-all duration-300 ${isFinished ? 'opacity-60' : 'cursor-pointer hover:shadow-md'}`} 
             onClick={onDecrement}
-            style={{
-                borderColor: cardBorderColor,
-                borderWidth: '1.5px',
-                borderStyle: 'solid'
-            }}
         >
             <div className={`flex justify-between items-start mb-2 ${isEn ? 'flex-row' : ''}`}>
-                <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-bold shadow-sm" style={{backgroundColor: theme.palette[1]+'30', color: theme.palette[1]}}>
+                <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold" style={{ backgroundColor: `${primaryColor}14`, color: primaryColor }}>
                     {displayNote}
                 </span>
                 <div 
                     className={`count-badge w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg shadow-md transform transition-transform`} 
                     style={
                         isFinished 
-                        ? { backgroundColor: 'var(--badge-finished-bg)', color: 'var(--badge-finished-text)' } 
-                        : (isDefaultTheme 
-                            ? { backgroundColor: '#ffffff', color: '#000000', border: '1px solid rgba(0,0,0,0.1)' } 
-                            : { backgroundImage: `linear-gradient(to bottom right, ${theme.palette[0]}, ${theme.palette[1]})`, color: theme.name === 'اسود' ? '#000000' : '#ffffff' }
-                        )
+                        ? { backgroundColor: '#94a3b8', color: '#ffffff' } 
+                        : { backgroundColor: primaryColor, color: '#ffffff', boxShadow: `0 4px 14px 0 ${primaryColor}40` }
                     }
                 >
                     {isFinished ? <i className="fa-solid fa-check"></i> : zikr.currentCount}
@@ -241,9 +229,10 @@ function AthkarAlSalah({ onBack, onNavigate }: AthkarAlSalahProps) {
     const { theme, themeKey } = useTheme();
     const { language } = useLanguage();
     const isEn = language === 'en';
-    const isBlackTheme = theme.bgColor === '#000000';
+    const isBlackTheme = theme.bgColor === '#000000' || theme.name === 'أبيض وأسود' || theme.name === 'اسود';
+    const primaryColor = isBlackTheme ? '#FFFFFF' : (theme.palette?.[0] || theme.accent || '#2E7D5E');
     const isDefaultTheme = themeKey === 'default' || theme.name === 'الافتراضي' || !!theme.isOriginal || !themeKey;
-    const cardBorderColor = isBlackTheme ? '#222222' : (theme.isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)');
+    const cardBorderColor = isBlackTheme ? 'rgba(255, 255, 255, 0.1)' : 'transparent';
     const [currentPrayer, setCurrentPrayer] = useState<{ id: string; title: string; titleEn?: string } | null>(null);
     const [athkarList, setAthkarList] = useState<any[]>([]);
     const [zoomedZikr, setZoomedZikr] = useState<any>(null);
@@ -459,7 +448,7 @@ function AthkarAlSalah({ onBack, onNavigate }: AthkarAlSalahProps) {
                                 title={isEn ? "Athkar Guide" : "دليل أذكار الصلاة"}
                                 aria-label={isEn ? "Athkar Guide" : "دليل أذكار الصلاة"}
                             >
-                                <HelpCircle size={19} />
+                                <i className="fa-solid fa-circle-question text-lg text-black"></i>
                             </button>
                             <ThemePageLock />
                             <button
@@ -569,7 +558,7 @@ function AthkarAlSalah({ onBack, onNavigate }: AthkarAlSalahProps) {
                     </div>
                 ) : !currentPrayer ? (
                     <>
-                        <div id="prayersMenu" className={activeTab === 'grid' ? "grid grid-cols-2 gap-3.5" : "space-y-4"}>
+                        <div id="prayersMenu" className={activeTab === 'grid' ? "grid grid-cols-2 gap-3.5" : "space-y-3.5"}>
                             {filteredPrayerOptions.map(prayer => (
                                  <div 
                                       key={prayer.id} 
@@ -578,36 +567,29 @@ function AthkarAlSalah({ onBack, onNavigate }: AthkarAlSalahProps) {
                                           `أذكار ${prayer.title}`, 
                                           `${prayer.titleEn} Adhkar`
                                       )} 
-                                      className={`themed-card p-4 rounded-xl shadow-sm border flex ${activeTab === 'grid' ? 'flex-col items-center text-center justify-center py-6 gap-3' : 'items-center justify-between'} cursor-pointer active:scale-95 transition`}
-                                      style={{ 
-                                          borderColor: cardBorderColor,
-                                          borderWidth: '1.5px',
-                                          borderStyle: 'solid',
-                                          ...(activeTab === 'grid' ? {} : (isEn ? {
-                                              borderLeftWidth: '4px',
-                                              borderLeftColor: prayer.color === 'primary' ? (isDefaultTheme ? '#000000' : theme.palette[0]) : theme.palette[1]
-                                          } : {
-                                              borderRightWidth: '4px',
-                                              borderRightColor: prayer.color === 'primary' ? (isDefaultTheme ? '#000000' : theme.palette[0]) : theme.palette[1]
-                                          }))
-                                      }}
+                                      className={`bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-2xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05),0_2px_6px_-1px_rgba(0,0,0,0.02)] border border-slate-100/80 dark:border-white/5 flex ${activeTab === 'grid' ? 'flex-col items-center text-center justify-center py-6 gap-3' : 'items-center justify-between'} cursor-pointer active:scale-98 transition-all hover:shadow-md group`}
                                  >
                                     <div className={`flex ${activeTab === 'grid' ? 'flex-col items-center gap-3' : 'items-center gap-4'}`}>
                                         <div 
-                                             className={`w-12 h-12 rounded-full flex items-center justify-center ${themeKey === 'default' ? 'shadow-inner border border-black/5' : ''}`} 
+                                             className="w-12 h-12 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-105 shrink-0" 
                                              style={{
-                                                 backgroundColor: themeKey === 'default' ? '#FFFFFF' : (prayer.color === 'primary' ? theme.palette[0]+'20' : theme.palette[1]+'20'), 
-                                                 color: themeKey === 'default' ? '#000000' : (prayer.color === 'primary' ? theme.palette[0] : theme.palette[1])
+                                                 backgroundColor: isBlackTheme ? 'rgba(255, 255, 255, 0.1)' : `${primaryColor}14`, 
+                                                 color: primaryColor
                                              }}
                                         >
                                             <i className={`fa-solid ${prayer.icon} text-xl`}></i>
                                         </div>
                                         <div>
-                                            <h2 className="font-bold text-base sm:text-lg">
+                                            <h2 className="font-bold text-base sm:text-lg text-slate-800 dark:text-white">
                                                 {isEn ? prayer.titleEn : prayer.title}
                                             </h2>
                                         </div>
                                     </div>
+                                    {activeTab === 'list' && (
+                                        <div className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 dark:text-zinc-500 opacity-60">
+                                            <i className={`fa-solid ${isEn ? 'fa-chevron-right' : 'fa-chevron-left'} text-sm`}></i>
+                                        </div>
+                                    )}
                                 </div>
                             ))}
                         </div>
@@ -665,7 +647,11 @@ function AthkarAlSalah({ onBack, onNavigate }: AthkarAlSalahProps) {
             )}
 
             {/* Floating Menu & FAB */}
-            <div ref={fabContainerRef} className={`fixed bottom-3 ${isEn ? 'left-4' : 'right-4'} ${isMenuOpen ? 'z-[1250]' : 'z-[90]'} flex flex-col ${isEn ? 'items-start' : 'items-end'}`}>
+            <div 
+                ref={fabContainerRef} 
+                className={`fixed ${isEn ? 'left-4 items-start' : 'right-4 items-end'} ${isMenuOpen ? 'z-[1250]' : 'z-[90]'} flex flex-col`}
+                style={{ bottom: 'calc(env(safe-area-inset-bottom, 24px) + 32px)' }}
+            >
                 <AnimatePresence>
                     {isMenuOpen && (
                         <motion.div
@@ -724,81 +710,12 @@ function AthkarAlSalah({ onBack, onNavigate }: AthkarAlSalahProps) {
             </div>
 
             {/* Zoom Modal */}
-            {zoomedZikr && (
-                <div className="fixed inset-0 bg-black/80 z-[100] flex justify-center items-center p-4 backdrop-blur-sm" onClick={() => setZoomedZikr(null)}>
-                    <div className="bg-modal-bg text-modal-text p-8 rounded-3xl w-full max-w-2xl text-center relative scale-in shadow-2xl border-2 border-modal-border flex flex-col max-h-[90vh]" style={{ fontFamily: isEn ? 'sans-serif' : theme.font }} onClick={e => e.stopPropagation()}>
-                        <div className="overflow-y-auto hide-scrollbar flex-1 py-4">
-                            {(isEn ? (zoomedZikr.titleEn || '') : zoomedZikr.title) && (
-                                <h3 className="text-xl font-bold mb-4" style={{ color: theme.palette[1] }}>
-                                    {isEn ? (zoomedZikr.titleEn || '') : zoomedZikr.title}
-                                </h3>
-                            )}
-                            
-                            {/* When in English mode, render ONLY the English text. Never show Arabic. */}
-                            {isEn ? (
-                                <div 
-                                    className="text-xl md:text-2xl leading-relaxed text-center font-sans my-4" 
-                                    dir="ltr" 
-                                    dangerouslySetInnerHTML={{ __html: zoomedZikr.textEn || zoomedZikr.text }}
-                                ></div>
-                            ) : (
-                                <div 
-                                    className="text-2xl md:text-3xl leading-relaxed font-amiri text-center"
-                                    dangerouslySetInnerHTML={{ __html: zoomedZikr.text }}
-                                ></div>
-                            )}
-
-                            {zoomedZikr.note && (
-                                <p className="text-lg mt-6 font-bold" style={{ color: theme.palette[0] }}>
-                                    {zoomedZikr.count !== undefined 
-                                        ? (isEn ? `Required repetitions: ${zoomedZikr.noteEn || zoomedZikr.note}` : `التكرار المطلوب: ${zoomedZikr.note}`)
-                                        : (isEn ? (zoomedZikr.noteEn || zoomedZikr.note) : zoomedZikr.note)}
-                                </p>
-                            )}
-                        </div>
-
-                        <div className="mt-6 shrink-0 flex items-center gap-3">
-                            <button 
-                                onClick={async (e) => {
-                                    e.stopPropagation();
-                                    if (!zoomedZikr) return;
-                                    const fallbackTitle = isEn ? 'Prayer Remembrance' : 'أذكار ما بعد الصلاة';
-                                    const itemTitle = isEn 
-                                        ? (zoomedZikr.titleEn || (currentPrayer ? `${currentPrayer.titleEn} Adhkar` : fallbackTitle)) 
-                                        : (zoomedZikr.title || (currentPrayer ? `أذكار صلاة ${currentPrayer.title}` : fallbackTitle));
-                                    const itemCategory = isEn 
-                                        ? (currentPrayer ? `${currentPrayer.titleEn} Adhkar` : 'Prayer Remembrances') 
-                                        : (currentPrayer ? `أذكار صلاة ${currentPrayer.title}` : 'أذكار الصلاة');
-                                    const itemNote = isEn ? (zoomedZikr.noteEn || zoomedZikr.note) : zoomedZikr.note;
-
-                                    await shareAsImage({
-                                        text: isEn ? (zoomedZikr.textEn || zoomedZikr.text) : zoomedZikr.text,
-                                        title: itemTitle,
-                                        source: itemNote,
-                                        category: itemCategory,
-                                        theme,
-                                        isEn: isEn,
-                                        language: isEn ? 'en' : 'ar',
-                                        setToastMessage
-                                    });
-                                }} 
-                                className="flex-1 py-3 rounded-xl font-bold text-white flex items-center justify-center gap-2 hover:opacity-95 transition-opacity shadow-md"
-                                style={{ backgroundColor: theme.palette[0] }}
-                                title={isEn ? "Share Image" : "مشاركة كصورة"}
-                            >
-                                <i className="fa-solid fa-share-nodes"></i>
-                                <span>{isEn ? 'Share Image' : 'مشاركة كصورة'}</span>
-                            </button>
-                            <button 
-                                onClick={() => setZoomedZikr(null)} 
-                                className="flex-1 py-3 rounded-xl font-bold bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:opacity-90 transition-opacity"
-                            >
-                                {isEn ? 'Close' : 'إغلاق'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <ZoomModal 
+                zoomedZikr={zoomedZikr} 
+                currentPrayer={currentPrayer} 
+                onClose={() => setZoomedZikr(null)} 
+                setToastMessage={setToastMessage} 
+            />
 
             <AnimatePresence>
                 {toastMessage && (

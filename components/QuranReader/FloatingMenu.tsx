@@ -36,6 +36,8 @@ import {
   Loader2,
   ChevronLeft,
   Grid,
+  BookOpen,
+  Menu,
 } from "lucide-react";
 import {
   THEMES,
@@ -1262,39 +1264,42 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
             fontFamily: currentTheme.font || "var(--font-amiri)",
             backgroundColor: currentTheme.bg || "#ffffff",
             color: currentTheme.text || "#000000",
-            borderTop: isLandscape
-              ? "0px none"
-              : `2px solid ${currentTheme.barBorder || currentTheme.accent || "#000000"}`,
-            borderBottom: isLandscape
-              ? "0px none"
-              : `2px solid ${currentTheme.barBorder || currentTheme.accent || "#000000"}`,
-            borderLeft: isRTL ? `2px solid ${currentTheme.barBorder || currentTheme.accent || "#000000"}` : "0px solid transparent",
-            borderRight: !isRTL ? `2px solid ${currentTheme.barBorder || currentTheme.accent || "#000000"}` : "0px solid transparent",
+            border: "none",
+            borderTop: "none",
+            borderBottom: "none",
+            borderLeft: "none",
+            borderRight: "none",
+            boxShadow: isRTL
+              ? "-6px 0 25px -4px rgba(0, 0, 0, 0.22), 0 10px 20px -3px rgba(0, 0, 0, 0.15), inset 0 1px 2px rgba(255, 255, 255, 0.8), inset 1px 0 2px rgba(255, 255, 255, 0.6)"
+              : "6px 0 25px -4px rgba(0, 0, 0, 0.22), 0 10px 20px -3px rgba(0, 0, 0, 0.15), inset 0 1px 2px rgba(255, 255, 255, 0.8), inset -1px 0 2px rgba(255, 255, 255, 0.6)",
           }}
         >
           {isAddModalOpen ? (
             /* Customization Content (Replacing Main Menu) */
             <div className="flex flex-col h-full overflow-hidden">
-              <div className="p-4 border-b flex items-center justify-between bg-gray-50/50">
+              <div className="p-3.5 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Plus size={20} style={{ color: "#000000" }} />
+                  <div className="w-7 h-7 rounded-lg quran-raised-card flex items-center justify-center border-0">
+                    <Plus size={16} className="quran-3d-icon" style={{ color: iconColor }} />
+                  </div>
                   <h3
-                    className="font-bold text-sm"
-                    style={{ color: "#000000" }}
+                    className="font-extrabold text-xs"
+                    style={{ color: currentTheme.text }}
                   >
                     {isEn ? "Customize Shortcuts" : "تخصيص الاختصارات"}
                   </h3>
                 </div>
                 <button
                   onClick={() => setIsAddModalOpen(false)}
-                  className="p-1.5 hover:bg-gray-200 rounded-full transition-colors text-gray-400"
+                  className="w-7 h-7 rounded-lg quran-raised-btn flex items-center justify-center transition-colors border-0"
+                  style={{ color: currentTheme.text }}
                 >
-                  <X size={18} />
+                  <X size={15} className="quran-3d-icon" />
                 </button>
               </div>
 
-              <div className="flex-grow overflow-y-auto p-4 custom-scrollbar">
-                <div className="flex flex-col gap-1">
+              <div className="flex-grow overflow-y-auto p-3 custom-scrollbar">
+                <div className="flex flex-col gap-1.5">
                   {ALL_SHORTCUTS.map((shortcut) => {
                     const isSelected = tempShortcuts.includes(shortcut.id);
                     return (
@@ -1309,23 +1314,30 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                             setTempShortcuts([...tempShortcuts, shortcut.id]);
                           }
                         }}
-                        className={`flex items-center gap-3 py-2 border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors ${isRTL ? "text-right" : "text-left"} w-full group`}
+                        className={`flex items-center gap-2.5 p-2 rounded-xl transition-all ${isRTL ? "text-right" : "text-left"} w-full border-0 ${isSelected ? "quran-raised-btn-selected text-white" : "quran-raised-btn"}`}
+                        style={{
+                          backgroundColor: isSelected
+                            ? (currentTheme.accent || "#10b981")
+                            : (currentTheme?.id === "night" ? "rgba(255,255,255,0.06)" : "#ffffff"),
+                          border: "none",
+                        }}
                       >
                         <div
-                          style={{ color: isSelected ? "#000000" : "#9ca3af" }}
-                          className="transition-colors"
+                          style={{ color: isSelected ? "#ffffff" : iconColor }}
+                          className="quran-3d-icon shrink-0"
                         >
                           {shortcut.icon}
                         </div>
                         <span
-                          className={`text-sm flex-1 transition-all ${isSelected ? "text-gray-900 font-bold" : "text-gray-500"}`}
+                          className={`text-xs flex-1 truncate transition-all font-bold`}
+                          style={{ color: isSelected ? "#ffffff" : currentTheme.text }}
                         >
                           {translateMenuItem(shortcut.id, shortcut.label)}
                         </span>
                         <div
-                          className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${isSelected ? "bg-black border-black text-white" : "border-gray-300 group-hover:border-gray-400"}`}
+                          className={`w-5 h-5 rounded-lg flex items-center justify-center transition-all ${isSelected ? "bg-white/20 text-white" : "opacity-40"}`}
                         >
-                          {isSelected && <Save size={12} />}
+                          {isSelected && <Check size={12} />}
                         </div>
                       </button>
                     );
@@ -1333,18 +1345,19 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                 </div>
               </div>
 
-              <div className="p-3 border-t bg-gray-50/80 flex gap-2">
+              <div className="p-3 flex gap-2">
                 <button
                   onClick={saveShortcuts}
-                  className="flex-1 text-white py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-md active:scale-95 transition-all"
-                  style={{ backgroundColor: iconColor }}
+                  className="flex-1 text-white py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 quran-raised-btn-selected border-0"
+                  style={{ backgroundColor: iconColor, border: "none" }}
                 >
-                  <Save size={16} />
+                  <Save size={15} className="quran-3d-icon" />
                   {isEn ? "Save" : "حفظ"}
                 </button>
                 <button
                   onClick={() => setIsAddModalOpen(false)}
-                  className="px-4 py-2.5 bg-gray-200 text-gray-600 rounded-xl font-bold text-sm active:scale-95 transition-all"
+                  className="px-4 py-2.5 rounded-xl font-bold text-xs quran-raised-btn border-0"
+                  style={{ backgroundColor: currentTheme?.id === "night" ? "rgba(255,255,255,0.08)" : "#ffffff", color: currentTheme.text, border: "none" }}
                 >
                   {isEn ? "Cancel" : "إلغاء"}
                 </button>
@@ -1354,16 +1367,15 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
             /* Themes View */
             <div className="flex flex-col h-full overflow-hidden animate-fadeIn">
               <div
-                className="p-2.5 border-b flex items-center justify-between"
+                className="p-3 flex items-center justify-between"
                 style={{
                   backgroundColor: `${currentTheme.accent}15`,
-                  borderBottomColor: `${currentTheme.text}20`,
                 }}
               >
                 <div className="flex items-center gap-2">
-                  <Palette size={18} style={{ color: iconColor }} />
+                  <Palette size={18} className="quran-3d-icon" style={{ color: iconColor }} />
                   <h3
-                    className="font-bold text-xs"
+                    className="font-extrabold text-xs"
                     style={{ color: currentTheme.text }}
                   >
                     {isEn ? "Appearance" : "المظهر"}
@@ -1372,13 +1384,13 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
               </div>
 
               <div className="flex-grow overflow-y-auto overflow-x-hidden p-2.5 custom-scrollbar flex flex-col justify-between">
-                <div className="space-y-5">
+                <div className="space-y-4">
                   {/* Toggles Section */}
                   <div
-                    className="space-y-2.5 p-2 rounded-xl border"
+                    className="space-y-2.5 p-3 rounded-2xl quran-raised-card border-0"
                     style={{
-                      backgroundColor: `${currentTheme.text}05`,
-                      borderColor: `${currentTheme.text}10`,
+                      backgroundColor: currentTheme?.id === "night" ? "rgba(255,255,255,0.05)" : "#ffffff",
+                      border: "none",
                     }}
                   >
                     <div className="flex items-center justify-between gap-1.5">
@@ -1449,9 +1461,8 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                     </div>
                   </div>
 
-
                   {/* Themes Grid */}
-                  <div className="grid grid-cols-3 gap-y-4 gap-x-1.5">
+                  <div className="grid grid-cols-3 gap-2">
                     {Object.entries(THEMES).map(
                       ([id, theme]: [string, any]) => {
                         const activeModeSuffix = isMemorizationMode
@@ -1476,14 +1487,22 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                                 e.stopPropagation();
                                 applyTheme(id);
                               }}
-                              className="flex flex-col items-center gap-1.5 group cursor-pointer min-w-0"
+                              className={`flex flex-col items-center justify-center p-2 rounded-2xl cursor-pointer min-w-0 border-0 transition-all ${
+                                isActiveTheme ? "quran-raised-btn-selected" : "quran-raised-btn"
+                              }`}
+                              style={{
+                                backgroundColor: isActiveTheme
+                                  ? (currentTheme?.accent || "#10b981")
+                                  : (currentTheme?.id === "night" ? "rgba(255,255,255,0.06)" : "#ffffff"),
+                                border: "none",
+                              }}
                             >
                               <div
-                                className={`pointer-events-none w-[20px] h-[20px] rounded-full border-2 transition-all flex items-center justify-center ${isActiveTheme ? "scale-110 border-gray-400 shadow-md" : "border-transparent hover:scale-105"}`}
+                                className="w-5 h-5 rounded-full shadow-inner flex items-center justify-center shrink-0"
                                 style={{
                                   backgroundColor:
                                     id === "black"
-                                      ? "#000000"
+                                      ? "#10b981"
                                       : id === "deep_black"
                                         ? "#000000"
                                         : theme.accent ||
@@ -1494,25 +1513,19 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                               >
                                 {isActiveTheme && (
                                   <div
-                                    className={`pointer-events-none w-1.5 h-1.5 rounded-full shadow-sm ${id === "deep_black" ? "bg-emerald-500" : "bg-white"}`}
+                                    className={`w-1.5 h-1.5 rounded-full ${id === "deep_black" ? "bg-emerald-500" : "bg-white"}`}
                                   ></div>
                                 )}
                               </div>
                               <span
-                                className="pointer-events-none text-[7px] font-bold opacity-80 truncate w-full text-center leading-tight"
-                                style={{ color: currentTheme.text }}
+                                className="text-[9px] font-bold truncate w-full text-center mt-1.5 leading-tight"
+                                style={{
+                                  color: isActiveTheme ? "#ffffff" : currentTheme.text,
+                                }}
                               >
                                 {isEn ? (THEME_NAMES_EN[id] || t(`theme.${id}`, theme.name)) : theme.name}
                               </span>
                             </button>
-                            {id === "lime" && (
-                              <div
-                                className="col-span-3 h-px my-1"
-                                style={{
-                                  backgroundColor: `${currentTheme.text}15`,
-                                }}
-                              ></div>
-                            )}
                           </React.Fragment>
                         );
                       },
@@ -1522,18 +1535,18 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
               </div>
 
               <div
-                className="p-2 border-t"
+                className="p-2.5"
                 style={{
                   backgroundColor: `${currentTheme.accent}10`,
-                  borderTopColor: `${currentTheme.text}20`,
                 }}
               >
                 <button
                   onClick={() => setCurrentView("main")}
-                  className="w-full py-2 rounded-xl font-bold text-xs flex items-center justify-center gap-2 active:scale-95 transition-all"
+                  className="w-full py-2.5 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 quran-raised-btn border-0"
                   style={{
-                    backgroundColor: `${currentTheme.text}15`,
+                    backgroundColor: currentTheme?.id === "night" ? "rgba(255,255,255,0.08)" : "#ffffff",
                     color: currentTheme.text,
+                    border: "none",
                   }}
                 >
                   {isEn ? "Back" : "رجوع"}
@@ -1543,23 +1556,22 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
           ) : currentView === "download_quran_menu" ? (
             <div className="flex flex-col h-full overflow-hidden animate-fadeIn">
               <div
-                className="p-4 border-b flex items-center justify-between"
+                className="p-3.5 flex items-center justify-between"
                 style={{
                   backgroundColor: `${currentTheme.accent}15`,
-                  borderBottomColor: `${currentTheme.text}20`,
                 }}
               >
                 <div className="flex items-center gap-2">
-                  <Download size={20} style={{ color: iconColor }} />
+                  <Download size={20} className="quran-3d-icon" style={{ color: iconColor }} />
                   <h3
-                    className="font-bold text-sm"
+                    className="font-extrabold text-xs"
                     style={{ color: currentTheme.text }}
                   >
                     {isEn ? "Download Qur'an" : "تحميل القرآن"}
                   </h3>
                 </div>
               </div>
-              <div className="flex-grow overflow-y-auto p-4 custom-scrollbar flex flex-col gap-2">
+              <div className="flex-grow overflow-y-auto p-3 custom-scrollbar flex flex-col gap-2">
                 <MenuItem
                   icon={<Download size={18} />}
                   label={isEn ? "Download Mushaf" : "تحميل المصحف"}
@@ -1586,18 +1598,18 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                 />
               </div>
               <div
-                className="p-3 border-t"
+                className="p-3"
                 style={{
                   backgroundColor: `${currentTheme.accent}10`,
-                  borderTopColor: `${currentTheme.text}20`,
                 }}
               >
                 <button
                   onClick={() => setCurrentView("main")}
-                  className="w-full py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 active:scale-95 transition-all"
+                  className="w-full py-2.5 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 quran-raised-btn border-0"
                   style={{
-                    backgroundColor: `${currentTheme.text}15`,
+                    backgroundColor: currentTheme?.id === "night" ? "rgba(255,255,255,0.08)" : "#ffffff",
                     color: currentTheme.text,
+                    border: "none",
                   }}
                 >
                   {isEn ? "Back" : "رجوع"}
@@ -1607,24 +1619,23 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
           ) : currentView === "audio" ? (
             <div className="flex flex-col h-full overflow-hidden animate-fadeIn">
               <div
-                className="p-4 border-b flex items-center justify-between"
+                className="p-3.5 flex items-center justify-between"
                 style={{
                   backgroundColor: `${currentTheme.accent}15`,
-                  borderBottomColor: `${currentTheme.text}20`,
                 }}
               >
                 <div className="flex items-center gap-2">
-                  <Headphones size={20} style={{ color: iconColor }} />
+                  <Headphones size={20} className="quran-3d-icon" style={{ color: iconColor }} />
                   <h3
-                    className="font-bold text-sm"
+                    className="font-extrabold text-xs"
                     style={{ color: currentTheme.text }}
                   >
                     {isEn ? "Reciters" : "القراء"}
                   </h3>
                 </div>
               </div>
-              <div className="flex-grow overflow-y-auto p-4 custom-scrollbar flex flex-col justify-between">
-                <div className="flex flex-col gap-3">
+              <div className="flex-grow overflow-y-auto p-3 custom-scrollbar flex flex-col justify-between">
+                <div className="flex flex-col gap-2.5">
                   {/* Reciters view strictly filtered by readingMode */}
                   {(() => {
                     const modeReaders = getReadersForMode(readingMode, READERS);
@@ -1645,7 +1656,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                                 ? (isEn ? "Recitation & Translation Reciter" : "قارئ التلاوة والترجمة الإنجليزية")
                                 : (isEn ? "English Translation Audio" : "قارئ الترجمة الإنجليزية (صحيح إنترناشونال)")}
                             </h4>
-                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-500 dark:text-indigo-300 font-bold border border-indigo-500/30">
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-500 dark:text-indigo-300 font-bold">
                               {isBilingualMode ? 'AR+EN' : 'EN'}
                             </span>
                           </div>
@@ -1658,14 +1669,15 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                                 setIsFloatingMenuOpen(false);
                                 showToast(isEn ? `Selected reciter: ${displayName}` : `تم اختيار القارئ: ${singleReader.name}`);
                               }}
-                              className={`w-full flex items-center justify-between p-3.5 rounded-xl border-2 transition-all font-bold text-start cursor-pointer active:scale-[0.99] ${
+                              className={`w-full flex items-center justify-between p-3.5 rounded-2xl border-0 transition-all font-bold text-start cursor-pointer ${
                                 isSelected
-                                  ? "bg-gradient-to-r from-indigo-600 to-blue-600 text-white border-indigo-400 shadow-md ring-2 ring-indigo-400/40"
-                                  : "bg-indigo-500/10 hover:bg-indigo-500/15 text-indigo-700 dark:text-indigo-200 border-indigo-500/40"
+                                  ? "quran-raised-btn-selected bg-gradient-to-r from-indigo-600 to-blue-600 text-white"
+                                  : "quran-raised-btn bg-indigo-500/10 text-indigo-700 dark:text-indigo-200"
                               }`}
+                              style={{ border: "none" }}
                             >
                               <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isSelected ? 'bg-white/20 text-white' : 'bg-indigo-500/20 text-indigo-600 dark:text-indigo-300'}`}>
+                                <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${isSelected ? 'bg-white/20 text-white' : 'bg-indigo-500/20 text-indigo-600 dark:text-indigo-300'}`}>
                                   <Globe size={16} />
                                 </div>
                                 <div className="flex flex-col min-w-0">
@@ -1678,10 +1690,10 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                                 </div>
                               </div>
                               <div className="flex items-center gap-1.5 shrink-0 ml-2 mr-2">
-                                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
                                   isSelected 
-                                    ? 'bg-white/25 text-white border border-white/30' 
-                                    : 'bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 border border-indigo-500/30'
+                                    ? 'bg-white/25 text-white' 
+                                    : 'bg-indigo-500/20 text-indigo-600 dark:text-indigo-300'
                                 }`}>
                                   {isBilingualMode ? 'AR+EN' : 'EN'}
                                 </span>
@@ -1716,32 +1728,30 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                                   setIsFloatingMenuOpen(false);
                                   showToast(isEn ? `Selected reciter: ${displayName}` : `تم اختيار القارئ: ${r.name}`);
                                 }}
-                                className={`flex items-center justify-between p-3.5 rounded-xl border transition-all ${
-                                  isSelected ? "border-emerald-500" : ""
+                                className={`flex items-center justify-between p-3.5 rounded-2xl border-0 transition-all ${
+                                  isSelected ? "quran-raised-btn-selected" : "quran-raised-btn"
                                 }`}
                                 style={{
                                   backgroundColor:
                                     isSelected
-                                      ? `${currentTheme.accent}15`
-                                      : `${currentTheme.text}05`,
-                                  borderColor:
-                                    isSelected
-                                      ? currentTheme.accent
-                                      : `${currentTheme.text}10`,
-                                  color: currentTheme.text,
+                                      ? (currentTheme?.accent || "#10b981")
+                                      : (currentTheme?.id === "night" ? "rgba(255,255,255,0.06)" : "#ffffff"),
+                                  color: isSelected ? "#ffffff" : currentTheme.text,
+                                  border: "none",
                                 }}
                               >
                                 <span
-                                  className={`text-xs font-bold truncate ${
-                                    isSelected ? "text-emerald-500" : ""
-                                  }`}
+                                  className="text-xs font-bold truncate"
+                                  style={{
+                                    color: isSelected ? "#ffffff" : currentTheme.text,
+                                  }}
                                 >
                                   {displayName}
                                 </span>
                                 {isSelected && (
                                   <Check
                                     size={16}
-                                    className="text-emerald-500 shrink-0"
+                                    className="text-white shrink-0"
                                   />
                                 )}
                               </button>
@@ -1754,18 +1764,18 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                 </div>
               </div>
               <div
-                className="p-3 border-t"
+                className="p-3"
                 style={{
                   backgroundColor: `${currentTheme.accent}10`,
-                  borderTopColor: `${currentTheme.text}20`,
                 }}
               >
                 <button
                   onClick={() => setCurrentView("main")}
-                  className="w-full py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 active:scale-95 transition-all"
+                  className="w-full py-2.5 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 quran-raised-btn border-0"
                   style={{
-                    backgroundColor: `${currentTheme.text}15`,
+                    backgroundColor: currentTheme?.id === "night" ? "rgba(255,255,255,0.08)" : "#ffffff",
                     color: currentTheme.text,
+                    border: "none",
                   }}
                 >
                   {isEn ? "Back" : "رجوع"}
@@ -1775,16 +1785,15 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
           ) : currentView === "font" ? (
             <div className="flex flex-col h-full overflow-hidden animate-fadeIn">
               <div
-                className="p-4 border-b flex items-center justify-between"
+                className="p-3.5 flex items-center justify-between"
                 style={{
                   backgroundColor: `${currentTheme.accent}15`,
-                  borderBottomColor: `${currentTheme.text}20`,
                 }}
               >
                 <div className="flex items-center gap-2">
-                  <Type size={20} style={{ color: iconColor }} />
+                  <Type size={20} className="quran-3d-icon" style={{ color: iconColor }} />
                   <h3
-                    className="font-bold text-sm"
+                    className="font-extrabold text-xs"
                     style={{ color: currentTheme.text }}
                   >
                     {readingMode === "translation" 
@@ -1793,8 +1802,8 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                   </h3>
                 </div>
               </div>
-              <div className="flex-grow overflow-y-auto p-4 custom-scrollbar flex flex-col justify-between">
-                <div className="grid grid-cols-1 gap-3">
+              <div className="flex-grow overflow-y-auto p-3 custom-scrollbar flex flex-col justify-between">
+                <div className="grid grid-cols-1 gap-2.5">
                   {(readingMode === "translation" ? ENGLISH_FONTS : FONTS).map((f) => {
                     const isTranslationMode = readingMode === "translation";
                     const fontDisplayName = isTranslationMode 
@@ -1815,31 +1824,31 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                           setIsFloatingMenuOpen(false);
                           showToast(isEn ? `Font changed to: ${fontDisplayName}` : `تم تغيير الخط إلى: ${fontDisplayName}`);
                         }}
-                        className={`flex flex-col p-4 rounded-xl border transition-all ${isSelected ? "border-emerald-500 shadow-sm" : ""}`}
+                        className={`flex flex-col p-3.5 rounded-2xl border-0 transition-all text-start cursor-pointer ${isSelected ? "quran-raised-card-selected" : "quran-raised-card"}`}
                         style={{
                           backgroundColor:
                             isSelected
-                              ? `${currentTheme.accent}15`
-                              : `${currentTheme.text}05`,
-                          borderColor:
-                            isSelected
-                              ? currentTheme.accent
-                              : `${currentTheme.text}10`,
+                              ? (currentTheme?.id === "night" ? "rgba(255,255,255,0.12)" : `${currentTheme.accent}18`)
+                              : (currentTheme?.id === "night" ? "rgba(255,255,255,0.06)" : "#ffffff"),
                           color: currentTheme.text,
+                          border: "none",
                         }}
                       >
-                        <div className="flex items-center justify-between w-full mb-2">
+                        <div className="flex items-center justify-between w-full mb-1.5">
                           <span
-                            className={`text-sm font-bold ${isSelected ? "text-emerald-500" : ""}`}
+                            className="text-xs font-bold"
+                            style={{
+                              color: isSelected ? (currentTheme.accent || "#10b981") : currentTheme.text,
+                            }}
                           >
                             {fontDisplayName}
                           </span>
                           {isSelected && (
-                            <Check size={16} className="text-emerald-500" />
+                            <Check size={16} style={{ color: currentTheme.accent || "#10b981" }} />
                           )}
                         </div>
                       <span
-                        className={`text-center opacity-80 ${isTranslationMode ? "text-sm text-left italic font-normal" : "text-xl text-center"}`}
+                        className={`opacity-85 ${isTranslationMode ? "text-xs text-left italic font-normal" : "text-lg text-center w-full"}`}
                         style={{ fontFamily: f.id }}
                       >
                         {previewText}
@@ -1850,18 +1859,18 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                 </div>
               </div>
               <div
-                className="p-3 border-t"
+                className="p-3"
                 style={{
                   backgroundColor: `${currentTheme.accent}10`,
-                  borderTopColor: `${currentTheme.text}20`,
                 }}
               >
                 <button
                   onClick={() => setCurrentView("main")}
-                  className="w-full py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 active:scale-95 transition-all"
+                  className="w-full py-2.5 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 quran-raised-btn border-0"
                   style={{
-                    backgroundColor: `${currentTheme.text}15`,
+                    backgroundColor: currentTheme?.id === "night" ? "rgba(255,255,255,0.08)" : "#ffffff",
                     color: currentTheme.text,
+                    border: "none",
                   }}
                 >
                   {isEn ? "Back" : "رجوع"}
@@ -1871,23 +1880,22 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
           ) : currentView === "notifications" ? (
             <div className="flex flex-col h-full overflow-hidden animate-fadeIn">
               <div
-                className="p-4 border-b flex items-center justify-between"
+                className="p-3.5 flex items-center justify-between"
                 style={{
                   backgroundColor: `${currentTheme.accent}15`,
-                  borderBottomColor: `${currentTheme.text}20`,
                 }}
               >
                 <div className="flex items-center gap-2">
-                  <Bell size={20} style={{ color: iconColor }} />
+                  <Bell size={20} className="quran-3d-icon" style={{ color: iconColor }} />
                   <h3
-                    className="font-bold text-sm"
+                    className="font-extrabold text-xs"
                     style={{ color: currentTheme.text }}
                   >
                     {isEn ? "Notifications" : "الإشعارات"}
                   </h3>
                 </div>
               </div>
-              <div className="flex-grow overflow-y-auto p-4 custom-scrollbar flex flex-col justify-between">
+              <div className="flex-grow overflow-y-auto p-3 custom-scrollbar flex flex-col justify-between">
                 <NotificationSettingsContent
                   showToast={showToast}
                   currentTheme={currentTheme}
@@ -1907,18 +1915,18 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                 />
               </div>
               <div
-                className="p-3 border-t"
+                className="p-3"
                 style={{
                   backgroundColor: `${currentTheme.accent}10`,
-                  borderTopColor: `${currentTheme.text}20`,
                 }}
               >
                 <button
                   onClick={() => setCurrentView("main")}
-                  className="w-full py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 active:scale-95 transition-all"
+                  className="w-full py-2.5 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 quran-raised-btn border-0"
                   style={{
-                    backgroundColor: `${currentTheme.text}15`,
+                    backgroundColor: currentTheme?.id === "night" ? "rgba(255,255,255,0.08)" : "#ffffff",
                     color: currentTheme.text,
+                    border: "none",
                   }}
                 >
                   {isEn ? "Back" : "رجوع"}
@@ -1928,28 +1936,27 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
           ) : currentView === "download_tafseer" ? (
             <div className="flex flex-col h-full overflow-hidden animate-fadeIn">
               <div
-                className="p-4 border-b flex items-center justify-between"
+                className="p-3.5 flex items-center justify-between"
                 style={{
                   backgroundColor: `${currentTheme.accent}15`,
-                  borderBottomColor: `${currentTheme.text}20`,
                 }}
               >
                 <div className="flex items-center gap-2">
-                  <Download size={20} style={{ color: iconColor }} />
+                  <Download size={20} className="quran-3d-icon" style={{ color: iconColor }} />
                   <h3
-                    className="font-bold text-sm"
+                    className="font-extrabold text-xs"
                     style={{ color: currentTheme.text }}
                   >
                     {isEn ? "Download Tafseer" : "تحميل التفسير"}
                   </h3>
                 </div>
               </div>
-              <div className="flex-grow overflow-y-auto p-4 custom-scrollbar">
-                <div className="space-y-6">
+              <div className="flex-grow overflow-y-auto p-3.5 custom-scrollbar">
+                <div className="space-y-5">
                   {/* Tafsir Selection */}
                   <div className="space-y-2">
                     <label
-                      className={`text-xs font-bold opacity-50 block ${isRTL ? "text-right" : "text-left"}`}
+                      className={`text-xs font-bold opacity-75 block ${isRTL ? "text-right" : "text-left"}`}
                       style={{ color: currentTheme.text }}
                     >
                       {isEn ? "Select Tafseer" : "اختر التفسير"}
@@ -1959,25 +1966,22 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                         <button
                           key={t.id}
                           onClick={() => setSelectedTafsir(t.id)}
-                          className={`p-3 text-xs font-bold rounded-xl border transition-all ${isRTL ? "text-right" : "text-left"} flex justify-between items-center ${selectedTafsir === t.id ? "border-emerald-500" : ""}`}
+                          className={`p-3 text-xs font-bold rounded-2xl border-0 transition-all ${isRTL ? "text-right" : "text-left"} flex justify-between items-center ${selectedTafsir === t.id ? "quran-raised-btn-selected text-white" : "quran-raised-btn"}`}
                           style={{
                             backgroundColor:
                               selectedTafsir === t.id
-                                ? `${currentTheme.accent}15`
-                                : `${currentTheme.text}05`,
-                            borderColor:
-                              selectedTafsir === t.id
-                                ? currentTheme.accent
-                                : `${currentTheme.text}10`,
+                                ? (currentTheme.accent || "#10b981")
+                                : (currentTheme?.id === "night" ? "rgba(255,255,255,0.06)" : "#ffffff"),
                             color:
                               selectedTafsir === t.id
-                                ? "text-emerald-500"
+                                ? "#ffffff"
                                 : currentTheme.text,
+                            border: "none",
                           }}
                         >
                           <span>{isEn ? (t.englishName || t.name) : t.name}</span>
                           {selectedTafsir === t.id && (
-                            <Check size={14} className="text-emerald-500" />
+                            <Check size={14} className="text-white" />
                           )}
                         </button>
                       ))}
@@ -1987,7 +1991,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                   {/* Surah Selection */}
                   <div className="space-y-2">
                     <label
-                      className={`text-xs font-bold opacity-50 block ${isRTL ? "text-right" : "text-left"}`}
+                      className={`text-xs font-bold opacity-75 block ${isRTL ? "text-right" : "text-left"}`}
                       style={{ color: currentTheme.text }}
                     >
                       {isEn ? "Select Surahs" : "اختر السور"}
@@ -1995,16 +1999,14 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                     <div className="grid grid-cols-3 gap-2 max-h-40 overflow-y-auto p-1 custom-scrollbar">
                       <button
                         onClick={() => toggleSelection("all", "surah")}
-                        className={`p-2 text-[10px] font-bold rounded-lg border transition-all ${selectedSurahs.includes("all") ? "bg-emerald-500 border-emerald-500 text-white" : ""}`}
-                        style={
-                          !selectedSurahs.includes("all")
-                            ? {
-                                backgroundColor: `${currentTheme.text}05`,
-                                borderColor: `${currentTheme.text}10`,
-                                color: currentTheme.text,
-                              }
-                            : {}
-                        }
+                        className={`p-2 text-[10px] font-bold rounded-xl border-0 transition-all ${selectedSurahs.includes("all") ? "quran-raised-btn-selected bg-emerald-500 text-white" : "quran-raised-btn"}`}
+                        style={{
+                          backgroundColor: selectedSurahs.includes("all")
+                            ? (currentTheme.accent || "#10b981")
+                            : (currentTheme?.id === "night" ? "rgba(255,255,255,0.06)" : "#ffffff"),
+                          color: selectedSurahs.includes("all") ? "#ffffff" : currentTheme.text,
+                          border: "none",
+                        }}
                       >
                         {isEn ? "All" : "الكل"}
                       </button>
@@ -2018,17 +2020,19 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                             onClick={() =>
                               toggleSelection((i + 1).toString(), "surah")
                             }
-                            className={`p-2 text-[10px] font-bold rounded-lg border transition-all ${isSelected ? "border-emerald-500" : isDownloaded ? "bg-emerald-50 dark:bg-emerald-900/30 border-emerald-400 text-emerald-700 dark:text-emerald-400" : ""}`}
+                            className={`p-2 text-[10px] font-bold rounded-xl border-0 transition-all ${isSelected ? "quran-raised-btn-selected" : "quran-raised-btn"}`}
                             style={{
                               backgroundColor: isSelected
-                                ? `${currentTheme.accent}15`
-                                : isDownloaded ? undefined : `${currentTheme.text}05`,
-                              borderColor: isSelected
-                                ? currentTheme.accent
-                                : isDownloaded ? undefined : `${currentTheme.text}10`,
+                                ? (currentTheme.accent || "#10b981")
+                                : isDownloaded
+                                  ? (currentTheme?.id === "night" ? "rgba(16,185,129,0.2)" : "#d1fae5")
+                                  : (currentTheme?.id === "night" ? "rgba(255,255,255,0.06)" : "#ffffff"),
                               color: isSelected
-                                ? "text-emerald-500"
-                                : isDownloaded ? undefined : currentTheme.text,
+                                ? "#ffffff"
+                                : isDownloaded
+                                  ? "#059669"
+                                  : currentTheme.text,
+                              border: "none",
                             }}
                           >
                             <div className="flex items-center justify-center gap-1">
@@ -2044,7 +2048,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                   {/* Juz Selection */}
                   <div className="space-y-2">
                     <label
-                      className={`text-xs font-bold opacity-50 block ${isRTL ? "text-right" : "text-left"}`}
+                      className={`text-xs font-bold opacity-75 block ${isRTL ? "text-right" : "text-left"}`}
                       style={{ color: currentTheme.text }}
                     >
                       {isEn ? "Select Juzs" : "اختر الأجزاء"}
@@ -2057,17 +2061,19 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                           <button
                             key={j}
                             onClick={() => toggleSelection(j.toString(), "juz")}
-                            className={`p-2 text-[10px] font-bold rounded-lg border transition-all ${isSelected ? "border-emerald-500" : isDownloaded ? "bg-emerald-50 dark:bg-emerald-900/30 border-emerald-400 text-emerald-700 dark:text-emerald-400" : ""}`}
+                            className={`p-2 text-[10px] font-bold rounded-xl border-0 transition-all ${isSelected ? "quran-raised-btn-selected" : "quran-raised-btn"}`}
                             style={{
                               backgroundColor: isSelected
-                                ? `${currentTheme.accent}15`
-                                : isDownloaded ? undefined : `${currentTheme.text}05`,
-                              borderColor: isSelected
-                                ? currentTheme.accent
-                                : isDownloaded ? undefined : `${currentTheme.text}10`,
+                                ? (currentTheme.accent || "#10b981")
+                                : isDownloaded
+                                  ? (currentTheme?.id === "night" ? "rgba(16,185,129,0.2)" : "#d1fae5")
+                                  : (currentTheme?.id === "night" ? "rgba(255,255,255,0.06)" : "#ffffff"),
                               color: isSelected
-                                ? "text-emerald-500"
-                                : isDownloaded ? undefined : currentTheme.text,
+                                ? "#ffffff"
+                                : isDownloaded
+                                  ? "#059669"
+                                  : currentTheme.text,
+                              border: "none",
                             }}
                           >
                             <div className="flex items-center justify-center gap-1">
@@ -2082,10 +2088,9 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                 </div>
               </div>
               <div
-                className="p-3 border-t space-y-2"
+                className="p-3 space-y-2"
                 style={{
                   backgroundColor: `${currentTheme.accent}10`,
-                  borderTopColor: `${currentTheme.text}20`,
                 }}
               >
                 {isDownloading && (
@@ -2112,18 +2117,19 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                   <button
                     onClick={() => startDownload("tafseer")}
                     disabled={!isDownloading && isAllSelectedDownloaded()}
-                    className={`flex-1 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all ${isDownloading ? "bg-red-500 text-white" : "text-white shadow-md active:scale-95"} ${!isDownloading && isAllSelectedDownloaded() ? "opacity-50 grayscale cursor-not-allowed" : ""}`}
-                    style={!isDownloading ? { backgroundColor: iconColor } : {}}
+                    className={`flex-1 py-2.5 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 quran-raised-btn border-0 transition-all ${isDownloading ? "bg-red-500 text-white" : "text-white"} ${!isDownloading && isAllSelectedDownloaded() ? "opacity-50 grayscale cursor-not-allowed" : ""}`}
+                    style={!isDownloading ? { backgroundColor: iconColor, border: "none" } : { border: "none" }}
                   >
                     {isDownloading ? <X size={16} /> : <Download size={16} />}
                     {isDownloading ? (isEn ? "Stop" : "إيقاف") : isAllSelectedDownloaded() ? (isEn ? "Downloaded" : "محمل") : (isEn ? "Download" : "تحميل")}
                   </button>
                   <button
                     onClick={() => setCurrentView("main")}
-                    className="px-4 py-2.5 rounded-xl font-bold text-xs active:scale-95 transition-all"
+                    className="px-4 py-2.5 rounded-2xl font-bold text-xs quran-raised-btn border-0 transition-all"
                     style={{
-                      backgroundColor: `${currentTheme.text}15`,
+                      backgroundColor: currentTheme?.id === "night" ? "rgba(255,255,255,0.08)" : "#ffffff",
                       color: currentTheme.text,
+                      border: "none",
                     }}
                   >
                     {isEn ? "Back" : "رجوع"}
@@ -2134,23 +2140,22 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
           ) : currentView === "interface" ? (
             <div className="flex flex-col h-full overflow-hidden animate-fadeIn">
               <div
-                className="p-4 border-b flex items-center justify-between"
+                className="p-3.5 flex items-center justify-between"
                 style={{
                   backgroundColor: `${currentTheme.accent}15`,
-                  borderBottomColor: `${currentTheme.text}20`,
                 }}
               >
                 <div className="flex items-center gap-2">
-                  <Palette size={20} style={{ color: iconColor }} />
+                  <Palette size={20} className="quran-3d-icon" style={{ color: iconColor }} />
                   <h3
-                    className="font-bold text-sm"
+                    className="font-extrabold text-xs"
                     style={{ color: currentTheme.text }}
                   >
                     {isEn ? "Interface Customization" : "تخصيص الواجهة"}
                   </h3>
                 </div>
               </div>
-              <div className="flex-grow overflow-y-auto p-4 custom-scrollbar">
+              <div className="flex-grow overflow-y-auto p-3 custom-scrollbar">
                 <ToolbarColorPickerContent
                   currentTheme={currentTheme}
                   isLandscape={isLandscape}
@@ -2163,18 +2168,18 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                 />
               </div>
               <div
-                className="p-3 border-t"
+                className="p-3"
                 style={{
                   backgroundColor: `${currentTheme.accent}10`,
-                  borderTopColor: `${currentTheme.text}20`,
                 }}
               >
                 <button
                   onClick={() => setCurrentView("main")}
-                  className="w-full py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 active:scale-95 transition-all"
+                  className="w-full py-2.5 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 quran-raised-btn border-0"
                   style={{
-                    backgroundColor: `${currentTheme.text}15`,
+                    backgroundColor: currentTheme?.id === "night" ? "rgba(255,255,255,0.08)" : "#ffffff",
                     color: currentTheme.text,
+                    border: "none",
                   }}
                 >
                   {isEn ? "Back" : "رجوع"}
@@ -2186,16 +2191,15 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
             currentView === "download_memorization" ? (
             <div className="flex flex-col h-full overflow-hidden animate-fadeIn">
               <div
-                className="p-4 border-b flex items-center justify-between"
+                className="p-3.5 flex items-center justify-between"
                 style={{
                   backgroundColor: `${currentTheme.accent}15`,
-                  borderBottomColor: `${currentTheme.text}20`,
                 }}
               >
                 <div className="flex items-center gap-2">
-                  <Download size={20} style={{ color: iconColor }} />
+                  <Download size={20} className="quran-3d-icon" style={{ color: iconColor }} />
                   <h3
-                    className="font-bold text-sm"
+                    className="font-extrabold text-xs"
                     style={{ color: currentTheme.text }}
                   >
                     {currentView === "download_quran"
@@ -2206,13 +2210,13 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                   </h3>
                 </div>
               </div>
-              <div className="flex-grow overflow-y-auto p-4 custom-scrollbar">
-                <div className="space-y-6">
+              <div className="flex-grow overflow-y-auto p-3.5 custom-scrollbar">
+                <div className="space-y-5">
                   {/* Reciter Selection */}
                   <div className="space-y-2">
                     <div className="flex justify-between items-center" dir={isRTL ? "rtl" : "ltr"}>
                       <label
-                        className="text-xs font-bold opacity-50 block"
+                        className="text-xs font-bold opacity-75 block"
                         style={{ color: currentTheme.text }}
                       >
                         {isEn ? "Select Reciter" : "اختر القارئ"}
@@ -2234,16 +2238,16 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                           value={readerSearch}
                           onChange={(e) => setReaderSearch(e.target.value)}
                           placeholder={isEn ? "Search reciter..." : "ابحث عن قارئ..."}
-                          className={`w-full py-1.5 ${isRTL ? "pr-7 pl-3" : "pl-7 pr-3"} text-xs rounded-lg border outline-none`}
+                          className={`w-full py-2 ${isRTL ? "pr-8 pl-3" : "pl-8 pr-3"} text-xs rounded-xl border-0 outline-none quran-raised-card`}
                           style={{
-                            backgroundColor: `${currentTheme.text}05`,
-                            borderColor: `${currentTheme.text}15`,
+                            backgroundColor: currentTheme?.id === "night" ? "rgba(255,255,255,0.06)" : "#ffffff",
                             color: currentTheme.text,
+                            border: "none",
                           }}
                           dir={isRTL ? "rtl" : "ltr"}
                         />
                         <Search
-                          size={12}
+                          size={13}
                           className={`absolute ${isRTL ? "right-2.5" : "left-2.5"} top-2.5 opacity-40`}
                           style={{ color: currentTheme.text }}
                         />
@@ -2270,20 +2274,17 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                               setSelectedJuzs([]);
                             }
                           }}
-                          className={`p-2 text-[10px] font-bold rounded-lg border transition-all ${selectedReader === r.id ? "border-emerald-500" : ""}`}
+                          className={`p-2 text-[10px] font-bold rounded-xl border-0 transition-all ${selectedReader === r.id ? "quran-raised-btn-selected text-white" : "quran-raised-btn"}`}
                           style={{
                             backgroundColor:
                               selectedReader === r.id
-                                ? `${currentTheme.accent}15`
-                                : `${currentTheme.text}05`,
-                            borderColor:
-                              selectedReader === r.id
-                                ? currentTheme.accent
-                                : `${currentTheme.text}10`,
+                                ? (currentTheme.accent || "#10b981")
+                                : (currentTheme?.id === "night" ? "rgba(255,255,255,0.06)" : "#ffffff"),
                             color:
                               selectedReader === r.id
-                                ? "text-emerald-500"
+                                ? "#ffffff"
                                 : currentTheme.text,
+                            border: "none",
                           }}
                         >
                           <span className="truncate block">{isEn ? getReciterDisplayName(r.name, 'en') : r.name}</span>
@@ -2294,11 +2295,11 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                     {/* Warning banner when reader has partial Quran */}
                     {currentView === "download_listening" && selectedReaderObj && availableSurahsList.length < 114 && (
                       <div
-                        className={`flex items-start gap-2 p-2 rounded-lg border text-[11px] ${isRTL ? "text-right" : "text-left"} mt-1 animate-fadeIn`}
+                        className={`flex items-start gap-2 p-2 rounded-xl text-[11px] ${isRTL ? "text-right" : "text-left"} mt-1 animate-fadeIn quran-raised-card border-0`}
                         style={{
                           backgroundColor: `${currentTheme.accent}10`,
-                          borderColor: `${currentTheme.accent}30`,
                           color: currentTheme.text,
+                          border: "none",
                         }}
                         dir={isRTL ? "rtl" : "ltr"}
                       >
@@ -2315,7 +2316,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                   <div className="space-y-2">
                     <div className="flex justify-between items-center" dir={isRTL ? "rtl" : "ltr"}>
                       <label
-                        className="text-xs font-bold opacity-50 block"
+                        className="text-xs font-bold opacity-75 block"
                         style={{ color: currentTheme.text }}
                       >
                         {currentView === "download_listening" && availableSurahsList.length < 114
@@ -2323,7 +2324,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                           : (isEn ? "Select Surahs" : "اختر السور")}
                       </label>
                       {selectedSurahs.length > 0 && !selectedSurahs.includes("all") && (
-                        <span className="text-[10px] opacity-60 font-medium">
+                        <span className="text-[10px] opacity-70 font-bold">
                           {isEn ? `Selected: ${selectedSurahs.length} surahs` : `محدد: ${selectedSurahs.length} سورة`}
                         </span>
                       )}
@@ -2331,16 +2332,14 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                     <div className="grid grid-cols-3 gap-2 max-h-40 overflow-y-auto p-1 custom-scrollbar" dir={isRTL ? "rtl" : "ltr"}>
                       <button
                         onClick={() => toggleSelection("all", "surah")}
-                        className={`p-2 text-[10px] font-bold rounded-lg border transition-all ${selectedSurahs.includes("all") ? "bg-emerald-500 border-emerald-500 text-white" : ""}`}
-                        style={
-                          !selectedSurahs.includes("all")
-                            ? {
-                                backgroundColor: `${currentTheme.text}05`,
-                                borderColor: `${currentTheme.text}10`,
-                                color: currentTheme.text,
-                              }
-                            : {}
-                        }
+                        className={`p-2 text-[10px] font-bold rounded-xl border-0 transition-all ${selectedSurahs.includes("all") ? "quran-raised-btn-selected bg-emerald-500 text-white" : "quran-raised-btn"}`}
+                        style={{
+                          backgroundColor: selectedSurahs.includes("all")
+                            ? (currentTheme.accent || "#10b981")
+                            : (currentTheme?.id === "night" ? "rgba(255,255,255,0.06)" : "#ffffff"),
+                          color: selectedSurahs.includes("all") ? "#ffffff" : currentTheme.text,
+                          border: "none",
+                        }}
                       >
                         {currentView === "download_listening" && availableSurahsList.length < 114
                           ? (isEn ? `Available (${availableSurahsList.length})` : `المتاح (${availableSurahsList.length})`)
@@ -2356,17 +2355,19 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                             onClick={() =>
                               toggleSelection(surah.number.toString(), "surah")
                             }
-                            className={`p-2 text-[10px] font-bold rounded-lg border transition-all ${isSelected ? "border-emerald-500" : isDownloaded ? "bg-emerald-50 dark:bg-emerald-900/30 border-emerald-400 text-emerald-700 dark:text-emerald-400" : ""}`}
+                            className={`p-2 text-[10px] font-bold rounded-xl border-0 transition-all ${isSelected ? "quran-raised-btn-selected" : "quran-raised-btn"}`}
                             style={{
                               backgroundColor: isSelected
-                                ? `${currentTheme.accent}15`
-                                : isDownloaded ? undefined : `${currentTheme.text}05`,
-                              borderColor: isSelected
-                                ? currentTheme.accent
-                                : isDownloaded ? undefined : `${currentTheme.text}10`,
+                                ? (currentTheme.accent || "#10b981")
+                                : isDownloaded
+                                  ? (currentTheme?.id === "night" ? "rgba(16,185,129,0.2)" : "#d1fae5")
+                                  : (currentTheme?.id === "night" ? "rgba(255,255,255,0.06)" : "#ffffff"),
                               color: isSelected
-                                ? "text-emerald-500"
-                                : isDownloaded ? undefined : currentTheme.text,
+                                ? "#ffffff"
+                                : isDownloaded
+                                  ? "#059669"
+                                  : currentTheme.text,
+                              border: "none",
                             }}
                           >
                             <div className="flex items-center justify-center gap-1">
@@ -2383,7 +2384,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                   <div className="space-y-2">
                     <div className="flex justify-between items-center" dir={isRTL ? "rtl" : "ltr"}>
                       <label
-                        className="text-xs font-bold opacity-50 block"
+                        className="text-xs font-bold opacity-75 block"
                         style={{ color: currentTheme.text }}
                       >
                         {currentView === "download_listening" && availableSurahsList.length < 114
@@ -2391,7 +2392,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                           : (isEn ? "Select Juzs" : "اختر الأجزاء")}
                       </label>
                       {selectedJuzs.length > 0 && (
-                        <span className="text-[10px] opacity-60 font-medium">
+                        <span className="text-[10px] opacity-70 font-bold">
                           {isEn ? `Selected: ${selectedJuzs.length} juzs` : `محدد: ${selectedJuzs.length} جزء`}
                         </span>
                       )}
@@ -2426,17 +2427,19 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                                 );
                               }
                             }}
-                            className={`p-2 text-[10px] font-bold rounded-lg border transition-all flex flex-col items-center justify-center gap-0.5 ${isSelected ? "border-emerald-500" : isDownloaded ? "bg-emerald-50 dark:bg-emerald-900/30 border-emerald-400 text-emerald-700 dark:text-emerald-400" : isUnavailable ? "opacity-40 cursor-not-allowed" : ""}`}
+                            className={`p-2 text-[10px] font-bold rounded-xl border-0 transition-all flex flex-col items-center justify-center gap-0.5 ${isSelected ? "quran-raised-btn-selected" : "quran-raised-btn"} ${isUnavailable ? "opacity-40 cursor-not-allowed" : ""}`}
                             style={{
                               backgroundColor: isSelected
-                                ? `${currentTheme.accent}15`
-                                : isDownloaded ? undefined : `${currentTheme.text}05`,
-                              borderColor: isSelected
-                                ? currentTheme.accent
-                                : isDownloaded ? undefined : `${currentTheme.text}10`,
+                                ? (currentTheme.accent || "#10b981")
+                                : isDownloaded
+                                  ? (currentTheme?.id === "night" ? "rgba(16,185,129,0.2)" : "#d1fae5")
+                                  : (currentTheme?.id === "night" ? "rgba(255,255,255,0.06)" : "#ffffff"),
                               color: isSelected
-                                ? "text-emerald-500"
-                                : isDownloaded ? undefined : currentTheme.text,
+                                ? "#ffffff"
+                                : isDownloaded
+                                  ? "#059669"
+                                  : currentTheme.text,
+                              border: "none",
                             }}
                           >
                             <div className="flex items-center justify-center gap-1">
@@ -2456,10 +2459,9 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                 </div>
               </div>
               <div
-                className="p-3 border-t space-y-2"
+                className="p-3 space-y-2"
                 style={{
                   backgroundColor: `${currentTheme.accent}10`,
-                  borderTopColor: `${currentTheme.text}20`,
                 }}
               >
                 {isDownloading && (
@@ -2496,18 +2498,19 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                       )
                     }
                     disabled={!isDownloading && isAllSelectedDownloaded()}
-                    className={`flex-1 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all ${isDownloading ? "bg-red-500 text-white" : "text-white shadow-md active:scale-95"} ${!isDownloading && isAllSelectedDownloaded() ? "opacity-50 grayscale cursor-not-allowed" : ""}`}
-                    style={!isDownloading ? { backgroundColor: iconColor } : {}}
+                    className={`flex-1 py-2.5 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 quran-raised-btn border-0 transition-all ${isDownloading ? "bg-red-500 text-white" : "text-white"} ${!isDownloading && isAllSelectedDownloaded() ? "opacity-50 grayscale cursor-not-allowed" : ""}`}
+                    style={!isDownloading ? { backgroundColor: iconColor, border: "none" } : { border: "none" }}
                   >
                     {isDownloading ? <X size={16} /> : <Download size={16} />}
                     {isDownloading ? (isEn ? "Stop" : "إيقاف") : isAllSelectedDownloaded() ? (isEn ? "Downloaded" : "محمل") : (isEn ? "Download" : "تحميل")}
                   </button>
                   <button
                     onClick={() => setCurrentView("download_quran_menu")}
-                    className="px-4 py-2.5 rounded-xl font-bold text-xs active:scale-95 transition-all"
+                    className="px-4 py-2.5 rounded-2xl font-bold text-xs quran-raised-btn border-0 transition-all"
                     style={{
-                      backgroundColor: `${currentTheme.text}15`,
+                      backgroundColor: currentTheme?.id === "night" ? "rgba(255,255,255,0.08)" : "#ffffff",
                       color: currentTheme.text,
+                      border: "none",
                     }}
                   >
                     {isEn ? "Back" : "رجوع"}
@@ -2518,29 +2521,28 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
           ) : currentView === "bookmarks" ? (
             <div className="flex flex-col h-full overflow-hidden animate-fadeIn">
               <div
-                className="p-4 border-b flex items-center justify-between"
+                className="p-3.5 flex items-center justify-between"
                 style={{
                   backgroundColor: `${currentTheme.accent}15`,
-                  borderBottomColor: `${currentTheme.text}20`,
                 }}
               >
                 <div className="flex items-center gap-2">
-                  <Bookmark size={20} style={{ color: iconColor }} />
+                  <Bookmark size={20} className="quran-3d-icon" style={{ color: iconColor }} />
                   <h3
-                    className="font-bold text-sm"
+                    className="font-extrabold text-xs"
                     style={{ color: currentTheme.text }}
                   >
                     {isEn ? "Bookmarks" : "العلامات المرجعية"}
                   </h3>
                 </div>
               </div>
-              <div className="flex-grow overflow-y-auto p-4 custom-scrollbar">
+              <div className="flex-grow overflow-y-auto p-3 custom-scrollbar">
                 {bookmarks.length === 0 ? (
                   <div
                     className="flex flex-col items-center justify-center h-full gap-2"
                     style={{ color: `${currentTheme.text}40` }}
                   >
-                    <Bookmark size={40} className="opacity-20" />
+                    <Bookmark size={40} className="opacity-20 quran-3d-icon" />
                     <span className="text-xs font-bold">
                       {isEn ? "No bookmarks found" : "لا توجد علامات مرجعية"}
                     </span>
@@ -2550,11 +2552,11 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                     {bookmarks.map((b: any) => (
                       <div
                         key={b.id}
-                        className="p-3 rounded-xl border flex items-center justify-between group transition-all cursor-pointer"
+                        className="p-3 rounded-2xl quran-raised-card flex items-center justify-between group transition-all cursor-pointer border-0"
                         style={{
-                          backgroundColor: `${currentTheme.text}05`,
-                          borderColor: `${currentTheme.text}10`,
+                          backgroundColor: currentTheme?.id === "night" ? "rgba(255,255,255,0.06)" : "#ffffff",
                           color: currentTheme.text,
+                          border: "none",
                         }}
                         onClick={() => {
                           if (jumpToAyah) {
@@ -2567,7 +2569,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                           <span className="font-bold text-sm">
                             {isEn ? `Surah ${SURAH_NAMES_EN[b.s - 1] || SURAH_NAMES_AR[b.s - 1]}` : `سورة ${SURAH_NAMES_AR[b.s - 1]}`}
                           </span>
-                          <span className="text-[10px] opacity-60">
+                          <span className="text-[10px] opacity-60 font-bold">
                             {isEn ? `Ayah ${b.a} • ${b.date}` : `آية ${toArabic(b.a)} • ${b.date}`}
                           </span>
                         </div>
@@ -2576,10 +2578,10 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                             e.stopPropagation();
                             if (deleteBookmark) deleteBookmark(b.id);
                           }}
-                          className="p-2 rounded-full transition-all"
-                          style={{ color: `${currentTheme.text}40` }}
+                          className="w-7 h-7 rounded-xl quran-raised-btn flex items-center justify-center transition-all border-0"
+                          style={{ color: `${currentTheme.text}60`, border: "none" }}
                         >
-                          <X size={16} />
+                          <X size={15} className="quran-3d-icon" />
                         </button>
                       </div>
                     ))}
@@ -2587,18 +2589,18 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                 )}
               </div>
               <div
-                className="p-3 border-t"
+                className="p-3"
                 style={{
                   backgroundColor: `${currentTheme.accent}10`,
-                  borderTopColor: `${currentTheme.text}20`,
                 }}
               >
                 <button
                   onClick={() => setCurrentView("main")}
-                  className="w-full py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 active:scale-95 transition-all"
+                  className="w-full py-2.5 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 quran-raised-btn border-0"
                   style={{
-                    backgroundColor: `${currentTheme.text}15`,
+                    backgroundColor: currentTheme?.id === "night" ? "rgba(255,255,255,0.08)" : "#ffffff",
                     color: currentTheme.text,
+                    border: "none",
                   }}
                 >
                   {isEn ? "Back" : "رجوع"}
@@ -2608,26 +2610,25 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
           ) : currentView === "sajdah_list" ? (
             <div className="flex flex-col h-full overflow-hidden animate-fadeIn">
               <div
-                className="p-2 border-b flex items-center justify-center"
+                className="p-2.5 flex items-center justify-center"
                 style={{
                   backgroundColor: `${currentTheme.accent}15`,
-                  borderBottomColor: `${currentTheme.text}20`,
                 }}
               >
                 <button
                   onClick={() => handleAction(() => openModal("sajdah-card"))}
-                  className="p-1.5 rounded-lg transition-all flex items-center gap-2 w-full justify-center shadow-sm active:scale-95"
+                  className="p-2 rounded-xl transition-all flex items-center gap-2 w-full justify-center quran-raised-btn border-0"
                   style={{
-                    backgroundColor: `${currentTheme.accent}20`,
-                    color: currentTheme.accent,
-                    border: `1px solid ${currentTheme.accent}40`,
+                    backgroundColor: currentTheme?.accent || "#10b981",
+                    color: "#ffffff",
+                    border: "none",
                   }}
                 >
                   <span className="text-[10px] font-bold">{isEn ? "Sajdah Info" : "معلومات السجدة"}</span>
                 </button>
               </div>
               <div className="flex-grow overflow-y-auto p-2.5 custom-scrollbar">
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   {SAJDAH_LOCATIONS.map((loc, idx) => {
                     const juzNum = (() => {
                       for (let i = JUZ_MAP.length - 1; i >= 0; i--) {
@@ -2643,11 +2644,11 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                     return (
                       <div
                         key={idx}
-                        className="p-2 rounded-lg border flex flex-col items-center gap-0.5 transition-all cursor-pointer hover:shadow-sm active:scale-[0.98]"
+                        className="p-2.5 rounded-2xl quran-raised-card flex flex-col items-center gap-1 transition-all cursor-pointer border-0"
                         style={{
-                          backgroundColor: `${currentTheme.text}05`,
-                          borderColor: `${currentTheme.text}10`,
+                          backgroundColor: currentTheme?.id === "night" ? "rgba(255,255,255,0.06)" : "#ffffff",
                           color: currentTheme.text,
+                          border: "none",
                         }}
                         onClick={() => {
                           if (jumpToAyah) {
@@ -2664,12 +2665,12 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                         </div>
                         <div className="flex items-center gap-2 text-[9px] opacity-70 font-bold">
                           <span className="flex items-center gap-1">
-                            <i className="fa-regular fa-file-lines text-[8px]"></i>
+                            <i className="fa-regular fa-file-lines text-[8px] quran-3d-icon"></i>
                             {isEn ? `Ayah ${loc.a}` : `آية ${toArabic(loc.a)}`}
                           </span>
                           <span className="w-px h-2.5 bg-current opacity-20"></span>
                           <span className="flex items-center gap-1">
-                            <i className="fa-solid fa-book-open text-[8px]"></i>
+                            <i className="fa-solid fa-book-open text-[8px] quran-3d-icon"></i>
                             {isEn ? `Juz ${juzNum}` : `الجزء ${toArabic(juzNum)}`}
                           </span>
                         </div>
@@ -2679,18 +2680,18 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                 </div>
               </div>
               <div
-                className="p-3 border-t"
+                className="p-3"
                 style={{
                   backgroundColor: `${currentTheme.accent}10`,
-                  borderTopColor: `${currentTheme.text}20`,
                 }}
               >
                 <button
                   onClick={() => setCurrentView("main")}
-                  className="w-full py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 active:scale-95 transition-all"
+                  className="w-full py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 quran-raised-btn border-0"
                   style={{
-                    backgroundColor: `${currentTheme.text}15`,
+                    backgroundColor: currentTheme?.id === "night" ? "rgba(255,255,255,0.08)" : "#ffffff",
                     color: currentTheme.text,
+                    border: "none",
                   }}
                 >
                   {isEn ? "Back" : "رجوع"}
@@ -2936,7 +2937,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                   </React.Fragment>
                 ))}
               </MenuSection>
-              <div className="pt-2 pb-0.5 px-0.5 flex items-center gap-1.5">
+              <div className="pt-2 pb-0.5 px-0.5 flex items-center gap-2">
                 {onOpenMainGuide && (
                   <button
                     type="button"
@@ -2944,21 +2945,37 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                       setIsFloatingMenuOpen(false);
                       onOpenMainGuide();
                     }}
-                    className="flex-1 py-1.5 px-2 rounded-xl text-[11px] font-bold flex items-center justify-center opacity-75 hover:opacity-100 hover:bg-black/5 active:scale-95 transition-all cursor-pointer whitespace-nowrap"
-                    style={{ color: currentTheme?.text || '#000000' }}
-                    title={isEn ? "Quran" : "المصحف"}
+                    className="flex-1 py-2 px-2.5 rounded-2xl border-0 quran-raised-btn flex items-center justify-center transition-all cursor-pointer active:scale-95"
+                    style={{
+                      backgroundColor: currentTheme?.btnBg || (currentTheme?.text === "#ffffff" ? "rgba(255,255,255,0.07)" : "rgba(255,255,255,0.95)"),
+                      color: currentTheme?.text || '#000000',
+                      border: "none",
+                      outline: "none",
+                    }}
+                    title={isEn ? "Quran Guide" : "دليل المصحف"}
+                    aria-label={isEn ? "Quran Guide" : "دليل المصحف"}
                   >
-                    <span>{isEn ? "Quran" : "المصحف"}</span>
+                    <div style={{ color: sidebarIconColor }} className="quran-3d-icon shrink-0 flex items-center justify-center">
+                      <BookOpen size={18} />
+                    </div>
                   </button>
                 )}
                 <button
                   type="button"
                   onClick={() => setIsSidebarGuideOpen(true)}
-                  className={`${onOpenMainGuide ? 'flex-1' : 'w-full'} py-1.5 px-2 rounded-xl text-[11px] font-bold flex items-center justify-center opacity-75 hover:opacity-100 hover:bg-black/5 active:scale-95 transition-all cursor-pointer whitespace-nowrap`}
-                  style={{ color: currentTheme?.text || '#000000' }}
-                  title={isEn ? "Sidebar" : "القائمة"}
+                  className={`${onOpenMainGuide ? 'flex-1' : 'w-full'} py-2 px-2.5 rounded-2xl border-0 quran-raised-btn flex items-center justify-center transition-all cursor-pointer active:scale-95`}
+                  style={{
+                    backgroundColor: currentTheme?.btnBg || (currentTheme?.text === "#ffffff" ? "rgba(255,255,255,0.07)" : "rgba(255,255,255,0.95)"),
+                    color: currentTheme?.text || '#000000',
+                    border: "none",
+                    outline: "none",
+                  }}
+                  title={isEn ? "Sidebar Guide" : "دليل القائمة"}
+                  aria-label={isEn ? "Sidebar Guide" : "دليل القائمة"}
                 >
-                  <span>{isEn ? "Sidebar" : "القائمة"}</span>
+                  <div style={{ color: sidebarIconColor }} className="quran-3d-icon shrink-0 flex items-center justify-center">
+                    <Menu size={18} />
+                  </div>
                 </button>
               </div>
               {/* Bottom Spacer only active during sidebar guide */}
@@ -3127,34 +3144,33 @@ const NotificationSettingsContent: React.FC<{
       dir={isRTL ? "rtl" : "ltr"}
     >
       <div
-        className="flex border-b mb-3"
-        style={{ borderColor: `${currentTheme.text}10` }}
+        className="flex gap-2 mb-3 px-1"
       >
         <button
-          className={`flex-1 py-2 text-[10px] font-bold flex items-center justify-center gap-1 transition-colors ${activeTab === "app" ? "border-b-2" : "opacity-60"}`}
+          className={`flex-1 py-2 text-[10px] font-bold flex items-center justify-center gap-1.5 rounded-xl transition-all border-0 ${activeTab === "app" ? "quran-raised-btn-selected text-white" : "quran-raised-btn"}`}
           style={{
-            color:
-              activeTab === "app" ? currentTheme.accent : currentTheme.text,
-            borderBottomColor:
-              activeTab === "app" ? currentTheme.accent : "transparent",
+            backgroundColor:
+              activeTab === "app" ? (currentTheme.accent || "#10b981") : (currentTheme?.id === "night" ? "rgba(255,255,255,0.06)" : "#ffffff"),
+            color: activeTab === "app" ? "#ffffff" : currentTheme.text,
+            border: "none",
           }}
           onClick={() => setActiveTab("app")}
         >
-          <AppWindow size={14} />
-          {isEn ? "App Alerts" : "إشعارات التطبيق"}
+          <AppWindow size={14} className="quran-3d-icon" />
+          <span>{isEn ? "App Alerts" : "إشعارات التطبيق"}</span>
         </button>
         <button
-          className={`flex-1 py-2 text-[10px] font-bold flex items-center justify-center gap-1 transition-colors ${activeTab === "phone" ? "border-b-2" : "opacity-60"}`}
+          className={`flex-1 py-2 text-[10px] font-bold flex items-center justify-center gap-1.5 rounded-xl transition-all border-0 ${activeTab === "phone" ? "quran-raised-btn-selected text-white" : "quran-raised-btn"}`}
           style={{
-            color:
-              activeTab === "phone" ? currentTheme.accent : currentTheme.text,
-            borderBottomColor:
-              activeTab === "phone" ? currentTheme.accent : "transparent",
+            backgroundColor:
+              activeTab === "phone" ? (currentTheme.accent || "#10b981") : (currentTheme?.id === "night" ? "rgba(255,255,255,0.06)" : "#ffffff"),
+            color: activeTab === "phone" ? "#ffffff" : currentTheme.text,
+            border: "none",
           }}
           onClick={() => setActiveTab("phone")}
         >
-          <Smartphone size={14} />
-          {isEn ? "Phone Alerts" : "إشعارات الهاتف"}
+          <Smartphone size={14} className="quran-3d-icon" />
+          <span>{isEn ? "Phone Alerts" : "إشعارات الهاتف"}</span>
         </button>
       </div>
 
@@ -3201,28 +3217,27 @@ const NotificationSettingsContent: React.FC<{
               <div
                 key={item.id}
                 onClick={() => toggleAppSetting(item.id)}
-                className={`flex items-center justify-between p-2.5 rounded-xl border transition-all cursor-pointer ${appSettings[item.id] ? "shadow-sm" : "opacity-60"}`}
+                className={`flex items-center justify-between p-2.5 rounded-2xl quran-raised-card transition-all cursor-pointer border-0 ${appSettings[item.id] ? "shadow-sm" : "opacity-75"}`}
                 style={{
                   backgroundColor: appSettings[item.id]
                     ? `${currentTheme.accent}15`
-                    : `${currentTheme.text}05`,
-                  borderColor: appSettings[item.id]
-                    ? currentTheme.accent
-                    : `${currentTheme.text}10`,
+                    : (currentTheme?.id === "night" ? "rgba(255,255,255,0.06)" : "#ffffff"),
                   color: currentTheme.text,
+                  border: "none",
                 }}
               >
                 <div className={`flex flex-col gap-0.5 ${isRTL ? "text-right" : "text-left"}`}>
                   <span className="font-bold text-[11px]">{item.label}</span>
-                  <span className="text-[9px] opacity-60">{item.desc}</span>
+                  <span className="text-[9px] opacity-60 font-bold">{item.desc}</span>
                 </div>
                 <div
-                  className={`w-4 h-4 rounded-full flex items-center justify-center transition-colors flex-shrink-0`}
+                  className={`w-4 h-4 rounded-full flex items-center justify-center transition-colors flex-shrink-0 quran-raised-card`}
                   style={{
                     backgroundColor: appSettings[item.id]
                       ? currentTheme.accent
                       : `${currentTheme.text}20`,
                     color: appSettings[item.id] ? "#ffffff" : currentTheme.text,
+                    border: "none",
                   }}
                 >
                   {appSettings[item.id] && <Check className="w-2.5 h-2.5" />}
@@ -3233,7 +3248,7 @@ const NotificationSettingsContent: React.FC<{
         ) : (
           <div className="space-y-4">
             <div className="space-y-2">
-              <h4 className={`font-bold text-[10px] opacity-80 px-1 ${isRTL ? "text-right" : "text-left"}`}>
+              <h4 className={`font-extrabold text-[10px] opacity-80 px-1 ${isRTL ? "text-right" : "text-left"}`}>
                 {isEn ? "Night Times" : "أوقات الليل"}
               </h4>
               {[
@@ -3265,30 +3280,29 @@ const NotificationSettingsContent: React.FC<{
                         item.id as "firstThird" | "midnight" | "lastThird",
                       )
                     }
-                    className={`flex items-center justify-between p-2.5 rounded-xl border transition-all cursor-pointer ${isEnabled ? "shadow-sm" : "opacity-60"}`}
+                    className={`flex items-center justify-between p-2.5 rounded-2xl quran-raised-card transition-all cursor-pointer border-0 ${isEnabled ? "shadow-sm" : "opacity-75"}`}
                     style={{
                       backgroundColor: isEnabled
                         ? `${currentTheme.accent}15`
-                        : `${currentTheme.text}05`,
-                      borderColor: isEnabled
-                        ? currentTheme.accent
-                        : `${currentTheme.text}10`,
+                        : (currentTheme?.id === "night" ? "rgba(255,255,255,0.06)" : "#ffffff"),
                       color: currentTheme.text,
+                      border: "none",
                     }}
                   >
                     <div className={`flex flex-col gap-0.5 ${isRTL ? "text-right" : "text-left"}`}>
                       <span className="font-bold text-[11px]">
                         {item.label}
                       </span>
-                      <span className="text-[9px] opacity-60">{item.desc}</span>
+                      <span className="text-[9px] opacity-60 font-bold">{item.desc}</span>
                     </div>
                     <div
-                      className={`w-4 h-4 rounded-full flex items-center justify-center transition-colors flex-shrink-0`}
+                      className={`w-4 h-4 rounded-full flex items-center justify-center transition-colors flex-shrink-0 quran-raised-card`}
                       style={{
                         backgroundColor: isEnabled
                           ? currentTheme.accent
                           : `${currentTheme.text}20`,
                         color: isEnabled ? "#ffffff" : currentTheme.text,
+                        border: "none",
                       }}
                     >
                       {isEnabled && <Check className="w-2.5 h-2.5" />}
@@ -3300,9 +3314,8 @@ const NotificationSettingsContent: React.FC<{
 
             <div
               className="space-y-2 pt-2"
-              style={{ borderTop: `1px solid ${currentTheme.text}10` }}
             >
-              <h4 className={`font-bold text-[10px] opacity-80 px-1 ${isRTL ? "text-right" : "text-left"}`}>
+              <h4 className={`font-extrabold text-[10px] opacity-80 px-1 ${isRTL ? "text-right" : "text-left"}`}>
                 {isEn ? "Adhkar & Tasbeeh" : "الأذكار والتسبيح"}
               </h4>
               {[
@@ -3340,19 +3353,15 @@ const NotificationSettingsContent: React.FC<{
                 <div
                   key={item.id}
                   onClick={() => togglePhoneSetting(item.id)}
-                  className={`flex items-center justify-between p-2.5 rounded-xl border transition-all cursor-pointer ${phoneSettings[item.id as keyof typeof phoneSettings] ? "shadow-sm" : "opacity-60"}`}
+                  className={`flex items-center justify-between p-2.5 rounded-2xl quran-raised-card transition-all cursor-pointer border-0 ${phoneSettings[item.id as keyof typeof phoneSettings] ? "shadow-sm" : "opacity-75"}`}
                   style={{
                     backgroundColor: phoneSettings[
                       item.id as keyof typeof phoneSettings
                     ]
                       ? `${currentTheme.accent}15`
-                      : `${currentTheme.text}05`,
-                    borderColor: phoneSettings[
-                      item.id as keyof typeof phoneSettings
-                    ]
-                      ? currentTheme.accent
-                      : `${currentTheme.text}10`,
+                      : (currentTheme?.id === "night" ? "rgba(255,255,255,0.06)" : "#ffffff"),
                     color: currentTheme.text,
+                    border: "none",
                   }}
                 >
                   <div className={`flex flex-col gap-0.5 ${isRTL ? "text-right" : "text-left"}`}>
@@ -3417,11 +3426,11 @@ const NotificationSettingsContent: React.FC<{
                   <button
                     key={opt.days}
                     onClick={() => muteAudioForDuration(opt.days)}
-                    className="py-1.5 px-1 text-[9px] font-bold rounded-lg border transition-colors"
+                    className="py-1.5 px-1 text-[9px] font-bold rounded-xl quran-raised-btn border-0 transition-all"
                     style={{
-                      borderColor: `${currentTheme.text}20`,
                       color: currentTheme.text,
-                      backgroundColor: `${currentTheme.text}05`,
+                      backgroundColor: currentTheme?.id === "night" ? "rgba(255,255,255,0.06)" : "#ffffff",
+                      border: "none",
                     }}
                   >
                     {opt.label}
@@ -3544,13 +3553,14 @@ const ToolbarColorPickerContent: React.FC<{
   ];
 
   return (
-    <div className="space-y-4" dir={isRTL ? "rtl" : "ltr"}>
+    <div className="space-y-3.5" dir={isRTL ? "rtl" : "ltr"}>
       <button
         onClick={resetColors}
-        className="w-full py-2 rounded-xl text-xs font-bold active:scale-95 transition-all"
+        className="w-full py-2.5 rounded-2xl text-xs font-bold quran-raised-btn border-0 transition-all"
         style={{
-          backgroundColor: `${currentTheme.text}15`,
+          backgroundColor: currentTheme?.id === "night" ? "rgba(255,255,255,0.08)" : "#ffffff",
           color: currentTheme.text,
+          border: "none",
         }}
       >
         {isEn ? "Restore Default Colors" : "استعادة الألوان الافتراضية"}
@@ -3559,14 +3569,14 @@ const ToolbarColorPickerContent: React.FC<{
       {sections.map((section) => (
         <div
           key={section.id}
-          className="p-3 rounded-xl border space-y-3"
+          className="p-3.5 rounded-2xl quran-raised-card border-0 space-y-3"
           style={{
-            backgroundColor: `${currentTheme.text}05`,
-            borderColor: `${currentTheme.text}10`,
+            backgroundColor: currentTheme?.id === "night" ? "rgba(255,255,255,0.06)" : "#ffffff",
+            border: "none",
           }}
         >
           <h4
-            className={`text-xs font-bold opacity-70 ${isRTL ? "text-right" : "text-left"}`}
+            className={`text-xs font-bold opacity-75 ${isRTL ? "text-right" : "text-left"}`}
             style={{ color: currentTheme.text }}
           >
             {section.label}
@@ -3574,13 +3584,13 @@ const ToolbarColorPickerContent: React.FC<{
 
           {activePicker?.sectionId === section.id && (
             <div
-              className="p-1.5 rounded-xl border-2 shadow-sm animate-fadeIn"
+              className="p-2.5 rounded-2xl quran-raised-card border-0 animate-fadeIn"
               style={{
                 backgroundColor: currentTheme.bg,
-                borderColor: `${currentTheme.accent}40`,
+                border: "none",
               }}
             >
-              <div className="grid grid-cols-5 gap-3 px-0.5">
+              <div className="grid grid-cols-5 gap-2.5 px-0.5">
                 {PRESET_COLORS.map((color, i) => {
                   const currentValue =
                     toolbarColors[activePicker.sectionId]?.[
@@ -3603,7 +3613,7 @@ const ToolbarColorPickerContent: React.FC<{
                           color,
                         )
                       }
-                      className={`w-full aspect-square rounded-full border transition-all flex items-center justify-center relative overflow-hidden ${isSelected ? "scale-110 z-10 shadow-sm" : "hover:scale-105"}`}
+                      className={`w-full aspect-square rounded-full border-0 quran-raised-btn transition-all flex items-center justify-center relative overflow-hidden ${isSelected ? "quran-raised-btn-selected scale-110 z-10" : ""}`}
                       style={{
                         backgroundColor:
                           color === "transparent" ? "white" : color,
@@ -3613,14 +3623,12 @@ const ToolbarColorPickerContent: React.FC<{
                             : "none",
                         backgroundSize:
                           color === "transparent" ? "8px 8px" : "auto",
-                        borderColor: isSelected
-                          ? currentTheme.accent
-                          : `${currentTheme.text}10`,
+                        border: "none",
                       }}
                     >
                       {isSelected && (
                         <Check
-                          size={10}
+                          size={12}
                           className={
                             color === "#ffffff" || color === "transparent"
                               ? "text-emerald-600"
@@ -3635,7 +3643,7 @@ const ToolbarColorPickerContent: React.FC<{
             </div>
           )}
 
-          <div className="flex gap-4">
+          <div className="flex gap-3">
             {[
               {
                 type: "bg" as const,
@@ -3662,7 +3670,7 @@ const ToolbarColorPickerContent: React.FC<{
               return (
                 <div key={field.type} className="flex-1 space-y-1">
                   <span
-                    className="text-[10px] opacity-50 block text-center"
+                    className="text-[10px] opacity-60 block text-center font-bold"
                     style={{ color: currentTheme.text }}
                   >
                     {field.label}
@@ -3674,7 +3682,7 @@ const ToolbarColorPickerContent: React.FC<{
                         type: field.type,
                       })
                     }
-                    className={`w-full h-8 rounded-lg border-2 transition-all relative overflow-hidden ${isActive ? "ring-2 ring-emerald-100" : "shadow-sm"}`}
+                    className={`w-full h-8 rounded-xl border-0 quran-raised-btn transition-all relative overflow-hidden ${isActive ? "quran-raised-btn-selected" : ""}`}
                     style={{
                       backgroundColor:
                         value === "transparent" ? "white" : value,
@@ -3684,15 +3692,13 @@ const ToolbarColorPickerContent: React.FC<{
                           : "none",
                       backgroundSize:
                         value === "transparent" ? "8px 8px" : "auto",
-                      borderColor: isActive
-                        ? currentTheme.accent
-                        : `${currentTheme.text}10`,
+                      border: "none",
                     }}
                   >
                     {isActive && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/5">
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/10">
                         <Check
-                          size={12}
+                          size={14}
                           className={
                             value === "#ffffff" || value === "transparent"
                               ? "text-emerald-600"
@@ -3720,23 +3726,24 @@ const MenuSection: React.FC<{
   currentTheme?: any;
   isRTL?: boolean;
 }> = ({ title, children, iconColor, titleColor = "#000000", currentTheme, isRTL = true }) => (
-  <div className="flex flex-col flex-grow">
+  <div className="flex flex-col flex-grow mb-1">
     <div
-      className={`py-1 px-2.5 rounded-md mb-1 ${isRTL ? "text-right" : "text-left"} whitespace-nowrap`}
+      className={`py-1.5 px-3 rounded-xl mb-1.5 ${isRTL ? "text-right" : "text-left"} whitespace-nowrap quran-raised-card border-0`}
       style={{
         backgroundColor: currentTheme
           ? `${currentTheme.accent}15`
           : "rgba(37, 99, 235, 0.1)",
+        border: "none",
       }}
     >
       <span
-        className="text-[11px] font-bold whitespace-nowrap"
+        className="text-[11px] font-extrabold whitespace-nowrap tracking-wide"
         style={{ color: currentTheme ? currentTheme.accent : titleColor }}
       >
         {title}
       </span>
     </div>
-    <div className="flex flex-col px-1 justify-evenly flex-grow">
+    <div className="flex flex-col px-0.5 gap-1 justify-evenly flex-grow">
       {children}
     </div>
   </div>
@@ -3770,17 +3777,22 @@ const MenuItem: React.FC<{
   <button
     onClick={onClick}
     data-id={dataId}
-    className={`flex items-center gap-2.5 py-2 px-1 border-b last:border-0 hover:bg-black/5 transition-colors ${isRTL ? "text-right" : "text-left"} w-full whitespace-nowrap ${isSubItem ? "px-2 py-1.5 border-0" : ""}`}
+    className={`flex items-center gap-2.5 py-2.5 px-3 my-0.5 rounded-2xl border-0 transition-all ${isRTL ? "text-right" : "text-left"} w-full whitespace-nowrap ${isSubItem ? "px-2.5 py-2" : ""} ${isActive ? "quran-raised-btn-selected" : "quran-raised-btn"}`}
     style={{
-      borderBottomColor: currentTheme ? `${currentTheme.text}10` : "#f3f4f6",
+      backgroundColor: isActive
+        ? (currentTheme?.accent || "#10b981")
+        : (currentTheme?.btnBg || (currentTheme?.text === "#ffffff" ? "rgba(255,255,255,0.07)" : "rgba(255,255,255,0.95)")),
+      color: isActive ? "#ffffff" : (currentTheme?.text || "#000000"),
+      border: "none",
+      outline: "none",
     }}
   >
-    <div style={{ color: iconColor }} className="shrink-0 flex items-center justify-center">{icon}</div>
+    <div style={{ color: isActive ? "#ffffff" : iconColor }} className="quran-3d-icon shrink-0 flex items-center justify-center">{icon}</div>
     <span
-      className={`${isSubItem ? "text-[11px]" : "text-[12px]"} font-bold whitespace-nowrap`}
+      className={`${isSubItem ? "text-[11px]" : "text-[12px]"} font-bold whitespace-nowrap flex-1`}
       style={{
         color: isActive
-          ? iconColor
+          ? "#ffffff"
           : currentTheme
             ? currentTheme.text
             : "#000000",
@@ -3788,6 +3800,9 @@ const MenuItem: React.FC<{
     >
       {label}
     </span>
+    {showChevron && (
+      <ChevronLeft size={14} className={`shrink-0 transition-transform ${isExpanded ? "-rotate-90" : ""} ${isActive ? "text-white" : "opacity-40"}`} />
+    )}
   </button>
 );
 

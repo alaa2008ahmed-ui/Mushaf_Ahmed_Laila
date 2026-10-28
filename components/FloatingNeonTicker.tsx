@@ -74,7 +74,9 @@ const FloatingNeonTicker: React.FC = () => {
   }
 
   return (
-    <div className="absolute inset-0 z-10 w-full h-full overflow-hidden rounded-2xl shadow-lg">
+    <div 
+      className="absolute inset-0 z-10 w-full h-full overflow-hidden rounded-2xl shadow-lg"
+    >
       <style>
         {`
           @keyframes neon-ticker-scroll {

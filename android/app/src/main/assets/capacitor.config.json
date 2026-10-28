@@ -1,0 +1,25 @@
+{
+	"appId": "com.mushaf.ahmedandlayla",
+	"appName": "مصحف أحمد وليلى",
+	"webDir": "dist",
+	"backgroundColor": "#000000",
+	"server": {
+		"androidScheme": "https",
+		"allowNavigation": [
+			"*.google.com",
+			"accounts.google.com",
+			"ssl.gstatic.com"
+		]
+	},
+	"plugins": {
+		"Keyboard": {
+			"resize": "native",
+			"style": "dark"
+		},
+		"LocalNotifications": {
+			"smallIcon": "ic_stat_name",
+			"iconColor": "#2E7D5E",
+			"sound": "chime.mp3"
+		}
+	}
+}

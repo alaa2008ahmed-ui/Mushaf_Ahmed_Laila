@@ -64,23 +64,22 @@ const AdkarHeader: React.FC<AdkarHeaderProps> = ({ title, subtitle, onBack, onHo
                             <button
                                 type="button"
                                 onClick={onOpenGuide}
-                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
-                                style={{ color: 'var(--top-bar-text, inherit)' }}
+                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer text-black"
                                 title={isEn ? "Athkar Guide" : "دليل أذكار الصباح والمساء"}
                                 aria-label={isEn ? "Athkar Guide" : "دليل أذكار الصباح والمساء"}
                             >
-                                <i className="fa-solid fa-circle-question text-lg"></i>
+                                <i className="fa-solid fa-circle-question text-lg text-black"></i>
                             </button>
                         )}
                         <ThemePageLock />
                         {onHome && (
                             <button
                                 onClick={onHome}
-                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer text-black"
                                 title={isEn ? "Home" : "الصفحة الرئيسية"}
                                 aria-label={isEn ? "Home" : "الصفحة الرئيسية"}
                             >
-                                <i className="fa-solid fa-house text-xl"></i>
+                                <i className="fa-solid fa-house text-xl text-black"></i>
                             </button>
                         )}
                     </div>

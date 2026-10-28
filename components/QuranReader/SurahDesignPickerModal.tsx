@@ -54,27 +54,26 @@ const SurahDesignPickerModal: FC<SurahDesignPickerModalProps> = ({
         >
             <div 
                 dir={dir}
-                className={`modal-skinned w-full ${isLandscape ? 'max-w-xl max-h-[90vh]' : 'max-w-md sm:max-w-lg max-h-[82vh]'} rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-modal-enter`}
+                className={`modal-skinned w-full ${isLandscape ? 'max-w-xl max-h-[90vh]' : 'max-w-md sm:max-w-lg max-h-[82vh]'} rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-modal-enter border-0`}
                 style={{ 
                     backgroundColor: currentTheme?.modalBg || currentTheme?.bg || '#ffffff',
                     color: currentTheme?.modalText || currentTheme?.text || '#1f2937',
-                    border: `2px solid ${currentTheme?.barBorder || currentTheme?.accent || '#e5e7eb'}`
+                    border: 'none',
+                    outline: 'none'
                 }}
                 onClick={e => e.stopPropagation()}
             >
                 {/* Modal Header */}
                 <div 
-                    className="p-3.5 px-4 border-b flex items-center justify-between shrink-0"
-                    style={{ borderColor: currentTheme?.barBorder || 'rgba(128,128,128,0.2)' }}
+                    className="p-3.5 px-4 flex items-center justify-between shrink-0"
                 >
                     <div className="flex items-center gap-2">
                         <span className="text-sm sm:text-base font-bold" style={{ color: currentTheme?.text || '#1f2937' }}>
                             {isEn ? "Surah Header Design" : "تصميم رأس السورة"}
                         </span>
                         <span 
-                            className="text-[11px] px-2 py-0.5 rounded-full font-bold opacity-75"
+                            className="text-[11px] px-2.5 py-0.5 rounded-full font-bold quran-raised-btn"
                             style={{ 
-                                backgroundColor: 'color-mix(in srgb, var(--qr-accent, #10b981) 15%, transparent)',
                                 color: currentTheme?.accent || '#10b981'
                             }}
                         >
@@ -84,18 +83,18 @@ const SurahDesignPickerModal: FC<SurahDesignPickerModalProps> = ({
                     <button
                         type="button"
                         onClick={onClose}
-                        className="w-8 h-8 rounded-full flex items-center justify-center transition-all opacity-70 hover:opacity-100 hover:bg-black/10 dark:hover:bg-white/10 active:scale-95"
+                        className="w-8 h-8 rounded-xl flex items-center justify-center transition-all quran-raised-btn"
                         style={{ color: currentTheme?.text || '#1f2937' }}
                         title={isEn ? "Close" : "إغلاق"}
                     >
-                        <X size={18} />
+                        <X size={18} className="quran-3d-icon" />
                     </button>
                 </div>
 
                 {/* Modal Body: Scrollable list of designs (without any name or model text) */}
                 <div 
                     ref={scrollContainerRef}
-                    className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 scroll-smooth scrollbar-hide"
+                    className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3.5 scroll-smooth scrollbar-hide"
                 >
                     {designs.map((d) => {
                         const isSelected = currentDesign === d;
@@ -108,28 +107,26 @@ const SurahDesignPickerModal: FC<SurahDesignPickerModalProps> = ({
                                     onSelectDesign(d);
                                     onClose();
                                 }}
-                                className={`relative w-full rounded-xl transition-all duration-200 p-1.5 text-right block overflow-hidden group hover:scale-[1.01] active:scale-[0.98] ${
+                                className={`relative w-full rounded-2xl transition-all duration-200 p-2 text-right block overflow-hidden cursor-pointer ${
                                     isSelected 
-                                        ? 'shadow-md scale-[1.01]' 
-                                        : 'border hover:border-gray-400 dark:hover:border-gray-500'
+                                        ? 'quran-raised-btn-selected shadow-lg scale-[1.01]' 
+                                        : 'quran-raised-card hover:scale-[1.01]'
                                 }`}
                                 style={{
-                                    borderColor: isSelected 
-                                        ? (currentTheme?.accent || 'var(--qr-accent, #10b981)') 
-                                        : (currentTheme?.barBorder || 'rgba(128,128,128,0.2)'),
+                                    border: 'none',
+                                    outline: 'none',
                                     backgroundColor: isSelected 
-                                        ? 'color-mix(in srgb, var(--qr-accent, #10b981) 8%, transparent)' 
-                                        : (currentTheme?.cardBg || 'rgba(255,255,255,0.03)'),
-                                    borderWidth: isSelected ? '2px' : '1px'
+                                        ? 'color-mix(in srgb, var(--qr-accent, #10b981) 15%, transparent)' 
+                                        : (currentTheme?.cardBg || 'rgba(255,255,255,0.03)')
                                 }}
                             >
                                 {/* Selected Active Badge */}
                                 {isSelected && (
                                     <div 
-                                        className="absolute top-2.5 start-2.5 z-20 w-5 h-5 rounded-full flex items-center justify-center shadow-md text-white animate-scaleIn"
+                                        className="absolute top-3 start-3 z-20 w-6 h-6 rounded-full flex items-center justify-center shadow-md text-white animate-scaleIn quran-raised-btn-selected"
                                         style={{ backgroundColor: currentTheme?.accent || 'var(--qr-accent, #10b981)' }}
                                     >
-                                        <Check size={12} className="stroke-[3]" />
+                                        <Check size={14} className="stroke-[3] quran-3d-icon" />
                                     </div>
                                 )}
 

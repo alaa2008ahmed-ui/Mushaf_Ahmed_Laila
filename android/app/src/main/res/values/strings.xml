@@ -4,4 +4,16 @@
     <string name="title_activity_main">Mushaf Ahmed &amp; Laila</string>
     <string name="package_name">com.mushaf.ahmedandlayla</string>
     <string name="custom_url_scheme">com.mushaf.ahmedandlayla</string>
+
+    <!-- App Launcher Shortcuts -->
+    <string name="shortcut_quran_short">القرآن الكريم</string>
+    <string name="shortcut_quran_long">تلاوة القرآن الكريم</string>
+    <string name="shortcut_prayer_short">أوقات الصلاة</string>
+    <string name="shortcut_prayer_long">مواقيت وأذان الصلاة</string>
+    <string name="shortcut_qibla_short">القبلة</string>
+    <string name="shortcut_qibla_long">بوصلة اتجاه القبلة</string>
+    <string name="shortcut_seerah_short">السيرة النبوية</string>
+    <string name="shortcut_seerah_long">السيرة النبوية الشريفة</string>
+    <string name="shortcut_azkar_short">حصن المسلم</string>
+    <string name="shortcut_azkar_long">الأذكار وحصن المسلم</string>
 </resources>

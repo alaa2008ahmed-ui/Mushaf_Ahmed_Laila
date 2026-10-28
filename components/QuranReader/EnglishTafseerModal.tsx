@@ -190,26 +190,26 @@ const EnglishTafseerModal: React.FC<EnglishTafseerModalProps> = ({
             dir="ltr"
         >
             <div 
-                className={`w-full ${isLandscape ? 'max-w-4xl h-[95vh] rounded-xl' : 'max-w-2xl h-[90vh] max-h-[850px] rounded-2xl'} shadow-2xl flex flex-col overflow-hidden animate-modal-enter border-2`}
+                className={`w-full ${isLandscape ? 'max-w-4xl h-[95vh] rounded-2xl' : 'max-w-2xl h-[90vh] max-h-[850px] rounded-3xl'} shadow-2xl flex flex-col overflow-hidden animate-modal-enter border-0`}
                 style={{ 
                     backgroundColor: bgColor, 
                     color: textColor,
-                    borderColor: accentColor,
+                    border: 'none',
+                    outline: 'none',
                     fontFamily: "'Inter', system-ui, -apple-system, sans-serif"
                 }}
                 onClick={e => e.stopPropagation()}
             >
                 {/* Header */}
                 <div 
-                    className="p-3.5 border-b flex items-center justify-between shrink-0"
-                    style={{ borderColor: cardBorder }}
+                    className="p-3.5 border-0 flex items-center justify-between shrink-0"
                 >
                     <div className="flex items-center gap-2.5 overflow-hidden">
                         <div 
-                            className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-sm"
+                            className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-sm quran-raised-card border-0"
                             style={{ backgroundColor: `${accentColor}20`, color: accentColor }}
                         >
-                            <BookOpen size={18} />
+                            <BookOpen size={18} className="quran-3d-icon" />
                         </div>
                         <div className="flex flex-col min-w-0">
                             <div className="flex items-center gap-1.5 flex-wrap">
@@ -217,13 +217,13 @@ const EnglishTafseerModal: React.FC<EnglishTafseerModalProps> = ({
                                     Surah {surahNameEn}
                                 </h3>
                                 <span 
-                                    className="text-xs px-2 py-0.5 rounded-full font-bold shadow-xs"
-                                    style={{ backgroundColor: `${accentColor}18`, color: accentColor, border: `1px solid ${accentColor}33` }}
+                                    className="text-xs px-2.5 py-0.5 rounded-full font-bold quran-raised-card border-0"
+                                    style={{ backgroundColor: `${accentColor}18`, color: accentColor }}
                                 >
                                     Ayah {ayahNumber}
                                 </span>
                             </div>
-                            <span className="text-[11px] opacity-70 truncate">
+                            <span className="text-[11px] opacity-70 truncate font-medium">
                                 {activeEdition.fullName}
                             </span>
                         </div>
@@ -231,54 +231,53 @@ const EnglishTafseerModal: React.FC<EnglishTafseerModalProps> = ({
 
                     <div className="flex items-center gap-1.5 shrink-0">
                         {/* Font resize buttons */}
-                        <div className="flex items-center rounded-lg border p-0.5" style={{ borderColor: cardBorder }}>
+                        <div className="flex items-center rounded-xl p-0.5 quran-raised-card border-0 gap-1">
                             <button 
                                 onClick={() => handleFontSizeChange(-1.5)}
-                                className="px-2 py-1 rounded hover:opacity-70 transition text-xs font-bold"
+                                className="px-2 py-1.5 rounded-lg transition text-xs font-bold quran-raised-btn border-0"
                                 title="Decrease font size"
                             >
-                                <ZoomOut size={14} />
+                                <ZoomOut size={14} className="quran-3d-icon" />
                             </button>
-                            <span className="text-[11px] px-1 font-mono opacity-80 select-none">
+                            <span className="text-[11px] px-1 font-mono opacity-80 select-none font-bold">
                                 {Math.round(fontSize)}
                             </span>
                             <button 
                                 onClick={() => handleFontSizeChange(1.5)}
-                                className="px-2 py-1 rounded hover:opacity-70 transition text-xs font-bold"
+                                className="px-2 py-1.5 rounded-lg transition text-xs font-bold quran-raised-btn border-0"
                                 title="Increase font size"
                             >
-                                <ZoomIn size={14} />
+                                <ZoomIn size={14} className="quran-3d-icon" />
                             </button>
                         </div>
 
                         {/* Copy button */}
                         <button 
                             onClick={handleCopy}
-                            className="p-1.5 rounded-lg border hover:opacity-80 transition"
-                            style={{ borderColor: cardBorder }}
+                            className="p-2 rounded-xl transition quran-raised-btn border-0"
                             title="Copy Commentary"
                         >
-                            {copied ? <Check size={16} className="text-emerald-500" /> : <Copy size={16} />}
+                            {copied ? <Check size={16} className="text-emerald-500 quran-3d-icon" /> : <Copy size={16} className="quran-3d-icon" />}
                         </button>
 
                         {/* Close button */}
                         <button 
                             onClick={onClose}
-                            className="p-1.5 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"
+                            className="p-2 rounded-xl transition quran-raised-btn border-0 opacity-70 hover:opacity-100"
                             title="Close"
                         >
-                            <X size={18} />
+                            <X size={18} className="quran-3d-icon" />
                         </button>
                     </div>
                 </div>
 
                 {/* Edition Selector Tabs */}
                 <div 
-                    className="px-3.5 py-2 border-b flex items-center gap-1.5 overflow-x-auto scrollbar-hide shrink-0"
-                    style={{ backgroundColor: `${cardBg}80`, borderColor: cardBorder }}
+                    className="px-3.5 py-2.5 border-0 flex items-center gap-2 overflow-x-auto scrollbar-hide shrink-0"
+                    style={{ backgroundColor: `${cardBg}80` }}
                 >
                     <span className="text-[11px] font-bold opacity-60 mr-1 flex items-center gap-1 shrink-0">
-                        <Layers size={13} />
+                        <Layers size={13} className="quran-3d-icon" />
                         Edition:
                     </span>
                     {ENGLISH_TAFSIR_EDITIONS.map(ed => {
@@ -287,14 +286,13 @@ const EnglishTafseerModal: React.FC<EnglishTafseerModalProps> = ({
                             <button
                                 key={ed.id}
                                 onClick={() => setSelectedEdition(ed.id)}
-                                className={`text-xs px-2.5 py-1 rounded-lg font-bold transition-all shrink-0 select-none ${
+                                className={`text-xs px-3 py-1.5 rounded-xl font-bold transition-all shrink-0 select-none border-0 ${
                                     isSelected 
-                                        ? 'shadow-sm text-white' 
-                                        : 'hover:opacity-80 opacity-70'
+                                        ? 'quran-raised-btn-selected shadow-sm text-white' 
+                                        : 'quran-raised-btn opacity-80 hover:opacity-100'
                                 }`}
                                 style={{
-                                    backgroundColor: isSelected ? accentColor : 'transparent',
-                                    border: `1px solid ${isSelected ? accentColor : cardBorder}`
+                                    backgroundColor: isSelected ? accentColor : undefined,
                                 }}
                             >
                                 {ed.name}
@@ -306,12 +304,9 @@ const EnglishTafseerModal: React.FC<EnglishTafseerModalProps> = ({
                 {/* Verse Citation Banner */}
                 {((!isTranslationOnly && verseText.ar) || verseText.en) && (
                     <div 
-                        className="mx-3.5 mt-3 p-3 rounded-xl border shrink-0 text-left"
+                        className="mx-3.5 mt-3 p-3.5 rounded-2xl border-0 quran-raised-card shrink-0 text-left"
                         style={{ 
                             backgroundColor: `${cardBg}`,
-                            borderColor: `${accentColor}33`,
-                            borderLeftWidth: '4px',
-                            borderLeftColor: accentColor
                         }}
                     >
                         {!isTranslationOnly && verseText.ar && (
@@ -350,10 +345,10 @@ const EnglishTafseerModal: React.FC<EnglishTafseerModalProps> = ({
                             <p className="text-sm font-bold text-red-500">{error}</p>
                             <button 
                                 onClick={() => fetchTafsir(selectedEdition)}
-                                className="px-4 py-2 rounded-xl text-xs font-bold text-white shadow-sm flex items-center gap-2 active:scale-95 transition"
+                                className="px-4 py-2.5 rounded-2xl text-xs font-bold text-white shadow-sm flex items-center gap-2 active:scale-95 transition border-0 quran-raised-btn-selected"
                                 style={{ backgroundColor: accentColor }}
                             >
-                                <RefreshCw size={14} />
+                                <RefreshCw size={14} className="quran-3d-icon" />
                                 Try Again
                             </button>
                         </div>
@@ -372,15 +367,15 @@ const EnglishTafseerModal: React.FC<EnglishTafseerModalProps> = ({
 
                 {/* Footer */}
                 <div 
-                    className="p-2.5 px-4 border-t flex items-center justify-between shrink-0"
-                    style={{ backgroundColor: cardBg, borderColor: cardBorder }}
+                    className="p-3 px-4 border-0 flex items-center justify-between shrink-0 rounded-b-3xl"
+                    style={{ backgroundColor: cardBg }}
                 >
-                    <span className="text-[11px] opacity-60">
+                    <span className="text-[11px] opacity-70 font-medium">
                         {surahNameEn} {surahNumber}:{ayahNumber} • {activeEdition.name}
                     </span>
                     <button 
                         onClick={onClose}
-                        className="px-5 py-1.5 rounded-xl font-bold text-xs text-white shadow-sm transition active:scale-95"
+                        className="px-6 py-2 rounded-xl font-bold text-xs text-white shadow-sm transition active:scale-95 border-0 quran-raised-btn-selected"
                         style={{ backgroundColor: accentColor }}
                     >
                         Close

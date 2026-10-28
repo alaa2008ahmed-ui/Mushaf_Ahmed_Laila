@@ -39,10 +39,70 @@ async function prepareAudio() {
         console.warn(`Warning: Could not copy to Android dir. This is normal if the Android platform is not added yet.`);
     }
     
+    // Prevent Android AAPT2 "Duplicate resources" errors (e.g. ic_stat_name.xml vs ic_stat_name.png)
+    sanitizeAndroidResources();
+
     // Ensure Capacitor LocalNotifications plugin retains wake lock and alarm attributes
     patchCapacitorNotifications();
 
     console.log('--- Audio Preparation Complete ---');
+}
+
+function sanitizeAndroidResources() {
+    try {
+        const resDir = path.join(__dirname, '../android/app/src/main/res');
+        if (!fs.existsSync(resDir)) return;
+
+        // 1. ic_stat_name.png already exists in density-qualified folders (drawable-mdpi..xxxhdpi).
+        // Remove unqualified drawable/ic_stat_name.* and drawable-nodpi/ic_stat_name.* so they never
+        // collide with CI-generated or leftover ic_stat_name.xml in res/drawable/.
+        const hasDensityStatIcon = fs.existsSync(path.join(resDir, 'drawable-hdpi', 'ic_stat_name.png'));
+        if (hasDensityStatIcon) {
+            const redundantStatFiles = [
+                path.join(resDir, 'drawable', 'ic_stat_name.png'),
+                path.join(resDir, 'drawable', 'ic_stat_name.xml'),
+                path.join(resDir, 'drawable-nodpi', 'ic_stat_name.png'),
+                path.join(resDir, 'drawable-nodpi', 'ic_stat_name.xml'),
+            ];
+            for (const filePath of redundantStatFiles) {
+                if (fs.existsSync(filePath)) {
+                    fs.unlinkSync(filePath);
+                    console.log(`Removed redundant/conflicting resource: ${path.relative(resDir, filePath)}`);
+                }
+            }
+        }
+
+        // 2. Scan all drawable* and mipmap* folders for any same-name duplicate extensions (e.g. foo.xml + foo.png)
+        const subdirs = fs.readdirSync(resDir, { withFileTypes: true })
+            .filter(d => d.isDirectory() && (d.name.startsWith('drawable') || d.name.startsWith('mipmap')))
+            .map(d => path.join(resDir, d.name));
+
+        for (const dir of subdirs) {
+            const entries = fs.readdirSync(dir);
+            const byBaseName = new Map();
+            for (const entry of entries) {
+                const ext = path.extname(entry).toLowerCase();
+                if (!['.xml', '.png', '.jpg', '.jpeg', '.webp'].includes(ext)) continue;
+                const base = entry.slice(0, entry.length - ext.length).replace(/\.9$/, '');
+                if (!byBaseName.has(base)) byBaseName.set(base, []);
+                byBaseName.get(base).push(entry);
+            }
+            for (const [base, files] of byBaseName.entries()) {
+                if (files.length > 1) {
+                    // Prefer custom PNG/WebP icon over auto-generated XML fallback when both exist in the same folder
+                    const preferred = files.find(f => f.endsWith('.png')) || files.find(f => f.endsWith('.webp')) || files[0];
+                    for (const f of files) {
+                        if (f !== preferred) {
+                            fs.unlinkSync(path.join(dir, f));
+                            console.log(`Resolved duplicate resource in ${path.basename(dir)}: removed ${f}, kept ${preferred}`);
+                        }
+                    }
+                }
+            }
+        }
+    } catch (e) {
+        console.warn('Warning while sanitizing Android resources:', e);
+    }
 }
 
 function patchCapacitorNotifications() {

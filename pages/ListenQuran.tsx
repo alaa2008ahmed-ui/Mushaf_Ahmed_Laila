@@ -18,7 +18,27 @@ import { SURAH_INFO, ARABIC_READERS } from '../components/QuranReader/constants'
 import { registerBackInterceptor } from '../hooks/useBackButton';
 import { getAvailableSurahsForReader } from '../utils/listenQuranUtils';
 import './QuranReader.css';
-import { HelpCircle } from 'lucide-react';
+import { 
+    HelpCircle, 
+    Play, 
+    Pause, 
+    SkipBack, 
+    SkipForward, 
+    RotateCcw, 
+    RotateCw, 
+    Moon, 
+    Heart, 
+    Download, 
+    User, 
+    BookOpen, 
+    ChevronDown, 
+    ChevronLeft, 
+    ChevronRight, 
+    Plus, 
+    Minus, 
+    Trash2, 
+    Repeat
+} from 'lucide-react';
 import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/CommunitySpotlightGuide';
 import { LISTEN_QURAN_PAGE_STEPS } from '../components/Community/communityTourSteps';
 import { markPageAsSeen } from '../utils/badgeManager';
@@ -71,7 +91,13 @@ interface ListenFavorite {
     createdAt: number;
 }
 
-function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
+interface ListenQuranProps {
+    onBack: () => void;
+    onOpenThemes?: () => void;
+    onNavigate: (pageId: string, params?: any) => void;
+}
+
+function ListenQuran({ onBack, onNavigate }: ListenQuranProps) {
     const { theme, themeKey } = useTheme();
     const { language, isRTL, dir } = useLanguage();
     const isEn = language === 'en';
@@ -84,13 +110,11 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
         }
     }, []);
 
-    const isBlackTheme = theme.bgColor === '#000000';
-    const isDefaultTheme = themeKey === 'default' || !themeKey;
-    const cardBorderColor = isDefaultTheme 
-        ? '#000000' 
-        : (isBlackTheme 
-            ? '#FFFFFF' 
-            : (theme.palette?.[0] || '#000000'));
+    // --- Dynamic Theme Tokens (Matching MainMenu Design System) ---
+    const isBlackTheme = themeKey === 'deep_black' || theme.bgColor === '#000000' || theme.name === 'اسود' || theme.name === 'black';
+    const primaryColor = isBlackTheme ? '#FFFFFF' : (theme.palette?.[0] || theme.accent || theme.btnBg || '#2E7D5E');
+    const pageBgColor = isBlackTheme ? '#000000' : (theme.bgColor || '#F8FAFC');
+
     const [reciterId, setReciterId] = useState(RECITERS[0].id);
     const [surahNumber, setSurahNumber] = useState(1);
     const [isPlaying, setIsPlaying] = useState(false);
@@ -100,7 +124,7 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
     const [duration, setDuration] = useState(0);
     const [currentTime, setCurrentTime] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState('');
+    const [, setError] = useState('');
     const [showReciterModal, setShowReciterModal] = useState(false);
     const [showSurahModal, setShowSurahModal] = useState(false);
     const [showDownloadModal, setShowDownloadModal] = useState(false);
@@ -162,12 +186,6 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
         }
     }, [availableSurahIds, surahNumber]);
 
-    const filteredQuranData = useMemo(() => {
-        return {
-            surahs: mockQuranData.surahs.filter(s => availableSurahIds.includes(s.number))
-        };
-    }, [availableSurahIds]);
-    
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const autoPlayNextRef = useRef(false);
     const objectUrlRef = useRef<string | null>(null);
@@ -237,7 +255,6 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
                     if (match) {
                         setReciterId(match.id);
                     } else {
-                        // Check if savedReciterId is an EveryAyah ID or reciter name that can be mapped to RECITERS
                         const eaReader = ARABIC_READERS.find(r => r.id === savedReciterId);
                         const targetName = eaReader?.name;
                         const matchedByName = targetName 
@@ -264,7 +281,7 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
         }
     }, []);
 
-    // Self-healing: if reciterId in state is not in RECITERS (e.g. from previously corrupted state), immediately heal it
+    // Self-healing: if reciterId in state is not in RECITERS
     useEffect(() => {
         if (!RECITERS.some(r => r.id === reciterId)) {
             const eaReader = ARABIC_READERS.find(r => r.id === reciterId);
@@ -337,6 +354,7 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
         }
     }, [getAvailableSurahs, reciterId, surahNumber]);
 
+    // Apply CSS variables for the dynamic theme
     useEffect(() => {
         const root = document.documentElement;
         const t = theme;
@@ -348,19 +366,19 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
         root.style.setProperty('--qr-bar-bg', t.barBg || (isDark ? 'rgba(30, 41, 59, 0.7)' : 'rgba(255, 255, 255, 0.7)'));
         root.style.setProperty('--qr-bar-text', t.textColor);
         root.style.setProperty('--qr-bar-border', t.barBorder || 'transparent');
-        root.style.setProperty('--qr-btn-bg', t.palette[0]);
-        root.style.setProperty('--qr-btn-text', '#ffffff');
-        root.style.setProperty('--qr-accent', themeKey === 'default' ? '#000000' : (t.palette[1] || t.palette[0]));
-        root.style.setProperty('--qr-accent-text', '#ffffff');
+        root.style.setProperty('--qr-btn-bg', primaryColor);
+        root.style.setProperty('--qr-btn-text', isBlackTheme ? '#000000' : '#ffffff');
+        root.style.setProperty('--qr-accent', primaryColor);
+        root.style.setProperty('--qr-accent-text', isBlackTheme ? '#000000' : '#ffffff');
         root.style.setProperty('--qr-modal-bg', t.bgColor || '#0D1B2A');
         root.style.setProperty('--qr-modal-text', t.textColor);
-        root.style.setProperty('--qr-header-bg', t.palette[0]);
-        root.style.setProperty('--qr-header-text', '#ffffff');
-        root.style.setProperty('--qr-card-bg', isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.5)');
+        root.style.setProperty('--qr-header-bg', primaryColor);
+        root.style.setProperty('--qr-header-text', isBlackTheme ? '#000000' : '#ffffff');
+        root.style.setProperty('--qr-card-bg', isDark ? 'rgba(255, 255, 255, 0.05)' : '#ffffff');
         root.style.setProperty('--qr-card-text', t.textColor);
-        root.style.setProperty('--qr-card-border', isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.07)');
-        root.style.setProperty('--qr-slider-thumb', themeKey === 'default' ? '#000000' : t.palette[0]);
-    }, [theme, themeKey]);
+        root.style.setProperty('--qr-card-border', isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)');
+        root.style.setProperty('--qr-slider-thumb', primaryColor);
+    }, [theme, themeKey, primaryColor, isBlackTheme]);
 
     useEffect(() => {
         audioRef.current = new Audio();
@@ -403,7 +421,6 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
         };
     }, []);
 
-    // دالة فارغة لإلغاء ظهور أي إشعارات بالصفحة نهائياً ومنع أي خطأ برمجي
     const showToast = useCallback((_msg?: string) => {}, []);
 
     // تأثير العد التنازلي لمؤقت النوم
@@ -430,7 +447,7 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
         }, 1000);
 
         return () => clearInterval(interval);
-    }, [isSleepTimerActive, sleepTimerRemainingSeconds, showToast]);
+    }, [isSleepTimerActive, sleepTimerRemainingSeconds, showToast, language]);
 
     // معالجة انتهاء السورة الصوتية مع دعم مؤقت النوم
     useEffect(() => {
@@ -438,7 +455,6 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
         if (!audio) return;
 
         const handleEnded = () => {
-             // التحقق إذا كان مؤقت النوم مضبوط على آخر السورة
              if (isSleepTimerActiveRef.current && sleepTimerModeRef.current === 'end_of_surah') {
                  setIsPlaying(false);
                  setCurrentTime(0);
@@ -447,7 +463,6 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
                  setSleepTimerRemainingSeconds(null);
                  return;
              }
-             // خاصية تكرار نفس السورة بعد انتهائها
              if (isRepeatSurahRef.current) {
                  if (audioRef.current) {
                      audioRef.current.currentTime = 0;
@@ -556,9 +571,7 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
         if (isCurrentFavorite) {
             setFavorites(prev => prev.filter(f => !(f.reciterId === reciterId && f.surahNumber === surahNumber)));
         } else {
-            if (favorites.length >= 10) {
-                return;
-            }
+            if (favorites.length >= 10) return;
             const newFav: ListenFavorite = {
                 id: `${reciterId}_${surahNumber}`,
                 reciterId,
@@ -656,16 +669,16 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
             savedRepeatSurah: isRepeatSurah,
         }));
 
-    }, [reciterId, surahNumber]);
+    }, [reciterId, surahNumber, isContinuousPlay, isRepeatSurah, language]);
     
-     useEffect(() => {
+    useEffect(() => {
         localStorage.setItem(STORAGE_KEY, JSON.stringify({
              savedReciterId: reciterId, 
              savedSurahNumber: surahNumber,
              savedContinuousPlay: isContinuousPlay,
              savedRepeatSurah: isRepeatSurah
         }));
-    }, [isContinuousPlay, isRepeatSurah]);
+    }, [isContinuousPlay, isRepeatSurah, reciterId, surahNumber]);
     
     const handlePlayPause = async () => {
         const audio = audioRef.current;
@@ -705,37 +718,65 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
     const reciterName = currentReciter.name;
     const surahName = SURAH_LIST.find(s => s.number === surahNumber)?.name || SURAH_LIST[0].name;
 
+    const progressPercent = duration > 0 ? Math.min(100, Math.max(0, (currentTime / duration) * 100)) : 0;
+
     return (
-        <div dir={dir} className="h-screen flex flex-col font-cairo overflow-hidden" style={{ backgroundColor: 'transparent', color: theme.textColor }}>
+        <div 
+            dir={dir} 
+            className="h-screen flex flex-col font-cairo overflow-hidden select-none" 
+            style={{ 
+                backgroundColor: pageBgColor, 
+                color: isBlackTheme ? '#FFFFFF' : (theme.textColor || '#1E293B') 
+            }}
+        >
             <header className="app-top-bar" dir={dir}>
                 <style>{`
-                    .quran-slider::-webkit-slider-thumb {
+                    .quran-slider {
+                        -webkit-appearance: none;
                         appearance: none;
-                        width: 16px;
-                        height: 16px;
-                        background: var(--qr-slider-thumb);
+                        width: 100%;
+                        height: 10px;
+                        border-radius: 9999px;
+                        outline: none;
+                        cursor: pointer;
+                        transition: all 0.2s ease;
+                    }
+                    .quran-slider::-webkit-slider-thumb {
+                        -webkit-appearance: none;
+                        appearance: none;
+                        width: 22px;
+                        height: 22px;
+                        background: #FFFFFF;
+                        border: 3.5px solid var(--qr-slider-thumb, ${primaryColor});
                         border-radius: 50%;
                         cursor: pointer;
-                        border: 2px solid #FFFFFF;
-                        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+                        box-shadow: 0 2px 8px rgba(0,0,0,0.22);
+                        transition: transform 0.15s ease, box-shadow 0.15s ease;
+                    }
+                    .quran-slider::-webkit-slider-thumb:hover {
+                        transform: scale(1.15);
+                        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                    }
+                    .quran-slider::-webkit-slider-thumb:active {
+                        transform: scale(0.95);
                     }
                     .quran-slider::-moz-range-thumb {
-                        width: 16px;
-                        height: 16px;
-                        background: var(--qr-slider-thumb);
+                        width: 22px;
+                        height: 22px;
+                        background: #FFFFFF;
+                        border: 3.5px solid var(--qr-slider-thumb, ${primaryColor});
                         border-radius: 50%;
                         cursor: pointer;
-                        border: 2px solid #FFFFFF;
-                        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+                        box-shadow: 0 2px 8px rgba(0,0,0,0.22);
                     }
                 `}</style>
                 <div className="app-top-bar__inner">
-                    <div className="relative flex items-center justify-center w-full min-h-[44px]">
+                    <div className="relative flex items-center justify-between w-full min-h-[44px]">
                         {/* زر الرجوع للخلف وأيقونة المفضلة */}
-                        <div className={`absolute ${isRTL ? 'right-0' : 'left-0'} flex items-center gap-1`}>
+                        <div className="flex items-center gap-1.5 z-10">
                             <button
                                 onClick={handleBack}
-                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/5 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
                                 title={tListen('back', language)}
                                 aria-label={tListen('back', language)}
                             >
@@ -745,492 +786,639 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
                                 id="btn-listen-toggle-fav"
                                 type="button"
                                 onClick={handleToggleFavorite}
-                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/5 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
                                 title={isCurrentFavorite ? tListen('removeFromFavorites', language) : tListen('addToFavorites', language)}
                                 aria-label={tListen('favorites', language)}
                             >
-                                <i className={`text-xl transition-all ${isCurrentFavorite ? 'fa-solid fa-heart text-red-500 scale-110' : 'fa-regular fa-heart opacity-75 hover:opacity-100 hover:text-red-500'}`} style={isCurrentFavorite ? {} : { color: theme.textColor }}></i>
+                                <Heart 
+                                    className={`w-5 h-5 transition-transform duration-200 ${isCurrentFavorite ? 'scale-110 fill-red-500 text-red-500' : 'opacity-70 hover:opacity-100'}`} 
+                                    strokeWidth={isCurrentFavorite ? 0 : 2}
+                                />
                             </button>
                         </div>
 
                         {/* عنوان الصفحة في الوسط */}
-                        <div className="text-center px-16 sm:px-20 min-w-0">
-                            <h1 className="app-top-bar__title text-lg sm:text-xl font-kufi truncate">
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <h1 className="app-top-bar__title text-lg sm:text-xl font-kufi font-bold truncate px-24">
                                 {tListen('pageTitle', language)}
                             </h1>
                         </div>
 
-                        {/* قفل الثيم وأيقونة المنزل */}
-                        <div className={`absolute ${isRTL ? 'left-0' : 'right-0'} flex items-center gap-1`}>
+                        {/* قفل الثيم وأيقونة المنزل ودليل الاستخدام */}
+                        <div className="flex items-center gap-1.5 z-10">
                             <button
                                 type="button"
                                 onClick={() => setShowGuide(true)}
-                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/5 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
                                 style={{ color: 'var(--top-bar-text, inherit)' }}
                                 title={tListen('guide', language)}
                                 aria-label={tListen('guide', language)}
                             >
-                                <HelpCircle size={19} />
+                                <i className="fa-solid fa-circle-question text-lg text-black"></i>
                             </button>
                             <ThemePageLock />
                             <button
                                 onClick={handleGoHome}
-                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/5 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
                                 title={tListen('home', language)}
                                 aria-label={tListen('home', language)}
                             >
-                                <i className="fa-solid fa-house text-xl"></i>
+                                <i className="fa-solid fa-house text-lg"></i>
                             </button>
                         </div>
                     </div>
                 </div>
             </header>
 
-            <main id="listen-scroll-container" className="w-full max-w-md mx-auto flex-1 flex flex-col px-4 pb-4 z-10 overflow-y-auto">
-
-                <div className="space-y-3 flex-shrink-0 py-4">
+            <main 
+                id="listen-scroll-container" 
+                className="w-full max-w-lg mx-auto flex-1 flex flex-col px-4 sm:px-6 py-4 z-10 overflow-y-auto space-y-4"
+            >
+                {/* 1. مربعات الاختيار (القارئ والسورة) كبطاقات بيضاء ناعمة بظلال مطابقة للرئيسية */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 flex-shrink-0">
+                    {/* بطاقة اختيار القارئ */}
                     <button 
                         id="btn-listen-select-reciter"
                         onClick={() => setShowReciterModal(true)} 
-                        className="w-full p-3 text-center rounded-xl font-bold themed-card flex justify-between items-center transition-all cursor-pointer"
-                        style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                        className={`w-full p-3.5 sm:p-4 rounded-2xl flex items-center justify-between transition-all duration-300 hover:shadow-md active:scale-[0.985] cursor-pointer text-start ${
+                            isBlackTheme 
+                                ? 'bg-[#18181b] border border-white/10 text-white' 
+                                : 'bg-white text-slate-800 shadow-[0_4px_20px_-2px_rgba(0,0,0,0.05),0_2px_6px_-1px_rgba(0,0,0,0.02)]'
+                        }`}
+                        style={{ borderRadius: '16px' }}
                     >
-                        <span className="truncate">{getReciterDisplayName(reciterId, reciterName, language)}</span>
-                        <i className="fa-solid fa-chevron-down opacity-50 shrink-0"></i>
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                            <div 
+                                className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-colors"
+                                style={{ 
+                                    backgroundColor: isBlackTheme ? 'rgba(255,255,255,0.1)' : `${primaryColor}14`, 
+                                    color: primaryColor 
+                                }}
+                            >
+                                <User className="w-5 h-5" strokeWidth={2.2} />
+                            </div>
+                            <div className="flex flex-col min-w-0">
+                                <span className={`text-[11px] font-medium leading-tight ${isBlackTheme ? 'text-zinc-400' : 'text-slate-400'}`}>
+                                    {language === 'en' ? 'Reciter' : 'القارئ'}
+                                </span>
+                                <span className="text-sm sm:text-base font-bold truncate mt-0.5">
+                                    {getReciterDisplayName(reciterId, reciterName, language)}
+                                </span>
+                            </div>
+                        </div>
+                        <div 
+                            className="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
+                            style={{ 
+                                backgroundColor: isBlackTheme ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)', 
+                                color: isBlackTheme ? '#FFFFFF' : '#64748B' 
+                            }}
+                        >
+                            <ChevronDown className="w-4 h-4" />
+                        </div>
                     </button>
+
+                    {/* بطاقة اختيار السورة */}
                     <button 
                         id="btn-listen-select-surah"
                         onClick={() => setShowSurahModal(true)} 
-                        className="w-full p-3 text-center rounded-xl font-bold themed-card flex justify-between items-center transition-all cursor-pointer"
-                        style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                        className={`w-full p-3.5 sm:p-4 rounded-2xl flex items-center justify-between transition-all duration-300 hover:shadow-md active:scale-[0.985] cursor-pointer text-start ${
+                            isBlackTheme 
+                                ? 'bg-[#18181b] border border-white/10 text-white' 
+                                : 'bg-white text-slate-800 shadow-[0_4px_20px_-2px_rgba(0,0,0,0.05),0_2px_6px_-1px_rgba(0,0,0,0.02)]'
+                        }`}
+                        style={{ borderRadius: '16px' }}
                     >
-                        <span className="truncate">{formatListenNumber(surahNumber, language)} - {getSurahDisplayName(surahNumber, surahName, language)}</span>
-                        <i className="fa-solid fa-chevron-down opacity-50 shrink-0"></i>
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                            <div 
+                                className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-colors"
+                                style={{ 
+                                    backgroundColor: isBlackTheme ? 'rgba(255,255,255,0.1)' : `${primaryColor}14`, 
+                                    color: primaryColor 
+                                }}
+                            >
+                                <BookOpen className="w-5 h-5" strokeWidth={2.2} />
+                            </div>
+                            <div className="flex flex-col min-w-0">
+                                <span className={`text-[11px] font-medium leading-tight ${isBlackTheme ? 'text-zinc-400' : 'text-slate-400'}`}>
+                                    {language === 'en' ? 'Surah' : 'السورة'}
+                                </span>
+                                <span className="text-sm sm:text-base font-bold truncate mt-0.5">
+                                    {formatListenNumber(surahNumber, language)} - {getSurahDisplayName(surahNumber, surahName, language)}
+                                </span>
+                            </div>
+                        </div>
+                        <div 
+                            className="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
+                            style={{ 
+                                backgroundColor: isBlackTheme ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)', 
+                                color: isBlackTheme ? '#FFFFFF' : '#64748B' 
+                            }}
+                        >
+                            <ChevronDown className="w-4 h-4" />
+                        </div>
                     </button>
                 </div>
 
+                {/* 2. بطاقة مشغل الصوت الرئيسية (Audio Player Card) بتصميم نقي ودعم كامل للألوان الديناميكية */}
                 <div 
                     id="listen-player-card"
-                    className="themed-card rounded-3xl p-6 space-y-5 flex-shrink-0 transition-all"
-                    style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                    className={`w-full rounded-3xl p-5 sm:p-7 space-y-6 flex-shrink-0 transition-all duration-300 ${
+                        isBlackTheme 
+                            ? 'bg-[#18181b] border border-white/10 text-white shadow-[0_8px_30px_-4px_rgba(0,0,0,0.7)]' 
+                            : 'bg-white text-slate-800 shadow-[0_8px_30px_-4px_rgba(0,0,0,0.08),0_4px_12px_-2px_rgba(0,0,0,0.04)]'
+                    }`}
+                    style={{ borderRadius: '20px' }}
                 >
-                    <div className="w-full space-y-1.5" dir={dir}>
-                        <input
-                            type="range"
-                            min="0"
-                            max={duration || 100}
-                            value={currentTime}
-                            onChange={handleSeek}
-                            className="w-full h-1.5 rounded-lg appearance-none cursor-pointer quran-slider"
-                            style={{ background: `linear-gradient(to ${isRTL ? 'left' : 'right'}, ${theme.palette[0]} ${duration > 0 ? (currentTime / duration) * 100 : 0}%, ${theme.cardBorder} ${duration > 0 ? (currentTime / duration) * 100 : 0}%)` }}
-                        />
-                        <div className="flex justify-between text-xs font-mono" style={{ color: theme.textColor, opacity: 0.7 }}>
+                    {/* معلومات التلاوة الحالية في أعلى بطاقة المشغل */}
+                    <div className="text-center space-y-1">
+                        <div 
+                            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold mb-1"
+                            style={{ 
+                                backgroundColor: isBlackTheme ? 'rgba(255,255,255,0.1)' : `${primaryColor}14`, 
+                                color: primaryColor 
+                            }}
+                        >
+                            <span className="w-2 h-2 rounded-full inline-block animate-pulse" style={{ backgroundColor: primaryColor }}></span>
+                            <span>{getReciterDisplayName(reciterId, reciterName, language)}</span>
+                        </div>
+                        <h2 className="text-xl sm:text-2xl font-bold font-kufi tracking-tight">
+                            {tListen('surahPrefix', language)} {getSurahDisplayName(surahNumber, surahName, language)}
+                        </h2>
+                    </div>
+
+                    {/* شريط التقدم: سميك وواضح وأرقام الوقت مكبرة لتسهيل القراءة */}
+                    <div className="w-full space-y-2" dir={dir}>
+                        <div className="relative flex items-center w-full">
+                            <input
+                                type="range"
+                                min="0"
+                                max={duration || 100}
+                                value={currentTime}
+                                onChange={handleSeek}
+                                className="w-full h-2.5 sm:h-3 rounded-full appearance-none cursor-pointer quran-slider"
+                                style={{ 
+                                    background: `linear-gradient(to ${isRTL ? 'left' : 'right'}, ${primaryColor} ${progressPercent}%, ${isBlackTheme ? 'rgba(255,255,255,0.14)' : '#E2E8F0'} ${progressPercent}%)` 
+                                }}
+                            />
+                        </div>
+                        {/* أرقام الوقت بخط مكبر وواضح */}
+                        <div className="flex justify-between items-center px-1 text-sm sm:text-base font-bold tabular-nums tracking-wide" style={{ color: isBlackTheme ? '#A1A1AA' : '#64748B' }}>
                             <span>{formatListenTime(currentTime, language)}</span>
                             <span>{formatListenTime(duration, language)}</span>
                         </div>
                     </div>
 
-                    <div className="flex items-center justify-between">
-                        <button onClick={handlePrevSurah} className="w-24 text-center hover:opacity-80 transition-opacity font-bold cursor-pointer" style={{ color: theme.textColor }}>
-                            {tListen('previous', language)}
+                    {/* أزرار التحكم بالصوت: أيقونات مسطحة عصرية مع زر Play باللون الأساسي الديناميكي */}
+                    <div className="flex items-center justify-between px-3 sm:px-8 pt-1">
+                        {/* زر السابق: أيقونة مسطحة عصرية */}
+                        <button 
+                            type="button"
+                            onClick={handlePrevSurah} 
+                            className={`w-13 h-13 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center transition-all duration-200 active:scale-95 hover:scale-105 cursor-pointer shadow-xs ${
+                                isBlackTheme 
+                                    ? 'bg-white/10 hover:bg-white/15 text-white' 
+                                    : 'bg-slate-100 hover:bg-slate-200/80 text-slate-700'
+                            }`}
+                            title={tListen('previous', language)}
+                            aria-label={tListen('previous', language)}
+                        >
+                            {isRTL ? (
+                                <SkipForward className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={2.3} />
+                            ) : (
+                                <SkipBack className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={2.3} />
+                            )}
                         </button>
-                        <button onClick={handlePlayPause} disabled={isLoading && !isPlaying} className="rounded-full w-20 h-20 flex items-center justify-center shadow-lg active:scale-95 transition disabled:opacity-70 cursor-pointer" style={{ backgroundColor: themeKey === 'default' ? '#000000' : (themeKey === 'deep_black' || isBlackTheme ? '#FFFFFF' : theme.palette[0]), color: (themeKey === 'deep_black' || isBlackTheme) ? '#000000' : '#FFFFFF' }}>
-                            {isLoading && !isPlaying ? <i className="fa-solid fa-spinner fa-spin fa-2x"></i> : <i className={`fa-solid ${isPlaying ? 'fa-pause' : 'fa-play'} fa-2x ${isRTL ? 'pl-1' : 'pr-1'}`}></i>}
+
+                        {/* زر التشغيل والإيقاف الكبير باللون الأساسي للتطبيق */}
+                        <button 
+                            type="button"
+                            onClick={handlePlayPause} 
+                            disabled={isLoading && !isPlaying} 
+                            className="w-20 h-20 sm:w-22 sm:h-22 rounded-full flex items-center justify-center active:scale-95 transition-all duration-300 disabled:opacity-70 cursor-pointer" 
+                            style={{ 
+                                backgroundColor: primaryColor, 
+                                color: isBlackTheme ? '#000000' : '#FFFFFF',
+                                boxShadow: isBlackTheme 
+                                    ? '0 10px 25px -4px rgba(255, 255, 255, 0.25)' 
+                                    : `0 12px 28px -6px ${primaryColor}66`
+                            }}
+                            title={isPlaying ? tListen('pause', language) : tListen('play', language)}
+                            aria-label={isPlaying ? tListen('pause', language) : tListen('play', language)}
+                        >
+                            {isLoading && !isPlaying ? (
+                                <i className="fa-solid fa-spinner fa-spin fa-2x"></i>
+                            ) : isPlaying ? (
+                                <Pause className="w-8 h-8 sm:w-9 sm:h-9" strokeWidth={2.4} />
+                            ) : (
+                                <Play className={`w-8 h-8 sm:w-9 sm:h-9 ${isRTL ? '-translate-x-0.5' : 'translate-x-0.5'}`} strokeWidth={2.4} fill="currentColor" />
+                            )}
                         </button>
-                        <button onClick={handleNextSurah} className="w-24 text-center hover:opacity-80 transition-opacity font-bold cursor-pointer" style={{ color: theme.textColor }}>
-                            {tListen('next', language)}
+
+                        {/* زر التالي: أيقونة مسطحة عصرية */}
+                        <button 
+                            type="button"
+                            onClick={handleNextSurah} 
+                            className={`w-13 h-13 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center transition-all duration-200 active:scale-95 hover:scale-105 cursor-pointer shadow-xs ${
+                                isBlackTheme 
+                                    ? 'bg-white/10 hover:bg-white/15 text-white' 
+                                    : 'bg-slate-100 hover:bg-slate-200/80 text-slate-700'
+                            }`}
+                            title={tListen('next', language)}
+                            aria-label={tListen('next', language)}
+                        >
+                            {isRTL ? (
+                                <SkipBack className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={2.3} />
+                            ) : (
+                                <SkipForward className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={2.3} />
+                            )}
                         </button>
                     </div>
-
                 </div>
 
-                {/* بطاقة مؤقت النوم (Sleep Timer) */}
-                <div className="pt-4 pb-1 flex-shrink-0 space-y-3">
-                    <div 
-                        id="listen-sleep-timer-card"
-                        className="themed-card rounded-2xl p-4 space-y-3.5 transition-all"
-                        style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
-                    >
-                        {/* عنوان ورأس البطاقة */}
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <i className="fa-solid fa-moon text-amber-500 text-base"></i>
-                                <span className="font-bold text-sm" style={{ color: theme.textColor }}>
-                                    {tListen('sleepTimer', language)}
-                                </span>
+                {/* 3. بطاقة مؤقت النوم (Sleep Timer) مع رقاقات الوقت (Chips/Tags) بدون حدود سوداء */}
+                <div 
+                    id="listen-sleep-timer-card"
+                    className={`w-full rounded-2xl p-4 sm:p-5 space-y-4 flex-shrink-0 transition-all duration-300 ${
+                        isBlackTheme 
+                            ? 'bg-[#18181b] border border-white/10 text-white shadow-[0_8px_30px_-4px_rgba(0,0,0,0.7)]' 
+                            : 'bg-white text-slate-800 shadow-[0_4px_20px_-2px_rgba(0,0,0,0.05),0_2px_6px_-1px_rgba(0,0,0,0.02)]'
+                    }`}
+                    style={{ borderRadius: '16px' }}
+                >
+                    {/* عنوان ورأس البطاقة */}
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                            <div 
+                                className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+                                style={{ 
+                                    backgroundColor: isBlackTheme ? 'rgba(255,255,255,0.1)' : `${primaryColor}14`, 
+                                    color: primaryColor 
+                                }}
+                            >
+                                <Moon className="w-4 h-4" strokeWidth={2.2} />
                             </div>
-                            
-                            {/* شارة حالة المؤقت */}
-                            {isSleepTimerActive ? (
-                                <div className="flex items-center gap-2">
-                                    <span 
-                                        className="text-xs px-2.5 py-1 rounded-full font-bold flex items-center gap-1.5 shadow-xs"
-                                        style={{
-                                            backgroundColor: (themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF25' : '#00000015') : `${theme.palette[0]}25`,
-                                            color: (themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF' : '#000000') : theme.palette[0]
-                                        }}
-                                    >
-                                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping inline-block"></span>
-                                        {sleepTimerMode === 'end_of_surah' ? tListen('atEndOfSurah', language) : `${tListen('remaining', language)} ${formatListenTimerCountdown(sleepTimerRemainingSeconds || 0, language)}`}
-                                    </span>
-                                    <button
-                                        type="button"
-                                        onClick={handleCancelSleepTimer}
-                                        className="text-xs px-2 py-0.5 rounded-md hover:bg-red-500/10 text-red-500 transition-colors cursor-pointer font-medium"
-                                        title={tListen('cancelTimer', language)}
-                                    >
-                                        {tListen('cancel', language)}
-                                    </button>
-                                </div>
-                            ) : (
-                                <span className="text-xs opacity-60 font-medium">
-                                    {tListen('timerOff', language)}
-                                </span>
-                            )}
+                            <span className="font-bold text-sm sm:text-base">
+                                {tListen('sleepTimer', language)}
+                            </span>
                         </div>
-
-                        {/* خيارات التحديد السريع (15 أو 30 أو 60 دقيقة أو آخر السورة) */}
-                        <div className="grid grid-cols-4 gap-2 text-xs">
-                            {/* 15 دقيقة */}
-                            <button
-                                type="button"
-                                onClick={() => handleSetPresetTimer(15)}
-                                className={`py-2 px-1 rounded-xl font-bold transition-all border flex flex-col items-center justify-center gap-0.5 cursor-pointer ${isSleepTimerActive && sleepTimerMode === '15' ? 'shadow-xs scale-[1.02]' : 'hover:opacity-85'}`}
-                                style={{
-                                    backgroundColor: isSleepTimerActive && sleepTimerMode === '15'
-                                        ? ((themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF25' : '#00000015') : `${theme.palette[0]}25`)
-                                        : 'transparent',
-                                    borderColor: isSleepTimerActive && sleepTimerMode === '15'
-                                        ? ((themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF' : '#000000') : theme.palette[0])
-                                        : 'rgba(150, 150, 150, 0.25)',
-                                    color: theme.textColor
-                                }}
-                            >
-                                <span>{tListen('preset15', language)}</span>
-                            </button>
-
-                            {/* 30 دقيقة */}
-                            <button
-                                type="button"
-                                onClick={() => handleSetPresetTimer(30)}
-                                className={`py-2 px-1 rounded-xl font-bold transition-all border flex flex-col items-center justify-center gap-0.5 cursor-pointer ${isSleepTimerActive && sleepTimerMode === '30' ? 'shadow-xs scale-[1.02]' : 'hover:opacity-85'}`}
-                                style={{
-                                    backgroundColor: isSleepTimerActive && sleepTimerMode === '30'
-                                        ? ((themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF25' : '#00000015') : `${theme.palette[0]}25`)
-                                        : 'transparent',
-                                    borderColor: isSleepTimerActive && sleepTimerMode === '30'
-                                        ? ((themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF' : '#000000') : theme.palette[0])
-                                        : 'rgba(150, 150, 150, 0.25)',
-                                    color: theme.textColor
-                                }}
-                            >
-                                <span>{tListen('preset30', language)}</span>
-                            </button>
-
-                            {/* 60 دقيقة */}
-                            <button
-                                type="button"
-                                onClick={() => handleSetPresetTimer(60)}
-                                className={`py-2 px-1 rounded-xl font-bold transition-all border flex flex-col items-center justify-center gap-0.5 cursor-pointer ${isSleepTimerActive && sleepTimerMode === '60' ? 'shadow-xs scale-[1.02]' : 'hover:opacity-85'}`}
-                                style={{
-                                    backgroundColor: isSleepTimerActive && sleepTimerMode === '60'
-                                        ? ((themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF25' : '#00000015') : `${theme.palette[0]}25`)
-                                        : 'transparent',
-                                    borderColor: isSleepTimerActive && sleepTimerMode === '60'
-                                        ? ((themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF' : '#000000') : theme.palette[0])
-                                        : 'rgba(150, 150, 150, 0.25)',
-                                    color: theme.textColor
-                                }}
-                            >
-                                <span>{tListen('preset60', language)}</span>
-                            </button>
-
-                            {/* آخر السورة */}
-                            <button
-                                type="button"
-                                onClick={handleSetEndOfSurahTimer}
-                                className={`py-2 px-1 rounded-xl font-bold transition-all border flex flex-col items-center justify-center gap-0.5 cursor-pointer ${isSleepTimerActive && sleepTimerMode === 'end_of_surah' ? 'shadow-xs scale-[1.02]' : 'hover:opacity-85'}`}
-                                style={{
-                                    backgroundColor: isSleepTimerActive && sleepTimerMode === 'end_of_surah'
-                                        ? ((themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF25' : '#00000015') : `${theme.palette[0]}25`)
-                                        : 'transparent',
-                                    borderColor: isSleepTimerActive && sleepTimerMode === 'end_of_surah'
-                                        ? ((themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF' : '#000000') : theme.palette[0])
-                                        : 'rgba(150, 150, 150, 0.25)',
-                                    color: theme.textColor
-                                }}
-                            >
-                                <span>{tListen('endOfSurah', language)}</span>
-                            </button>
-                        </div>
-
-                        {/* صف أزرار زيادة ونقصان الوقت (+) و (-) مع عرض الوقت وزر التفعيل */}
-                        <div className="pt-1 flex items-center justify-between gap-3 border-t border-gray-200/20 dark:border-gray-700/20">
+                        
+                        {/* شارة حالة المؤقت */}
+                        {isSleepTimerActive ? (
                             <div className="flex items-center gap-2">
-                                {/* زر إنقاص الوقت (-) */}
-                                <button
-                                    type="button"
-                                    onClick={handleDecrementTimer}
-                                    disabled={isSleepTimerActive && sleepTimerMode === 'end_of_surah'}
-                                    className="w-9 h-9 rounded-xl flex items-center justify-center border font-bold text-base transition-all hover:opacity-80 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                                <span 
+                                    className="text-xs px-2.5 py-1 rounded-full font-bold flex items-center gap-1.5"
                                     style={{
-                                        borderColor: (themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF40' : '#00000030') : `${theme.palette[0]}50`,
-                                        backgroundColor: (themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF10' : '#00000008') : `${theme.palette[0]}10`,
-                                        color: theme.textColor
-                                    }}
-                                    title={tListen('decreaseTimeTooltip', language)}
-                                    aria-label={tListen('decreaseTimeAria', language)}
-                                >
-                                    <i className="fa-solid fa-minus text-xs"></i>
-                                </button>
-
-                                {/* عرض الوقت الحالي المحدد أو المتبقي */}
-                                <div 
-                                    className="px-3 py-1.5 rounded-xl border text-center font-bold text-sm min-w-[95px]"
-                                    style={{
-                                        borderColor: (themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF30' : '#00000020') : `${theme.palette[0]}30`,
-                                        backgroundColor: (themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF08' : '#00000005') : `${theme.palette[0]}08`,
-                                        color: theme.textColor
+                                        backgroundColor: isBlackTheme ? 'rgba(255,255,255,0.15)' : `${primaryColor}15`,
+                                        color: primaryColor
                                     }}
                                 >
-                                    {isSleepTimerActive && sleepTimerRemainingSeconds !== null ? (
-                                        <span>{formatListenTimerCountdown(sleepTimerRemainingSeconds, language)}</span>
-                                    ) : (
-                                        <span>{formatListenNumber(customTimerMinutes, language)} {tListen('minShort', language)}</span>
-                                    )}
-                                </div>
-
-                                {/* زر زيادة الوقت (+) */}
-                                <button
-                                    type="button"
-                                    onClick={handleIncrementTimer}
-                                    disabled={isSleepTimerActive && sleepTimerMode === 'end_of_surah'}
-                                    className="w-9 h-9 rounded-xl flex items-center justify-center border font-bold text-base transition-all hover:opacity-80 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-                                    style={{
-                                        borderColor: (themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF40' : '#00000030') : `${theme.palette[0]}50`,
-                                        backgroundColor: (themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF10' : '#00000008') : `${theme.palette[0]}10`,
-                                        color: theme.textColor
-                                    }}
-                                    title={tListen('increaseTimeTooltip', language)}
-                                    aria-label={tListen('increaseTimeAria', language)}
-                                >
-                                    <i className="fa-solid fa-plus text-xs"></i>
-                                </button>
-                            </div>
-
-                            {/* زر تفعيل أو إلغاء المؤقت */}
-                            {!isSleepTimerActive ? (
-                                <button
-                                    type="button"
-                                    onClick={handleStartCustomTimer}
-                                    className="px-3.5 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer shadow-xs"
-                                    style={{
-                                        backgroundColor: (themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF' : '#000000') : theme.palette[0],
-                                        color: (themeKey === 'deep_black' || isBlackTheme) ? '#000000' : '#FFFFFF'
-                                    }}
-                                >
-                                    {tListen('startTimer', language)}
-                                </button>
-                            ) : (
+                                    <span className="w-2 h-2 rounded-full inline-block animate-ping" style={{ backgroundColor: primaryColor }}></span>
+                                    {sleepTimerMode === 'end_of_surah' ? tListen('atEndOfSurah', language) : `${tListen('remaining', language)} ${formatListenTimerCountdown(sleepTimerRemainingSeconds || 0, language)}`}
+                                </span>
                                 <button
                                     type="button"
                                     onClick={handleCancelSleepTimer}
-                                    className="px-3.5 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer border border-red-500/40 text-red-500 hover:bg-red-500/10"
+                                    className="text-xs px-2 py-0.5 rounded-md hover:bg-red-500/10 text-red-500 transition-colors cursor-pointer font-medium"
+                                    title={tListen('cancelTimer', language)}
                                 >
-                                    {tListen('stopTimer', language)}
+                                    {tListen('cancel', language)}
                                 </button>
-                            )}
-                        </div>
-                    </div>
-                </div>
-
-                <div className="pt-6 pb-2 flex-shrink-0 space-y-3">
-                    <div 
-                        id="listen-options-card"
-                        className="themed-card rounded-2xl p-4 space-y-4 transition-all"
-                        style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
-                    >
-                        {/* خيار تكرار نفس السورة بعد انتهائها */}
-                        <div className="flex items-center justify-between">
-                            <label htmlFor="repeat-surah-toggle" className="font-bold text-sm flex items-center gap-2 cursor-pointer" style={{ color: isBlackTheme ? '#FFFFFF' : theme.textColor }}>
-                                <i className="fa-solid fa-arrow-rotate-right" style={{ color: (themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF' : '#000000') : theme.palette[0] }}></i>
-                                <span>{tListen('repeatSurahToggle', language)}</span>
-                            </label>
-                            <button
-                                id="repeat-surah-toggle"
-                                onClick={handleToggleRepeatSurah}
-                                className="relative w-12 h-7 rounded-full transition-colors cursor-pointer"
-                                style={{ 
-                                    backgroundColor: isRepeatSurah 
-                                        ? (isBlackTheme ? '#FFFFFF' : (themeKey === 'default' ? '#000000' : theme.palette[0])) 
-                                        : (isBlackTheme ? '#222222' : (theme.cardBorder || '#d1d5db')),
-                                    border: isBlackTheme ? '1.5px solid #FFFFFF' : 'none'
-                                }}
-                                aria-checked={isRepeatSurah}
-                                role="switch"
-                            >
-                                <span 
-                                    className={`absolute top-1 w-5 h-5 rounded-full shadow-md transition-all duration-300 ease-in-out ${isRepeatSurah ? 'left-6' : 'left-1'}`}
-                                    style={{
-                                        backgroundColor: isBlackTheme 
-                                            ? (isRepeatSurah ? '#000000' : '#FFFFFF') 
-                                            : '#FFFFFF'
-                                    }}
-                                ></span>
-                            </button>
-                        </div>
-
-                        <div className="h-px w-full bg-gray-200 dark:bg-gray-700 opacity-30"></div>
-
-                        {/* خيار تشغيل متواصل */}
-                        <div className="flex items-center justify-between">
-                            <label htmlFor="continuous-play-toggle" className="font-bold text-sm flex items-center gap-2 cursor-pointer" style={{ color: isBlackTheme ? '#FFFFFF' : theme.textColor }}>
-                                <i className="fa-solid fa-repeat" style={{ color: (themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF' : '#000000') : theme.palette[0] }}></i>
-                                <span>{tListen('continuousPlayToggle', language)}</span>
-                            </label>
-                            <button
-                                id="continuous-play-toggle"
-                                onClick={handleToggleContinuousPlay}
-                                className="relative w-12 h-7 rounded-full transition-colors cursor-pointer"
-                                style={{ 
-                                    backgroundColor: isContinuousPlay 
-                                        ? (isBlackTheme ? '#FFFFFF' : (themeKey === 'default' ? '#000000' : theme.palette[0])) 
-                                        : (isBlackTheme ? '#222222' : (theme.cardBorder || '#d1d5db')),
-                                    border: isBlackTheme ? '1.5px solid #FFFFFF' : 'none'
-                                }}
-                                aria-checked={isContinuousPlay}
-                                role="switch"
-                            >
-                                <span 
-                                    className={`absolute top-1 w-5 h-5 rounded-full shadow-md transition-all duration-300 ease-in-out ${isContinuousPlay ? 'left-6' : 'left-1'}`}
-                                    style={{
-                                        backgroundColor: isBlackTheme 
-                                            ? (isContinuousPlay ? '#000000' : '#FFFFFF') 
-                                            : '#FFFFFF'
-                                    }}
-                                ></span>
-                            </button>
-                        </div>
-
-                        <div className="h-px w-full bg-gray-200 dark:bg-gray-700 opacity-30"></div>
-
-                        <button 
-                            id="btn-listen-download"
-                            onClick={() => setShowDownloadModal(true)} 
-                            className="w-full flex justify-between items-center group cursor-pointer"
-                        >
-                            <div className="flex items-center gap-2">
-                                <i className="fa-solid fa-download" style={{ color: (themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF' : '#000000') : theme.palette[0] }}></i>
-                                <span className="font-bold text-sm">{tListen('downloadMushaf', language)}</span>
-                            </div>
-                            <i className={`fa-solid ${isRTL ? 'fa-chevron-left' : 'fa-chevron-right'} opacity-30 group-hover:opacity-100 transition-opacity`}></i>
-                        </button>
-                    </div>
-                </div>
-
-                {/* قسم المفضلات المحفوظة (حتى 10 سور وقراء) */}
-                <div className="pt-2 pb-2 flex-shrink-0 space-y-3">
-                    <div 
-                        id="listen-favorites-card"
-                        className="themed-card rounded-2xl p-4 space-y-3 transition-all"
-                        style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
-                    >
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <i className="fa-solid fa-heart text-red-500 text-sm"></i>
-                                <span className="font-bold text-sm" style={{ color: theme.textColor }}>
-                                    {tListen('savedFavorites', language)}
-                                </span>
-                            </div>
-                            <span 
-                                className="text-xs px-2.5 py-0.5 rounded-full font-bold shadow-xs"
-                                style={{ 
-                                    backgroundColor: (themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF20' : '#00000015') : `${theme.palette[0]}20`,
-                                    color: (themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF' : '#000000') : theme.palette[0]
-                                }}
-                            >
-                                {formatListenNumber(favorites.length, language)} / {formatListenNumber(10, language)}
-                            </span>
-                        </div>
-
-                        {favorites.length === 0 ? (
-                            <div className="text-center py-5 px-3 opacity-60">
-                                <i className="fa-regular fa-heart text-3xl mb-2.5 block opacity-40"></i>
-                                <p 
-                                    className="text-xs leading-relaxed font-medium"
-                                    dangerouslySetInnerHTML={{ __html: tListen('noFavoritesDesc', language) }}
-                                />
                             </div>
                         ) : (
-                            <div className="space-y-2">
-                                {favorites.map((fav) => {
-                                    const isSelected = fav.reciterId === reciterId && fav.surahNumber === surahNumber;
-                                    return (
-                                        <div
-                                            key={fav.id}
-                                            onClick={() => handleSelectFavorite(fav)}
-                                            className={`p-2.5 rounded-xl border flex items-center justify-between cursor-pointer transition-all active:scale-[0.99] ${isSelected ? 'shadow-xs' : 'hover:opacity-90'}`}
-                                            style={{
-                                                backgroundColor: isSelected 
-                                                    ? ((themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF15' : '#0000000c') : `${theme.palette[0]}15`)
-                                                    : 'transparent',
-                                                borderColor: isSelected 
-                                                    ? ((themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF' : '#000000') : theme.palette[0])
-                                                    : 'rgba(150, 150, 150, 0.2)',
-                                                borderWidth: isSelected ? '1.5px' : '1px'
-                                            }}
-                                            title={tListen('tapToListen', language)}
-                                        >
-                                            <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                                                <div 
-                                                    className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 font-bold text-xs"
-                                                    style={{
-                                                        backgroundColor: (themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF20' : '#00000010') : `${theme.palette[0]}20`,
-                                                        color: (themeKey === 'default' || isBlackTheme) ? (isBlackTheme ? '#FFFFFF' : '#000000') : theme.palette[0]
-                                                    }}
-                                                >
-                                                    {formatListenNumber(fav.surahNumber, language)}
-                                                </div>
-                                                <div className={`truncate ${isRTL ? 'text-right' : 'text-left'}`}>
-                                                    <div className="text-xs font-bold truncate" style={{ color: theme.textColor }}>
-                                                        {tListen('surahPrefix', language)} {getSurahDisplayName(fav.surahNumber, fav.surahName, language)}
-                                                    </div>
-                                                    <div className="text-[11px] opacity-65 truncate font-medium">
-                                                        {tListen('reciterPrefix', language)} {getReciterDisplayName(fav.reciterId, fav.reciterName, language)}
-                                                    </div>
-                                                </div>
-                                            </div>
+                            <span className={`text-xs font-medium ${isBlackTheme ? 'text-zinc-500' : 'text-slate-400'}`}>
+                                {tListen('timerOff', language)}
+                            </span>
+                        )}
+                    </div>
 
-                                            <div className={`flex items-center gap-1.5 shrink-0 ${isRTL ? 'mr-2' : 'ml-2'}`}>
-                                                {isSelected && (
-                                                    <span className="text-[10px] px-2 py-0.5 rounded-md font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
-                                                        {isPlaying ? tListen('playing', language) : tListen('selected', language)}
-                                                    </span>
-                                                )}
-                                                <button
-                                                    type="button"
-                                                    onClick={(e) => handleRemoveFavorite(fav.id, e)}
-                                                    className="w-8 h-8 rounded-full flex items-center justify-center opacity-50 hover:opacity-100 hover:text-red-500 transition-all cursor-pointer"
-                                                    title={tListen('deleteFromFavorites', language)}
-                                                    aria-label={tListen('delete', language)}
-                                                >
-                                                    <i className="fa-regular fa-trash-can text-xs"></i>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
+                    {/* خيارات التحديد السريع على شكل رقاقات (Chips/Tags) بدون حدود سوداء */}
+                    <div className="grid grid-cols-4 gap-2 text-xs">
+                        {[
+                            { mode: '15', label: tListen('preset15', language), onClick: () => handleSetPresetTimer(15) },
+                            { mode: '30', label: tListen('preset30', language), onClick: () => handleSetPresetTimer(30) },
+                            { mode: '60', label: tListen('preset60', language), onClick: () => handleSetPresetTimer(60) },
+                            { mode: 'end_of_surah', label: tListen('endOfSurah', language), onClick: handleSetEndOfSurahTimer }
+                        ].map(chip => {
+                            const isActive = isSleepTimerActive && sleepTimerMode === chip.mode;
+                            return (
+                                <button
+                                    key={chip.mode}
+                                    type="button"
+                                    onClick={chip.onClick}
+                                    className={`py-2.5 px-1.5 rounded-xl font-bold text-xs transition-all duration-200 cursor-pointer flex items-center justify-center text-center ${
+                                        isActive 
+                                            ? 'shadow-sm scale-[1.02]' 
+                                            : (isBlackTheme 
+                                                ? 'bg-white/[0.06] hover:bg-white/[0.1] text-zinc-300' 
+                                                : 'bg-slate-100 hover:bg-slate-200/70 text-slate-600')
+                                    }`}
+                                    style={isActive ? {
+                                        backgroundColor: primaryColor,
+                                        color: isBlackTheme ? '#000000' : '#FFFFFF',
+                                        boxShadow: `0 4px 14px -2px ${primaryColor}50`
+                                    } : undefined}
+                                >
+                                    <span className="truncate">{chip.label}</span>
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    {/* صف أزرار زيادة ونقصان الوقت (+) و (-) مع زر بدء المؤقت الملون بلون الثيم */}
+                    <div className="pt-2 flex items-center justify-between gap-3 border-t border-slate-100 dark:border-white/5">
+                        <div className="flex items-center gap-2">
+                            {/* زر إنقاص الوقت (-) */}
+                            <button
+                                type="button"
+                                onClick={handleDecrementTimer}
+                                disabled={isSleepTimerActive && sleepTimerMode === 'end_of_surah'}
+                                className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-base transition-all duration-150 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer ${
+                                    isBlackTheme ? 'bg-white/10 hover:bg-white/15 text-white' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                                }`}
+                                title={tListen('decreaseTimeTooltip', language)}
+                                aria-label={tListen('decreaseTimeAria', language)}
+                            >
+                                <Minus className="w-4 h-4" />
+                            </button>
+
+                            {/* عرض الوقت الحالي المحدد أو المتبقي */}
+                            <div 
+                                className={`px-3 py-1.5 rounded-xl text-center font-bold text-sm min-w-[95px] tabular-nums ${
+                                    isBlackTheme ? 'bg-white/[0.06] text-white' : 'bg-slate-50 text-slate-800'
+                                }`}
+                            >
+                                {isSleepTimerActive && sleepTimerRemainingSeconds !== null ? (
+                                    <span>{formatListenTimerCountdown(sleepTimerRemainingSeconds, language)}</span>
+                                ) : (
+                                    <span>{formatListenNumber(customTimerMinutes, language)} {tListen('minShort', language)}</span>
+                                )}
                             </div>
+
+                            {/* زر زيادة الوقت (+) */}
+                            <button
+                                type="button"
+                                onClick={handleIncrementTimer}
+                                disabled={isSleepTimerActive && sleepTimerMode === 'end_of_surah'}
+                                className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-base transition-all duration-150 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer ${
+                                    isBlackTheme ? 'bg-white/10 hover:bg-white/15 text-white' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                                }`}
+                                title={tListen('increaseTimeTooltip', language)}
+                                aria-label={tListen('increaseTimeAria', language)}
+                            >
+                                <Plus className="w-4 h-4" />
+                            </button>
+                        </div>
+
+                        {/* زر تفعيل أو إلغاء المؤقت: يستخدم لون الثيم الأساسي */}
+                        {!isSleepTimerActive ? (
+                            <button
+                                type="button"
+                                onClick={handleStartCustomTimer}
+                                className="px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 active:scale-95 cursor-pointer shadow-sm hover:shadow-md"
+                                style={{
+                                    backgroundColor: primaryColor,
+                                    color: isBlackTheme ? '#000000' : '#FFFFFF',
+                                    boxShadow: `0 4px 12px -2px ${primaryColor}40`
+                                }}
+                            >
+                                {tListen('startTimer', language)}
+                            </button>
+                        ) : (
+                            <button
+                                type="button"
+                                onClick={handleCancelSleepTimer}
+                                className="px-4 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer border border-red-500/30 text-red-500 hover:bg-red-500/10"
+                            >
+                                {tListen('stopTimer', language)}
+                            </button>
                         )}
                     </div>
                 </div>
 
-                {/* ملاحظة الصفحة في آخر الصفحة بعد بطاقة المفضلة */}
-                <p className="text-xs text-center mt-3 mb-1 px-3" style={{ color: isBlackTheme ? '#FFFFFF' : theme.textColor, opacity: 0.65 }}>
+                {/* 4. بطاقة خيارات التشغيل (Options Card) بدون إطارات سوداء */}
+                <div 
+                    id="listen-options-card"
+                    className={`w-full rounded-2xl p-4 sm:p-5 space-y-4 flex-shrink-0 transition-all duration-300 ${
+                        isBlackTheme 
+                            ? 'bg-[#18181b] border border-white/10 text-white shadow-[0_8px_30px_-4px_rgba(0,0,0,0.7)]' 
+                            : 'bg-white text-slate-800 shadow-[0_4px_20px_-2px_rgba(0,0,0,0.05),0_2px_6px_-1px_rgba(0,0,0,0.02)]'
+                    }`}
+                    style={{ borderRadius: '16px' }}
+                >
+                    {/* خيار تكرار نفس السورة بعد انتهائها */}
+                    <div className="flex items-center justify-between">
+                        <label htmlFor="repeat-surah-toggle" className="font-bold text-sm flex items-center gap-2.5 cursor-pointer">
+                            <div 
+                                className="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
+                                style={{ 
+                                    backgroundColor: isBlackTheme ? 'rgba(255,255,255,0.08)' : `${primaryColor}14`, 
+                                    color: primaryColor 
+                                }}
+                            >
+                                <RotateCw className="w-3.5 h-3.5" />
+                            </div>
+                            <span>{tListen('repeatSurahToggle', language)}</span>
+                        </label>
+                        <button
+                            id="repeat-surah-toggle"
+                            onClick={handleToggleRepeatSurah}
+                            className="relative w-12 h-7 rounded-full transition-colors cursor-pointer"
+                            style={{ 
+                                backgroundColor: isRepeatSurah 
+                                    ? primaryColor 
+                                    : (isBlackTheme ? '#27272a' : '#E2E8F0')
+                            }}
+                            aria-checked={isRepeatSurah}
+                            role="switch"
+                        >
+                            <span 
+                                className={`absolute top-1 w-5 h-5 rounded-full shadow-md transition-all duration-300 ease-in-out ${isRepeatSurah ? (isRTL ? 'right-6' : 'left-6') : (isRTL ? 'right-1' : 'left-1')}`}
+                                style={{
+                                    backgroundColor: isBlackTheme && isRepeatSurah ? '#000000' : '#FFFFFF'
+                                }}
+                            ></span>
+                        </button>
+                    </div>
+
+                    <div className="h-px w-full bg-slate-100 dark:bg-white/5"></div>
+
+                    {/* خيار تشغيل متواصل */}
+                    <div className="flex items-center justify-between">
+                        <label htmlFor="continuous-play-toggle" className="font-bold text-sm flex items-center gap-2.5 cursor-pointer">
+                            <div 
+                                className="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
+                                style={{ 
+                                    backgroundColor: isBlackTheme ? 'rgba(255,255,255,0.08)' : `${primaryColor}14`, 
+                                    color: primaryColor 
+                                }}
+                            >
+                                <Repeat className="w-3.5 h-3.5" />
+                            </div>
+                            <span>{tListen('continuousPlayToggle', language)}</span>
+                        </label>
+                        <button
+                            id="continuous-play-toggle"
+                            onClick={handleToggleContinuousPlay}
+                            className="relative w-12 h-7 rounded-full transition-colors cursor-pointer"
+                            style={{ 
+                                backgroundColor: isContinuousPlay 
+                                    ? primaryColor 
+                                    : (isBlackTheme ? '#27272a' : '#E2E8F0')
+                            }}
+                            aria-checked={isContinuousPlay}
+                            role="switch"
+                        >
+                            <span 
+                                className={`absolute top-1 w-5 h-5 rounded-full shadow-md transition-all duration-300 ease-in-out ${isContinuousPlay ? (isRTL ? 'right-6' : 'left-6') : (isRTL ? 'right-1' : 'left-1')}`}
+                                style={{
+                                    backgroundColor: isBlackTheme && isContinuousPlay ? '#000000' : '#FFFFFF'
+                                }}
+                            ></span>
+                        </button>
+                    </div>
+
+                    <div className="h-px w-full bg-slate-100 dark:bg-white/5"></div>
+
+                    {/* زر تحميل السور */}
+                    <button 
+                        id="btn-listen-download"
+                        onClick={() => setShowDownloadModal(true)} 
+                        className="w-full flex justify-between items-center group cursor-pointer pt-0.5"
+                    >
+                        <div className="flex items-center gap-2.5">
+                            <div 
+                                className="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
+                                style={{ 
+                                    backgroundColor: isBlackTheme ? 'rgba(255,255,255,0.08)' : `${primaryColor}14`, 
+                                    color: primaryColor 
+                                }}
+                            >
+                                <Download className="w-3.5 h-3.5" />
+                            </div>
+                            <span className="font-bold text-sm">{tListen('downloadMushaf', language)}</span>
+                        </div>
+                        <div className="text-slate-400 group-hover:text-slate-600 dark:group-hover:text-white transition-colors">
+                            {isRTL ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                        </div>
+                    </button>
+                </div>
+
+                {/* 5. قسم المفضلات المحفوظة (Favorites Card) بتصميم بطاقات نقية */}
+                <div 
+                    id="listen-favorites-card"
+                    className={`w-full rounded-2xl p-4 sm:p-5 space-y-3.5 flex-shrink-0 transition-all duration-300 ${
+                        isBlackTheme 
+                            ? 'bg-[#18181b] border border-white/10 text-white shadow-[0_8px_30px_-4px_rgba(0,0,0,0.7)]' 
+                            : 'bg-white text-slate-800 shadow-[0_4px_20px_-2px_rgba(0,0,0,0.05),0_2px_6px_-1px_rgba(0,0,0,0.02)]'
+                    }`}
+                    style={{ borderRadius: '16px' }}
+                >
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                            <div 
+                                className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-red-500/10 text-red-500"
+                            >
+                                <Heart className="w-4 h-4 fill-red-500" />
+                            </div>
+                            <span className="font-bold text-sm sm:text-base">
+                                {tListen('savedFavorites', language)}
+                            </span>
+                        </div>
+                        <span 
+                            className="text-xs px-2.5 py-1 rounded-full font-bold"
+                            style={{ 
+                                backgroundColor: isBlackTheme ? 'rgba(255,255,255,0.1)' : `${primaryColor}15`,
+                                color: primaryColor
+                            }}
+                        >
+                            {formatListenNumber(favorites.length, language)} / {formatListenNumber(10, language)}
+                        </span>
+                    </div>
+
+                    {favorites.length === 0 ? (
+                        <div className={`text-center py-6 px-3 ${isBlackTheme ? 'text-zinc-500' : 'text-slate-400'}`}>
+                            <Heart className="w-8 h-8 mx-auto mb-2 opacity-30 stroke-1" />
+                            <p 
+                                className="text-xs leading-relaxed font-medium"
+                                dangerouslySetInnerHTML={{ __html: tListen('noFavoritesDesc', language) }}
+                            />
+                        </div>
+                    ) : (
+                        <div className="space-y-2">
+                            {favorites.map((fav) => {
+                                const isSelected = fav.reciterId === reciterId && fav.surahNumber === surahNumber;
+                                return (
+                                    <div
+                                        key={fav.id}
+                                        onClick={() => handleSelectFavorite(fav)}
+                                        className={`p-3 rounded-xl flex items-center justify-between cursor-pointer transition-all duration-200 active:scale-[0.99] ${
+                                            isSelected 
+                                                ? 'shadow-xs' 
+                                                : (isBlackTheme 
+                                                    ? 'bg-white/[0.04] hover:bg-white/[0.08]' 
+                                                    : 'bg-slate-50 hover:bg-slate-100/80')
+                                        }`}
+                                        style={isSelected ? {
+                                            backgroundColor: isBlackTheme ? 'rgba(255,255,255,0.12)' : `${primaryColor}12`,
+                                            outline: `1.5px solid ${primaryColor}40`
+                                        } : undefined}
+                                        title={tListen('tapToListen', language)}
+                                    >
+                                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                                            <div 
+                                                className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 font-bold text-xs"
+                                                style={{
+                                                    backgroundColor: isBlackTheme ? 'rgba(255,255,255,0.12)' : `${primaryColor}15`,
+                                                    color: primaryColor
+                                                }}
+                                            >
+                                                {formatListenNumber(fav.surahNumber, language)}
+                                            </div>
+                                            <div className={`truncate ${isRTL ? 'text-right' : 'text-left'}`}>
+                                                <div className="text-xs sm:text-sm font-bold truncate">
+                                                    {tListen('surahPrefix', language)} {getSurahDisplayName(fav.surahNumber, fav.surahName, language)}
+                                                </div>
+                                                <div className={`text-[11px] truncate font-medium mt-0.5 ${isBlackTheme ? 'text-zinc-400' : 'text-slate-500'}`}>
+                                                    {tListen('reciterPrefix', language)} {getReciterDisplayName(fav.reciterId, fav.reciterName, language)}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className={`flex items-center gap-1.5 shrink-0 ${isRTL ? 'mr-2' : 'ml-2'}`}>
+                                            {isSelected && (
+                                                <span 
+                                                    className="text-[10px] px-2 py-0.5 rounded-full font-bold"
+                                                    style={{ 
+                                                        backgroundColor: isBlackTheme ? '#FFFFFF' : primaryColor, 
+                                                        color: isBlackTheme ? '#000000' : '#FFFFFF' 
+                                                    }}
+                                                >
+                                                    {isPlaying ? tListen('playing', language) : tListen('selected', language)}
+                                                </span>
+                                            )}
+                                            <button
+                                                type="button"
+                                                onClick={(e) => handleRemoveFavorite(fav.id, e)}
+                                                className="w-8 h-8 rounded-full flex items-center justify-center opacity-40 hover:opacity-100 hover:text-red-500 transition-all cursor-pointer"
+                                                title={tListen('deleteFromFavorites', language)}
+                                                aria-label={tListen('delete', language)}
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+
+                {/* ملاحظة الاتصال بالإنترنت */}
+                <p className={`text-xs text-center mt-2 mb-2 px-3 leading-relaxed ${isBlackTheme ? 'text-zinc-500' : 'text-slate-400'}`}>
                     {tListen('internetNote', language)}
                 </p>
 
-                <div className="w-full h-6 shrink-0"></div>
+                <div className="w-full h-8 shrink-0"></div>
             </main>
 
             {showReciterModal && (
@@ -1239,6 +1427,7 @@ function ListenQuran({ onBack, onOpenThemes, onNavigate }) {
                     currentReader={reciterId}
                     onSelect={(id) => setReciterId(id)}
                     readersList={RECITERS}
+                    hideHeader={true}
                 />
             )}
             {showSurahModal && (

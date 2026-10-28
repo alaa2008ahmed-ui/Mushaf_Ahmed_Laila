@@ -261,18 +261,18 @@ const SurahJuzModal: React.FC<SurahJuzModalProps> = ({
         return (
             <div className="flex flex-1 overflow-hidden themed-card-bg relative" dir={isRTL ? "rtl" : "ltr"}>
                 {/* Juz Column */}
-                <div className={`flex-[0.5] flex flex-col ${isRTL ? 'border-l' : 'border-r'} theme-card-border`}>
-                    <div className="p-2 text-center text-xs font-bold opacity-60 border-b theme-card-border">
+                <div className="flex-[0.5] flex flex-col border-0">
+                    <div className="p-2 text-center text-xs font-bold opacity-70 border-0">
                         {isEn ? "Juz" : "الجزء"}
                     </div>
-                    <div className="flex-1 overflow-y-auto p-1 space-y-1 min-h-0 overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
+                    <div className="flex-1 overflow-y-auto p-1.5 space-y-1.5 min-h-0 overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
                         {Array.from({ length: 30 }, (_, i) => i + 1).map(j => (
                             <button
                                 key={j}
                                 id={j === 1 ? 'juz-item-1' : undefined}
                                 ref={el => { juzRefs.current[j] = el; }}
                                 onClick={() => handleJuzClick(j)}
-                                className={`w-full p-2 rounded text-sm font-bold transition ${j === 1 ? 'surah-juz-first-row-item' : ''} ${selectedJuz === j ? 'theme-accent-btn shadow-md' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}
+                                className={`w-full p-2.5 rounded-xl text-sm font-bold transition border-0 ${j === 1 ? 'surah-juz-first-row-item' : ''} ${selectedJuz === j ? 'theme-accent-btn quran-raised-btn-selected shadow-md' : 'quran-raised-btn'}`}
                             >
                                 {isEn ? j : toArabic(j)}
                             </button>
@@ -281,11 +281,11 @@ const SurahJuzModal: React.FC<SurahJuzModalProps> = ({
                 </div>
 
                 {/* Surah Column */}
-                <div className={`flex-[2] flex flex-col ${isRTL ? 'border-l' : 'border-r'} theme-card-border`}>
-                    <div className="p-2 text-center text-xs font-bold opacity-60 border-b theme-card-border">
+                <div className="flex-[2] flex flex-col border-0">
+                    <div className="p-2 text-center text-xs font-bold opacity-70 border-0">
                         {isEn ? "Surah" : "السورة"}
                     </div>
-                    <div className="flex-1 overflow-y-auto p-1 space-y-1 min-h-0 overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
+                    <div className="flex-1 overflow-y-auto p-1.5 space-y-1.5 min-h-0 overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
                         {filteredSurahs.map((s: any) => {
                             const surahNameAr = s.name.replace('سورة', '').trim();
                             const surahDisplayName = isEn ? (SURAH_NAMES_EN[s.number - 1] || surahNameAr) : surahNameAr;
@@ -299,7 +299,7 @@ const SurahJuzModal: React.FC<SurahJuzModalProps> = ({
                                     onPointerDown={() => handleSurahPointerDown(s.number, surahNameAr)}
                                     onPointerUp={handleSurahPointerUp}
                                     onPointerLeave={handleSurahPointerUp}
-                                    className={`w-full p-2 rounded text-sm font-bold text-center flex justify-center items-center gap-2 transition select-none ${isFirstSurah ? 'surah-juz-first-row-item' : ''} ${selectedSurah === s.number ? 'theme-accent-btn shadow-md' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}
+                                    className={`w-full p-2.5 rounded-xl text-sm font-bold text-center flex justify-center items-center gap-2 transition select-none border-0 ${isFirstSurah ? 'surah-juz-first-row-item' : ''} ${selectedSurah === s.number ? 'theme-accent-btn quran-raised-btn-selected shadow-md' : 'quran-raised-btn'}`}
                                 >
                                     <span className={`text-xs ${selectedSurah === s.number ? 'text-white' : 'opacity-60'}`}>{isEn ? s.number : toArabic(s.number)} -</span>
                                     <span style={{ fontFamily: isEn ? 'inherit' : 'var(--font-amiri)' }}>{surahDisplayName}</span>
@@ -307,7 +307,7 @@ const SurahJuzModal: React.FC<SurahJuzModalProps> = ({
                             );
                         })}
                         {filteredSurahs.length === 0 && (
-                            <div className="text-center py-4 text-xs opacity-50">
+                            <div className="text-center py-4 text-xs opacity-50 font-bold">
                                 {isEn ? "No results found" : "لا توجد نتائج"}
                             </div>
                         )}
@@ -315,18 +315,18 @@ const SurahJuzModal: React.FC<SurahJuzModalProps> = ({
                 </div>
 
                 {/* Ayah Column */}
-                <div className={`flex-[0.5] flex flex-col ${isRTL ? 'border-l' : 'border-r'} theme-card-border`}>
-                    <div className="p-2 text-center text-xs font-bold opacity-60 border-b theme-card-border">
+                <div className="flex-[0.5] flex flex-col border-0">
+                    <div className="p-2 text-center text-xs font-bold opacity-70 border-0">
                         {isEn ? "Ayah" : "الآية"}
                     </div>
-                    <div className="flex-1 overflow-y-auto p-1 space-y-1 min-h-0 overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
+                    <div className="flex-1 overflow-y-auto p-1.5 space-y-1.5 min-h-0 overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
                         {Array.from({ length: ayahsCount }, (_, i) => i + 1).map(a => (
                             <button
                                 key={a}
                                 id={a === 1 ? 'ayah-item-1' : undefined}
                                 ref={el => { ayahRefs.current[a] = el; }}
                                 onClick={() => handleAyahClick(a)}
-                                className={`w-full p-2 rounded text-sm font-bold transition ${a === 1 ? 'surah-juz-first-row-item' : ''} ${selectedAyah === a ? 'theme-accent-btn shadow-md' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}
+                                className={`w-full p-2.5 rounded-xl text-sm font-bold transition border-0 ${a === 1 ? 'surah-juz-first-row-item' : ''} ${selectedAyah === a ? 'theme-accent-btn quran-raised-btn-selected shadow-md' : 'quran-raised-btn'}`}
                             >
                                 {isEn ? a : toArabic(a)}
                             </button>
@@ -335,18 +335,18 @@ const SurahJuzModal: React.FC<SurahJuzModalProps> = ({
                 </div>
 
                 {/* Hizb Quarter Column */}
-                <div className="flex-[1.5] flex flex-col">
-                    <div className="p-2 text-center text-xs font-bold opacity-60 border-b theme-card-border">
+                <div className="flex-[1.5] flex flex-col border-0">
+                    <div className="p-2 text-center text-xs font-bold opacity-70 border-0">
                         {isEn ? "Hizb" : "الحزب"}
                     </div>
-                    <div className="flex-1 overflow-y-auto p-1 space-y-1 min-h-0 overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
+                    <div className="flex-1 overflow-y-auto p-1.5 space-y-1.5 min-h-0 overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
                         {Array.from({ length: 240 }, (_, i) => i + 1).map(hq => (
                             <button
                                 key={hq}
                                 id={hq === 1 ? 'hizb-item-1' : undefined}
                                 ref={el => { hizbRefs.current[hq] = el; }}
                                 onClick={() => handleHizbQuarterClick(hq)}
-                                className={`w-full p-2 rounded text-xs font-bold transition ${hq === 1 ? 'surah-juz-first-row-item' : ''} ${selectedHizbQuarter === hq ? 'theme-accent-btn shadow-md' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}
+                                className={`w-full p-2.5 rounded-xl text-xs font-bold transition border-0 ${hq === 1 ? 'surah-juz-first-row-item' : ''} ${selectedHizbQuarter === hq ? 'theme-accent-btn quran-raised-btn-selected shadow-md' : 'quran-raised-btn'}`}
                             >
                                 {formatHizbQuarter(hq)}
                             </button>
@@ -358,17 +358,18 @@ const SurahJuzModal: React.FC<SurahJuzModalProps> = ({
     }, [selectedJuz, selectedSurah, selectedAyah, selectedHizbQuarter, filteredSurahs, ayahsCount, isEn, isRTL]);
 
     return (
-        <div className={`fixed inset-0 z-[1200] bg-black/20 backdrop-blur-[2px] flex justify-center items-center ${isLandscape ? 'p-0' : 'p-4'} animate-fadeIn`} 
+        <div className={`fixed inset-0 z-[1200] bg-black/25 backdrop-blur-[2px] flex justify-center items-center ${isLandscape ? 'p-0' : 'p-4'} animate-fadeIn`} 
              dir={isRTL ? "rtl" : "ltr"}
              onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
             <div 
-                className={`modal-skinned w-full ${isLandscape ? 'max-w-4xl h-full rounded-none max-h-screen' : 'max-w-4xl rounded-2xl max-h-[90vh]'} shadow-2xl overflow-hidden flex flex-col animate-modal-enter`}
+                className={`modal-skinned w-full ${isLandscape ? 'max-w-4xl h-full rounded-none max-h-screen' : 'max-w-4xl rounded-3xl max-h-[90vh]'} shadow-2xl overflow-hidden flex flex-col border-0 animate-modal-enter`}
+                style={{ border: 'none', outline: 'none' }}
                 onClick={e => e.stopPropagation()}
             >
                 {!isLandscape && (
-                    <div className="p-4 theme-header-bg flex flex-col gap-3" onClick={e => e.stopPropagation()}>
+                    <div className="p-4 theme-header-bg flex flex-col gap-3 border-0" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center gap-2">
-                            <div id="surah-juz-search-box" className="relative flex-1">
+                            <div id="surah-juz-search-box" className="relative flex-1 quran-raised-card rounded-2xl overflow-hidden border-0">
                                 <input
                                     id="surah-juz-search-input"
                                     type="text"
@@ -379,9 +380,9 @@ const SurahJuzModal: React.FC<SurahJuzModalProps> = ({
                                     onFocus={e => e.stopPropagation()}
                                     onMouseDown={e => e.stopPropagation()}
                                     onTouchStart={e => e.stopPropagation()}
-                                    className={`w-full p-2 ${isRTL ? 'pr-10' : 'pl-10'} rounded-xl theme-card-bg border theme-card-border theme-card-text placeholder:opacity-50 text-sm focus:outline-none focus:ring-2 theme-accent-ring transition-all`}
+                                    className={`w-full p-2.5 ${isRTL ? 'pr-10' : 'pl-10'} rounded-2xl theme-card-bg border-0 theme-card-text placeholder:opacity-50 text-sm font-bold focus:outline-none transition-all`}
                                 />
-                                <i className={`fas fa-search absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 text-sm opacity-70`}></i>
+                                <i className={`fas fa-search absolute ${isRTL ? 'right-3.5' : 'left-3.5'} top-1/2 -translate-y-1/2 text-sm opacity-60`}></i>
                             </div>
                             {onOpenGuide && (
                                 <button
@@ -390,10 +391,10 @@ const SurahJuzModal: React.FC<SurahJuzModalProps> = ({
                                         e.stopPropagation();
                                         onOpenGuide();
                                     }}
-                                    className="w-9 h-9 rounded-xl flex items-center justify-center theme-btn-bg theme-card-border border text-sm opacity-80 hover:opacity-100 hover:scale-105 active:scale-95 transition-all shadow-sm cursor-pointer"
+                                    className="w-10 h-10 rounded-2xl flex items-center justify-center theme-btn-bg text-sm quran-raised-btn border-0 active:scale-95 transition-all cursor-pointer"
                                     title={isEn ? "Surah Index Guide" : "إرشاد فهرس السور"}
                                 >
-                                    <i className="fas fa-question-circle text-emerald-500 text-base"></i>
+                                    <i className="fas fa-question-circle text-emerald-500 text-lg quran-3d-icon"></i>
                                 </button>
                             )}
                         </div>
@@ -402,19 +403,18 @@ const SurahJuzModal: React.FC<SurahJuzModalProps> = ({
 
                 {listsContent}
 
-                <div className="p-4 theme-header-bg flex justify-center gap-4">
+                <div className="p-4 theme-header-bg flex justify-center gap-4 border-0">
                     <button 
                         onClick={() => onSelect(selectedSurah, selectedAyah)}
-                        className="theme-accent-btn px-8 py-2 rounded-full font-bold shadow-lg transform active:scale-95 transition"
+                        className="theme-accent-btn px-8 py-2.5 rounded-2xl font-bold border-0 quran-raised-btn-selected active:scale-95 transition"
                     >
                         {isEn ? "View" : "عرض"}
                     </button>
                     <button 
                         onClick={onClose}
-                        className="theme-btn-bg theme-btn-text px-8 py-2 rounded-full font-bold shadow-lg transform active:scale-95 transition border"
+                        className="theme-btn-bg theme-btn-text px-8 py-2.5 rounded-2xl font-bold border-0 quran-raised-btn active:scale-95 transition"
                         style={{ 
                             color: currentTheme?.id === 'black' ? (currentTheme?.btnText || '#000000') : (currentTheme?.btnText || '#000000'),
-                            borderColor: currentTheme?.id === 'black' ? (currentTheme?.cardBorder || '#000000') : (currentTheme?.cardBorder || '#e5e7eb'),
                             backgroundColor: currentTheme?.id === 'black' ? (currentTheme?.btnBg || '#ffffff') : (currentTheme?.btnBg || '#ffffff')
                         }}
                     >

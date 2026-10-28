@@ -24,14 +24,15 @@ export const navItems = [
   { id: 'calculators', title: "الحاسبة الشرعية", icon: CalculatorIcon },
   { id: 'salah-adhkar', title: "أذكار الصلاة", icon: SalahAdhkarIcon },
   { id: 'prayer-times', title: "مواقيت الصلاة", icon: PrayerTimesIcon },
-  { id: 'qibla', title: "القبلة", icon: QiblaIcon },
+  { id: 'qibla', title: "البوصلة", icon: QiblaIcon },
   { id: 'hajj-umrah', title: "الحج والعمرة", icon: HajjIcon },
   { id: 'hisn-muslim', title: "حصن المسلم", icon: HisnMuslimIcon },
   { id: 'listen', title: "الاستماع للقرآن", icon: ListenIcon },
   { id: 'calendar', title: "التقويم", icon: CalendarIcon },
-  { id: 'nawawi', title: 'الأربعون النووية', icon: HisnMuslimIcon },
-  { id: 'tajweed-education', title: 'تعليم التجويد', icon: TajweedIcon },
   { id: 'prophetic-seerah', title: 'السيرة النبوية', icon: HisnMuslimIcon },
-  { id: 'ten-promised', title: 'العشرة المبشرون', icon: HisnMuslimIcon }
+  { id: 'asmaul-husna', title: 'أسماء الله', icon: HisnMuslimIcon },
+  { id: 'nawawi', title: 'الأربعون النووية', icon: HisnMuslimIcon },
+  { id: 'ten-promised', title: 'العشرة المبشرون', icon: HisnMuslimIcon },
+  { id: 'tajweed-education', title: 'تعليم التجويد', icon: TajweedIcon }
 ];
 

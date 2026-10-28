@@ -68,14 +68,19 @@ export const TawafCounterCard: React.FC<TawafCounterCardProps> = ({ theme }) => 
 
   return (
     <div
-      className="w-full mt-2 py-3.5 px-4 sm:px-5 rounded-2xl shadow-lg border-2 relative overflow-hidden flex flex-col gap-3 transition-all duration-300"
+      className={`w-full mt-2 py-3.5 px-4 sm:px-5 relative overflow-hidden flex flex-col gap-3 select-none ${
+        isBlackTheme ? 'bg-[#18181b] text-white tactile-3d-card-dark' : 'bg-white tactile-3d-card-light'
+      }`}
       style={{
-        borderColor: primaryAccent,
-        backgroundColor: cardBg,
         fontFamily: theme?.font
       }}
       dir={dir}
     >
+      {/* 3D Glossy specular sheen */}
+      <div className="absolute inset-x-2 top-0.5 h-[35%] rounded-t-[18px] bg-gradient-to-b from-white/35 via-white/10 to-transparent pointer-events-none" />
+      <div className="absolute inset-x-6 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/85 to-transparent rounded-full pointer-events-none" />
+      <div className="absolute inset-x-4 bottom-0 h-[2px] bg-black/10 rounded-b-[20px] pointer-events-none" />
+
       {/* 1. Header with Mode Tabs, Quick reset and Title */}
       <div className="flex items-center justify-between z-10 w-full relative gap-2">
         <span className="text-sm md:text-base font-bold font-kufi truncate" style={{ color: primaryAccent }}>
@@ -85,31 +90,33 @@ export const TawafCounterCard: React.FC<TawafCounterCardProps> = ({ theme }) => 
         {/* Controls: Tawaf/Sai Toggle + Reset */}
         <div className="flex items-center gap-1.5 shrink-0">
           {/* Tab Selector */}
-          <div className="flex p-0.5 rounded-lg bg-black/5 dark:bg-white/10 border border-black/5 text-[11px] font-bold">
+          <div className="flex p-0.5 rounded-xl bg-black/5 dark:bg-white/10 text-[11px] font-bold shadow-inner">
             <button
               onClick={(e) => handleSwitchTab('tawaf', e)}
-              className={`px-2 py-1 rounded-md transition-all ${
+              className={`px-2.5 py-1 rounded-lg transition-all ${
                 state.activeTab === 'tawaf'
-                  ? (isBlackTheme ? 'bg-white text-black shadow-sm' : 'shadow-sm text-white')
+                  ? (isBlackTheme ? 'bg-white text-black shadow-xs' : 'shadow-xs text-white')
                   : 'opacity-60'
               }`}
               style={{
                 backgroundColor: state.activeTab === 'tawaf' ? (isBlackTheme ? '#FFFFFF' : primaryAccent) : 'transparent',
-                color: state.activeTab === 'tawaf' ? (isBlackTheme ? '#000000' : '#FFFFFF') : 'var(--text-color)'
+                color: state.activeTab === 'tawaf' ? (isBlackTheme ? '#000000' : '#FFFFFF') : 'var(--text-color)',
+                boxShadow: state.activeTab === 'tawaf' ? '0 2px 0 rgba(0,0,0,0.15), inset 0 1px 1px rgba(255,255,255,0.4)' : 'none'
               }}
             >
               {t('tawaf.tab', 'طواف')}
             </button>
             <button
               onClick={(e) => handleSwitchTab('sai', e)}
-              className={`px-2 py-1 rounded-md transition-all ${
+              className={`px-2.5 py-1 rounded-lg transition-all ${
                 state.activeTab === 'sai'
-                  ? (isBlackTheme ? 'bg-white text-black shadow-sm' : 'shadow-sm text-white')
+                  ? (isBlackTheme ? 'bg-white text-black shadow-xs' : 'shadow-xs text-white')
                   : 'opacity-60'
               }`}
               style={{
                 backgroundColor: state.activeTab === 'sai' ? (isBlackTheme ? '#FFFFFF' : primaryAccent) : 'transparent',
-                color: state.activeTab === 'sai' ? (isBlackTheme ? '#000000' : '#FFFFFF') : 'var(--text-color)'
+                color: state.activeTab === 'sai' ? (isBlackTheme ? '#000000' : '#FFFFFF') : 'var(--text-color)',
+                boxShadow: state.activeTab === 'sai' ? '0 2px 0 rgba(0,0,0,0.15), inset 0 1px 1px rgba(255,255,255,0.4)' : 'none'
               }}
             >
               {t('sai.tab', 'سعي')}
@@ -120,7 +127,11 @@ export const TawafCounterCard: React.FC<TawafCounterCardProps> = ({ theme }) => 
           <button
             onClick={handleReset}
             title={t('tawaf.reset_tooltip', 'إعادة ضبط العداد')}
-            className="w-7 h-7 rounded-lg flex items-center justify-center bg-black/5 dark:bg-white/10 hover:bg-black/10 active:scale-90 transition-all text-gray-500 dark:text-gray-300"
+            className="w-8 h-8 rounded-xl flex items-center justify-center transition-all text-gray-600 dark:text-gray-300 active:scale-90"
+            style={{
+              backgroundColor: isBlackTheme ? 'rgba(255,255,255,0.08)' : '#f8fafc',
+              boxShadow: '0 2px 0 rgba(0,0,0,0.12), inset 0 1px 1px rgba(255,255,255,0.7)'
+            }}
           >
             <RotateCcw className="w-3.5 h-3.5" />
           </button>
@@ -164,10 +175,10 @@ export const TawafCounterCard: React.FC<TawafCounterCardProps> = ({ theme }) => 
         <button
           onClick={() => handleIncrement()}
           disabled={isComplete}
-          className={`w-full py-3.5 px-5 rounded-2xl font-bold flex items-center justify-between shadow-md transition-all ${
+          className={`w-full py-3.5 px-5 rounded-2xl font-bold flex items-center justify-between transition-all relative overflow-hidden select-none ${
             isComplete
               ? 'bg-emerald-600 text-white cursor-default'
-              : 'active:scale-[0.98] cursor-pointer'
+              : 'active:scale-[0.98] active:translate-y-0.5 cursor-pointer'
           }`}
           style={{
             backgroundColor: isComplete
@@ -175,9 +186,17 @@ export const TawafCounterCard: React.FC<TawafCounterCardProps> = ({ theme }) => 
               : (isBlackTheme ? '#FFFFFF' : primaryAccent),
             color: isComplete
               ? '#FFFFFF'
-              : (isBlackTheme ? '#000000' : '#FFFFFF')
+              : (isBlackTheme ? '#000000' : '#FFFFFF'),
+            boxShadow: isBlackTheme
+              ? '0 4.5px 0 #222222, 0 8px 16px rgba(0, 0, 0, 0.6), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.3)'
+              : '0 4.5px 0 rgba(0, 0, 0, 0.22), 0 8px 16px rgba(0, 0, 0, 0.15), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.65)',
+            border: 'none',
           }}
         >
+          {/* 3D Glossy specular sheen across top half */}
+          <div className="absolute inset-x-1 top-0.5 h-[45%] rounded-t-[14px] bg-gradient-to-b from-white/35 via-white/12 to-transparent pointer-events-none" />
+          <div className="absolute inset-x-3 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/85 to-transparent rounded-full pointer-events-none" />
+          <div className="absolute inset-x-2 bottom-0 h-[2px] bg-black/15 rounded-b-2xl pointer-events-none" />
           <div className="text-start">
             <span className="block text-base md:text-lg font-bold leading-tight font-kufi">
               {isComplete 

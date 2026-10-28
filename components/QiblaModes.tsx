@@ -18,13 +18,12 @@ L.Icon.Default.mergeOptions({
 const KAABA_LAT = 21.4225;
 const KAABA_LNG = 39.8262;
 
-export const VisualQibla = ({ lat, lng, theme, cardBorderColor }: { lat: number, lng: number, theme: any, cardBorderColor?: string }) => {
+export const VisualQibla = ({ lat, lng, theme }: { lat: number, lng: number, theme: any, cardBorderColor?: string }) => {
     const { language } = useLanguage();
     const isEn = language === 'en';
     const [isOnline, setIsOnline] = useState(navigator.onLine);
-    const isDefaultTheme = theme?.key === 'default' || theme?.name === 'الأصلي';
     const isBlackTheme = theme?.bgColor === '#000000' || theme?.name === 'أبيض وأسود';
-    const effectiveBorder = cardBorderColor || (isDefaultTheme ? '#000000' : (isBlackTheme ? '#FFFFFF' : (theme?.palette?.[0] || '#000000')));
+    const primaryColor = isBlackTheme ? '#FFFFFF' : (theme?.palette?.[0] || theme?.accent || '#2E7D5E');
 
     useEffect(() => {
         const handleOnline = () => setIsOnline(true);
@@ -39,12 +38,12 @@ export const VisualQibla = ({ lat, lng, theme, cardBorderColor }: { lat: number,
 
     if (!isOnline) {
         return (
-            <div className="w-full h-full rounded-2xl flex flex-col items-center justify-center p-6 text-center themed-card" style={{ borderColor: effectiveBorder, borderWidth: '1.5px', borderStyle: 'solid' }}>
-                <i className="fa-solid fa-wifi text-6xl mb-4 opacity-50" style={{ color: theme.palette[0] }}></i>
-                <h3 className="text-xl font-bold mb-2">
+            <div className="w-full h-full rounded-2xl flex flex-col items-center justify-center p-6 text-center bg-white dark:bg-[#1E293B] shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-slate-100 dark:border-white/5">
+                <i className="fa-solid fa-wifi text-6xl mb-4 opacity-50" style={{ color: primaryColor }}></i>
+                <h3 className="text-xl font-bold mb-2 text-slate-800 dark:text-white">
                     {isEn ? 'No Internet Connection' : 'لا يوجد اتصال بالإنترنت'}
                 </h3>
-                <p className="opacity-70 text-sm">
+                <p className="text-slate-500 dark:text-slate-400 text-sm">
                     {isEn 
                         ? 'Visual map requires an active internet connection to load map tiles. Please check your network and try again.' 
                         : 'الخريطة المرئية تتطلب اتصالاً بالإنترنت لتحميل الخرائط. يرجى التحقق من اتصالك والمحاولة مرة أخرى.'}
@@ -54,26 +53,25 @@ export const VisualQibla = ({ lat, lng, theme, cardBorderColor }: { lat: number,
     }
 
     return (
-        <div className="w-full h-full rounded-2xl overflow-hidden shadow-lg relative z-0" style={{ borderColor: effectiveBorder, borderWidth: '2px', borderStyle: 'solid' }}>
+        <div className="w-full h-full rounded-2xl overflow-hidden shadow-[0_4px_20px_-4px_rgba(0,0,0,0.08)] relative z-0 border border-slate-100 dark:border-white/5">
             <MapContainer center={[lat, lng]} zoom={4} style={{ height: '100%', width: '100%' }}>
                 <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                 <Marker position={[lat, lng]} />
                 <Marker position={[KAABA_LAT, KAABA_LNG]} />
-                <Polyline positions={[[lat, lng], [KAABA_LAT, KAABA_LNG]]} color="red" weight={3} dashArray="5, 10" />
+                <Polyline positions={[[lat, lng], [KAABA_LAT, KAABA_LNG]]} color={primaryColor} weight={3} dashArray="5, 10" />
             </MapContainer>
         </div>
     );
 };
 
-export const ARQibla = ({ qiblaDirection, heading, isAligned, theme, cardBorderColor }: any) => {
+export const ARQibla = ({ qiblaDirection, heading, isAligned, theme }: any) => {
     const { language } = useLanguage();
     const isEn = language === 'en';
     const videoRef = useRef<HTMLVideoElement>(null);
     const [error, setError] = useState('');
     const [showCameraPermissionModal, setShowCameraPermissionModal] = useState(false);
-    const isDefaultTheme = theme?.key === 'default' || theme?.name === 'الأصلي';
     const isBlackTheme = theme?.bgColor === '#000000' || theme?.name === 'أبيض وأسود';
-    const effectiveBorder = cardBorderColor || (isDefaultTheme ? '#000000' : (isBlackTheme ? '#FFFFFF' : (theme?.palette?.[0] || '#000000')));
+    const primaryColor = isBlackTheme ? '#FFFFFF' : (theme?.palette?.[0] || theme?.accent || '#2E7D5E');
 
     const startCamera = async () => {
         try {
@@ -125,14 +123,15 @@ export const ARQibla = ({ qiblaDirection, heading, isAligned, theme, cardBorderC
     const rotation = qiblaDirection - heading;
 
     return (
-        <div className="w-full h-full relative rounded-2xl overflow-hidden bg-black flex flex-col items-center justify-center shadow-lg" style={{ borderColor: effectiveBorder, borderWidth: '2px', borderStyle: 'solid' }}>
+        <div className="w-full h-full relative rounded-2xl overflow-hidden bg-black flex flex-col items-center justify-center shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] border border-slate-200/20">
             {error ? (
                 <div className="p-4 text-center space-y-3 z-10">
                     <p className="text-red-400 text-xs sm:text-sm font-bold">{error}</p>
                     <button
                         type="button"
                         onClick={() => setShowCameraPermissionModal(true)}
-                        className="px-4 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold shadow-lg active:scale-95 cursor-pointer hover:bg-emerald-700"
+                        className="px-4 py-2 rounded-xl text-white text-xs font-bold shadow-lg active:scale-95 cursor-pointer transition-all"
+                        style={{ backgroundColor: primaryColor }}
                     >
                         {isEn ? 'Grant Camera Permission' : 'منح إذن الكاميرا الآن'}
                     </button>
@@ -164,7 +163,7 @@ export const ARQibla = ({ qiblaDirection, heading, isAligned, theme, cardBorderC
                         <div className="absolute inset-0 bg-green-500/20 rounded-full animate-pulse"></div>
                     )}
                 </div>
-                <div className="mt-8 bg-black/50 backdrop-blur-md px-6 py-3 rounded-full text-white font-bold text-lg" style={{ borderColor: effectiveBorder, borderWidth: '1.5px', borderStyle: 'solid' }}>
+                <div className="mt-8 bg-black/60 backdrop-blur-md px-6 py-3 rounded-full text-white font-bold text-lg border border-white/20 shadow-lg">
                     {isAligned ? (isEn ? 'Facing Qibla' : 'أنت متجه للقبلة') : (isEn ? 'Point camera towards the Kaaba' : 'وجه الكاميرا نحو الكعبة')}
                 </div>
             </div>
@@ -172,13 +171,12 @@ export const ARQibla = ({ qiblaDirection, heading, isAligned, theme, cardBorderC
     );
 };
 
-export const SunMoonQibla = ({ lat, lng, qiblaDirection, heading, theme, cardBorderColor }: any) => {
+export const SunMoonQibla = ({ lat, lng, qiblaDirection, heading, theme }: any) => {
     const { language } = useLanguage();
     const isEn = language === 'en';
     const [time, setTime] = useState(new Date());
-    const isDefaultTheme = theme?.key === 'default' || theme?.name === 'الأصلي';
     const isBlackTheme = theme?.bgColor === '#000000' || theme?.name === 'أبيض وأسود';
-    const effectiveBorder = cardBorderColor || (isDefaultTheme ? '#000000' : (isBlackTheme ? '#FFFFFF' : (theme?.palette?.[0] || '#000000')));
+    const primaryColor = isBlackTheme ? '#FFFFFF' : (theme?.palette?.[0] || theme?.accent || '#2E7D5E');
 
     useEffect(() => {
         const timer = setInterval(() => setTime(new Date()), 60000);
@@ -195,7 +193,7 @@ export const SunMoonQibla = ({ lat, lng, qiblaDirection, heading, theme, cardBor
     const moonDiff = Math.abs(moonHeading - qiblaDirection);
 
     const CompassDial = ({ targetHeading, targetIcon, targetColor }: any) => (
-        <div className="relative w-64 h-64 rounded-full border-4 flex items-center justify-center mx-auto my-6 shadow-lg" style={{ borderColor: `${theme.palette[0]}50`, backgroundColor: `${theme.palette[0]}0a` }}>
+        <div className="relative w-64 h-64 rounded-full border-2 border-slate-100 dark:border-white/10 flex items-center justify-center mx-auto my-6 shadow-[0_8px_30px_rgb(0,0,0,0.06)] bg-white dark:bg-[#1E293B]">
             {/* Phone heading indicator (fixed at top) */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 -mt-4 w-8 h-8 rounded-full bg-red-500 z-20 shadow-md flex items-center justify-center border-2 border-white dark:border-gray-800">
                 <i className="fa-solid fa-mobile-screen text-white text-sm"></i>
@@ -204,7 +202,7 @@ export const SunMoonQibla = ({ lat, lng, qiblaDirection, heading, theme, cardBor
             {/* Rotating dial */}
             <div className="absolute w-full h-full transition-transform duration-300 ease-out" style={{ transform: `rotate(${-heading}deg)` }}>
                 {/* North marker */}
-                <div className="absolute top-2 left-1/2 -translate-x-1/2 text-sm font-bold opacity-60" style={{ color: theme.palette[0] }}>
+                <div className="absolute top-2 left-1/2 -translate-x-1/2 text-sm font-bold opacity-60" style={{ color: primaryColor }}>
                     {isEn ? 'N' : 'ش'}
                 </div>
                 
@@ -228,15 +226,15 @@ export const SunMoonQibla = ({ lat, lng, qiblaDirection, heading, theme, cardBor
             </div>
             
             {/* Center dot */}
-            <div className="w-4 h-4 rounded-full z-10 border-2 border-white dark:border-gray-800" style={{ backgroundColor: theme.palette[0] }}></div>
+            <div className="w-4 h-4 rounded-full z-10 border-2 border-white dark:border-gray-800" style={{ backgroundColor: primaryColor }}></div>
         </div>
     );
 
     return (
         <div className="w-full shrink-0 flex flex-col gap-6 pb-8" dir={isEn ? 'ltr' : 'rtl'}>
-            <div className="themed-card p-8 rounded-2xl flex flex-col items-center justify-center text-center relative overflow-hidden shadow-md" style={{ borderColor: effectiveBorder, borderWidth: '1.5px', borderStyle: 'solid' }}>
+            <div className="bg-white dark:bg-[#1E293B] p-8 rounded-2xl flex flex-col items-center justify-center text-center relative overflow-hidden shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-slate-100 dark:border-white/5">
                 <div className={`absolute top-4 ${isEn ? 'left-4' : 'right-4'} text-yellow-500 opacity-10`}><i className="fa-solid fa-sun text-6xl"></i></div>
-                <h3 className="text-2xl font-bold mb-4" style={{ color: theme.palette[0] }}>
+                <h3 className="text-2xl font-bold mb-4" style={{ color: primaryColor }}>
                     {isEn ? 'Qibla Direction by Sun' : 'تحديد القبلة عن طريق الشمس'}
                 </h3>
                 
@@ -251,13 +249,13 @@ export const SunMoonQibla = ({ lat, lng, qiblaDirection, heading, theme, cardBor
                 <CompassDial targetHeading={sunHeading} targetIcon="fa-sun" targetColor="#eab308" />
 
                 <div className="w-full space-y-2 mb-4">
-                    <div className="flex justify-between items-center p-3 rounded-lg themed-bg-alt" style={{ borderColor: effectiveBorder, borderWidth: '1px', borderStyle: 'solid' }}>
-                        <span className="text-sm font-bold">{isEn ? 'Sun Direction:' : 'اتجاه الشمس:'}</span>
-                        <span className="font-mono text-lg">{Math.round(sunHeading)}°</span>
+                    <div className="flex justify-between items-center p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-white/5">
+                        <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{isEn ? 'Sun Direction:' : 'اتجاه الشمس:'}</span>
+                        <span className="font-mono text-lg font-bold text-slate-900 dark:text-white">{Math.round(sunHeading)}°</span>
                     </div>
-                    <div className="flex justify-between items-center p-3 rounded-lg themed-bg-alt" style={{ borderColor: effectiveBorder, borderWidth: '1px', borderStyle: 'solid' }}>
-                        <span className="text-sm font-bold">{isEn ? 'Qibla Direction:' : 'اتجاه القبلة:'}</span>
-                        <span className="font-mono text-lg">{Math.round(qiblaDirection)}°</span>
+                    <div className="flex justify-between items-center p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-white/5">
+                        <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{isEn ? 'Qibla Direction:' : 'اتجاه القبلة:'}</span>
+                        <span className="font-mono text-lg font-bold" style={{ color: primaryColor }}>{Math.round(qiblaDirection)}°</span>
                     </div>
                 </div>
 
@@ -270,9 +268,9 @@ export const SunMoonQibla = ({ lat, lng, qiblaDirection, heading, theme, cardBor
                 </div>
             </div>
 
-            <div className="themed-card p-8 rounded-2xl flex flex-col items-center justify-center text-center relative overflow-hidden shadow-md" style={{ borderColor: effectiveBorder, borderWidth: '1.5px', borderStyle: 'solid' }}>
+            <div className="bg-white dark:bg-[#1E293B] p-8 rounded-2xl flex flex-col items-center justify-center text-center relative overflow-hidden shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-slate-100 dark:border-white/5">
                 <div className={`absolute top-4 ${isEn ? 'left-4' : 'right-4'} text-blue-400 opacity-10`}><i className="fa-solid fa-moon text-6xl"></i></div>
-                <h3 className="text-2xl font-bold mb-4" style={{ color: theme.palette[0] }}>
+                <h3 className="text-2xl font-bold mb-4" style={{ color: primaryColor }}>
                     {isEn ? 'Qibla Direction by Moon' : 'تحديد القبلة عن طريق القمر'}
                 </h3>
                 
@@ -287,13 +285,13 @@ export const SunMoonQibla = ({ lat, lng, qiblaDirection, heading, theme, cardBor
                 <CompassDial targetHeading={moonHeading} targetIcon="fa-moon" targetColor="#60a5fa" />
 
                 <div className="w-full space-y-2 mb-4">
-                    <div className="flex justify-between items-center p-3 rounded-lg themed-bg-alt" style={{ borderColor: effectiveBorder, borderWidth: '1px', borderStyle: 'solid' }}>
-                        <span className="text-sm font-bold">{isEn ? 'Moon Direction:' : 'اتجاه القمر:'}</span>
-                        <span className="font-mono text-lg">{Math.round(moonHeading)}°</span>
+                    <div className="flex justify-between items-center p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-white/5">
+                        <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{isEn ? 'Moon Direction:' : 'اتجاه القمر:'}</span>
+                        <span className="font-mono text-lg font-bold text-slate-900 dark:text-white">{Math.round(moonHeading)}°</span>
                     </div>
-                    <div className="flex justify-between items-center p-3 rounded-lg themed-bg-alt" style={{ borderColor: effectiveBorder, borderWidth: '1px', borderStyle: 'solid' }}>
-                        <span className="text-sm font-bold">{isEn ? 'Qibla Direction:' : 'اتجاه القبلة:'}</span>
-                        <span className="font-mono text-lg">{Math.round(qiblaDirection)}°</span>
+                    <div className="flex justify-between items-center p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-white/5">
+                        <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{isEn ? 'Qibla Direction:' : 'اتجاه القبلة:'}</span>
+                        <span className="font-mono text-lg font-bold" style={{ color: primaryColor }}>{Math.round(qiblaDirection)}°</span>
                     </div>
                 </div>
 
@@ -309,13 +307,12 @@ export const SunMoonQibla = ({ lat, lng, qiblaDirection, heading, theme, cardBor
     );
 };
 
-export const ShadowQibla = ({ lat, lng, qiblaDirection, heading, theme, cardBorderColor }: any) => {
+export const ShadowQibla = ({ lat, lng, qiblaDirection, heading, theme }: any) => {
     const { language } = useLanguage();
     const isEn = language === 'en';
     const [time, setTime] = useState(new Date());
-    const isDefaultTheme = theme?.key === 'default' || theme?.name === 'الأصلي';
     const isBlackTheme = theme?.bgColor === '#000000' || theme?.name === 'أبيض وأسود';
-    const effectiveBorder = cardBorderColor || (isDefaultTheme ? '#000000' : (isBlackTheme ? '#FFFFFF' : (theme?.palette?.[0] || '#000000')));
+    const primaryColor = isBlackTheme ? '#FFFFFF' : (theme?.palette?.[0] || theme?.accent || '#2E7D5E');
 
     useEffect(() => {
         const timer = setInterval(() => setTime(new Date()), 60000);
@@ -328,13 +325,13 @@ export const ShadowQibla = ({ lat, lng, qiblaDirection, heading, theme, cardBord
     const shadowDiff = Math.abs(shadowHeading - qiblaDirection);
 
     return (
-        <div className="w-full shrink-0 flex flex-col items-center justify-start themed-card p-8 rounded-2xl text-center relative overflow-hidden shadow-md mb-8" style={{ borderColor: effectiveBorder, borderWidth: '1.5px', borderStyle: 'solid' }} dir={isEn ? 'ltr' : 'rtl'}>
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-5">
+        <div className="w-full shrink-0 flex flex-col items-center justify-start bg-white dark:bg-[#1E293B] p-8 rounded-2xl text-center relative overflow-hidden shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-slate-100 dark:border-white/5 mb-8" dir={isEn ? 'ltr' : 'rtl'}>
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-5 pointer-events-none">
                 <i className="fa-solid fa-person-rays text-[15rem]"></i>
             </div>
             
             <div className="z-10 flex flex-col items-center w-full">
-                <h3 className="text-2xl font-bold mb-4" style={{ color: theme.palette[0] }}>
+                <h3 className="text-2xl font-bold mb-4" style={{ color: primaryColor }}>
                     {isEn ? 'Qibla Direction by Shadow' : 'تحديد القبلة عن طريق الظل'}
                 </h3>
                 
@@ -346,7 +343,7 @@ export const ShadowQibla = ({ lat, lng, qiblaDirection, heading, theme, cardBord
                     </p>
                 </div>
 
-                <div className="relative w-64 h-64 rounded-full border-4 flex items-center justify-center mx-auto my-6 shadow-lg" style={{ borderColor: `${theme.palette[0]}50`, backgroundColor: `${theme.palette[0]}0a` }}>
+                <div className="relative w-64 h-64 rounded-full border-2 border-slate-100 dark:border-white/10 flex items-center justify-center mx-auto my-6 shadow-[0_8px_30px_rgb(0,0,0,0.06)] bg-white dark:bg-[#1E293B]">
                     {/* Phone heading indicator */}
                     <div className="absolute top-0 left-1/2 -translate-x-1/2 -mt-4 w-8 h-8 rounded-full bg-red-500 z-20 shadow-md flex items-center justify-center border-2 border-white dark:border-gray-800">
                         <i className="fa-solid fa-mobile-screen text-white text-sm"></i>
@@ -355,7 +352,7 @@ export const ShadowQibla = ({ lat, lng, qiblaDirection, heading, theme, cardBord
                     {/* Rotating dial */}
                     <div className="absolute w-full h-full transition-transform duration-300 ease-out" style={{ transform: `rotate(${-heading}deg)` }}>
                         {/* North marker */}
-                        <div className="absolute top-2 left-1/2 -translate-x-1/2 text-sm font-bold opacity-60" style={{ color: theme.palette[0] }}>
+                        <div className="absolute top-2 left-1/2 -translate-x-1/2 text-sm font-bold opacity-60" style={{ color: primaryColor }}>
                             {isEn ? 'N' : 'ش'}
                         </div>
                         
@@ -371,30 +368,30 @@ export const ShadowQibla = ({ lat, lng, qiblaDirection, heading, theme, cardBord
                         {/* Shadow marker */}
                         <div className="absolute w-full h-full" style={{ transform: `rotate(${shadowHeading}deg)` }}>
                             <div className="absolute top-6 left-1/2 -translate-x-1/2 flex flex-col items-center">
-                                <i className="fa-solid fa-person-rays text-4xl" style={{ color: theme.palette[0] }}></i>
+                                <i className="fa-solid fa-person-rays text-4xl" style={{ color: primaryColor }}></i>
                             </div>
                             {/* Line to Shadow */}
-                            <div className="absolute top-16 bottom-1/2 left-1/2 w-1 -translate-x-1/2 opacity-50 rounded-full" style={{ backgroundColor: theme.palette[0] }}></div>
+                            <div className="absolute top-16 bottom-1/2 left-1/2 w-1 -translate-x-1/2 opacity-50 rounded-full" style={{ backgroundColor: primaryColor }}></div>
                         </div>
                     </div>
                     
                     {/* Center dot */}
-                    <div className="w-4 h-4 rounded-full z-10 border-2 border-white dark:border-gray-800" style={{ backgroundColor: theme.palette[0] }}></div>
+                    <div className="w-4 h-4 rounded-full z-10 border-2 border-white dark:border-gray-800" style={{ backgroundColor: primaryColor }}></div>
                 </div>
 
                 <div className="w-full space-y-3 mt-4">
-                    <div className="flex justify-between items-center p-3 rounded-lg themed-bg-alt" style={{ borderColor: effectiveBorder, borderWidth: '1px', borderStyle: 'solid' }}>
-                        <span className="text-sm font-bold">{isEn ? 'Current Shadow Direction:' : 'اتجاه الظل الحالي:'}</span>
-                        <span className="font-mono text-lg">{Math.round(shadowHeading)}°</span>
+                    <div className="flex justify-between items-center p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-white/5">
+                        <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{isEn ? 'Current Shadow Direction:' : 'اتجاه الظل الحالي:'}</span>
+                        <span className="font-mono text-lg font-bold text-slate-900 dark:text-white">{Math.round(shadowHeading)}°</span>
                     </div>
-                    <div className="flex justify-between items-center p-3 rounded-lg themed-bg-alt" style={{ borderColor: effectiveBorder, borderWidth: '1px', borderStyle: 'solid' }}>
-                        <span className="text-sm font-bold">{isEn ? 'Qibla Direction:' : 'اتجاه القبلة:'}</span>
-                        <span className="font-mono text-lg">{Math.round(qiblaDirection)}°</span>
+                    <div className="flex justify-between items-center p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-white/5">
+                        <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{isEn ? 'Qibla Direction:' : 'اتجاه القبلة:'}</span>
+                        <span className="font-mono text-lg font-bold" style={{ color: primaryColor }}>{Math.round(qiblaDirection)}°</span>
                     </div>
                 </div>
 
-                <div className="mt-4 p-4 rounded-xl border w-full" style={{ backgroundColor: `${theme.palette[0]}1a`, borderColor: effectiveBorder, borderWidth: '1px', borderStyle: 'solid' }}>
-                    <p className="font-bold text-sm" style={{ color: theme.palette[0] }}>
+                <div className="mt-4 p-4 rounded-xl border w-full" style={{ backgroundColor: `${primaryColor}14`, borderColor: `${primaryColor}30` }}>
+                    <p className="font-bold text-sm" style={{ color: primaryColor }}>
                         {isEn 
                             ? `Qibla is ${Math.round(shadowDiff)}° away from the Shadow` 
                             : `القبلة تبعد عن الظل بـ ${Math.round(shadowDiff)} درجة`}

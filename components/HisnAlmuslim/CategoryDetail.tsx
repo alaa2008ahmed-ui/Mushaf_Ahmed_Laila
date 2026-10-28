@@ -5,6 +5,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { shareAsImage } from '../../utils/shareAsImage';
 import { playTTS, stopTTS, subscribeTTS } from '../../utils/ttsEngine';
 import { HISN_ITEMS_EN, HISN_CATEGORIES_EN, HisnItemTranslation } from '../../data/hisnAlmuslimTranslationsEn';
+import { getModernFlatTokens, hexToRgba } from '../../utils/flatDesignTokens';
 
 interface CategoryDetailProps {
     selectedCategory: any;
@@ -55,10 +56,8 @@ const HisnItemCard: React.FC<HisnItemCardProps> = ({
 }) => {
     const { theme, themeKey } = useTheme();
     const { language } = useLanguage();
+    const tokens = getModernFlatTokens(theme, themeKey);
     const isEn = language === 'en';
-    const isBlackTheme = theme.bgColor === '#000000';
-    const isDefaultTheme = themeKey === 'default' || theme.name === 'الافتراضي' || !!theme.isOriginal || !themeKey;
-    const cardBorderColor = isBlackTheme ? '#222222' : (theme.isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)');
     const [isFav, setIsFav] = useState(false);
     const [playingText, setPlayingText] = useState<string | null>(null);
 
@@ -101,6 +100,7 @@ const HisnItemCard: React.FC<HisnItemCardProps> = ({
             }
             localStorage.setItem('favorite_dhikr', JSON.stringify(newFavs));
             setIsFav(!isFav);
+            setToastMessage(isFav ? (isEn ? 'Removed from favorites' : 'تمت الإزالة من المفضلة') : (isEn ? 'Added to favorites' : 'تمت الإضافة إلى المفضلة'));
         } catch (e) {}
     };
 
@@ -109,29 +109,6 @@ const HisnItemCard: React.FC<HisnItemCardProps> = ({
         navigator.clipboard.writeText(displayText).then(() => {
             setToastMessage(isEn ? 'Copied to clipboard' : 'تم النسخ إلى الحافظة');
         });
-    };
-
-    const handlePlayAudio = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        if (isPlaying) {
-            stopTTS();
-        } else {
-            playTTS(displayText, {
-                onToast: (msg) => {
-                    if (isEn) {
-                        if (msg.includes('جاري تشغيل')) setToastMessage('Playing audio...');
-                        else if (msg.includes('تم إيقاف')) setToastMessage('Audio stopped');
-                        else if (msg.includes('غير مفعلة') || msg.includes('غير مدعومة')) setToastMessage('Speech service is not available on this device');
-                        else setToastMessage(msg);
-                    } else {
-                        setToastMessage(msg);
-                    }
-                },
-                categoryId: isEn ? undefined : categoryId,
-                lang: isEn ? 'en' : 'ar',
-                isEn
-            });
-        }
     };
 
     const handleShare = async (e: React.MouseEvent) => {
@@ -148,28 +125,35 @@ const HisnItemCard: React.FC<HisnItemCardProps> = ({
         });
     };
 
+    const handlePlayAudio = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        playTTS(displayText, {
+            onToast: (msg) => {
+                if (isEn) {
+                    if (msg.includes('جاري تشغيل')) setToastMessage('Playing audio...');
+                    else if (msg.includes('تم إيقاف')) setToastMessage('Audio stopped');
+                    else setToastMessage(msg);
+                } else {
+                    setToastMessage(msg);
+                }
+            }
+        });
+    };
+
     const repetitionText = isEn 
         ? (initialCount > 1 ? `Repeat ${initialCount} times` : 'Read once')
         : (initialCount > 1 
             ? (initialCount === 2 ? 'يُقرأ مرتين' : `يُقرأ ${toArabicNumerals(initialCount)} مرات`) 
             : 'يُقرأ مرة واحدة');
 
-    const badgeStyle = isFinished 
-        ? { backgroundColor: 'var(--badge-finished-bg)', color: 'var(--badge-finished-text)' } 
-        : (themeKey === 'default' 
-            ? { backgroundColor: '#ffffff', color: '#000000', border: '1px solid rgba(0,0,0,0.1)' } 
-            : { backgroundImage: `linear-gradient(to bottom right, ${theme.palette[0]}, ${theme.palette[1]})`, color: theme.name === 'اسود' ? '#000000' : '#ffffff' }
-        );
-
     return (
         <div 
-            className={`themed-card p-5 pb-3 rounded-2xl border relative overflow-hidden group mb-4 transition-all duration-300 ${isFinished ? 'opacity-60' : 'cursor-pointer hover:shadow-md'}`}
+            className={`p-5 pb-3.5 rounded-[18px] relative overflow-hidden group mb-4 transition-all duration-300 border-0 ${isFinished ? 'opacity-65' : 'cursor-pointer active:scale-[0.99]'}`}
             onClick={!isFinished ? onDecrement : undefined}
             dir={isEn ? 'ltr' : 'rtl'}
             style={{ 
-                borderColor: cardBorderColor, 
-                borderWidth: '1.5px', 
-                borderStyle: 'solid', 
+                backgroundColor: tokens.cardBgColor,
+                boxShadow: tokens.cardShadow,
                 color: 'var(--text-color)',
                 fontFamily: isEn ? 'sans-serif' : theme.font
             }}
@@ -177,14 +161,21 @@ const HisnItemCard: React.FC<HisnItemCardProps> = ({
             {/* Top Bar with repetition and counter badge */}
             <div className="flex justify-between items-start mb-3">
                 <span 
-                    className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold shadow-sm select-none" 
-                    style={{ backgroundColor: theme.palette[1] + '30', color: theme.palette[1] }}
+                    className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold select-none" 
+                    style={{ 
+                        backgroundColor: hexToRgba(tokens.primaryColor, 0.1), 
+                        color: tokens.primaryColor 
+                    }}
                 >
                     {repetitionText}
                 </span>
                 <div 
-                    className="count-badge w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg shadow-md transform transition-transform shrink-0 select-none cursor-pointer" 
-                    style={badgeStyle}
+                    className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-base sm:text-lg shrink-0 select-none cursor-pointer transition-transform active:scale-90" 
+                    style={
+                        isFinished 
+                            ? { backgroundColor: '#10B981', color: '#FFFFFF' }
+                            : { backgroundColor: hexToRgba(tokens.primaryColor, 0.12), color: tokens.primaryColor }
+                    }
                     onClick={(e) => {
                         if (isFinished) {
                             e.stopPropagation();
@@ -193,31 +184,33 @@ const HisnItemCard: React.FC<HisnItemCardProps> = ({
                     }}
                     title={isFinished ? (isEn ? 'Click to reset' : 'اضغط لإعادة التكرار') : (isEn ? 'Remaining count' : 'العدد المتبقي')}
                 >
-                    {isFinished ? <i className="fa-solid fa-check"></i> : (isEn ? currentCount : toArabicNumerals(currentCount))}
+                    {isFinished ? <i className="fa-solid fa-check text-sm"></i> : (isEn ? currentCount : toArabicNumerals(currentCount))}
                 </div>
             </div>
 
             {displayTitle && (
-                <h3 className={`font-bold mb-2 text-sm ${isEn ? 'text-left font-sans' : 'text-center font-cairo'}`} style={{ color: theme.palette[1] }}>
+                <h3 className={`font-bold mb-2 text-sm font-cairo ${isEn ? 'text-left font-sans' : 'text-center'}`} style={{ color: tokens.primaryColor }}>
                     {displayTitle}
                 </h3>
             )}
 
-            <p className={`leading-relaxed select-none mb-3 ${isEn ? 'text-base sm:text-lg text-left font-sans font-medium' : 'text-xl text-center font-amiri'}`}>
+            <p className={`leading-[2.2] select-none mb-3 ${isEn ? 'text-base sm:text-lg text-left font-sans font-medium' : 'text-xl md:text-2xl text-center font-amiri'}`}>
                 {displayText}
             </p>
 
             {displaySource && (
-                <p className={`text-xs mt-2 themed-text-muted opacity-80 ${isEn ? 'text-left font-sans' : 'text-center font-cairo'}`}>
-                    {isEn ? `Source: ${displaySource}` : `المصدر: ${displaySource}`}
-                </p>
+                <div className="flex justify-center mb-3">
+                    <span className={`text-xs opacity-70 font-bold bg-slate-100 dark:bg-zinc-800/60 px-3.5 py-1 rounded-full ${isEn ? 'text-left font-sans' : 'text-center font-cairo'}`}>
+                        {isEn ? `Source: ${displaySource}` : `المصدر: ${displaySource}`}
+                    </span>
+                </div>
             )}
             
             {/* Actions Bar */}
-            <div className="flex justify-between items-center mt-4 mb-1 pt-3 border-t" style={{ borderColor: 'var(--card-border)' }}>
+            <div className="flex justify-between items-center mt-3 pt-3 border-t border-slate-100 dark:border-white/5">
                 <button 
                     onClick={toggleFav} 
-                    className="w-9 h-9 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors"
+                    className="w-9 h-9 rounded-full flex items-center justify-center bg-slate-100/80 dark:bg-zinc-800/80 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
                     title={isEn ? (isFav ? 'Remove from favorites' : 'Add to favorites') : (isFav ? 'إزالة من المفضلة' : 'إضافة إلى المفضلة')}
                     aria-label={isEn ? 'Favorite' : 'المفضلة'}
                 >
@@ -240,44 +233,49 @@ const HisnItemCard: React.FC<HisnItemCardProps> = ({
                                isEn
                            }); 
                        }} 
-                       className="w-9 h-9 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors opacity-70 hover:opacity-100" 
+                       className="w-9 h-9 rounded-full flex items-center justify-center bg-slate-100/80 dark:bg-zinc-800/80 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors opacity-75 hover:opacity-100 cursor-pointer" 
                        style={{ color: 'var(--text-color)' }} 
                        title={isEn ? "Zoom" : "تكبير"}
                        aria-label={isEn ? "Zoom" : "تكبير"}
                    >
-                       <i className="fa-solid fa-magnifying-glass-plus"></i>
+                       <i className="fa-solid fa-magnifying-glass-plus text-xs"></i>
                    </button>
                    <button 
                        onClick={handleCopy} 
-                       className="w-9 h-9 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors opacity-70 hover:opacity-100" 
+                       className="w-9 h-9 rounded-full flex items-center justify-center bg-slate-100/80 dark:bg-zinc-800/80 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors opacity-75 hover:opacity-100 cursor-pointer" 
                        style={{ color: 'var(--text-color)' }} 
                        title={isEn ? "Copy" : "نسخ"}
                        aria-label={isEn ? "Copy" : "نسخ"}
                    >
-                       <i className="fa-regular fa-copy"></i>
+                       <i className="fa-regular fa-copy text-xs"></i>
                    </button>
                    <button 
                        onClick={handleShare} 
-                       className="w-9 h-9 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors opacity-70 hover:opacity-100" 
+                       className="w-9 h-9 rounded-full flex items-center justify-center bg-slate-100/80 dark:bg-zinc-800/80 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors opacity-75 hover:opacity-100 cursor-pointer" 
                        style={{ color: 'var(--text-color)' }} 
                        title={isEn ? "Share" : "مشاركة"}
                        aria-label={isEn ? "Share" : "مشاركة"}
                    >
-                       <i className="fa-solid fa-share-nodes"></i>
+                       <i className="fa-solid fa-share-nodes text-xs"></i>
                    </button>
                    <button 
                        onClick={handlePlayAudio} 
-                       className="w-9 h-9 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors opacity-70 hover:opacity-100" 
+                       className="w-9 h-9 rounded-full flex items-center justify-center bg-slate-100/80 dark:bg-zinc-800/80 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors opacity-75 hover:opacity-100 cursor-pointer" 
                        style={{ color: isPlaying ? '#ef4444' : 'var(--text-color)' }}
                        title={isEn ? (isPlaying ? "Stop listening" : "Listen audio") : (isPlaying ? "إيقاف الاستماع" : "استماع صوتي")}
-                       aria-label={isEn ? "Audio" : "صوت"}
+                       aria-label={isEn ? "Listen audio" : "استماع صوتي"}
                    >
-                       <i className={`fa-solid ${isPlaying ? 'fa-circle-pause text-red-500 animate-pulse' : 'fa-volume-high'}`}></i>
+                       <i className={`fa-solid ${isPlaying ? 'fa-circle-pause text-red-500 animate-pulse text-sm' : 'fa-volume-high text-xs'}`}></i>
                    </button>
                 </div>
             </div>
-
-            {!isFinished && <div className="absolute inset-0 opacity-0 group-active:opacity-100 transition pointer-events-none" style={{ backgroundColor: theme.palette[0] + '15' }}></div>}
+            
+            {!isFinished && (
+                <div 
+                    className="absolute inset-0 opacity-0 group-active:opacity-100 transition pointer-events-none" 
+                    style={{ backgroundColor: hexToRgba(tokens.primaryColor, 0.08) }}
+                ></div>
+            )}
         </div>
     );
 };
@@ -313,15 +311,15 @@ const CategoryDetail: React.FC<CategoryDetailProps> = ({
 
     if (items.length === 0 && selectedCategory.id === 'favorites') {
         return (
-            <div className="py-12 text-center text-gray-500 dark:text-gray-400 font-bold" dir={isEn ? 'ltr' : 'rtl'}>
-                <i className="fa-solid fa-heart-crack text-4xl mb-4 opacity-50"></i>
-                <p>{isEn ? 'No supplications in favorites yet.' : 'لا توجد أذكار في المفضلة بعد.'}</p>
+            <div className="py-16 text-center text-gray-500 dark:text-gray-400 font-bold" dir={isEn ? 'ltr' : 'rtl'}>
+                <i className="fa-solid fa-heart-crack text-4xl mb-4 opacity-40"></i>
+                <p className="text-sm font-cairo">{isEn ? 'No supplications in favorites yet.' : 'لا توجد أذكار في المفضلة بعد.'}</p>
             </div>
         );
     }
 
     return (
-        <div className="space-y-4" dir={isEn ? 'ltr' : 'rtl'}>
+        <div className="space-y-3.5" dir={isEn ? 'ltr' : 'rtl'}>
             {items.map((item: any, index: number) => {
                 const initialCount = item.count || 1;
                 const itemKey = item.text;

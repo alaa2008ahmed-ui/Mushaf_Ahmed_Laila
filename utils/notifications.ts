@@ -2,6 +2,8 @@ import { LocalNotifications } from '@capacitor/local-notifications';
 import { Capacitor } from '@capacitor/core';
 import moment from 'moment-hijri';
 import { BASE_ADHKAR_MORNING, BASE_ADHKAR_EVENING } from '../data/adkarSabahMasaaData';
+import { ALL_DUAA } from '../data/adiaData';
+import { ADIA_EN_MAP } from '../data/adiaTranslationsEn';
 import { PhoneNotificationSettings } from '../hooks/useNotificationSettings';
 import { syncDailyWirdNotifications, ensureWirdNotificationChannel } from './dailyWirdNotificationService';
 
@@ -22,6 +24,24 @@ const ALL_ATHKAR_EN = [
   "There is no power and no strength except with Allah, the Most High, the Most Great."
 ];
 
+const TASBEEH_REMINDERS_AR = [
+  "سبحان الله وبحمده، عدد خلقه ورضا نفسه وزنة عرشه ومداد كلماته.",
+  "سبحان الله، والحمد لله، ولا إله إلا الله، والله أكبر، ولا حول ولا قوة إلا بالله.",
+  "سبحان الله وبحمده، سبحان الله العظيم.",
+  "لا إله إلا الله وحده لا شريك له، له الملك وله الحمد وهو على كل شيء قدير.",
+  "أستغفر الله العظيم وأتوب إليه، لا إله إلا هو الحي القيوم.",
+  "اللهم صلِّ وسلِّم وبارك على نبينا محمد وعلى آله وصحبه أجمعين."
+];
+
+const TASBEEH_REMINDERS_EN = [
+  "Glory is to Allah and praise is to Him, by the multitude of His creation and by His pleasure.",
+  "Glory be to Allah, all praise is due to Allah, there is no god but Allah, and Allah is the Greatest.",
+  "Glory be to Allah and His is the praise, Glory be to Allah the Tremendous.",
+  "None has the right to be worshipped except Allah alone, without partner; to Him belongs all praise and dominion.",
+  "I seek forgiveness of Allah the Almighty and repent unto Him.",
+  "O Allah, send peace, blessings, and grace upon our Prophet Muhammad and his family."
+];
+
 const getRandomAthkar = () => {
     const randomIndex = Math.floor(Math.random() * ALL_ATHKAR.length);
     return ALL_ATHKAR[randomIndex];
@@ -30,6 +50,17 @@ const getRandomAthkar = () => {
 const getRandomAthkarEn = () => {
     const randomIndex = Math.floor(Math.random() * ALL_ATHKAR_EN.length);
     return ALL_ATHKAR_EN[randomIndex];
+};
+
+const getRandomDuaa = () => {
+    const randomIndex = Math.floor(Math.random() * ALL_DUAA.length);
+    return ALL_DUAA[randomIndex];
+};
+
+const getRandomDuaaEn = () => {
+    const randomDua = getRandomDuaa();
+    const enTrans = ADIA_EN_MAP[randomDua.id];
+    return enTrans?.text || randomDua.textEn || randomDua.text;
 };
 
 export const setupNotifications = async (settings?: PhoneNotificationSettings, langOverride?: 'ar' | 'en') => {
@@ -81,8 +112,16 @@ export const setupNotifications = async (settings?: PhoneNotificationSettings, l
 
     // Clear ONLY existing athkar/dua notifications (IDs < 1000 or >= 9000, excluding Daily Wird IDs 9300..9399)
     // CRITICAL: NEVER cancel prayer notifications (IDs 1000..8999) or Daily Wird notifications!
+    // AND CRITICAL: NEVER cancel notifications that are currently delivered and visible in the notification drawer!
     const pending = await LocalNotifications.getPending();
-    const athkarPending = pending.notifications.filter(n => (n.id < 1000 || n.id >= 9000) && !(n.id >= 9300 && n.id <= 9399));
+    const delivered = await LocalNotifications.getDeliveredNotifications();
+    const deliveredIds = new Set((delivered?.notifications || []).map(n => n.id));
+
+    const athkarPending = (pending?.notifications || []).filter(
+        n => (n.id < 1000 || n.id >= 9000) && 
+             !(n.id >= 9300 && n.id <= 9399) && 
+             !deliveredIds.has(n.id)
+    );
     if (athkarPending.length > 0) {
         await LocalNotifications.cancel({ notifications: athkarPending });
     }
@@ -187,10 +226,21 @@ export const setupNotifications = async (settings?: PhoneNotificationSettings, l
         if (setting && setting.enabled) {
             const { hour, minute } = parseTime(setting.time);
             
+            let notifBody = '';
+            if (conf.key === 'dua') {
+                notifBody = isEn ? getRandomDuaaEn() : getRandomDuaa().text;
+            } else if (conf.key === 'tasbeehMorning' || conf.key === 'tasbeehEvening') {
+                notifBody = isEn 
+                    ? TASBEEH_REMINDERS_EN[Math.floor(Math.random() * TASBEEH_REMINDERS_EN.length)]
+                    : TASBEEH_REMINDERS_AR[Math.floor(Math.random() * TASBEEH_REMINDERS_AR.length)];
+            } else {
+                notifBody = isEn ? getRandomAthkarEn() : getRandomAthkar().text;
+            }
+
             // Primary daily recurring schedule
             notificationsToSchedule.push({
                 title: conf.title,
-                body: isEn ? getRandomAthkarEn() : getRandomAthkar().text,
+                body: notifBody,
                 id: conf.id,
                 schedule: { on: { hour, minute }, allowWhileIdle: true, repeats: true },
                 channelId: 'athkar_v3_chime_channel',
@@ -400,7 +450,24 @@ export const setupNotifications = async (settings?: PhoneNotificationSettings, l
     } catch (e) {}
 
     if (notificationsToSchedule.length > 0) {
-      await LocalNotifications.schedule({ notifications: notificationsToSchedule });
+      const cleanAthkarNotifs = notificationsToSchedule.map((n: any) => {
+        let finalId = n.id;
+        while (deliveredIds.has(finalId)) {
+          finalId += 500;
+        }
+        const { group, groupSummary, ...rest } = n;
+        return {
+          ...rest,
+          id: finalId,
+          group: 'com.mushaf.ahmedandlayla.APP_ALERTS_CARD',
+          groupSummary: false,
+          smallIcon: 'ic_stat_name',
+          iconColor: '#2E7D5E',
+          ongoing: false,
+          autoCancel: true,
+        };
+      });
+      await LocalNotifications.schedule({ notifications: cleanAthkarNotifs });
     }
 
     // Synchronize Daily Wird reminders if active with app language

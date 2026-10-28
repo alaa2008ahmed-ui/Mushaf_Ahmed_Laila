@@ -71,12 +71,10 @@ const VerseSection: React.FC<VerseSectionProps> = ({
     const isDarkTheme = theme.isDark;
     const isLightTheme = !isDarkTheme;
 
-    let finalTextColor = verseSettings.textColor;
-    if (isDarkTheme) {
-        finalTextColor = '#FFFFFF';
-    } else if (isLightTheme) {
-        finalTextColor = theme.palette?.[0] || theme.textColor;
-    }
+    const isCustomTextColor = verseSettings.textColor && verseSettings.textColor !== 'transparent' && verseSettings.textColor !== theme.textColor;
+    let finalTextColor = isCustomTextColor 
+        ? verseSettings.textColor 
+        : (isDarkTheme ? '#FFFFFF' : (theme.palette?.[0] || theme.textColor));
 
     const surahTextColor = isBlackTheme 
         ? '#9ca3af' 

@@ -20,7 +20,7 @@ const config: any = {
     },
     LocalNotifications: {
       smallIcon: "ic_stat_name",
-      iconColor: "#488AFF",
+      iconColor: "#2E7D5E",
       sound: "chime.mp3",
     },
   },

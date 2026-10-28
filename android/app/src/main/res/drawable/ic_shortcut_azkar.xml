@@ -1,0 +1,15 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <!-- Rounded Background Badge (Muslim Pro style) -->
+    <path
+        android:fillColor="#4A154B"
+        android:pathData="M24,4 C36,4 44,12 44,24 C44,36 36,44 24,44 C12,44 4,36 4,24 C4,12 12,4 24,4 Z" />
+    
+    <!-- Azkar & Hisn Al-Muslim Shield Glyph -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M24,12 L14,16.4 V23.1 C14,29.3 18.3,35 24,36.4 C29.7,35 34,29.3 34,23.1 V16.4 L24,12 Z M31.6,23.1 C31.6,28 28.4,32.5 24,33.9 C19.6,32.5 16.4,28 16.4,23.1 V18 L24,14.7 L31.6,18 V23.1 Z M24,20 C22.3,20 21,21.3 21,23 C21,25.3 24,28.5 24,28.5 C24,28.5 27,25.3 27,23 C27,21.3 25.7,20 24,20 Z" />
+</vector>

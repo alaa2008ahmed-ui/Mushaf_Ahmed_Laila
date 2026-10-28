@@ -1,5 +1,5 @@
 import React from 'react';
-import { Moon, Star, Clock, Bell, BellOff } from 'lucide-react';
+import { Bell, BellOff } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { getPrayerDisplayName, tPrayer } from '../../utils/prayerTimesTranslations';
 
@@ -7,9 +7,9 @@ interface NextPrayerCardProps {
     nextPrayer: { key: string; name: string } | null;
     times: Record<string, string>;
     countdown: string;
-    isBlackAndWhite: boolean;
-    themePalette0: string;
-    themePalette1: string;
+    isBlackAndWhite?: boolean;
+    themePalette0?: string;
+    themePalette1?: string;
     isDefaultTheme?: boolean;
     isBlackTheme?: boolean;
     isDarkTheme?: boolean;
@@ -29,19 +29,8 @@ const NextPrayerCard: React.FC<NextPrayerCardProps> = ({
     nextPrayer,
     times,
     countdown,
-    isBlackAndWhite,
-    isDefaultTheme,
     isBlackTheme,
-    isDarkTheme,
-    themeCardBg,
-    themeTextColor,
     themePalette0,
-    themePalette1,
-    cardBorderColor,
-    nextPrayerBorderColor,
-    formatTime12,
-    applyOffset,
-    prayerOffset,
     nightTimes,
     nightNotifications = { firstThird: true, midnight: true, lastThird: true },
     onToggleNightNotification
@@ -49,27 +38,12 @@ const NextPrayerCard: React.FC<NextPrayerCardProps> = ({
     const { language, dir } = useLanguage();
     if (!nextPrayer || !times[nextPrayer.key]) return null;
 
-    const activeBorderColor = nextPrayerBorderColor || (isDefaultTheme ? '#059669' : (isBlackTheme || isBlackAndWhite ? '#FFFFFF' : themePalette0));
-    const isDarkCard = Boolean(!isDefaultTheme && (isBlackTheme || isBlackAndWhite || isDarkTheme));
-    const cardBackground = isDefaultTheme
-        ? '#FFFFFF'
-        : (isBlackTheme || isBlackAndWhite
-            ? '#111111'
-            : (themeCardBg || (isDarkTheme ? '#1e293b' : '#FFFFFF')));
-    const cardTextColor = isDefaultTheme
-        ? '#000000'
-        : (isBlackTheme || isBlackAndWhite
-            ? '#FFFFFF'
-            : (themeTextColor || (isDarkTheme ? '#FFFFFF' : themePalette0)));
-    const bellAccentColor = isDefaultTheme
-        ? '#059669'
-        : (isBlackTheme || isBlackAndWhite ? '#FFFFFF' : activeBorderColor);
-    const bellBtnClass = isDarkCard ? 'bg-white/10 hover:bg-white/20' : 'bg-black/5 hover:bg-black/10';
-    const dividerClass = isDarkCard ? 'bg-white/20' : 'bg-black/15';
+    const primaryColor = isBlackTheme ? '#FFFFFF' : (themePalette0 || '#2E7D5E');
+    const dividerClass = isBlackTheme ? 'bg-white/10' : 'bg-slate-100';
 
     const formatNightTime = (timeStr: string) => {
         if (!timeStr || timeStr.includes('--')) return "--:-- --";
-        let [h, m] = timeStr.split(':');
+        const [h, m] = timeStr.split(':');
         let hInt = parseInt(h);
         const ap = hInt >= 12 ? 'pm' : 'am';
         hInt = hInt % 12 || 12;
@@ -80,70 +54,113 @@ const NextPrayerCard: React.FC<NextPrayerCardProps> = ({
         <div 
             id="next-prayer-card" 
             dir={dir}
-            className="w-full shrink-0 rounded-2xl themed-card mb-1 relative overflow-hidden flex flex-col shadow-sm transition-all duration-200" 
-            style={{
-                backgroundColor: cardBackground,
-                color: cardTextColor,
-                border: `2.5px solid ${activeBorderColor}`
-            }}
+            className={`w-full shrink-0 rounded-2xl mb-2 relative overflow-hidden flex flex-col transition-all duration-300 ${
+                isBlackTheme 
+                    ? 'bg-[#18181b] border border-white/10 text-white shadow-[0_8px_30px_-4px_rgba(0,0,0,0.7)]' 
+                    : 'bg-white text-slate-800 shadow-[0_8px_30px_-4px_rgba(0,0,0,0.06),0_4px_12px_-2px_rgba(0,0,0,0.03)]'
+            }`}
+            style={{ borderRadius: '16px' }}
         >
-            <div className="px-2.5 sm:px-4 py-4 sm:py-5 flex justify-between items-center gap-1.5 sm:gap-3 relative z-10">
-                <div id="next-prayer-countdown-container" className="text-center flex flex-col items-center justify-center shrink-0">
-                    <p className={`text-[10px] sm:text-[11px] font-bold opacity-95 mb-1 leading-tight ${language === 'ar' ? 'whitespace-nowrap' : ''}`}>
-                        {tPrayer('remainingUntil', language)}{' '}
-                        <span className="underline underline-offset-2" style={{ textDecorationColor: bellAccentColor }}>
+            <div className="px-2.5 sm:px-4 py-3 sm:py-4 flex justify-between items-center gap-1.5 sm:gap-3 relative z-10">
+                {/* عداد 'المتبقي على الصلاة' داخل حاوية نظيفة بدون حدود، واستخدام لون الثيم لإبراز الأرقام */}
+                <div id="next-prayer-countdown-container" className="text-start flex flex-col justify-center shrink-0 min-w-0">
+                    <p className="text-[10px] sm:text-xs font-semibold text-slate-500 dark:text-zinc-400 mb-0.5 sm:mb-1 leading-tight flex items-center gap-1">
+                        <span>{tPrayer('remainingUntil', language)}</span>
+                        <span className="font-bold" style={{ color: primaryColor }}>
                             {getPrayerDisplayName(nextPrayer.key, language)}
                         </span>
                     </p>
-                    <p className="text-lg sm:text-xl font-black font-mono tracking-tighter leading-none whitespace-nowrap" dir="ltr">{countdown}</p>
+                    <p 
+                        className="text-lg sm:text-2xl md:text-3xl font-black font-mono tracking-tight leading-none whitespace-nowrap tabular-nums" 
+                        dir="ltr"
+                        style={{ color: primaryColor }}
+                    >
+                        {countdown}
+                    </p>
                 </div>
-                <div id="night-times-container" className="flex gap-1.5 sm:gap-3 items-center shrink-0">
+
+                {/* أوقات أثلاث الليل */}
+                <div id="night-times-container" className="flex gap-1.5 sm:gap-2.5 items-center shrink-0 min-w-0">
+                    {/* الثلث الأول */}
                     <div className="flex flex-col items-center">
-                        <div className="flex items-center gap-0.5 sm:gap-1 opacity-95 mb-1">
+                        <div className="flex items-center gap-0.5 sm:gap-1 mb-0.5 sm:mb-1">
                             {onToggleNightNotification && (
                                 <button 
+                                    type="button"
                                     onClick={() => onToggleNightNotification('firstThird')}
-                                    className={`p-0.5 sm:p-1 rounded-full ${bellBtnClass} transition-colors cursor-pointer shrink-0`}
+                                    className="p-0.5 sm:p-1 rounded-full transition-colors cursor-pointer shrink-0 hover:bg-black/5 dark:hover:bg-white/10"
                                     title={tPrayer('firstThird', language)}
                                 >
-                                    {nightNotifications.firstThird ? <Bell className="w-3 h-3" style={{ color: bellAccentColor }} /> : <BellOff className="w-3 h-3 text-red-500 opacity-75" />}
+                                    {nightNotifications.firstThird ? (
+                                        <Bell className="w-3 h-3 sm:w-3.5 sm:h-3.5" style={{ color: primaryColor }} />
+                                    ) : (
+                                        <BellOff className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-red-500 opacity-75" />
+                                    )}
                                 </button>
                             )}
-                            <span className="text-[9px] sm:text-[10px] font-bold whitespace-nowrap leading-tight">{tPrayer('firstThird', language)}</span>
+                            <span className="text-[9px] sm:text-[10.5px] font-medium text-slate-500 dark:text-zinc-400 whitespace-nowrap leading-tight">
+                                {tPrayer('firstThird', language)}
+                            </span>
                         </div>
-                        <span className="text-[10px] sm:text-[11px] font-bold font-mono whitespace-nowrap leading-none" dir="ltr">{formatNightTime(nightTimes.firstThird)}</span>
+                        <span className="text-[9.5px] sm:text-[11.5px] font-bold font-mono text-slate-800 dark:text-zinc-200 whitespace-nowrap leading-none tabular-nums" dir="ltr">
+                            {formatNightTime(nightTimes.firstThird)}
+                        </span>
                     </div>
-                    <div className={`w-px h-7 ${dividerClass} shrink-0`}></div>
+
+                    <div className={`w-px h-6 sm:h-7 ${dividerClass} shrink-0`}></div>
+
+                    {/* نصف الليل */}
                     <div className="flex flex-col items-center">
-                        <div className="flex items-center gap-0.5 sm:gap-1 opacity-95 mb-1">
+                        <div className="flex items-center gap-0.5 sm:gap-1 mb-0.5 sm:mb-1">
                             {onToggleNightNotification && (
                                 <button 
+                                    type="button"
                                     onClick={() => onToggleNightNotification('midnight')}
-                                    className={`p-0.5 sm:p-1 rounded-full ${bellBtnClass} transition-colors cursor-pointer shrink-0`}
+                                    className="p-0.5 sm:p-1 rounded-full transition-colors cursor-pointer shrink-0 hover:bg-black/5 dark:hover:bg-white/10"
                                     title={tPrayer('midnight', language)}
                                 >
-                                    {nightNotifications.midnight ? <Bell className="w-3 h-3" style={{ color: bellAccentColor }} /> : <BellOff className="w-3 h-3 text-red-500 opacity-75" />}
+                                    {nightNotifications.midnight ? (
+                                        <Bell className="w-3 h-3 sm:w-3.5 sm:h-3.5" style={{ color: primaryColor }} />
+                                    ) : (
+                                        <BellOff className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-red-500 opacity-75" />
+                                    )}
                                 </button>
                             )}
-                            <span className="text-[9px] sm:text-[10px] font-bold whitespace-nowrap leading-tight">{tPrayer('midnight', language)}</span>
+                            <span className="text-[9px] sm:text-[10.5px] font-medium text-slate-500 dark:text-zinc-400 whitespace-nowrap leading-tight">
+                                {tPrayer('midnight', language)}
+                            </span>
                         </div>
-                        <span className="text-[10px] sm:text-[11px] font-bold font-mono whitespace-nowrap leading-none" dir="ltr">{formatNightTime(nightTimes.midnight)}</span>
+                        <span className="text-[9.5px] sm:text-[11.5px] font-bold font-mono text-slate-800 dark:text-zinc-200 whitespace-nowrap leading-none tabular-nums" dir="ltr">
+                            {formatNightTime(nightTimes.midnight)}
+                        </span>
                     </div>
-                    <div className={`w-px h-7 ${dividerClass} shrink-0`}></div>
+
+                    <div className={`w-px h-6 sm:h-7 ${dividerClass} shrink-0`}></div>
+
+                    {/* الثلث الأخير */}
                     <div className="flex flex-col items-center">
-                        <div className="flex items-center gap-0.5 sm:gap-1 opacity-95 mb-1">
+                        <div className="flex items-center gap-0.5 sm:gap-1 mb-0.5 sm:mb-1">
                             {onToggleNightNotification && (
                                 <button 
+                                    type="button"
                                     onClick={() => onToggleNightNotification('lastThird')}
-                                    className={`p-0.5 sm:p-1 rounded-full ${bellBtnClass} transition-colors cursor-pointer shrink-0`}
+                                    className="p-0.5 sm:p-1 rounded-full transition-colors cursor-pointer shrink-0 hover:bg-black/5 dark:hover:bg-white/10"
                                     title={tPrayer('lastThird', language)}
                                 >
-                                    {nightNotifications.lastThird ? <Bell className="w-3 h-3" style={{ color: bellAccentColor }} /> : <BellOff className="w-3 h-3 text-red-500 opacity-75" />}
+                                    {nightNotifications.lastThird ? (
+                                        <Bell className="w-3 h-3 sm:w-3.5 sm:h-3.5" style={{ color: primaryColor }} />
+                                    ) : (
+                                        <BellOff className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-red-500 opacity-75" />
+                                    )}
                                 </button>
                             )}
-                            <span className="text-[9px] sm:text-[10px] font-bold whitespace-nowrap leading-tight">{tPrayer('lastThird', language)}</span>
+                            <span className="text-[9px] sm:text-[10.5px] font-medium text-slate-500 dark:text-zinc-400 whitespace-nowrap leading-tight">
+                                {tPrayer('lastThird', language)}
+                            </span>
                         </div>
-                        <span className="text-[10px] sm:text-[11px] font-bold font-mono whitespace-nowrap leading-none" dir="ltr">{formatNightTime(nightTimes.lastThird)}</span>
+                        <span className="text-[9.5px] sm:text-[11.5px] font-bold font-mono text-slate-800 dark:text-zinc-200 whitespace-nowrap leading-none tabular-nums" dir="ltr">
+                            {formatNightTime(nightTimes.lastThird)}
+                        </span>
                     </div>
                 </div>
             </div>

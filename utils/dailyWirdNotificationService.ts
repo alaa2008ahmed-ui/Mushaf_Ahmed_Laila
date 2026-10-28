@@ -1,6 +1,15 @@
 import { LocalNotifications } from '@capacitor/local-notifications';
-import { Capacitor } from '@capacitor/core';
-import { playNotificationSound, stopNotificationSound } from './prayerTimesUtils';
+import { Capacitor, registerPlugin } from '@capacitor/core';
+import { Preferences } from '@capacitor/preferences';
+import { playNotificationSound } from './prayerTimesUtils';
+
+// Plugin interface for native bridge
+interface AutoSilentPluginInterface {
+  syncDailyWird: () => Promise<void>;
+  checkDndPermission?: () => Promise<{ granted: boolean }>;
+  requestDndPermission?: () => Promise<void>;
+}
+const AutoSilentMode = registerPlugin<AutoSilentPluginInterface>('AutoSilentMode');
 
 export interface WirdProfile {
   id: string;
@@ -16,7 +25,7 @@ export interface WirdProfile {
   lastAyah?: { s: number; a: number };
   reminderEnabled?: boolean;
   reminderTime?: string; // HH:mm format, e.g. "09:00"
-  lastCompletedDate?: string; // YYYY-MM-DD
+  lastCompletedDate?: string; // YYYY-MM-DD or ISO
 }
 
 export interface WirdAlertData {
@@ -26,16 +35,27 @@ export interface WirdAlertData {
   totalDays: number;
   startPage: number;
   endPage: number;
-  missedDaysCount: number; // 0 = on track, 1 = missed yesterday, >1 = missed multiple days
+  missedDaysCount: number;
   title: string;
   message: string;
   soundFileName?: string;
 }
 
 const TOTAL_QURAN_PAGES = 604;
-const WIRD_CHANNEL_ID = 'daily_wird_reminder_channel';
-const NOTIFICATION_BASE_ID = 9300; // IDs 9301 to 9330 reserved for scheduled wird notifications
+export const WIRD_CHANNEL_ID = 'daily_wird_reminders_channel';
+export const WIRD_GROUP_ID = 'com.mushaf.ahmedandlayla.APP_ALERTS_CARD';
+
+// Notification IDs:
+// 9300: Test notification
+// 9301: Daily morning recurring fallback (9:00 AM)
+// 9302: Daily evening recurring fallback (10:00 PM)
+// 9310 - 9324: Exact upcoming morning notifications (days 0..14)
+// 9330 - 9344: Exact upcoming evening notifications (days 0..14)
 const TEST_NOTIFICATION_ID = 9300;
+const RECURRING_MORNING_ID = 9301;
+const RECURRING_EVENING_ID = 9302;
+const BASE_MORNING_EXACT_ID = 9310;
+const BASE_EVENING_EXACT_ID = 9330;
 
 /**
  * Calculates start and end page for a given day in the Khatma
@@ -49,12 +69,12 @@ export const getWirdDayRange = (day: number, profile: WirdProfile) => {
     const totalDays = profile.value;
     const start = Math.floor(((day - 1) * pagesLeft) / totalDays) + 1 + offset;
     const end = Math.floor((day * pagesLeft) / totalDays) + offset;
-    return { start, end: Math.max(start - 1, end) };
+    return { start: Math.min(start, TOTAL_QURAN_PAGES), end: Math.min(Math.max(start, end), TOTAL_QURAN_PAGES) };
   } else {
     const pagesPerDay = profile.value;
     const start = (day - 1) * pagesPerDay + 1 + offset;
     const end = Math.min(day * pagesPerDay + offset, TOTAL_QURAN_PAGES);
-    return { start: Math.min(start, TOTAL_QURAN_PAGES + 1), end };
+    return { start: Math.min(start, TOTAL_QURAN_PAGES), end: Math.min(Math.max(start, end), TOTAL_QURAN_PAGES) };
   }
 };
 
@@ -85,34 +105,60 @@ export const getActiveWirdProfile = (): WirdProfile | null => {
 };
 
 /**
- * Helper to calculate missed days and current wird status relative to a specific reference date
+ * Helper to get current app language from localStorage
+ */
+export const getCurrentAppLanguage = (): 'ar' | 'en' => {
+  try {
+    const lang = localStorage.getItem('app_language');
+    if (lang === 'en') return 'en';
+  } catch (e) {}
+  return 'ar';
+};
+
+/**
+ * Formats user's display name politely for notifications ("وباسم المستخدم")
+ */
+export const formatWirdUserName = (rawName?: string, lang: 'ar' | 'en' = 'ar'): string => {
+  if (!rawName || !rawName.trim()) {
+    return lang === 'en' ? "Qur'an Reader" : 'صاحب القرآن';
+  }
+  const clean = rawName.trim();
+  if (/^مستخدم(\s*\d+)?$/i.test(clean) || /^user(\s*\d+)?$/i.test(clean)) {
+    return lang === 'en' ? "Qur'an Reader" : 'صاحب القرآن';
+  }
+  return clean;
+};
+
+/**
+ * Calculates missed days and current wird status relative to a specific reference date
  */
 export const calculateWirdStatus = (profile: WirdProfile, targetDate = new Date()) => {
   const totalDays = getWirdTotalDays(profile);
   const completedCount = profile.completedDays?.length || 0;
   const isKhatmaFinished = completedCount >= totalDays;
 
-  // Normalize dates to midnight local time to avoid timezone/hour discrepancies
+  // Normalize dates to midnight local time
   const start = new Date(profile.startDate);
   start.setHours(0, 0, 0, 0);
 
   const target = new Date(targetDate);
   target.setHours(0, 0, 0, 0);
 
-  const diffTime = target.getTime() - start.getTime();
-  const calendarDaysElapsed = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
+  const diffTime = Math.max(0, target.getTime() - start.getTime());
+  const calendarDaysElapsed = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
-  // Expected days that should have been finished by the end of yesterday:
-  // e.g. If started today (diff = 0), expected past finished = 0.
-  // If tomorrow (diff = 1), expected past finished = 1 (Day 1).
+  // Expected days that should have been finished before target date
   const expectedPastDays = Math.min(calendarDaysElapsed, totalDays);
-  
-  // Missed days = how many past days were expected minus what is actually completed
   const missedDaysCount = Math.max(0, expectedPastDays - completedCount);
 
-  // Today's target day in progression
+  // Target day in progression
   const targetDayNumber = Math.min(completedCount + 1, totalDays);
-  const isTodayDayCompleted = profile.completedDays.includes(profile.currentDay);
+  
+  // Check if today was already completed
+  const targetDateStr = targetDate.toISOString().split('T')[0];
+  const isTodayDayCompleted = Boolean(
+    profile.lastCompletedDate && profile.lastCompletedDate.startsWith(targetDateStr)
+  ) || profile.completedDays.includes(targetDayNumber);
 
   return {
     totalDays,
@@ -126,93 +172,135 @@ export const calculateWirdStatus = (profile: WirdProfile, targetDate = new Date(
 };
 
 /**
- * Helper to get current app language from localStorage
- */
-export const getCurrentAppLanguage = (): 'ar' | 'en' => {
-  try {
-    const lang = localStorage.getItem('app_language');
-    if (lang === 'en') return 'en';
-  } catch (e) {}
-  return 'ar';
-};
-
-/**
- * Builds respectful, inspiring Arabic or English texts based on missed days count
+ * Builds respectful, inspiring Arabic or English notification texts addressing the user by name
+ * Supports morning (9:00 AM) and evening (10:00 PM / 22:00) reminders with delayed catch-up.
  */
 export const buildWirdNotificationContent = (
   profile: WirdProfile,
   dayNumber: number,
   missedCount: number,
+  isEvening: boolean = false,
   lang: 'ar' | 'en' = getCurrentAppLanguage()
 ) => {
   const range = getWirdDayRange(dayNumber, profile);
   const isEn = lang === 'en';
+  const userName = formatWirdUserName(profile.name, lang);
   const pageRangeStr = range.start <= range.end 
     ? (isEn ? `(p. ${range.start} - ${range.end})` : `(ص ${range.start} - ${range.end})`) 
     : '';
 
+  // Calculate yesterday's range if missed
+  let yesterdayRangeStr = '';
+  if (missedCount >= 1 && dayNumber > 1) {
+    const yRange = getWirdDayRange(dayNumber - 1, profile);
+    yesterdayRangeStr = isEn ? `(p. ${yRange.start} - ${yRange.end})` : `(ص ${yRange.start} - ${yRange.end})`;
+  }
+
   if (isEn) {
-    if (missedCount === 0) {
-      // Normal reminder: on schedule, today's wird
-      return {
-        title: "Illuminate Your Day with the Qur'an",
-        body: `Daily Qur'an portion reminder (Day ${dayNumber}) ${pageRangeStr}.. Blessed is the one who dedicates time to the Qur'an. Open your Mushaf and read now.`
-      };
-    } else if (missedCount === 1) {
-      // Missed yesterday's wird
-      return {
-        title: "Gentle Reminder of the Noble Qur'an",
-        body: `A gentle reminder: You haven't completed yesterday's portion yet, and a blessed new portion awaits you today.. Read them together to keep your Khatma growing in grace and blessings.`
-      };
+    const prefix = `Dear ${userName}: `;
+    if (isEvening) {
+      if (missedCount === 0) {
+        return {
+          title: `${prefix}Evening Qur'an Reminder`,
+          body: `The day is coming to a close and today's assigned portion (Day ${dayNumber}) ${pageRangeStr} awaits you.. Conclude your night with the light of the Qur'an before sleep.`
+        };
+      } else if (missedCount === 1) {
+        return {
+          title: `${prefix}Catch Up Before Day's End`,
+          body: `Evening reminder: Yesterday's portion ${yesterdayRangeStr} and today's portion ${pageRangeStr} await you.. Make the seal of your night verses from the Holy Qur'an.`
+        };
+      } else {
+        return {
+          title: `${prefix}Blessed Opportunity Tonight`,
+          body: `Do not let today's portion ${pageRangeStr} and (${missedCount}) previous portions pass unread.. Spend a few tranquil minutes catching up tonight.`
+        };
+      }
     } else {
-      // Missed multiple days
-      return {
-        title: "Eager for Your Return to the Qur'an",
-        body: `Today's portion and (${missedCount}) previous portions are waiting for you.. Do not let days pass without the light of the Qur'an. A few minutes will catch you up; open your Mushaf now.`
-      };
+      // Morning (9:00 AM)
+      if (missedCount === 0) {
+        return {
+          title: `${prefix}Illuminate Your Day with the Qur'an`,
+          body: `Daily Qur'an portion reminder (Day ${dayNumber}) ${pageRangeStr}.. Blessed is the one who begins the day with the Qur'an. Open your Mushaf and read now.`
+        };
+      } else if (missedCount === 1) {
+        return {
+          title: `${prefix}Gentle Reminder of the Holy Qur'an`,
+          body: `A gentle reminder: You haven't completed yesterday's portion ${yesterdayRangeStr} yet, and a blessed new portion awaits you today ${pageRangeStr}.. Read them together to maintain your Khatma.`
+        };
+      } else {
+        return {
+          title: `${prefix}Eager for Your Return to the Qur'an`,
+          body: `Today's portion ${pageRangeStr} and (${missedCount}) previous portions await you.. Do not let days pass without the light of the Qur'an. Catch up now.`
+        };
+      }
     }
   }
 
   // Arabic
-  if (missedCount === 0) {
-    // Normal reminder: on schedule, today's wird
-    return {
-      title: 'نور يومك بكتاب الله',
-      body: `تذكير بوردك القرآني لليوم (اليوم ${dayNumber}) ${pageRangeStr}.. هنيئاً لمن جعل للقرآن نصيباً من يومه، افتح مصحفك واقرأ وردك الآن.`
-    };
-  } else if (missedCount === 1) {
-    // Missed yesterday's wird
-    return {
-      title: 'تذكير طيب بورد القرآن الكريم',
-      body: `تذكير لطيف: لم تكمل ورد الأمس بعد، ولديك اليوم ورد مبارك جديد.. يمكنك قراءتهما معاً لتستمر في مسيرة ختمتك المباركة وتفيض عليك البركة.`
-    };
+  const prefix = `يا ${userName}: `;
+  if (isEvening) {
+    if (missedCount === 0) {
+      return {
+        title: `${prefix}تذكير المساء بورد القرآن الكريم`,
+        body: `أوشك اليوم على الانقضاء ولم تقرأ وردك المقرر (اليوم ${dayNumber}) ${pageRangeStr}.. اختم يومك بنور كتاب الله واقرأ وردك قبل النوم لتنعم بليل مبارك.`
+      };
+    } else if (missedCount === 1) {
+      return {
+        title: `${prefix}تدارك وردك قبل نهاية اليوم`,
+        body: `تذكير مسائي: لم تقرأ ورد الأمس ${yesterdayRangeStr} وورد اليوم ${pageRangeStr}.. اجعل مسك ختام ليلتك آيات من الذكر الحكيم واقرأهما الآن.`
+      };
+    } else {
+      return {
+        title: `${prefix}فرصة طيبة لاستدراك وردك الليلة`,
+        body: `أوشك اليوم على الانتهاء ولديك ورد اليوم ${pageRangeStr} و (${missedCount}) أوراد سابقة متأخرة في انتظارك.. بضع دقائق في سكون الليل كفيلة باستدراك ما فاتك، افتح مصحفك الآن.`
+      };
+    }
   } else {
-    // Missed multiple days
-    return {
-      title: 'مشتاقون لعودتك إلى كتاب الله',
-      body: `لديك ورد اليوم و (${missedCount}) أوراد سابقة في انتظارك.. لا تدع الأيام تمضي دون نور القرآن، بضع دقائق كفيلة باستدراك ما فاتك، افتح مصحفك الآن.`
-    };
+    // Morning (9:00 AM)
+    if (missedCount === 0) {
+      return {
+        title: `${prefix}نور يومك بكتاب الله`,
+        body: `تذكير بوردك القرآني لليوم (اليوم ${dayNumber}) ${pageRangeStr}.. هنيئاً لمن جعل للقرآن نصيباً من يومه، افتح مصحفك واقرأ وردك الآن.`
+      };
+    } else if (missedCount === 1) {
+      return {
+        title: `${prefix}تذكير طيب بورد القرآن الكريم`,
+        body: `تذكير لطيف: لم تكمل ورد الأمس ${yesterdayRangeStr}، ولديك اليوم ورد مبارك جديد ${pageRangeStr}.. اقرأهما معاً لتستمر في مسيرة ختمتك المباركة وتفيض عليك البركة.`
+      };
+    } else {
+      return {
+        title: `${prefix}مشتاقون لعودتك إلى كتاب الله`,
+        body: `لديك ورد اليوم ${pageRangeStr} و (${missedCount}) أوراد سابقة متأخرة في انتظارك.. لا تدع الأيام تمضي دون نور القرآن، افتح مصحفك الآن واستدرك ما فاتك.`
+      };
+    }
   }
 };
 
 /**
- * Initializes the dedicated Android notification channel
+ * Initializes the dedicated Android notification channels
  */
 export const ensureWirdNotificationChannel = async (lang: 'ar' | 'en' = getCurrentAppLanguage()) => {
   if (!Capacitor.isNativePlatform()) return;
   try {
     const isEn = lang === 'en';
-    await LocalNotifications.createChannel({
-      id: WIRD_CHANNEL_ID,
+    const channelConfig = {
       name: isEn ? 'Daily Wird & Khatma Reminders' : 'تنبيهات الورد اليومي والختمات',
       description: isEn 
         ? "Gentle reminders for daily Qur'an reading and Khatma progress with chime sound and vibration"
         : 'قناة تنبيهات الورد القرآني والتذكير بالقراءة اليومية بنغمة هادئة واهتزاز',
-      importance: 5, // High importance (shows heads-up notification)
+      importance: 5 as any, // High importance (shows heads-up notification and status bar icon)
       sound: 'chime.mp3',
       vibration: true,
       visibility: 1
-    });
+    };
+    await LocalNotifications.createChannel({
+      id: WIRD_CHANNEL_ID,
+      ...channelConfig
+    } as any);
+    await LocalNotifications.createChannel({
+      id: 'daily_wird_reminder_channel',
+      ...channelConfig
+    } as any);
   } catch (e) {
     console.warn('Error creating wird notification channel:', e);
   }
@@ -220,9 +308,23 @@ export const ensureWirdNotificationChannel = async (lang: 'ar' | 'en' = getCurre
 
 /**
  * Synchronizes and schedules daily notifications for the active Khatma
- * Schedules ahead for up to 14 days, updating intelligently based on current progress
+ * - Immediately requests permissions if not granted
+ * - Stores state in Preferences for native Android background alarms
+ * - Schedules morning (09:00 AM) and evening (10:00 PM / 22:00) reminders
+ * - Automatically addresses user by name
+ * - Handles missed days catch-up dynamically
  */
 export const syncDailyWirdNotifications = async (langOverride?: 'ar' | 'en') => {
+  // Sync to native SharedPreferences (CapacitorStorage) so background Android receivers can access it
+  try {
+    const saved = localStorage.getItem('dailyWirdSettings_v2');
+    if (saved) {
+      await Preferences.set({ key: 'dailyWirdSettings_v2', value: saved });
+    }
+  } catch (e) {
+    console.warn('Error mirroring daily wird settings to Preferences:', e);
+  }
+
   if (!Capacitor.isNativePlatform()) {
     console.log('[DailyWird] Platform is not native, skip local notification scheduling.');
     return;
@@ -230,14 +332,32 @@ export const syncDailyWirdNotifications = async (langOverride?: 'ar' | 'en') => 
 
   const lang = langOverride || getCurrentAppLanguage();
   try {
+    // 1. Explicitly request notification permissions (ensures Android 13+ prompt appears)
+    const permStatus = await LocalNotifications.requestPermissions();
+    if (permStatus.display !== 'granted') {
+      console.log('[DailyWird] Notification permission not granted yet by user.');
+      return;
+    }
+
     const profile = getActiveWirdProfile();
-    
-    // 1. First, cancel any previously scheduled wird notifications (IDs 9301 to 9330)
+
+    // 2. Clear previously scheduled wird notifications (IDs 9300 to 9399) that are not currently delivered
     const pending = await LocalNotifications.getPending();
-    const wirdPending = pending.notifications.filter(n => n.id >= 9300 && n.id <= 9330);
+    const delivered = await LocalNotifications.getDeliveredNotifications();
+    const deliveredIds = new Set((delivered?.notifications || []).map(n => n.id));
+    const wirdPending = (pending?.notifications || []).filter(
+      n => n.id >= 9300 && n.id <= 9399 && !deliveredIds.has(n.id)
+    );
     if (wirdPending.length > 0) {
       await LocalNotifications.cancel({ notifications: wirdPending });
     }
+
+    // Also trigger native alarm synchronization
+    try {
+      if (AutoSilentMode && typeof AutoSilentMode.syncDailyWird === 'function') {
+        await AutoSilentMode.syncDailyWird();
+      }
+    } catch (e) {}
 
     if (!profile || !profile.isActive || profile.reminderEnabled === false) {
       console.log('[DailyWird] No active wird or reminder is disabled.');
@@ -246,80 +366,171 @@ export const syncDailyWirdNotifications = async (langOverride?: 'ar' | 'en') => 
 
     const totalDays = getWirdTotalDays(profile);
     if (profile.completedDays.length >= totalDays) {
-      console.log('[DailyWird] Khatma already completed. No reminder scheduled.');
-      return;
-    }
-
-    // Check permissions
-    const permStatus = await LocalNotifications.checkPermissions();
-    if (permStatus.display !== 'granted') {
-      console.log('[DailyWird] Notification permission not granted yet.');
+      console.log('[DailyWird] Khatma already completed. No reminder needed.');
       return;
     }
 
     await ensureWirdNotificationChannel(lang);
 
-    // Parse reminder time (default to 09:00 AM)
-    const reminderTimeStr = profile.reminderTime || '09:00';
-    const [hStr, mStr] = reminderTimeStr.split(':');
-    const reminderHour = parseInt(hStr, 10) || 9;
-    const reminderMinute = parseInt(mStr, 10) || 0;
-
     const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+    const isTodayAlreadyCompleted = Boolean(
+      profile.lastCompletedDate && profile.lastCompletedDate.startsWith(todayStr)
+    );
+
     const notificationsToSchedule: any[] = [];
 
-    // Schedule for the next 14 calendar days
-    // Day offset 1 = tomorrow, 2 = day after, ..., up to 14
-    for (let dayOffset = 1; dayOffset <= 14; dayOffset++) {
+    // 3. Baseline Daily Repeating Notifications via AlarmManager:
+    // Morning (09:00 AM) and Evening (10:00 PM / 22:00)
+    const baselineDayNumber = Math.min(profile.completedDays.length + 1, totalDays);
+    const morningBaseContent = buildWirdNotificationContent(profile, baselineDayNumber, 0, false, lang);
+    const eveningBaseContent = buildWirdNotificationContent(profile, baselineDayNumber, 0, true, lang);
+
+    notificationsToSchedule.push({
+      id: RECURRING_MORNING_ID,
+      title: morningBaseContent.title,
+      body: morningBaseContent.body,
+      schedule: { on: { hour: 9, minute: 0 }, allowWhileIdle: true, repeats: true },
+      channelId: WIRD_CHANNEL_ID,
+      sound: 'chime.mp3',
+      extra: {
+        page: 'daily-wird',
+        type: 'daily-wird',
+        period: 'morning',
+        profileId: profile.id,
+        playSound: true,
+        soundFile: '/assets/audio/chime.mp3'
+      },
+      smallIcon: 'ic_stat_name',
+      iconColor: '#2E7D5E',
+      group: WIRD_GROUP_ID,
+      groupSummary: false,
+      ongoing: false,
+      autoCancel: true
+    });
+
+    notificationsToSchedule.push({
+      id: RECURRING_EVENING_ID,
+      title: eveningBaseContent.title,
+      body: eveningBaseContent.body,
+      schedule: { on: { hour: 22, minute: 0 }, allowWhileIdle: true, repeats: true },
+      channelId: WIRD_CHANNEL_ID,
+      sound: 'chime.mp3',
+      extra: {
+        page: 'daily-wird',
+        type: 'daily-wird',
+        period: 'evening',
+        profileId: profile.id,
+        playSound: true,
+        soundFile: '/assets/audio/chime.mp3'
+      },
+      smallIcon: 'ic_stat_name',
+      iconColor: '#2E7D5E',
+      group: WIRD_GROUP_ID,
+      groupSummary: false,
+      ongoing: false,
+      autoCancel: true
+    });
+
+    // 4. Exact Lookahead Schedule for Day 0 (today) and the next 14 calendar days
+    for (let dayOffset = 0; dayOffset <= 14; dayOffset++) {
+      // Calculate calendar target date
       const targetDate = new Date();
       targetDate.setDate(now.getDate() + dayOffset);
-      targetDate.setHours(reminderHour, reminderMinute, 0, 0);
+      const targetDateStr = targetDate.toISOString().split('T')[0];
 
-      // If scheduled time already passed (shouldn't happen for dayOffset >= 1), skip
-      if (targetDate.getTime() <= now.getTime()) continue;
+      // Missed count calculation assuming no additional reading in between:
+      // If dayOffset == 0 (today):
+      //   missed = 0 if on track, or past missed days
+      // If dayOffset >= 1 (future):
+      //   if today is completed: dayOffset - 1 missed days
+      //   if today is not completed: dayOffset missed days
+      let missedOnTargetDate: number;
+      if (dayOffset === 0) {
+        const start = new Date(profile.startDate);
+        start.setHours(0, 0, 0, 0);
+        const diffTime = Math.max(0, targetDate.getTime() - start.getTime());
+        const daysElapsed = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        missedOnTargetDate = Math.max(0, daysElapsed - profile.completedDays.length);
+      } else {
+        missedOnTargetDate = (isTodayAlreadyCompleted ? 0 : 1) + (dayOffset - 1);
+      }
 
-      // Status calculation assuming user hasn't made progress in between:
-      // Current completed count:
-      const completedCount = profile.completedDays.length;
-      
-      // Is today's target day already completed today?
-      const isTodayCompleted = profile.completedDays.includes(profile.currentDay);
+      const targetDayNumber = Math.min(profile.completedDays.length + 1, totalDays);
 
-      // Number of days that will have been missed before this target date:
-      // Tomorrow (dayOffset = 1):
-      // If today wasn't completed -> 1 missed day (ورد الأمس).
-      // If today was completed -> 0 missed days.
-      // Day after tomorrow (dayOffset = 2):
-      // (isTodayCompleted ? 0 : 1) + 1 = 1 or 2 missed days.
-      const missedOnTargetDate = (isTodayCompleted ? 0 : 1) + (dayOffset - 1);
+      // Morning Schedule (09:00 AM)
+      const morningTarget = new Date(targetDate);
+      morningTarget.setHours(9, 0, 0, 0);
 
-      const targetDayNumber = Math.min(completedCount + 1, totalDays);
-      const content = buildWirdNotificationContent(profile, targetDayNumber, missedOnTargetDate, lang);
+      // If today and already completed today, skip morning reminder for today
+      const shouldScheduleMorning = (dayOffset > 0 || !isTodayAlreadyCompleted) && (morningTarget.getTime() > now.getTime());
+      if (shouldScheduleMorning) {
+        const morningContent = buildWirdNotificationContent(profile, targetDayNumber, missedOnTargetDate, false, lang);
+        notificationsToSchedule.push({
+          id: BASE_MORNING_EXACT_ID + dayOffset,
+          title: morningContent.title,
+          body: morningContent.body,
+          schedule: { at: morningTarget, allowWhileIdle: true },
+          channelId: WIRD_CHANNEL_ID,
+          sound: 'chime.mp3',
+          extra: {
+            page: 'daily-wird',
+            type: 'daily-wird',
+            period: 'morning',
+            profileId: profile.id,
+            profileName: profile.name,
+            dayNumber: targetDayNumber,
+            missedCount: missedOnTargetDate,
+            playSound: true,
+            soundFile: '/assets/audio/chime.mp3'
+          },
+          smallIcon: 'ic_stat_name',
+          iconColor: '#2E7D5E',
+          group: WIRD_GROUP_ID,
+          groupSummary: false,
+          ongoing: false,
+          autoCancel: true
+        });
+      }
 
-      notificationsToSchedule.push({
-        id: NOTIFICATION_BASE_ID + dayOffset,
-        title: content.title,
-        body: content.body,
-        schedule: { at: targetDate, allowWhileIdle: true },
-        channelId: WIRD_CHANNEL_ID,
-        sound: 'chime.mp3',
-        extra: {
-          page: 'daily-wird',
-          type: 'daily-wird',
-          profileId: profile.id,
-          profileName: profile.name,
-          dayNumber: targetDayNumber,
-          missedCount: missedOnTargetDate,
-          playSound: true,
-          soundFile: '/assets/audio/chime.mp3'
-        },
-        smallIcon: 'ic_stat_name'
-      });
+      // Evening Schedule (10:00 PM / 22:00)
+      const eveningTarget = new Date(targetDate);
+      eveningTarget.setHours(22, 0, 0, 0);
+
+      const shouldScheduleEvening = (dayOffset > 0 || !isTodayAlreadyCompleted) && (eveningTarget.getTime() > now.getTime());
+      if (shouldScheduleEvening) {
+        const eveningContent = buildWirdNotificationContent(profile, targetDayNumber, missedOnTargetDate, true, lang);
+        notificationsToSchedule.push({
+          id: BASE_EVENING_EXACT_ID + dayOffset,
+          title: eveningContent.title,
+          body: eveningContent.body,
+          schedule: { at: eveningTarget, allowWhileIdle: true },
+          channelId: WIRD_CHANNEL_ID,
+          sound: 'chime.mp3',
+          extra: {
+            page: 'daily-wird',
+            type: 'daily-wird',
+            period: 'evening',
+            profileId: profile.id,
+            profileName: profile.name,
+            dayNumber: targetDayNumber,
+            missedCount: missedOnTargetDate,
+            playSound: true,
+            soundFile: '/assets/audio/chime.mp3'
+          },
+          smallIcon: 'ic_stat_name',
+          iconColor: '#2E7D5E',
+          group: WIRD_GROUP_ID,
+          groupSummary: false,
+          ongoing: false,
+          autoCancel: true
+        });
+      }
     }
 
     if (notificationsToSchedule.length > 0) {
       await LocalNotifications.schedule({ notifications: notificationsToSchedule });
-      console.log(`[DailyWird] Successfully scheduled ${notificationsToSchedule.length} upcoming wird notifications in (${lang}).`);
+      console.log(`[DailyWird] Successfully scheduled ${notificationsToSchedule.length} phone notifications in (${lang}) with chime sound and custom icon.`);
     }
   } catch (error) {
     console.error('[DailyWird] Error synchronizing notifications:', error);
@@ -327,43 +538,27 @@ export const syncDailyWirdNotifications = async (langOverride?: 'ar' | 'en') => 
 };
 
 /**
- * Triggers an immediate test notification and sound for the user to try
+ * Triggers an immediate test notification with chime sound and custom icon for the user to verify
  */
 export const triggerTestWirdNotification = async (langOverride?: 'ar' | 'en') => {
   const lang = langOverride || getCurrentAppLanguage();
   const isEn = lang === 'en';
   const profile = getActiveWirdProfile();
   const dayNumber = profile ? profile.currentDay : 1;
+  const userName = profile ? formatWirdUserName(profile.name, lang) : (isEn ? 'Ahmed' : 'أحمد');
+  
   const content = profile 
-    ? buildWirdNotificationContent(profile, dayNumber, 0, lang)
+    ? buildWirdNotificationContent(profile, dayNumber, 0, false, lang)
     : (isEn ? {
-        title: "Daily Wird Test Alert",
-        body: "This is a test notification for your daily Qur'an portion with gentle reminder chime and vibration."
+        title: `Dear ${userName}: Daily Wird Phone Alert`,
+        body: `Portion reminder (Day 1) (p. 1 - 20).. Blessed is the one who dedicates time to the Holy Qur'an.`
       } : {
-        title: 'تنبيه الورد اليومي التجريبي',
-        body: 'هذا نموذج لتنبيه الورد اليومي القرآني بصوت نغمة التذكير الهادئة واهتزاز الهاتف.'
+        title: `يا ${userName}: نور يومك بكتاب الله`,
+        body: `تذكير بوردك القرآني لليوم (اليوم 1) (ص 1 - 20).. هنيئاً لمن جعل للقرآن نصيباً من يومه، افتح مصحفك واقرأ وردك الآن.`
       });
 
   // Play gentle sound
   playNotificationSound('/assets/audio/chime.mp3', true);
-
-  // Dispatch in-app modal alert only on web / browser (never in native APK)
-  if (!Capacitor.isNativePlatform()) {
-    window.dispatchEvent(new CustomEvent('show-wird-alert', {
-      detail: {
-        profileId: profile?.id || 'demo',
-        profileName: profile?.name || (isEn ? 'Current Khatma' : 'الختمة الحالية'),
-        currentDay: dayNumber,
-        totalDays: profile ? getWirdTotalDays(profile) : 30,
-        startPage: profile ? getWirdDayRange(dayNumber, profile).start : 1,
-        endPage: profile ? getWirdDayRange(dayNumber, profile).end : 20,
-        missedDaysCount: 0,
-        title: content.title,
-        message: content.body,
-        soundFileName: 'chime.mp3'
-      }
-    }));
-  }
 
   if (Capacitor.isNativePlatform()) {
     try {
@@ -386,7 +581,12 @@ export const triggerTestWirdNotification = async (langOverride?: 'ar' | 'en') =>
               playSound: true,
               soundFile: '/assets/audio/chime.mp3'
             },
-            smallIcon: 'ic_stat_name'
+            smallIcon: 'ic_stat_name',
+            iconColor: '#2E7D5E',
+            group: WIRD_GROUP_ID,
+            groupSummary: false,
+            ongoing: false,
+            autoCancel: true
           }
         ]
       });
@@ -397,11 +597,9 @@ export const triggerTestWirdNotification = async (langOverride?: 'ar' | 'en') =>
 };
 
 /**
- * Checks if the user has an uncompleted wird on app launch/resume and returns alert data if needed
- * Note: Only active on web/browser platforms. In native APK, reminders are handled via system notifications.
+ * Checks if the user has an uncompleted wird on web/browser only
  */
 export const checkWirdAlertOnAppResume = (): WirdAlertData | null => {
-  // Never show in-app popup alerts inside native APK
   if (Capacitor.isNativePlatform()) {
     return null;
   }
@@ -418,13 +616,10 @@ export const checkWirdAlertOnAppResume = (): WirdAlertData | null => {
     }
 
     const status = calculateWirdStatus(profile);
-    
-    // Only prompt if today's wird is NOT completed yet
     if (status.isTodayDayCompleted) {
       return null;
     }
 
-    // Check last alert prompt date to avoid annoying modal every single page navigation
     const todayStr = new Date().toISOString().split('T')[0];
     const lastAlertKey = `wird_alert_shown_date_${profile.id}`;
     const lastShown = localStorage.getItem(lastAlertKey);
@@ -434,7 +629,7 @@ export const checkWirdAlertOnAppResume = (): WirdAlertData | null => {
 
     const lang = getCurrentAppLanguage();
     const dayRange = getWirdDayRange(status.targetDayNumber, profile);
-    const content = buildWirdNotificationContent(profile, status.targetDayNumber, status.missedDaysCount, lang);
+    const content = buildWirdNotificationContent(profile, status.targetDayNumber, status.missedDaysCount, false, lang);
 
     return {
       profileId: profile.id,
@@ -454,9 +649,6 @@ export const checkWirdAlertOnAppResume = (): WirdAlertData | null => {
   }
 };
 
-/**
- * Marks today's alert modal as viewed for today
- */
 export const markWirdAlertShownToday = (profileId: string) => {
   try {
     const todayStr = new Date().toISOString().split('T')[0];

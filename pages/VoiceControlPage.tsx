@@ -95,7 +95,7 @@ const VoiceControlPage: React.FC<{ onBack: () => void, onNavigate: (pageId: stri
                                 title={isEn ? "Voice Control Guide" : "دليل التحكم الصوتي"}
                                 aria-label={isEn ? "Voice Control Guide" : "دليل التحكم الصوتي"}
                             >
-                                <HelpCircle size={19} />
+                                <i className="fa-solid fa-circle-question text-lg text-black"></i>
                             </button>
                             <ThemePageLock />
                             <button

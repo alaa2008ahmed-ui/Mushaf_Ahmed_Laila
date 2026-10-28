@@ -44,27 +44,29 @@ const FontSelectModal: FC<{
         <div className={`fixed inset-0 z-[1200] bg-black/40 backdrop-blur-sm flex justify-center items-center ${isLandscape ? 'p-0' : 'p-4'} animate-fadeIn`} onClick={onClose}>
             <div 
                 dir={isTranslationMode ? 'ltr' : dir} 
-                className={`modal-skinned w-full ${isLandscape ? 'max-w-4xl h-full rounded-none max-h-screen' : 'max-w-md sm:max-w-2xl rounded-2xl max-h-[90vh]'} shadow-2xl flex flex-col animate-modal-enter overflow-hidden`} 
+                className={`modal-skinned w-full ${isLandscape ? 'max-w-4xl h-full rounded-none max-h-screen' : 'max-w-md sm:max-w-2xl rounded-2xl max-h-[90vh]'} shadow-2xl flex flex-col animate-modal-enter overflow-hidden border-0`} 
+                style={{ border: 'none', outline: 'none' }}
                 onClick={e => e.stopPropagation()}
             >
                 {/* Header */}
-                <div className="p-3.5 border-b flex items-center justify-between shrink-0" style={{ borderColor: 'var(--qr-card-border)' }}>
+                <div className="p-3.5 flex items-center justify-between shrink-0">
                     <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold truncate" style={{ color: 'var(--qr-card-text)' }}>
+                        <span className="text-sm sm:text-base font-bold truncate" style={{ color: 'var(--qr-card-text)' }}>
                             {modalTitle}
                         </span>
                         {isTranslationMode && (
-                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/30">
+                            <span className="text-[10px] px-2.5 py-0.5 rounded-full font-bold quran-raised-btn text-emerald-600 dark:text-emerald-400">
                                 English Only
                             </span>
                         )}
                     </div>
                     <button 
                         onClick={onClose} 
-                        className="p-1 rounded-lg hover:opacity-70 transition opacity-60 text-sm font-bold"
+                        className="w-8 h-8 rounded-xl flex items-center justify-center transition-all quran-raised-btn text-sm font-bold"
                         style={{ color: 'var(--qr-card-text)' }}
+                        title={isEn ? "Close" : "إغلاق"}
                     >
-                        <i className="fa-solid fa-times"></i>
+                        <i className="fa-solid fa-times quran-3d-icon"></i>
                     </button>
                 </div>
 
@@ -87,16 +89,22 @@ const FontSelectModal: FC<{
                             <button 
                                 key={f.id} 
                                 onClick={() => onSelect(f.id)} 
-                                className={`w-full p-3.5 rounded-xl text-center font-bold transition flex flex-col justify-center items-center gap-1.5 ${isSelected ? 'theme-accent-btn shadow-md ring-2 ring-emerald-500/50' : 'hover:opacity-85'}`} 
-                                style={!isSelected ? { 
+                                className={`w-full p-3.5 rounded-xl text-center font-bold transition-all flex flex-col justify-center items-center gap-1.5 cursor-pointer ${
+                                    isSelected 
+                                        ? 'quran-raised-btn-selected shadow-lg' 
+                                        : 'quran-raised-btn hover:opacity-90'
+                                }`} 
+                                style={isSelected ? { 
+                                    backgroundColor: 'var(--qr-accent)', 
+                                    color: 'var(--qr-accent-text, #ffffff)' 
+                                } : { 
                                     backgroundColor: 'var(--qr-card-bg)', 
-                                    color: 'var(--qr-card-text)', 
-                                    border: '1px solid var(--qr-card-border)' 
-                                } : {}}
+                                    color: 'var(--qr-card-text)'
+                                }}
                             >
                                 <div className="flex items-center justify-between w-full px-1">
                                     <span className="text-sm font-bold truncate">{displayName}</span>
-                                    {isSelected && <i className="fa-solid fa-circle-check text-xs"></i>}
+                                    {isSelected && <i className="fa-solid fa-circle-check text-xs quran-3d-icon"></i>}
                                 </div>
                                 <span 
                                     className={`w-full truncate px-1 opacity-80 ${isTranslationMode ? 'text-sm text-left font-normal italic tracking-wide' : 'text-xs text-center'}`}

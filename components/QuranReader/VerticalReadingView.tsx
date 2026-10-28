@@ -729,7 +729,7 @@ const VerticalReadingView: React.FC<VerticalReadingViewProps> = React.memo(({
 
     if (isLoading) {
         return (
-            <div className="flex items-center justify-center h-full" style={{ backgroundColor: currentTheme.bg }}>
+            <div className="flex items-center justify-center h-full" style={{ backgroundColor: currentTheme.bg || '#ffffff' }}>
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: currentTheme.accent }}></div>
             </div>
         );
@@ -738,7 +738,7 @@ const VerticalReadingView: React.FC<VerticalReadingViewProps> = React.memo(({
     return (
         <div 
             className={`w-full min-h-full ${isLandscape ? (!isLandscapeUIHidden ? 'pt-[calc(48px+var(--logical-safe-top))] pb-[calc(56px+var(--logical-safe-bottom))]' : 'pt-2 pb-8') : ''}`} 
-            style={{ direction: readingMode === 'translation' ? 'ltr' : 'rtl', backgroundColor: settings.bgColor || currentTheme.bg }}
+            style={{ direction: readingMode === 'translation' ? 'ltr' : 'rtl', backgroundColor: settings.bgColor || currentTheme.bg || '#ffffff' }}
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}

@@ -14,13 +14,16 @@ interface AutoSilentPluginInterface {
   setSilentNow(options: { silent: boolean; prayerName?: string }): Promise<{ success: boolean; isSilent: boolean }>;
   scheduleSilentWindows(options: { windows: SilentWindow[] }): Promise<{ success: boolean }>;
   cancelAllSilent(): Promise<{ success: boolean }>;
+  updateWidget?(): Promise<{ success: boolean }>;
   updatePersistentNotification(): Promise<{ success: boolean }>;
   setPersistentNotificationEnabled(options: { enabled: boolean }): Promise<{ success: boolean; enabled: boolean }>;
   checkBatteryOptimization(): Promise<{ isIgnoring: boolean }>;
   requestBatteryOptimization(): Promise<void>;
+  openAppNotificationSettings?(): Promise<{ success: boolean }>;
   playTone(options: { path: string }): Promise<{ success: boolean; fallbackNeeded?: boolean; error?: string }>;
   stopTone(): Promise<{ success: boolean }>;
   setAppLanguage?(options: { language: string }): Promise<{ success: boolean; language: string }>;
+  getPendingShortcut?(): Promise<{ target?: string; seq?: number }>;
 }
 
 export const AutoSilentMode = registerPlugin<AutoSilentPluginInterface>('AutoSilentMode');
@@ -143,6 +146,20 @@ export const requestNativeBatteryOptimization = async (): Promise<void> => {
 };
 
 /**
+ * Opens system notification settings for this app directly.
+ */
+export const openNativeNotificationSettings = async (): Promise<boolean> => {
+  if (Capacitor.getPlatform() !== 'android') return false;
+  try {
+    const res = await AutoSilentMode.openAppNotificationSettings?.();
+    return !!res?.success;
+  } catch (e) {
+    console.warn('openNativeNotificationSettings error:', e);
+    return false;
+  }
+};
+
+/**
  * Plays a prayer alert tone natively on Android via MediaPlayer from res/raw or file.
  * Returns true if played natively, false if web fallback should handle it.
  */
@@ -183,4 +200,37 @@ export const setNativeAppLanguage = async (language: string): Promise<void> => {
     console.warn('setNativeAppLanguage error:', e);
   }
 };
+
+export interface PendingShortcutResult {
+  target: string;
+  seq: number;
+}
+
+/**
+ * Retrieves and clears any pending launcher/widget shortcut target from native Android storage.
+ */
+export const getPendingShortcutInfo = async (): Promise<PendingShortcutResult | null> => {
+  if (Capacitor.getPlatform() !== 'android') return null;
+  try {
+    if (AutoSilentMode.getPendingShortcut) {
+      const res = await AutoSilentMode.getPendingShortcut();
+      if (res && res.target && res.target.trim()) {
+        return {
+          target: res.target.trim(),
+          seq: typeof res.seq === 'number' ? res.seq : 0,
+        };
+      }
+    }
+    return null;
+  } catch (e) {
+    console.warn('getPendingShortcut error:', e);
+    return null;
+  }
+};
+
+export const getPendingShortcut = async (): Promise<string | null> => {
+  const info = await getPendingShortcutInfo();
+  return info ? info.target : null;
+};
+
 

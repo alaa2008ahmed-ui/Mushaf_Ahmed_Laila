@@ -395,6 +395,7 @@ export const PRAYER_TIMES_STRINGS: Record<string, { ar: string; en: string }> = 
   customize: { ar: 'تخصيص', en: 'Customize' },
   dstTooltip: { ar: 'التوقيت الصيفي', en: 'Daylight Saving Time' },
   iqamaPrefix: { ar: 'إقامة', en: 'Iqama' },
+  iqama: { ar: 'الإقامة', en: 'Iqama' },
   iqamaButtonTooltip: { ar: 'تخصيص وقت ونغمة الإقامة', en: 'Customize Iqama time and alert' },
 
   // Footer Note
@@ -551,7 +552,7 @@ export const PRAYER_TIMES_STRINGS: Record<string, { ar: string; en: string }> = 
   sharePdfTitle: { ar: 'مشاركة أو حفظ ملف PDF', en: 'Share or Save PDF' },
   shareNotSupported: { ar: 'المشاركة غير مدعومة في هذا المتصفح', en: 'Sharing is not supported in this browser' },
   pdfError: { ar: 'حدث خطأ أثناء إنشاء ملف PDF', en: 'Error generating PDF file' },
-  createdAppAttribution: { ar: 'مصحف أحمد وليلى', en: 'Mushaf Ahmed & Laila' },
+  createdAppAttribution: { ar: 'مصحف أحمد و ليلى', en: 'Mushaf Ahmed & Laila' },
   monthlyShareHeading: { ar: 'مواقيت الصلاة لشهر {m}', en: 'Prayer Times for the Month of {m}' },
   locationLabel: { ar: 'الموقع: {loc}', en: 'Location: {loc}' },
   generatedByLabel: { ar: 'تم الإنشاء بواسطة: {app}', en: 'Created by: {app}' }

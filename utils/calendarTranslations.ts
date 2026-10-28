@@ -1,3 +1,5 @@
+import { EXTRA_HISTORICAL_EVENTS } from '../data/islamicHistoryEventsExtra';
+
 export type Language = 'ar' | 'en';
 
 export const CALENDAR_STRINGS: Record<string, { ar: string; en: string }> = {
@@ -97,8 +99,8 @@ export const CALENDAR_STRINGS: Record<string, { ar: string; en: string }> = {
 
   // Historical memory card
   historyTitle: {
-    ar: 'ذاكرة التاريخ',
-    en: 'History Archive'
+    ar: 'ذاكرة التاريخ الإسلامي',
+    en: 'Islamic History Memory'
   },
   anotherEvent: {
     ar: 'حدث آخر',
@@ -922,7 +924,8 @@ export const HISTORICAL_EVENTS_TRANSLATED: HistoricalEventLocalized[] = [
     gregorianYearEn: "c. 825 AD",
     descriptionAr: "بدأ الإمام البخاري رحلته الكبرى في طلب الحديث عبر الأمصار، والتي أثمرت عن 'صحيح البخاري' أصح كتاب بعد كتاب الله.",
     descriptionEn: "Imam Muhammad ibn Ismail al-Bukhari embarked on his historic travels across cities compiling 'Sahih al-Bukhari', the most authentic collection of Hadith."
-  }
+  },
+  ...EXTRA_HISTORICAL_EVENTS
 ];
 
 export function tCalendar(key: string, language: Language = 'ar'): string {

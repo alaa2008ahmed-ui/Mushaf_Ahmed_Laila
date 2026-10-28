@@ -33,19 +33,21 @@ export interface Theme {
 export const presetThemes: { [key: string]: Theme } = {
     default: {
         name: "الافتراضي",
-        bgColor: "#FFFFFF",
+        bgColor: "#DFE5EC",
         isOriginal: true,
-        textColor: "#000000",
+        textColor: "#1E293B",
         font: "'Cairo', sans-serif",
-        palette: ["#059669", "#8B5CF6", "#059669"],
+        palette: ["#2E7D5E", "#544670", "#3B7A82", "#A26743"],
         barBg: "#FFFFFF",
-        barBorder: "1px solid #000000",
+        barBorder: "none",
         topBarBg: "#FFFFFF",
-        topBarText: "#000000",
-        btnBg: "#FFFFFF",
+        topBarText: "#1E293B",
+        btnBg: "#2E7D5E",
         btnText: "#FFFFFF",
-        btnBorder: "1px solid #000000",
-        accent: "#059669"
+        btnBorder: "none",
+        accent: "#2E7D5E",
+        cardBg: "#FFFFFF",
+        cardBorder: "none"
     },
     deep_black: {
         name: "اسود",

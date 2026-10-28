@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Heart, Star, Volume2, VolumeX, Share2, Check, Sparkles, Moon, Calendar } from 'lucide-react';
 import moment from 'moment-hijri';
+import { Capacitor } from '@capacitor/core';
 import { useTheme } from '../context/ThemeContext';
 import { playNotificationSound, stopNotificationSound } from '../utils/prayerTimesUtils';
 
@@ -123,8 +124,10 @@ const MawlidNotification: React.FC = () => {
     const isBlackTheme = theme?.bgColor === '#000000' || themeKey === 'deep_black';
     const timerRef = useRef<any>(null);
 
-    // التحقق التلقائي عند بدء التطبيق
+    // التحقق التلقائي عند بدء التطبيق (على المتصفح فقط - في تطبيق APK تظهر الإشعارات في الشريط العلوي للهاتف فقط)
     useEffect(() => {
+        if (Capacitor.isNativePlatform()) return;
+
         const checkOccasions = () => {
             const today = moment();
             const year = today.iYear();
@@ -232,7 +235,7 @@ const MawlidNotification: React.FC = () => {
         }
     };
 
-    if (!currentOccasion) return null;
+    if (Capacitor.isNativePlatform() || !currentOccasion) return null;
 
     const accentColor = currentOccasion.accentColor || theme.palette?.[0] || '#10b981';
     const today = moment();

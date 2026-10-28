@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_card_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:layoutDirection="ltr"
+    android:background="@drawable/widget_bg_white"
+    android:clipToOutline="true"
+    android:paddingStart="7dp"
+    android:paddingEnd="7dp"
+    android:paddingTop="3dp"
+    android:paddingBottom="4dp">
+
+    <!-- 4-Color Accent Strip (Matching Home Page: Purple, Green, Teal, Terracotta) -->
+    <LinearLayout
+        android:id="@+id/widget_card_accent_strip"
+        android:layout_width="match_parent"
+        android:layout_height="2.5dp"
+        android:orientation="horizontal"
+        android:layout_marginBottom="3dp"
+        android:baselineAligned="false">
+        <FrameLayout
+            android:id="@+id/card_strip_purple"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="match_parent"
+            android:background="#544670" />
+        <FrameLayout
+            android:id="@+id/card_strip_green"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="match_parent"
+            android:background="#2E7D5E" />
+        <FrameLayout
+            android:id="@+id/card_strip_teal"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="match_parent"
+            android:background="#3B7A82" />
+        <FrameLayout
+            android:id="@+id/card_strip_terracotta"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="match_parent"
+            android:background="#A26743" />
+    </LinearLayout>
+
+    <!-- Section 1 (Top, LTR): City (Purple) & Date (Teal) & Logo -->
+    <LinearLayout
+        android:id="@+id/widget_card_header"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="horizontal"
+        android:layoutDirection="ltr"
+        android:gravity="center_vertical">
+
+        <ImageView
+            android:id="@+id/widget_card_icon"
+            android:layout_width="19dp"
+            android:layout_height="19dp"
+            android:src="@mipmap/ic_launcher"
+            android:contentDescription="App Logo" />
+
+        <TextView
+            android:id="@+id/widget_card_city"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Dammam"
+            android:textColor="#544670"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:layout_marginStart="5dp"
+            android:layout_marginEnd="5dp" />
+
+        <TextView
+            android:id="@+id/widget_card_date"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:text="15 Jumada 1, 1448"
+            android:textColor="#3B7A82"
+            android:textSize="10.5sp"
+            android:textStyle="bold"
+            android:gravity="end" />
+    </LinearLayout>
+
+    <!-- Section 2 (Middle, LTR): Next Prayer (Green), Live Countdown (White), Adhan Time (Warm Amber) on Slate-Violet Hero -->
+    <LinearLayout
+        android:id="@+id/widget_card_hero"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1.15"
+        android:orientation="horizontal"
+        android:layoutDirection="ltr"
+        android:gravity="center"
+        android:background="@drawable/widget_card_hero_bg"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp"
+        android:paddingTop="2dp"
+        android:paddingBottom="2dp"
+        android:layout_marginTop="2dp"
+        android:layout_marginBottom="2dp">
+
+        <TextView
+            android:id="@+id/widget_card_prayer_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Asr in"
+            android:textColor="#86EFAC"
+            android:textSize="11.5sp"
+            android:textStyle="bold"
+            android:layout_marginEnd="6dp" />
+
+        <Chronometer
+            android:id="@+id/widget_card_countdown"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#FFFFFF"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:visibility="gone"
+            android:countDown="true" />
+
+        <TextView
+            android:id="@+id/widget_card_countdown_en"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#FFFFFF"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:visibility="visible" />
+
+        <TextView
+            android:id="@+id/widget_card_prayer_time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Adhan : 03:14"
+            android:textColor="#FDE68A"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:layout_marginStart="8dp" />
+    </LinearLayout>
+
+    <!-- Section 3 (Bottom, LTR): 6 Prayers Strip Compact -->
+    <LinearLayout
+        android:id="@+id/widget_card_prayers_strip"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="horizontal"
+        android:layoutDirection="ltr"
+        android:gravity="center_vertical"
+        android:baselineAligned="false">
+
+        <!-- Fajr -->
+        <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center">
+            <TextView android:id="@+id/card_name_fajr" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Fajr" android:textColor="#0F172A" android:textSize="9.5sp" android:textStyle="bold"/>
+            <TextView android:id="@+id/card_time_fajr" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="04:25" android:textColor="#0F172A" android:textSize="10.5sp" android:textStyle="bold"/>
+        </LinearLayout>
+        <!-- Sunrise -->
+        <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center">
+            <TextView android:id="@+id/card_name_sunrise" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Sun" android:textColor="#0F172A" android:textSize="9.5sp" android:textStyle="bold"/>
+            <TextView android:id="@+id/card_time_sunrise" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="05:45" android:textColor="#0F172A" android:textSize="10.5sp" android:textStyle="bold"/>
+        </LinearLayout>
+        <!-- Dhuhr -->
+        <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center">
+            <TextView android:id="@+id/card_name_dhuhr" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Dhuhr" android:textColor="#0F172A" android:textSize="9.5sp" android:textStyle="bold"/>
+            <TextView android:id="@+id/card_time_dhuhr" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="11:24" android:textColor="#0F172A" android:textSize="10.5sp" android:textStyle="bold"/>
+        </LinearLayout>
+        <!-- Asr -->
+        <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center">
+            <TextView android:id="@+id/card_name_asr" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Asr" android:textColor="#0F172A" android:textSize="9.5sp" android:textStyle="bold"/>
+            <TextView android:id="@+id/card_time_asr" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="02:38" android:textColor="#0F172A" android:textSize="10.5sp" android:textStyle="bold"/>
+        </LinearLayout>
+        <!-- Maghrib -->
+        <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center">
+            <TextView android:id="@+id/card_name_maghrib" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Maghrib" android:textColor="#0F172A" android:textSize="9.5sp" android:textStyle="bold"/>
+            <TextView android:id="@+id/card_time_maghrib" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="05:02" android:textColor="#0F172A" android:textSize="10.5sp" android:textStyle="bold"/>
+        </LinearLayout>
+        <!-- Isha -->
+        <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center">
+            <TextView android:id="@+id/card_name_isha" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Isha" android:textColor="#0F172A" android:textSize="9.5sp" android:textStyle="bold"/>
+            <TextView android:id="@+id/card_time_isha" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="06:32" android:textColor="#0F172A" android:textSize="10.5sp" android:textStyle="bold"/>
+        </LinearLayout>
+    </LinearLayout>
+
+</LinearLayout>

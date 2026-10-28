@@ -66,16 +66,16 @@ export const ISLAMIC_TRANSLATIONS: Translations = {
     en: 'Hisn Al-Muslim'
   },
   'menu.tasbeeh': {
-    ar: 'السبحة',
-    en: 'Electronic Tasbeeh'
+    ar: 'التسبيح',
+    en: 'Tasbeeh'
   },
   'menu.calendar': {
     ar: 'التقويم',
     en: 'Islamic Calendar'
   },
   'menu.qibla': {
-    ar: 'القبلة',
-    en: 'Qibla Direction'
+    ar: 'البوصلة',
+    en: 'Compass'
   },
   'menu.hajj_umrah': {
     ar: 'الحج والعمرة',
@@ -90,8 +90,8 @@ export const ISLAMIC_TRANSLATIONS: Translations = {
     en: 'Calculators'
   },
   'menu.asmaul_husna': {
-    ar: 'أسماء الله الحسنى',
-    en: 'Divine Names'
+    ar: 'أسماء الله',
+    en: 'Names of Allah'
   },
   'menu.daily_wird': {
     ar: 'الورد اليومي',
@@ -115,7 +115,7 @@ export const ISLAMIC_TRANSLATIONS: Translations = {
   },
   'menu.others': {
     ar: 'الرقية الشرعية',
-    en: 'Al-Ruqyah'
+    en: 'Ruqyah'
   },
   'menu.prophetic_seerah': {
     ar: 'السيرة النبوية',
@@ -575,6 +575,14 @@ export const ISLAMIC_TRANSLATIONS: Translations = {
     ar: 'وضع العرض',
     en: 'Landscape View'
   },
+  'common.landscape': {
+    ar: 'عرضي',
+    en: 'Landscape'
+  },
+  'common.quran': {
+    ar: 'القرآن الكريم',
+    en: 'The Noble Qur\'an'
+  },
 
   // Prayer Cards on Home Screen
   'prayer.previous': {
@@ -873,6 +881,14 @@ export const ISLAMIC_TRANSLATIONS: Translations = {
     ar: 'شارك التطبيق',
     en: 'Share Application'
   },
+  'app_share.ayah': {
+    ar: 'قال تعالى: ﴿ وَتَعَاوَنُوا عَلَى الْبِرِّ وَالتَّقْوَىٰ ﴾',
+    en: 'Allah says: ﴿ And cooperate in righteousness and piety ﴾'
+  },
+  'app_share.hadith': {
+    ar: '« مَنْ دَلَّ عَلَى خَيْرٍ فَلَهُ مِثْلُ أَجْرِ فَاعِلِهِ »',
+    en: '« Whoever guides someone to goodness will have a reward like one who did it »'
+  },
   'app_share.desc': {
     ar: 'اذا اعجبك التطبيق قم بنشره على وسائل التواصل ليكون لك الاجر ولمن تحب ان شاء الله .',
     en: 'If you benefit from the app, share it on social media to earn ongoing rewards, insha\'Allah.'
@@ -880,6 +896,30 @@ export const ISLAMIC_TRANSLATIONS: Translations = {
   'app_share.copied': {
     ar: 'تم نسخ نص المشاركة',
     en: 'Share text copied to clipboard'
+  },
+  'app_share.qr_button': {
+    ar: 'الكيو ار',
+    en: 'QR Code'
+  },
+  'app_share.qr_page_title': {
+    ar: 'رمز الاستجابة السريعة (QR Code)',
+    en: 'Application QR Code'
+  },
+  'app_share.qr_page_subtitle': {
+    ar: 'امسح رمز الاستجابة السريعة بكاميرا هاتفك للوصول المباشر إلى التطبيق على متجر جوجل بلاي',
+    en: 'Scan the QR code with your phone camera for direct access on Google Play'
+  },
+  'app_share.print': {
+    ar: 'طباعة',
+    en: 'Print'
+  },
+  'app_share.print_a4': {
+    ar: 'طباعة A4',
+    en: 'Print A4'
+  },
+  'app_share.print_a5': {
+    ar: 'طباعة A5',
+    en: 'Print A5'
   },
 
   // Theme Names Localization
@@ -1059,19 +1099,19 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
       'sabah-masaa': 'Daily Adhkar',
       'salah-adhkar': 'Salah Adhkar',
       'hisn-muslim': 'Hisn Al-Muslim',
-      'tasbeeh': 'Electronic Tasbeeh',
+      'tasbeeh': 'Tasbeeh',
       'calendar': 'Islamic Calendar',
-      'qibla': 'Qibla Direction',
+      'qibla': 'Compass',
       'hajj-umrah': 'Hajj & Umrah',
       'nawawi': 'Forty Hadith',
       'calculators': 'Calculators',
-      'asmaul-husna': 'Divine Names',
+      'asmaul-husna': 'Names of Allah',
       'daily-wird': 'Daily Wird',
       'habit-tracker': 'Habit Tracker',
       'memorization': 'Memorization',
       'voice-control': 'Voice Control',
       'islamic-sites': 'Islamic Sites',
-      'others': 'Al-Ruqyah',
+      'others': 'Ruqyah',
       'prophetic-seerah': 'Prophetic Seerah',
       'ten-promised': 'The Ten Promised Paradise',
       'tajweed-education': 'Tajweed Rules',
@@ -1147,11 +1187,14 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
   };
 
   const formatNumber = (n: number | string): string => {
+    const str = String(n);
     if (language === 'en') {
-      return String(n);
+      return str
+        .replace(/[٠-٩]/g, d => '0123456789'['٠١٢٣٤٥٦٧٨٩'.indexOf(d)])
+        .replace(/[۰-۹]/g, d => '0123456789'['۰۱۲۳۴۵۶۷۸۹'.indexOf(d)]);
     }
     const easternDigits = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
-    return String(n).replace(/[0-9]/g, (w) => easternDigits[+w]);
+    return str.replace(/[0-9]/g, (w) => easternDigits[+w]);
   };
 
   return (

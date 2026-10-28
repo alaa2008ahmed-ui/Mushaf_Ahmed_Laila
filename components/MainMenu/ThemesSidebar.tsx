@@ -44,6 +44,21 @@ const getThemeCircleColor = (key: string, t: any) => {
 };
 
 
+// Helper: Calculate relative perceived luminance of a hex color (0 = black, 1 = white)
+const getLuminance = (hexColor: string): number => {
+  if (!hexColor || typeof hexColor !== 'string') return 0.5;
+  const hex = hexColor.replace('#', '').trim();
+  if (hex.length !== 6 && hex.length !== 3) return 0.5;
+  const fullHex = hex.length === 3 
+    ? hex.split('').map(c => c + c).join('') 
+    : hex;
+  const r = parseInt(fullHex.substring(0, 2), 16);
+  const g = parseInt(fullHex.substring(2, 4), 16);
+  const b = parseInt(fullHex.substring(4, 6), 16);
+  if (isNaN(r) || isNaN(g) || isNaN(b)) return 0.5;
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+};
+
 export const ThemesSidebar: React.FC<ThemesSidebarProps> = ({ isOpen, onClose }) => {
   const { theme, themeKey, applyPresetTheme, setCustomBackground, resetBackground } = useTheme();
   const { isRTL, language } = useLanguage();
@@ -64,7 +79,20 @@ export const ThemesSidebar: React.FC<ThemesSidebarProps> = ({ isOpen, onClose })
     }
   };
 
-  const themeBorderColor = (theme.palette && theme.palette[0]) || theme.accent || '#10b981';
+  const isBlackTheme = themeKey === 'deep_black' || theme.bgColor === '#000000' || theme.name === 'اسود' || theme.name === 'black';
+  const sidebarBg = isBlackTheme ? '#000000' : (theme.bgColor || '#DFE5EC');
+  const sidebarLum = getLuminance(sidebarBg);
+  const isDarkBg = isBlackTheme || sidebarLum < 0.45;
+
+  const rawPrimary = theme.palette?.[0] || theme.accent || '#2E7D5E';
+  const header3DIconColor = isBlackTheme
+    ? '#FFFFFF'
+    : (isDarkBg && getLuminance(rawPrimary) < 0.45
+        ? (theme.accent && getLuminance(theme.accent) >= 0.45 ? theme.accent : '#FFFFFF')
+        : rawPrimary);
+  const header3DIconFilter = isBlackTheme || isDarkBg
+    ? 'drop-shadow(0 2px 3px rgba(255,255,255,0.4)) drop-shadow(0 4px 6px rgba(0,0,0,0.9))'
+    : 'drop-shadow(0 1px 0 rgba(255,255,255,0.95)) drop-shadow(0 2px 3px rgba(0,0,0,0.32)) drop-shadow(0 4px 5px rgba(0,0,0,0.22))';
 
   return (
     <AnimatePresence>
@@ -86,8 +114,8 @@ export const ThemesSidebar: React.FC<ThemesSidebarProps> = ({ isOpen, onClose })
             transition={{ type: 'spring', damping: 28, stiffness: 320 }}
             className={`w-[88px] sm:w-[98px] shadow-2xl flex flex-col ${
               isRTL 
-                ? 'rounded-l-2xl rounded-r-none border-y-2 border-l-2 border-r-0' 
-                : 'rounded-r-2xl rounded-l-none border-y-2 border-r-2 border-l-0'
+                ? 'rounded-l-2xl rounded-r-none' 
+                : 'rounded-r-2xl rounded-l-none'
             } overflow-hidden`}
             dir={isRTL ? "rtl" : "ltr"}
             style={{
@@ -97,35 +125,51 @@ export const ThemesSidebar: React.FC<ThemesSidebarProps> = ({ isOpen, onClose })
               right: isRTL ? 0 : 'auto',
               left: isRTL ? 'auto' : 0,
               zIndex: 1250,
-              backgroundColor: '#FFFFFF',
-              color: '#1e293b',
-              borderColor: themeBorderColor,
+              backgroundColor: sidebarBg,
+              color: isDarkBg ? '#FFFFFF' : theme.textColor,
+              border: 'none',
+              borderLeft: isRTL ? (isDarkBg ? '1px solid rgba(255, 255, 255, 0.18)' : '1px solid rgba(0, 0, 0, 0.08)') : 'none',
+              borderRight: !isRTL ? (isDarkBg ? '1px solid rgba(255, 255, 255, 0.18)' : '1px solid rgba(0, 0, 0, 0.08)') : 'none',
               fontFamily: theme.font,
             }}
           >
-            {/* Quick Actions Row */}
+            {/* Quick Actions Row: Standalone 3D Embossed Icons (No Button Boxes) */}
             <div 
-              className="p-1.5 border-b grid grid-cols-2 gap-1 shrink-0 bg-slate-50 relative z-10"
-              style={{ borderBottomColor: `${themeBorderColor}25` }}
+              className="px-2 pt-2.5 pb-0.5 grid grid-cols-2 gap-x-2 place-items-center shrink-0 relative z-10"
+              style={{ backgroundColor: 'transparent', borderBottom: 'none' }}
             >
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="py-2 px-1 rounded-lg flex items-center justify-center transition-all active:scale-90 hover:bg-slate-200/60 cursor-pointer"
+                className="p-1 flex items-center justify-center transition-all duration-150 active:scale-90 hover:scale-110 cursor-pointer select-none bg-transparent border-none outline-none"
                 title={isEn ? "Custom Background" : "تخصيص خلفية مخصصة"}
                 aria-label={isEn ? "Custom Background" : "تخصيص خلفية مخصصة"}
               >
-                <Image className="w-4 h-4 text-blue-600 font-bold" />
+                <Image
+                  strokeWidth={2.3}
+                  className="w-[19.5px] h-[19.5px] sm:w-[21px] sm:h-[21px] pointer-events-none transition-transform"
+                  style={{
+                    color: header3DIconColor,
+                    filter: header3DIconFilter
+                  }}
+                />
               </button>
 
               <button
                 type="button"
                 onClick={() => resetBackground()}
-                className="py-2 px-1 rounded-lg flex items-center justify-center transition-all active:scale-90 hover:bg-slate-200/60 cursor-pointer"
+                className="p-1 flex items-center justify-center transition-all duration-150 active:scale-90 hover:scale-110 cursor-pointer select-none bg-transparent border-none outline-none"
                 title={isEn ? "Reset Background" : "استعادة الخلفية"}
                 aria-label={isEn ? "Reset Background" : "استعادة الخلفية"}
               >
-                <RotateCcw className="w-4 h-4 text-amber-600 font-bold" />
+                <RotateCcw
+                  strokeWidth={2.3}
+                  className="w-[19.5px] h-[19.5px] sm:w-[21px] sm:h-[21px] pointer-events-none transition-transform"
+                  style={{
+                    color: header3DIconColor,
+                    filter: header3DIconFilter
+                  }}
+                />
               </button>
             </div>
 
@@ -139,14 +183,53 @@ export const ThemesSidebar: React.FC<ThemesSidebarProps> = ({ isOpen, onClose })
             />
 
             {/* Scrollable Theme Circles */}
-            <div className="flex-1 overflow-y-auto p-2 pb-2.5 scrollbar-hide relative z-10 bg-white">
+            <div className="flex-1 overflow-y-auto px-2 pt-0.5 pb-2.5 scrollbar-hide relative z-10" style={{ backgroundColor: 'transparent' }}>
               <div 
-                className="grid grid-cols-2 gap-y-[10.7px] gap-x-2 place-items-center py-2"
+                className="grid grid-cols-2 gap-y-[10.7px] gap-x-2 place-items-center pt-1 pb-2"
                 style={{ rowGap: '10.7px' }}
               >
                 {Object.entries(presetThemes).map(([key, t]: [string, any]) => {
                   const isSelected = themeKey === key;
-                  const circleBg = getThemeCircleColor(key, t);
+                  const baseCircleColor = getThemeCircleColor(key, t);
+                  const circleLum = getLuminance(baseCircleColor);
+                  const isDarkCircle = circleLum < 0.35 || key === 'deep_black' || key === 'kaaba_kiswa';
+                  
+                  // For deep_black on dark/black background, use a sleek charcoal tone so the inside of the circle is distinct
+                  const circleBg = (key === 'deep_black' && isDarkBg) ? '#18181B' : baseCircleColor;
+
+                  // High-contrast border and shadows dynamically adapted to sidebar background and circle luminance
+                  let circleBorder: string;
+                  let circleShadow: string;
+
+                  if (isDarkBg) {
+                    if (isDarkCircle) {
+                      // Dark circles on dark background: crisp white border + contrast glow
+                      circleBorder = '2px solid rgba(255, 255, 255, 0.85)';
+                      circleShadow = isSelected
+                        ? '0 0 0 2.5px #10B981, 0 0 10px rgba(16, 185, 129, 0.7)'
+                        : '0 0 0 1px rgba(255, 255, 255, 0.3), 0 2px 6px rgba(0, 0, 0, 0.6)';
+                    } else {
+                      // Light / vibrant circles on dark background
+                      circleBorder = '1.5px solid rgba(255, 255, 255, 0.45)';
+                      circleShadow = isSelected
+                        ? '0 0 0 2.5px #FFFFFF, 0 0 10px rgba(255, 255, 255, 0.6)'
+                        : '0 2px 6px rgba(0, 0, 0, 0.4)';
+                    }
+                  } else {
+                    if (circleLum > 0.75) {
+                      // Very light circles on light background: crisp dark border
+                      circleBorder = '2px solid rgba(0, 0, 0, 0.35)';
+                      circleShadow = isSelected
+                        ? '0 0 0 2.5px #059669, 0 3px 8px rgba(0, 0, 0, 0.25)'
+                        : '0 1px 4px rgba(0, 0, 0, 0.18)';
+                    } else {
+                      // Normal / vibrant circles on light background
+                      circleBorder = '1.5px solid rgba(0, 0, 0, 0.18)';
+                      circleShadow = isSelected
+                        ? '0 0 0 2.5px #059669, 0 3px 8px rgba(5, 150, 105, 0.4)'
+                        : '0 1px 3px rgba(0, 0, 0, 0.12)';
+                    }
+                  }
 
                   return (
                     <button
@@ -158,26 +241,31 @@ export const ThemesSidebar: React.FC<ThemesSidebarProps> = ({ isOpen, onClose })
                       aria-label={t.name}
                     >
                       <div
-                        className={`w-[26px] h-[26px] rounded-full border-0 transition-all flex items-center justify-center relative ${
+                        className={`w-[30px] h-[30px] rounded-full transition-all flex items-center justify-center relative overflow-hidden group/circle ${
                           isSelected
-                            ? 'scale-110 shadow-lg'
-                            : 'hover:scale-110 shadow-md'
+                            ? 'scale-110'
+                            : 'hover:scale-105'
                         }`}
                         style={{
                           backgroundColor: circleBg,
-                          boxShadow: isSelected
-                            ? '0 4px 8px rgba(0,0,0,0.25)'
-                            : '0 2px 4px rgba(0,0,0,0.12)'
+                          border: isDarkCircle ? '1px solid rgba(255,255,255,0.4)' : '1px solid rgba(255,255,255,0.7)',
+                          boxShadow: isSelected 
+                            ? `0 5px 0 0 ${isDarkCircle ? '#059669' : '#047857'}, 0 8px 16px rgba(0,0,0,0.4), inset 0 1.5px 1.5px rgba(255,255,255,0.7), inset 0 -2px 3px rgba(0,0,0,0.3)`
+                            : `0 4.5px 0 0 ${isDarkCircle ? '#111111' : 'rgba(0,0,0,0.35)'}, 0 6px 14px -2px rgba(0,0,0,0.25), inset 0 1.5px 1.5px rgba(255,255,255,0.65), inset 0 -2px 3px rgba(0,0,0,0.25)`
                         }}
                       >
+                        {/* 3D Glossy specular sheen across top half */}
+                        <div className="absolute inset-x-0.5 top-0.5 h-[48%] rounded-t-full bg-gradient-to-b from-white/45 via-white/15 to-transparent pointer-events-none"></div>
+
                         {isSelected && (
                           <div
-                            className="w-2 h-2 rounded-full shadow-sm"
+                            className="w-2.5 h-2.5 rounded-full shadow-md relative z-10"
                             style={{
-                              backgroundColor:
-                                key === 'deep_black' || key === 'kaaba_kiswa'
-                                  ? themeBorderColor
-                                  : '#ffffff'
+                              backgroundColor: isDarkCircle ? '#10B981' : '#FFFFFF',
+                              border: isDarkCircle 
+                                ? '1px solid rgba(255, 255, 255, 0.9)' 
+                                : '1px solid rgba(0, 0, 0, 0.35)',
+                              boxShadow: '0 1px 2px rgba(0,0,0,0.3)'
                             }}
                           />
                         )}

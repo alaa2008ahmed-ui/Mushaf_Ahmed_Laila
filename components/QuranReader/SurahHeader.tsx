@@ -102,29 +102,28 @@ const SurahHeader: React.FC<SurahHeaderProps> = ({
         switch (numericDesign) {
             case 1: // Design 1 (Current)
                 return (
-                    <div className={`surah-header-visual relative h-14 w-full flex items-center justify-between ${compact ? 'px-1' : 'px-2 sm:px-6'} rounded-md border-[2.5px] overflow-hidden`}
+                    <div className={`surah-header-visual relative h-14 w-full flex items-center justify-between ${compact ? 'px-1' : 'px-2 sm:px-6'} rounded-xl border-0 overflow-hidden`}
                          style={{ 
                              background: headerBg,
-                             borderColor: headerBorder,
-                             boxShadow: isDefaultTheme ? 'none' : '0 4px 6px -1px rgba(0, 0, 0, 0.2)'
+                             boxShadow: '0 4px 12px -2px rgba(0, 0, 0, 0.16), 0 2px 4px rgba(0, 0, 0, 0.08), inset 0 1px 1.5px rgba(255, 255, 255, 0.85), inset 0 -1.5px 2px rgba(0, 0, 0, 0.08)'
                          }}>
-                        <div className={`font-bold text-sm sm:text-lg z-10 ${isDefaultTheme ? '' : 'drop-shadow-md'} whitespace-nowrap`} style={{ color: headerText, fontFamily: hafsFont }}>
+                        <div className="font-bold text-sm sm:text-lg z-10 whitespace-nowrap" style={{ color: headerText, fontFamily: hafsFont, textShadow: '0 1px 1px rgba(0,0,0,0.1)' }}>
                             {displayAyahCount}
                         </div>
                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                            <div className="relative h-10 px-6 sm:px-12 flex items-center justify-center border-2 shadow-inner max-w-[55%] sm:max-w-none"
+                            <div className="relative h-10 px-6 sm:px-12 flex items-center justify-center border-0 max-w-[55%] sm:max-w-none"
                                  style={{ 
                                      borderRadius: '50px / 50px', 
                                      minWidth: '140px',
                                      backgroundColor: cartoucheBg,
-                                     borderColor: headerBorder
+                                     boxShadow: '0 2.5px 6px -1px rgba(0, 0, 0, 0.14), inset 0 1px 1.5px rgba(255, 255, 255, 0.9), inset 0 -1px 2px rgba(0, 0, 0, 0.08)'
                                  }}>
-                                <h2 className="text-base sm:text-xl font-bold whitespace-nowrap w-full text-center mb-0" style={{ color: cartoucheText, fontFamily: quranFont, transform: 'translateY(-2px)' }}>
+                                <h2 className="text-base sm:text-xl font-bold whitespace-nowrap w-full text-center mb-0" style={{ color: cartoucheText, fontFamily: quranFont, transform: 'translateY(-2px)', textShadow: '0 1px 1px rgba(0,0,0,0.12)' }}>
                                     {fullSurahName}
                                 </h2>
                             </div>
                         </div>
-                        <div className={`font-bold text-sm sm:text-lg z-10 ${isDefaultTheme ? '' : 'drop-shadow-md'} whitespace-nowrap`} style={{ color: headerText, fontFamily: hafsFont }}>
+                        <div className="font-bold text-sm sm:text-lg z-10 whitespace-nowrap" style={{ color: headerText, fontFamily: hafsFont, textShadow: '0 1px 1px rgba(0,0,0,0.1)' }}>
                             {displaySurahType}
                         </div>
                     </div>
@@ -384,29 +383,28 @@ const SurahHeader: React.FC<SurahHeaderProps> = ({
 
             default:
                 return (
-                    <div className={`surah-header-visual relative h-14 w-full flex items-center justify-between ${compact ? 'px-1' : 'px-2 sm:px-6'} rounded-md border-[3px] overflow-hidden`}
+                    <div className={`surah-header-visual relative h-14 w-full flex items-center justify-between ${compact ? 'px-1' : 'px-2 sm:px-6'} rounded-xl border-0 overflow-hidden`}
                          style={{ 
                              background: headerBg,
-                             borderColor: headerBorder,
-                             boxShadow: (isDefaultTheme && isDesign1) ? 'none' : '0 4px 6px -1px rgba(0, 0, 0, 0.2)'
+                             boxShadow: '0 4px 12px -2px rgba(0, 0, 0, 0.16), 0 2px 4px rgba(0, 0, 0, 0.08), inset 0 1px 1.5px rgba(255, 255, 255, 0.85), inset 0 -1.5px 2px rgba(0, 0, 0, 0.08)'
                          }}>
-                        <div className={`font-bold text-sm sm:text-lg z-10 ${(isDefaultTheme && isDesign1) ? '' : 'drop-shadow-md'} whitespace-nowrap`} style={{ color: headerText }}>
+                        <div className="font-bold text-sm sm:text-lg z-10 whitespace-nowrap" style={{ color: headerText, textShadow: '0 1px 1px rgba(0,0,0,0.1)' }}>
                             {displayAyahCount}
                         </div>
                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                            <div className="relative h-10 px-6 sm:px-12 flex items-center justify-center border-2 shadow-inner max-w-[50%] sm:max-w-none"
+                            <div className="relative h-10 px-6 sm:px-12 flex items-center justify-center border-0 max-w-[50%] sm:max-w-none"
                                  style={{ 
                                      borderRadius: '50px / 50px', 
                                      minWidth: '140px',
                                      backgroundColor: cartoucheBg,
-                                     borderColor: headerBorder
+                                     boxShadow: '0 2.5px 6px -1px rgba(0, 0, 0, 0.14), inset 0 1px 1.5px rgba(255, 255, 255, 0.9), inset 0 -1px 2px rgba(0, 0, 0, 0.08)'
                                  }}>
-                                <h2 className="text-base sm:text-xl font-bold whitespace-nowrap w-full text-center mb-0" style={{ color: cartoucheText, transform: 'translateY(-4px)' }}>
+                                <h2 className="text-base sm:text-xl font-bold whitespace-nowrap w-full text-center mb-0" style={{ color: cartoucheText, transform: 'translateY(-4px)', textShadow: '0 1px 1px rgba(0,0,0,0.12)' }}>
                                     {fullSurahName}
                                 </h2>
                             </div>
                         </div>
-                        <div className={`font-bold text-sm sm:text-lg z-10 ${(isDefaultTheme && isDesign1) ? '' : 'drop-shadow-md'} whitespace-nowrap`} style={{ color: headerText }}>
+                        <div className="font-bold text-sm sm:text-lg z-10 whitespace-nowrap" style={{ color: headerText, textShadow: '0 1px 1px rgba(0,0,0,0.1)' }}>
                             {displaySurahType}
                         </div>
                     </div>

@@ -12,7 +12,8 @@ import {
     STANCE_CATEGORIES_EN, 
     getTranslatedMilestone, 
     getTranslatedStance, 
-    getTranslatedLineage 
+    getTranslatedLineage,
+    getShortSeerahHeaderTitle
 } from '../data/propheticSeerahTranslations';
 import ThemePageLock from '../components/ThemePageLock';
 import { useTheme } from '../context/ThemeContext';
@@ -22,9 +23,37 @@ import { shareAsImage } from '../utils/shareAsImage';
 import { sharePropheticLineageImage } from '../utils/lineageShareHelper';
 import { registerBackInterceptor } from '../hooks/useBackButton';
 import { markPageAsSeen } from '../utils/badgeManager';
-import { ZoomIn, HelpCircle } from 'lucide-react';
+import { ZoomIn, HelpCircle, Share2, Copy, Check, ChevronDown } from 'lucide-react';
 import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/CommunitySpotlightGuide';
 import { PROPHETIC_SEERAH_PAGE_STEPS } from '../components/Community/communityTourSteps';
+
+import { getModernFlatTokens, hexToRgba } from '../utils/flatDesignTokens';
+
+const normalizeArabicSearch = (text: string): string => {
+    if (!text) return '';
+    return text
+        .replace(/[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06ED]/g, '')
+        .replace(/[أإآٱ]/g, 'ا')
+        .replace(/ة/g, 'ه')
+        .replace(/ى/g, 'ي')
+        .replace(/ؤ/g, 'و')
+        .replace(/ئ/g, 'ي')
+        .replace(/ء/g, '')
+        .replace(/ـ+/g, '')
+        .replace(/[«»""''.,;:!?()\[\]{}\\/—–-]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .toLowerCase();
+};
+
+const matchesArabicSearch = (content: string, rawQuery: string): boolean => {
+    const cleanQuery = normalizeArabicSearch(rawQuery);
+    if (!cleanQuery) return true;
+    const tokens = cleanQuery.split(' ').filter(Boolean);
+    if (tokens.length === 0) return true;
+    const cleanContent = normalizeArabicSearch(content);
+    return tokens.every(token => cleanContent.includes(token));
+};
 
 interface PropheticSeerahPageProps {
     onBack?: () => void;
@@ -42,22 +71,27 @@ interface ZoomedCardData {
     isVerseOrProof?: boolean;
 }
 
+
 const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNavigate, onOpenThemes }) => {
     const { theme, themeKey } = useTheme();
     const { language, isRTL } = useLanguage();
     const isEn = language === 'en';
     const ui = SEERAH_UI_TEXTS[isEn ? 'en' : 'ar'];
 
-    const isDefaultTheme = themeKey === 'default' || !themeKey || theme.name?.includes('الافتراضي') || theme.name === 'Default';
-    const isDeepBlack = theme.bgColor === '#000000' || theme.name === 'أبيض وأسود' || themeKey === 'deep_black';
-    const primaryColor = isDeepBlack ? '#FFFFFF' : (theme.palette?.[0] || theme.accent || '#059669');
-    const secondaryColor = isDeepBlack ? '#E2E8F0' : (theme.palette?.[1] || theme.palette?.[0] || primaryColor);
-    const themeActiveTextColor = isDeepBlack ? '#000000' : (theme.accentText || '#FFFFFF');
-    const cardBorderColor = isDefaultTheme 
-        ? '#000000' 
-        : (isDeepBlack 
-            ? '#FFFFFF' 
-            : (theme.palette?.[0] || theme.accent || '#000000'));
+    // Modern Flat Design System
+    const tokens = useMemo(() => getModernFlatTokens(theme, themeKey), [theme, themeKey]);
+    const { 
+        primaryColor, 
+        secondaryColor, 
+        themeActiveTextColor, 
+        pageBgColor, 
+        cardBgColor, 
+        cardShadow, 
+        capsuleBg, 
+        filledInputBg, 
+        chipInactiveBg, 
+        actionBtnBg 
+    } = tokens;
 
     // Scroll container refs
     const mainScrollRef = useRef<HTMLElement | null>(null);
@@ -83,6 +117,7 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
     // Zoom Modal State for Cards
     const [zoomedCard, setZoomedCard] = useState<ZoomedCardData | null>(null);
     const [zoomFontSize, setZoomFontSize] = useState<number>(24);
+    const [copiedModal, setCopiedModal] = useState(false);
 
     // Global in-page card font scaling
     const [cardTextScale, setCardTextScale] = useState<number>(() => {
@@ -241,7 +276,7 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
             }
 
             text += `💡 *العِبر والدروس الإيمانية والعملية:*\n${m.lessons.map((l, i) => `${i + 1}. ${l}`).join('\n')}\n\n`;
-            text += `مشارك من تطبيق مصحف أحمد وليلى`;
+            text += `مشارك من تطبيق مصحف أحمد و ليلى`;
         }
 
         navigator.clipboard.writeText(text).then(() => {
@@ -310,7 +345,7 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
 
             text += `💡 *القيمة الأخلاقية والعِبرة الخالدة:*\n${s.moralLesson}\n\n`;
             text += `📜 *المصدر والتوثيق:* ${s.proof}\n\n`;
-            text += `مشارك من تطبيق مصحف أحمد وليلى`;
+            text += `مشارك من تطبيق مصحف أحمد و ليلى`;
         }
 
         navigator.clipboard.writeText(text).then(() => {
@@ -344,7 +379,7 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
         if (isEn) {
             text += `📜 *Virtues of Lineage:*\nThe Messenger of Allah ﷺ said: "Indeed Allah chose Kinanah from the offspring of Ismail, and He chose Quraysh from Kinanah, and He chose Banu Hashim from Quraysh, and He chose me from Banu Hashim. So I am the best of the best" (Sahih Muslim).\n\nShared from Mushaf Ahmed & Laila App`;
         } else {
-            text += `📜 *أحاديث الاصطفاء وطهارة النسب:*\nقال رسول الله ﷺ: «إن الله اصطفى كنانة من ولد إسماعيل، واصطفى قريشاً من كنانة، واصطفى من قريش بني هاشم، واصطفاني من بني هاشم، فأنا خيار من خيار» (صحيح مسلم).\n\nمشارك من تطبيق مصحف أحمد وليلى`;
+            text += `📜 *أحاديث الاصطفاء وطهارة النسب:*\nقال رسول الله ﷺ: «إن الله اصطفى كنانة من ولد إسماعيل، واصطفى قريشاً من كنانة، واصطفى من قريش بني هاشم، واصطفاني من بني هاشم، فأنا خيار من خيار» (صحيح مسلم).\n\nمشارك من تطبيق مصحف أحمد و ليلى`;
         }
 
         navigator.clipboard.writeText(text).then(() => {
@@ -448,44 +483,62 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
         }
     };
 
-    // Filtering Milestones with useMemo for instantaneous tab switching
+    // Filtering Milestones with comprehensive Arabic search
     const filteredMilestones = useMemo(() => {
-        const q = searchQuery.trim().toLowerCase();
+        const query = searchQuery.trim();
         return allMilestones.filter((m) => {
             const matchesEra = activeEraFilter === 'all' || m.era === activeEraFilter;
             if (!matchesEra) return false;
-            if (!q) return true;
-            return (
-                m.title.toLowerCase().includes(q) ||
-                m.summary.toLowerCase().includes(q) ||
-                m.details.toLowerCase().includes(q) ||
-                m.location.toLowerCase().includes(q) ||
-                (m.strategicImpact && m.strategicImpact.toLowerCase().includes(q)) ||
-                (m.propheticMiraclesOrDuas && m.propheticMiraclesOrDuas.toLowerCase().includes(q)) ||
-                (m.historicalSecrets && m.historicalSecrets.toLowerCase().includes(q)) ||
-                (m.keyFigures && m.keyFigures.some(f => f.toLowerCase().includes(q))) ||
-                m.lessons.some(l => l.toLowerCase().includes(q))
-            );
+            if (!query) return true;
+
+            const searchableContent = [
+                m.title,
+                m.summary,
+                m.details,
+                m.location,
+                m.badge,
+                m.eraLabel,
+                m.ageOfProphet,
+                m.yearHijri || '',
+                m.yearGregorian || '',
+                m.strategicImpact || '',
+                m.propheticMiraclesOrDuas || '',
+                m.historicalSecrets || '',
+                m.proof || '',
+                m.versesOrHadiths || '',
+                ...(m.keyFigures || []),
+                ...(m.lessons || [])
+            ].join(' ');
+
+            return matchesArabicSearch(searchableContent, query);
         });
     }, [allMilestones, activeEraFilter, searchQuery]);
 
-    // Filtering Stances with useMemo for instantaneous tab switching
+    // Filtering Stances with comprehensive Arabic search
     const filteredStances = useMemo(() => {
-        const q = searchQuery.trim().toLowerCase();
+        const query = searchQuery.trim();
         return allStances.filter((s) => {
             const matchesCategory = activeStanceCategory === 'all' || s.category === activeStanceCategory;
             if (!matchesCategory) return false;
-            if (!q) return true;
-            return (
-                s.title.toLowerCase().includes(q) ||
-                s.situation.toLowerCase().includes(q) ||
-                s.quote.toLowerCase().includes(q) ||
-                s.moralLesson.toLowerCase().includes(q) ||
-                (s.detailedDialogue && s.detailedDialogue.toLowerCase().includes(q)) ||
-                (s.psychologicalAnalysis && s.psychologicalAnalysis.toLowerCase().includes(q)) ||
-                (s.contemporaryReflection && s.contemporaryReflection.toLowerCase().includes(q)) ||
-                (s.keyFigures && s.keyFigures.some(f => f.toLowerCase().includes(q)))
-            );
+            if (!query) return true;
+
+            const searchableContent = [
+                s.title,
+                s.situation,
+                s.quote,
+                s.moralLesson,
+                s.categoryBadge,
+                s.category,
+                s.proof || '',
+                s.detailedDialogue || '',
+                s.psychologicalAnalysis || '',
+                s.contemporaryReflection || '',
+                s.practicalApplication || '',
+                s.year || '',
+                ...(s.keyFigures || [])
+            ].join(' ');
+
+            return matchesArabicSearch(searchableContent, query);
         });
     }, [allStances, activeStanceCategory, searchQuery]);
 
@@ -596,7 +649,7 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
         <div 
             className={`flex flex-col h-screen overflow-hidden select-none ${isEn ? 'text-left font-sans' : 'text-right'}`}
             style={{ 
-                backgroundColor: theme.bgColor || '#FFFFFF', 
+                backgroundColor: pageBgColor, 
                 color: theme.textColor,
                 direction: isEn ? 'ltr' : 'rtl' 
             }}
@@ -609,8 +662,8 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                         initial={{ opacity: 0, y: -20 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -20 }}
-                        className="fixed top-5 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold shadow-xl border flex items-center gap-2"
-                        style={{ backgroundColor: primaryColor, color: themeActiveTextColor, borderColor: isDeepBlack ? '#FFFFFF' : `${primaryColor}88` }}
+                        className="fixed top-5 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold shadow-xl border-0 flex items-center gap-2"
+                        style={{ backgroundColor: primaryColor, color: themeActiveTextColor }}
                     >
                         <i className="fa-solid fa-circle-check text-amber-300"></i>
                         <span>{toastMessage}</span>
@@ -620,24 +673,24 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
 
             {/* Top Header */}
             <header className="app-top-bar z-20 shrink-0">
-                <div className="app-top-bar__inner">
-                    <div className="relative flex items-center justify-center w-full min-h-[44px]">
-                        {/* Back button, Magnifying Glass */}
-                        <div className={`absolute ${isEn ? 'left-0' : 'right-0'} flex items-center gap-1`}>
+                <div className="app-top-bar__inner !px-2.5 sm:!px-5">
+                    <div className="flex items-center justify-between gap-1.5 w-full min-h-[44px]">
+                        {/* Start Side: Back button & Magnifying Glass */}
+                        <div className="flex items-center gap-0.5 shrink-0">
                             <button
                                 onClick={handleBackClick}
-                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
                                 title={ui.goBack}
                                 aria-label={ui.goBack}
                             >
-                                <i className={`fa-solid ${isEn ? 'fa-arrow-left' : 'fa-arrow-right'} text-xl`}></i>
+                                <i className={`fa-solid ${isEn ? 'fa-arrow-left' : 'fa-arrow-right'} text-lg sm:text-xl`}></i>
                             </button>
                             
                             {/* Magnifying Glass to scale text of all cards on the page */}
                             <button
                                 type="button"
                                 onClick={toggleCardTextScale}
-                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer relative"
+                                className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer relative"
                                 title={isEn ? `Enlarge card text (${Math.round(cardTextScale * 100)}%)` : `تكبير نص البطاقات (${Math.round(cardTextScale * 100)}%)`}
                                 aria-label={isEn ? 'Enlarge card text' : 'تكبير نص البطاقات'}
                             >
@@ -650,71 +703,79 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                             </button>
                         </div>
 
-                        {/* Title in center */}
-                        <div className={`text-center ${selectedMilestone || selectedStance ? 'px-20 sm:px-24' : 'px-12'}`}>
-                            <h1 className={`app-top-bar__title ${isEn ? 'font-bold' : 'font-kufi'} transition-all ${
-                                selectedMilestone || selectedStance 
-                                    ? 'text-[11px] sm:text-xs leading-tight font-bold line-clamp-2' 
-                                    : 'text-xl sm:text-2xl'
-                            }`}>
-                                {activeMilestone
-                                    ? activeMilestone.title
-                                    : activeStance
-                                    ? activeStance.title
-                                    : activeTab === 'timeline'
-                                    ? (isEn ? ui.pageTitle : 'السيرة النبوية')
-                                    : activeTab === 'stances'
-                                    ? ui.tabStancesFull
-                                    : ui.tabLineageFull}
-                            </h1>
-                        </div>
+                        {/* Concise Complete Title in Center (bounded between icon groups, zero overlap) */}
+                        {(() => {
+                            const topTitle = activeMilestone
+                                ? getShortSeerahHeaderTitle(activeMilestone.id, activeMilestone.title, isEn)
+                                : activeStance
+                                ? getShortSeerahHeaderTitle(activeStance.id, activeStance.title, isEn)
+                                : activeTab === 'timeline'
+                                ? (isEn ? ui.pageTitle : 'السيرة النبوية')
+                                : activeTab === 'stances'
+                                ? ui.tabStancesFull
+                                : ui.tabLineageFull;
 
-                        {/* Right Tools: Guide, ThemeLock & Home Button */}
-                        <div className={`absolute ${isEn ? 'right-0' : 'left-0'} flex items-center gap-1`}>
+                            return (
+                                <div className="flex-1 min-w-0 flex items-center justify-center px-1 text-center">
+                                    <h1 
+                                        className={`app-top-bar__title ${isEn ? 'font-bold' : 'font-kufi'} transition-all whitespace-nowrap leading-snug`}
+                                        style={{
+                                            fontSize: isEn
+                                                ? 'clamp(0.85rem, 3.6vw, 1.15rem)'
+                                                : (selectedMilestone || selectedStance
+                                                    ? 'clamp(0.95rem, 4vw, 1.2rem)'
+                                                    : undefined)
+                                        }}
+                                    >
+                                        {topTitle}
+                                    </h1>
+                                </div>
+                            );
+                        })()}
+
+                        {/* End Side: Guide, ThemeLock & Home Button */}
+                        <div className="flex items-center gap-0.5 shrink-0">
                             <button
                                 type="button"
                                 onClick={() => setShowGuide(true)}
-                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
                                 style={{ color: 'var(--top-bar-text, inherit)' }}
                                 title={isEn ? "Seerah Guide" : "دليل السيرة النبوية"}
                                 aria-label={isEn ? "Seerah Guide" : "دليل السيرة النبوية"}
                             >
-                                <HelpCircle size={19} />
+                                <i className="fa-solid fa-circle-question text-lg text-black"></i>
                             </button>
                             <ThemePageLock />
                             <button
                                 onClick={() => onNavigate('home')}
-                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
                                 title={ui.home}
                                 aria-label={ui.home}
                             >
-                                <i className="fa-solid fa-house text-xl"></i>
+                                <i className="fa-solid fa-house text-lg sm:text-xl"></i>
                             </button>
                         </div>
                     </div>
                 </div>
             </header>
 
-            {/* Top Navigation Tabs */}
+            {/* Top Navigation Tabs - Modern Segmented Control in Capsule */}
             {!selectedMilestone && !selectedStance && (
-                <div className="px-4 pt-1 pb-2 shrink-0">
+                <div className="seerah-tabs-nav px-4 pt-1.5 pb-2 shrink-0">
                     <div 
-                        className="max-w-3xl mx-auto flex items-center justify-center p-1 rounded-2xl bg-black/5 dark:bg-white/5 border gap-1 shadow-xs"
-                        style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                        className="max-w-3xl mx-auto flex items-center justify-center p-1.5 rounded-2xl gap-1 border-0"
+                        style={{ backgroundColor: capsuleBg }}
                     >
                         <button
                             onClick={() => switchTab('timeline')}
-                            className={`flex-1 py-2 px-2.5 rounded-xl text-xs sm:text-sm font-bold ${isEn ? 'font-sans' : 'font-kufi'} transition-all flex items-center justify-center text-center ${
+                            className={`flex-1 py-2 px-2.5 rounded-xl text-xs sm:text-sm font-bold ${isEn ? 'font-sans' : 'font-kufi'} transition-all flex items-center justify-center text-center cursor-pointer border-0 ${
                                 activeTab === 'timeline'
-                                    ? 'shadow-sm'
-                                    : 'opacity-75 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/5'
+                                    ? 'shadow-xs'
+                                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-transparent'
                             }`}
                             style={{
-                                backgroundColor: activeTab === 'timeline' ? primaryColor : undefined,
-                                color: activeTab === 'timeline' ? themeActiveTextColor : 'inherit',
-                                borderColor: activeTab === 'timeline' ? primaryColor : cardBorderColor,
-                                borderWidth: '1px',
-                                borderStyle: 'solid'
+                                backgroundColor: activeTab === 'timeline' ? primaryColor : 'transparent',
+                                color: activeTab === 'timeline' ? themeActiveTextColor : undefined,
                             }}
                         >
                             <span className="text-center block w-full">{ui.tabTimeline}</span>
@@ -722,17 +783,14 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
 
                         <button
                             onClick={() => switchTab('stances')}
-                            className={`flex-1 py-2 px-2.5 rounded-xl text-xs sm:text-sm font-bold ${isEn ? 'font-sans' : 'font-kufi'} transition-all flex items-center justify-center text-center ${
+                            className={`flex-1 py-2 px-2.5 rounded-xl text-xs sm:text-sm font-bold ${isEn ? 'font-sans' : 'font-kufi'} transition-all flex items-center justify-center text-center cursor-pointer border-0 ${
                                 activeTab === 'stances'
-                                    ? 'shadow-sm'
-                                    : 'opacity-75 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/5'
+                                    ? 'shadow-xs'
+                                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-transparent'
                             }`}
                             style={{
-                                backgroundColor: activeTab === 'stances' ? primaryColor : undefined,
-                                color: activeTab === 'stances' ? themeActiveTextColor : 'inherit',
-                                borderColor: activeTab === 'stances' ? primaryColor : cardBorderColor,
-                                borderWidth: '1px',
-                                borderStyle: 'solid'
+                                backgroundColor: activeTab === 'stances' ? primaryColor : 'transparent',
+                                color: activeTab === 'stances' ? themeActiveTextColor : undefined,
                             }}
                         >
                             <span className="text-center block w-full">{ui.tabStances}</span>
@@ -740,17 +798,14 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
 
                         <button
                             onClick={() => switchTab('lineage')}
-                            className={`flex-1 py-2 px-2.5 rounded-xl text-xs sm:text-sm font-bold ${isEn ? 'font-sans' : 'font-kufi'} transition-all flex items-center justify-center text-center ${
+                            className={`flex-1 py-2 px-2.5 rounded-xl text-xs sm:text-sm font-bold ${isEn ? 'font-sans' : 'font-kufi'} transition-all flex items-center justify-center text-center cursor-pointer border-0 ${
                                 activeTab === 'lineage'
-                                    ? 'shadow-sm'
-                                    : 'opacity-75 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/5'
+                                    ? 'shadow-xs'
+                                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-transparent'
                             }`}
                             style={{
-                                backgroundColor: activeTab === 'lineage' ? primaryColor : undefined,
-                                color: activeTab === 'lineage' ? themeActiveTextColor : 'inherit',
-                                borderColor: activeTab === 'lineage' ? primaryColor : cardBorderColor,
-                                borderWidth: '1px',
-                                borderStyle: 'solid'
+                                backgroundColor: activeTab === 'lineage' ? primaryColor : 'transparent',
+                                color: activeTab === 'lineage' ? themeActiveTextColor : undefined,
                             }}
                         >
                             <span className="text-center block w-full">{ui.tabLineage}</span>
@@ -759,73 +814,58 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                 </div>
             )}
 
-            {/* Scoped CSS for scaling text across all cards when cardTextScale > 1 */}
+            {/* Scoped CSS for scaling text strictly inside .seerah-card elements ONLY (tabs & chips are never touched) */}
             {cardTextScale > 1 && (
                 <style>{`
-                    .seerah-scalable-content .themed-card p,
-                    .seerah-scalable-content .rounded-2xl.border p,
-                    .seerah-scalable-content .rounded-3xl.border p,
-                    .seerah-scalable-content .themed-card li,
-                    .seerah-scalable-content .rounded-2xl.border li,
-                    .seerah-scalable-content .themed-card .leading-relaxed,
-                    .seerah-scalable-content .rounded-2xl.border .leading-relaxed {
+                    .seerah-card p,
+                    .seerah-card li,
+                    .seerah-card blockquote,
+                    .seerah-card .leading-relaxed {
                         font-size: calc(0.925rem * ${cardTextScale}) !important;
-                        line-height: ${cardTextScale >= 1.3 ? '1.85' : '1.7'} !important;
+                        line-height: ${cardTextScale >= 1.3 ? '1.9' : '1.75'} !important;
                     }
-                    .seerah-scalable-content .themed-card h2,
-                    .seerah-scalable-content .rounded-2xl.border h2,
-                    .seerah-scalable-content .rounded-3xl.border h2 {
-                        font-size: calc(1.5rem * ${cardTextScale}) !important;
+                    .seerah-card h2 {
+                        font-size: calc(1.35rem * ${cardTextScale}) !important;
                     }
-                    .seerah-scalable-content .themed-card h3,
-                    .seerah-scalable-content .rounded-2xl.border h3,
-                    .seerah-scalable-content .rounded-3xl.border h3 {
+                    .seerah-card h3 {
                         font-size: calc(1.15rem * ${cardTextScale}) !important;
                     }
-                    .seerah-scalable-content .themed-card h4,
-                    .seerah-scalable-content .themed-card h5,
-                    .seerah-scalable-content .rounded-2xl.border h4,
-                    .seerah-scalable-content .rounded-2xl.border h5 {
+                    .seerah-card h4,
+                    .seerah-card h5 {
                         font-size: calc(1.05rem * ${cardTextScale}) !important;
                     }
-                    .seerah-scalable-content .themed-card .text-xs,
-                    .seerah-scalable-content .themed-card .text-\\[11px\\],
-                    .seerah-scalable-content .themed-card .text-\\[10px\\],
-                    .seerah-scalable-content .rounded-2xl.border .text-xs,
-                    .seerah-scalable-content .rounded-2xl.border .text-\\[11px\\] {
+                    .seerah-card .text-xs:not(button),
+                    .seerah-card .text-\\[11px\\]:not(button),
+                    .seerah-card .text-\\[10px\\]:not(button) {
                         font-size: calc(0.775rem * ${cardTextScale}) !important;
                     }
-                    .seerah-scalable-content .themed-card .text-sm,
-                    .seerah-scalable-content .rounded-2xl.border .text-sm {
+                    .seerah-card .text-sm:not(button) {
                         font-size: calc(0.875rem * ${cardTextScale}) !important;
                     }
-                    .seerah-scalable-content .themed-card .text-base,
-                    .seerah-scalable-content .rounded-2xl.border .text-base {
+                    .seerah-card .text-base:not(button) {
                         font-size: calc(1rem * ${cardTextScale}) !important;
                     }
-                    .seerah-scalable-content .themed-card .text-lg,
-                    .seerah-scalable-content .rounded-2xl.border .text-lg {
+                    .seerah-card .text-lg:not(button) {
                         font-size: calc(1.125rem * ${cardTextScale}) !important;
                     }
-                    .seerah-scalable-content .themed-card .text-xl,
-                    .seerah-scalable-content .rounded-2xl.border .text-xl {
+                    .seerah-card .text-xl:not(button) {
                         font-size: calc(1.25rem * ${cardTextScale}) !important;
                     }
-                    .seerah-scalable-content .themed-card .text-2xl,
-                    .seerah-scalable-content .rounded-2xl.border .text-2xl {
-                        font-size: calc(1.5rem * ${cardTextScale}) !important;
-                    }
-                    .seerah-scalable-content .line-clamp-2 {
+                    .seerah-card .line-clamp-2 {
                         -webkit-line-clamp: 4 !important;
                     }
-                    .seerah-scalable-content .line-clamp-3 {
+                    .seerah-card .line-clamp-3 {
                         -webkit-line-clamp: 5 !important;
+                    }
+                    .seerah-card button.rounded-full,
+                    .seerah-card button.rounded-full i {
+                        font-size: 0.75rem !important;
                     }
                 `}</style>
             )}
 
             {/* Main Content Body */}
-            <main ref={mainScrollRef} className="flex-1 overflow-y-auto hide-scrollbar px-4 pt-2 pb-6 seerah-scalable-content">
+            <main ref={mainScrollRef} className="flex-1 overflow-y-auto hide-scrollbar px-4 pt-2 pb-6">
                 {/* 1. Milestone Detail View */}
                 {selectedMilestone && activeMilestone ? (
                     <div
@@ -834,8 +874,8 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                     >
                             {/* Hero Card */}
                             <div 
-                                className="p-5 sm:p-6 rounded-3xl themed-card border shadow-lg relative overflow-hidden"
-                                style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                                className="seerah-card p-5 sm:p-6 rounded-[18px] border-0 relative overflow-hidden"
+                                style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
                             >
                                 <div 
                                     className="absolute -right-16 -top-16 w-44 h-44 rounded-full opacity-15 blur-3xl pointer-events-none"
@@ -845,8 +885,8 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                                 <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
                                     <div className="flex items-center gap-2">
                                         <span 
-                                            className="text-xs font-bold px-2.5 py-1 rounded-full border flex items-center gap-1.5"
-                                            style={{ backgroundColor: `${primaryColor}18`, color: primaryColor, borderColor: `${primaryColor}38` }}
+                                            className="text-xs font-bold px-2.5 py-1 rounded-lg border-0 flex items-center gap-1.5"
+                                            style={{ backgroundColor: `${primaryColor}14`, color: primaryColor }}
                                         >
                                             <i className={activeMilestone.icon}></i>
                                             {activeMilestone.badge}
@@ -870,8 +910,8 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                                                 icon: activeMilestone.icon,
                                                 content: `${activeMilestone.summary}\n\n• ${ui.dateAndTime} ${activeMilestone.yearHijri ? `${activeMilestone.yearHijri} • ` : ''}${activeMilestone.yearGregorian}\n• ${ui.prophetAge} ${activeMilestone.ageOfProphet}`
                                             })}
-                                            className="w-8 h-8 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors opacity-70 hover:opacity-100 cursor-pointer shrink-0"
-                                            style={{ color: 'var(--text-color)' }}
+                                            className="w-8 h-8 rounded-full border-0 flex items-center justify-center transition-colors opacity-80 hover:opacity-100 cursor-pointer shrink-0"
+                                            style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
                                             title={ui.zoom}
                                             aria-label={ui.zoom}
                                         >
@@ -884,12 +924,12 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                                     {activeMilestone.title}
                                 </h2>
 
-                                <div className="grid grid-cols-2 gap-2 mt-4 pt-3 border-t text-xs" style={{ borderColor: 'var(--card-border)' }}>
-                                    <div className="p-2.5 rounded-xl bg-black/5 dark:bg-white/5">
+                                <div className="grid grid-cols-2 gap-2 mt-4 pt-3 border-t text-xs border-slate-100 dark:border-slate-800/60">
+                                    <div className="p-2.5 rounded-xl bg-slate-100/70 dark:bg-white/5">
                                         <span className="opacity-60 block text-[10px]">{ui.dateAndTime}</span>
                                         <span className="font-bold">{activeMilestone.yearHijri ? `${activeMilestone.yearHijri} • ` : ''}{activeMilestone.yearGregorian}</span>
                                     </div>
-                                    <div className="p-2.5 rounded-xl bg-black/5 dark:bg-white/5">
+                                    <div className="p-2.5 rounded-xl bg-slate-100/70 dark:bg-white/5">
                                         <span className="opacity-60 block text-[10px]">{ui.prophetAge}</span>
                                         <span className="font-bold">{activeMilestone.ageOfProphet}</span>
                                     </div>
@@ -899,8 +939,8 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                             {/* Key Figures Tags */}
                             {activeMilestone.keyFigures && activeMilestone.keyFigures.length > 0 && (
                                 <div 
-                                    className="p-4 rounded-3xl themed-card border shadow-xs space-y-2"
-                                    style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                                    className="seerah-card p-4 sm:p-5 rounded-[18px] border-0 space-y-2"
+                                    style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
                                 >
                                     <div className="flex items-center justify-between gap-2">
                                         <h4 className={`text-xs font-bold ${isEn ? 'font-sans' : 'font-kufi'} flex items-center gap-1.5`} style={{ color: primaryColor }}>
@@ -916,8 +956,8 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                                                 icon: 'fa-solid fa-users',
                                                 content: activeMilestone.keyFigures!.map(person => `• ${person}`).join('\n')
                                             })}
-                                            className="w-8 h-8 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors opacity-70 hover:opacity-100 cursor-pointer shrink-0"
-                                            style={{ color: 'var(--text-color)' }}
+                                            className="w-8 h-8 rounded-full border-0 flex items-center justify-center transition-colors opacity-80 hover:opacity-100 cursor-pointer shrink-0"
+                                            style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
                                             title={ui.zoom}
                                             aria-label={ui.zoom}
                                         >
@@ -928,8 +968,8 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                                         {activeMilestone.keyFigures.map((person, idx) => (
                                             <span 
                                                 key={idx} 
-                                                className="text-[11px] font-bold px-3 py-1 rounded-full border flex items-center gap-1.5"
-                                                style={{ backgroundColor: `${primaryColor}15`, color: primaryColor, borderColor: `${primaryColor}30` }}
+                                                className="text-[11px] font-bold px-3 py-1 rounded-lg border-0 flex items-center gap-1.5"
+                                                style={{ backgroundColor: `${primaryColor}14`, color: primaryColor }}
                                             >
                                                 <i className="fa-solid fa-user text-[9px] opacity-60"></i>
                                                 {person}
@@ -941,8 +981,8 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
 
                             {/* Full Narrative Details */}
                             <div 
-                                className="p-5 sm:p-6 rounded-3xl themed-card border shadow-sm space-y-3"
-                                style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                                className="seerah-card p-5 sm:p-6 rounded-[18px] border-0 space-y-3"
+                                style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
                             >
                                 <div className="flex items-center justify-between gap-2">
                                     <h3 className={`text-sm font-bold ${isEn ? 'font-sans' : 'font-kufi'} flex items-center gap-2`} style={{ color: primaryColor }}>
@@ -958,15 +998,15 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                                             icon: 'fa-solid fa-book-open',
                                             content: activeMilestone.details
                                         })}
-                                        className="w-8 h-8 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors opacity-70 hover:opacity-100 cursor-pointer shrink-0"
-                                        style={{ color: 'var(--text-color)' }}
+                                        className="w-8 h-8 rounded-full border-0 flex items-center justify-center transition-colors opacity-80 hover:opacity-100 cursor-pointer shrink-0"
+                                        style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
                                         title={ui.zoom}
                                         aria-label={ui.zoom}
                                     >
                                         <i className="fa-solid fa-magnifying-glass-plus text-xs"></i>
                                     </button>
                                 </div>
-                                <p className="text-sm sm:text-base leading-relaxed opacity-90 font-medium whitespace-pre-line">
+                                <p className="text-sm sm:text-base leading-[1.8] opacity-90 font-medium whitespace-pre-line">
                                     {activeMilestone.details}
                                 </p>
                             </div>
@@ -974,8 +1014,8 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                             {/* 🎯 Strategic Impact */}
                             {activeMilestone.strategicImpact && (
                                 <div 
-                                    className="p-5 rounded-3xl themed-card border shadow-sm space-y-2.5 bg-blue-500/5"
-                                    style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                                    className="seerah-card p-5 rounded-[18px] border-0 space-y-2.5"
+                                    style={{ backgroundColor: tokens.isDark ? 'rgba(59, 130, 246, 0.1)' : '#EFF6FF', boxShadow: cardShadow }}
                                 >
                                     <div className="flex items-center justify-between gap-2">
                                         <h3 className={`text-sm font-bold ${isEn ? 'font-sans' : 'font-kufi'} flex items-center gap-2 text-blue-600 dark:text-blue-400`}>
@@ -991,15 +1031,15 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                                                 icon: 'fa-solid fa-chess',
                                                 content: activeMilestone.strategicImpact!
                                             })}
-                                            className="w-8 h-8 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors opacity-70 hover:opacity-100 cursor-pointer shrink-0"
-                                            style={{ color: 'var(--text-color)' }}
+                                            className="w-8 h-8 rounded-full border-0 flex items-center justify-center transition-colors opacity-80 hover:opacity-100 cursor-pointer shrink-0"
+                                            style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
                                             title={ui.zoom}
                                             aria-label={ui.zoom}
                                         >
                                             <i className="fa-solid fa-magnifying-glass-plus text-xs"></i>
                                         </button>
                                     </div>
-                                    <p className="text-xs sm:text-sm leading-relaxed opacity-95 font-semibold">
+                                    <p className="text-xs sm:text-sm leading-[1.75] opacity-95 font-semibold">
                                         {activeMilestone.strategicImpact}
                                     </p>
                                 </div>
@@ -1008,8 +1048,8 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                             {/* 🤲 Prophetic Miracles & Duas */}
                             {activeMilestone.propheticMiraclesOrDuas && (
                                 <div 
-                                    className="p-5 rounded-3xl themed-card border shadow-sm space-y-2.5 bg-amber-500/5"
-                                    style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                                    className="seerah-card p-5 rounded-[18px] border-0 space-y-2.5"
+                                    style={{ backgroundColor: tokens.isDark ? 'rgba(245, 158, 11, 0.1)' : '#FFFBEB', boxShadow: cardShadow }}
                                 >
                                     <div className="flex items-center justify-between gap-2">
                                         <h3 className={`text-sm font-bold ${isEn ? 'font-sans' : 'font-kufi'} flex items-center gap-2 text-amber-600 dark:text-amber-400`}>
@@ -1025,15 +1065,15 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                                                 icon: 'fa-solid fa-hand-holding-heart',
                                                 content: activeMilestone.propheticMiraclesOrDuas!
                                             })}
-                                            className="w-8 h-8 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors opacity-70 hover:opacity-100 cursor-pointer shrink-0"
-                                            style={{ color: 'var(--text-color)' }}
+                                            className="w-8 h-8 rounded-full border-0 flex items-center justify-center transition-colors opacity-80 hover:opacity-100 cursor-pointer shrink-0"
+                                            style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
                                             title={ui.zoom}
                                             aria-label={ui.zoom}
                                         >
                                             <i className="fa-solid fa-magnifying-glass-plus text-xs"></i>
                                         </button>
                                     </div>
-                                    <p className="text-xs sm:text-sm leading-relaxed opacity-95 font-medium">
+                                    <p className="text-xs sm:text-sm leading-[1.75] opacity-95 font-medium">
                                         {activeMilestone.propheticMiraclesOrDuas}
                                     </p>
                                 </div>
@@ -1042,8 +1082,8 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                             {/* 🔍 Historical Secrets */}
                             {activeMilestone.historicalSecrets && (
                                 <div 
-                                    className="p-5 rounded-3xl themed-card border shadow-sm space-y-2.5 bg-purple-500/5"
-                                    style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                                    className="seerah-card p-5 rounded-[18px] border-0 space-y-2.5"
+                                    style={{ backgroundColor: tokens.isDark ? 'rgba(168, 85, 247, 0.1)' : '#FAF5FF', boxShadow: cardShadow }}
                                 >
                                     <div className="flex items-center justify-between gap-2">
                                         <h3 className={`text-sm font-bold ${isEn ? 'font-sans' : 'font-kufi'} flex items-center gap-2 text-purple-600 dark:text-purple-400`}>
@@ -1059,15 +1099,15 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                                                 icon: 'fa-solid fa-compass',
                                                 content: activeMilestone.historicalSecrets!
                                             })}
-                                            className="w-8 h-8 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors opacity-70 hover:opacity-100 cursor-pointer shrink-0"
-                                            style={{ color: 'var(--text-color)' }}
+                                            className="w-8 h-8 rounded-full border-0 flex items-center justify-center transition-colors opacity-80 hover:opacity-100 cursor-pointer shrink-0"
+                                            style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
                                             title={ui.zoom}
                                             aria-label={ui.zoom}
                                         >
                                             <i className="fa-solid fa-magnifying-glass-plus text-xs"></i>
                                         </button>
                                     </div>
-                                    <p className="text-xs sm:text-sm leading-relaxed opacity-95 font-medium">
+                                    <p className="text-xs sm:text-sm leading-[1.75] opacity-95 font-medium">
                                         {activeMilestone.historicalSecrets}
                                     </p>
                                 </div>
@@ -1075,8 +1115,8 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
 
                             {/* Lessons and Moral Values */}
                             <div 
-                                className="p-5 rounded-3xl themed-card border shadow-sm space-y-3"
-                                style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid', backgroundColor: `${primaryColor}0D` }}
+                                className="seerah-card p-5 rounded-[18px] border-0 space-y-3"
+                                style={{ backgroundColor: tokens.isDark ? `${primaryColor}14` : `${primaryColor}0A`, boxShadow: cardShadow }}
                             >
                                 <div className="flex items-center justify-between gap-2">
                                     <h3 className={`text-sm font-bold ${isEn ? 'font-sans' : 'font-kufi'} flex items-center gap-2`} style={{ color: primaryColor }}>
@@ -1092,8 +1132,8 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                                             icon: 'fa-solid fa-lightbulb',
                                             content: activeMilestone.lessons
                                         })}
-                                        className="w-8 h-8 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors opacity-70 hover:opacity-100 cursor-pointer shrink-0"
-                                        style={{ color: 'var(--text-color)' }}
+                                        className="w-8 h-8 rounded-full border-0 flex items-center justify-center transition-colors opacity-80 hover:opacity-100 cursor-pointer shrink-0"
+                                        style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
                                         title={ui.zoom}
                                         aria-label={ui.zoom}
                                     >
@@ -1115,8 +1155,8 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                             {/* Proof Quote */}
                             {(activeMilestone.versesOrHadiths || activeMilestone.proof) && (
                                 <div 
-                                    className="p-4 rounded-2xl bg-black/5 dark:bg-white/5 border text-xs"
-                                    style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                                    className="seerah-card p-4 rounded-[18px] border-0 text-xs"
+                                    style={{ backgroundColor: tokens.isDark ? 'rgba(255,255,255,0.04)' : '#F8FAFC', boxShadow: cardShadow }}
                                 >
                                     <div className="flex items-center justify-between gap-2 mb-1.5">
                                         <span className={`font-bold opacity-75 flex items-center gap-1.5 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: primaryColor }}>
@@ -1133,8 +1173,8 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                                                 content: (activeMilestone.versesOrHadiths || activeMilestone.proof)!,
                                                 isVerseOrProof: true
                                             })}
-                                            className="w-8 h-8 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors opacity-70 hover:opacity-100 cursor-pointer shrink-0"
-                                            style={{ color: 'var(--text-color)' }}
+                                            className="w-8 h-8 rounded-full border-0 flex items-center justify-center transition-colors opacity-80 hover:opacity-100 cursor-pointer shrink-0"
+                                            style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
                                             title={ui.zoom}
                                             aria-label={ui.zoom}
                                         >
@@ -1152,7 +1192,7 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                                 <button
                                     onClick={() => handleShareCardImage(activeMilestone)}
                                     disabled={isSharing}
-                                    className="flex-1 py-3 px-4 rounded-2xl text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 hover:opacity-95 active:scale-95 transition-all shadow-md"
+                                    className="flex-1 py-3 px-4 rounded-xl text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 hover:opacity-95 active:scale-95 transition-all shadow-md cursor-pointer border-0"
                                     style={{ background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`, color: themeActiveTextColor }}
                                 >
                                     {isSharing ? (
@@ -1170,8 +1210,8 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
 
                                 <button
                                     onClick={() => handleCopyMilestone(activeMilestone)}
-                                    className="py-3 px-4 rounded-2xl border text-xs sm:text-sm font-bold flex items-center gap-2 hover:bg-black/5 dark:hover:bg-white/5 active:scale-95 transition-all shadow-xs"
-                                    style={{ borderColor: cardBorderColor }}
+                                    className="py-3 px-4 rounded-xl border-0 text-xs sm:text-sm font-bold flex items-center gap-2 active:scale-95 transition-all cursor-pointer"
+                                    style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
                                     title={ui.copyAllData}
                                 >
                                     <i className="fa-regular fa-copy text-xs"></i>
@@ -1184,8 +1224,8 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                                 {prevMilestone ? (
                                     <button
                                         onClick={() => handleSelectMilestone(prevMilestone)}
-                                        className={`p-3 rounded-2xl border ${isEn ? 'text-left' : 'text-right'} transition-all active:scale-95 shadow-sm hover:opacity-90`}
-                                        style={{ borderColor: cardBorderColor }}
+                                        className={`seerah-card p-3 rounded-[16px] border-0 ${isEn ? 'text-left' : 'text-right'} transition-all active:scale-95 hover:opacity-90 cursor-pointer`}
+                                        style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
                                     >
                                         <span className="text-[10px] opacity-60 block">{ui.prevMilestone}</span>
                                         <span className={`text-xs font-bold block truncate ${isEn ? 'font-sans' : 'font-kufi'}`}>{prevMilestone.title}</span>
@@ -1197,8 +1237,8 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                                 {nextMilestone ? (
                                     <button
                                         onClick={() => handleSelectMilestone(nextMilestone)}
-                                        className={`p-3 rounded-2xl border ${isEn ? 'text-left' : 'text-right'} transition-all active:scale-95 shadow-sm hover:opacity-90`}
-                                        style={{ borderColor: cardBorderColor }}
+                                        className={`seerah-card p-3 rounded-[16px] border-0 ${isEn ? 'text-left' : 'text-right'} transition-all active:scale-95 hover:opacity-90 cursor-pointer`}
+                                        style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
                                     >
                                         <span className="text-[10px] opacity-60 block">{ui.nextMilestone}</span>
                                         <span className={`text-xs font-bold block truncate ${isEn ? 'font-sans' : 'font-kufi'}`}>{nextMilestone.title}</span>
@@ -1215,11 +1255,14 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                             className="max-w-2xl mx-auto space-y-4"
                         >
                             <div 
-                                className="p-5 sm:p-6 rounded-3xl themed-card border shadow-lg relative overflow-hidden"
-                                style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                                className="seerah-card p-5 sm:p-6 rounded-[18px] border-0 relative overflow-hidden"
+                                style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
                             >
                                 <div className="flex items-center justify-between gap-2 mb-3">
-                                    <span className="text-xs font-bold px-3 py-1 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 flex items-center gap-1.5">
+                                    <span 
+                                        className="text-xs font-bold px-3 py-1 rounded-lg border-0 flex items-center gap-1.5"
+                                        style={{ backgroundColor: `${primaryColor}14`, color: primaryColor }}
+                                    >
                                         {activeStance.icon && (activeStance.icon.startsWith('fa') ? <i className={activeStance.icon}></i> : <span>{activeStance.icon}</span>)}
                                         {activeStance.categoryBadge}
                                     </span>
@@ -1236,8 +1279,8 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                                                 icon: activeStance.icon,
                                                 content: `«${activeStance.quote}»\n\n${activeStance.situation}`
                                             })}
-                                            className="w-8 h-8 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors opacity-70 hover:opacity-100 cursor-pointer shrink-0"
-                                            style={{ color: 'var(--text-color)' }}
+                                            className="w-8 h-8 rounded-full border-0 flex items-center justify-center transition-colors opacity-80 hover:opacity-100 cursor-pointer shrink-0"
+                                            style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
                                             title={ui.zoom}
                                             aria-label={ui.zoom}
                                         >
@@ -1252,13 +1295,13 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
 
                                 {/* Prophetic Immortal Quote Callout */}
                                 <div 
-                                    className="mt-4 p-4 rounded-2xl bg-gradient-to-r from-amber-500/10 to-amber-500/5 border text-center"
-                                    style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                                    className="mt-4 p-4 rounded-2xl border-0 text-center"
+                                    style={{ backgroundColor: tokens.isDark ? 'rgba(245, 158, 11, 0.12)' : '#FEF3C7' }}
                                 >
                                     <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 block mb-1">
                                         {ui.immortalQuote}
                                     </span>
-                                    <p className={`text-base sm:text-lg font-bold ${isEn ? 'font-sans' : 'font-kufi'} text-amber-700 dark:text-amber-300 leading-relaxed`}>
+                                    <p className={`text-base sm:text-lg font-bold ${isEn ? 'font-sans' : 'font-kufi'} text-amber-800 dark:text-amber-300 leading-relaxed`}>
                                         «{activeStance.quote}»
                                     </p>
                                 </div>
@@ -1266,8 +1309,8 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
 
                             {/* The Situation Context */}
                             <div 
-                                className="p-5 rounded-3xl themed-card border shadow-sm space-y-2.5"
-                                style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                                className="seerah-card p-5 rounded-[18px] border-0 space-y-2.5"
+                                style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
                             >
                                 <div className="flex items-center justify-between gap-2">
                                     <h3 className={`text-sm font-bold ${isEn ? 'font-sans' : 'font-kufi'} flex items-center gap-2`} style={{ color: primaryColor }}>
@@ -1283,15 +1326,15 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                                             icon: 'fa-solid fa-scroll',
                                             content: activeStance.situation
                                         })}
-                                        className="w-8 h-8 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors opacity-70 hover:opacity-100 cursor-pointer shrink-0"
-                                        style={{ color: 'var(--text-color)' }}
+                                        className="w-8 h-8 rounded-full border-0 flex items-center justify-center transition-colors opacity-80 hover:opacity-100 cursor-pointer shrink-0"
+                                        style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
                                         title={ui.zoom}
                                         aria-label={ui.zoom}
                                     >
                                         <i className="fa-solid fa-magnifying-glass-plus text-xs"></i>
                                     </button>
                                 </div>
-                                <p className="text-sm sm:text-base leading-relaxed opacity-90 font-medium whitespace-pre-line">
+                                <p className="text-sm sm:text-base leading-[1.8] opacity-90 font-medium whitespace-pre-line">
                                     {activeStance.situation}
                                 </p>
                             </div>
@@ -1299,8 +1342,8 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                             {/* 💬 Detailed Dialogue */}
                             {activeStance.detailedDialogue && (
                                 <div 
-                                    className="p-5 rounded-3xl themed-card border shadow-sm space-y-2.5"
-                                    style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid', backgroundColor: `${primaryColor}0D` }}
+                                    className="seerah-card p-5 rounded-[18px] border-0 space-y-2.5"
+                                    style={{ backgroundColor: tokens.isDark ? `${primaryColor}14` : `${primaryColor}0A`, boxShadow: cardShadow }}
                                 >
                                     <div className="flex items-center justify-between gap-2">
                                         <h3 className={`text-sm font-bold ${isEn ? 'font-sans' : 'font-kufi'} flex items-center gap-2`} style={{ color: primaryColor }}>
@@ -1316,15 +1359,15 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                                                 icon: 'fa-solid fa-comments',
                                                 content: activeStance.detailedDialogue!
                                             })}
-                                            className="w-8 h-8 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors opacity-70 hover:opacity-100 cursor-pointer shrink-0"
-                                            style={{ color: 'var(--text-color)' }}
+                                            className="w-8 h-8 rounded-full border-0 flex items-center justify-center transition-colors opacity-80 hover:opacity-100 cursor-pointer shrink-0"
+                                            style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
                                             title={ui.zoom}
                                             aria-label={ui.zoom}
                                         >
                                             <i className="fa-solid fa-magnifying-glass-plus text-xs"></i>
                                         </button>
                                     </div>
-                                    <p className="text-xs sm:text-sm leading-relaxed opacity-95 font-semibold whitespace-pre-line">
+                                    <p className="text-xs sm:text-sm leading-[1.75] opacity-95 font-semibold whitespace-pre-line">
                                         {activeStance.detailedDialogue}
                                     </p>
                                 </div>
@@ -1333,8 +1376,8 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                             {/* 🧠 Psychological & Leadership Analysis */}
                             {activeStance.psychologicalAnalysis && (
                                 <div 
-                                    className="p-5 rounded-3xl themed-card border shadow-sm space-y-2.5 bg-blue-500/5"
-                                    style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                                    className="seerah-card p-5 rounded-[18px] border-0 space-y-2.5"
+                                    style={{ backgroundColor: tokens.isDark ? 'rgba(59, 130, 246, 0.1)' : '#EFF6FF', boxShadow: cardShadow }}
                                 >
                                     <div className="flex items-center justify-between gap-2">
                                         <h3 className={`text-sm font-bold ${isEn ? 'font-sans' : 'font-kufi'} flex items-center gap-2 text-blue-600 dark:text-blue-400`}>
@@ -1350,15 +1393,15 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                                                 icon: 'fa-solid fa-brain',
                                                 content: activeStance.psychologicalAnalysis!
                                             })}
-                                            className="w-8 h-8 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors opacity-70 hover:opacity-100 cursor-pointer shrink-0"
-                                            style={{ color: 'var(--text-color)' }}
+                                            className="w-8 h-8 rounded-full border-0 flex items-center justify-center transition-colors opacity-80 hover:opacity-100 cursor-pointer shrink-0"
+                                            style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
                                             title={ui.zoom}
                                             aria-label={ui.zoom}
                                         >
                                             <i className="fa-solid fa-magnifying-glass-plus text-xs"></i>
                                         </button>
                                     </div>
-                                    <p className="text-xs sm:text-sm leading-relaxed opacity-95 font-medium">
+                                    <p className="text-xs sm:text-sm leading-[1.75] opacity-95 font-medium">
                                         {activeStance.psychologicalAnalysis}
                                     </p>
                                 </div>
@@ -1367,8 +1410,8 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                             {/* 🌍 Contemporary Reflection */}
                             {activeStance.contemporaryReflection && (
                                 <div 
-                                    className="p-5 rounded-3xl themed-card border shadow-sm space-y-2.5 bg-purple-500/5"
-                                    style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                                    className="seerah-card p-5 rounded-[18px] border-0 space-y-2.5"
+                                    style={{ backgroundColor: tokens.isDark ? 'rgba(168, 85, 247, 0.1)' : '#FAF5FF', boxShadow: cardShadow }}
                                 >
                                     <div className="flex items-center justify-between gap-2">
                                         <h3 className={`text-sm font-bold ${isEn ? 'font-sans' : 'font-kufi'} flex items-center gap-2 text-purple-600 dark:text-purple-400`}>
@@ -1384,15 +1427,15 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                                                 icon: 'fa-solid fa-globe',
                                                 content: activeStance.contemporaryReflection!
                                             })}
-                                            className="w-8 h-8 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors opacity-70 hover:opacity-100 cursor-pointer shrink-0"
-                                            style={{ color: 'var(--text-color)' }}
+                                            className="w-8 h-8 rounded-full border-0 flex items-center justify-center transition-colors opacity-80 hover:opacity-100 cursor-pointer shrink-0"
+                                            style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
                                             title={ui.zoom}
                                             aria-label={ui.zoom}
                                         >
                                             <i className="fa-solid fa-magnifying-glass-plus text-xs"></i>
                                         </button>
                                     </div>
-                                    <p className="text-xs sm:text-sm leading-relaxed opacity-95 font-medium">
+                                    <p className="text-xs sm:text-sm leading-[1.75] opacity-95 font-medium">
                                         {activeStance.contemporaryReflection}
                                     </p>
                                 </div>
@@ -1401,8 +1444,8 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                             {/* 🛠️ Practical Application Steps */}
                             {activeStance.practicalApplication && (
                                 <div 
-                                    className="p-5 rounded-3xl themed-card border shadow-sm space-y-2.5 bg-amber-500/5"
-                                    style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                                    className="seerah-card p-5 rounded-[18px] border-0 space-y-2.5"
+                                    style={{ backgroundColor: tokens.isDark ? 'rgba(245, 158, 11, 0.1)' : '#FFFBEB', boxShadow: cardShadow }}
                                 >
                                     <div className="flex items-center justify-between gap-2">
                                         <h3 className={`text-sm font-bold ${isEn ? 'font-sans' : 'font-kufi'} flex items-center gap-2 text-amber-600 dark:text-amber-400`}>
@@ -1418,15 +1461,15 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                                                 icon: 'fa-solid fa-check-to-slot',
                                                 content: activeStance.practicalApplication!
                                             })}
-                                            className="w-8 h-8 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors opacity-70 hover:opacity-100 cursor-pointer shrink-0"
-                                            style={{ color: 'var(--text-color)' }}
+                                            className="w-8 h-8 rounded-full border-0 flex items-center justify-center transition-colors opacity-80 hover:opacity-100 cursor-pointer shrink-0"
+                                            style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
                                             title={ui.zoom}
                                             aria-label={ui.zoom}
                                         >
                                             <i className="fa-solid fa-magnifying-glass-plus text-xs"></i>
                                         </button>
                                     </div>
-                                    <p className="text-xs sm:text-sm leading-relaxed opacity-95 font-medium whitespace-pre-line">
+                                    <p className="text-xs sm:text-sm leading-[1.75] opacity-95 font-medium whitespace-pre-line">
                                         {activeStance.practicalApplication}
                                     </p>
                                 </div>
@@ -1434,8 +1477,8 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
 
                             {/* The Moral Lesson */}
                             <div 
-                                className="p-5 rounded-3xl themed-card border shadow-sm space-y-2.5"
-                                style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid', backgroundColor: `${primaryColor}0D` }}
+                                className="seerah-card p-5 rounded-[18px] border-0 space-y-2.5"
+                                style={{ backgroundColor: tokens.isDark ? `${primaryColor}14` : `${primaryColor}0A`, boxShadow: cardShadow }}
                             >
                                 <div className="flex items-center justify-between gap-2">
                                     <h3 className={`text-sm font-bold ${isEn ? 'font-sans' : 'font-kufi'} flex items-center gap-2`} style={{ color: primaryColor }}>
@@ -1451,23 +1494,23 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                                             icon: 'fa-solid fa-lightbulb',
                                             content: activeStance.moralLesson
                                         })}
-                                        className="w-8 h-8 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors opacity-70 hover:opacity-100 cursor-pointer shrink-0"
-                                        style={{ color: 'var(--text-color)' }}
+                                        className="w-8 h-8 rounded-full border-0 flex items-center justify-center transition-colors opacity-80 hover:opacity-100 cursor-pointer shrink-0"
+                                        style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
                                         title={ui.zoom}
                                         aria-label={ui.zoom}
                                     >
                                         <i className="fa-solid fa-magnifying-glass-plus text-xs"></i>
                                     </button>
                                 </div>
-                                <p className="text-sm sm:text-base leading-relaxed font-semibold">
+                                <p className="text-sm sm:text-base leading-[1.75] font-semibold">
                                     {activeStance.moralLesson}
                                 </p>
                             </div>
 
                             {/* Proof Documentation */}
                             <div 
-                                className="p-4 rounded-2xl bg-black/5 dark:bg-white/5 border text-xs"
-                                style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                                className="seerah-card p-4 rounded-[18px] border-0 text-xs"
+                                style={{ backgroundColor: tokens.isDark ? 'rgba(255,255,255,0.04)' : '#F8FAFC', boxShadow: cardShadow }}
                             >
                                 <div className="flex items-center justify-between gap-2 mb-1">
                                     <span className={`font-bold opacity-75 text-blue-500 flex items-center gap-1.5 ${isEn ? 'font-sans' : 'font-kufi'}`}>
@@ -1484,8 +1527,8 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                                             content: activeStance.proof,
                                             isVerseOrProof: true
                                         })}
-                                        className="w-8 h-8 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors opacity-70 hover:opacity-100 cursor-pointer shrink-0"
-                                        style={{ color: 'var(--text-color)' }}
+                                        className="w-8 h-8 rounded-full border-0 flex items-center justify-center transition-colors opacity-80 hover:opacity-100 cursor-pointer shrink-0"
+                                        style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
                                         title={ui.zoom}
                                         aria-label={ui.zoom}
                                     >
@@ -1502,7 +1545,7 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                                 <button
                                     onClick={() => handleShareStanceImage(activeStance)}
                                     disabled={isSharing}
-                                    className="flex-1 py-3 px-4 rounded-2xl text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 hover:opacity-95 active:scale-95 transition-all shadow-md"
+                                    className="flex-1 py-3 px-4 rounded-xl text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 hover:opacity-95 active:scale-95 transition-all shadow-md cursor-pointer border-0"
                                     style={{ background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`, color: themeActiveTextColor }}
                                 >
                                     {isSharing ? (
@@ -1519,8 +1562,8 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                                 </button>
                                 <button
                                     onClick={() => handleCopyStance(activeStance)}
-                                    className="py-3 px-4 rounded-2xl border text-xs sm:text-sm font-bold flex items-center gap-2 hover:bg-black/5 dark:hover:bg-white/5 active:scale-95 transition-all shadow-xs"
-                                    style={{ borderColor: cardBorderColor }}
+                                    className="py-3 px-4 rounded-xl border-0 text-xs sm:text-sm font-bold flex items-center gap-2 active:scale-95 transition-all cursor-pointer"
+                                    style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
                                     title={ui.copyStanceDetails}
                                 >
                                     <i className="fa-regular fa-copy text-xs"></i>
@@ -1536,8 +1579,8 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                         >
                             {/* Sub-Navigation Tabs within Lineage View */}
                             <div 
-                                className="flex items-center gap-1.5 overflow-x-auto pb-1.5 pt-1.5 px-2 rounded-2xl border hide-scrollbar"
-                                style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                                className="filter-chips-nav flex items-center gap-1 overflow-x-auto p-1.5 rounded-2xl border-0 hide-scrollbar"
+                                style={{ backgroundColor: capsuleBg }}
                             >
                                 {[
                                     { id: 'tree', label: ui.lineageTabTree, icon: 'fa-sitemap' },
@@ -1546,38 +1589,41 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                                     { id: 'nurses', label: ui.lineageTabNurses, icon: 'fa-baby' },
                                     { id: 'characteristics', label: ui.lineageTabCharacteristics, icon: 'fa-sun' },
                                     { id: 'virtues', label: ui.lineageTabVirtues, icon: 'fa-certificate' },
-                                ].map((tab) => (
-                                    <button
-                                        key={tab.id}
-                                        onClick={() => setLineageTab(tab.id as any)}
-                                        className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border shrink-0 flex items-center gap-1.5 active:scale-95 ${
-                                            lineageTab === tab.id
-                                                ? 'shadow-sm'
-                                                : 'bg-black/5 dark:bg-white/5 hover:bg-black/10'
-                                        } ${isEn ? 'font-sans' : 'font-kufi'}`}
-                                        style={{
-                                            backgroundColor: lineageTab === tab.id ? primaryColor : undefined,
-                                            color: lineageTab === tab.id ? themeActiveTextColor : 'inherit',
-                                            borderColor: lineageTab === tab.id ? primaryColor : cardBorderColor,
-                                            borderWidth: '1px',
-                                            borderStyle: 'solid'
-                                        }}
-                                    >
-                                        <i className={`fa-solid ${tab.icon} text-[10px]`}></i>
-                                        <span>{tab.label}</span>
-                                    </button>
-                                ))}
+                                ].map((tab) => {
+                                    const isActive = lineageTab === tab.id;
+                                    return (
+                                        <button
+                                            key={tab.id}
+                                            onClick={() => setLineageTab(tab.id as any)}
+                                            className={`px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border-0 shrink-0 flex items-center gap-1.5 active:scale-95 cursor-pointer ${
+                                                isActive
+                                                    ? 'shadow-xs'
+                                                    : 'hover:opacity-100 bg-transparent'
+                                            } ${isEn ? 'font-sans' : 'font-kufi'}`}
+                                            style={{
+                                                backgroundColor: isActive ? primaryColor : 'transparent',
+                                                color: isActive ? themeActiveTextColor : (tokens.isDark ? '#E2E8F0' : '#475569')
+                                            }}
+                                        >
+                                            <i className={`fa-solid ${tab.icon} text-[10px]`}></i>
+                                            <span>{tab.label}</span>
+                                        </button>
+                                    );
+                                })}
                             </div>
 
                             {/* Lineage Hero Card */}
                             {lineageTab === 'tree' && (
                                 <div 
-                                    className="p-5 sm:p-7 rounded-3xl themed-card border shadow-lg relative overflow-hidden text-center space-y-4"
-                                    style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                                    className="seerah-card p-5 sm:p-7 rounded-[18px] border-0 relative overflow-hidden text-center space-y-4"
+                                    style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
                                 >
                                     <div className="flex items-center justify-between">
                                         <div className="w-8 h-8 opacity-0 pointer-events-none" />
-                                        <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 text-xs font-bold ${isEn ? 'font-sans' : 'font-kufi'}`}>
+                                        <div 
+                                            className={`inline-flex items-center gap-2 px-3 py-1 rounded-lg border-0 text-xs font-bold ${isEn ? 'font-sans' : 'font-kufi'}`}
+                                            style={{ backgroundColor: `${primaryColor}14`, color: primaryColor }}
+                                        >
                                             <i className="fa-solid fa-crown text-amber-400"></i>
                                             <span>{ui.lineageBadge}</span>
                                         </div>
@@ -1590,8 +1636,8 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                                                 icon: 'fa-solid fa-crown',
                                                 content: `${activeLineageData.shortChain}\n\n• ${ui.fullLineTitle}\n${activeLineageData.fullText}`
                                             })}
-                                            className="w-8 h-8 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors opacity-70 hover:opacity-100 cursor-pointer shrink-0"
-                                            style={{ color: 'var(--text-color)' }}
+                                            className="w-8 h-8 rounded-full border-0 flex items-center justify-center transition-colors opacity-80 hover:opacity-100 cursor-pointer shrink-0"
+                                            style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
                                             title={ui.zoom}
                                             aria-label={ui.zoom}
                                         >
@@ -1599,13 +1645,13 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                                         </button>
                                     </div>
 
-                                    <h2 className={`text-2xl sm:text-3xl font-bold ${isEn ? 'font-sans' : 'font-kufi'} text-emerald-600 dark:text-emerald-400`}>
+                                    <h2 className={`text-2xl sm:text-3xl font-bold ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: primaryColor }}>
                                         {activeLineageData.fullName}
                                     </h2>
 
                                     <div 
-                                        className={`p-4 rounded-2xl bg-black/5 dark:bg-white/5 border text-xs sm:text-sm leading-relaxed font-semibold relative ${isEn ? 'text-left' : 'text-right'}`}
-                                        style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                                        className={`p-4 rounded-2xl border-0 text-xs sm:text-sm leading-[1.8] font-semibold relative ${isEn ? 'text-left' : 'text-right'}`}
+                                        style={{ backgroundColor: tokens.isDark ? 'rgba(255, 255, 255, 0.05)' : '#F1F5F9' }}
                                     >
                                         <div className="flex items-center justify-between gap-2 mb-1.5">
                                             <span className={`text-[11px] font-bold text-amber-600 dark:text-amber-400 ${isEn ? 'font-sans' : 'font-kufi'}`}>
@@ -1620,8 +1666,8 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                                                     icon: 'fa-solid fa-crown',
                                                     content: activeLineageData.shortChain
                                                 })}
-                                                className="w-7 h-7 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors opacity-70 hover:opacity-100 cursor-pointer shrink-0"
-                                                style={{ color: 'var(--text-color)' }}
+                                                className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors opacity-80 hover:opacity-100 cursor-pointer shrink-0"
+                                                style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
                                                 title={ui.zoom}
                                                 aria-label={ui.zoom}
                                             >
@@ -1635,11 +1681,11 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
 
                                     {/* Full Connected Lineage Paragraph */}
                                     <div 
-                                        className={`p-4 rounded-2xl bg-emerald-500/10 border text-xs sm:text-sm leading-relaxed font-medium relative ${isEn ? 'text-left' : 'text-right'}`}
-                                        style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                                        className={`p-4 rounded-2xl border-0 text-xs sm:text-sm leading-[1.8] font-medium relative ${isEn ? 'text-left' : 'text-right'}`}
+                                        style={{ backgroundColor: tokens.isDark ? `${primaryColor}14` : `${primaryColor}0A` }}
                                     >
                                         <div className="flex items-center justify-between gap-2 mb-1.5">
-                                            <span className={`font-bold text-emerald-700 dark:text-emerald-300 block ${isEn ? 'font-sans' : 'font-kufi'}`}>
+                                            <span className={`font-bold block ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: primaryColor }}>
                                                 {ui.fullLineTitle}
                                             </span>
                                             <button
@@ -1651,8 +1697,8 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                                                     icon: 'fa-solid fa-sitemap',
                                                     content: activeLineageData.fullText
                                                 })}
-                                                className="w-7 h-7 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors opacity-70 hover:opacity-100 cursor-pointer shrink-0"
-                                                style={{ color: 'var(--text-color)' }}
+                                                className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors opacity-80 hover:opacity-100 cursor-pointer shrink-0"
+                                                style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
                                                 title={ui.zoom}
                                                 aria-label={ui.zoom}
                                             >
@@ -1669,7 +1715,8 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                                         <button
                                             onClick={handleShareLineageImage}
                                             disabled={isSharing}
-                                            className="py-2.5 px-5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-700 text-white text-xs sm:text-sm font-bold flex items-center gap-2 hover:opacity-95 active:scale-95 transition-all shadow-md"
+                                            className="py-2.5 px-5 rounded-xl border-0 text-white text-xs sm:text-sm font-bold flex items-center gap-2 hover:opacity-95 active:scale-95 transition-all shadow-md cursor-pointer"
+                                            style={{ background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`, color: themeActiveTextColor }}
                                         >
                                             <i className="fa-solid fa-image text-xs"></i>
                                             {ui.shareLineagePoster}
@@ -1677,8 +1724,8 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
 
                                         <button
                                             onClick={() => handleCopyLineage('all')}
-                                            className="py-2.5 px-5 rounded-2xl border text-xs sm:text-sm font-bold flex items-center gap-2 hover:bg-black/5 dark:hover:bg-white/5 active:scale-95 transition-all shadow-xs"
-                                            style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                                            className="py-2.5 px-5 rounded-xl border-0 text-xs sm:text-sm font-bold flex items-center gap-2 active:scale-95 transition-all cursor-pointer"
+                                            style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
                                         >
                                             <i className="fa-regular fa-copy text-xs"></i>
                                             {ui.copyLineageAll}
@@ -1691,13 +1738,14 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                             {lineageTab === 'tree' && (
                                 <div className="space-y-3">
                                     <div className="flex items-center justify-between">
-                                        <h3 className={`text-sm font-bold ${isEn ? 'font-sans' : 'font-kufi'} flex items-center gap-2 text-emerald-600 dark:text-emerald-400`}>
+                                        <h3 className={`text-sm font-bold ${isEn ? 'font-sans' : 'font-kufi'} flex items-center gap-2`} style={{ color: primaryColor }}>
                                             <i className="fa-solid fa-users-rays"></i>
                                             {ui.ancestorsTitle}
                                         </h3>
                                         <button
                                             onClick={() => handleCopyLineage('tree')}
-                                            className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
+                                            className="text-xs font-bold hover:underline flex items-center gap-1 cursor-pointer"
+                                            style={{ color: primaryColor }}
                                         >
                                             <i className="fa-regular fa-copy text-[10px]"></i>
                                             {ui.copy}
@@ -1708,12 +1756,15 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                                         {activeLineageData.ancestors.map((anc, idx) => (
                                             <div 
                                                 key={idx}
-                                                className="p-4 rounded-2xl themed-card border shadow-xs space-y-2 hover:border-emerald-500/50 transition-colors"
-                                                style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                                                className="seerah-card p-4 sm:p-5 rounded-[18px] border-0 space-y-2 transition-all"
+                                                style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
                                             >
                                                 <div className="flex items-center justify-between gap-2">
                                                     <div className="flex items-center gap-2">
-                                                        <span className="w-6 h-6 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-xs">
+                                                        <span 
+                                                            className="w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs"
+                                                            style={{ backgroundColor: `${primaryColor}18`, color: primaryColor }}
+                                                        >
                                                             {idx + 1}
                                                         </span>
                                                         <span className={`font-bold text-base ${isEn ? 'font-sans' : 'font-kufi'}`}>
@@ -1730,31 +1781,31 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                                                                 icon: 'fa-solid fa-user-shield',
                                                                 content: `${anc.significance}${anc.story ? `\n\n• ${ui.ancestorStoryTitle}\n${anc.story}` : ''}`
                                                             })}
-                                                            className="w-7 h-7 rounded-full bg-black/5 dark:bg-white/5 hover:bg-black/10 flex items-center justify-center text-xs transition-colors opacity-70 hover:opacity-100 cursor-pointer"
-                                                            style={{ color: 'var(--text-color)' }}
+                                                            className="w-8 h-8 rounded-full border-0 flex items-center justify-center text-xs transition-colors opacity-80 hover:opacity-100 cursor-pointer"
+                                                            style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
                                                             title={ui.zoom}
                                                             aria-label={ui.zoom}
                                                         >
                                                             <i className="fa-solid fa-magnifying-glass-plus"></i>
                                                         </button>
                                                         {anc.title && (
-                                                            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                                                            <span className="text-[11px] font-bold px-2 py-0.5 rounded-lg border-0 bg-amber-500/10 text-amber-600 dark:text-amber-400">
                                                                 {anc.title}
                                                             </span>
                                                         )}
                                                     </div>
                                                 </div>
 
-                                                <p className="text-xs opacity-85 leading-relaxed font-semibold">
+                                                <p className="text-xs opacity-85 leading-[1.75] font-semibold">
                                                     {anc.significance}
                                                 </p>
 
                                                 {anc.story && (
                                                     <div 
-                                                        className="p-3 rounded-xl bg-black/5 dark:bg-white/5 border text-xs text-opacity-90 leading-relaxed"
-                                                        style={{ borderColor: cardBorderColor, borderWidth: '1px', borderStyle: 'solid' }}
+                                                        className="p-3 rounded-xl border-0 text-xs leading-[1.75]"
+                                                        style={{ backgroundColor: tokens.isDark ? 'rgba(255, 255, 255, 0.04)' : '#F8FAFC' }}
                                                     >
-                                                        <span className={`font-bold text-emerald-600 dark:text-emerald-400 block text-[11px] mb-1 ${isEn ? 'font-sans' : 'font-kufi'}`}>
+                                                        <span className={`font-bold block text-[11px] mb-1 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: primaryColor }}>
                                                             {ui.ancestorStoryTitle}
                                                         </span>
                                                         <p className="opacity-90 leading-relaxed font-normal">
@@ -1771,8 +1822,8 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                             {/* Sub-tab 2: Mother's Lineage */}
                             {lineageTab === 'mother' && (
                                 <div 
-                                    className="p-5 sm:p-6 rounded-3xl themed-card border shadow-sm space-y-4"
-                                    style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                                    className="seerah-card p-5 sm:p-6 rounded-[18px] border-0 space-y-4"
+                                    style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
                                 >
                                     <div className="flex items-center justify-between">
                                         <h3 className={`text-base font-bold ${isEn ? 'font-sans' : 'font-kufi'} flex items-center gap-2 text-rose-500`}>
@@ -1789,8 +1840,8 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                                                     icon: 'fa-solid fa-heart',
                                                     content: `${activeLineageData.motherLineage.tribe}\n\n• ${ui.meetingPointTitle}\n${activeLineageData.motherLineage.meetingPoint}\n\n• ${isEn ? 'Historical Details & Status:' : 'التفاصيل والمكانة:'}\n${activeLineageData.motherLineage.details}`
                                                 })}
-                                                className="w-7 h-7 rounded-full bg-black/5 dark:bg-white/5 hover:bg-black/10 flex items-center justify-center text-xs transition-colors opacity-70 hover:opacity-100 cursor-pointer"
-                                                style={{ color: 'var(--text-color)' }}
+                                                className="w-8 h-8 rounded-full border-0 flex items-center justify-center text-xs transition-colors opacity-80 hover:opacity-100 cursor-pointer"
+                                                style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
                                                 title={ui.zoom}
                                                 aria-label={ui.zoom}
                                             >
@@ -1798,7 +1849,8 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                                             </button>
                                             <button
                                                 onClick={() => handleCopyLineage('mother')}
-                                                className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
+                                                className="text-xs font-bold hover:underline flex items-center gap-1 cursor-pointer"
+                                                style={{ color: primaryColor }}
                                             >
                                                 <i className="fa-regular fa-copy text-[10px]"></i>
                                                 {ui.copy}
@@ -1807,8 +1859,8 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                                     </div>
 
                                     <div 
-                                        className="p-4 rounded-2xl bg-rose-500/10 border space-y-2"
-                                        style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                                        className="p-4 rounded-xl border-0 space-y-2"
+                                        style={{ backgroundColor: tokens.isDark ? 'rgba(244, 63, 94, 0.1)' : '#FFF1F2' }}
                                     >
                                         <span className={`text-xs font-bold text-rose-600 dark:text-rose-400 block ${isEn ? 'font-sans' : 'font-kufi'}`}>
                                             {activeLineageData.motherLineage.fullName}
@@ -1819,11 +1871,11 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                                     </div>
 
                                     <div 
-                                        className="p-4 rounded-2xl bg-black/5 dark:bg-white/5 border space-y-2 text-xs leading-relaxed"
-                                        style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                                        className="p-4 rounded-xl border-0 space-y-2 text-xs leading-[1.75]"
+                                        style={{ backgroundColor: tokens.isDark ? 'rgba(255, 255, 255, 0.04)' : '#F8FAFC' }}
                                     >
                                         <div className="flex items-center justify-between gap-2">
-                                            <span className={`font-bold text-emerald-600 dark:text-emerald-400 block ${isEn ? 'font-sans' : 'font-kufi'}`}>
+                                            <span className={`font-bold block ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: primaryColor }}>
                                                 {ui.meetingPointTitle}
                                             </span>
                                             <button
@@ -1835,8 +1887,8 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                                                     icon: 'fa-solid fa-link',
                                                     content: `${activeLineageData.motherLineage.meetingPoint}\n\n${activeLineageData.motherLineage.details}`
                                                 })}
-                                                className="w-6 h-6 rounded-full bg-black/5 dark:bg-white/5 hover:bg-black/10 flex items-center justify-center text-[10px] transition-colors opacity-70 hover:opacity-100 cursor-pointer"
-                                                style={{ color: 'var(--text-color)' }}
+                                                className="w-7 h-7 rounded-full border-0 flex items-center justify-center text-[10px] transition-colors opacity-80 hover:opacity-100 cursor-pointer"
+                                                style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
                                                 title={ui.zoom}
                                                 aria-label={ui.zoom}
                                             >
@@ -1848,7 +1900,7 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                                         </p>
                                     </div>
 
-                                    <div className="space-y-2 text-xs sm:text-sm leading-relaxed opacity-90 font-medium">
+                                    <div className="space-y-2 text-xs sm:text-sm leading-[1.8] opacity-90 font-medium">
                                         <p className="whitespace-pre-line">
                                             {activeLineageData.motherLineage.details}
                                         </p>
@@ -1860,13 +1912,14 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                             {lineageTab === 'names' && (
                                 <div className="space-y-3">
                                     <div className="flex items-center justify-between">
-                                        <h3 className={`text-sm font-bold ${isEn ? 'font-sans' : 'font-kufi'} flex items-center gap-2 text-emerald-600 dark:text-emerald-400`}>
+                                        <h3 className={`text-sm font-bold ${isEn ? 'font-sans' : 'font-kufi'} flex items-center gap-2`} style={{ color: primaryColor }}>
                                             <i className="fa-solid fa-sparkles text-amber-400"></i>
                                             {ui.namesTitle} ({activeLineageData.propheticNames.length} {isEn ? 'blessed names' : 'اسماً مباركاً'})
                                         </h3>
                                         <button
                                             onClick={() => handleCopyLineage('names')}
-                                            className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
+                                            className="text-xs font-bold hover:underline flex items-center gap-1 cursor-pointer"
+                                            style={{ color: primaryColor }}
                                         >
                                             <i className="fa-regular fa-copy text-[10px]"></i>
                                             {ui.copy}
@@ -1877,11 +1930,11 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                                         {activeLineageData.propheticNames.map((pn, i) => (
                                             <div 
                                                 key={i}
-                                                className="p-4 rounded-2xl themed-card border shadow-xs space-y-2"
-                                                style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                                                className="seerah-card p-4 sm:p-5 rounded-[18px] border-0 space-y-2"
+                                                style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
                                             >
                                                 <div className="flex items-center justify-between">
-                                                    <span className={`text-base font-bold ${isEn ? 'font-sans' : 'font-kufi'} text-emerald-600 dark:text-emerald-400`}>
+                                                    <span className={`text-base font-bold ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: primaryColor }}>
                                                         {pn.name}
                                                     </span>
                                                     <div className="flex items-center gap-1.5">
@@ -1894,22 +1947,25 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                                                                 icon: 'fa-solid fa-sparkles',
                                                                 content: `${pn.meaning}\n\n• ${ui.hadithSource}\n${pn.source}`
                                                             })}
-                                                            className="w-7 h-7 rounded-full bg-black/5 dark:bg-white/5 hover:bg-black/10 flex items-center justify-center text-xs transition-colors opacity-70 hover:opacity-100 cursor-pointer"
-                                                            style={{ color: 'var(--text-color)' }}
+                                                            className="w-8 h-8 rounded-full border-0 flex items-center justify-center text-xs transition-colors opacity-80 hover:opacity-100 cursor-pointer"
+                                                            style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
                                                             title={ui.zoom}
                                                             aria-label={ui.zoom}
                                                         >
                                                             <i className="fa-solid fa-magnifying-glass-plus"></i>
                                                         </button>
-                                                        <span className="w-5 h-5 rounded-full bg-emerald-500/10 text-emerald-600 text-[10px] flex items-center justify-center font-bold">
+                                                        <span 
+                                                            className="w-5 h-5 rounded-full text-[10px] flex items-center justify-center font-bold"
+                                                            style={{ backgroundColor: `${primaryColor}18`, color: primaryColor }}
+                                                        >
                                                             {i + 1}
                                                         </span>
                                                     </div>
                                                 </div>
-                                                <p className="text-xs leading-relaxed opacity-90 font-medium">
+                                                <p className="text-xs leading-[1.75] opacity-90 font-medium">
                                                     {pn.meaning}
                                                 </p>
-                                                <span className="text-[10px] opacity-60 block border-t pt-1 font-mono" style={{ borderColor: 'var(--card-border)' }}>
+                                                <span className="text-[10px] opacity-60 block border-t border-slate-100 dark:border-slate-800/60 pt-1.5 font-mono">
                                                     {pn.source}
                                                 </span>
                                             </div>
@@ -1922,13 +1978,14 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                             {lineageTab === 'nurses' && (
                                 <div className="space-y-3">
                                     <div className="flex items-center justify-between">
-                                        <h3 className={`text-sm font-bold ${isEn ? 'font-sans' : 'font-kufi'} flex items-center gap-2 text-emerald-600 dark:text-emerald-400`}>
+                                        <h3 className={`text-sm font-bold ${isEn ? 'font-sans' : 'font-kufi'} flex items-center gap-2`} style={{ color: primaryColor }}>
                                             <i className="fa-solid fa-baby text-pink-400"></i>
                                             {ui.nursesTitle}
                                         </h3>
                                         <button
                                             onClick={() => handleCopyLineage('nurses')}
-                                            className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
+                                            className="text-xs font-bold hover:underline flex items-center gap-1 cursor-pointer"
+                                            style={{ color: primaryColor }}
                                         >
                                             <i className="fa-regular fa-copy text-[10px]"></i>
                                             {ui.copy}
@@ -1939,11 +1996,11 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                                         {activeLineageData.nursesAndFosterBrothers.map((nb, i) => (
                                             <div 
                                                 key={i}
-                                                className="p-4 rounded-2xl themed-card border shadow-xs space-y-1.5"
-                                                style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                                                className="seerah-card p-4 sm:p-5 rounded-[18px] border-0 space-y-2"
+                                                style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
                                             >
                                                 <div className="flex items-center justify-between gap-2">
-                                                    <span className={`font-bold text-sm ${isEn ? 'font-sans' : 'font-kufi'} text-emerald-600 dark:text-emerald-400`}>
+                                                    <span className={`font-bold text-sm ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: primaryColor }}>
                                                         {nb.person}
                                                     </span>
                                                     <div className="flex items-center gap-1.5">
@@ -1956,19 +2013,19 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                                                                 icon: 'fa-solid fa-baby',
                                                                 content: nb.details
                                                             })}
-                                                            className="w-7 h-7 rounded-full bg-black/5 dark:bg-white/5 hover:bg-black/10 flex items-center justify-center text-xs transition-colors opacity-70 hover:opacity-100 cursor-pointer"
-                                                            style={{ color: 'var(--text-color)' }}
+                                                            className="w-8 h-8 rounded-full border-0 flex items-center justify-center text-xs transition-colors opacity-80 hover:opacity-100 cursor-pointer"
+                                                            style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
                                                             title={ui.zoom}
                                                             aria-label={ui.zoom}
                                                         >
                                                             <i className="fa-solid fa-magnifying-glass-plus"></i>
                                                         </button>
-                                                        <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-pink-500/10 text-pink-600 dark:text-pink-400 border border-pink-500/20">
+                                                        <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-lg border-0 bg-pink-500/10 text-pink-600 dark:text-pink-400">
                                                             {nb.role}
                                                         </span>
                                                     </div>
                                                 </div>
-                                                <p className="text-xs opacity-90 leading-relaxed font-medium">
+                                                <p className="text-xs opacity-90 leading-[1.75] font-medium">
                                                     {nb.details}
                                                 </p>
                                             </div>
@@ -1981,13 +2038,14 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                             {lineageTab === 'characteristics' && (
                                 <div className="space-y-3">
                                     <div className="flex items-center justify-between">
-                                        <h3 className={`text-sm font-bold ${isEn ? 'font-sans' : 'font-kufi'} flex items-center gap-2 text-emerald-600 dark:text-emerald-400`}>
+                                        <h3 className={`text-sm font-bold ${isEn ? 'font-sans' : 'font-kufi'} flex items-center gap-2`} style={{ color: primaryColor }}>
                                             <i className="fa-solid fa-sun text-amber-400"></i>
                                             {ui.characteristicsTitle} ({activeLineageData.nobleCharacteristics.length} {isEn ? 'sublime characteristics' : 'شَميلة خَلقية وخُلقية'})
                                         </h3>
                                         <button
                                             onClick={() => handleCopyLineage('characteristics')}
-                                            className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
+                                            className="text-xs font-bold hover:underline flex items-center gap-1 cursor-pointer"
+                                            style={{ color: primaryColor }}
                                         >
                                             <i className="fa-regular fa-copy text-[10px]"></i>
                                             {ui.copy}
@@ -1998,11 +2056,11 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                                         {activeLineageData.nobleCharacteristics.map((c, i) => (
                                             <div 
                                                 key={i}
-                                                className="p-5 rounded-3xl themed-card border shadow-sm space-y-2.5"
-                                                style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                                                className="seerah-card p-5 rounded-[18px] border-0 space-y-2.5"
+                                                style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
                                             >
                                                 <div className="flex items-center justify-between gap-2">
-                                                    <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                                                    <span className="text-xs font-bold px-2.5 py-0.5 rounded-lg border-0 bg-amber-500/10 text-amber-600 dark:text-amber-400">
                                                         {c.category}
                                                     </span>
                                                     <div className="flex items-center gap-1.5">
@@ -2015,28 +2073,31 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                                                                 icon: 'fa-solid fa-sun',
                                                                 content: `${c.description}\n\n• ${ui.hadithSource}\n${c.hadithRef}`
                                                             })}
-                                                            className="w-7 h-7 rounded-full bg-black/5 dark:bg-white/5 hover:bg-black/10 flex items-center justify-center text-xs transition-colors opacity-70 hover:opacity-100 cursor-pointer"
-                                                            style={{ color: 'var(--text-color)' }}
+                                                            className="w-8 h-8 rounded-full border-0 flex items-center justify-center text-xs transition-colors opacity-80 hover:opacity-100 cursor-pointer"
+                                                            style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
                                                             title={ui.zoom}
                                                             aria-label={ui.zoom}
                                                         >
                                                             <i className="fa-solid fa-magnifying-glass-plus"></i>
                                                         </button>
-                                                        <span className="w-5 h-5 rounded-full bg-emerald-500/10 text-emerald-600 text-[10px] flex items-center justify-center font-bold shrink-0">
+                                                        <span 
+                                                            className="w-5 h-5 rounded-full text-[10px] flex items-center justify-center font-bold shrink-0"
+                                                            style={{ backgroundColor: `${primaryColor}18`, color: primaryColor }}
+                                                        >
                                                             {i + 1}
                                                         </span>
                                                     </div>
                                                 </div>
 
-                                                <h4 className={`font-bold text-base ${isEn ? 'font-sans' : 'font-kufi'} text-emerald-600 dark:text-emerald-400`}>
+                                                <h4 className={`font-bold text-base ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: primaryColor }}>
                                                     {c.title}
                                                 </h4>
 
-                                                <p className="text-xs sm:text-sm leading-relaxed opacity-95 font-medium whitespace-pre-line">
+                                                <p className="text-xs sm:text-sm leading-[1.8] opacity-95 font-medium whitespace-pre-line">
                                                     {c.description}
                                                 </p>
 
-                                                <span className="text-[10px] opacity-60 block pt-1 border-t" style={{ borderColor: 'var(--card-border)' }}>
+                                                <span className="text-[10px] opacity-60 block pt-1.5 border-t border-slate-100 dark:border-slate-800/60 font-mono">
                                                     {c.hadithRef}
                                                 </span>
                                             </div>
@@ -2049,13 +2110,14 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                             {lineageTab === 'virtues' && (
                                 <div className="space-y-3">
                                     <div className="flex items-center justify-between">
-                                        <h3 className={`text-sm font-bold ${isEn ? 'font-sans' : 'font-kufi'} flex items-center gap-2 text-emerald-600 dark:text-emerald-400`}>
+                                        <h3 className={`text-sm font-bold ${isEn ? 'font-sans' : 'font-kufi'} flex items-center gap-2`} style={{ color: primaryColor }}>
                                             <i className="fa-solid fa-certificate text-amber-400"></i>
                                             {ui.virtuesTitle}
                                         </h3>
                                         <button
                                             onClick={() => handleCopyLineage('virtues')}
-                                            className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
+                                            className="text-xs font-bold hover:underline flex items-center gap-1 cursor-pointer"
+                                            style={{ color: primaryColor }}
                                         >
                                             <i className="fa-regular fa-copy text-[10px]"></i>
                                             {ui.copy}
@@ -2066,8 +2128,8 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                                         {activeLineageData.virtues.map((v, i) => (
                                             <div 
                                                 key={i} 
-                                                className="p-4 rounded-2xl bg-black/5 dark:bg-white/5 border space-y-1.5"
-                                                style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                                                className="seerah-card p-4 sm:p-5 rounded-[18px] border-0 space-y-2"
+                                                style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
                                             >
                                                 <div className="flex items-center justify-between gap-2">
                                                     <span className={`text-xs font-bold text-amber-600 dark:text-amber-400 block ${isEn ? 'font-sans' : 'font-kufi'}`}>
@@ -2083,15 +2145,15 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                                                             content: `«${v.hadith}»\n\n[ ${v.source} ]`,
                                                             isVerseOrProof: true
                                                         })}
-                                                        className="w-7 h-7 rounded-full bg-black/5 dark:bg-white/5 hover:bg-black/10 flex items-center justify-center text-xs transition-colors opacity-70 hover:opacity-100 cursor-pointer shrink-0"
-                                                        style={{ color: 'var(--text-color)' }}
+                                                        className="w-8 h-8 rounded-full border-0 flex items-center justify-center text-xs transition-colors opacity-80 hover:opacity-100 cursor-pointer shrink-0"
+                                                        style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
                                                         title={ui.zoom}
                                                         aria-label={ui.zoom}
                                                     >
                                                         <i className="fa-solid fa-magnifying-glass-plus"></i>
                                                     </button>
                                                 </div>
-                                                <p className="text-xs sm:text-sm italic font-semibold leading-relaxed opacity-95">
+                                                <p className="text-xs sm:text-sm italic font-semibold leading-[1.8] opacity-95">
                                                     {v.hadith}
                                                 </p>
                                                 <span className={`text-[10px] opacity-65 block font-mono ${isEn ? 'text-right' : 'text-left'}`}>
@@ -2111,33 +2173,28 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                         >
                             {/* Search and Category Filter */}
                             <div className="space-y-2.5">
-                                <div 
-                                    className="p-2 sm:p-2.5 rounded-2xl themed-card border shadow-sm relative overflow-hidden flex items-center"
-                                    style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
-                                >
-                                    <div className="relative w-full">
-                                        <input
-                                            type="text"
-                                            value={searchQuery}
-                                            onChange={(e) => setSearchQuery(e.target.value)}
-                                            placeholder={ui.searchStancesPlaceholder}
-                                            className={`w-full ${isEn ? 'pl-9 pr-8 text-left' : 'pl-8 pr-9 text-right'} py-2 text-xs sm:text-sm rounded-xl border bg-black/5 dark:bg-white/5 focus:outline-none focus:ring-1 focus:ring-emerald-500`}
-                                            style={{ borderColor: cardBorderColor, color: theme.textColor }}
-                                        />
-                                        <i className={`fa-solid fa-magnifying-glass absolute ${isEn ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 text-xs opacity-50`}></i>
-                                        {searchQuery && (
-                                            <button
-                                                onClick={() => setSearchQuery('')}
-                                                className={`absolute ${isEn ? 'right-2.5' : 'left-2.5'} top-1/2 -translate-y-1/2 text-xs opacity-50 hover:opacity-100`}
-                                            >
-                                                <i className="fa-solid fa-times"></i>
-                                            </button>
-                                        )}
-                                    </div>
+                                <div className="relative w-full">
+                                    <input
+                                        type="text"
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        placeholder={ui.searchStancesPlaceholder}
+                                        className={`w-full ${isEn ? 'pl-10 pr-9 text-left' : 'pl-9 pr-10 text-right'} py-3 text-xs sm:text-sm rounded-[14px] border-0 focus:outline-none transition-all placeholder:text-slate-400`}
+                                        style={{ backgroundColor: filledInputBg, color: theme.textColor }}
+                                    />
+                                    <i className={`fa-solid fa-magnifying-glass absolute ${isEn ? 'left-3.5' : 'right-3.5'} top-1/2 -translate-y-1/2 text-sm text-slate-400`}></i>
+                                    {searchQuery && (
+                                        <button
+                                            onClick={() => setSearchQuery('')}
+                                            className={`absolute ${isEn ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 w-6 h-6 rounded-full flex items-center justify-center text-xs text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-pointer`}
+                                        >
+                                            <i className="fa-solid fa-times"></i>
+                                        </button>
+                                    )}
                                 </div>
 
-                                {/* Category Pills */}
-                                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 hide-scrollbar">
+                                {/* Category Chips */}
+                                <div className="filter-chips-nav flex items-center gap-1.5 overflow-x-auto pb-1 hide-scrollbar">
                                     {[
                                         { id: 'all', label: isEn ? 'All' : 'الكل' },
                                         { id: 'رحمة وعفو', label: isEn ? 'Mercy' : 'الرحمة' },
@@ -2150,23 +2207,27 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                                         const count = cat.id === 'all' 
                                             ? allStances.length 
                                             : allStances.filter(s => s.category === cat.id).length;
+                                        const isActive = activeStanceCategory === cat.id;
                                         return (
                                             <button
                                                 key={cat.id}
                                                 onClick={() => setActiveStanceCategory(cat.id)}
-                                                className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border shrink-0 active:scale-95 flex items-center gap-1.5 ${
-                                                    activeStanceCategory === cat.id
-                                                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
-                                                        : 'bg-black/5 dark:bg-white/5 hover:bg-black/10'
+                                                className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border-0 shrink-0 active:scale-95 flex items-center gap-1.5 cursor-pointer ${
+                                                    isActive ? 'shadow-xs' : 'hover:opacity-100'
                                                 } ${isEn ? 'font-sans' : 'font-kufi'}`}
-                                                style={{ borderColor: cardBorderColor, borderWidth: '1px', borderStyle: 'solid' }}
+                                                style={{
+                                                    backgroundColor: isActive ? primaryColor : chipInactiveBg,
+                                                    color: isActive ? themeActiveTextColor : (tokens.isDark ? '#E2E8F0' : '#475569')
+                                                }}
                                             >
                                                 <span>{cat.label}</span>
-                                                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${
-                                                    activeStanceCategory === cat.id 
-                                                        ? 'bg-white/20 text-white' 
-                                                        : 'bg-black/10 dark:bg-white/10 text-emerald-600 dark:text-emerald-400'
-                                                }`}>
+                                                <span 
+                                                    className="text-[10px] px-1.5 py-0.5 rounded-full font-black"
+                                                    style={{
+                                                        backgroundColor: isActive ? 'rgba(255,255,255,0.25)' : (tokens.isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)'),
+                                                        color: isActive ? themeActiveTextColor : primaryColor
+                                                    }}
+                                                >
                                                     {count}
                                                 </span>
                                             </button>
@@ -2181,11 +2242,14 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                                     <div
                                         key={stance.id}
                                         onClick={() => handleSelectStance(stance)}
-                                        className="p-4 sm:p-5 rounded-2xl sm:rounded-3xl themed-card border shadow-sm hover:shadow-md transition-all space-y-2.5 cursor-pointer relative overflow-hidden group active:scale-99"
-                                        style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                                        className="seerah-card p-4 sm:p-5 rounded-[18px] border-0 hover:shadow-md transition-all space-y-3 cursor-pointer relative overflow-hidden group active:scale-[0.99]"
+                                        style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
                                     >
                                         <div className="flex items-center justify-between gap-2">
-                                            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 flex items-center gap-1">
+                                            <span 
+                                                className="text-[11px] font-bold px-2.5 py-1 rounded-lg border-0 flex items-center gap-1.5"
+                                                style={{ backgroundColor: `${primaryColor}14`, color: primaryColor }}
+                                            >
                                                 {stance.icon && (stance.icon.startsWith('fa') ? <i className={stance.icon}></i> : <span>{stance.icon}</span>)}
                                                 {stance.categoryBadge}
                                             </span>
@@ -2196,8 +2260,8 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                                                         handleCopyStance(stance);
                                                     }}
                                                     title={ui.copyStanceDetails}
-                                                    className="w-7 h-7 rounded-full border flex items-center justify-center text-xs hover:bg-black/10 transition-colors"
-                                                    style={{ borderColor: cardBorderColor }}
+                                                    className="w-8 h-8 rounded-full border-0 flex items-center justify-center text-xs transition-colors cursor-pointer"
+                                                    style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
                                                 >
                                                     <i className="fa-regular fa-copy"></i>
                                                 </button>
@@ -2214,15 +2278,16 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                                                     }}
                                                     title={ui.zoom}
                                                     aria-label={ui.zoom}
-                                                    className="w-7 h-7 rounded-full bg-black/5 dark:bg-white/5 hover:bg-black/10 flex items-center justify-center text-xs transition-colors opacity-70 hover:opacity-100"
-                                                    style={{ color: 'var(--text-color)' }}
+                                                    className="w-8 h-8 rounded-full border-0 flex items-center justify-center text-xs transition-colors opacity-80 hover:opacity-100 cursor-pointer"
+                                                    style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
                                                 >
                                                     <i className="fa-solid fa-magnifying-glass-plus"></i>
                                                 </button>
                                                 <button
                                                     onClick={(e) => handleShareStanceImage(stance, e)}
                                                     title={ui.shareStanceCard}
-                                                    className="w-7 h-7 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 flex items-center justify-center text-xs transition-colors"
+                                                    className="w-8 h-8 rounded-full border-0 flex items-center justify-center text-xs transition-colors cursor-pointer"
+                                                    style={{ backgroundColor: `${primaryColor}14`, color: primaryColor }}
                                                 >
                                                     <i className="fa-solid fa-image"></i>
                                                 </button>
@@ -2232,27 +2297,27 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                                             </div>
                                         </div>
 
-                                        <h3 className={`font-bold text-base sm:text-lg ${isEn ? 'font-sans' : 'font-kufi'} group-hover:text-emerald-500 transition-colors`}>
+                                        <h3 className={`font-bold text-base sm:text-lg ${isEn ? 'font-sans' : 'font-kufi'} transition-colors`} style={{ color: tokens.isDark ? '#F8FAFC' : '#0F172A' }}>
                                             {stance.title}
                                         </h3>
 
                                         {/* Immortal Quote Preview */}
                                         <div 
-                                            className="p-3 rounded-xl bg-amber-500/10 border text-center"
-                                            style={{ borderColor: cardBorderColor, borderWidth: '1px', borderStyle: 'solid' }}
+                                            className="p-3.5 rounded-xl border-0 text-center"
+                                            style={{ backgroundColor: tokens.isDark ? 'rgba(245, 158, 11, 0.12)' : '#FEF3C7' }}
                                         >
                                             <p className={`text-xs sm:text-sm font-bold ${isEn ? 'font-sans' : 'font-kufi'} text-amber-800 dark:text-amber-300 line-clamp-2`}>
                                                 «{stance.quote}»
                                             </p>
                                         </div>
 
-                                        <p className="text-xs opacity-80 leading-relaxed line-clamp-2">
+                                        <p className="text-xs sm:text-sm opacity-85 leading-[1.75] line-clamp-2">
                                             {stance.situation}
                                         </p>
 
-                                        <div className="flex items-center justify-between text-xs pt-1.5 border-t opacity-80" style={{ borderColor: 'var(--card-border)' }}>
-                                            <span className="truncate max-w-[200px]">{stance.proof}</span>
-                                            <span className="font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 shrink-0">
+                                        <div className="flex items-center justify-between text-xs pt-2.5 border-t border-slate-100 dark:border-slate-800/60 opacity-85">
+                                            <span className="truncate max-w-[200px] text-slate-500 dark:text-slate-400">{stance.proof}</span>
+                                            <span className="font-bold flex items-center gap-1 shrink-0" style={{ color: primaryColor }}>
                                                 {ui.stanceDetails}
                                                 <i className={`fa-solid ${isEn ? 'fa-arrow-right' : 'fa-arrow-left'} text-[10px]`}></i>
                                             </span>
@@ -2276,68 +2341,70 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                         >
                             {/* Search and Era Filters */}
                             <div className="space-y-2.5">
-                                <div 
-                                    className="p-2 sm:p-2.5 rounded-2xl themed-card border shadow-sm relative overflow-hidden flex items-center"
-                                    style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
-                                >
-                                    <div className="relative w-full">
-                                        <input
-                                            type="text"
-                                            value={searchQuery}
-                                            onChange={(e) => setSearchQuery(e.target.value)}
-                                            placeholder={isEn ? `Search Seerah events, expeditions, figures, places & lessons (${allMilestones.length} milestones)...` : `ابحث في أحداث السيرة، المعارك، الشخصيات، الأماكن والعِبر (${allMilestones.length} محطة)...`}
-                                            className={`w-full ${isEn ? 'pl-9 pr-8 text-left' : 'pl-8 pr-9 text-right'} py-2 text-xs sm:text-sm rounded-xl border bg-black/5 dark:bg-white/5 focus:outline-none focus:ring-1 focus:ring-emerald-500`}
-                                            style={{ borderColor: cardBorderColor, color: theme.textColor }}
-                                        />
-                                        <i className={`fa-solid fa-magnifying-glass absolute ${isEn ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 text-xs opacity-50`}></i>
-                                        {searchQuery && (
-                                            <button
-                                                onClick={() => setSearchQuery('')}
-                                                className={`absolute ${isEn ? 'right-2.5' : 'left-2.5'} top-1/2 -translate-y-1/2 text-xs opacity-50 hover:opacity-100`}
-                                            >
-                                                <i className="fa-solid fa-times"></i>
-                                            </button>
-                                        )}
-                                    </div>
+                                <div className="relative w-full">
+                                    <input
+                                        type="text"
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        placeholder={isEn ? `Search Seerah events, expeditions, figures, places & lessons (${allMilestones.length} milestones)...` : `ابحث في أحداث السيرة، المعارك، الشخصيات، الأماكن والعِبر (${allMilestones.length} محطة)...`}
+                                        className={`w-full ${isEn ? 'pl-10 pr-9 text-left' : 'pl-9 pr-10 text-right'} py-3 text-xs sm:text-sm rounded-[14px] border-0 focus:outline-none transition-all placeholder:text-slate-400`}
+                                        style={{ backgroundColor: filledInputBg, color: theme.textColor }}
+                                    />
+                                    <i className={`fa-solid fa-magnifying-glass absolute ${isEn ? 'left-3.5' : 'right-3.5'} top-1/2 -translate-y-1/2 text-sm text-slate-400`}></i>
+                                    {searchQuery && (
+                                        <button
+                                            onClick={() => setSearchQuery('')}
+                                            className={`absolute ${isEn ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 w-6 h-6 rounded-full flex items-center justify-center text-xs text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-pointer`}
+                                        >
+                                            <i className="fa-solid fa-times"></i>
+                                        </button>
+                                    )}
                                 </div>
 
-                                {/* Era Filter Pills */}
-                                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 hide-scrollbar">
+                                {/* Era Filter Chips */}
+                                <div className="filter-chips-nav flex items-center gap-1.5 overflow-x-auto pb-1 hide-scrollbar">
                                     {[
                                         { id: 'all', label: isEn ? `All (${allMilestones.length})` : `كامل السيرة (${allMilestones.length})` },
                                         { id: 'pre-prophethood', label: isEn ? 'Pre-Prophethood' : 'قبل البعثة' },
                                         { id: 'makki', label: isEn ? 'Meccan' : 'العهد المكي' },
                                         { id: 'early-madani', label: isEn ? 'Early Medinan' : 'أوائل المدني' },
                                         { id: 'late-madani', label: isEn ? 'Late Medinan' : 'أواخر المدني' },
-                                    ].map((era) => (
-                                        <button
-                                            key={era.id}
-                                            onClick={() => setActiveEraFilter(era.id)}
-                                            className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border shrink-0 active:scale-95 ${
-                                                activeEraFilter === era.id
-                                                    ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
-                                                    : 'bg-black/5 dark:bg-white/5 hover:bg-black/10'
-                                            } ${isEn ? 'font-sans' : 'font-kufi'}`}
-                                            style={{ borderColor: cardBorderColor, borderWidth: '1px', borderStyle: 'solid' }}
-                                        >
-                                            {era.label}
-                                        </button>
-                                    ))}
+                                    ].map((era) => {
+                                        const isActive = activeEraFilter === era.id;
+                                        return (
+                                            <button
+                                                key={era.id}
+                                                onClick={() => setActiveEraFilter(era.id)}
+                                                className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border-0 shrink-0 active:scale-95 cursor-pointer ${
+                                                    isActive ? 'shadow-xs' : 'hover:opacity-100'
+                                                } ${isEn ? 'font-sans' : 'font-kufi'}`}
+                                                style={{
+                                                    backgroundColor: isActive ? primaryColor : chipInactiveBg,
+                                                    color: isActive ? themeActiveTextColor : (tokens.isDark ? '#E2E8F0' : '#475569')
+                                                }}
+                                            >
+                                                {era.label}
+                                            </button>
+                                        );
+                                    })}
                                 </div>
                             </div>
 
                             {/* Timeline Milestone Cards */}
-                            <div className={`space-y-3 relative before:absolute ${isEn ? 'before:left-6' : 'before:right-6'} before:top-4 before:bottom-4 before:w-0.5 before:bg-emerald-500/25`}>
+                            <div className={`space-y-3.5 relative before:absolute ${isEn ? 'before:left-6' : 'before:right-6'} before:top-4 before:bottom-4 before:w-[2px] ${tokens.isDark ? 'before:bg-slate-700/60' : 'before:bg-slate-200'}`}>
                                 {filteredMilestones.map((milestone) => (
                                     <div
                                         key={milestone.id}
                                         onClick={() => handleSelectMilestone(milestone)}
-                                        className={`p-4 sm:p-5 rounded-2xl sm:rounded-3xl themed-card border shadow-sm hover:shadow-md transition-all space-y-2.5 cursor-pointer relative overflow-hidden group active:scale-99 ${isEn ? 'ml-2' : 'mr-2'}`}
-                                        style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                                        className={`seerah-card p-4 sm:p-5 rounded-[18px] border-0 hover:shadow-md transition-all space-y-3 cursor-pointer relative overflow-hidden group active:scale-[0.99] ${isEn ? 'ml-2' : 'mr-2'}`}
+                                        style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
                                     >
                                         <div className="flex items-center justify-between gap-2">
                                             <div className="flex items-center gap-2">
-                                                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                                                <span 
+                                                    className="text-[11px] font-bold px-2.5 py-1 rounded-lg border-0 flex items-center gap-1.5"
+                                                    style={{ backgroundColor: `${primaryColor}14`, color: primaryColor }}
+                                                >
                                                     <i className={milestone.icon}></i>
                                                     {milestone.badge}
                                                 </span>
@@ -2353,8 +2420,8 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                                                         handleCopyMilestone(milestone);
                                                     }}
                                                     title={ui.copyMilestone}
-                                                    className="w-7 h-7 rounded-full border flex items-center justify-center text-xs hover:bg-black/10 transition-colors"
-                                                    style={{ borderColor: cardBorderColor }}
+                                                    className="w-8 h-8 rounded-full border-0 flex items-center justify-center text-xs transition-colors cursor-pointer"
+                                                    style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
                                                 >
                                                     <i className="fa-regular fa-copy"></i>
                                                 </button>
@@ -2371,36 +2438,37 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                                                     }}
                                                     title={ui.zoom}
                                                     aria-label={ui.zoom}
-                                                    className="w-7 h-7 rounded-full bg-black/5 dark:bg-white/5 hover:bg-black/10 flex items-center justify-center text-xs transition-colors opacity-70 hover:opacity-100"
-                                                    style={{ color: 'var(--text-color)' }}
+                                                    className="w-8 h-8 rounded-full border-0 flex items-center justify-center text-xs transition-colors opacity-80 hover:opacity-100 cursor-pointer"
+                                                    style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
                                                 >
                                                     <i className="fa-solid fa-magnifying-glass-plus"></i>
                                                 </button>
                                                 <button
                                                     onClick={(e) => handleShareCardImage(milestone, e)}
                                                     title={ui.shareImage}
-                                                    className="w-7 h-7 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 flex items-center justify-center text-xs transition-colors"
+                                                    className="w-8 h-8 rounded-full border-0 flex items-center justify-center text-xs transition-colors cursor-pointer"
+                                                    style={{ backgroundColor: `${primaryColor}14`, color: primaryColor }}
                                                 >
                                                     <i className="fa-solid fa-image"></i>
                                                 </button>
                                             </div>
                                         </div>
 
-                                        <h3 className={`font-bold text-base sm:text-lg ${isEn ? 'font-sans' : 'font-kufi'} group-hover:text-emerald-500 transition-colors`}>
+                                        <h3 className={`font-bold text-base sm:text-lg ${isEn ? 'font-sans' : 'font-kufi'} transition-colors`} style={{ color: tokens.isDark ? '#F8FAFC' : '#0F172A' }}>
                                             {milestone.title}
                                         </h3>
 
-                                        <p className="text-xs sm:text-sm opacity-85 leading-relaxed line-clamp-2">
+                                        <p className="text-xs sm:text-sm opacity-85 leading-[1.75] line-clamp-2">
                                             {milestone.summary}
                                         </p>
 
-                                        <div className="flex items-center justify-between text-xs pt-2 border-t opacity-75" style={{ borderColor: 'var(--card-border)' }}>
-                                            <span className="flex items-center gap-1 font-bold">
-                                                <i className="fa-solid fa-location-dot text-emerald-500 text-[10px]"></i>
+                                        <div className="flex items-center justify-between text-xs pt-2.5 border-t border-slate-100 dark:border-slate-800/60 opacity-80">
+                                            <span className="flex items-center gap-1.5 font-bold text-slate-500 dark:text-slate-400">
+                                                <i className="fa-solid fa-location-dot text-[10px]" style={{ color: primaryColor }}></i>
                                                 {milestone.location} • {milestone.yearHijri ? `${milestone.yearHijri} • ` : ''}{milestone.yearGregorian}
                                             </span>
 
-                                            <span className="font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 shrink-0">
+                                            <span className="font-bold flex items-center gap-1 shrink-0" style={{ color: primaryColor }}>
                                                 {ui.detailsAndLessons}
                                                 <i className={`fa-solid ${isEn ? 'fa-arrow-right' : 'fa-arrow-left'} text-[10px]`}></i>
                                             </span>
@@ -2419,54 +2487,66 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                     )}
             </main>
 
-            {/* Zoom Modal - Matches identical style & behavior of Adhkar & Duas pages with left alignment for English */}
+            {/* Zoom Modal - Matches identical style & behavior of Adia & Adkar */}
             <AnimatePresence>
                 {zoomedCard && (
                     <div 
-                        className="fixed inset-0 bg-black/80 z-[100] flex justify-center items-center p-3 sm:p-4 backdrop-blur-sm"
+                        className="fixed inset-0 bg-black/60 z-[120] flex flex-col justify-end backdrop-blur-xs select-none"
                         onClick={() => setZoomedCard(null)}
+                        dir={isRTL ? 'rtl' : 'ltr'}
                     >
                         <motion.div 
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.95 }}
-                            className={`p-5 sm:p-7 rounded-3xl w-full max-w-2xl relative shadow-2xl border-2 flex flex-col max-h-[90vh] ${isEn ? 'text-left font-sans' : 'text-center'}`}
+                            initial={{ y: '100%', opacity: 0.6 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            exit={{ y: '100%', opacity: 0 }}
+                            transition={{ type: 'spring', damping: 28, stiffness: 280 }}
+                            className="w-full max-w-xl mx-auto rounded-t-[28px] flex flex-col max-h-[85vh] overflow-hidden relative shadow-2xl"
                             style={{ 
-                                fontFamily: isEn ? 'inherit' : theme.font,
-                                backgroundColor: isDeepBlack ? '#111827' : (theme.cardBg || '#ffffff'),
-                                color: theme.textColor || (isDeepBlack ? '#ffffff' : '#1f2937'),
-                                borderColor: cardBorderColor,
-                                direction: isEn ? 'ltr' : 'rtl'
+                                fontFamily: isEn ? 'sans-serif' : theme.font,
+                                backgroundColor: cardBgColor,
+                                color: theme.textColor || (tokens.isDark ? '#FFFFFF' : '#1f2937'),
                             }}
                             onClick={e => e.stopPropagation()}
-                            dir={isEn ? 'ltr' : 'rtl'}
                         >
-                            {/* Header: Title & Subtitle */}
-                            <div className="flex items-center pb-3 border-b shrink-0 gap-2.5" style={{ borderColor: 'var(--card-border)' }}>
-                                {zoomedCard.icon && (
-                                    <div className="w-9 h-9 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                                        <i className={`${zoomedCard.icon} text-sm`}></i>
-                                    </div>
-                                )}
-                                <div className={`min-w-0 flex-1 ${isEn ? 'text-left' : 'text-right'}`}>
-                                    <h3 className={`text-base sm:text-lg font-bold ${isEn ? 'font-sans' : 'font-kufi'} text-emerald-600 dark:text-emerald-400 leading-snug`}>
-                                        {zoomedCard.title}
-                                    </h3>
-                                    {zoomedCard.subtitle && (
-                                        <p className="text-xs opacity-70 font-sans mt-0.5">
-                                            {zoomedCard.subtitle}
-                                        </p>
-                                    )}
+                            {/* Top Drag Handle without X button */}
+                            <div className="pt-3 px-6 pb-2 shrink-0 flex flex-col items-center">
+                                <div className="w-12 h-1.5 rounded-full bg-slate-300 dark:bg-zinc-700 mb-2" />
+                                <div className="w-full flex items-center justify-center">
+                                    <span 
+                                        className="px-3.5 py-1 rounded-full text-xs font-bold"
+                                        style={{
+                                            backgroundColor: hexToRgba(tokens.primaryColor, 0.1),
+                                            color: tokens.primaryColor
+                                        }}
+                                    >
+                                        {zoomedCard.subtitle || (isEn ? "Prophetic Seerah" : "السيرة النبوية")}
+                                    </span>
                                 </div>
                             </div>
 
                             {/* Content Container */}
-                            <div ref={zoomScrollRef} className={`overflow-y-auto hide-scrollbar flex-1 py-4 ${isEn ? 'text-left' : 'text-right'}`}>
+                            <div ref={zoomScrollRef} className="overflow-y-auto hide-scrollbar flex-1 px-6 py-4 space-y-4">
+                                {zoomedCard.title && (
+                                    <h3 
+                                        className={`text-base sm:text-lg font-bold ${isEn ? 'font-sans' : 'font-kufi'} text-center leading-snug`} 
+                                        style={{ color: tokens.primaryColor }}
+                                    >
+                                        {zoomedCard.title}
+                                    </h3>
+                                )}
+
                                 {Array.isArray(zoomedCard.content) ? (
                                     <div className="space-y-3">
                                         {zoomedCard.content.map((item, idx) => (
-                                            <div key={idx} className="flex items-start gap-3 p-3.5 rounded-2xl bg-black/5 dark:bg-white/5 border" style={{ borderColor: 'var(--card-border)' }}>
-                                                <span className="w-7 h-7 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 font-bold text-xs mt-0.5">
+                                            <div 
+                                                key={idx} 
+                                                className="flex items-start gap-3 p-3.5 rounded-2xl border-0"
+                                                style={{ backgroundColor: tokens.isDark ? 'rgba(255,255,255,0.05)' : '#F8FAFC' }}
+                                            >
+                                                <span 
+                                                    className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 font-bold text-xs mt-0.5"
+                                                    style={{ backgroundColor: `${primaryColor}20`, color: primaryColor }}
+                                                >
                                                     {idx + 1}
                                                 </span>
                                                 <p 
@@ -2480,7 +2560,7 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                                     </div>
                                 ) : (
                                     <p 
-                                        className={`leading-loose font-medium select-text whitespace-pre-line ${
+                                        className={`leading-loose font-medium select-text whitespace-pre-line text-center py-2 ${
                                             isEn ? 'font-sans' : (zoomedCard.isVerseOrProof ? 'font-quran' : 'font-amiri')
                                         }`}
                                         style={{ fontSize: `${zoomFontSize}px` }}
@@ -2490,29 +2570,98 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                                 )}
                             </div>
 
-                            {/* Footer Buttons */}
-                            <div className="pt-3 border-t flex items-center gap-2 shrink-0" style={{ borderColor: 'var(--card-border)' }}>
+                            {/* Action Bar (Share, Copy, Zoom, ChevronDown to hide) without Audio button & with safe-area bottom elevation */}
+                            <div 
+                                className="p-4 pt-3 shrink-0 flex items-center justify-center gap-3 sm:gap-4 border-t border-slate-100 dark:border-white/5" 
+                                style={{ 
+                                    backgroundColor: cardBgColor,
+                                    paddingBottom: 'calc(env(safe-area-inset-bottom, 16px) + 16px)'
+                                }}
+                            >
+                                {/* Share Button */}
+                                <button 
+                                    type="button"
+                                    onClick={async (e) => {
+                                        e.stopPropagation();
+                                        if (!zoomedCard) return;
+                                        const textToShare = Array.isArray(zoomedCard.content)
+                                            ? zoomedCard.content.map((item, i) => `${i + 1}. ${item}`).join('\n\n')
+                                            : zoomedCard.content;
+                                        await shareAsImage({
+                                            title: zoomedCard.title,
+                                            text: textToShare,
+                                            category: zoomedCard.subtitle || (isEn ? 'Prophetic Seerah' : 'السيرة النبوية'),
+                                            source: zoomedCard.badge || '',
+                                            theme,
+                                            isEn,
+                                            language: isEn ? 'en' : 'ar',
+                                            setToastMessage
+                                        });
+                                    }} 
+                                    className="w-11 h-11 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border-0"
+                                    style={{
+                                        backgroundColor: tokens.isDark ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9',
+                                        color: tokens.textColor
+                                    }}
+                                    title={isEn ? "Share Image" : "مشاركة كصورة"}
+                                >
+                                    <Share2 className="w-5 h-5" />
+                                </button>
+
+                                {/* Copy Button */}
                                 <button
                                     type="button"
-                                    onClick={() => {
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (!zoomedCard) return;
                                         const textToCopy = Array.isArray(zoomedCard.content) 
                                             ? zoomedCard.content.map((item, i) => `${i + 1}. ${item}`).join('\n')
                                             : zoomedCard.content;
-                                        navigator.clipboard.writeText(textToCopy);
-                                        showToast(ui.toastCopiedText);
+                                        navigator.clipboard.writeText(textToCopy).then(() => {
+                                            setCopiedModal(true);
+                                            setTimeout(() => setCopiedModal(false), 2000);
+                                            showToast(ui.toastCopiedText);
+                                        });
                                     }}
-                                    className="flex-1 py-3 rounded-xl font-bold border text-sm flex items-center justify-center gap-2 hover:bg-black/5 dark:hover:bg-white/5 active:scale-95 transition-all cursor-pointer"
-                                    style={{ borderColor: cardBorderColor }}
+                                    className="w-11 h-11 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border-0"
+                                    style={{
+                                        backgroundColor: copiedModal ? '#10B981' : (tokens.isDark ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9'),
+                                        color: copiedModal ? '#FFFFFF' : tokens.textColor
+                                    }}
+                                    title={isEn ? 'Copy text' : 'نسخ النص'}
                                 >
-                                    <i className="fa-regular fa-copy text-xs"></i>
-                                    {ui.copyText}
+                                    {copiedModal ? <Check className="w-5 h-5 text-white" /> : <Copy className="w-5 h-5" />}
                                 </button>
+
+                                {/* Zoom Button */}
+                                <button
+                                    type="button"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setZoomFontSize(prev => (prev >= 36 ? 20 : prev + 4));
+                                    }}
+                                    className="w-11 h-11 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border-0"
+                                    style={{
+                                        backgroundColor: tokens.isDark ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9',
+                                        color: tokens.textColor
+                                    }}
+                                    title={isEn ? 'Enlarge font size' : 'تكبير حجم الخط'}
+                                >
+                                    <ZoomIn className="w-5 h-5" />
+                                </button>
+
+                                {/* Chevron Down / Hide Modal Button */}
                                 <button 
                                     type="button"
                                     onClick={() => setZoomedCard(null)} 
-                                    className="flex-1 py-3 rounded-xl font-bold bg-emerald-600 hover:bg-emerald-700 text-white active:scale-95 transition-all cursor-pointer text-sm"
+                                    className="w-11 h-11 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border-0"
+                                    style={{
+                                        backgroundColor: tokens.isDark ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9',
+                                        color: tokens.textColor
+                                    }}
+                                    title={isEn ? 'Hide list' : 'إخفاء القائمة'}
                                 >
-                                    {ui.close}
+                                    <ChevronDown className="w-5 h-5" />
                                 </button>
                             </div>
                         </motion.div>

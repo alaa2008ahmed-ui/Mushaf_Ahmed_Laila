@@ -66,9 +66,10 @@ export function Tasbeeh({ onBack, onNavigate }: TasbeehProps) {
     const isBlackAndWhite = isBlackTheme || isWhiteTheme;
     const isDefaultTheme = themeKey === 'default' || !themeKey;
 
-    const primaryTextColor = theme.palette[0] || '#10b981';
-    const secondaryTextColor = theme.palette[1] || '#059669';
-    const cardBorderColor = isDefaultTheme ? '#000000' : (isBlackTheme ? '#FFFFFF' : (theme.palette?.[0] || '#000000'));
+    const primaryColor = isBlackTheme ? '#FFFFFF' : (theme.palette?.[0] || theme.accent || '#2E7D5E');
+    const primaryTextColor = primaryColor;
+    const secondaryTextColor = isBlackTheme ? '#A1A1AA' : (theme.palette?.[1] || '#059669');
+    const cardBorderColor = isBlackTheme ? 'rgba(255, 255, 255, 0.1)' : 'transparent';
 
     const [phrases, setPhrases] = useState(DEFAULT_PHRASES);
     const [activePhrase, setActivePhrase] = useState(DEFAULT_PHRASES[0].text);
@@ -79,8 +80,8 @@ export function Tasbeeh({ onBack, onNavigate }: TasbeehProps) {
     const [dailyStats, setDailyStats] = useState<{date: string, count: number}[]>([]);
 
     const getDefaultCounterColor = useCallback(() => {
-        return themeKey === 'default' ? '#000000' : (isBlackTheme ? '#FFFFFF' : theme.palette[0]);
-    }, [themeKey, isBlackTheme, theme.palette]);
+        return isBlackTheme ? '#FFFFFF' : (theme.palette?.[0] || theme.accent || '#2E7D5E');
+    }, [isBlackTheme, theme.palette, theme.accent]);
 
     const [counterColor, setCounterColor] = useState(getDefaultCounterColor);
 
@@ -401,18 +402,16 @@ export function Tasbeeh({ onBack, onNavigate }: TasbeehProps) {
                         <ThreeDButton 
                             label={tTasbeeh('reset', language)} 
                             onClick={handleReset} 
-                            color={isBlackAndWhite ? '#333' : theme.palette[1]} 
-                            padding="py-2.5 text-base" 
+                            color={isBlackTheme ? '#FFFFFF' : '#64748B'} 
+                            padding="py-3 text-sm sm:text-base" 
                             theme={theme} 
-                            cardBorderColor={cardBorderColor}
                         />
                         <ThreeDButton 
                             label={tTasbeeh('editTarget', language)} 
                             onClick={() => setModals(p => ({...p, target: true}))} 
-                            color={isBlackAndWhite ? '#000' : theme.palette[0]} 
-                            padding="py-2.5 text-base" 
+                            color={primaryColor} 
+                            padding="py-3 text-sm sm:text-base" 
                             theme={theme} 
-                            cardBorderColor={cardBorderColor}
                         />
                     </div>
 
@@ -420,14 +419,16 @@ export function Tasbeeh({ onBack, onNavigate }: TasbeehProps) {
                     <motion.button
                         whileTap={{ scale: 0.98 }}
                         onClick={() => setModals(p => ({...p, stats: true}))}
-                        className="w-full mt-2.5 p-2.5 px-3.5 rounded-2xl themed-card shadow-sm flex items-center justify-between text-xs transition-all hover:shadow-md active:scale-95 group"
-                        style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                        className="w-full mt-3 p-3 px-4 rounded-2xl bg-white dark:bg-[#1E293B] shadow-[0_4px_16px_-2px_rgba(0,0,0,0.05)] border border-slate-100/80 dark:border-white/5 flex items-center justify-between text-xs transition-all hover:shadow-md active:scale-98 group cursor-pointer"
                     >
-                        <div className="flex items-center gap-2 font-bold">
-                            <span className="p-1.5 rounded-lg bg-black/5 dark:bg-white/10 text-amber-500">
+                        <div className="flex items-center gap-2.5 font-bold">
+                            <span 
+                                className="p-1.5 rounded-xl transition-transform group-hover:scale-110"
+                                style={{ backgroundColor: `${primaryColor}14`, color: primaryColor }}
+                            >
                                 <BarChart3 className="w-4 h-4" />
                             </span>
-                            <span className="font-bold" style={{ color: isBlackTheme ? '#FFFFFF' : (theme.textColor || '#111827') }}>
+                            <span className="font-bold text-sm text-slate-800 dark:text-white">
                                 {tTasbeeh('chartTitle', language)}
                             </span>
                         </div>

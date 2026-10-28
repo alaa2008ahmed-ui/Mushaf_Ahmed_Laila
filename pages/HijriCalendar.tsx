@@ -14,7 +14,8 @@ import {
     CALENDAR_HIJRI_MONTHS,
     HISTORICAL_EVENTS_TRANSLATED,
     ISLAMIC_EVENTS_TRANSLATED,
-    HistoricalEventLocalized
+    HistoricalEventLocalized,
+    Language
 } from '../utils/calendarTranslations';
 import { ChevronRight, ChevronLeft, Calendar as CalendarIcon, RefreshCw, ZoomIn, Copy, Share2, HelpCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -22,6 +23,21 @@ import { shareAsImage } from '../utils/shareAsImage';
 import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/CommunitySpotlightGuide';
 import { CALENDAR_PAGE_STEPS } from '../components/Community/communityTourSteps';
 import { markPageAsSeen } from '../utils/badgeManager';
+
+// Helper to convert hex colors to RGBA for smooth dynamic theme tints
+function hexToRgba(hex: string, alpha: number = 1): string {
+    if (!hex) return `rgba(46, 125, 94, ${alpha})`;
+    let clean = hex.replace('#', '');
+    if (clean.length === 3) {
+        clean = clean.split('').map(c => c + c).join('');
+    }
+    const num = parseInt(clean, 16);
+    if (isNaN(num)) return `rgba(46, 125, 94, ${alpha})`;
+    const r = (num >> 16) & 255;
+    const g = (num >> 8) & 255;
+    const b = num & 255;
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
 
 // Convert Gregorian to Hijri for a given date
 function getHijriDetails(date: Date) {
@@ -121,7 +137,23 @@ function h2g(y: number, m: number, d: number): Date {
 
 // --- Sub-components ---
 
-const CalendarGrid = ({ viewDate, onSelectDay, selectedDay, theme, primaryColor, secondaryColor, isBlackAndWhite, isDefaultTheme, language }: any) => {
+interface CalendarGridProps {
+    viewDate: Date;
+    onSelectDay: (date: Date) => void;
+    selectedDay: Date;
+    primaryColor: string;
+    secondaryColor: string;
+    language: Language;
+}
+
+const CalendarGrid = ({
+    viewDate,
+    onSelectDay,
+    selectedDay,
+    primaryColor,
+    secondaryColor,
+    language
+}: CalendarGridProps) => {
     const daysInMonth = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0).getDate();
     const firstDayOfMonth = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1).getDay(); // 0 is Sunday
     
@@ -164,97 +196,83 @@ const CalendarGrid = ({ viewDate, onSelectDay, selectedDay, theme, primaryColor,
     today.setHours(0, 0, 0, 0);
 
     return (
-        <div className="grid grid-cols-7 gap-1.5 sm:gap-2 w-full p-1 sm:p-2">
+        <div className="grid grid-cols-7 gap-1 sm:gap-1.5 w-full">
             {CALENDAR_WEEKDAYS.map((_, dayIdx) => (
-                <div key={dayIdx} className="text-center py-2 text-[10px] sm:text-xs font-black themed-text-muted opacity-40 uppercase tracking-tighter">
+                <div
+                    key={dayIdx}
+                    className="text-center py-2 text-[10px] sm:text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-tight"
+                >
                     {getCalendarWeekdayName(dayIdx, true, language)}
                 </div>
             ))}
             {cells.map((cell, idx) => {
                 const dayDate = new Date(cell.date);
-                dayDate.setHours(0,0,0,0);
+                dayDate.setHours(0, 0, 0, 0);
                 const isToday = dayDate.getTime() === today.getTime();
-                const isSelected = selectedDay && dayDate.getTime() === new Date(selectedDay).setHours(0,0,0,0);
+                const isSelected = selectedDay && dayDate.getTime() === new Date(selectedDay).setHours(0, 0, 0, 0);
                 const hijri = getHijriDetails(cell.date);
                 const event = islamicEvents.find(e => e.day === hijri.day && e.month === hijri.month);
-                const isRamadan = hijri.month === 9;
 
-                // Color definition for the border
-                const borderColor = isDefaultTheme ? '#000000' : (theme.palette?.[0] || '#000000');
+                // Styling logic:
+                // 1. Is Today: Filled with the dynamic primary theme color, soft rounded shape (circle/rounded-2xl)
+                // 2. Is Selected (not today): Highlighted with theme-tinted background and border ring
+                // 3. Normal days: Free numbers with NO square borders, clean subtle hover
+                let dayContainerStyle: React.CSSProperties = {};
+                let textClasses = 'text-slate-800 dark:text-slate-100';
+                let hijriTextClasses = 'text-slate-400 dark:text-slate-500';
+                let stateClasses = 'hover:bg-slate-100/80 dark:hover:bg-white/10 active:scale-95';
 
-                let dynamicBgClass = 'bg-white/50 dark:bg-white/5 border border-black/5 dark:border-white/5 shadow-sm';
-                let dynamicTextClass = '';
-                let dynamicDotClass = '';
-                
-                if (event?.isPrimary) {
+                if (isToday) {
+                    dayContainerStyle = {
+                        backgroundColor: primaryColor,
+                        color: '#FFFFFF'
+                    };
+                    textClasses = 'text-white font-black';
+                    hijriTextClasses = 'text-white/80 font-bold';
+                    stateClasses = 'shadow-md shadow-black/10 scale-100 z-10';
                     if (isSelected) {
-                        dynamicBgClass = 'bg-red-500 text-white shadow-lg border-transparent';
-                        dynamicDotClass = 'bg-white';
-                    } else {
-                        dynamicBgClass = 'bg-red-500/15 dark:bg-red-500/25 border border-red-500/30 shadow-sm text-red-500';
-                        dynamicTextClass = 'text-red-600 dark:text-red-400';
-                        dynamicDotClass = 'bg-red-500';
+                        stateClasses += ' ring-2 ring-offset-2 ring-slate-400 dark:ring-offset-slate-900';
                     }
-                } else if (event) {
-                    if (isSelected) {
-                        dynamicBgClass = 'bg-blue-500 text-white shadow-lg border-transparent';
-                        dynamicDotClass = 'bg-white';
-                    } else {
-                        dynamicBgClass = 'bg-blue-500/15 dark:bg-blue-500/25 border border-blue-500/30 shadow-sm text-blue-500';
-                        dynamicTextClass = 'text-blue-600 dark:text-blue-400';
-                        dynamicDotClass = 'bg-blue-500';
-                    }
-                } else if (isRamadan) {
-                    if (isSelected) {
-                        dynamicBgClass = 'bg-emerald-500 text-white shadow-lg border-transparent';
-                    } else {
-                        dynamicBgClass = 'bg-emerald-500/15 dark:bg-emerald-500/25 border border-emerald-500/30 shadow-sm text-emerald-600 dark:text-emerald-400';
-                        dynamicTextClass = 'text-emerald-700 dark:text-emerald-400';
-                    }
-                } else {
-                    if (isSelected) {
-                        dynamicBgClass = 'shadow-xl text-white';
-                    }
-                }
-
-                let cellStyle: React.CSSProperties = {};
-                if (!event && !isRamadan) {
-                    if (isSelected) {
-                        cellStyle.backgroundColor = isDefaultTheme ? '#000000' : secondaryColor;
-                        cellStyle.color = isBlackAndWhite ? '#000' : '#FFF';
-                    } else if (isToday) {
-                        if (isDefaultTheme) {
-                            cellStyle.backgroundColor = '#000000';
-                            cellStyle.color = '#FFFFFF';
-                        }
-                    }
-                } else if (isToday && !isSelected) {
-                    dynamicBgClass += ' ring-2 ring-offset-1 ' + (event?.isPrimary ? 'ring-red-500 dark:ring-offset-gray-900' : (event ? 'ring-blue-500 dark:ring-offset-gray-900' : 'ring-emerald-500 dark:ring-offset-gray-900'));
+                } else if (isSelected) {
+                    dayContainerStyle = {
+                        backgroundColor: hexToRgba(primaryColor, 0.15),
+                        color: primaryColor
+                    };
+                    textClasses = 'font-black';
+                    hijriTextClasses = 'opacity-80 font-bold';
+                    stateClasses = 'ring-1.5 ring-inset ring-current scale-105 z-10 shadow-sm';
                 }
 
                 return (
                     <button
                         key={idx}
                         onClick={() => onSelectDay(cell.date)}
-                        className={`relative flex flex-col items-center justify-center rounded-xl sm:rounded-2xl transition-all aspect-square 
-                            ${cell.isCurrentMonth ? dynamicBgClass : 'opacity-30 ' + dynamicBgClass}
-                            ${isSelected ? 'scale-110 z-10 shadow-xl' : 'hover:scale-[1.02] hover:bg-white/80 dark:hover:bg-white/10'}
+                        className={`relative flex flex-col items-center justify-center rounded-2xl transition-all duration-200 aspect-square cursor-pointer
+                            ${cell.isCurrentMonth ? '' : 'opacity-25'}
+                            ${stateClasses}
                         `}
-                        style={{ ...cellStyle, border: `1px solid ${borderColor}` }}
+                        style={dayContainerStyle}
                     >
-                        <span className={`text-sm sm:text-lg font-black leading-none ${!isSelected ? dynamicTextClass : ''}`}>
+                        {/* Gregorian Day (Free, unboxed number) */}
+                        <span className={`text-sm sm:text-base font-black leading-none ${textClasses}`}>
                             {formatCalendarNumber(cell.day, language)}
                         </span>
-                        <span className={`text-[9px] sm:text-[10px] mt-1 font-bold ${isSelected || isToday ? 'opacity-100' : 'opacity-40'} ${event ? 'opacity-100 font-black' : ''}`}>
+
+                        {/* Hijri Day */}
+                        <span className={`text-[9px] sm:text-[10px] mt-1 font-semibold leading-none ${hijriTextClasses}`}>
                             {formatCalendarNumber(hijri.day, language)}
                         </span>
-                        
-                        {isToday && !isSelected && !isDefaultTheme && !event && !isRamadan && (
-                            <div className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full border-2 border-white dark:border-gray-900" style={{ backgroundColor: secondaryColor }}></div>
-                        )}
 
+                        {/* Event indicator dot */}
                         {event && (
-                            <div className={`absolute bottom-1.5 w-1.5 h-1.5 rounded-full ${dynamicDotClass}`}></div>
+                            <span
+                                className={`absolute bottom-1 w-1.5 h-1.5 rounded-full ${
+                                    isToday
+                                        ? 'bg-white'
+                                        : (event.isPrimary ? 'bg-red-500' : 'bg-blue-500')
+                                }`}
+                                title={event.name}
+                            />
                         )}
                     </button>
                 );
@@ -264,20 +282,16 @@ const CalendarGrid = ({ viewDate, onSelectDay, selectedDay, theme, primaryColor,
 };
 
 // --- Main Component ---
-function HijriCalendar({ onBack, onNavigate }: { onBack: () => void, onNavigate: (id: string, params?: any) => void; }) {
+function HijriCalendar({ onBack, onNavigate }: { onBack: () => void; onNavigate: (id: string, params?: any) => void; }) {
     const { theme, themeKey } = useTheme();
     const { language, isRTL, dir } = useLanguage();
-    const isBlackAndWhite = themeKey === 'deep_black';
-    const isBlackTheme = theme.bgColor === '#000000';
-    const isDefaultTheme = themeKey === 'default' || !themeKey;
-    const cardBorderColor = isDefaultTheme 
-        ? '#000000' 
-        : (isBlackTheme 
-            ? '#FFFFFF' 
-            : (theme.palette?.[0] || '#000000'));
-    const primaryColor = isBlackAndWhite ? '#FFFFFF' : theme.palette[0];
-    const secondaryColor = isBlackAndWhite ? '#FFFFFF' : theme.palette[1];
-    
+    const isBlackAndWhite = themeKey === 'deep_black' || theme.name === 'اسود';
+    const isBlackTheme = theme.bgColor === '#000000' || isBlackAndWhite;
+
+    // Use dynamic theme primary color seamlessly
+    const primaryColor = isBlackTheme ? 'rgba(255, 255, 255, 0.22)' : (theme.palette?.[0] || theme.accent || '#2E7D5E');
+    const secondaryColor = isBlackTheme ? '#A1A1AA' : (theme.palette?.[1] || theme.palette?.[0] || '#4B5563');
+
     const [viewDate, setViewDate] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [activeTab, setActiveTab] = useState<'calendar' | 'converter'>('calendar');
@@ -299,11 +313,11 @@ function HijriCalendar({ onBack, onNavigate }: { onBack: () => void, onNavigate:
     const [inputs, setInputs] = useState(() => {
         const h = getHijriDetails(new Date());
         return {
-            gDay: new Date().getDate(), 
-            gMonth: new Date().getMonth() + 1, 
+            gDay: new Date().getDate(),
+            gMonth: new Date().getMonth() + 1,
             gYear: String(new Date().getFullYear()),
-            hDay: h.day, 
-            hMonth: h.month, 
+            hDay: h.day,
+            hMonth: h.month,
             hYear: String(h.year)
         };
     });
@@ -321,9 +335,16 @@ function HijriCalendar({ onBack, onNavigate }: { onBack: () => void, onNavigate:
     }, []);
 
     const selectedHijri = useMemo(() => getHijriDetails(selectedDate), [selectedDate]);
+
     const refreshEvent = () => {
-        const randomIndex = Math.floor(Math.random() * HISTORICAL_EVENTS_TRANSLATED.length);
-        setHistoricalEvent(HISTORICAL_EVENTS_TRANSLATED[randomIndex]);
+        if (HISTORICAL_EVENTS_TRANSLATED.length <= 1) return;
+        setHistoricalEvent(prev => {
+            let randomIndex = Math.floor(Math.random() * HISTORICAL_EVENTS_TRANSLATED.length);
+            if (prev && HISTORICAL_EVENTS_TRANSLATED[randomIndex]?.titleAr === prev.titleAr) {
+                randomIndex = (randomIndex + 1) % HISTORICAL_EVENTS_TRANSLATED.length;
+            }
+            return HISTORICAL_EVENTS_TRANSLATED[randomIndex];
+        });
     };
 
     const handleBack = () => {
@@ -495,6 +516,7 @@ function HijriCalendar({ onBack, onNavigate }: { onBack: () => void, onNavigate:
 
     return (
         <div className="h-screen flex flex-col bg-transparent font-sans overflow-hidden" dir={dir}>
+            {/* Top Bar */}
             <header className="app-top-bar shrink-0">
                 <div className="app-top-bar__inner">
                     <div className="relative flex items-center justify-center w-full min-h-[44px]">
@@ -527,7 +549,7 @@ function HijriCalendar({ onBack, onNavigate }: { onBack: () => void, onNavigate:
                                 title={language === 'en' ? "Calendar Guide" : "دليل التقويم"}
                                 aria-label={language === 'en' ? "Calendar Guide" : "دليل التقويم"}
                             >
-                                <HelpCircle size={19} />
+                                <i className="fa-solid fa-circle-question text-lg text-black"></i>
                             </button>
                             <ThemePageLock />
                             <button
@@ -543,206 +565,259 @@ function HijriCalendar({ onBack, onNavigate }: { onBack: () => void, onNavigate:
                 </div>
             </header>
 
-            <main className="flex-1 overflow-y-auto px-3 pt-2 pb-6 shadow-inner">
-                <div className="w-full max-w-lg mx-auto space-y-3">
+            <main className="flex-1 overflow-y-auto px-3 sm:px-4 pt-3 pb-8">
+                <div className="w-full max-w-lg mx-auto space-y-3.5">
                     
-                    {/* Mode Toggles */}
-                    <div className="flex p-1 rounded-2xl themed-bg-alt shadow-inner bg-white" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
+                    {/* Modern Segmented Control / Chips for Tabs (Zero solid black border, dynamic theming) */}
+                    <div className="flex p-1.5 rounded-2xl bg-white dark:bg-slate-900 shadow-sm border border-slate-100 dark:border-white/5 gap-1.5">
                         <button 
                             onClick={() => setActiveTab('calendar')}
-                            className={`flex-1 py-2 px-1 rounded-xl font-bold transition-all flex items-center justify-center gap-2 duration-300 ${activeTab === 'calendar' ? 'shadow-lg' : (isDefaultTheme ? 'text-black opacity-60' : 'themed-text-muted hover:bg-black/5')}`}
-                            style={activeTab === 'calendar' ? { backgroundColor: isDefaultTheme ? '#000000' : primaryColor, color: isDefaultTheme ? '#FFFFFF' : (isBlackAndWhite ? '#000' : '#FFF') } : (isDefaultTheme ? { backgroundColor: '#FFFFFF', color: '#000000' } : {})}
+                            className={`flex-1 py-2.5 px-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 text-xs sm:text-sm duration-200 cursor-pointer ${
+                                activeTab === 'calendar' 
+                                    ? 'shadow-md shadow-black/5 dark:shadow-none font-black' 
+                                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100/70 dark:hover:bg-white/5'
+                            }`}
+                            style={activeTab === 'calendar' ? { backgroundColor: primaryColor, color: '#FFFFFF' } : {}}
                         >
                             <CalendarIcon size={16} />
-                            {tCalendar('calendarView', language)}
+                            <span>{tCalendar('calendarView', language)}</span>
                         </button>
                         <button 
                             onClick={() => setActiveTab('converter')}
-                            className={`flex-1 py-2 px-1 rounded-xl font-bold transition-all flex items-center justify-center gap-2 duration-300 ${activeTab === 'converter' ? 'shadow-lg' : (isDefaultTheme ? 'text-black opacity-60' : 'themed-text-muted hover:bg-black/5')}`}
-                            style={activeTab === 'converter' ? { backgroundColor: isDefaultTheme ? '#000000' : primaryColor, color: isDefaultTheme ? '#FFFFFF' : (isBlackAndWhite ? '#000' : '#FFF') } : (isDefaultTheme ? { backgroundColor: '#FFFFFF', color: '#000000' } : {})}
+                            className={`flex-1 py-2.5 px-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 text-xs sm:text-sm duration-200 cursor-pointer ${
+                                activeTab === 'converter' 
+                                    ? 'shadow-md shadow-black/5 dark:shadow-none font-black' 
+                                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100/70 dark:hover:bg-white/5'
+                            }`}
+                            style={activeTab === 'converter' ? { backgroundColor: primaryColor, color: '#FFFFFF' } : {}}
                         >
                             <RefreshCw size={16} />
-                            {tCalendar('dateConverter', language)}
+                            <span>{tCalendar('dateConverter', language)}</span>
                         </button>
                     </div>
 
                     {activeTab === 'calendar' ? (
-                        <div className="space-y-2">
-                            {/* Calendar Header Card */}
-                            <div className="themed-card rounded-2xl shadow-lg overflow-hidden relative" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
-                                <div className="absolute top-0 left-0 w-full h-1" style={{ backgroundColor: isDefaultTheme ? '#000000' : primaryColor }}></div>
-                                <div className="flex items-center justify-between p-3">
+                        <div className="space-y-3.5">
+                            {/* Calendar Card: Pure white / dark background with soft drop shadow, NO harsh black border */}
+                            <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm sm:shadow-md border border-slate-100 dark:border-white/5 overflow-hidden">
+                                {/* Month Navigation Header */}
+                                <div className="flex items-center justify-between p-3.5 sm:p-4 border-b border-slate-100 dark:border-white/5">
                                     <button 
                                         onClick={() => changeMonth(isRTL ? -1 : 1)} 
-                                        className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-all group active:scale-90"
+                                        className="w-9 h-9 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-white/10 rounded-full transition-all active:scale-90 cursor-pointer"
                                         title={isRTL ? tCalendar('prevMonth', language) : tCalendar('nextMonth', language)}
                                     >
-                                        <ChevronRight size={22} style={{ color: isDefaultTheme ? '#000000' : primaryColor }} />
+                                        <ChevronRight size={22} style={{ color: primaryColor }} />
                                     </button>
-                                    <div className="flex-1 flex flex-col items-center justify-center cursor-pointer group" onClick={() => openPicker('calendarMonth')}>
-                                        <h2 className="text-lg font-black tracking-tight group-active:scale-95 transition-transform" style={{ color: isDefaultTheme ? '#000000' : primaryColor }}>
+                                    <div 
+                                        className="flex-1 flex flex-col items-center justify-center cursor-pointer group px-2"
+                                        onClick={() => openPicker('calendarMonth')}
+                                    >
+                                        <h2 
+                                            className="text-base sm:text-lg font-black tracking-tight group-active:scale-95 transition-transform text-center" 
+                                            style={{ color: primaryColor }}
+                                        >
                                             {getCalendarMonthName(viewDate.getMonth(), false, language)}{' '}
-                                            <span onClick={(e) => { e.stopPropagation(); openPicker('calendarYear'); }}>
+                                            <span onClick={(e) => { e.stopPropagation(); openPicker('calendarYear'); }} className="hover:underline">
                                                 {formatCalendarNumber(viewDate.getFullYear(), language)}
                                             </span>
                                         </h2>
-                                        <p className="text-xs font-bold opacity-70 mt-0.5">
+                                        <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mt-0.5">
                                             {getCalendarMonthName(getHijriDetails(viewDate).month - 1, true, language)}{' '}
                                             {formatCalendarNumber(getHijriDetails(viewDate).year, language)} {tCalendar('hijriYearSuffix', language)}
                                         </p>
                                     </div>
                                     <button 
                                         onClick={() => changeMonth(isRTL ? 1 : -1)} 
-                                        className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-all group active:scale-90"
+                                        className="w-9 h-9 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-white/10 rounded-full transition-all active:scale-90 cursor-pointer"
                                         title={isRTL ? tCalendar('nextMonth', language) : tCalendar('prevMonth', language)}
                                     >
-                                        <ChevronLeft size={22} style={{ color: isDefaultTheme ? '#000000' : primaryColor }} />
+                                        <ChevronLeft size={22} style={{ color: primaryColor }} />
                                     </button>
                                 </div>
 
-                                {/* Calendar Grid */}
-                                <div className="px-2 pb-3">
+                                {/* Calendar Days Grid */}
+                                <div className="p-2 sm:p-3">
                                     <CalendarGrid 
                                         viewDate={viewDate} 
                                         onSelectDay={handleSelectDay} 
                                         selectedDay={selectedDate}
-                                        theme={theme}
                                         primaryColor={primaryColor}
                                         secondaryColor={secondaryColor}
-                                        isBlackAndWhite={isBlackAndWhite}
-                                        isDefaultTheme={isDefaultTheme}
                                         language={language}
                                     />
                                 </div>
                             </div>
 
-                            {/* Event List Section */}
-                            <div className="themed-card p-5 rounded-2xl shadow-md" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
-                                <h3 className="font-kufi font-black text-lg mb-4 flex items-center gap-2">
-                                    <div className="w-1.5 h-6 rounded-full" style={{ backgroundColor: secondaryColor }}></div>
-                                    {tCalendar('eventsTitle', language)}
+                            {/* Event List Section (أبرز المناسبات): Clean flat cards, dynamic theme coloring */}
+                            <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl shadow-sm sm:shadow-md border border-slate-100 dark:border-white/5">
+                                <h3 className="font-kufi font-black text-base sm:text-lg mb-4 flex items-center gap-2.5">
+                                    <div className="w-1.5 h-5 rounded-full" style={{ backgroundColor: primaryColor }}></div>
+                                    <span style={{ color: primaryColor }}>{tCalendar('eventsTitle', language)}</span>
                                 </h3>
-                            <div className="space-y-3">
-                                {(() => {
-                                    const mYear = viewDate.getFullYear();
-                                    const mMonth = viewDate.getMonth();
-                                    const daysInMonth = new Date(mYear, mMonth + 1, 0).getDate();
-                                    
-                                    const eventsToShow: any[] = [];
-                                    for (let i = 1; i <= daysInMonth; i++) {
-                                        const dayDate = new Date(mYear, mMonth, i);
-                                        const hInfo = getHijriDetails(dayDate);
-                                        const e = islamicEvents.find(ev => ev.day === hInfo.day && ev.month === hInfo.month);
-                                        if (e) {
-                                            if (!eventsToShow.find(existing => existing.id === e.id)) {
-                                                eventsToShow.push({ ...e, gDate: dayDate });
+                                <div className="space-y-2.5">
+                                    {(() => {
+                                        const mYear = viewDate.getFullYear();
+                                        const mMonth = viewDate.getMonth();
+                                        const daysInMonth = new Date(mYear, mMonth + 1, 0).getDate();
+                                        
+                                        const eventsToShow: any[] = [];
+                                        for (let i = 1; i <= daysInMonth; i++) {
+                                            const dayDate = new Date(mYear, mMonth, i);
+                                            const hInfo = getHijriDetails(dayDate);
+                                            const e = islamicEvents.find(ev => ev.day === hInfo.day && ev.month === hInfo.month);
+                                            if (e) {
+                                                if (!eventsToShow.find(existing => existing.id === e.id)) {
+                                                    eventsToShow.push({ ...e, gDate: dayDate });
+                                                }
                                             }
                                         }
-                                    }
-                                    
-                                    if (eventsToShow.length > 0) {
-                                        return eventsToShow.map((event: any) => {
-                                            const gDate = event.gDate;
-                                            const dayName = getCalendarWeekdayName(gDate.getDay(), false, language);
-                                            const gFormatted = `${formatCalendarNumber(gDate.getDate(), language)} ${getCalendarMonthName(gDate.getMonth(), false, language)}`;
-                                            const eventLocalizedName = language === 'en' && ISLAMIC_EVENTS_TRANSLATED[event.name]
-                                                ? ISLAMIC_EVENTS_TRANSLATED[event.name].enName
-                                                : event.name;
+                                        
+                                        if (eventsToShow.length > 0) {
+                                            return eventsToShow.map((event: any) => {
+                                                const gDate = event.gDate;
+                                                const dayName = getCalendarWeekdayName(gDate.getDay(), false, language);
+                                                const gFormatted = `${formatCalendarNumber(gDate.getDate(), language)} ${getCalendarMonthName(gDate.getMonth(), false, language)}`;
+                                                const eventLocalizedName = language === 'en' && ISLAMIC_EVENTS_TRANSLATED[event.name]
+                                                    ? ISLAMIC_EVENTS_TRANSLATED[event.name].enName
+                                                    : event.name;
 
-                                            return (
-                                                <div key={event.id} className="flex items-center gap-4 p-3 hover:bg-black/5 dark:hover:bg-white/5 rounded-2xl transition-all shadow-sm" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
-                                                    <div className={`w-2.5 h-2.5 rounded-full shadow-sm shrink-0 ${event.isPrimary ? 'bg-red-500 animate-pulse' : 'bg-blue-500'}`}></div>
-                                                    <div className="flex-1">
-                                                        <p className="font-black text-base opacity-95 mb-1" style={{ color: primaryColor }}>
-                                                            {eventLocalizedName}
-                                                        </p>
-                                                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                                                            <span className="text-sm font-black" style={{ color: 'var(--text-color)' }}>
-                                                                {formatCalendarNumber(event.day, language)} {getCalendarMonthName(event.month - 1, true, language)}
-                                                            </span>
-                                                            <span className="text-xs opacity-30">|</span>
-                                                            <div className="flex items-center gap-1.5">
-                                                                <span className="text-sm font-black" style={{ color: secondaryColor }}>{dayName}</span>
-                                                                <span className="text-xs font-black" style={{ color: 'var(--text-color)' }}>{gFormatted}</span>
+                                                return (
+                                                    <div 
+                                                        key={event.id} 
+                                                        className="flex items-center gap-3.5 p-3.5 bg-slate-50 dark:bg-white/5 hover:bg-slate-100/80 dark:hover:bg-white/10 rounded-2xl transition-all border border-slate-100 dark:border-white/5 shadow-xs"
+                                                    >
+                                                        <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${event.isPrimary ? 'bg-red-500 animate-pulse' : 'bg-blue-500'}`}></div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="font-bold text-sm sm:text-base mb-1 truncate" style={{ color: primaryColor }}>
+                                                                {eventLocalizedName}
+                                                            </p>
+                                                            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-600 dark:text-slate-400">
+                                                                <span className="font-black text-slate-800 dark:text-slate-200">
+                                                                    {formatCalendarNumber(event.day, language)} {getCalendarMonthName(event.month - 1, true, language)}
+                                                                </span>
+                                                                <span className="opacity-30">|</span>
+                                                                <div className="flex items-center gap-1.5 font-medium">
+                                                                    <span className="font-bold" style={{ color: primaryColor }}>{dayName}</span>
+                                                                    <span>{gFormatted}</span>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>
-                                                </div>
-                                            );
-                                        });
-                                    }
-                                    return (
-                                        <div className="text-center py-6 opacity-40 grayscale">
-                                            <CalendarIcon size={36} className="mx-auto mb-2" />
-                                            <p className="text-sm font-bold">{tCalendar('noEvents', language)}</p>
-                                        </div>
-                                    );
-                                })()}
-                            </div>
+                                                );
+                                            });
+                                        }
+                                        return (
+                                            <div className="text-center py-8 text-slate-400 dark:text-slate-500">
+                                                <CalendarIcon size={32} className="mx-auto mb-2 opacity-50" />
+                                                <p className="text-xs sm:text-sm font-bold">{tCalendar('noEvents', language)}</p>
+                                            </div>
+                                        );
+                                    })()}
+                                </div>
                             </div>
                         </div>
                     ) : (
-                        /* Converter View */
-                        <div className="space-y-3">
-                            <div className="themed-card p-5 rounded-2xl shadow-lg space-y-5 relative overflow-hidden" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
-                                <div className="absolute top-0 right-0 w-24 h-24 blur-3xl opacity-10 -mr-12 -mt-12" style={{ backgroundColor: isDefaultTheme ? '#000000' : primaryColor }}></div>
+                        /* Converter View (محول التاريخ): Modern filled text fields, clean 10% theme container, dynamic theming */
+                        <div className="space-y-3.5">
+                            <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl shadow-sm sm:shadow-md border border-slate-100 dark:border-white/5 space-y-5 relative">
                                 
-                                <div className="flex p-1 rounded-xl bg-black/5 dark:bg-white/5 text-[10px] font-bold" style={{ borderColor: cardBorderColor, borderWidth: '1px', borderStyle: 'solid' }}>
+                                {/* Mode Toggles: Hijri <-> Gregorian Chips */}
+                                <div className="flex p-1.5 rounded-2xl bg-slate-100 dark:bg-white/10 gap-1.5 text-xs font-bold">
                                     <button 
                                         onClick={() => setConvTab('hijriToGregorian')}
-                                        className={`flex-1 py-2 px-1 rounded-lg transition-all duration-300 ${convTab === 'hijriToGregorian' ? 'themed-card shadow-md transform scale-100 font-black' : 'themed-text-muted opacity-50 scale-95'}`}
-                                        style={convTab === 'hijriToGregorian' ? { borderColor: cardBorderColor, borderWidth: '1px', borderStyle: 'solid' } : {}}
+                                        className={`flex-1 py-2.5 px-2 rounded-xl transition-all duration-200 cursor-pointer ${
+                                            convTab === 'hijriToGregorian' 
+                                                ? 'shadow-sm font-black' 
+                                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                                        }`}
+                                        style={convTab === 'hijriToGregorian' ? { backgroundColor: primaryColor, color: '#FFFFFF' } : {}}
                                     >
                                         {tCalendar('hijriToGregorian', language)}
                                     </button>
                                     <button 
                                         onClick={() => setConvTab('gregorianToHijri')}
-                                        className={`flex-1 py-2 px-1 rounded-lg transition-all duration-300 ${convTab === 'gregorianToHijri' ? 'themed-card shadow-md transform scale-100 font-black' : 'themed-text-muted opacity-50 scale-95'}`}
-                                        style={convTab === 'gregorianToHijri' ? { borderColor: cardBorderColor, borderWidth: '1px', borderStyle: 'solid' } : {}}
+                                        className={`flex-1 py-2.5 px-2 rounded-xl transition-all duration-200 cursor-pointer ${
+                                            convTab === 'gregorianToHijri' 
+                                                ? 'shadow-sm font-black' 
+                                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                                        }`}
+                                        style={convTab === 'gregorianToHijri' ? { backgroundColor: primaryColor, color: '#FFFFFF' } : {}}
                                     >
                                         {tCalendar('gregorianToHijri', language)}
                                     </button>
                                 </div>
 
-                                <div className="grid grid-cols-3 gap-3">
+                                {/* Modern Filled Text Fields for Day / Month / Year */}
+                                <div className="grid grid-cols-3 gap-2.5 sm:gap-3">
                                     {convTab === 'gregorianToHijri' ? (
                                         <>
-                                            <div className="space-y-1 text-center cursor-pointer" onClick={() => openPicker('gDay')}>
-                                                <label className="text-[10px] themed-text-muted font-black">{tCalendar('dayLabel', language)}</label>
-                                                <div className="w-full p-2.5 themed-bg-alt rounded-xl font-black text-center shadow-inner text-xs" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
+                                            <div 
+                                                className="space-y-1 text-center cursor-pointer group" 
+                                                onClick={() => openPicker('gDay')}
+                                            >
+                                                <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block">
+                                                    {tCalendar('dayLabel', language)}
+                                                </label>
+                                                <div className="w-full p-3 sm:p-3.5 bg-slate-100 dark:bg-white/10 hover:bg-slate-200/70 dark:hover:bg-white/15 rounded-2xl font-black text-center text-sm sm:text-base text-slate-800 dark:text-slate-100 transition-all active:scale-95 border border-transparent hover:border-slate-200 dark:hover:border-white/10">
                                                     {formatCalendarNumber(inputs.gDay, language)}
                                                 </div>
                                             </div>
-                                            <div className="space-y-1 text-center cursor-pointer" onClick={() => openPicker('gMonth')}>
-                                                <label className="text-[10px] themed-text-muted font-black">{tCalendar('monthLabel', language)}</label>
-                                                <div className="w-full p-2.5 themed-bg-alt rounded-xl font-black text-center shadow-inner text-[10px]" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
+                                            <div 
+                                                className="space-y-1 text-center cursor-pointer group" 
+                                                onClick={() => openPicker('gMonth')}
+                                            >
+                                                <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block">
+                                                    {tCalendar('monthLabel', language)}
+                                                </label>
+                                                <div className="w-full p-3 sm:p-3.5 bg-slate-100 dark:bg-white/10 hover:bg-slate-200/70 dark:hover:bg-white/15 rounded-2xl font-black text-center text-xs sm:text-sm text-slate-800 dark:text-slate-100 transition-all active:scale-95 truncate border border-transparent hover:border-slate-200 dark:hover:border-white/10">
                                                     {getCalendarMonthName(inputs.gMonth - 1, false, language)}
                                                 </div>
                                             </div>
-                                            <div className="space-y-1 text-center cursor-pointer" onClick={() => openPicker('gYear')}>
-                                                <label className="text-[10px] themed-text-muted font-black">{tCalendar('yearLabel', language)}</label>
-                                                <div className="w-full p-2.5 themed-bg-alt rounded-xl font-black text-center shadow-inner text-xs" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
+                                            <div 
+                                                className="space-y-1 text-center cursor-pointer group" 
+                                                onClick={() => openPicker('gYear')}
+                                            >
+                                                <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block">
+                                                    {tCalendar('yearLabel', language)}
+                                                </label>
+                                                <div className="w-full p-3 sm:p-3.5 bg-slate-100 dark:bg-white/10 hover:bg-slate-200/70 dark:hover:bg-white/15 rounded-2xl font-black text-center text-sm sm:text-base text-slate-800 dark:text-slate-100 transition-all active:scale-95 border border-transparent hover:border-slate-200 dark:hover:border-white/10">
                                                     {formatCalendarNumber(inputs.gYear, language)}
                                                 </div>
                                             </div>
                                         </>
                                     ) : (
                                         <>
-                                            <div className="space-y-1 text-center cursor-pointer" onClick={() => openPicker('hDay')}>
-                                                <label className="text-[10px] themed-text-muted font-black">{tCalendar('dayLabel', language)}</label>
-                                                <div className="w-full p-2.5 themed-bg-alt rounded-xl font-black text-center shadow-inner text-xs" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
+                                            <div 
+                                                className="space-y-1 text-center cursor-pointer group" 
+                                                onClick={() => openPicker('hDay')}
+                                            >
+                                                <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block">
+                                                    {tCalendar('dayLabel', language)}
+                                                </label>
+                                                <div className="w-full p-3 sm:p-3.5 bg-slate-100 dark:bg-white/10 hover:bg-slate-200/70 dark:hover:bg-white/15 rounded-2xl font-black text-center text-sm sm:text-base text-slate-800 dark:text-slate-100 transition-all active:scale-95 border border-transparent hover:border-slate-200 dark:hover:border-white/10">
                                                     {formatCalendarNumber(inputs.hDay, language)}
                                                 </div>
                                             </div>
-                                            <div className="space-y-1 text-center cursor-pointer" onClick={() => openPicker('hMonth')}>
-                                                <label className="text-[10px] themed-text-muted font-black">{tCalendar('monthLabel', language)}</label>
-                                                <div className="w-full p-2.5 themed-bg-alt rounded-xl font-black text-center shadow-inner text-[10px]" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
+                                            <div 
+                                                className="space-y-1 text-center cursor-pointer group" 
+                                                onClick={() => openPicker('hMonth')}
+                                            >
+                                                <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block">
+                                                    {tCalendar('monthLabel', language)}
+                                                </label>
+                                                <div className="w-full p-3 sm:p-3.5 bg-slate-100 dark:bg-white/10 hover:bg-slate-200/70 dark:hover:bg-white/15 rounded-2xl font-black text-center text-xs sm:text-sm text-slate-800 dark:text-slate-100 transition-all active:scale-95 truncate border border-transparent hover:border-slate-200 dark:hover:border-white/10">
                                                     {getCalendarMonthName(inputs.hMonth - 1, true, language)}
                                                 </div>
                                             </div>
-                                            <div className="space-y-1 text-center cursor-pointer" onClick={() => openPicker('hYear')}>
-                                                <label className="text-[10px] themed-text-muted font-black">{tCalendar('yearLabel', language)}</label>
-                                                <div className="w-full p-2.5 themed-bg-alt rounded-xl font-black text-center shadow-inner text-xs" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
+                                            <div 
+                                                className="space-y-1 text-center cursor-pointer group" 
+                                                onClick={() => openPicker('hYear')}
+                                            >
+                                                <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block">
+                                                    {tCalendar('yearLabel', language)}
+                                                </label>
+                                                <div className="w-full p-3 sm:p-3.5 bg-slate-100 dark:bg-white/10 hover:bg-slate-200/70 dark:hover:bg-white/15 rounded-2xl font-black text-center text-sm sm:text-base text-slate-800 dark:text-slate-100 transition-all active:scale-95 border border-transparent hover:border-slate-200 dark:hover:border-white/10">
                                                     {formatCalendarNumber(inputs.hYear, language)}
                                                 </div>
                                             </div>
@@ -750,85 +825,104 @@ function HijriCalendar({ onBack, onNavigate }: { onBack: () => void, onNavigate:
                                     )}
                                 </div>
 
+                                {/* Conversion Result Container: 10% Opacity Theme Tint, NO Dashed Border */}
                                 <AnimatePresence>
                                     {convResult && (
                                         <motion.div 
-                                            initial={{ opacity: 0, y: 10 }} 
+                                            initial={{ opacity: 0, y: 8 }} 
                                             animate={{ opacity: 1, y: 0 }}
-                                            exit={{ opacity: 0, y: -10 }}
-                                            className="text-center p-4 rounded-2xl bg-black/5 dark:bg-white/5 relative"
-                                            style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'dashed' }}
+                                            exit={{ opacity: 0, y: -8 }}
+                                            className="text-center p-5 rounded-2xl relative transition-all duration-300"
+                                            style={{ backgroundColor: hexToRgba(primaryColor, 0.10) }}
                                         >
-                                            <p className="text-[10px] themed-text-muted font-black mb-1 tracking-widest">{convMessage}</p>
-                                            <p className="text-xl font-black" style={{ color: isDefaultTheme ? '#000000' : primaryColor }}>{convResult}</p>
+                                            <p 
+                                                className="text-xs font-bold mb-1 tracking-wider opacity-80"
+                                                style={{ color: primaryColor }}
+                                            >
+                                                {convMessage}
+                                            </p>
+                                            <p 
+                                                className="text-lg sm:text-2xl font-black" 
+                                                style={{ color: primaryColor }}
+                                            >
+                                                {convResult}
+                                            </p>
                                         </motion.div>
                                     )}
                                 </AnimatePresence>
                             </div>
 
+                            {/* Historical Event Card (بطاقة ذاكرة التاريخ): Soft drop shadow, primary-themed action buttons and side line */}
                             {historicalEvent && (
                                 <motion.div 
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
-                                    className="themed-card p-4 rounded-2xl shadow-md relative mt-1 group"
-                                    style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                                    className="bg-white dark:bg-slate-900 p-5 rounded-3xl shadow-sm sm:shadow-md border border-slate-100 dark:border-white/5 relative group"
                                 >
-                                    <div className="absolute top-0 right-0 w-12 h-1 bg-gradient-to-l from-transparent" style={{ backgroundColor: isDefaultTheme ? '#000000' : secondaryColor, borderTopRightRadius: '999px' }}></div>
                                     <div className="flex justify-between items-center mb-3">
-                                        <div className="flex items-center gap-3">
+                                        <div className="flex items-center gap-2.5">
                                             <button 
                                                 onClick={refreshEvent}
-                                                className="p-1.5 rounded-xl bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-all active:scale-90"
+                                                className="w-8 h-8 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                                                style={{ backgroundColor: hexToRgba(primaryColor, 0.08) }}
                                                 title={tCalendar('anotherEvent', language)}
                                             >
-                                                <RefreshCw size={12} className="hover:rotate-180 transition-transform duration-500" style={{ color: secondaryColor }} />
+                                                <RefreshCw size={13} className="hover:rotate-180 transition-transform duration-500" style={{ color: primaryColor }} />
                                             </button>
-                                            <h4 className="text-[10px] sm:text-xs font-black opacity-30 uppercase tracking-widest">
+                                            <h4 className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
                                                 {tCalendar('historyTitle', language)}
                                             </h4>
                                         </div>
                                         <div className="flex gap-2">
                                             <button 
                                                 onClick={() => setShowZoomModal(true)}
-                                                className="w-7 h-7 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors"
+                                                className="w-8 h-8 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                                                style={{ backgroundColor: hexToRgba(primaryColor, 0.08) }}
                                                 title={tCalendar('zoomIn', language)}
                                             >
-                                                <ZoomIn size={14} style={{ color: secondaryColor }} />
+                                                <ZoomIn size={14} style={{ color: primaryColor }} />
                                             </button>
                                             <button 
                                                 onClick={() => handleCopy(language === 'en' ? historicalEvent.descriptionEn : historicalEvent.descriptionAr)}
-                                                className="w-7 h-7 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors"
+                                                className="w-8 h-8 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                                                style={{ backgroundColor: hexToRgba(primaryColor, 0.08) }}
                                                 title={tCalendar('copy', language)}
                                             >
-                                                <Copy size={14} style={{ color: secondaryColor }} />
+                                                <Copy size={14} style={{ color: primaryColor }} />
                                             </button>
                                             <button 
                                                 onClick={() => handleShare(
                                                     language === 'en' ? historicalEvent.titleEn : historicalEvent.titleAr,
                                                     language === 'en' ? historicalEvent.descriptionEn : historicalEvent.descriptionAr
                                                 )}
-                                                className="w-7 h-7 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors"
+                                                className="w-8 h-8 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                                                style={{ backgroundColor: hexToRgba(primaryColor, 0.08) }}
                                                 title={tCalendar('share', language)}
                                             >
-                                                <Share2 size={14} style={{ color: secondaryColor }} />
+                                                <Share2 size={14} style={{ color: primaryColor }} />
                                             </button>
                                         </div>
                                     </div>
-                                    <h5 className="text-lg sm:text-xl font-black mb-1.5" style={{ color: isDefaultTheme ? '#000000' : primaryColor }}>
+                                    <h5 
+                                        className="text-lg sm:text-xl font-black mb-2" 
+                                        style={{ color: primaryColor }}
+                                    >
                                         {language === 'en' ? historicalEvent.titleEn : historicalEvent.titleAr}
                                     </h5>
-                                    <div className="flex gap-4 text-xs font-bold themed-text-muted mb-3 justify-end">
+                                    <div className="flex gap-4 text-xs font-bold text-slate-500 dark:text-slate-400 mb-3 justify-end">
                                         <span className="flex items-center gap-1.5">
-                                            <CalendarIcon size={13} /> {language === 'en' ? historicalEvent.hijriYearEn : historicalEvent.hijriYearAr}
+                                            <CalendarIcon size={13} style={{ color: primaryColor }} /> {language === 'en' ? historicalEvent.hijriYearEn : historicalEvent.hijriYearAr}
                                         </span>
                                         <span className="flex items-center gap-1.5">
-                                            <CalendarIcon size={13} /> {language === 'en' ? historicalEvent.gregorianYearEn : historicalEvent.gregorianYearAr}
+                                            <CalendarIcon size={13} style={{ color: primaryColor }} /> {language === 'en' ? historicalEvent.gregorianYearEn : historicalEvent.gregorianYearAr}
                                         </span>
                                     </div>
                                     <p 
-                                        className={`leading-relaxed themed-text-muted text-justify ${language === 'ar' ? 'font-amiri border-r-2 pr-4' : 'font-sans border-l-2 pl-4'}`} 
+                                        className={`leading-relaxed text-slate-700 dark:text-slate-300 text-justify ${
+                                            language === 'ar' ? 'font-amiri border-r-2 pr-4' : 'font-sans border-l-2 pl-4'
+                                        }`} 
                                         style={{ 
-                                            borderColor: `${secondaryColor}40`,
+                                            borderColor: primaryColor,
                                             fontSize: `${1.0 * historyFontSize}rem`
                                         }}
                                     >
@@ -851,7 +945,7 @@ function HijriCalendar({ onBack, onNavigate }: { onBack: () => void, onNavigate:
                         initial={{ opacity: 0, y: 50, x: '-50%' }}
                         animate={{ opacity: 1, y: 0, x: '-50%' }}
                         exit={{ opacity: 0, y: 50, x: '-50%' }}
-                        className="fixed bottom-8 left-1/2 z-[200] bg-gray-800 text-white px-6 py-3 rounded-full shadow-lg font-bold text-sm text-center whitespace-nowrap"
+                        className="fixed bottom-8 left-1/2 z-[200] bg-slate-900 text-white px-6 py-3 rounded-full shadow-lg font-bold text-sm text-center whitespace-nowrap"
                     >
                         {toastMessage}
                     </motion.div>
@@ -861,37 +955,41 @@ function HijriCalendar({ onBack, onNavigate }: { onBack: () => void, onNavigate:
             {/* Zoom Modal */}
             <AnimatePresence>
                 {showZoomModal && historicalEvent && (
-                    <div className="fixed inset-0 bg-black/80 z-[100] flex justify-center items-center p-4 backdrop-blur-sm" onClick={() => setShowZoomModal(false)}>
+                    <div className="fixed inset-0 bg-black/75 z-[100] flex justify-center items-center p-4 backdrop-blur-sm" onClick={() => setShowZoomModal(false)}>
                         <motion.div 
-                            initial={{ scale: 0.9, opacity: 0 }}
+                            initial={{ scale: 0.92, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.9, opacity: 0 }}
-                            className="themed-card p-8 rounded-3xl w-full max-w-2xl text-center relative shadow-2xl flex flex-col max-h-[90vh] overflow-hidden" 
-                            style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                            exit={{ scale: 0.92, opacity: 0 }}
+                            className="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-3xl w-full max-w-2xl text-center relative shadow-2xl flex flex-col max-h-[90vh] overflow-hidden border border-slate-100 dark:border-white/10" 
                             onClick={e => e.stopPropagation()}
                             dir={dir}
                         >
-                            <div className="overflow-y-auto hide-scrollbar flex-1 py-4">
-                                <h3 className="text-2xl font-black mb-6" style={{ color: isDefaultTheme ? '#000000' : primaryColor }}>
+                            <div className="overflow-y-auto hide-scrollbar flex-1 py-2">
+                                <h3 className="text-xl sm:text-2xl font-black mb-4 sm:mb-6" style={{ color: primaryColor }}>
                                     {language === 'en' ? historicalEvent.titleEn : historicalEvent.titleAr}
                                 </h3>
                                 <div 
-                                    className={`text-2xl md:text-3xl leading-relaxed themed-text ${language === 'ar' ? 'font-amiri' : 'font-sans'}`}
+                                    className={`text-xl sm:text-2xl leading-relaxed text-slate-800 dark:text-slate-100 ${
+                                        language === 'ar' ? 'font-amiri' : 'font-sans'
+                                    }`}
                                 >
                                     {language === 'en' ? historicalEvent.descriptionEn : historicalEvent.descriptionAr}
                                 </div>
-                                <div className="flex gap-6 text-sm font-bold themed-text-muted mt-8 justify-center">
-                                    <span className="flex items-center gap-2">
-                                        <CalendarIcon size={18} /> {language === 'en' ? historicalEvent.hijriYearEn : historicalEvent.hijriYearAr}
+                                <div className="flex gap-6 text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 mt-6 justify-center">
+                                    <span className="flex items-center gap-1.5">
+                                        <CalendarIcon size={16} style={{ color: primaryColor }} /> {language === 'en' ? historicalEvent.hijriYearEn : historicalEvent.hijriYearAr}
                                     </span>
-                                    <span className="flex items-center gap-2">
-                                        <CalendarIcon size={18} /> {language === 'en' ? historicalEvent.gregorianYearEn : historicalEvent.gregorianYearAr}
+                                    <span className="flex items-center gap-1.5">
+                                        <CalendarIcon size={16} style={{ color: primaryColor }} /> {language === 'en' ? historicalEvent.gregorianYearEn : historicalEvent.gregorianYearAr}
                                     </span>
                                 </div>
                             </div>
 
-                            <div className="mt-8 shrink-0 flex gap-3">
-                                <button onClick={() => setShowZoomModal(false)} className="flex-1 py-4 rounded-2xl font-black bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors">
+                            <div className="mt-6 shrink-0 flex gap-3">
+                                <button 
+                                    onClick={() => setShowZoomModal(false)} 
+                                    className="flex-1 py-3.5 rounded-2xl font-bold bg-slate-100 dark:bg-white/10 hover:bg-slate-200/80 dark:hover:bg-white/15 text-slate-700 dark:text-slate-200 transition-colors cursor-pointer"
+                                >
                                     {tCalendar('close', language)}
                                 </button>
                                 <button 
@@ -899,7 +997,7 @@ function HijriCalendar({ onBack, onNavigate }: { onBack: () => void, onNavigate:
                                         language === 'en' ? historicalEvent.titleEn : historicalEvent.titleAr,
                                         language === 'en' ? historicalEvent.descriptionEn : historicalEvent.descriptionAr
                                     )}
-                                    className="flex-1 py-4 rounded-2xl font-black text-white"
+                                    className="flex-1 py-3.5 rounded-2xl font-bold text-white shadow-md transition-all active:scale-98 cursor-pointer"
                                     style={{ backgroundColor: primaryColor }}
                                 >
                                     {tCalendar('shareEvent', language)}
@@ -913,20 +1011,19 @@ function HijriCalendar({ onBack, onNavigate }: { onBack: () => void, onNavigate:
             {/* Custom Picker Modal */}
             {pickerConfig.isOpen && (
                 <div 
-                    className="fixed inset-0 bg-black/40 z-[300] flex items-center justify-center p-6 backdrop-blur-[1px]"
+                    className="fixed inset-0 bg-black/50 z-[300] flex items-center justify-center p-6 backdrop-blur-xs"
                     onClick={() => setPickerConfig(p => ({ ...p, isOpen: false }))}
                     dir={dir}
                 >
                     <div 
-                        className="themed-card w-full max-w-[280px] rounded-[2.5rem] shadow-2xl flex flex-col max-h-[450px] overflow-hidden"
-                        style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                        className="bg-white dark:bg-slate-900 w-full max-w-[290px] rounded-3xl shadow-2xl flex flex-col max-h-[460px] overflow-hidden border border-slate-100 dark:border-white/10"
                         onClick={e => e.stopPropagation()}
                     >
-                        <div className="p-5 border-b border-black/5 dark:border-white/5 text-center shrink-0 bg-black/[0.03] dark:bg-white/[0.03]">
-                            <h3 className="text-sm font-black opacity-80" style={{ color: primaryColor }}>{pickerConfig.title}</h3>
+                        <div className="p-4 border-b border-slate-100 dark:border-white/5 text-center shrink-0 bg-slate-50/50 dark:bg-white/[0.02]">
+                            <h3 className="text-sm font-black" style={{ color: primaryColor }}>{pickerConfig.title}</h3>
                         </div>
 
-                        <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-1.5 hide-scrollbar">
+                        <div ref={scrollRef} className="flex-1 overflow-y-auto px-3.5 py-3 space-y-1 hide-scrollbar">
                             {pickerConfig.options.map((opt, i) => {
                                 const currentValue = pickerConfig.type === 'calendarMonth' ? viewDate.getMonth() 
                                                     : pickerConfig.type === 'calendarYear' ? viewDate.getFullYear()
@@ -938,12 +1035,14 @@ function HijriCalendar({ onBack, onNavigate }: { onBack: () => void, onNavigate:
                                         key={i}
                                         data-selected={isSelected}
                                         onClick={() => handlePickerSelect(opt.value)}
-                                        className={`w-full flex items-center justify-center p-3 rounded-2xl transition-all active:scale-[0.94] ${
-                                            isSelected ? 'shadow-md z-10' : 'hover:bg-black/5 dark:hover:bg-white/5'
+                                        className={`w-full flex items-center justify-center p-3 rounded-2xl transition-all active:scale-[0.96] cursor-pointer ${
+                                            isSelected 
+                                                ? 'shadow-sm z-10 font-black' 
+                                                : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 font-semibold'
                                         }`}
-                                        style={isSelected ? { backgroundColor: secondaryColor, color: isBlackAndWhite ? '#000' : '#FFF' } : {}}
+                                        style={isSelected ? { backgroundColor: primaryColor, color: '#FFFFFF' } : {}}
                                     >
-                                        <span className={`text-base ${isSelected ? 'font-black scale-110' : 'font-bold opacity-60'}`}>
+                                        <span className={`text-sm sm:text-base ${isSelected ? 'scale-105' : 'opacity-70'}`}>
                                             {opt.label}
                                         </span>
                                     </button>

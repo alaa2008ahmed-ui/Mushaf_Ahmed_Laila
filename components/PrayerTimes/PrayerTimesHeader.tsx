@@ -240,7 +240,7 @@ const PrayerTimesHeader: React.FC<PrayerTimesHeaderProps> = ({
                                 title={language === 'en' ? "Prayer Times Guide" : "دليل وشرح مواقيت الصلاة"}
                                 aria-label={language === 'en' ? "Prayer Times Guide" : "دليل وشرح مواقيت الصلاة"}
                             >
-                                <HelpCircle size={18} />
+                                <i className="fa-solid fa-circle-question text-lg text-black"></i>
                             </button>
                         )}
                         <ThemePageLock />

@@ -163,7 +163,7 @@ const MushafPage: React.FC<MushafPageProps> = React.memo(({ pageNum, pageData, h
 
     return (
         <div id={`page-${pageNum}`} className={`mushaf-page ${pageNum === 1 ? 'first-page' : ''}`} data-page={pageNum} ref={pageRef} style={{ 
-            backgroundColor: 'transparent',
+            backgroundColor: 'var(--qr-bg, #ffffff)',
             boxSizing: 'border-box'
         }}>
             <div className="page-content" style={pageStyle}>

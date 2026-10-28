@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_compact_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:layoutDirection="rtl"
+    android:background="@drawable/widget_bg_white"
+    android:clipToOutline="true"
+    android:paddingStart="4dp"
+    android:paddingEnd="4dp"
+    android:paddingTop="3dp"
+    android:paddingBottom="3dp">
+
+    <!-- 4-Color Accent Strip (Matching Home Page Palette) -->
+    <LinearLayout
+        android:id="@+id/widget_compact_accent_strip"
+        android:layout_width="match_parent"
+        android:layout_height="2.5dp"
+        android:orientation="horizontal"
+        android:layout_marginBottom="2dp"
+        android:baselineAligned="false">
+        <FrameLayout
+            android:id="@+id/compact_strip_purple"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="match_parent"
+            android:background="#544670" />
+        <FrameLayout
+            android:id="@+id/compact_strip_green"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="match_parent"
+            android:background="#2E7D5E" />
+        <FrameLayout
+            android:id="@+id/compact_strip_teal"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="match_parent"
+            android:background="#3B7A82" />
+        <FrameLayout
+            android:id="@+id/compact_strip_terracotta"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="match_parent"
+            android:background="#A26743" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:baselineAligned="false"
+        android:weightSum="3">
+
+        <!-- Section 1: App Icon & City Name in Slate-Violet/Purple (Color 1) -->
+        <LinearLayout
+            android:id="@+id/widget_compact_left"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="2dp">
+
+            <ImageView
+                android:id="@+id/widget_compact_icon"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@mipmap/ic_launcher"
+                android:contentDescription="App Logo" />
+
+            <TextView
+                android:id="@+id/widget_compact_city"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="الدمام"
+                android:textColor="#544670"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:singleLine="true"
+                android:ellipsize="end"
+                android:gravity="center"
+                android:layout_marginTop="2dp" />
+        </LinearLayout>
+
+        <!-- Divider 1 -->
+        <FrameLayout
+            android:id="@+id/widget_compact_sep1"
+            android:layout_width="1dp"
+            android:layout_height="match_parent"
+            android:background="#E2E8F0"
+            android:layout_marginTop="6dp"
+            android:layout_marginBottom="6dp" />
+
+        <!-- Section 2: Next Prayer in Emerald Green (Color 2) & Live Countdown -->
+        <LinearLayout
+            android:id="@+id/widget_compact_center"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="2dp">
+
+            <TextView
+                android:id="@+id/widget_compact_prayer_name"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="العصر بعد"
+                android:textColor="#2E7D5E"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:singleLine="true"
+                android:ellipsize="end"
+                android:gravity="center" />
+
+            <Chronometer
+                android:id="@+id/widget_compact_countdown"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="#0F172A"
+                android:textSize="14.5sp"
+                android:textStyle="bold"
+                android:singleLine="true"
+                android:gravity="center"
+                android:layout_marginTop="2dp"
+                android:countDown="true" />
+
+            <TextView
+                android:id="@+id/widget_compact_countdown_en"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="#0F172A"
+                android:textSize="14.5sp"
+                android:textStyle="bold"
+                android:singleLine="true"
+                android:gravity="center"
+                android:layout_marginTop="2dp"
+                android:visibility="gone" />
+        </LinearLayout>
+
+        <!-- Divider 2 -->
+        <FrameLayout
+            android:id="@+id/widget_compact_sep2"
+            android:layout_width="1dp"
+            android:layout_height="match_parent"
+            android:background="#E2E8F0"
+            android:layout_marginTop="6dp"
+            android:layout_marginBottom="6dp" />
+
+        <!-- Section 3: Adhan Tag in Teal (Color 3) & Prayer Time in Terracotta (Color 4) -->
+        <LinearLayout
+            android:id="@+id/widget_compact_right"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="2dp">
+
+            <TextView
+                android:id="@+id/widget_compact_prayer_tag"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="الأذان"
+                android:textColor="#3B7A82"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:singleLine="true"
+                android:ellipsize="end"
+                android:gravity="center" />
+
+            <TextView
+                android:id="@+id/widget_compact_prayer_time"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="02:38"
+                android:textColor="#A26743"
+                android:textSize="14.5sp"
+                android:textStyle="bold"
+                android:singleLine="true"
+                android:gravity="center"
+                android:layout_marginTop="2dp" />
+        </LinearLayout>
+    </LinearLayout>
+
+</LinearLayout>

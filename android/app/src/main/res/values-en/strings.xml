@@ -2,4 +2,14 @@
 <resources>
     <string name="app_name">Mushaf Ahmed &amp; Laila</string>
     <string name="title_activity_main">Mushaf Ahmed &amp; Laila</string>
+    <string name="shortcut_quran_short">Holy Quran</string>
+    <string name="shortcut_quran_long">Read Holy Quran</string>
+    <string name="shortcut_prayer_short">Prayer Times</string>
+    <string name="shortcut_prayer_long">Prayer Times &amp; Adhan</string>
+    <string name="shortcut_qibla_short">Qibla</string>
+    <string name="shortcut_qibla_long">Qibla Compass</string>
+    <string name="shortcut_seerah_short">Prophetic Seerah</string>
+    <string name="shortcut_seerah_long">Prophetic Biography</string>
+    <string name="shortcut_azkar_short">Hisn Al-Muslim</string>
+    <string name="shortcut_azkar_long">Daily Athkar &amp; Duas</string>
 </resources>

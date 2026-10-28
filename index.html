@@ -4,9 +4,9 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>مصحف أحمد وليلى</title>
+    <title>مصحف أحمد و ليلى</title>
     <meta name="description" content="تطبيق إسلامي شامل يعمل بدون انترنت، يحتوي على القرآن الكريم، أذكار، تسبيح، مواقيت الصلاة، وقائمة تطبيقات متنوعة. مصمم ليكون رفيقك اليومي." />
-    <meta property="og:title" content="مصحف أحمد وليلى" />
+    <meta property="og:title" content="مصحف أحمد و ليلى" />
     <meta property="og:description" content="تطبيق إسلامي شامل يعمل بدون انترنت، يحتوي على القرآن الكريم، أذكار، تسبيح، مواقيت الصلاة، وقائمة تطبيقات متنوعة. مصمم ليكون رفيقك اليومي." />
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -28,6 +28,14 @@
             }
             // Prevent React DevTools instrumentation error in restricted environments
             window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = { isDisabled: true };
+            try {
+                var raw = (window.location.href + ' ' + window.location.hash + ' ' + window.location.search).toLowerCase();
+                if (raw.indexOf('quran') !== -1) window.__pendingShortcut = 'quran';
+                else if (raw.indexOf('prayer') !== -1 || raw.indexOf('salah') !== -1) window.__pendingShortcut = 'prayer-times';
+                else if (raw.indexOf('qibla') !== -1) window.__pendingShortcut = 'qibla';
+                else if (raw.indexOf('seerah') !== -1) window.__pendingShortcut = 'prophetic-seerah';
+                else if (raw.indexOf('hisn') !== -1 || raw.indexOf('azkar') !== -1) window.__pendingShortcut = 'hisn-muslim';
+            } catch (e) {}
         }
         document.addEventListener('deviceready', function() { console.log('Device ready - Cordova initialized'); }, false);
     </script>
@@ -96,13 +104,26 @@
           align-items: center;
           justify-content: center;
       }
+      .app-top-bar button i,
+      .app-top-bar button svg,
+      .app-top-bar button,
+      .app-top-bar .fa-solid,
+      .app-top-bar .fas,
+      .app-top-bar .fa-house,
+      .app-top-bar .fa-circle-question {
+          color: #000000 !important;
+      }
       body.hide-top-bars .app-top-bar { display: none !important; }
       
-      /* Apply the same padding as MoreMenuPage.tsx (pt-12 = 3rem) when top bars are hidden */
+      /* When top bars are hidden in other pages */
       body.hide-top-bars:not(.quran-context) main:not(.absolute),
-      body.hide-top-bars:not(.quran-context) .main-layout,
       body.hide-top-bars:not(.quran-context) .app-top-bar + * {
           padding-top: calc(env(safe-area-inset-top) + 0.5rem) !important;
+      }
+
+      /* Home page layout has its dedicated header which already includes safe-area-inset-top */
+      .main-layout {
+          padding-top: 0 !important;
       }
 
       .app-top-bar__inner { 

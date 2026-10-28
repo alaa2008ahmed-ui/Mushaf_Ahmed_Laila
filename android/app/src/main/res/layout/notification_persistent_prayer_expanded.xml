@@ -8,7 +8,19 @@
     android:paddingTop="2dp"
     android:paddingBottom="2dp">
 
-    <!-- Row 1: Next Prayer Name and Live Real-Time Countdown -->
+    <!-- Small Remaining Time (visible only when notification is expanded) -->
+    <Chronometer
+        android:id="@+id/notif_chronometer_small"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="end"
+        android:layout_marginBottom="2dp"
+        android:textAppearance="@style/TextAppearance.Compat.Notification.Line2"
+        android:textSize="12sp"
+        android:singleLine="true"
+        android:countDown="true" />
+
+    <!-- Row 1: Next Prayer Name and Live Real-Time Countdown (Big Font) -->
     <LinearLayout
         android:id="@+id/notif_title_container"
         android:layout_width="match_parent"
@@ -32,6 +44,7 @@
             android:textAppearance="@style/TextAppearance.Compat.Notification.Title"
             android:textStyle="bold"
             android:textSize="15sp"
+            android:singleLine="true"
             android:text=" (" />
 
         <Chronometer
@@ -41,6 +54,7 @@
             android:textAppearance="@style/TextAppearance.Compat.Notification.Title"
             android:textStyle="bold"
             android:textSize="15sp"
+            android:singleLine="true"
             android:countDown="true" />
 
         <TextView
@@ -50,6 +64,7 @@
             android:textAppearance="@style/TextAppearance.Compat.Notification.Title"
             android:textStyle="bold"
             android:textSize="15sp"
+            android:singleLine="true"
             android:text=")" />
 
     </LinearLayout>
@@ -59,7 +74,7 @@
         android:id="@+id/notif_summary"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="3dp"
+        android:layout_marginTop="4dp"
         android:textAppearance="@style/TextAppearance.Compat.Notification.Line2"
         android:textSize="13sp"
         android:maxLines="4"

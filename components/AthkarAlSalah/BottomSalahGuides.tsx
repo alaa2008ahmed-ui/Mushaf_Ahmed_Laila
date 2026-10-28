@@ -21,6 +21,10 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
     onZoom,
     setToastMessage
 }) => {
+    const isBlack = isBlackTheme || theme?.bgColor === '#000000' || theme?.name === 'أبيض وأسود' || theme?.name === 'اسود';
+    const primaryColor = isBlack ? '#FFFFFF' : (theme?.palette?.[0] || theme?.accent || '#2E7D5E');
+    const tintedBg = isBlack ? 'rgba(255, 255, 255, 0.05)' : `${primaryColor}14`;
+
     // All cards are folded (collapsed) by default as requested
     const [openCards, setOpenCards] = useState<{ [key: string]: boolean }>({});
 
@@ -35,7 +39,7 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = text;
         const cleanText = tempDiv.textContent || tempDiv.innerText || text;
-        navigator.clipboard.writeText(`${title}\n\n${cleanText}\n\nمصحف أحمد وليلى`);
+        navigator.clipboard.writeText(`${title}\n\n${cleanText}\n\nمصحف أحمد و ليلى`);
         setToastMessage(isEn ? 'Copied to clipboard 📋' : 'تم النسخ إلى الحافظة 📋');
     };
 
@@ -294,13 +298,9 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
 
             {/* --- CARD 1: Sunan Rawatib --- */}
             <div
-                className="themed-card rounded-2xl border transition-all duration-300 overflow-hidden shadow-sm hover:shadow-md"
+                className="rounded-2xl transition-all duration-300 overflow-hidden shadow-[0_4px_20px_-4px_rgba(0,0,0,0.04)] hover:shadow-md border border-slate-100/60 dark:border-white/5"
                 style={{
-                    borderColor: cardBorderColor,
-                    borderWidth: '1.5px',
-                    borderStyle: 'solid',
-                    borderTopWidth: '4px',
-                    borderTopColor: theme.palette[0]
+                    backgroundColor: tintedBg
                 }}
             >
                 {/* Header (Accordion Toggle) - No arrows */}
@@ -314,14 +314,14 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                         <div
                             className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm"
                             style={{
-                                backgroundColor: isBlackTheme ? '#27272a' : `${theme.palette[0]}20`,
-                                color: isBlackTheme ? '#FFFFFF' : theme.palette[0]
+                                backgroundColor: isBlack ? '#27272a' : `${primaryColor}20`,
+                                color: primaryColor
                             }}
                         >
                             <i className="fa-solid fa-mosque text-lg"></i>
                         </div>
                         <div className="min-w-0 text-right" dir={isEn ? 'ltr' : 'rtl'}>
-                            <h3 className="font-bold text-sm sm:text-base leading-snug truncate" style={{ color: theme.palette[1] }}>
+                            <h3 className="font-bold text-sm sm:text-base leading-snug truncate" style={{ color: primaryColor }}>
                                 {sunanTitle}
                             </h3>
                             <p className="text-xs opacity-75 truncate mt-0.5">
@@ -333,7 +333,7 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                     <div className="flex items-center gap-2 shrink-0">
                         <span
                             className="text-[11px] font-bold px-2.5 py-1 rounded-lg"
-                            style={{ backgroundColor: `${theme.palette[0]}15`, color: theme.palette[0] }}
+                            style={{ backgroundColor: `${primaryColor}20`, color: primaryColor }}
                         >
                             {openCards['sunan'] ? (isEn ? 'Hide' : 'إخفاء') : (isEn ? 'View' : 'عرض')}
                         </span>
@@ -348,7 +348,7 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                             animate={{ height: 'auto', opacity: 1 }}
                             exit={{ height: 0, opacity: 0 }}
                             transition={{ duration: 0.28, ease: 'easeInOut' }}
-                            className="overflow-hidden border-t border-black/5 dark:border-white/10"
+                            className="overflow-hidden border-t border-black/5 dark:border-white/5 bg-white/80 dark:bg-slate-900/40 backdrop-blur-sm"
                         >
                             <div className="p-4 sm:p-5">
                                 <div className={`space-y-2 text-sm ${isEn ? 'font-sans' : 'font-amiri'} themed-text-muted`} dir={isEn ? 'ltr' : 'rtl'}>
@@ -419,13 +419,9 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
 
             {/* --- CARD 2: Hadiths on Sunan --- */}
             <div
-                className="themed-card rounded-2xl border transition-all duration-300 overflow-hidden shadow-sm hover:shadow-md"
+                className="rounded-2xl transition-all duration-300 overflow-hidden shadow-[0_4px_20px_-4px_rgba(0,0,0,0.04)] hover:shadow-md border border-slate-100/60 dark:border-white/5"
                 style={{
-                    borderColor: cardBorderColor,
-                    borderWidth: '1.5px',
-                    borderStyle: 'solid',
-                    borderTopWidth: '4px',
-                    borderTopColor: theme.palette[1]
+                    backgroundColor: tintedBg
                 }}
             >
                 {/* Header (Accordion Toggle) - No arrows */}
@@ -439,14 +435,14 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                         <div
                             className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm"
                             style={{
-                                backgroundColor: isBlackTheme ? '#27272a' : `${theme.palette[1]}20`,
-                                color: isBlackTheme ? '#FFFFFF' : theme.palette[1]
+                                backgroundColor: isBlack ? '#27272a' : `${primaryColor}20`,
+                                color: primaryColor
                             }}
                         >
                             <i className="fa-solid fa-scroll text-lg"></i>
                         </div>
                         <div className="min-w-0 text-right" dir={isEn ? 'ltr' : 'rtl'}>
-                            <h3 className="font-bold text-sm sm:text-base leading-snug truncate" style={{ color: theme.palette[0] }}>
+                            <h3 className="font-bold text-sm sm:text-base leading-snug truncate" style={{ color: primaryColor }}>
                                 {hadithsTitle}
                             </h3>
                             <p className="text-xs opacity-75 truncate mt-0.5">
@@ -458,7 +454,7 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                     <div className="flex items-center gap-2 shrink-0">
                         <span
                             className="text-[11px] font-bold px-2.5 py-1 rounded-lg"
-                            style={{ backgroundColor: `${theme.palette[1]}15`, color: theme.palette[1] }}
+                            style={{ backgroundColor: `${primaryColor}20`, color: primaryColor }}
                         >
                             {openCards['hadiths'] ? (isEn ? 'Hide' : 'إخفاء') : (isEn ? 'View' : 'عرض')}
                         </span>
@@ -473,7 +469,7 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                             animate={{ height: 'auto', opacity: 1 }}
                             exit={{ height: 0, opacity: 0 }}
                             transition={{ duration: 0.28, ease: 'easeInOut' }}
-                            className="overflow-hidden border-t border-black/5 dark:border-white/10"
+                            className="overflow-hidden border-t border-black/5 dark:border-white/5 bg-white/80 dark:bg-slate-900/40 backdrop-blur-sm"
                         >
                             <div className="p-4 sm:p-5">
                                 <div className={`space-y-4 text-sm ${isEn ? 'font-sans' : 'font-amiri'} themed-text-muted`} dir={isEn ? 'ltr' : 'rtl'}>
@@ -564,13 +560,9 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
 
             {/* --- CARD 3: Sujood As-Sahw (سهو الصلاة) - NEW FEATURE --- */}
             <div
-                className="themed-card rounded-2xl border transition-all duration-300 overflow-hidden shadow-sm hover:shadow-md"
+                className="rounded-2xl transition-all duration-300 overflow-hidden shadow-[0_4px_20px_-4px_rgba(0,0,0,0.04)] hover:shadow-md border border-slate-100/60 dark:border-white/5"
                 style={{
-                    borderColor: cardBorderColor,
-                    borderWidth: '1.5px',
-                    borderStyle: 'solid',
-                    borderTopWidth: '4px',
-                    borderTopColor: isBlackTheme ? '#FFFFFF' : (theme.palette[2] || theme.palette[0])
+                    backgroundColor: tintedBg
                 }}
             >
                 {/* Header (Accordion Toggle) - No arrows */}
@@ -584,14 +576,14 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                         <div
                             className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm"
                             style={{
-                                backgroundColor: isBlackTheme ? '#27272a' : `${theme.palette[0]}25`,
-                                color: isBlackTheme ? '#FFFFFF' : theme.palette[0]
+                                backgroundColor: isBlack ? '#27272a' : `${primaryColor}20`,
+                                color: primaryColor
                             }}
                         >
                             <i className="fa-solid fa-scale-balanced text-lg"></i>
                         </div>
                         <div className="min-w-0 text-right" dir={isEn ? 'ltr' : 'rtl'}>
-                            <h3 className="font-bold text-sm sm:text-base leading-snug truncate" style={{ color: theme.palette[0] }}>
+                            <h3 className="font-bold text-sm sm:text-base leading-snug truncate" style={{ color: primaryColor }}>
                                 {sahwTitle}
                             </h3>
                             <p className="text-xs opacity-75 truncate mt-0.5">
@@ -603,7 +595,7 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                     <div className="flex items-center gap-2 shrink-0">
                         <span
                             className="text-[11px] font-bold px-2.5 py-1 rounded-lg"
-                            style={{ backgroundColor: `${theme.palette[0]}15`, color: theme.palette[0] }}
+                            style={{ backgroundColor: `${primaryColor}20`, color: primaryColor }}
                         >
                             {openCards['sahw'] ? (isEn ? 'Hide' : 'إخفاء') : (isEn ? 'View' : 'عرض')}
                         </span>
@@ -618,7 +610,7 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                             animate={{ height: 'auto', opacity: 1 }}
                             exit={{ height: 0, opacity: 0 }}
                             transition={{ duration: 0.28, ease: 'easeInOut' }}
-                            className="overflow-hidden border-t border-black/5 dark:border-white/10"
+                            className="overflow-hidden border-t border-black/5 dark:border-white/10 bg-white/80 dark:bg-slate-900/40 backdrop-blur-sm"
                         >
                             <div className="p-4 sm:p-5">
                                 <div 

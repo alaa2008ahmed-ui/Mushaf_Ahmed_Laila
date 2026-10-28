@@ -138,14 +138,14 @@ const ToolbarColorPickerModal: React.FC<ToolbarColorPickerModalProps> = ({ onClo
     if (editingType) {
         return (
             <div className={`fixed inset-0 z-[1200] bg-black/40 backdrop-blur-sm flex items-center justify-center ${isLandscape ? 'p-0' : 'p-4'} animate-fadeIn`} onClick={() => setEditingType(null)}>
-                <div className={`modal-skinned w-full ${isLandscape ? 'max-w-4xl h-full rounded-none max-h-screen' : 'max-w-md rounded-3xl max-h-[85vh]'} shadow-2xl overflow-hidden animate-modal-enter flex flex-col`} onClick={e => e.stopPropagation()} style={{ backgroundColor: currentTheme.bg, color: currentTheme.text, borderColor: currentTheme.text === '#ffffff' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}>
-                    <div className="theme-header-bg p-4 flex justify-between items-center">
+                <div className={`modal-skinned w-full ${isLandscape ? 'max-w-4xl h-full rounded-none max-h-screen' : 'max-w-md rounded-3xl max-h-[85vh]'} shadow-2xl overflow-hidden animate-modal-enter flex flex-col border-0`} onClick={e => e.stopPropagation()} style={{ backgroundColor: currentTheme.bg, color: currentTheme.text, border: 'none', outline: 'none' }}>
+                    <div className="p-4 flex justify-between items-center">
                         <div className="flex items-center gap-2">
-                            <Palette className="w-5 h-5" />
+                            <Palette className="w-5 h-5 quran-3d-icon" />
                             <h3 className="font-bold text-lg">تخصيص: {getName(editingType)}</h3>
                         </div>
-                        <button onClick={() => setEditingType(null)} className="hover:bg-black/10 dark:hover:bg-white/10 rounded-full p-1 transition-colors">
-                            <X className="w-5 h-5" />
+                        <button onClick={() => setEditingType(null)} className="w-8 h-8 rounded-xl flex items-center justify-center transition-all quran-raised-btn">
+                            <X className="w-5 h-5 quran-3d-icon" />
                         </button>
                     </div>
                     
@@ -159,7 +159,8 @@ const ToolbarColorPickerModal: React.FC<ToolbarColorPickerModalProps> = ({ onClo
                                 <select 
                                     value={editConfig.font} 
                                     onChange={e => setEditConfig({...editConfig, font: e.target.value})} 
-                                    className="w-full p-3 rounded-xl themed-card-bg border border-gray-200 dark:border-gray-700 font-bold text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                                    className="w-full p-3 rounded-xl quran-raised-card font-bold text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all border-0"
+                                    style={{ border: 'none', outline: 'none' }}
                                 >
                                     <option value="">افتراضي</option>
                                     <option value="var(--font-amiri-quran)">حفص</option>
@@ -191,11 +192,11 @@ const ToolbarColorPickerModal: React.FC<ToolbarColorPickerModalProps> = ({ onClo
                             <div className="space-y-2">
                                 <label className="text-xs font-bold opacity-60 px-1">لون الخلفية</label>
                                 <button 
-                                    className={`h-12 w-full rounded-xl border-2 transition-all flex items-center justify-center ${activeColorField === 'bg' ? 'scale-[1.02] shadow-lg' : 'border-gray-200 dark:border-gray-700'}`}
-                                    style={{ borderColor: activeColorField === 'bg' ? 'var(--qr-accent)' : 'var(--qr-card-border)', ...renderCheckerboard(editConfig.bg) }}
+                                    className={`h-12 w-full rounded-xl transition-all flex items-center justify-center cursor-pointer ${activeColorField === 'bg' ? 'quran-raised-btn-selected shadow-lg scale-[1.02]' : 'quran-raised-btn'}`}
+                                    style={{ border: 'none', ...renderCheckerboard(editConfig.bg) }}
                                     onClick={() => setActiveColorField(activeColorField === 'bg' ? null : 'bg')}
                                 >
-                                    {activeColorField === 'bg' && <Check className="w-6 h-6 drop-shadow-md" style={{ color: 'var(--qr-accent)' }} />}
+                                    {activeColorField === 'bg' && <Check className="w-6 h-6 drop-shadow-md quran-3d-icon" style={{ color: 'var(--qr-accent)' }} />}
                                 </button>
                             </div>
 
@@ -203,11 +204,11 @@ const ToolbarColorPickerModal: React.FC<ToolbarColorPickerModalProps> = ({ onClo
                                 <div className="space-y-2">
                                     <label className="text-xs font-bold opacity-60 px-1">لون النص/الأيقونة</label>
                                     <button 
-                                        className={`h-12 w-full rounded-xl border-2 transition-all flex items-center justify-center ${activeColorField === 'text' ? 'scale-[1.02] shadow-lg' : 'border-gray-200 dark:border-gray-700'}`}
-                                        style={{ borderColor: activeColorField === 'text' ? 'var(--qr-accent)' : 'var(--qr-card-border)', ...renderCheckerboard(editConfig.text) }}
+                                        className={`h-12 w-full rounded-xl transition-all flex items-center justify-center cursor-pointer ${activeColorField === 'text' ? 'quran-raised-btn-selected shadow-lg scale-[1.02]' : 'quran-raised-btn'}`}
+                                        style={{ border: 'none', ...renderCheckerboard(editConfig.text) }}
                                         onClick={() => setActiveColorField(activeColorField === 'text' ? null : 'text')}
                                     >
-                                        {activeColorField === 'text' && <Check className="w-6 h-6 drop-shadow-md" style={{ color: 'var(--qr-accent)' }} />}
+                                        {activeColorField === 'text' && <Check className="w-6 h-6 drop-shadow-md quran-3d-icon" style={{ color: 'var(--qr-accent)' }} />}
                                     </button>
                                 </div>
                             )}
@@ -215,25 +216,25 @@ const ToolbarColorPickerModal: React.FC<ToolbarColorPickerModalProps> = ({ onClo
                             <div className="space-y-2">
                                 <label className="text-xs font-bold opacity-60 px-1">لون الحدود</label>
                                 <button 
-                                    className={`h-12 w-full rounded-xl border-2 transition-all flex items-center justify-center ${activeColorField === 'border' ? 'scale-[1.02] shadow-lg' : 'border-gray-200 dark:border-gray-700'}`}
-                                    style={{ borderColor: activeColorField === 'border' ? 'var(--qr-accent)' : 'var(--qr-card-border)', ...renderCheckerboard(editConfig.border) }}
+                                    className={`h-12 w-full rounded-xl transition-all flex items-center justify-center cursor-pointer ${activeColorField === 'border' ? 'quran-raised-btn-selected shadow-lg scale-[1.02]' : 'quran-raised-btn'}`}
+                                    style={{ border: 'none', ...renderCheckerboard(editConfig.border) }}
                                     onClick={() => setActiveColorField(activeColorField === 'border' ? null : 'border')}
                                 >
-                                    {activeColorField === 'border' && <Check className="w-6 h-6 drop-shadow-md" style={{ color: 'var(--qr-accent)' }} />}
+                                    {activeColorField === 'border' && <Check className="w-6 h-6 drop-shadow-md quran-3d-icon" style={{ color: 'var(--qr-accent)' }} />}
                                 </button>
                             </div>
                             
                             {activeColorField && (
-                                <div className="col-span-full themed-card-bg p-1.5 rounded-2xl border border-gray-200 dark:border-gray-700 mt-2 animate-fadeIn shadow-inner">
+                                <div className="col-span-full quran-raised-card p-3 rounded-2xl mt-2 animate-fadeIn border-0" style={{ border: 'none' }}>
                                     <div className="grid grid-cols-5 gap-3">
                                         {PREDEFINED_COLORS.map(c => (
                                             <button
                                                 key={c}
                                                 onClick={() => setEditConfig({...editConfig, [activeColorField]: c})}
-                                                className={`h-12 rounded-lg border-2 transition-all hover:scale-110 active:scale-90 flex items-center justify-center ${editConfig[activeColorField] === c ? 'shadow-md z-10' : 'border-transparent'}`}
-                                                style={{ borderColor: editConfig[activeColorField] === c ? 'var(--qr-accent)' : 'transparent', ...renderCheckerboard(c) }}
+                                                className={`h-12 rounded-xl transition-all flex items-center justify-center cursor-pointer ${editConfig[activeColorField] === c ? 'quran-raised-btn-selected shadow-md z-10' : 'quran-raised-btn'}`}
+                                                style={{ border: 'none', ...renderCheckerboard(c) }}
                                             >
-                                                {editConfig[activeColorField] === c && <Check className="w-5 h-5" style={{ color: 'var(--qr-accent)' }} />}
+                                                {editConfig[activeColorField] === c && <Check className="w-5 h-5 quran-3d-icon" style={{ color: 'var(--qr-accent)' }} />}
                                             </button>
                                         ))}
                                     </div>
@@ -242,12 +243,13 @@ const ToolbarColorPickerModal: React.FC<ToolbarColorPickerModalProps> = ({ onClo
                         </div>
                     </div>
 
-                    <div className="p-4 themed-card-bg border-t border-gray-200 dark:border-gray-700">
+                    <div className="p-4 flex justify-center">
                         <button 
                             onClick={saveElementChanges} 
-                            className="w-full theme-accent-btn font-bold py-4 rounded-2xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2"
+                            className="w-full quran-raised-btn-selected font-bold py-3.5 rounded-2xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer border-0"
+                            style={{ backgroundColor: 'var(--qr-accent)', color: 'var(--qr-accent-text, #ffffff)', border: 'none' }}
                         >
-                            <Check className="w-5 h-5" />
+                            <Check className="w-5 h-5 quran-3d-icon" />
                             تطبيق التغييرات
                         </button>
                     </div>
@@ -258,14 +260,14 @@ const ToolbarColorPickerModal: React.FC<ToolbarColorPickerModalProps> = ({ onClo
     
     return (
         <div className={`fixed inset-0 bg-black/40 backdrop-blur-sm z-[1200] flex items-center justify-center ${isLandscape ? 'p-0' : 'p-4'} animate-fadeIn`} onClick={handleClose}>
-            <div className={`modal-skinned w-full ${isLandscape ? 'max-w-5xl h-full rounded-none max-h-screen' : 'max-w-md rounded-2xl max-h-[85vh]'} shadow-2xl overflow-hidden flex flex-col animate-modal-enter`} onClick={e => e.stopPropagation()} style={{ backgroundColor: currentTheme.bg, color: currentTheme.text, borderColor: currentTheme.text === '#ffffff' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}>
-                <div className="theme-header-bg p-4 flex justify-between items-center">
+            <div className={`modal-skinned w-full ${isLandscape ? 'max-w-5xl h-full rounded-none max-h-screen' : 'max-w-md rounded-2xl max-h-[85vh]'} shadow-2xl overflow-hidden flex flex-col animate-modal-enter border-0`} onClick={e => e.stopPropagation()} style={{ backgroundColor: currentTheme.bg, color: currentTheme.text, border: 'none', outline: 'none' }}>
+                <div className="p-4 flex justify-between items-center">
                     <div className="flex items-center gap-2">
-                        <Palette className="w-5 h-5" />
+                        <Palette className="w-5 h-5 quran-3d-icon" />
                         <h3 className="font-bold text-lg">تخصيص الواجهة</h3>
                     </div>
-                    <button onClick={handleClose} className="hover:bg-black/10 dark:hover:bg-white/10 rounded-full p-1 transition-colors">
-                        <X className="w-5 h-5" />
+                    <button onClick={handleClose} className="w-8 h-8 rounded-xl flex items-center justify-center transition-all quran-raised-btn">
+                        <X className="w-5 h-5 quran-3d-icon" />
                     </button>
                 </div>
 
@@ -273,22 +275,22 @@ const ToolbarColorPickerModal: React.FC<ToolbarColorPickerModalProps> = ({ onClo
                     {/* Main Toolbars Section */}
                     <div className="space-y-3">
                         <h4 className="text-sm font-bold opacity-60 px-2 flex items-center gap-2">
-                            <div className="w-1 h-4 rounded-full" style={{ backgroundColor: 'var(--qr-accent)' }}></div>
+                            <div className="w-1.5 h-4 rounded-full" style={{ backgroundColor: 'var(--qr-accent)' }}></div>
                             الأشرطة الرئيسية
                         </h4>
                         <div className="grid grid-cols-2 gap-4">
-                            <button onClick={() => openEditModal('top-toolbar')} className="themed-card-bg p-4 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all group relative overflow-hidden">
+                            <button onClick={() => openEditModal('top-toolbar')} className="quran-raised-card p-4 rounded-2xl shadow-md transition-all group relative overflow-hidden text-right cursor-pointer border-0" style={{ border: 'none' }}>
                                 <div className="absolute top-0 left-0 w-full h-1 opacity-50" style={{ backgroundColor: 'var(--qr-accent)' }}></div>
                                 <div className="flex flex-col items-center gap-2">
                                     <span className="font-bold text-sm">الشريط العلوى</span>
-                                    <div className="h-6 w-12 rounded border border-gray-300 dark:border-gray-600" style={renderCheckerboard(getStyleForType('top-toolbar').bg)}></div>
+                                    <div className="h-6 w-12 rounded quran-raised-btn" style={{ border: 'none', ...renderCheckerboard(getStyleForType('top-toolbar').bg) }}></div>
                                 </div>
                             </button>
-                            <button onClick={() => openEditModal('bottom-toolbar')} className="themed-card-bg p-4 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all group relative overflow-hidden">
+                            <button onClick={() => openEditModal('bottom-toolbar')} className="quran-raised-card p-4 rounded-2xl shadow-md transition-all group relative overflow-hidden text-right cursor-pointer border-0" style={{ border: 'none' }}>
                                 <div className="absolute bottom-0 left-0 w-full h-1 opacity-50" style={{ backgroundColor: 'var(--qr-accent)' }}></div>
                                 <div className="flex flex-col items-center gap-2">
                                     <span className="font-bold text-sm">الشريط السفلى</span>
-                                    <div className="h-6 w-12 rounded border border-gray-300 dark:border-gray-600" style={renderCheckerboard(getStyleForType('bottom-toolbar').bg)}></div>
+                                    <div className="h-6 w-12 rounded quran-raised-btn" style={{ border: 'none', ...renderCheckerboard(getStyleForType('bottom-toolbar').bg) }}></div>
                                 </div>
                             </button>
                         </div>
@@ -298,21 +300,21 @@ const ToolbarColorPickerModal: React.FC<ToolbarColorPickerModalProps> = ({ onClo
                     <div className="space-y-3">
                         <div className="flex justify-between items-center px-2">
                             <h4 className="text-sm font-bold opacity-60 flex items-center gap-2">
-                                <div className="w-1 h-4 bg-emerald-500 rounded-full"></div>
+                                <div className="w-1.5 h-4 bg-emerald-500 rounded-full"></div>
                                 أزرار الشريط العلوى
                             </h4>
-                            <div className="flex items-center gap-2 bg-emerald-500/10 px-2 py-1 rounded-lg">
+                            <div className="flex items-center gap-2 px-2.5 py-1 rounded-xl quran-raised-btn">
                                 <label className="text-[10px] font-bold text-emerald-600">توحيد</label>
-                                <input type="checkbox" checked={headerSync} onChange={e => setHeaderSync(e.target.checked)} className="w-3 h-3 accent-emerald-500"/>
+                                <input type="checkbox" checked={headerSync} onChange={e => setHeaderSync(e.target.checked)} className="w-3.5 h-3.5 accent-emerald-500 cursor-pointer"/>
                             </div>
                         </div>
                         <div className="grid grid-cols-2 gap-3">
                             {['surah', 'juz', 'page', 'audio', 'btn-menu'].map(type => {
                                 const style = getStyleForType(type);
                                 return (
-                                    <button key={type} onClick={() => openEditModal(type)} className="themed-card-bg p-3 rounded-xl border border-gray-200 dark:border-gray-700 flex items-center justify-between hover:border-emerald-500 transition-colors">
+                                    <button key={type} onClick={() => openEditModal(type)} className="quran-raised-btn p-3 rounded-xl flex items-center justify-between cursor-pointer border-0" style={{ border: 'none' }}>
                                         <span className="text-xs font-bold">{getName(type)}</span>
-                                        <div className="w-6 h-6 rounded-full border border-gray-300" style={renderCheckerboard(style.bg)}></div>
+                                        <div className="w-6 h-6 rounded-full shadow-inner" style={{ border: 'none', ...renderCheckerboard(style.bg) }}></div>
                                     </button>
                                 );
                             })}
@@ -323,21 +325,21 @@ const ToolbarColorPickerModal: React.FC<ToolbarColorPickerModalProps> = ({ onClo
                     <div className={`space-y-3 ${isLandscape ? 'col-span-2' : ''}`}>
                         <div className="flex justify-between items-center px-2">
                             <h4 className="text-sm font-bold opacity-60 flex items-center gap-2">
-                                <div className="w-1 h-4 bg-emerald-500 rounded-full"></div>
+                                <div className="w-1.5 h-4 bg-emerald-500 rounded-full"></div>
                                 أزرار الشريط السفلى
                             </h4>
-                            <div className="flex items-center gap-2 bg-emerald-500/10 px-2 py-1 rounded-lg">
+                            <div className="flex items-center gap-2 px-2.5 py-1 rounded-xl quran-raised-btn">
                                 <label className="text-[10px] font-bold text-emerald-600">توحيد</label>
-                                <input type="checkbox" checked={footerSync} onChange={e => setFooterSync(e.target.checked)} className="w-3 h-3 accent-emerald-500"/>
+                                <input type="checkbox" checked={footerSync} onChange={e => setFooterSync(e.target.checked)} className="w-3.5 h-3.5 accent-emerald-500 cursor-pointer"/>
                             </div>
                         </div>
                         <div className={`grid gap-3 ${isLandscape ? 'grid-cols-4' : 'grid-cols-2'}`}>
                              {['btn-settings', 'btn-home', 'btn-bookmark', 'btn-autoscroll', 'btn-themes', 'btn-bookmarks-list', 'btn-share'].map(type => {
                                 const style = getStyleForType(type);
                                 return (
-                                    <button key={type} onClick={() => openEditModal(type)} className="themed-card-bg p-3 rounded-xl border border-gray-200 dark:border-gray-700 flex items-center justify-between hover:border-emerald-500 transition-colors">
+                                    <button key={type} onClick={() => openEditModal(type)} className="quran-raised-btn p-3 rounded-xl flex items-center justify-between cursor-pointer border-0" style={{ border: 'none' }}>
                                         <span className="text-xs font-bold">{getName(type)}</span>
-                                        <div className="w-6 h-6 rounded-full border border-gray-300" style={renderCheckerboard(style.bg)}></div>
+                                        <div className="w-6 h-6 rounded-full shadow-inner" style={{ border: 'none', ...renderCheckerboard(style.bg) }}></div>
                                     </button>
                                 );
                             })}
@@ -348,20 +350,22 @@ const ToolbarColorPickerModal: React.FC<ToolbarColorPickerModalProps> = ({ onClo
                     <div className={`${isLandscape ? 'col-span-2' : ''} pt-2`}>
                          <button 
                             onClick={() => openEditModal('all')} 
-                            className="w-full py-4 bg-emerald-500/10 border-2 border-dashed border-emerald-500/30 rounded-2xl text-emerald-600 dark:text-emerald-400 font-bold hover:bg-emerald-500/20 transition-all flex items-center justify-center gap-2 text-sm"
+                            className="w-full py-3.5 quran-raised-btn rounded-2xl text-emerald-600 dark:text-emerald-400 font-bold transition-all flex items-center justify-center gap-2 text-sm cursor-pointer border-0"
+                            style={{ border: 'none' }}
                         >
-                            <Palette className="w-4 h-4" />
+                            <Palette className="w-4 h-4 quran-3d-icon" />
                             تطبيق لون موحد لجميع الأزرار
                         </button>
                     </div>
                 </div>
 
-                <div className="p-4 themed-card-bg border-t border-gray-200 dark:border-gray-700 flex justify-center">
+                <div className="p-4 flex justify-center">
                     <button 
                         onClick={handleClose} 
-                        className="theme-accent-btn w-full py-3 rounded-xl font-bold shadow-lg transition-all flex items-center justify-center gap-2 text-sm"
+                        className="quran-raised-btn-selected w-full py-3.5 rounded-xl font-bold shadow-lg transition-all flex items-center justify-center gap-2 text-sm cursor-pointer border-0"
+                        style={{ backgroundColor: 'var(--qr-accent)', color: 'var(--qr-accent-text, #ffffff)', border: 'none' }}
                     >
-                        <ChevronLeft className="w-4 h-4" />
+                        <ChevronLeft className="w-4 h-4 quran-3d-icon" />
                         الرجوع للإعدادات
                     </button>
                 </div>

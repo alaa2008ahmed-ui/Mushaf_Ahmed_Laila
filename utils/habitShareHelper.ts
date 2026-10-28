@@ -189,7 +189,7 @@ export const shareDailyHabitCard = async ({
           </div>
           <div style="text-align: left;">
             <div style="font-size: 26px; font-weight: 800; color: #fef08a;">
-              مصحف أحمد وليلى
+              مصحف أحمد و ليلى
             </div>
             <div style="font-size: 16px; opacity: 0.88; margin-top: 6px;">
               ${hijriDateStr}

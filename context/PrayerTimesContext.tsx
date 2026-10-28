@@ -11,7 +11,7 @@ import { LocalNotifications } from '@capacitor/local-notifications';
 import { scheduleDeviceSilentWindows, cancelAllDeviceSilentWindows, setDeviceSilentNow } from '../utils/silentMode';
 import { useTheme } from './ThemeContext';
 import { useLanguage } from './LanguageContext';
-import { PRAYER_NAMES_EN } from '../utils/prayerTimesTranslations';
+import { PRAYER_NAMES_EN, LOCATION_TRANSLATIONS } from '../utils/prayerTimesTranslations';
 
 // --- Types ---
 interface PrayerConfig {
@@ -379,8 +379,16 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                     };
                     
                     // Use API dates for consistency
+                    const gregorianMonthsArMap: Record<string, string> = {
+                        'January': 'يناير', 'February': 'فبراير', 'March': 'مارس',
+                        'April': 'أبريل', 'May': 'مايو', 'June': 'يونيو',
+                        'July': 'يوليو', 'August': 'أغسطس', 'September': 'سبتمبر',
+                        'October': 'أكتوبر', 'November': 'نوفمبر', 'December': 'ديسمبر'
+                    };
+                    const gMonthRaw = data.date.gregorian.month.en;
+                    const gMonthLocalized = isEn ? gMonthRaw : (gregorianMonthsArMap[gMonthRaw] || data.date.gregorian.month.ar || gMonthRaw);
                     hijriDate = `${data.date.hijri.day} ${data.date.hijri.month.ar} ${data.date.hijri.year}`;
-                    gregorianDate = `${data.date.gregorian.day} ${data.date.gregorian.month.en} ${data.date.gregorian.year}`;
+                    gregorianDate = `${data.date.gregorian.day} ${gMonthLocalized} ${data.date.gregorian.year}`;
                     
                     // Store timezone offset for countdown logic
                     const timezone = data.meta.timezone;
@@ -707,9 +715,10 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                             id: 'adhan_v5_silent',
                             name: isEn ? 'Prayer Adhan (Silent)' : 'أذان الصلوات (بدون صوت)',
                             description: isEn ? 'Adhan notification without sound' : 'إشعار الأذان بدون صوت تنبيه',
-                            importance: 4,
+                            importance: 5,
                             vibration: false,
-                            visibility: 1
+                            visibility: 1,
+                            lights: true
                         });
                     } catch (e) {}
                 }
@@ -1122,14 +1131,39 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
         if (isNative) {
             try {
                 const pending = await LocalNotifications.getPending();
-                const prayerNotifs = pending.notifications.filter(n => n.id >= 1000 && n.id < 9000);
+                const delivered = await LocalNotifications.getDeliveredNotifications();
+                const deliveredIds = new Set((delivered?.notifications || []).map(n => n.id));
+
+                // CRITICAL: NEVER cancel notifications that are currently delivered and visible in the notification drawer!
+                // Only cancel truly pending, future alarms.
+                const prayerNotifs = (pending?.notifications || []).filter(
+                    n => n.id >= 1000 && n.id < 9000 && !deliveredIds.has(n.id)
+                );
                 if (prayerNotifs.length > 0) {
                     await LocalNotifications.cancel({ notifications: prayerNotifs });
                 }
 
                 if (notificationsToSchedule.length > 0) {
-                    await LocalNotifications.schedule({ notifications: notificationsToSchedule });
-                    console.log(`[Capacitor] Scheduled ${notificationsToSchedule.length} prayer/iqama notifications.`);
+                    // Clean and assign collision-free IDs if an ID is currently active in the status bar
+                    const cleanPrayerNotifs = notificationsToSchedule.map(n => {
+                        let finalId = n.id;
+                        while (deliveredIds.has(finalId)) {
+                            finalId += 500; // shift to avoid overwriting or dismissing currently visible notification
+                        }
+                        const { group, groupSummary, ...rest } = n;
+                        return {
+                            ...rest,
+                            id: finalId,
+                            group: 'com.mushaf.ahmedandlayla.APP_ALERTS_CARD',
+                            groupSummary: false,
+                            smallIcon: 'ic_stat_name',
+                            iconColor: '#2E7D5E',
+                            ongoing: false,
+                            autoCancel: true
+                        };
+                    });
+                    await LocalNotifications.schedule({ notifications: cleanPrayerNotifs });
+                    console.log(`[Capacitor] Scheduled ${cleanPrayerNotifs.length} prayer/iqama notifications under group com.mushaf.ahmedandlayla.APP_ALERTS_CARD.`);
                 }
             } catch (err) {
                 console.warn('Error scheduling via LocalNotifications:', err);
@@ -1207,9 +1241,12 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
             return adjusted;
         };
         
+        const isWidgetLockLang = (typeof window !== 'undefined' ? localStorage.getItem('widget_lock_lang') : null);
+        const isWidgetEn = isWidgetLockLang === 'en' ? true : isWidgetLockLang === 'ar' ? false : isEn;
+
         const dayNamesAr = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
         const dayNamesEn = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-        const currentDayName = isEn ? dayNamesEn[new Date().getDay()] : dayNamesAr[new Date().getDay()];
+        const currentDayName = isWidgetEn ? dayNamesEn[new Date().getDay()] : dayNamesAr[new Date().getDay()];
         
         const getTimestamp = (timeStr: string, offset: number, isTomorrow: boolean = false) => {
             const adjusted = applyOffset(timeStr, offset + (isSummerTimeActive ? 60 : 0));
@@ -1232,22 +1269,81 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
             return Date.now() + (pDate.getTime() - cityNow.getTime());
         };
 
-        const localizedNextName = isEn ? (PRAYER_NAMES_EN[currentNext.key] || currentNext.name) : currentNext.name;
-        const midnightLabel = isEn ? `Midnight: ${to12h(nightTimes.midnight)}` : `منتصف الليل : ${to12h(nightTimes.midnight)}`;
-        const lastThirdLabel = isEn ? `Last Third: ${to12h(nightTimes.lastThird)}` : `الثلث الأخير : ${to12h(nightTimes.lastThird)}`;
+        const rawCity = (config.location?.cityGov || '').split(' - ')[0].trim();
+        const localizedCity = isWidgetEn ? (LOCATION_TRANSLATIONS[rawCity] || rawCity) : rawCity;
+
+        const gregorianMonthsMap: Record<string, string> = {
+            'January': 'يناير', 'February': 'فبراير', 'March': 'مارس',
+            'April': 'أبريل', 'May': 'مايو', 'June': 'يونيو',
+            'July': 'يوليو', 'August': 'أغسطس', 'September': 'سبتمبر',
+            'October': 'أكتوبر', 'November': 'نوفمبر', 'December': 'ديسمبر'
+        };
+
+        let localizedGregorian = currentDates.gregorian;
+        if (!isWidgetEn) {
+            Object.entries(gregorianMonthsMap).forEach(([enM, arM]) => {
+                localizedGregorian = localizedGregorian.replace(enM, arM);
+            });
+        } else {
+            Object.entries(gregorianMonthsMap).forEach(([enM, arM]) => {
+                localizedGregorian = localizedGregorian.replace(arM, enM);
+            });
+        }
+
+        let localizedHijri = currentDates.hijri;
+        if (isWidgetEn) {
+            localizedHijri = localizedHijri
+                .replace('المحرم', 'Muharram')
+                .replace('محرم', 'Muharram')
+                .replace('صفر', 'Safar')
+                .replace('ربيع الأول', 'Rabi\' 1')
+                .replace('ربيع الاول', 'Rabi\' 1')
+                .replace('ربيع الثاني', 'Rabi\' 2')
+                .replace('ربيع الآخر', 'Rabi\' 2')
+                .replace('جمادى الأولى', 'Jumada 1')
+                .replace('جمادى الاولى', 'Jumada 1')
+                .replace('جمادى الأول', 'Jumada 1')
+                .replace('جمادى الاخرة', 'Jumada 2')
+                .replace('جمادى الآخرة', 'Jumada 2')
+                .replace('جمادى الثانية', 'Jumada 2')
+                .replace('رجب', 'Rajab')
+                .replace('شعبان', 'Sha\'ban')
+                .replace('رمضان', 'Ramadan')
+                .replace('شوال', 'Shawwal')
+                .replace('ذو القعدة', 'Dhul-Qadah')
+                .replace('ذو الحجة', 'Dhul-Hijjah');
+        }
+
+        const localizedNextName = isWidgetEn ? (PRAYER_NAMES_EN[currentNext.key] || currentNext.name) : currentNext.name;
+        const midnightLabel = isWidgetEn ? `Midnight: ${to12h(nightTimes.midnight)}` : `منتصف الليل : ${to12h(nightTimes.midnight)}`;
+        const lastThirdLabel = isWidgetEn ? `Last Third: ${to12h(nightTimes.lastThird)}` : `الثلث الأخير : ${to12h(nightTimes.lastThird)}`;
+
+        const { methodId } = getCalculationParams(new Date(), config.location);
 
         updateAndroidWidget({
-            hijri: currentDates.hijri,
-            gregorian: currentDates.gregorian,
+            hijri: localizedHijri,
+            gregorian: localizedGregorian,
             day: currentDayName,
-            city: config.location.cityGov.split(' - ')[0],
+            city: localizedCity,
             next_prayer_name: localizedNextName,
             next_prayer_id: currentNext.key.toLowerCase(),
             remaining_time: currentCountdown.split(':').slice(0, 2).join(':'), // HH:MM
             target_time_millis: Date.now() + (currentNext.date.getTime() - currentNext.cityNow.getTime()),
+            base_date_millis: Date.now(),
+            coordinates: {
+                lat: config.location.lat,
+                lng: config.location.lng
+            },
+            method_id: methodId,
+            prayer_offsets: config.prayerOffsets,
+            isSummerTime: config.isSummerTime,
             midnight: midnightLabel,
             last_third: lastThirdLabel,
-            app_language: language,
+            app_language: isWidgetEn ? 'en' : 'ar',
+            theme: {
+                themeKey,
+                isDark: themeKey === 'dark' || (typeof document !== 'undefined' && document.documentElement.classList.contains('dark'))
+            },
             times: {
                 fajr: formatTime(currentTimes.Fajr, config.prayerOffsets.Fajr || 0),
                 sunrise: formatTime(currentTimes.Sunrise, config.prayerOffsets.Sunrise || 0),
@@ -1279,7 +1375,17 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                 nextIsha: getTimestamp(currentTimes.Isha, config.prayerOffsets.Isha || 0, true)
             }
         }, config.syncWidgetTheme !== false);
-    }, [config.location, config.prayerOffsets, config.isSummerTime, config.syncWidgetTheme, language, isEn]);
+    }, [config.location, config.prayerOffsets, config.isSummerTime, config.syncWidgetTheme, language, isEn, themeKey]);
+
+    useEffect(() => {
+        const handleWidgetSettingsChanged = () => {
+            if (times && dates && nextPrayer) {
+                updateWidget(times, dates, nextPrayer, countdown);
+            }
+        };
+        window.addEventListener('widget-settings-changed', handleWidgetSettingsChanged);
+        return () => window.removeEventListener('widget-settings-changed', handleWidgetSettingsChanged);
+    }, [times, dates, nextPrayer, countdown, updateWidget]);
 
     // --- Next Prayer & Countdown Logic ---
     useEffect(() => {
@@ -1445,26 +1551,30 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                                 }
                             }
 
-                            const prayerNameLocal = isEn ? (PRAYER_NAMES_EN[key] || key) : (prayerNamesAr[key] || key);
+                            if (!isNative) {
+                                const prayerNameLocal = isEn ? (PRAYER_NAMES_EN[key] || key) : (prayerNamesAr[key] || key);
 
-                            // Trigger in-app visual modal alert
-                            setActiveAdhanAlert({
-                                prayerKey: key,
-                                prayerName: prayerNameLocal,
-                                timeStr: adjustedTime,
-                                soundFileName
-                            });
+                                // Trigger in-app visual modal alert (web/browser only; APK uses status bar notifications only)
+                                setActiveAdhanAlert({
+                                    prayerKey: key,
+                                    prayerName: prayerNameLocal,
+                                    timeStr: adjustedTime,
+                                    soundFileName
+                                });
 
-                            // Trigger web browser Notification if permission is granted
-                            if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
-                                try {
-                                    new Notification(isEn ? `It is now time for ${prayerNameLocal} Adhan` : `حان الآن موعد أذان ${prayerNameLocal}`, {
-                                        body: isEn 
-                                            ? 'Remember Allah. The Prophet ﷺ said: "O Bilal, call the Adhan so we may find comfort in prayer."' 
-                                            : 'لا تنس ذكر الله. قال رسول الله ﷺ: "أرحنا بها يا بلال"',
-                                        icon: '/icon.png'
-                                    });
-                                } catch (e) {}
+                                // Trigger web browser Notification if permission is granted
+                                if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+                                    try {
+                                        new Notification(isEn ? `It is now time for ${prayerNameLocal} Adhan` : `حان الآن موعد أذان ${prayerNameLocal}`, {
+                                            body: isEn 
+                                                ? 'Remember Allah. The Prophet ﷺ said: "O Bilal, call the Adhan so we may find comfort in prayer."' 
+                                                : 'لا تنس ذكر الله. قال رسول الله ﷺ: "أرحنا بها يا بلال"',
+                                            icon: '/icon.png',
+                                            tag: `standalone_web_adhan_${key}_${Date.now()}`,
+                                            requireInteraction: true
+                                        });
+                                    } catch (e) {}
+                                }
                             }
                         }
                     }
@@ -1516,19 +1626,20 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                         const iqamaAlertKey = `${dayStr}_iqama_${key}`;
                         if (iqamaDiffMs >= 0 && iqamaDiffMs <= 45000 && !triggeredAlertsRef.current.has(iqamaAlertKey)) {
                             triggeredAlertsRef.current.add(iqamaAlertKey);
-                            console.log(`[Iqama Alert] Playing gentle chime and showing visual alert for ${key}`);
-                            // Play audio on all platforms (web + phone foreground)
-                            playNotificationSound('/assets/audio/chime.mp3', true);
-                            
-                            const prayerNameLocal = isEn ? (PRAYER_NAMES_EN[key] || key) : (prayerNamesAr[key] || key);
-                            // Trigger in-app visual alert
-                            const iqamaFormatted = applyOffset(times[key], totalOffset + iqamaMinutes);
-                            setActiveIqamaAlert({
-                                prayerKey: key,
-                                prayerName: prayerNameLocal,
-                                minutes: iqamaMinutes,
-                                timeStr: iqamaFormatted
-                            });
+                            if (!isNative) {
+                                console.log(`[Iqama Alert] Playing gentle chime and showing visual alert for ${key}`);
+                                playNotificationSound('/assets/audio/chime.mp3', true);
+                                
+                                const prayerNameLocal = isEn ? (PRAYER_NAMES_EN[key] || key) : (prayerNamesAr[key] || key);
+                                // Trigger in-app visual alert (web/browser only; APK uses status bar notifications only)
+                                const iqamaFormatted = applyOffset(times[key], totalOffset + iqamaMinutes);
+                                setActiveIqamaAlert({
+                                    prayerKey: key,
+                                    prayerName: prayerNameLocal,
+                                    minutes: iqamaMinutes,
+                                    timeStr: iqamaFormatted
+                                });
+                            }
                         }
                     }
 

@@ -241,7 +241,7 @@ export const WeeklyAchievementModal: React.FC<WeeklyAchievementModalProps> = ({
           </div>
           <div style="text-align: left;">
             <div style="font-size: 26px; font-weight: 700; color: #fef08a;">
-              مصحف أحمد وليلى
+              مصحف أحمد و ليلى
             </div>
             <div style="font-size: 18px; opacity: 0.85; margin-top: 6px;">
               ${stats.dateRangeStr}
@@ -530,7 +530,7 @@ export const WeeklyAchievementModal: React.FC<WeeklyAchievementModalProps> = ({
 🤍 *أعمال البر والعادات المخصصة:* ${stats.goodDeedsTotal} طاعة
 
 «أَحَبُّ الأَعْمَالِ إِلَى اللهِ أَدْوَمُهَا وَإِنْ قَلَّ»
-🌱 تطبيق مصحف أحمد وليلى • مربّي العبادات`;
+🌱 تطبيق مصحف أحمد و ليلى • مربّي العبادات`;
 
     try {
       await navigator.clipboard.writeText(text);
@@ -622,7 +622,7 @@ export const WeeklyAchievementModal: React.FC<WeeklyAchievementModalProps> = ({
               </div>
               <div className="text-left">
                 <div className="text-sm font-bold text-yellow-300">
-                  مصحف أحمد وليلى
+                  مصحف أحمد و ليلى
                 </div>
                 <div className="text-[11px] text-white/75 mt-0.5">
                   {stats.dateRangeStr}

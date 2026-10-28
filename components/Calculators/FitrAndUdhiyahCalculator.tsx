@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
-import { RefreshCw, Scale, Info, HeartHandshake, ShieldCheck } from 'lucide-react';
+import { RefreshCw, Scale, Info, HeartHandshake, ShieldCheck, Check } from 'lucide-react';
+import { getModernFlatTokens, hexToRgba } from '../../utils/flatDesignTokens';
 
 interface FitrAndUdhiyahCalculatorProps {
     cardBorderColor?: string;
@@ -131,21 +132,13 @@ const DEFECT_CHECKLIST = [
 ];
 
 const FitrAndUdhiyahCalculator: React.FC<FitrAndUdhiyahCalculatorProps> = ({ 
-    cardBorderColor: propCardBorderColor,
     subTab: propSubTab,
     onSubTabChange: propOnSubTabChange
 }) => {
     const { theme, themeKey } = useTheme();
+    const tokens = getModernFlatTokens(theme, themeKey);
     const { language } = useLanguage();
     const isEn = language === 'en';
-
-    const isBlackTheme = theme.bgColor === '#000000' || theme.name === 'أبيض وأسود';
-    const isDefaultTheme = themeKey === 'default' || !themeKey;
-    const cardBorderColor = propCardBorderColor || (isDefaultTheme 
-        ? '#000000' 
-        : (isBlackTheme 
-            ? '#FFFFFF' 
-            : (theme.palette?.[0] || '#000000')));
 
     // Mode: 'fitr' (Zakat al-Fitr) or 'udhiyah' (Udhiyah & Aqiqah)
     const [internalSubTab, setInternalSubTab] = useState<'fitr' | 'udhiyah'>('fitr');
@@ -178,15 +171,6 @@ const FitrAndUdhiyahCalculator: React.FC<FitrAndUdhiyahCalculatorProps> = ({
         lame: false,
         thin: false,
     });
-
-    const inputStyle: React.CSSProperties = {
-        backgroundColor: theme.isOriginal ? '#fff' : 'rgba(255,255,255,0.05)',
-        borderColor: cardBorderColor,
-        borderWidth: '1.5px',
-        borderStyle: 'solid',
-        color: theme.textColor,
-        textAlign: isEn ? 'left' : 'right',
-    };
 
     const clearAll = () => {
         if (subTab === 'fitr') {
@@ -221,7 +205,7 @@ const FitrAndUdhiyahCalculator: React.FC<FitrAndUdhiyahCalculatorProps> = ({
     const totalMeatWeight = parseFloat(approxMeatKg) || 0;
     const thirdPartWeight = (totalMeatWeight / 3).toFixed(1);
 
-    // Aqiqah calculation (2 sheep per boy, 1 sheep per girl)
+    // Aqiqah calculation
     const mBabies = parseInt(maleBabies, 10) || 0;
     const fBabies = parseInt(femaleBabies, 10) || 0;
     const totalAqiqahSheep = (mBabies * 2) + fBabies;
@@ -230,17 +214,22 @@ const FitrAndUdhiyahCalculator: React.FC<FitrAndUdhiyahCalculatorProps> = ({
     const hasAnyDefect = Object.values(checkedDefects).some(v => v === true);
 
     return (
-        <div className="space-y-5 animate-fade-in pb-8 font-cairo" dir={isEn ? 'ltr' : 'rtl'}>
-            {/* Sub-Tabs Switcher */}
-            <div id="fitr-udhiyah-subtabs" className="flex gap-2 p-1.5 rounded-2xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10">
+        <div className="space-y-4 animate-fade-in pb-8" dir={isEn ? 'ltr' : 'rtl'}>
+            {/* Sub-Tabs Switcher (Zero Border Segmented Pill) */}
+            <div 
+                id="fitr-udhiyah-subtabs" 
+                className="flex gap-1.5 p-1.5 rounded-2xl border-0"
+                style={{ backgroundColor: tokens.isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)' }}
+            >
                 <button
                     type="button"
                     onClick={() => setSubTab('fitr')}
-                    className={`flex-1 py-2 px-3 rounded-xl font-black text-xs sm:text-sm transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer ${
-                        subTab === 'fitr'
-                            ? (isDefaultTheme ? 'bg-black text-white shadow-md' : (isBlackTheme ? 'bg-white text-black shadow-md' : 'bg-primary text-white shadow-md'))
-                            : 'opacity-70 hover:opacity-100'
-                    }`}
+                    className="flex-1 py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer border-0"
+                    style={{
+                        backgroundColor: subTab === 'fitr' ? tokens.primaryColor : 'transparent',
+                        color: subTab === 'fitr' ? '#FFFFFF' : tokens.textColor,
+                        boxShadow: subTab === 'fitr' ? '0 2px 8px rgba(0,0,0,0.1)' : 'none'
+                    }}
                 >
                     <i className="fa-solid fa-wheat-awn"></i>
                     <span>{isEn ? 'Zakat al-Fitr' : 'زكاة الفطر'}</span>
@@ -248,11 +237,12 @@ const FitrAndUdhiyahCalculator: React.FC<FitrAndUdhiyahCalculatorProps> = ({
                 <button
                     type="button"
                     onClick={() => setSubTab('udhiyah')}
-                    className={`flex-1 py-2 px-3 rounded-xl font-black text-xs sm:text-sm transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer ${
-                        subTab === 'udhiyah'
-                            ? (isDefaultTheme ? 'bg-black text-white shadow-md' : (isBlackTheme ? 'bg-white text-black shadow-md' : 'bg-primary text-white shadow-md'))
-                            : 'opacity-70 hover:opacity-100'
-                    }`}
+                    className="flex-1 py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer border-0"
+                    style={{
+                        backgroundColor: subTab === 'udhiyah' ? tokens.primaryColor : 'transparent',
+                        color: subTab === 'udhiyah' ? '#FFFFFF' : tokens.textColor,
+                        boxShadow: subTab === 'udhiyah' ? '0 2px 8px rgba(0,0,0,0.1)' : 'none'
+                    }}
                 >
                     <i className="fa-solid fa-hand-holding-heart"></i>
                     <span>{isEn ? 'Udhiyah & Aqiqah' : 'الأضحية والعقيقة'}</span>
@@ -260,16 +250,16 @@ const FitrAndUdhiyahCalculator: React.FC<FitrAndUdhiyahCalculatorProps> = ({
             </div>
 
             {/* Header & Reset Button */}
-            <div className="flex justify-between items-center">
-                <h2 className="text-lg sm:text-xl font-black flex items-center gap-2" style={{ color: theme.textColor }}>
+            <div className="flex justify-between items-center mb-2">
+                <h2 className="text-lg sm:text-xl font-bold flex items-center gap-2" style={{ color: tokens.textColor }}>
                     {subTab === 'fitr' ? (
                         <>
-                            <i className="fa-solid fa-wheat-awn text-amber-600"></i>
+                            <i className="fa-solid fa-wheat-awn" style={{ color: tokens.primaryColor }}></i>
                             <span>{isEn ? 'Blessed Zakat al-Fitr Calculator' : 'حاسبة زكاة الفطر المبارك'}</span>
                         </>
                     ) : (
                         <>
-                            <i className="fa-solid fa-shield-halved text-emerald-600"></i>
+                            <i className="fa-solid fa-shield-halved" style={{ color: tokens.primaryColor }}></i>
                             <span>{isEn ? 'Udhiyah, Aqiqah & Shares Calculator' : 'حاسبة الأضحية والعقيقة والأنصبة'}</span>
                         </>
                     )}
@@ -278,9 +268,9 @@ const FitrAndUdhiyahCalculator: React.FC<FitrAndUdhiyahCalculatorProps> = ({
                     id="btn-fitr-udhiyah-reset"
                     type="button"
                     onClick={clearAll} 
-                    className="flex items-center gap-1 text-xs text-red-500 hover:bg-red-500/10 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer"
+                    className="flex items-center gap-1.5 text-xs sm:text-sm text-red-500 hover:bg-red-500/10 px-3 py-1.5 rounded-xl transition-colors cursor-pointer border-0"
                 >
-                    <RefreshCw size={13} />
+                    <RefreshCw size={14} />
                     <span>{isEn ? 'Reset' : 'إعادة ضبط'}</span>
                 </button>
             </div>
@@ -289,38 +279,43 @@ const FitrAndUdhiyahCalculator: React.FC<FitrAndUdhiyahCalculatorProps> = ({
             {subTab === 'fitr' && (
                 <div className="space-y-4">
                     {/* Input Card */}
-                    <div id="fitr-card-inputs" className="themed-card p-4 sm:p-5 rounded-2xl" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
+                    <div 
+                        id="fitr-card-inputs" 
+                        className="p-5 rounded-[18px] border-0"
+                        style={{ backgroundColor: tokens.cardBgColor, boxShadow: tokens.cardShadow }}
+                    >
                         <div className="space-y-4">
                             {/* Family Members Count */}
                             <div>
-                                <label className="block text-xs font-bold mb-1 opacity-90" style={{ color: theme.textColor }}>
+                                <label className="block text-xs font-bold mb-1 opacity-90" style={{ color: tokens.textColor }}>
                                     {isEn ? 'Number of family members eligible for Zakat al-Fitr:' : 'عدد أفراد الأسرة المستحق إخراج زكاة الفطر عنهم:'}
                                 </label>
-                                <p className="text-[11px] opacity-70 mb-2">
+                                <p className="text-[11px] opacity-75 mb-2 font-normal" style={{ color: tokens.subtextColor }}>
                                     {isEn 
                                         ? 'Obligatory upon a Muslim for themselves and everyone they are legally obliged to maintain (spouse, dependent children, dependent parents).' 
                                         : 'تجب على المسلم عن نفسه وعن كل من تلزمه نفقته (الزوجة، الأولاد، الوالدين المحتاجين).'}
                                 </p>
-                                <div className="flex items-center gap-3">
-                                    <div className="relative flex-1">
-                                        <input
-                                            type="number"
-                                            min="1"
-                                            value={familyMembers}
-                                            onChange={e => setFamilyMembers(e.target.value)}
-                                            className="w-full p-2.5 rounded-xl text-base font-black text-center"
-                                            style={inputStyle}
-                                            placeholder="1"
-                                        />
-                                    </div>
-                                    <div className="flex gap-1.5">
+                                <div className="flex items-center gap-2.5">
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        value={familyMembers}
+                                        onChange={e => setFamilyMembers(e.target.value)}
+                                        className="w-24 p-3 rounded-xl border-0 bg-slate-100 dark:bg-zinc-800 text-center font-bold text-base focus:ring-2 focus:ring-primary/40 focus:outline-hidden"
+                                        style={{ color: tokens.textColor }}
+                                        placeholder="1"
+                                    />
+                                    <div className="flex gap-1.5 flex-wrap">
                                         {[1, 2, 4, 5, 7].map(num => (
                                             <button
                                                 key={num}
                                                 type="button"
                                                 onClick={() => setFamilyMembers(String(num))}
-                                                className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 transition-all cursor-pointer"
-                                                style={{ color: theme.textColor }}
+                                                className="px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border-0"
+                                                style={{
+                                                    backgroundColor: String(num) === familyMembers ? tokens.primaryColor : (tokens.isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)'),
+                                                    color: String(num) === familyMembers ? '#FFFFFF' : tokens.textColor
+                                                }}
                                             >
                                                 {num}
                                             </button>
@@ -329,81 +324,100 @@ const FitrAndUdhiyahCalculator: React.FC<FitrAndUdhiyahCalculatorProps> = ({
                                 </div>
                             </div>
 
-                            {/* Unborn Baby checkbox */}
-                            <label className="flex items-center gap-2.5 p-2.5 rounded-xl bg-black/5 dark:bg-white/5 cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    checked={includeUnbornBaby}
-                                    onChange={e => setIncludeUnbornBaby(e.target.checked)}
-                                    className="w-4 h-4 rounded-sm accent-primary cursor-pointer"
-                                />
+                            {/* Unborn Baby Button */}
+                            <button
+                                type="button"
+                                onClick={() => setIncludeUnbornBaby(!includeUnbornBaby)}
+                                className="flex items-start gap-2.5 p-3 rounded-xl transition-all cursor-pointer border-0 text-start w-full"
+                                style={{ 
+                                    backgroundColor: includeUnbornBaby ? hexToRgba(tokens.primaryColor, 0.12) : (tokens.isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)')
+                                }}
+                            >
+                                <div 
+                                    className="w-5 h-5 rounded-md flex items-center justify-center shrink-0 mt-0.5 transition-colors"
+                                    style={{
+                                        backgroundColor: includeUnbornBaby ? tokens.primaryColor : 'rgba(150, 150, 150, 0.2)',
+                                        color: includeUnbornBaby ? '#FFFFFF' : 'transparent'
+                                    }}
+                                >
+                                    <Check size={12} strokeWidth={3} />
+                                </div>
                                 <div className="text-xs">
-                                    <span className="font-bold block" style={{ color: theme.textColor }}>
+                                    <span className="font-bold block" style={{ color: includeUnbornBaby ? tokens.primaryColor : tokens.textColor }}>
                                         {isEn ? 'Include unborn baby (Recommended / Mustahabb)' : 'إضافة الجنين في بطن أمه (استحباباً)'}
                                     </span>
-                                    <span className="text-[11px] opacity-70">
+                                    <span className="text-[11px] opacity-75 font-normal leading-tight block mt-0.5" style={{ color: tokens.subtextColor }}>
                                         {isEn 
                                             ? 'It is recommended to give Zakat al-Fitr for an unborn fetus if the soul has been breathed into it, following the practice of Uthman ibn Affan (RA).' 
                                             : 'يُستحب إخراج زكاة الفطر عن الحمل إذا نُفخت فيه الروح لفعل عثمان بن عفان رضي الله عنه.'}
                                     </span>
                                 </div>
-                            </label>
+                            </button>
 
                             {/* Grain Type Selector */}
                             <div>
-                                <label className="block text-xs font-bold mb-1 opacity-90" style={{ color: theme.textColor }}>
+                                <label className="block text-xs font-bold mb-1 opacity-90" style={{ color: tokens.textColor }}>
                                     {isEn ? 'Staple grain type of your country (Sa\'):' : 'نوع الصاع من قوت البلد:'}
                                 </label>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1.5">
-                                    {GRAIN_TYPES.map(g => (
-                                        <button
-                                            key={g.id}
-                                            type="button"
-                                            onClick={() => setSelectedGrain(g.id)}
-                                            className={`p-2.5 rounded-xl ${isEn ? 'text-left' : 'text-right'} transition-all border cursor-pointer ${
-                                                selectedGrain === g.id
-                                                    ? (isDefaultTheme ? 'bg-black text-white' : (isBlackTheme ? 'bg-white text-black' : 'bg-primary/15 border-primary'))
-                                                    : 'bg-black/5 dark:bg-white/5 border-transparent opacity-80 hover:opacity-100'
-                                            }`}
-                                        >
-                                            <div className="flex justify-between items-center mb-0.5">
-                                                <span className="font-bold text-xs">
-                                                    {isEn ? g.nameEn : g.name}
-                                                </span>
-                                                <span className="text-[11px] font-black px-1.5 py-0.5 rounded-md bg-black/10 dark:bg-white/10">
-                                                    {g.weight} {isEn ? 'kg' : 'كجم'}
-                                                </span>
-                                            </div>
-                                            <p className="text-[10px] opacity-70 leading-tight">
-                                                {isEn ? g.descEn : g.desc}
-                                            </p>
-                                        </button>
-                                    ))}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                                    {GRAIN_TYPES.map(g => {
+                                        const isSelected = selectedGrain === g.id;
+                                        return (
+                                            <button
+                                                key={g.id}
+                                                type="button"
+                                                onClick={() => setSelectedGrain(g.id)}
+                                                className="p-3 rounded-xl border-0 transition-all text-start cursor-pointer flex flex-col justify-between"
+                                                style={{
+                                                    backgroundColor: isSelected ? hexToRgba(tokens.primaryColor, 0.12) : (tokens.isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)'),
+                                                    color: tokens.textColor
+                                                }}
+                                            >
+                                                <div className="flex justify-between items-center mb-1">
+                                                    <span className="font-bold text-xs" style={{ color: isSelected ? tokens.primaryColor : tokens.textColor }}>
+                                                        {isEn ? g.nameEn : g.name}
+                                                    </span>
+                                                    <span 
+                                                        className="text-[11px] font-bold px-2 py-0.5 rounded-lg"
+                                                        style={{ 
+                                                            backgroundColor: isSelected ? tokens.primaryColor : (tokens.isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'),
+                                                            color: isSelected ? '#FFFFFF' : tokens.textColor
+                                                        }}
+                                                    >
+                                                        {g.weight} {isEn ? 'kg' : 'كجم'}
+                                                    </span>
+                                                </div>
+                                                <p className="text-[10px] opacity-75 font-normal leading-tight" style={{ color: tokens.subtextColor }}>
+                                                    {isEn ? g.descEn : g.desc}
+                                                </p>
+                                            </button>
+                                        );
+                                    })}
                                 </div>
                             </div>
 
                             {/* Cash Option */}
-                            <div className="pt-2 border-t border-black/10 dark:border-white/10">
-                                <label className="block text-xs font-bold mb-1 opacity-90" style={{ color: theme.textColor }}>
+                            <div className="pt-3 border-t border-slate-100 dark:border-zinc-800">
+                                <label className="block text-xs font-bold mb-1 opacity-90" style={{ color: tokens.textColor }}>
                                     {isEn ? 'Cash value per person (if paying in local currency):' : 'قيمة الفرد نقداً (في حال إخراج القيمة بالعملة المحلية):'}
                                 </label>
-                                <p className="text-[11px] opacity-70 mb-2">
+                                <p className="text-[11px] opacity-75 mb-2 font-normal" style={{ color: tokens.subtextColor }}>
                                     {isEn 
-                                        ? 'The Hanafi school and a group of early scholars permitted paying the cash equivalent for ease and fulfilling the poor\'s immediate needs. Enter the amount declared by your local Fatwa authority.' 
-                                        : 'أجاز جمهور فقهاء الحنفية وجماعة من السلف إخراج القيمة نقداً تيسيراً وسداً لحاجة الفقير. أدخل القيمة المحددة من دار الإفتاء ببلدك.'}
+                                        ? 'The Hanafi school and a group of early scholars permitted paying the cash equivalent for ease and fulfilling the poor\'s immediate needs.' 
+                                        : 'أجاز جمهور فقهاء الحنفية وجماعة من السلف إخراج القيمة نقداً تيسيراً وسداً لحاجة الفقير. أدخل القيمة المحددة ببلدك.'}
                                 </p>
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2.5">
                                     <input
                                         type="number"
                                         min="0"
                                         step="any"
                                         value={cashValuePerPerson}
                                         onChange={e => setCashValuePerPerson(e.target.value)}
-                                        className="w-full p-2.5 rounded-xl text-sm font-bold text-center"
-                                        style={inputStyle}
+                                        className="w-full p-3 rounded-xl border-0 bg-slate-100 dark:bg-zinc-800 text-sm font-bold text-center focus:ring-2 focus:ring-primary/40 focus:outline-hidden"
+                                        style={{ color: tokens.textColor }}
                                         placeholder={isEn ? 'e.g. 35' : 'مثال: 35'}
                                     />
-                                    <span className="text-xs font-bold shrink-0 opacity-80" style={{ color: theme.textColor }}>
+                                    <span className="text-xs font-bold shrink-0 opacity-80" style={{ color: tokens.textColor }}>
                                         {isEn ? 'Currency / Person' : 'عملة محلية / للفرد'}
                                     </span>
                                 </div>
@@ -412,49 +426,63 @@ const FitrAndUdhiyahCalculator: React.FC<FitrAndUdhiyahCalculatorProps> = ({
                     </div>
 
                     {/* Results Card */}
-                    <div id="fitr-card-results" className="themed-card p-4 sm:p-5 rounded-2xl bg-amber-500/10 border-amber-500/30" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
-                        <div className="flex items-center gap-2 mb-3 pb-2 border-b border-black/10 dark:border-white/10">
-                            <Scale className="w-5 h-5 text-amber-600" />
-                            <h3 className="font-black text-sm sm:text-base" style={{ color: theme.textColor }}>
+                    <div 
+                        id="fitr-card-results" 
+                        className="p-5 rounded-[18px] border-0"
+                        style={{ backgroundColor: tokens.cardBgColor, boxShadow: tokens.cardShadow }}
+                    >
+                        <div className="flex items-center gap-2 mb-3 pb-2 border-b border-slate-100 dark:border-zinc-800">
+                            <Scale className="w-5 h-5" style={{ color: tokens.primaryColor }} />
+                            <h3 className="font-bold text-sm sm:text-base" style={{ color: tokens.textColor }}>
                                 {isEn ? `Zakat al-Fitr Calculation Result (${totalFitrCount} Persons)` : `نتيجة حساب زكاة الفطر (${totalFitrCount} أفراد)`}
                             </h3>
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div className="p-3 rounded-xl bg-black/5 dark:bg-white/10 text-center">
-                                <span className="text-xs opacity-75 block mb-1">
+                            <div 
+                                className="p-4 rounded-xl text-center"
+                                style={{ backgroundColor: hexToRgba(tokens.primaryColor, 0.08) }}
+                            >
+                                <span className="text-xs opacity-75 block mb-1" style={{ color: tokens.textColor }}>
                                     {isEn ? 'In-Kind Amount (Grains & Staple Food)' : 'المقدار العيني (حبوب وطعام)'}
                                 </span>
-                                <div className="text-2xl font-black text-amber-600 dark:text-amber-400">
+                                <div className="text-2xl font-black font-sans" style={{ color: tokens.primaryColor }}>
                                     {totalWeightKg} <span className="text-sm font-normal">{isEn ? 'kg' : 'كجم'}</span>
                                 </div>
-                                <span className="text-[11px] opacity-70 block mt-1">
+                                <span className="text-[11px] opacity-70 block mt-1" style={{ color: tokens.subtextColor }}>
                                     {isEn 
                                         ? `Equivalent to ${totalFitrCount} Sa' of (${currentGrain.nameEn})` 
                                         : `يعادل ${totalFitrCount} أصواع من (${currentGrain.name})`}
                                 </span>
                             </div>
 
-                            <div className="p-3 rounded-xl bg-black/5 dark:bg-white/10 text-center">
-                                <span className="text-xs opacity-75 block mb-1">
+                            <div 
+                                className="p-4 rounded-xl text-center"
+                                style={{ backgroundColor: 'rgba(16, 185, 129, 0.08)' }}
+                            >
+                                <span className="text-xs opacity-75 block mb-1" style={{ color: tokens.textColor }}>
                                     {isEn ? 'Total Estimated Cash Amount' : 'المقدار النقدي الإجمالي (المقدّر)'}
                                 </span>
-                                <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
+                                <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-sans">
                                     {totalCashAmount}
                                 </div>
-                                <span className="text-[11px] opacity-70 block mt-1">
+                                <span className="text-[11px] opacity-70 block mt-1" style={{ color: tokens.subtextColor }}>
                                     {isEn ? `Based on ${cashPerPerson} per person` : `بناءً على ${cashPerPerson} للواحد`}
                                 </span>
                             </div>
                         </div>
 
                         {/* Jurisprudence Summary */}
-                        <div className={`mt-4 p-3 rounded-xl bg-black/5 dark:bg-white/5 space-y-1.5 ${isEn ? 'text-left' : 'text-right'} text-xs leading-relaxed`} dir={isEn ? 'ltr' : 'rtl'}>
-                            <div className="flex items-center gap-1.5 font-bold text-amber-700 dark:text-amber-300">
+                        <div 
+                            className={`mt-4 p-3.5 rounded-xl space-y-1.5 ${isEn ? 'text-left' : 'text-right'} text-xs leading-relaxed`} 
+                            style={{ backgroundColor: tokens.isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)' }}
+                            dir={isEn ? 'ltr' : 'rtl'}
+                        >
+                            <div className="flex items-center gap-1.5 font-bold" style={{ color: tokens.primaryColor }}>
                                 <Info size={14} className="shrink-0" />
                                 <span>{isEn ? 'Rulings & Guidelines of Zakat al-Fitr:' : 'أحكام وضوابط زكاة الفطر:'}</span>
                             </div>
-                            <ul className="list-disc list-inside space-y-1 text-[11px] opacity-80">
+                            <ul className="list-disc list-inside space-y-1 text-[11px] opacity-80" style={{ color: tokens.subtextColor }}>
                                 <li>
                                     <strong>{isEn ? 'Time of obligation: ' : 'وقت الوجوب: '}</strong>
                                     {isEn ? 'At sunset on the eve of Eid al-Fitr (last day of Ramadan).' : 'بغروب شمس ليلة العيد (آخر يوم من رمضان).'}
@@ -481,49 +509,62 @@ const FitrAndUdhiyahCalculator: React.FC<FitrAndUdhiyahCalculatorProps> = ({
             {subTab === 'udhiyah' && (
                 <div className="space-y-4">
                     {/* Animal Selection & Shares */}
-                    <div id="udhiyah-card-animal" className="themed-card p-4 sm:p-5 rounded-2xl" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
-                        <h3 className="font-black text-sm mb-2 flex items-center gap-1.5" style={{ color: theme.textColor }}>
-                            <i className="fa-solid fa-cow text-emerald-600"></i>
+                    <div 
+                        id="udhiyah-card-animal" 
+                        className="p-5 rounded-[18px] border-0"
+                        style={{ backgroundColor: tokens.cardBgColor, boxShadow: tokens.cardShadow }}
+                    >
+                        <h3 className="font-bold text-sm mb-2 flex items-center gap-1.5" style={{ color: tokens.textColor }}>
+                            <i className="fa-solid fa-cow" style={{ color: tokens.primaryColor }}></i>
                             <span>{isEn ? '1. Livestock Type & Minimum Age Requirements' : '1. نوع بهيمة الأنعام والشروط السنية'}</span>
                         </h3>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
-                            {ANIMAL_TYPES.map(a => (
-                                <button
-                                    key={a.id}
-                                    type="button"
-                                    onClick={() => {
-                                        setSelectedAnimal(a.id);
-                                        if (a.shares === 1) setMySharesCount('1');
-                                    }}
-                                    className={`p-3 rounded-xl ${isEn ? 'text-left' : 'text-right'} transition-all border cursor-pointer ${
-                                        selectedAnimal === a.id
-                                            ? (isDefaultTheme ? 'bg-black text-white' : (isBlackTheme ? 'bg-white text-black' : 'bg-primary/15 border-primary'))
-                                            : 'bg-black/5 dark:bg-white/5 border-transparent opacity-80 hover:opacity-100'
-                                    }`}
-                                >
-                                    <div className="flex justify-between items-center mb-1">
-                                        <span className="font-bold text-xs sm:text-sm">
-                                            {isEn ? a.nameEn : a.name}
-                                        </span>
-                                        <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-black/10 dark:bg-white/10">
-                                            {a.shares === 1 ? (isEn ? '1 Share' : 'سهم واحد') : (isEn ? `Up to ${a.shares} shares` : `حتى ${a.shares} أسهم`)}
-                                        </span>
-                                    </div>
-                                    <div className="text-[11px] text-amber-700 dark:text-amber-300 font-bold mb-1">
-                                        {isEn ? `Minimum Islamic Age: ${a.minAgeEn}` : `السن الشرعي: ${a.minAge}`}
-                                    </div>
-                                    <p className="text-[10px] opacity-70 leading-tight">
-                                        {isEn ? a.descEn : a.desc}
-                                    </p>
-                                </button>
-                            ))}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mt-2">
+                            {ANIMAL_TYPES.map(a => {
+                                const isSelected = selectedAnimal === a.id;
+                                return (
+                                    <button
+                                        key={a.id}
+                                        type="button"
+                                        onClick={() => {
+                                            setSelectedAnimal(a.id);
+                                            if (a.shares === 1) setMySharesCount('1');
+                                        }}
+                                        className="p-3.5 rounded-xl border-0 transition-all text-start cursor-pointer flex flex-col justify-between"
+                                        style={{
+                                            backgroundColor: isSelected ? hexToRgba(tokens.primaryColor, 0.12) : (tokens.isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)'),
+                                            color: tokens.textColor
+                                        }}
+                                    >
+                                        <div className="flex justify-between items-center mb-1">
+                                            <span className="font-bold text-xs sm:text-sm" style={{ color: isSelected ? tokens.primaryColor : tokens.textColor }}>
+                                                {isEn ? a.nameEn : a.name}
+                                            </span>
+                                            <span 
+                                                className="text-[10px] font-bold px-2 py-0.5 rounded-md"
+                                                style={{ 
+                                                    backgroundColor: isSelected ? tokens.primaryColor : (tokens.isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'),
+                                                    color: isSelected ? '#FFFFFF' : tokens.textColor
+                                                }}
+                                            >
+                                                {a.shares === 1 ? (isEn ? '1 Share' : 'سهم واحد') : (isEn ? `Up to ${a.shares} shares` : `حتى ${a.shares} أسهم`)}
+                                            </span>
+                                        </div>
+                                        <div className="text-[11px] font-bold mb-1" style={{ color: tokens.primaryColor }}>
+                                            {isEn ? `Minimum Age: ${a.minAgeEn}` : `السن الشرعي: ${a.minAge}`}
+                                        </div>
+                                        <p className="text-[10px] opacity-75 font-normal leading-tight" style={{ color: tokens.subtextColor }}>
+                                            {isEn ? a.descEn : a.desc}
+                                        </p>
+                                    </button>
+                                );
+                            })}
                         </div>
 
                         {/* Price & Shares Input */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4 pt-3 border-t border-black/10 dark:border-white/10">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4 pt-3 border-t border-slate-100 dark:border-zinc-800">
                             <div>
-                                <label className="block text-xs font-bold mb-1 opacity-90" style={{ color: theme.textColor }}>
+                                <label className="block text-xs font-bold mb-1 opacity-90" style={{ color: tokens.textColor }}>
                                     {isEn ? 'Total (or Estimated) Animal Price:' : 'سعر الذبيحة الإجمالي (أو التقديري):'}
                                 </label>
                                 <input
@@ -531,15 +572,15 @@ const FitrAndUdhiyahCalculator: React.FC<FitrAndUdhiyahCalculatorProps> = ({
                                     min="0"
                                     value={animalTotalPrice}
                                     onChange={e => setAnimalTotalPrice(e.target.value)}
-                                    className="w-full p-2.5 rounded-xl text-sm font-bold text-center"
-                                    style={inputStyle}
+                                    className="w-full p-3 rounded-xl border-0 bg-slate-100 dark:bg-zinc-800 text-sm font-bold text-center focus:ring-2 focus:ring-primary/40 focus:outline-hidden"
+                                    style={{ color: tokens.textColor }}
                                     placeholder="2500"
                                 />
                             </div>
 
                             {currentAnimal.shares > 1 ? (
                                 <div>
-                                    <label className="block text-xs font-bold mb-1 opacity-90" style={{ color: theme.textColor }}>
+                                    <label className="block text-xs font-bold mb-1 opacity-90" style={{ color: tokens.textColor }}>
                                         {isEn ? `Your shared shares (1 to ${currentAnimal.shares}):` : `عدد أسهمك المشارك بها (من 1 إلى ${currentAnimal.shares}):`}
                                     </label>
                                     <input
@@ -548,14 +589,14 @@ const FitrAndUdhiyahCalculator: React.FC<FitrAndUdhiyahCalculatorProps> = ({
                                         max={currentAnimal.shares}
                                         value={mySharesCount}
                                         onChange={e => setMySharesCount(e.target.value)}
-                                        className="w-full p-2.5 rounded-xl text-sm font-bold text-center"
-                                        style={inputStyle}
+                                        className="w-full p-3 rounded-xl border-0 bg-slate-100 dark:bg-zinc-800 text-sm font-bold text-center focus:ring-2 focus:ring-primary/40 focus:outline-hidden"
+                                        style={{ color: tokens.textColor }}
                                         placeholder="1"
                                     />
                                 </div>
                             ) : (
                                 <div>
-                                    <label className="block text-xs font-bold mb-1 opacity-90" style={{ color: theme.textColor }}>
+                                    <label className="block text-xs font-bold mb-1 opacity-90" style={{ color: tokens.textColor }}>
                                         {isEn ? 'Approximate Net Meat Weight (kg):' : 'الوزن التقريبي للحم الصافي (كجم):'}
                                     </label>
                                     <input
@@ -563,8 +604,8 @@ const FitrAndUdhiyahCalculator: React.FC<FitrAndUdhiyahCalculatorProps> = ({
                                         min="0"
                                         value={approxMeatKg}
                                         onChange={e => setApproxMeatKg(e.target.value)}
-                                        className="w-full p-2.5 rounded-xl text-sm font-bold text-center"
-                                        style={inputStyle}
+                                        className="w-full p-3 rounded-xl border-0 bg-slate-100 dark:bg-zinc-800 text-sm font-bold text-center focus:ring-2 focus:ring-primary/40 focus:outline-hidden"
+                                        style={{ color: tokens.textColor }}
                                         placeholder={isEn ? 'e.g. 24' : 'مثال: 24'}
                                     />
                                 </div>
@@ -573,66 +614,73 @@ const FitrAndUdhiyahCalculator: React.FC<FitrAndUdhiyahCalculatorProps> = ({
 
                         {/* Shares calculation breakdown if shared animal */}
                         {currentAnimal.shares > 1 && (
-                            <div className="mt-3 p-3 rounded-xl bg-black/5 dark:bg-white/5 flex flex-wrap justify-between items-center text-xs">
-                                <span>
+                            <div 
+                                className="mt-3 p-3 rounded-xl flex flex-wrap justify-between items-center text-xs"
+                                style={{ backgroundColor: hexToRgba(tokens.primaryColor, 0.08) }}
+                            >
+                                <span style={{ color: tokens.textColor }}>
                                     {isEn ? 'Cost of one share (1/7): ' : 'قيمة السهم الواحد (السبع): '}
-                                    <strong>{singleSharePrice}</strong>
+                                    <strong className="font-sans">{singleSharePrice}</strong>
                                 </span>
-                                <span>
-                                    {isEn ? `Total cost for your ${userShares} share(s): ` : `إجمالي تكلفة حصتك (${userShares} أسهم): `}
-                                    <strong className="text-emerald-600 dark:text-emerald-400">{userSharesTotalCost}</strong>
+                                <span style={{ color: tokens.textColor }}>
+                                    {isEn ? `Total for your ${userShares} share(s): ` : `إجمالي حصتك (${userShares} أسهم): `}
+                                    <strong className="font-sans font-bold" style={{ color: tokens.primaryColor }}>{userSharesTotalCost}</strong>
                                 </span>
                             </div>
                         )}
                     </div>
 
                     {/* Thirds Distribution Calculator */}
-                    <div id="udhiyah-card-division" className="themed-card p-4 sm:p-5 rounded-2xl" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
-                        <h3 className="font-black text-sm mb-2 flex items-center gap-1.5" style={{ color: theme.textColor }}>
-                            <Scale className="w-4 h-4 text-primary" />
+                    <div 
+                        id="udhiyah-card-division" 
+                        className="p-5 rounded-[18px] border-0"
+                        style={{ backgroundColor: tokens.cardBgColor, boxShadow: tokens.cardShadow }}
+                    >
+                        <h3 className="font-bold text-sm mb-2 flex items-center gap-1.5" style={{ color: tokens.textColor }}>
+                            <Scale className="w-4 h-4" style={{ color: tokens.primaryColor }} />
                             <span>
                                 {isEn 
                                     ? '2. Recommended Division of Sacrifice (1/3 household, 1/3 gift, 1/3 charity)' 
                                     : '2. قسمة الأضحية المستحبة (الثلث للأهل، والثلث هدية، والثلث صدقة)'}
                             </span>
                         </h3>
-                        <p className="text-[11px] opacity-70 mb-3">
+                        <p className="text-[11px] opacity-75 mb-3 font-normal" style={{ color: tokens.subtextColor }}>
                             {isEn 
                                 ? 'It is recommended to divide the sacrifice into three portions following the Hadith: "Eat, feed others, and store away."' 
                                 : 'يُستحب للمضحي أن يقسم أضحيته ثلاثة أثلاث عملاً بالحديث الشريف: «فَكُلُوا وَأَطْعِمُوا وَادَّخِرُوا».'}
                         </p>
 
                         <div className="grid grid-cols-3 gap-2 text-center">
-                            <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-                                <span className="text-[10px] font-bold block opacity-75 mb-1">
+                            <div className="p-3.5 rounded-xl bg-emerald-500/10 border-0">
+                                <span className="text-[10px] font-bold block opacity-75 mb-1" style={{ color: tokens.textColor }}>
                                     {isEn ? '1/3 Eating & Storing' : 'ثلث الأكل والإدخار'}
                                 </span>
-                                <span className="text-xs font-black text-emerald-700 dark:text-emerald-300">
+                                <span className="text-xs font-bold text-emerald-700 dark:text-emerald-300">
                                     {isEn ? 'For Household' : 'لأهل البيت'}
                                 </span>
-                                <div className="text-lg font-black mt-1">
+                                <div className="text-base sm:text-lg font-black mt-1 font-sans text-emerald-600 dark:text-emerald-400">
                                     {totalMeatWeight > 0 ? thirdPartWeight : '—'} <span className="text-[10px] font-normal">{isEn ? 'kg' : 'كجم'}</span>
                                 </div>
                             </div>
-                            <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20">
-                                <span className="text-[10px] font-bold block opacity-75 mb-1">
+                            <div className="p-3.5 rounded-xl bg-blue-500/10 border-0">
+                                <span className="text-[10px] font-bold block opacity-75 mb-1" style={{ color: tokens.textColor }}>
                                     {isEn ? '1/3 Gifting' : 'ثلث الإهداء'}
                                 </span>
-                                <span className="text-xs font-black text-blue-700 dark:text-blue-300">
-                                    {isEn ? 'For Relatives & Neighbors' : 'للأقارب والجيران'}
+                                <span className="text-xs font-bold text-blue-700 dark:text-blue-300">
+                                    {isEn ? 'Relatives & Friends' : 'للأقارب والجيران'}
                                 </span>
-                                <div className="text-lg font-black mt-1">
+                                <div className="text-base sm:text-lg font-black mt-1 font-sans text-blue-600 dark:text-blue-400">
                                     {totalMeatWeight > 0 ? thirdPartWeight : '—'} <span className="text-[10px] font-normal">{isEn ? 'kg' : 'كجم'}</span>
                                 </div>
                             </div>
-                            <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/20">
-                                <span className="text-[10px] font-bold block opacity-75 mb-1">
+                            <div className="p-3.5 rounded-xl bg-purple-500/10 border-0">
+                                <span className="text-[10px] font-bold block opacity-75 mb-1" style={{ color: tokens.textColor }}>
                                     {isEn ? '1/3 Charity' : 'ثلث التصدق'}
                                 </span>
-                                <span className="text-xs font-black text-purple-700 dark:text-purple-300">
+                                <span className="text-xs font-bold text-purple-700 dark:text-purple-300">
                                     {isEn ? 'For Poor & Needy' : 'للفقراء والمساكين'}
                                 </span>
-                                <div className="text-lg font-black mt-1">
+                                <div className="text-base sm:text-lg font-black mt-1 font-sans text-purple-600 dark:text-purple-400">
                                     {totalMeatWeight > 0 ? thirdPartWeight : '—'} <span className="text-[10px] font-normal">{isEn ? 'kg' : 'كجم'}</span>
                                 </div>
                             </div>
@@ -640,57 +688,79 @@ const FitrAndUdhiyahCalculator: React.FC<FitrAndUdhiyahCalculatorProps> = ({
                     </div>
 
                     {/* Defect Checklist */}
-                    <div id="udhiyah-card-defects" className="themed-card p-4 sm:p-5 rounded-2xl" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
+                    <div 
+                        id="udhiyah-card-defects" 
+                        className="p-5 rounded-[18px] border-0"
+                        style={{ backgroundColor: tokens.cardBgColor, boxShadow: tokens.cardShadow }}
+                    >
                         <div className="flex justify-between items-center mb-2">
-                            <h3 className="font-black text-sm flex items-center gap-1.5" style={{ color: theme.textColor }}>
+                            <h3 className="font-bold text-sm flex items-center gap-1.5" style={{ color: tokens.textColor }}>
                                 <ShieldCheck className="w-4 h-4 text-emerald-600" />
                                 <span>{isEn ? '3. Health Checklist for 4 Invalidation Defects' : '3. قائمة فحص السلامة من العيوب الأربعة المانعة'}</span>
                             </h3>
                             {hasAnyDefect ? (
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-500/20 text-red-600 dark:text-red-400">
-                                    {isEn ? 'Invalid due to defect' : 'غير مجزئة لوجود عيب'}
+                                <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-red-500/15 text-red-600 dark:text-red-400">
+                                    {isEn ? 'Invalid' : 'غير مجزئة'}
                                 </span>
                             ) : (
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400">
-                                    {isEn ? 'Healthy & valid insha\'Allah' : 'سليمة ومجزئة إن شاء الله'}
+                                <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+                                    {isEn ? 'Healthy' : 'سليمة ومجزئة'}
                                 </span>
                             )}
                         </div>
-                        <p className="text-[11px] opacity-70 mb-3">
+                        <p className="text-[11px] opacity-75 mb-3 font-normal" style={{ color: tokens.subtextColor }}>
                             {isEn 
-                                ? 'The Prophet ﷺ said: "Four types of animals are not permissible as sacrifices: the one-eyed whose defect is obvious, the sick whose illness is obvious, the lame whose limp is obvious, and the emaciated that has no marrow in its bones."' 
+                                ? 'The Prophet ﷺ said: "Four types of animals are not permissible as sacrifices: the one-eyed whose defect is obvious, the sick whose illness is obvious, the lame whose limp is obvious, and the emaciated that has no marrow."' 
                                 : 'قال النبي ﷺ: «أَرْبَعٌ لا تَجُوزُ في الأَضاحِي: العَوْراءُ البَيِّنُ عَوَرُها، والمَرِيضَةُ البَيِّنُ مَرَضُها، والعَرْجاءُ البَيِّنُ ظَلْعُها، والكَسِيرَةُ التي لا تَنْقَى».'}
                         </p>
 
                         <div className="space-y-2">
-                            {DEFECT_CHECKLIST.map(d => (
-                                <label key={d.id} className="flex items-start gap-2.5 p-2 rounded-xl bg-black/5 dark:bg-white/5 cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        checked={checkedDefects[d.id] || false}
-                                        onChange={e => setCheckedDefects(prev => ({ ...prev, [d.id]: e.target.checked }))}
-                                        className="w-4 h-4 mt-0.5 rounded-sm accent-red-500 cursor-pointer"
-                                    />
-                                    <div className="text-xs">
-                                        <span className="font-bold block" style={{ color: theme.textColor }}>
-                                            {isEn ? d.labelEn : d.label}
-                                        </span>
-                                        <span className="text-[11px] opacity-70">
-                                            {isEn ? d.descEn : d.desc}
-                                        </span>
-                                    </div>
-                                </label>
-                            ))}
+                            {DEFECT_CHECKLIST.map(d => {
+                                const checked = checkedDefects[d.id] || false;
+                                return (
+                                    <button
+                                        key={d.id}
+                                        type="button"
+                                        onClick={() => setCheckedDefects(prev => ({ ...prev, [d.id]: !prev[d.id] }))}
+                                        className="flex items-start gap-2.5 p-3 rounded-xl transition-all cursor-pointer border-0 text-start w-full"
+                                        style={{
+                                            backgroundColor: checked ? 'rgba(239, 68, 68, 0.12)' : (tokens.isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.03)')
+                                        }}
+                                    >
+                                        <div 
+                                            className="w-5 h-5 rounded-md flex items-center justify-center shrink-0 mt-0.5 transition-colors"
+                                            style={{
+                                                backgroundColor: checked ? '#EF4444' : 'rgba(150, 150, 150, 0.2)',
+                                                color: checked ? '#FFFFFF' : 'transparent'
+                                            }}
+                                        >
+                                            <Check size={12} strokeWidth={3} />
+                                        </div>
+                                        <div className="text-xs min-w-0">
+                                            <span className="font-bold block" style={{ color: checked ? '#EF4444' : tokens.textColor }}>
+                                                {isEn ? d.labelEn : d.label}
+                                            </span>
+                                            <span className="text-[11px] opacity-75 font-normal leading-tight block mt-0.5" style={{ color: tokens.subtextColor }}>
+                                                {isEn ? d.descEn : d.desc}
+                                            </span>
+                                        </div>
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
 
                     {/* Aqiqah Section */}
-                    <div id="udhiyah-card-aqiqah" className="themed-card p-4 sm:p-5 rounded-2xl" style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
-                        <h3 className="font-black text-sm mb-2 flex items-center gap-1.5" style={{ color: theme.textColor }}>
+                    <div 
+                        id="udhiyah-card-aqiqah" 
+                        className="p-5 rounded-[18px] border-0"
+                        style={{ backgroundColor: tokens.cardBgColor, boxShadow: tokens.cardShadow }}
+                    >
+                        <h3 className="font-bold text-sm mb-2 flex items-center gap-1.5" style={{ color: tokens.textColor }}>
                             <HeartHandshake className="w-4 h-4 text-pink-500" />
                             <span>{isEn ? '4. Newborn Aqiqah Calculator' : '4. حاسبة العقيقة عن المواليد'}</span>
                         </h3>
-                        <p className="text-[11px] opacity-70 mb-3">
+                        <p className="text-[11px] opacity-75 mb-3 font-normal" style={{ color: tokens.subtextColor }}>
                             {isEn 
                                 ? 'Aqiqah is an emphasized Sunnah; two equal sheep for a boy (or one), and one sheep for a girl, slaughtered on the 7th day after birth.' 
                                 : 'العقيقة سنة مؤكدة؛ عن الغلام شاتان مكافئتان (أو شاة)، وعن الجارية شاة واحدة، وتُذبح في اليوم السابع لولادته.'}
@@ -698,7 +768,7 @@ const FitrAndUdhiyahCalculator: React.FC<FitrAndUdhiyahCalculatorProps> = ({
 
                         <div className="grid grid-cols-2 gap-3">
                             <div>
-                                <label className="block text-xs font-bold mb-1 opacity-90" style={{ color: theme.textColor }}>
+                                <label className="block text-xs font-bold mb-1 opacity-90" style={{ color: tokens.textColor }}>
                                     {isEn ? 'Number of Boys (Male):' : 'عدد الذكور (الأولاد):'}
                                 </label>
                                 <input
@@ -706,17 +776,17 @@ const FitrAndUdhiyahCalculator: React.FC<FitrAndUdhiyahCalculatorProps> = ({
                                     min="0"
                                     value={maleBabies}
                                     onChange={e => setMaleBabies(e.target.value)}
-                                    className="w-full p-2 rounded-xl text-sm font-bold text-center"
-                                    style={inputStyle}
+                                    className="w-full p-3 rounded-xl border-0 bg-slate-100 dark:bg-zinc-800 text-sm font-bold text-center focus:ring-2 focus:ring-pink-500/40 focus:outline-hidden"
+                                    style={{ color: tokens.textColor }}
                                     placeholder="0"
                                 />
-                                <span className="text-[10px] opacity-60 block mt-1 text-center">
+                                <span className="text-[10px] opacity-70 block mt-1 text-center" style={{ color: tokens.subtextColor }}>
                                     {isEn ? '2 sheep per boy' : 'شاتان عن كل ولد'}
                                 </span>
                             </div>
 
                             <div>
-                                <label className="block text-xs font-bold mb-1 opacity-90" style={{ color: theme.textColor }}>
+                                <label className="block text-xs font-bold mb-1 opacity-90" style={{ color: tokens.textColor }}>
                                     {isEn ? 'Number of Girls (Female):' : 'عدد الإناث (البنات):'}
                                 </label>
                                 <input
@@ -724,22 +794,22 @@ const FitrAndUdhiyahCalculator: React.FC<FitrAndUdhiyahCalculatorProps> = ({
                                     min="0"
                                     value={femaleBabies}
                                     onChange={e => setFemaleBabies(e.target.value)}
-                                    className="w-full p-2 rounded-xl text-sm font-bold text-center"
-                                    style={inputStyle}
+                                    className="w-full p-3 rounded-xl border-0 bg-slate-100 dark:bg-zinc-800 text-sm font-bold text-center focus:ring-2 focus:ring-pink-500/40 focus:outline-hidden"
+                                    style={{ color: tokens.textColor }}
                                     placeholder="0"
                                 />
-                                <span className="text-[10px] opacity-60 block mt-1 text-center">
+                                <span className="text-[10px] opacity-70 block mt-1 text-center" style={{ color: tokens.subtextColor }}>
                                     {isEn ? '1 sheep per girl' : 'شاة واحدة عن كل بنت'}
                                 </span>
                             </div>
                         </div>
 
                         {totalAqiqahSheep > 0 && (
-                            <div className="mt-3 p-3 rounded-xl bg-pink-500/10 border border-pink-500/20 text-center">
-                                <span className="text-xs font-bold opacity-80 block">
+                            <div className="mt-3.5 p-4 rounded-xl bg-pink-500/10 border-0 text-center">
+                                <span className="text-xs font-bold opacity-80 block" style={{ color: tokens.textColor }}>
                                     {isEn ? 'Total Required Animals for Aqiqah:' : 'إجمالي الذبائح المطلوبة للعقيقة:'}
                                 </span>
-                                <span className="text-2xl font-black text-pink-600 dark:text-pink-400">
+                                <span className="text-2xl font-black text-pink-600 dark:text-pink-400 font-sans">
                                     {totalAqiqahSheep} <span className="text-sm font-normal">{isEn ? 'sheep / head' : 'شاة / رأس'}</span>
                                 </span>
                             </div>

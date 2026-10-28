@@ -5,6 +5,7 @@ import {
   Eye, Info, MessageSquare, Users, BookOpen, Send, Mic, Paperclip, Smile,
   Clock, Bell, Calendar, Volume2, Settings, MapPin, Moon, FileText, Share2, Sliders, Compass
 } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 
 export interface SpotlightStep {
   id: string;
@@ -76,7 +77,9 @@ export const resetCommunityGuides = (): void => {
       'calc_subtab_udhiyah_spotlight',
       'calc_tab_fitr_udhiyah_spotlight',
       'calc_tab_fitr-udhiyah_spotlight',
-      'calculator_page_spotlight'
+      'calculator_page_spotlight',
+      'worship_mentor_page_spotlight',
+      'custom_habit_modal_spotlight'
     ];
     keys.forEach(k => localStorage.removeItem(`guide_seen_${k}`));
   } catch (e) {}
@@ -153,6 +156,8 @@ export const CommunitySpotlightGuide: React.FC<CommunitySpotlightGuideProps> = (
   isEn = false,
   onStepChange
 }) => {
+  const { language, formatNumber } = useLanguage();
+  const effectiveIsEn = isEn || language === 'en';
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -520,7 +525,7 @@ export const CommunitySpotlightGuide: React.FC<CommunitySpotlightGuideProps> = (
     <div 
       id="community-spotlight-guide-root"
       className="community-spotlight-guide fixed inset-0 z-[100001] pointer-events-none select-none font-sans"
-      dir={isEn ? 'ltr' : 'rtl'}
+      dir={effectiveIsEn ? 'ltr' : 'rtl'}
     >
       {/* Subtle, crystal-clear dismiss backdrop with SVG spotlight mask cutout matching Quran page */}
       {targetRect ? (
@@ -662,9 +667,9 @@ export const CommunitySpotlightGuide: React.FC<CommunitySpotlightGuideProps> = (
                 border: `1px solid ${currentAccent}50`
               }}
             >
-              {isEn 
+              {effectiveIsEn 
                 ? (step.badgeEn || `Step ${currentStepIndex + 1} of ${steps.length}`)
-                : (step.badgeAr || `خطوة ${currentStepIndex + 1} من ${steps.length}`)}
+                : (step.badgeAr || `خطوة ${formatNumber(currentStepIndex + 1)} من ${formatNumber(steps.length)}`)}
             </span>
           </div>
 
@@ -672,7 +677,7 @@ export const CommunitySpotlightGuide: React.FC<CommunitySpotlightGuideProps> = (
             type="button"
             onClick={handleSkip}
             className="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 active:scale-90 transition-all cursor-pointer"
-            title={isEn ? "Skip Tour" : "تخطي الإرشاد"}
+            title={effectiveIsEn ? "Skip Tour" : "تخطي الإرشاد"}
           >
             <X size={15} />
           </button>
@@ -681,13 +686,13 @@ export const CommunitySpotlightGuide: React.FC<CommunitySpotlightGuideProps> = (
         {/* Title */}
         <h3 className="text-base sm:text-lg font-black font-kufi mb-1.5 flex items-center gap-1.5">
           <span style={{ color: currentAccent }}>
-            {isEn ? step.titleEn : step.titleAr}
+            {effectiveIsEn ? (step.titleEn || step.titleAr) : step.titleAr}
           </span>
         </h3>
 
         {/* Detailed Explanation */}
         <p className="text-xs sm:text-sm text-slate-200 leading-relaxed font-medium mb-4">
-          {isEn ? step.descEn : step.descAr}
+          {effectiveIsEn ? (step.descEn || formatNumber(step.descAr)) : step.descAr}
         </p>
 
         {/* Bottom Bar: Dots Progress & Action Controls */}
@@ -714,8 +719,8 @@ export const CommunitySpotlightGuide: React.FC<CommunitySpotlightGuideProps> = (
                 onClick={handlePrev}
                 className="px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white hover:bg-white/10 active:scale-95 transition-all flex items-center gap-1 cursor-pointer"
               >
-                {isEn ? <ChevronLeft size={14} /> : <ChevronRight size={14} />}
-                <span>{isEn ? 'Back' : 'السابق'}</span>
+                {effectiveIsEn ? <ChevronLeft size={14} /> : <ChevronRight size={14} />}
+                <span>{effectiveIsEn ? 'Back' : 'السابق'}</span>
               </button>
             )}
 
@@ -731,11 +736,11 @@ export const CommunitySpotlightGuide: React.FC<CommunitySpotlightGuideProps> = (
             >
               <span>
                 {isLastStep 
-                  ? (isEn ? 'Got it 👍' : 'فهمت ذلك 👍') 
-                  : (isEn ? 'Next' : 'التالي')}
+                  ? (effectiveIsEn ? 'Got it 👍' : 'فهمت ذلك 👍') 
+                  : (effectiveIsEn ? 'Next' : 'التالي')}
               </span>
               {!isLastStep ? (
-                isEn ? <ChevronRight size={14} /> : <ChevronLeft size={14} />
+                effectiveIsEn ? <ChevronRight size={14} /> : <ChevronLeft size={14} />
               ) : (
                 <Check size={14} className="stroke-[3]" />
               )}

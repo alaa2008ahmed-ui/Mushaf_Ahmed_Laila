@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 
 interface MenuItem {
     id: string;
@@ -15,6 +16,7 @@ interface MenuCustomizationModalProps {
 }
 
 const MenuCustomizationModal: React.FC<MenuCustomizationModalProps> = ({ isOpen, onClose, allItems, visibleIds, onSave, isLandscape }) => {
+    const { translateMenuItem, language, dir } = useLanguage();
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
     useEffect(() => {
@@ -39,11 +41,13 @@ const MenuCustomizationModal: React.FC<MenuCustomizationModalProps> = ({ isOpen,
     if (!isOpen) return null;
 
     return (
-        <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm ${isLandscape ? 'p-0' : 'p-4'} fade-in`}>
+        <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm ${isLandscape ? 'p-0' : 'p-4'} fade-in`} dir={dir}>
             <div className={`bg-white dark:bg-gray-800 ${isLandscape ? 'max-w-4xl h-full rounded-none' : 'max-w-md rounded-2xl max-h-[80vh]'} shadow-2xl w-full overflow-hidden flex flex-col`}>
                 <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900/50">
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">تخصيص القائمة الرئيسية</h3>
-                    <button onClick={onClose} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                        {language === 'en' ? 'Customize Main Menu' : 'تخصيص القائمة الرئيسية'}
+                    </h3>
+                    <button onClick={onClose} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 cursor-pointer">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                         </svg>
@@ -61,7 +65,9 @@ const MenuCustomizationModal: React.FC<MenuCustomizationModalProps> = ({ isOpen,
                                     : 'bg-gray-50 border-gray-200 dark:bg-gray-700/30 dark:border-gray-700'
                             }`}
                         >
-                            <span className="font-semibold text-gray-800 dark:text-gray-200">{item.label}</span>
+                            <span className="font-semibold text-gray-800 dark:text-gray-200">
+                                {translateMenuItem(item.id, item.label)}
+                            </span>
                             <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
                                 selectedIds.includes(item.id)
                                     ? 'bg-emerald-500 border-emerald-500'
@@ -80,9 +86,9 @@ const MenuCustomizationModal: React.FC<MenuCustomizationModalProps> = ({ isOpen,
                 <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
                     <button 
                         onClick={handleSave}
-                        className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow-lg transition-transform active:scale-95"
+                        className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow-lg transition-transform active:scale-95 cursor-pointer"
                     >
-                        حفظ التغييرات
+                        {language === 'en' ? 'Save Changes' : 'حفظ التغييرات'}
                     </button>
                 </div>
             </div>

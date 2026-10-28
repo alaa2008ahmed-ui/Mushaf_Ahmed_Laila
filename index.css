@@ -126,6 +126,16 @@ input[type=number] {
   -moz-appearance: textfield;
 }
 
+.no-time-picker-icon::-webkit-calendar-picker-indicator,
+.no-time-picker-icon::-webkit-clear-button,
+.no-time-picker-icon::-webkit-inner-spin-button {
+  display: none !important;
+  -webkit-appearance: none !important;
+  opacity: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
@@ -159,4 +169,54 @@ body:not(.quran-context) .font-kufam,
 body:not(.quran-context) .font-mirza,
 body:not(.quran-context) .font-gulzar {
     font-family: var(--theme-font) !important;
+}
+
+/* Quran Reader background rules: Pure white in default/light mode, clean dark in dark mode */
+body.quran-context {
+  background-color: var(--qr-bg, #ffffff) !important;
+  background-image: none !important;
+}
+
+html.dark body.quran-context {
+  background-color: var(--qr-bg, #000000) !important;
+  background-image: none !important;
+}
+
+/* 3D Prominent Tactile Card & Touch/Press Interaction */
+.tactile-3d-card-light {
+  border-radius: 20px !important;
+  border: 1px solid rgba(255, 255, 255, 0.95) !important;
+  box-shadow: 0 6.5px 0 rgba(0, 0, 0, 0.13), 0 12px 24px -2px rgba(0, 0, 0, 0.11), inset 0 2px 2px rgba(255, 255, 255, 0.95), inset 0 -2.5px 4px rgba(0, 0, 0, 0.05) !important;
+  transform: translateY(0);
+  transition: transform 0.16s cubic-bezier(0.2, 0.8, 0.4, 1), box-shadow 0.16s cubic-bezier(0.2, 0.8, 0.4, 1);
+  will-change: transform, box-shadow;
+}
+
+.tactile-3d-card-light:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8.5px 0 rgba(0, 0, 0, 0.14), 0 16px 30px -3px rgba(0, 0, 0, 0.14), inset 0 2px 2px rgba(255, 255, 255, 0.95), inset 0 -2.5px 4px rgba(0, 0, 0, 0.05) !important;
+}
+
+.tactile-3d-card-light:active {
+  transform: translateY(4px) scale(0.99) !important;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.14), 0 4px 10px rgba(0, 0, 0, 0.08), inset 0 2px 2px rgba(255, 255, 255, 0.95), inset 0 -1.5px 3px rgba(0, 0, 0, 0.05) !important;
+}
+
+.tactile-3d-card-dark {
+  border-radius: 20px !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  box-shadow: 0 6.5px 0 #0d0d10, 0 12px 24px -2px rgba(0, 0, 0, 0.7), inset 0 2px 2px rgba(255, 255, 255, 0.25), inset 0 -2.5px 5px rgba(0, 0, 0, 0.5) !important;
+  transform: translateY(0);
+  transition: transform 0.16s cubic-bezier(0.2, 0.8, 0.4, 1), box-shadow 0.16s cubic-bezier(0.2, 0.8, 0.4, 1);
+  will-change: transform, box-shadow;
+}
+
+.tactile-3d-card-dark:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8.5px 0 #0d0d10, 0 16px 30px -3px rgba(0, 0, 0, 0.8), inset 0 2px 2px rgba(255, 255, 255, 0.28), inset 0 -2.5px 5px rgba(0, 0, 0, 0.5) !important;
+}
+
+.tactile-3d-card-dark:active {
+  transform: translateY(4px) scale(0.99) !important;
+  box-shadow: 0 2px 0 #0d0d10, 0 4px 10px rgba(0, 0, 0, 0.4), inset 0 2px 2px rgba(255, 255, 255, 0.25), inset 0 -1.5px 3px rgba(0, 0, 0, 0.4) !important;
 }

@@ -10,12 +10,27 @@ import { playTTS, stopTTS, subscribeTTS } from '../utils/ttsEngine';
 import { useHabitTracker } from '../hooks/useHabitTracker';
 import { useLanguage } from '../context/LanguageContext';
 import { LayoutGrid, ListFilter, HelpCircle } from 'lucide-react';
+import ZoomModal from '../components/Adia/ZoomModal';
 import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/CommunitySpotlightGuide';
 import { ADIA_PAGE_STEPS } from '../components/Community/communityTourSteps';
 import { markPageAsSeen } from '../utils/badgeManager';
 
 const ADIA_STATUS_KEY = 'adia_status_v1';
 const toArabicNumerals = (num: number) => String(num).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[+d]);
+
+function hexToRgba(hex?: string, alpha: number = 1): string {
+    if (!hex) return `rgba(46, 125, 94, ${alpha})`;
+    let clean = hex.replace('#', '');
+    if (clean.length === 3) {
+        clean = clean.split('').map(c => c + c).join('');
+    }
+    const num = parseInt(clean, 16);
+    if (isNaN(num)) return `rgba(46, 125, 94, ${alpha})`;
+    const r = (num >> 16) & 255;
+    const g = (num >> 8) & 255;
+    const b = num & 255;
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
 
 interface AdiaProps {
     onBack: () => void;
@@ -26,13 +41,12 @@ function Adia({ onBack, onNavigate }: AdiaProps) {
     const { theme, themeKey } = useTheme();
     const { language } = useLanguage();
     const isEn = language === 'en';
-    const isBlackTheme = theme.bgColor === '#000000';
-    const isDefaultTheme = themeKey === 'default' || theme.name === 'الافتراضي' || !!theme.isOriginal || !themeKey;
-    const cardBorderColor = isDefaultTheme 
-        ? '#000000' 
-        : (isBlackTheme 
-            ? 'rgba(255, 255, 255, 0.2)' 
-            : (theme.palette?.[0] + '33' || 'rgba(0, 0, 0, 0.08)'));
+    
+    // Dynamic theme colors
+    const isBlackTheme = theme.bgColor === '#000000' || themeKey === 'deep_black' || theme.name === 'اسود' || theme.name === 'أبيض وأسود';
+    const primaryColor = isBlackTheme ? '#FFFFFF' : (theme.palette?.[0] || theme.accent || '#2E7D5E');
+    const btnTextColor = isBlackTheme ? '#000000' : (theme.btnText || '#FFFFFF');
+
     const [zoomedDuaa, setZoomedDuaa] = useState<DuaaItem | null>(null);
     const [activeCategory, setActiveCategory] = useState('all');
     const [favorites, setFavorites] = useState<string[]>([]);
@@ -257,11 +271,17 @@ function Adia({ onBack, onNavigate }: AdiaProps) {
     const pageTitle = isEn ? 'Prophetic & Quranic Supplications' : 'الأدعية المأثورة';
 
     return (
-        <div className="h-screen flex flex-col bg-transparent relative" dir={isEn ? 'ltr' : 'rtl'}>
+        <div 
+            className="h-screen flex flex-col relative transition-colors" 
+            dir={isEn ? 'ltr' : 'rtl'}
+            style={{ 
+                backgroundColor: isBlackTheme ? '#000000' : (theme.isDark ? '#0F172A' : '#F5F7FA') 
+            }}
+        >
             <header className="app-top-bar" dir={isEn ? 'ltr' : 'rtl'}>
                 <div className="app-top-bar__inner">
                     <div className="relative flex items-center justify-center w-full min-h-[44px]">
-                        {/* زر الرجوع للخلف: على اليمين في العربي، وعلى اليسار في الإنجليزي */}
+                        {/* Back button */}
                         <div className={`absolute ${isEn ? 'left-0' : 'right-0'} flex items-center`}>
                             <button
                                 onClick={handleBack}
@@ -273,14 +293,14 @@ function Adia({ onBack, onNavigate }: AdiaProps) {
                             </button>
                         </div>
 
-                        {/* عنوان الصفحة في الوسط */}
+                        {/* Title in center */}
                         <div className="text-center px-12 min-w-0">
                             <h1 className="app-top-bar__title text-lg sm:text-xl font-kufi truncate">
                                 {pageTitle}
                             </h1>
                         </div>
 
-                        {/* أيقونة المنزل: على اليسار في العربي، وعلى اليمين في الإنجليزي */}
+                        {/* Guide, ThemeLock and Home buttons */}
                         <div className={`absolute ${isEn ? 'right-0' : 'left-0'} flex items-center gap-1`}>
                             <button
                                 type="button"
@@ -290,7 +310,7 @@ function Adia({ onBack, onNavigate }: AdiaProps) {
                                 title={isEn ? "Adia Guide" : "دليل الأدعية"}
                                 aria-label={isEn ? "Adia Guide" : "دليل الأدعية"}
                             >
-                                <HelpCircle size={19} />
+                                <i className="fa-solid fa-circle-question text-lg text-black"></i>
                             </button>
                             <ThemePageLock />
                             <button
@@ -306,49 +326,47 @@ function Adia({ onBack, onNavigate }: AdiaProps) {
                 </div>
             </header>
 
-            <main ref={mainRef} className="w-full flex-1 overflow-y-auto px-4 pt-2 pb-4">
-                <div className="mb-6 max-w-3xl mx-auto flex items-center gap-2 w-full" dir={isEn ? 'ltr' : 'rtl'}>
-                    <div 
-                        className="relative flex-1 border-2 rounded-2xl overflow-hidden focus-within:ring-2 transition-all shadow-sm" 
-                        style={{ borderColor: cardBorderColor, ...(isDefaultTheme ? { focusRingColor: '#000'} : { focusRingColor: theme.palette[0]}) }}
+            <main ref={mainRef} className="w-full flex-1 overflow-y-auto px-4 pt-3 pb-6">
+                {/* Modern Borderless Search bar and View Mode Switch */}
+                <div className="mb-6 max-w-3xl mx-auto flex items-center gap-2.5 w-full" dir={isEn ? 'ltr' : 'rtl'}>
+                    <div className="relative flex-1 bg-slate-200/60 dark:bg-zinc-800/70 rounded-2xl transition-all shadow-none focus-within:ring-2 focus-within:ring-opacity-40 flex items-center overflow-hidden"
+                         style={{ '--tw-ring-color': primaryColor } as any}
                     >
+                        <i 
+                            className={`fa-solid fa-search absolute ${isEn ? 'left-4' : 'right-4'} top-1/2 transform -translate-y-1/2 opacity-45 pointer-events-none text-sm`} 
+                            style={{ color: 'var(--text-color)' }}
+                        ></i>
                         <input 
                             type="text" 
                             placeholder={isEn ? "Search supplications..." : "ابحث في الأدعية..."} 
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className={`w-full bg-black/5 dark:bg-white/5 py-3 ${isEn ? 'pl-12 pr-10 text-left font-sans' : 'pr-12 pl-10 text-right font-kufi'} focus:outline-none placeholder-gray-500 dark:placeholder-gray-400`}
+                            className={`w-full bg-transparent py-3 text-sm sm:text-base border-0 outline-none ${
+                                isEn ? 'pl-11 pr-10 text-left font-sans' : 'pr-11 pl-10 text-right font-kufi'
+                            } placeholder-gray-400 dark:placeholder-gray-500`}
                             style={{ color: 'var(--text-color)' }}
                         />
-                        <i 
-                            className={`fa-solid fa-search absolute ${isEn ? 'left-4' : 'right-4'} top-1/2 transform -translate-y-1/2 opacity-50`} 
-                            style={{ color: 'var(--text-color)' }}
-                        ></i>
                         {searchQuery && (
                             <button
                                 onClick={() => setSearchQuery('')}
-                                className={`absolute inset-y-0 ${isEn ? 'right-4' : 'left-4'} flex items-center text-gray-400 hover:text-gray-600`}
+                                className={`absolute inset-y-0 ${isEn ? 'right-4' : 'left-4'} flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer`}
                             >
                                 <i className="fa-solid fa-times text-xs"></i>
                             </button>
                         )}
                     </div>
 
-                    {/* View Mode Switch */}
-                    <div 
-                        className="flex items-center p-1 rounded-2xl border shrink-0 shadow-sm"
-                        style={{
-                            backgroundColor: isBlackTheme ? '#111111' : (theme.isDark ? '#1e293b' : '#ffffff'),
-                            borderColor: cardBorderColor
-                        }}
-                    >
+                    {/* View Mode Switch Chips */}
+                    <div className="flex items-center p-1 rounded-2xl bg-slate-200/60 dark:bg-zinc-800/70 shrink-0 gap-1">
                         <button
                             type="button"
                             onClick={() => setActiveTab('grid')}
-                            className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTab === 'grid' ? 'shadow-sm' : 'opacity-60 hover:opacity-100'}`}
+                            className={`flex items-center justify-center w-9 h-9 rounded-xl transition-all cursor-pointer ${
+                                activeTab === 'grid' ? 'shadow-sm' : 'opacity-60 hover:opacity-100'
+                            }`}
                             style={activeTab === 'grid' ? {
-                                backgroundColor: isBlackTheme ? '#FFFFFF' : (isDefaultTheme ? '#000000' : theme.palette[0]),
-                                color: isBlackTheme ? '#000000' : '#ffffff'
+                                backgroundColor: primaryColor,
+                                color: btnTextColor
                             } : { color: 'var(--text-color)' }}
                             title={isEn ? "Grid View" : "عرض شبكي"}
                         >
@@ -357,10 +375,12 @@ function Adia({ onBack, onNavigate }: AdiaProps) {
                         <button
                             type="button"
                             onClick={() => setActiveTab('list')}
-                            className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTab === 'list' ? 'shadow-sm' : 'opacity-60 hover:opacity-100'}`}
+                            className={`flex items-center justify-center w-9 h-9 rounded-xl transition-all cursor-pointer ${
+                                activeTab === 'list' ? 'shadow-sm' : 'opacity-60 hover:opacity-100'
+                            }`}
                             style={activeTab === 'list' ? {
-                                backgroundColor: isBlackTheme ? '#FFFFFF' : (isDefaultTheme ? '#000000' : theme.palette[0]),
-                                color: isBlackTheme ? '#000000' : '#ffffff'
+                                backgroundColor: primaryColor,
+                                color: btnTextColor
                             } : { color: 'var(--text-color)' }}
                             title={isEn ? "List View" : "عرض القوائم"}
                         >
@@ -369,7 +389,8 @@ function Adia({ onBack, onNavigate }: AdiaProps) {
                     </div>
                 </div>
 
-                <div className={activeTab === 'grid' ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" : "space-y-4 max-w-3xl mx-auto"}>
+                {/* Supplications Cards Grid/List */}
+                <div className={activeTab === 'grid' ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-3xl mx-auto pb-4" : "space-y-4 max-w-3xl mx-auto pb-4"}>
                     {filteredDuaa.length > 0 ? (
                         filteredDuaa.map((duaa) => {
                             const initialCount = duaa.count || 1;
@@ -377,13 +398,6 @@ function Adia({ onBack, onNavigate }: AdiaProps) {
                             const isFinished = currentCount === 0;
 
                             const repetitionText = getRepetitionText(initialCount, isEn);
-
-                            const badgeStyle = isFinished 
-                                ? { backgroundColor: 'var(--badge-finished-bg)', color: 'var(--badge-finished-text)' } 
-                                : (themeKey === 'default' 
-                                    ? { backgroundColor: '#ffffff', color: '#000000', border: '1px solid rgba(0,0,0,0.1)' } 
-                                    : { backgroundImage: `linear-gradient(to bottom right, ${theme.palette[0]}, ${theme.palette[1]})`, color: theme.name === 'اسود' ? '#000000' : '#ffffff' }
-                                );
 
                             const displayText = isEn ? (duaa.textEn || duaa.text) : duaa.text;
                             const displaySource = isEn ? (duaa.sourceEn || duaa.source) : duaa.source;
@@ -394,26 +408,39 @@ function Adia({ onBack, onNavigate }: AdiaProps) {
                             return (
                                 <div 
                                     key={duaa.id} 
-                                    className={`p-5 pb-3 rounded-3xl relative transition-all overflow-hidden themed-card group shadow-sm border flex flex-col justify-between ${isFinished ? 'opacity-60 cursor-pointer' : 'cursor-pointer hover:shadow-md'}`} 
+                                    className={`p-5 pb-3 rounded-[18px] relative transition-all duration-300 overflow-hidden group shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-none hover:shadow-[0_6px_25px_rgba(0,0,0,0.06)] border border-slate-100/80 dark:border-white/5 flex flex-col justify-between ${
+                                        isFinished ? 'opacity-65 cursor-pointer' : 'cursor-pointer'
+                                    }`} 
                                     onClick={() => handleDecrement(duaa.id, currentCount)}
                                     style={{ 
                                         fontFamily: isEn ? 'sans-serif' : theme.font,
-                                        borderColor: cardBorderColor,
-                                        borderWidth: '1.5px',
-                                        borderStyle: 'solid'
+                                        backgroundColor: isBlackTheme ? '#121212' : (theme.cardBg || (theme.isDark ? '#18181B' : '#FFFFFF')),
+                                        color: 'var(--text-color)'
                                     }}
                                 >
-                                    {/* Top Bar with repetition note and count badge */}
-                                    <div className="flex justify-between items-start mb-3">
+                                    {/* Top Bar with repetition badge and count badge */}
+                                    <div className="flex justify-between items-center mb-3">
                                         <span 
-                                            className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold shadow-sm select-none" 
-                                            style={{ backgroundColor: theme.palette[1] + '30', color: theme.palette[1] }}
+                                            className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold select-none transition-colors" 
+                                            style={{ 
+                                                backgroundColor: hexToRgba(primaryColor, isBlackTheme ? 0.2 : 0.1), 
+                                                color: isBlackTheme ? '#FFFFFF' : primaryColor 
+                                            }}
                                         >
                                             {repetitionText}
                                         </span>
+
+                                        {/* Repetition Counter Badge */}
                                         <div 
-                                            className="count-badge w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg shadow-md transform transition-transform shrink-0 select-none cursor-pointer" 
-                                            style={badgeStyle}
+                                            className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-base sm:text-lg select-none cursor-pointer transition-all active:scale-90 hover:scale-105 shrink-0" 
+                                            style={
+                                                isFinished 
+                                                ? { backgroundColor: '#10B981', color: '#FFFFFF', boxShadow: '0 2px 10px rgba(16, 185, 129, 0.3)' } 
+                                                : { 
+                                                    backgroundColor: hexToRgba(primaryColor, isBlackTheme ? 0.25 : 0.12), 
+                                                    color: isBlackTheme ? '#FFFFFF' : primaryColor 
+                                                }
+                                            }
                                             onClick={(e) => {
                                                 if (isFinished) {
                                                     e.stopPropagation();
@@ -422,14 +449,14 @@ function Adia({ onBack, onNavigate }: AdiaProps) {
                                             }}
                                             title={isFinished ? (isEn ? 'Click to reset' : 'اضغط لإعادة التكرار') : (isEn ? 'Remaining count' : 'العدد المتبقي')}
                                         >
-                                            {isFinished ? <i className="fa-solid fa-check"></i> : (isEn ? currentCount : toArabicNumerals(currentCount))}
+                                            {isFinished ? <i className="fa-solid fa-check text-sm"></i> : (isEn ? currentCount : toArabicNumerals(currentCount))}
                                         </div>
                                     </div>
 
-                                    {/* Duaa Text: When English, render ONLY English. When Arabic, render Arabic. */}
+                                    {/* Duaa Text with generous line height */}
                                     {isEn ? (
                                         <p 
-                                            className="text-base sm:text-lg leading-relaxed text-center font-sans font-medium mb-6 select-none text-balance" 
+                                            className="text-base sm:text-lg leading-relaxed text-center font-sans font-medium mb-4 select-none text-balance" 
                                             dir="ltr" 
                                             style={{ color: 'var(--text-color)' }}
                                         >
@@ -437,88 +464,95 @@ function Adia({ onBack, onNavigate }: AdiaProps) {
                                         </p>
                                     ) : (
                                         <p 
-                                            className="text-xl md:text-2xl leading-relaxed text-center font-amiri mb-6 select-none" 
+                                            className="text-xl md:text-2xl leading-[2.3] text-center font-amiri mb-4 select-none text-balance" 
                                             style={{ color: 'var(--text-color)' }}
                                         >
                                             {displayText}
                                         </p>
                                     )}
 
-                                    <div className="mt-auto pt-4 border-t space-y-4" style={{borderColor: 'var(--card-border)'}}>
-                                        <div className="flex justify-center">
+                                    {/* Source and Category */}
+                                    {(categoryTitle || displaySource) && (
+                                        <div className="flex justify-center mb-3">
                                             <span 
-                                                className="text-xs sm:text-sm text-center opacity-70 font-bold bg-black/5 dark:bg-white/5 px-4 py-1.5 rounded-full" 
+                                                className="text-xs sm:text-sm text-center opacity-70 font-bold bg-slate-100 dark:bg-zinc-800/60 px-3.5 py-1 rounded-full" 
                                                 dir={isEn ? 'ltr' : 'rtl'}
                                                 style={{ color: 'var(--text-color)' }}
                                             >
-                                                {categoryTitle} • {displaySource}
+                                                {categoryTitle ? `${categoryTitle} • ` : ''}{displaySource}
                                             </span>
                                         </div>
-                                        
-                                        <div className="flex justify-between items-center">
+                                    )}
+                                    
+                                    {/* Action Buttons Row */}
+                                    <div className="flex justify-between items-center mt-auto pt-3 border-t border-slate-100/90 dark:border-white/5">
+                                        <button 
+                                            onClick={(e) => toggleFavorite(duaa.id, e)} 
+                                            className="w-9 h-9 rounded-full flex items-center justify-center bg-slate-100/80 dark:bg-zinc-800/80 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
+                                            title={isEn ? (favorites.includes(duaa.id) ? 'Remove from favorites' : 'Add to favorites') : (favorites.includes(duaa.id) ? 'إزالة من المفضلة' : 'إضافة إلى المفضلة')}
+                                            aria-label={isEn ? 'Favorite' : 'المفضلة'}
+                                        >
+                                            <i className={`fa-heart ${favorites.includes(duaa.id) ? 'fa-solid text-red-500' : 'fa-regular opacity-70'}`} style={favorites.includes(duaa.id) ? {} : { color: 'var(--text-color)' }}></i>
+                                        </button>
+                                        <div className="flex gap-2">
                                             <button 
-                                                onClick={(e) => toggleFavorite(duaa.id, e)} 
-                                                className="w-9 h-9 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors"
-                                                title={isEn ? (favorites.includes(duaa.id) ? 'Remove from favorites' : 'Add to favorites') : (favorites.includes(duaa.id) ? 'إزالة من المفضلة' : 'إضافة إلى المفضلة')}
-                                                aria-label={isEn ? 'Favorite' : 'المفضلة'}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    openZoomModal(duaa);
+                                                }} 
+                                                className="w-9 h-9 rounded-full flex items-center justify-center bg-slate-100/80 dark:bg-zinc-800/80 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors opacity-75 hover:opacity-100 cursor-pointer"
+                                                style={{ color: 'var(--text-color)' }} 
+                                                title={isEn ? "Zoom" : "تكبير"}
+                                                aria-label={isEn ? "Zoom" : "تكبير"}
                                             >
-                                                <i className={`fa-heart ${favorites.includes(duaa.id) ? 'fa-solid text-red-500' : 'fa-regular opacity-70'}`} style={favorites.includes(duaa.id) ? {} : { color: 'var(--text-color)' }}></i>
+                                                <i className="fa-solid fa-magnifying-glass-plus text-xs"></i>
                                             </button>
-                                            <div className="flex gap-2">
-                                                <button 
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        openZoomModal(duaa);
-                                                    }} 
-                                                    className="w-9 h-9 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors opacity-70 hover:opacity-100"
-                                                    style={{ color: 'var(--text-color)' }} 
-                                                    title={isEn ? "Zoom" : "تكبير"}
-                                                    aria-label={isEn ? "Zoom" : "تكبير"}
-                                                >
-                                                    <i className="fa-solid fa-magnifying-glass-plus"></i>
-                                                </button>
-                                                <button 
-                                                    onClick={(e) => handleCopy(duaa, e)} 
-                                                    className="w-9 h-9 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors opacity-70 hover:opacity-100" 
-                                                    style={{ color: 'var(--text-color)' }} 
-                                                    title={isEn ? "Copy" : "نسخ"}
-                                                    aria-label={isEn ? "Copy" : "نسخ"}
-                                                >
-                                                    <i className="fa-regular fa-copy"></i>
-                                                </button>
-                                                <button 
-                                                    onClick={(e) => handleShare(duaa, e)} 
-                                                    className="w-9 h-9 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors opacity-70 hover:opacity-100" 
-                                                    style={{ color: 'var(--text-color)' }} 
-                                                    title={isEn ? "Share" : "مشاركة"}
-                                                    aria-label={isEn ? "Share" : "مشاركة"}
-                                                >
-                                                    <i className="fa-solid fa-share-nodes"></i>
-                                                </button>
-                                                <button 
-                                                    onClick={(e) => handlePlayAudio(duaa, e)} 
-                                                    className="w-9 h-9 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors opacity-70 hover:opacity-100" 
-                                                    style={{ color: isCurrentlyPlaying ? '#ef4444' : 'var(--text-color)' }}
-                                                    title={isEn ? (isCurrentlyPlaying ? "Stop listening" : "Listen audio") : (isCurrentlyPlaying ? "إيقاف الاستماع" : "استماع صوتي")}
-                                                    aria-label={isEn ? "Listen audio" : "استماع صوتي"}
-                                                >
-                                                    <i className={`fa-solid ${isCurrentlyPlaying ? 'fa-circle-pause text-red-500 animate-pulse' : 'fa-volume-high'}`}></i>
-                                                </button>
-                                            </div>
+                                            <button 
+                                                onClick={(e) => handleCopy(duaa, e)} 
+                                                className="w-9 h-9 rounded-full flex items-center justify-center bg-slate-100/80 dark:bg-zinc-800/80 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors opacity-75 hover:opacity-100 cursor-pointer" 
+                                                style={{ color: 'var(--text-color)' }} 
+                                                title={isEn ? "Copy" : "نسخ"}
+                                                aria-label={isEn ? "Copy" : "نسخ"}
+                                            >
+                                                <i className="fa-regular fa-copy text-xs"></i>
+                                            </button>
+                                            <button 
+                                                onClick={(e) => handleShare(duaa, e)} 
+                                                className="w-9 h-9 rounded-full flex items-center justify-center bg-slate-100/80 dark:bg-zinc-800/80 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors opacity-75 hover:opacity-100 cursor-pointer" 
+                                                style={{ color: 'var(--text-color)' }} 
+                                                title={isEn ? "Share" : "مشاركة"}
+                                                aria-label={isEn ? "Share" : "مشاركة"}
+                                            >
+                                                <i className="fa-solid fa-share-nodes text-xs"></i>
+                                            </button>
+                                            <button 
+                                                onClick={(e) => handlePlayAudio(duaa, e)} 
+                                                className="w-9 h-9 rounded-full flex items-center justify-center bg-slate-100/80 dark:bg-zinc-800/80 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors opacity-75 hover:opacity-100 cursor-pointer" 
+                                                style={{ color: isCurrentlyPlaying ? '#ef4444' : 'var(--text-color)' }}
+                                                title={isEn ? (isCurrentlyPlaying ? "Stop listening" : "Listen audio") : (isCurrentlyPlaying ? "إيقاف الاستماع" : "استماع صوتي")}
+                                                aria-label={isEn ? "Listen audio" : "استماع صوتي"}
+                                            >
+                                                <i className={`fa-solid ${isCurrentlyPlaying ? 'fa-circle-pause text-red-500 animate-pulse text-sm' : 'fa-volume-high text-xs'}`}></i>
+                                            </button>
                                         </div>
                                     </div>
 
-                                    {!isFinished && <div className="absolute inset-0 opacity-0 group-active:opacity-100 transition pointer-events-none" style={{ backgroundColor: theme.palette[0] + '15' }}></div>}
+                                    {!isFinished && (
+                                        <div 
+                                            className="absolute inset-0 opacity-0 group-active:opacity-100 transition pointer-events-none" 
+                                            style={{ backgroundColor: hexToRgba(primaryColor, 0.08) }}
+                                        ></div>
+                                    )}
                                 </div>
                             );
                         })
                     ) : (
-                        <div className="col-span-full py-12 text-center text-gray-500 dark:text-gray-400 font-bold">
-                            <i className="fa-solid fa-search text-4xl mb-4 opacity-50"></i>
+                        <div className="col-span-full py-16 text-center text-gray-500 dark:text-gray-400 font-bold">
+                            <i className="fa-solid fa-search text-4xl mb-4 opacity-40"></i>
                             <p>{isEn ? "No supplications match your search." : "لا توجد نتائج مطابقة لبحثك."}</p>
                         </div>
                     )}
-                    <div className="shrink-0 w-full h-32 col-span-full"></div>
+                    <div className="shrink-0 w-full h-28 col-span-full"></div>
                 </div>
             </main>
 
@@ -529,7 +563,7 @@ function Adia({ onBack, onNavigate }: AdiaProps) {
                         initial={{ opacity: 0, y: 50, x: '-50%' }}
                         animate={{ opacity: 1, y: 0, x: '-50%' }}
                         exit={{ opacity: 0, y: 50, x: '-50%' }}
-                        className="fixed bottom-8 left-1/2 z-[200] bg-gray-800 text-white px-6 py-3 rounded-full shadow-lg font-bold text-sm text-center whitespace-nowrap flex items-center gap-2 border border-white/10"
+                        className="fixed bottom-8 left-1/2 z-[200] bg-gray-900/90 backdrop-blur text-white px-6 py-3 rounded-full shadow-2xl font-bold text-sm text-center whitespace-nowrap flex items-center gap-2 border border-white/10"
                     >
                         <i className="fa-solid fa-check text-green-400"></i>
                         {toastMessage}
@@ -537,11 +571,10 @@ function Adia({ onBack, onNavigate }: AdiaProps) {
                 )}
             </AnimatePresence>
 
-            {/* Backdrop to close floating menu when clicking anywhere, absorbing the click */}
+            {/* Backdrop to close floating menu when clicking anywhere */}
             {isMenuOpen && (
                 <div 
                     className="fixed inset-0 z-[1200] bg-transparent cursor-pointer"
-                    style={{ position: 'fixed' }}
                     onClick={(e) => {
                         e.stopPropagation();
                         setIsMenuOpen(false);
@@ -549,8 +582,12 @@ function Adia({ onBack, onNavigate }: AdiaProps) {
                 />
             )}
 
-            {/* Floating Menu & FAB */}
-            <div ref={fabContainerRef} className={`fixed bottom-3 ${isEn ? 'left-4 items-start' : 'right-4 items-end'} ${isMenuOpen ? 'z-[1250]' : 'z-[90]'} flex flex-col`}>
+            {/* Floating Menu & Modern FAB */}
+            <div 
+                ref={fabContainerRef} 
+                className={`fixed ${isEn ? 'left-5 items-start' : 'right-5 items-end'} ${isMenuOpen ? 'z-[1250]' : 'z-[90]'} flex flex-col`}
+                style={{ bottom: 'calc(env(safe-area-inset-bottom, 24px) + 32px)' }}
+            >
                 <AnimatePresence>
                     {isMenuOpen && (
                         <motion.div
@@ -558,41 +595,50 @@ function Adia({ onBack, onNavigate }: AdiaProps) {
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: menuOpenDirection === 'up' ? 20 : -20, scale: 0.9 }}
                             transition={{ duration: 0.2 }}
-                            className={`absolute ${isEn ? 'left-0 origin-bottom-left' : 'right-0 origin-bottom-right'} ${menuOpenDirection === 'up' ? 'bottom-full mb-4' : 'top-full mt-4'} themed-card rounded-2xl shadow-xl border p-2 flex flex-col gap-1 overflow-hidden w-56 z-0`}
-                            style={{ borderColor: 'var(--card-border)', color: 'var(--text-color)' }}
+                            className={`absolute ${isEn ? 'left-0 origin-bottom-left' : 'right-0 origin-bottom-right'} ${menuOpenDirection === 'up' ? 'bottom-full mb-3' : 'top-full mt-3'} bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md rounded-2xl shadow-2xl p-2 flex flex-col gap-1 overflow-hidden w-56 z-0 border border-slate-100/80 dark:border-white/10`}
+                            style={{ color: 'var(--text-color)' }}
                             onClick={(e) => e.stopPropagation()}
                         >
                             <button 
                                 onClick={() => { setActiveCategory('all'); setIsMenuOpen(false); }}
-                                className={`w-full ${isEn ? 'text-left' : 'text-right'} px-4 py-2.5 rounded-xl text-sm font-bold transition-colors ${activeCategory === 'all' ? 'bg-black/5 dark:bg-white/10' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}
-                                style={activeCategory === 'all' ? { color: isBlackTheme ? '#FFFFFF' : theme.palette[0] } : {}}
+                                className="w-full text-right px-4 py-2.5 rounded-xl text-sm font-bold transition-colors cursor-pointer"
+                                style={activeCategory === 'all' ? { 
+                                    backgroundColor: hexToRgba(primaryColor, 0.12), 
+                                    color: primaryColor 
+                                } : {}}
                             >
                                 {isEn ? 'All Supplications' : 'الكل'}
                             </button>
                             <button 
                                 onClick={() => { setActiveCategory('favorites'); setIsMenuOpen(false); }}
-                                className={`w-full ${isEn ? 'text-left' : 'text-right'} px-4 py-2.5 rounded-xl text-sm font-bold transition-colors flex items-center justify-between ${activeCategory === 'favorites' ? 'bg-black/5 dark:bg-white/10' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}
-                                style={activeCategory === 'favorites' ? { color: isBlackTheme ? '#FFFFFF' : theme.palette[0] } : {}}
+                                className="w-full text-right px-4 py-2.5 rounded-xl text-sm font-bold transition-colors flex items-center justify-between cursor-pointer"
+                                style={activeCategory === 'favorites' ? { 
+                                    backgroundColor: hexToRgba(primaryColor, 0.12), 
+                                    color: primaryColor 
+                                } : {}}
                             >
                                 <span>{isEn ? 'Favorites' : 'المفضلة'}</span>
                                 <i className="fa-solid fa-heart text-xs opacity-70"></i>
                             </button>
-                            <div className="h-px bg-black/10 dark:bg-white/10 my-1" />
+                            <div className="h-px bg-slate-100 dark:bg-white/10 my-1" />
                             {DUAA_CATEGORIES.map(category => (
                                 <button 
                                     key={category.id}
                                     onClick={() => { setActiveCategory(category.id); setIsMenuOpen(false); }}
-                                    className={`w-full ${isEn ? 'text-left' : 'text-right'} px-4 py-2.5 rounded-xl text-sm font-bold transition-colors flex items-center justify-between ${activeCategory === category.id ? 'bg-black/5 dark:bg-white/10' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}
-                                    style={activeCategory === category.id ? { color: isBlackTheme ? '#FFFFFF' : theme.palette[0] } : {}}
+                                    className="w-full text-right px-4 py-2.5 rounded-xl text-sm font-bold transition-colors flex items-center justify-between cursor-pointer"
+                                    style={activeCategory === category.id ? { 
+                                        backgroundColor: hexToRgba(primaryColor, 0.12), 
+                                        color: primaryColor 
+                                    } : {}}
                                 >
                                     <span>{isEn ? (category.titleEn || category.title) : category.title}</span>
                                     <i className={`fa-solid ${category.icon} text-xs opacity-70`}></i>
                                 </button>
                             ))}
-                            <div className="h-px bg-black/10 dark:bg-white/10 my-1" />
+                            <div className="h-px bg-slate-100 dark:bg-white/10 my-1" />
                             <button 
                                 onClick={handleResetAll}
-                                className={`w-full ${isEn ? 'text-left' : 'text-right'} px-4 py-2.5 rounded-xl text-sm font-bold transition-colors flex items-center justify-between hover:bg-black/5 dark:hover:bg-white/5`}
+                                className="w-full text-right px-4 py-2.5 rounded-xl text-sm font-bold transition-colors flex items-center justify-between hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer"
                             >
                                 <span>{isEn ? 'Reset All Counters' : 'إعادة ضبط العدادات'}</span>
                                 <i className="fa-solid fa-rotate-left text-xs opacity-70"></i>
@@ -601,15 +647,16 @@ function Adia({ onBack, onNavigate }: AdiaProps) {
                     )}
                 </AnimatePresence>
 
+                {/* FAB: Clean circle filled with primaryColor and elevated soft drop shadow */}
                 <button 
                     ref={fabRef}
                     onClick={handleFabClick}
-                    className={`w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-all hover:scale-105 active:scale-95 cursor-pointer relative z-10 ${themeKey === 'default' ? 'text-black' : (isBlackTheme ? 'text-black' : 'text-white')}`}
-                    style={
-                        themeKey === 'default'
-                        ? { backgroundColor: '#ffffff', border: '1px solid #000000' }
-                        : { backgroundColor: isBlackTheme ? '#FFFFFF' : theme.palette[0] }
-                    }
+                    className="w-14 h-14 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer relative z-10 border-0"
+                    style={{
+                        backgroundColor: primaryColor,
+                        color: btnTextColor,
+                        boxShadow: `0 8px 25px ${hexToRgba(primaryColor, isBlackTheme ? 0.2 : 0.35)}`
+                    }}
                     title={isEn ? "Categories Menu" : "قائمة التصنيفات"}
                     aria-label={isEn ? "Categories Menu" : "قائمة التصنيفات"}
                 >
@@ -618,68 +665,11 @@ function Adia({ onBack, onNavigate }: AdiaProps) {
             </div>
 
             {/* Zoom Modal */}
-            {zoomedDuaa && (
-                <div className="fixed inset-0 bg-black/80 z-[100] flex justify-center items-center p-4 backdrop-blur-sm" onClick={closeZoomModal}>
-                    <div 
-                        className="bg-modal-bg text-modal-text p-8 rounded-3xl w-full max-w-2xl text-center relative scale-in shadow-2xl border-2 border-modal-border flex flex-col max-h-[90vh]" 
-                        style={{ fontFamily: isEn ? 'sans-serif' : theme.font }} 
-                        onClick={e => e.stopPropagation()}
-                    >
-                        <div className="overflow-y-auto hide-scrollbar flex-1 py-4">
-                            {/* When English, show ONLY English text. Zero Arabic. */}
-                            {isEn ? (
-                                <div 
-                                    className="text-xl md:text-2xl leading-relaxed font-sans font-medium text-center my-4 select-none text-balance"
-                                    dir="ltr"
-                                >
-                                    {zoomedDuaa.textEn || zoomedDuaa.text}
-                                </div>
-                            ) : (
-                                <div 
-                                    className="text-3xl md:text-4xl leading-relaxed font-amiri text-center select-none"
-                                >
-                                    {zoomedDuaa.text}
-                                </div>
-                            )}
-
-                            <p className="text-base sm:text-lg mt-6 font-bold" style={{ color: theme.palette[0] }} dir={isEn ? 'ltr' : 'rtl'}>
-                                {isEn 
-                                    ? `${categoryForDuaa(zoomedDuaa.categoryId)?.titleEn || ''} • ${zoomedDuaa.sourceEn || zoomedDuaa.source}`
-                                    : `من ${categoryForDuaa(zoomedDuaa.categoryId)?.title || ''} (${zoomedDuaa.source})`}
-                            </p>
-
-                            {zoomedDuaa.count > 1 && (
-                                <p className="text-sm mt-2 font-semibold opacity-75">
-                                    {isEn ? `Required repetitions: ${zoomedDuaa.count} times` : `التكرار المطلوب: ${toArabicNumerals(zoomedDuaa.count)} مرات`}
-                                </p>
-                            )}
-                        </div>
-
-                        <div className="mt-6 shrink-0 flex items-center gap-3">
-                            <button 
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (zoomedDuaa) {
-                                        handleShare(zoomedDuaa, e);
-                                    }
-                                }} 
-                                className="flex-1 py-3 rounded-xl font-bold text-white flex items-center justify-center gap-2 hover:opacity-95 transition-opacity shadow-md"
-                                style={{ backgroundColor: theme.palette[0] }}
-                                title={isEn ? "Share Image" : "مشاركة كصورة"}
-                            >
-                                <i className="fa-solid fa-share-nodes"></i>
-                                <span>{isEn ? 'Share Image' : 'مشاركة كصورة'}</span>
-                            </button>
-                            <button 
-                                onClick={closeZoomModal} 
-                                className="flex-1 py-3 rounded-xl font-bold bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:opacity-90 transition-opacity"
-                            >
-                                {isEn ? 'Close' : 'إغلاق'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <ZoomModal 
+                zoomedDuaa={zoomedDuaa} 
+                onClose={closeZoomModal} 
+                setToastMessage={setToastMessage} 
+            />
             <CommunitySpotlightGuide
                 isOpen={showGuide}
                 onClose={() => {

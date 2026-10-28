@@ -40,9 +40,9 @@ const TasbeehModals: React.FC<TasbeehModalsProps> = ({
     onNavigate
 }) => {
     const { language, isRTL } = useLanguage();
-    const isBlackTheme = theme.bgColor === '#000000';
-    const isDefaultTheme = themeKey === 'default' || !themeKey;
-    const activeBorderColor = cardBorderColor || (isDefaultTheme ? '#000000' : (isBlackTheme ? '#FFFFFF' : (theme.palette?.[0] || '#000000')));
+    const isBlackTheme = theme.bgColor === '#000000' || theme.name === 'اسود' || theme.name === 'black';
+    const primaryColor = isBlackTheme ? '#FFFFFF' : (theme.palette?.[0] || theme.accent || '#2E7D5E');
+    const activeBorderColor = isBlackTheme ? 'rgba(255, 255, 255, 0.1)' : 'transparent';
 
     return (
         <>
@@ -145,20 +145,20 @@ const TasbeehModals: React.FC<TasbeehModalsProps> = ({
             </ModalWrapper>
 
             {/* Select Phrase Modal */}
-            <ModalWrapper isOpen={modals.phrase} onClose={() => setModals((p: any) => ({...p, phrase: false}))} noStyles={true} cardBorderColor={activeBorderColor}>
-                <div className="overflow-y-auto max-h-[60vh] bg-modal-bg text-modal-text shadow-2xl rounded-2xl custom-scrollbar" style={{ borderColor: activeBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}>
+            <ModalWrapper isOpen={modals.phrase} onClose={() => setModals((p: any) => ({...p, phrase: false}))} noStyles={true}>
+                <div className="overflow-y-auto max-h-[60vh] bg-white dark:bg-[#1E293B] text-slate-800 dark:text-white shadow-2xl rounded-2xl border border-slate-100 dark:border-white/10 custom-scrollbar">
                     {phrases.map((p) => (
                         <button 
                              key={p.id} 
                              onClick={() => { setActivePhrase(p.text); handleReset(); setModals((p: any) => ({...p, phrase: false})); }}
-                             className={`w-full px-4 py-3.5 flex items-center justify-between transition-all border-b border-modal-border last:border-0 hover:bg-black/5 dark:hover:bg-white/5 active:scale-[0.99] ${activePhrase === p.text ? 'bg-black/5 dark:bg-white/10 font-bold' : ''}`}
-                             style={activePhrase === p.text ? { color: theme.palette[0] } : {}}
+                             className={`w-full px-4 py-3.5 flex items-center justify-between transition-all border-b border-slate-100 dark:border-white/5 last:border-0 hover:bg-black/5 dark:hover:bg-white/5 active:scale-[0.99] ${activePhrase === p.text ? 'bg-black/5 dark:bg-white/10 font-bold' : ''}`}
+                             style={activePhrase === p.text ? { color: primaryColor } : {}}
                         >
-                            <span className="text-base leading-relaxed font-amiri text-modal-text flex-1 text-start">
+                            <span className="text-base leading-relaxed font-amiri flex-1 text-start">
                                 {getPhraseDisplay(p.text, language)}
                             </span>
                             {activePhrase === p.text && (
-                                <div className="w-6 h-6 flex-shrink-0 flex items-center justify-center rounded-full bg-black/5 dark:bg-white/10" style={{ color: theme.palette[0] }}>
+                                <div className="w-6 h-6 flex-shrink-0 flex items-center justify-center rounded-full" style={{ backgroundColor: `${primaryColor}20`, color: primaryColor }}>
                                     <svg className="w-4 h-4" transform="scale(1.1)" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>
                                 </div>
                             )}
