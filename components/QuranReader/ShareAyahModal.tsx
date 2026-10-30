@@ -1885,7 +1885,14 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                     </div>
 
                     {/* Footer */}
-                    <div className="p-2 border-t flex gap-2" style={{ backgroundColor: currentTheme.bg, borderColor: currentTheme.text === '#ffffff' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }}>
+                    <div 
+                        className="p-3 border-t flex gap-2 shrink-0 z-10" 
+                        style={{ 
+                            backgroundColor: currentTheme.bg, 
+                            borderColor: currentTheme.text === '#ffffff' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+                            paddingBottom: 'calc(max(env(safe-area-inset-bottom, 0px), 56px) + 0.75rem)'
+                        }}
+                    >
                         <button
                             onClick={onClose}
                             className="flex-1 py-3.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-95 border-none quran-raised-btn"

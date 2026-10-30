@@ -2,6 +2,7 @@ import { LocalNotifications } from '@capacitor/local-notifications';
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import { Preferences } from '@capacitor/preferences';
 import { playNotificationSound } from './prayerTimesUtils';
+import { updateNativeAlertsGroupSummary } from './silentMode';
 
 // Plugin interface for native bridge
 interface AutoSilentPluginInterface {
@@ -43,7 +44,7 @@ export interface WirdAlertData {
 
 const TOTAL_QURAN_PAGES = 604;
 export const WIRD_CHANNEL_ID = 'daily_wird_reminders_channel';
-export const WIRD_GROUP_ID = 'com.mushaf.ahmedandlayla.APP_ALERTS_CARD';
+export const WIRD_GROUP_ID = 'com.mushaf.ahmedandlayla.GENERAL_ALERTS_CARD';
 
 // Notification IDs:
 // 9300: Test notification
@@ -352,12 +353,40 @@ export const syncDailyWirdNotifications = async (langOverride?: 'ar' | 'en') => 
       await LocalNotifications.cancel({ notifications: wirdPending });
     }
 
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+    const isTodayAlreadyCompleted = Boolean(
+      profile && profile.lastCompletedDate && profile.lastCompletedDate.startsWith(todayStr)
+    );
+
+    // If today is completed, remove any delivered notifications from drawer immediately
+    if (isTodayAlreadyCompleted) {
+      try {
+        const wirdDelivered = (delivered?.notifications || []).filter(
+          n => n.id >= 9300 && n.id <= 9399
+        );
+        if (wirdDelivered.length > 0) {
+          await LocalNotifications.removeDeliveredNotifications({
+            notifications: wirdDelivered
+          });
+        }
+      } catch (e) {}
+    }
+
     // Also trigger native alarm synchronization
     try {
       if (AutoSilentMode && typeof AutoSilentMode.syncDailyWird === 'function') {
         await AutoSilentMode.syncDailyWird();
       }
     } catch (e) {}
+
+    // On native Android, native DailyWirdAlarmReceiver handles exact AlarmManager reminders (morning and evening)
+    // with live state and completion verification. We avoid scheduling duplicate LocalNotifications on Android!
+    if (Capacitor.isNativePlatform()) {
+      console.log('[DailyWird] Native AlarmManager handles wird alarms via DailyWirdAlarmReceiver.');
+      await updateNativeAlertsGroupSummary();
+      return;
+    }
 
     if (!profile || !profile.isActive || profile.reminderEnabled === false) {
       console.log('[DailyWird] No active wird or reminder is disabled.');
@@ -371,12 +400,6 @@ export const syncDailyWirdNotifications = async (langOverride?: 'ar' | 'en') => 
     }
 
     await ensureWirdNotificationChannel(lang);
-
-    const now = new Date();
-    const todayStr = now.toISOString().split('T')[0];
-    const isTodayAlreadyCompleted = Boolean(
-      profile.lastCompletedDate && profile.lastCompletedDate.startsWith(todayStr)
-    );
 
     const notificationsToSchedule: any[] = [];
 
@@ -531,6 +554,7 @@ export const syncDailyWirdNotifications = async (langOverride?: 'ar' | 'en') => 
     if (notificationsToSchedule.length > 0) {
       await LocalNotifications.schedule({ notifications: notificationsToSchedule });
       console.log(`[DailyWird] Successfully scheduled ${notificationsToSchedule.length} phone notifications in (${lang}) with chime sound and custom icon.`);
+      await updateNativeAlertsGroupSummary();
     }
   } catch (error) {
     console.error('[DailyWird] Error synchronizing notifications:', error);

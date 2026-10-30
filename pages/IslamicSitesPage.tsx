@@ -173,7 +173,7 @@ const IslamicSitesPage: React.FC<IslamicSitesPageProps> = ({ onBack, onNavigate 
                                 title={isEn ? "Islamic Sites Guide" : "دليل المواقع الإسلامية"}
                                 aria-label={isEn ? "Islamic Sites Guide" : "دليل المواقع الإسلامية"}
                             >
-                                <i className="fa-solid fa-circle-question text-lg text-black"></i>
+                                <i className="fa-solid fa-circle-question text-lg"></i>
                             </button>
                             <ThemePageLock />
                             <button

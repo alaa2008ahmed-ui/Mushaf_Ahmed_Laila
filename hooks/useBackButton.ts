@@ -4,10 +4,12 @@ import { App } from '@capacitor/app';
 interface UseBackButtonProps {
     isThemeSelectorOpen: boolean;
     showExitConfirm: boolean;
+    isSideMenuOpen?: boolean;
     history: string[];
     navigateBack: () => void;
     setIsThemeSelectorOpen: (isOpen: boolean) => void;
     setShowExitConfirm: (show: boolean) => void;
+    setIsSideMenuOpen?: (isOpen: boolean) => void;
 }
 
 // Global stack of interceptors
@@ -26,10 +28,12 @@ export const registerBackInterceptor = (interceptor: () => boolean) => {
 export function useBackButton({
     isThemeSelectorOpen,
     showExitConfirm,
+    isSideMenuOpen,
     history,
     navigateBack,
     setIsThemeSelectorOpen,
     setShowExitConfirm,
+    setIsSideMenuOpen,
 }: UseBackButtonProps) {
     const historyRef = useRef(history);
     useEffect(() => {
@@ -45,6 +49,11 @@ export function useBackButton({
     useEffect(() => {
         showExitConfirmRef.current = showExitConfirm;
     }, [showExitConfirm]);
+
+    const isSideMenuOpenRef = useRef(isSideMenuOpen);
+    useEffect(() => {
+        isSideMenuOpenRef.current = isSideMenuOpen;
+    }, [isSideMenuOpen]);
 
     const lastBackTimeRef = useRef(0);
 
@@ -62,13 +71,19 @@ export function useBackButton({
             return;
         }
 
-        // 2. Close theme selector if open
+        // 2. Close side menu if open
+        if (isSideMenuOpenRef.current && setIsSideMenuOpen) {
+            setIsSideMenuOpen(false);
+            return;
+        }
+
+        // 3. Close theme selector if open
         if (isThemeSelectorOpenRef.current) {
             setIsThemeSelectorOpen(false);
             return;
         }
 
-        // 3. Check in-page interceptors (modals, popups, tafseer, image share, etc.)
+        // 4. Check in-page interceptors (modals, popups, tafseer, image share, etc.)
         for (let i = backButtonInterceptors.length - 1; i >= 0; i--) {
             const interceptor = backButtonInterceptors[i];
             try {
@@ -80,14 +95,14 @@ export function useBackButton({
             }
         }
 
-        // 4. Navigate back in history if not at root home screen
+        // 5. Navigate back in history if not at root home screen
         if (historyRef.current.length > 1) {
             navigateBack();
         } else {
-            // At root home screen: prompt exit confirmation
+            // At root home screen (Classic or Modern Smart): prompt exit confirmation modal
             setShowExitConfirm(true);
         }
-    }, [navigateBack, setIsThemeSelectorOpen, setShowExitConfirm]);
+    }, [navigateBack, setIsThemeSelectorOpen, setShowExitConfirm, setIsSideMenuOpen]);
 
     useEffect(() => {
         // 1. Capacitor native Android back button event (hardware button & back gestures)

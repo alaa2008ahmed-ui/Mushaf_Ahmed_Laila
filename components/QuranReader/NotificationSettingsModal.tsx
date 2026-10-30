@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Bell, Check, X, Smartphone, AppWindow, VolumeX, Shuffle, ShieldCheck, Zap, BellRing, LayoutGrid, Palette } from 'lucide-react';
+import { Bell, Check, X, Smartphone, AppWindow, VolumeX, Shuffle, ShieldCheck, Zap, BellRing, LayoutGrid, Palette, HelpCircle } from 'lucide-react';
 import { toArabic } from './constants';
 import { usePrayerTimes } from '../../context/PrayerTimesContext';
 import { setupNotifications } from '../../utils/notifications';
@@ -256,6 +256,7 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
     const [widgetLockTheme, setWidgetLockTheme] = useState<boolean>(() => {
         return localStorage.getItem('widget_lock_theme') === 'true';
     });
+    const [showWidgetsGuide, setShowWidgetsGuide] = useState<boolean>(false);
 
     const handleToggleWidgetArabic = async () => {
         const next = widgetLockLang === 'ar' ? null : 'ar';
@@ -520,8 +521,8 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
                                     style={{ border: 'none' }}
                                 >
                                     <span className="font-bold text-sm">{item.label}</span>
-                                    <div className="w-5 h-5 rounded-full flex items-center justify-center transition-colors shadow-inner shrink-0" style={{ backgroundColor: appSettings[item.id] ? 'var(--qr-accent)' : 'rgba(0,0,0,0.1)', color: appSettings[item.id] ? 'var(--qr-accent-text, #fff)' : 'transparent' }}>
-                                        {appSettings[item.id] && <Check className="w-3 h-3 quran-3d-icon" />}
+                                    <div className="w-4 h-4 rounded-full flex items-center justify-center transition-colors shadow-inner shrink-0" style={{ backgroundColor: appSettings[item.id] ? 'var(--qr-accent)' : 'rgba(0,0,0,0.1)', color: appSettings[item.id] ? 'var(--qr-accent-text, #fff)' : 'transparent' }}>
+                                        {appSettings[item.id] && <Check className="w-2.5 h-2.5 quran-3d-icon" />}
                                     </div>
                                 </div>
                             ))}
@@ -551,13 +552,13 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
                                         {isEn ? 'Persistent Prayer Notification (Status Bar)' : 'إشعار الصلاة المستمر (الشريط العلوي بجوار الساعة)'}
                                     </span>
                                     <div 
-                                        className="w-5 h-5 rounded-full flex items-center justify-center transition-colors flex-shrink-0 shadow-inner" 
+                                        className="w-4 h-4 rounded-full flex items-center justify-center transition-colors flex-shrink-0 shadow-inner" 
                                         style={{ 
                                             backgroundColor: isPersistentNotificationEnabled ? 'var(--qr-accent)' : 'rgba(0,0,0,0.1)', 
                                             color: isPersistentNotificationEnabled ? 'var(--qr-accent-text, #fff)' : 'transparent' 
                                         }}
                                     >
-                                        {isPersistentNotificationEnabled && <Check className="w-3 h-3 stroke-[3] quran-3d-icon" />}
+                                        {isPersistentNotificationEnabled && <Check className="w-2.5 h-2.5 stroke-[3] quran-3d-icon" />}
                                     </div>
                                 </div>
 
@@ -622,15 +623,63 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
 
                             {/* Home Screen Widgets Section */}
                             <div className="space-y-2 pt-1">
-                                <div className="flex items-center justify-between">
+                                <div className="flex items-center justify-between gap-2">
                                     <h4 className="font-bold text-xs sm:text-sm opacity-90 flex items-center gap-2">
                                         <LayoutGrid className="w-4 h-4 text-emerald-500 quran-3d-icon shrink-0" />
                                         <span>{isEn ? 'Home Screen Widgets' : 'التطبيقات المصغرة (الودجت)'}</span>
                                     </h4>
-                                    <span className="text-[10px] quran-raised-btn text-emerald-600 dark:text-emerald-400 font-bold px-2 py-0.5 rounded-full border-0">
-                                        {isEn ? 'Phone Screen' : 'شاشة الهاتف'}
-                                    </span>
+                                    <div className="flex items-center gap-1.5">
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowWidgetsGuide(prev => !prev)}
+                                            className="w-6 h-6 rounded-full quran-raised-btn flex items-center justify-center text-emerald-600 dark:text-emerald-400 active:scale-90 transition-all cursor-pointer border-0"
+                                            style={{ border: 'none' }}
+                                            title={isEn ? 'Widgets Guide & Details' : 'شرح وإرشاد التطبيقات المصغرة'}
+                                            aria-label={isEn ? 'Widgets Guide & Details' : 'شرح وإرشاد التطبيقات المصغرة'}
+                                        >
+                                            <HelpCircle className="w-3.5 h-3.5" />
+                                        </button>
+                                        <span className="text-[10px] quran-raised-btn text-emerald-600 dark:text-emerald-400 font-bold px-2 py-0.5 rounded-full border-0">
+                                            {isEn ? '3 Widgets' : '3 أشكال'}
+                                        </span>
+                                    </div>
                                 </div>
+
+                                {showWidgetsGuide && (
+                                    <div className="p-3 rounded-xl quran-raised-card text-[11px] sm:text-xs leading-relaxed space-y-2 border-0" style={{ border: 'none' }}>
+                                        <p className="font-bold text-emerald-700 dark:text-emerald-400">
+                                            {isEn
+                                                ? '3 Home Screen Widgets Available:'
+                                                : 'التطبيقات المصغرة الثلاثة لشاشة الهاتف:'}
+                                        </p>
+                                        <ul className="space-y-1 opacity-90 list-disc ps-4">
+                                            <li>
+                                                <strong>{isEn ? 'Full Comprehensive Widget:' : 'الودجت الشامل (الكبير):'}</strong>{' '}
+                                                {isEn
+                                                    ? 'Shows all 6 prayer times, next prayer live countdown, Hijri & Gregorian dates, Midnight, and Last Third.'
+                                                    : 'يعرض مواقيت الصلوات الست، الصلاة القادمة بالعد التنازلي الحي، التاريخ الهجري والميلادي، ومنتصف الليل والثلث الأخير.'}
+                                            </li>
+                                            <li>
+                                                <strong>{isEn ? 'Medium Card Widget:' : 'ودجت البطاقة المتوسطة:'}</strong>{' '}
+                                                {isEn
+                                                    ? 'Displays city, date, highlighted next prayer with countdown, and daily prayer strip.'
+                                                    : 'يعرض المدينة والتاريخ مع إبراز الصلاة القادمة والعد التنازلي وشريط مواقيت الصلوات.'}
+                                            </li>
+                                            <li>
+                                                <strong>{isEn ? 'Compact Mini Widget:' : 'الودجت المدمج (الصغير):'}</strong>{' '}
+                                                {isEn
+                                                    ? 'Space-saving design showing city, next prayer, and its time.'
+                                                    : 'تصميم مختصر يعرض المدينة والصلاة القادمة وموعدها في مساحة صغيرة.'}
+                                            </li>
+                                        </ul>
+                                        <p className="opacity-90">
+                                            <strong>{isEn ? 'Dynamic Theme & Locking:' : 'تغيير الثيم وتثبيت اللون أو اللغة:'}</strong>{' '}
+                                            {isEn
+                                                ? 'All 3 widgets automatically change colors to match your selected app theme. Use "Lock Widget Theme" below to freeze the current widget color so it stays unchanged when switching themes, or use "Lock Arabic / Lock English" to pin the widget language independently of the app language.'
+                                                : 'تتغير ألوان وتصاميم الودجت الثلاثة تلقائياً مع تغير ثيم التطبيق. يمكنك تفعيل «تثبيت ثيم الودجت» بالأسفل للاحتفاظ بلون الودجت الحالي ثابتاً دون تأثر بتغيير الثيم، أو تفعيل «تثبيت العربية / تثبيت الإنجليزية» لتثبيت لغة الودجت بشكل مستقل عن لغة التطبيق.'}
+                                        </p>
+                                    </div>
+                                )}
 
                                 <div className="grid grid-cols-2 gap-2">
                                     <div
@@ -644,13 +693,13 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
                                     >
                                         <span className="font-bold text-xs">{isEn ? 'Lock Arabic' : 'تثبيت العربية'}</span>
                                         <div 
-                                            className="w-5 h-5 rounded-full flex items-center justify-center transition-colors shrink-0 shadow-inner"
+                                            className="w-4 h-4 rounded-full flex items-center justify-center transition-colors shrink-0 shadow-inner"
                                             style={{
                                                 backgroundColor: widgetLockLang === 'ar' ? 'var(--qr-accent)' : 'rgba(0,0,0,0.1)',
                                                 color: widgetLockLang === 'ar' ? 'var(--qr-accent-text, #fff)' : 'transparent'
                                             }}
                                         >
-                                            {widgetLockLang === 'ar' && <Check className="w-3 h-3 stroke-[3] quran-3d-icon" />}
+                                            {widgetLockLang === 'ar' && <Check className="w-2.5 h-2.5 stroke-[3] quran-3d-icon" />}
                                         </div>
                                     </div>
 
@@ -665,13 +714,13 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
                                     >
                                         <span className="font-bold text-xs">{isEn ? 'Lock English' : 'تثبيت الإنجليزية'}</span>
                                         <div 
-                                            className="w-5 h-5 rounded-full flex items-center justify-center transition-colors shrink-0 shadow-inner"
+                                            className="w-4 h-4 rounded-full flex items-center justify-center transition-colors shrink-0 shadow-inner"
                                             style={{
                                                 backgroundColor: widgetLockLang === 'en' ? 'var(--qr-accent)' : 'rgba(0,0,0,0.1)',
                                                 color: widgetLockLang === 'en' ? 'var(--qr-accent-text, #fff)' : 'transparent'
                                             }}
                                         >
-                                            {widgetLockLang === 'en' && <Check className="w-3 h-3 stroke-[3] quran-3d-icon" />}
+                                            {widgetLockLang === 'en' && <Check className="w-2.5 h-2.5 stroke-[3] quran-3d-icon" />}
                                         </div>
                                     </div>
                                 </div>
@@ -690,13 +739,13 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
                                         <span>{isEn ? 'Lock Widget Theme' : 'تثبيت ثيم الودجت'}</span>
                                     </span>
                                     <div 
-                                        className="w-5 h-5 rounded-full flex items-center justify-center transition-colors shrink-0 shadow-inner"
+                                        className="w-4 h-4 rounded-full flex items-center justify-center transition-colors shrink-0 shadow-inner"
                                         style={{
                                             backgroundColor: widgetLockTheme ? 'var(--qr-accent)' : 'rgba(0,0,0,0.1)',
                                             color: widgetLockTheme ? 'var(--qr-accent-text, #fff)' : 'transparent'
                                         }}
                                     >
-                                        {widgetLockTheme && <Check className="w-3 h-3 stroke-[3] quran-3d-icon" />}
+                                        {widgetLockTheme && <Check className="w-2.5 h-2.5 stroke-[3] quran-3d-icon" />}
                                     </div>
                                 </div>
                             </div>
@@ -722,8 +771,8 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
                                             style={{ border: 'none' }}
                                         >
                                             <span className="font-bold text-xs sm:text-sm">{item.label}</span>
-                                            <div className="w-5 h-5 rounded-full flex items-center justify-center transition-colors shadow-inner shrink-0" style={{ backgroundColor: isEnabled ? 'var(--qr-accent)' : 'rgba(0,0,0,0.1)', color: isEnabled ? 'var(--qr-accent-text, #fff)' : 'transparent' }}>
-                                                {isEnabled && <Check className="w-3 h-3 quran-3d-icon" />}
+                                            <div className="w-4 h-4 rounded-full flex items-center justify-center transition-colors shadow-inner shrink-0" style={{ backgroundColor: isEnabled ? 'var(--qr-accent)' : 'rgba(0,0,0,0.1)', color: isEnabled ? 'var(--qr-accent-text, #fff)' : 'transparent' }}>
+                                                {isEnabled && <Check className="w-2.5 h-2.5 quran-3d-icon" />}
                                             </div>
                                         </div>
                                     );
@@ -755,8 +804,8 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
                                             style={{ border: 'none' }}
                                         >
                                             <div className="flex items-center gap-2 min-w-0">
-                                                <div className="w-5 h-5 rounded-full flex items-center justify-center transition-colors shadow-inner shrink-0" style={{ backgroundColor: setting.enabled ? 'var(--qr-accent)' : 'rgba(0,0,0,0.1)', color: setting.enabled ? 'var(--qr-accent-text, #fff)' : 'transparent' }}>
-                                                    {setting.enabled && <Check className="w-3 h-3 quran-3d-icon" />}
+                                                <div className="w-4 h-4 rounded-full flex items-center justify-center transition-colors shadow-inner shrink-0" style={{ backgroundColor: setting.enabled ? 'var(--qr-accent)' : 'rgba(0,0,0,0.1)', color: setting.enabled ? 'var(--qr-accent-text, #fff)' : 'transparent' }}>
+                                                    {setting.enabled && <Check className="w-2.5 h-2.5 quran-3d-icon" />}
                                                 </div>
                                                 <span className="font-bold text-xs sm:text-sm truncate">{item.label}</span>
                                             </div>
@@ -783,12 +832,12 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
                                     </h4>
                                     <div 
                                         onClick={toggleRandomAthkar}
-                                        className={`w-11 h-6 rounded-full relative transition-all cursor-pointer shadow-inner shrink-0 ${phoneSettings.randomAthkar.enabled ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-600'}`}
+                                        className={`w-[35px] h-[19px] rounded-full relative transition-all cursor-pointer shadow-inner shrink-0 ${phoneSettings.randomAthkar.enabled ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-600'}`}
                                     >
-                                        <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-md transition-all ${
+                                        <div className={`absolute top-[2.5px] w-[14px] h-[14px] rounded-full bg-white shadow-md transition-all ${
                                             phoneSettings.randomAthkar.enabled 
-                                                ? (isRTL ? 'right-6' : 'left-6') 
-                                                : (isRTL ? 'right-1' : 'left-1')
+                                                ? (isRTL ? 'right-[18px]' : 'left-[18px]') 
+                                                : (isRTL ? 'right-[3px]' : 'left-[3px]')
                                         }`} />
                                     </div>
                                 </div>

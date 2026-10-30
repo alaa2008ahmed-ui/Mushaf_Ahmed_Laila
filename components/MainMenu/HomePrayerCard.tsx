@@ -10,7 +10,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
-import { usePrayerTimes } from '../../context/PrayerTimesContext';
+import { usePrayerTimes, computeTimesSync } from '../../context/PrayerTimesContext';
 import { useTheme } from '../../context/ThemeContext';
 import { prayerNamesAr } from '../../data/prayerTimesData';
 import { checkSupportsDST, applyOffset } from '../../utils/prayerTimesUtils';
@@ -54,12 +54,19 @@ export const HomePrayerCard: React.FC<HomePrayerCardProps> = ({ onNavigate, card
 
   // Helper to get adjusted Date for a prayer given time string & offset
   const getPrayerDateTime = (key: string, baseDate: Date) => {
-    if (!times || !times[key] || times[key].includes('--')) return null;
+    let rawTime = times?.[key];
+    if (!rawTime || rawTime.includes('--')) {
+      const fallbackComputed = computeTimesSync(config.location, baseDate, language === 'en');
+      if (fallbackComputed?.timings && (fallbackComputed.timings as any)[key]) {
+        rawTime = (fallbackComputed.timings as any)[key];
+      }
+    }
+    if (!rawTime || rawTime.includes('--')) return null;
 
     const supportsDST = checkSupportsDST(config.location?.combinedCode, config.location?.fullCountry);
     const isSummerTimeActive = config.isSummerTime && supportsDST;
     const totalOffset = (config.prayerOffsets?.[key] || 0) + (isSummerTimeActive ? 60 : 0);
-    const adjustedTime = applyOffset(times[key], totalOffset);
+    const adjustedTime = applyOffset(rawTime, totalOffset);
 
     if (!adjustedTime || adjustedTime.includes('--')) return null;
 
@@ -104,24 +111,29 @@ export const HomePrayerCard: React.FC<HomePrayerCardProps> = ({ onNavigate, card
 
   // Calculate previous prayer, next prayer, elapsed progress, and countdown
   const salahCalculation = () => {
-    if (!times || Object.keys(times).length === 0) {
-      return {
-        prevKey: 'Fajr',
-        prevName: language === 'en' ? 'Fajr' : 'الفجر',
-        prevDate: null,
-        nextKey: 'Dhuhr',
-        nextName: language === 'en' ? 'Dhuhr' : 'الظهر',
-        nextDate: null,
-        countdownStr: '--:--:--',
-        progressPercent: 0,
-      };
-    }
+    let fajrToday = getPrayerDateTime('Fajr', nowDate);
+    let dhuhrToday = getPrayerDateTime('Dhuhr', nowDate);
+    let asrToday = getPrayerDateTime('Asr', nowDate);
+    let maghribToday = getPrayerDateTime('Maghrib', nowDate);
+    let ishaToday = getPrayerDateTime('Isha', nowDate);
 
-    const fajrToday = getPrayerDateTime('Fajr', nowDate);
-    const dhuhrToday = getPrayerDateTime('Dhuhr', nowDate);
-    const asrToday = getPrayerDateTime('Asr', nowDate);
-    const maghribToday = getPrayerDateTime('Maghrib', nowDate);
-    const ishaToday = getPrayerDateTime('Isha', nowDate);
+    if (!fajrToday || !dhuhrToday || !asrToday || !maghribToday || !ishaToday) {
+      const fallbackLoc = config.location?.lat ? config.location : { lat: 21.4225, lng: 39.8262 };
+      const fallback = computeTimesSync(fallbackLoc, nowDate, language === 'en');
+      if (fallback?.timings) {
+        const parsePrayerTime = (timeStr: string) => {
+          const [h, m] = timeStr.split(':').map(Number);
+          const d = new Date(nowDate);
+          d.setHours(h, m, 0, 0);
+          return d;
+        };
+        fajrToday = parsePrayerTime(fallback.timings.Fajr);
+        dhuhrToday = parsePrayerTime(fallback.timings.Dhuhr);
+        asrToday = parsePrayerTime(fallback.timings.Asr);
+        maghribToday = parsePrayerTime(fallback.timings.Maghrib);
+        ishaToday = parsePrayerTime(fallback.timings.Isha);
+      }
+    }
 
     if (!fajrToday || !dhuhrToday || !asrToday || !maghribToday || !ishaToday) {
       return {

@@ -45,7 +45,7 @@ function Adia({ onBack, onNavigate }: AdiaProps) {
     // Dynamic theme colors
     const isBlackTheme = theme.bgColor === '#000000' || themeKey === 'deep_black' || theme.name === 'اسود' || theme.name === 'أبيض وأسود';
     const primaryColor = isBlackTheme ? '#FFFFFF' : (theme.palette?.[0] || theme.accent || '#2E7D5E');
-    const btnTextColor = isBlackTheme ? '#000000' : (theme.btnText || '#FFFFFF');
+    const btnTextColor = isBlackTheme ? '#000000' : '#FFFFFF';
 
     const [zoomedDuaa, setZoomedDuaa] = useState<DuaaItem | null>(null);
     const [activeCategory, setActiveCategory] = useState('all');
@@ -103,6 +103,7 @@ function Adia({ onBack, onNavigate }: AdiaProps) {
         e.stopPropagation();
         const textToPlay = isEn ? (duaa.textEn || duaa.text) : duaa.text;
         playTTS(textToPlay, {
+            isEn,
             onToast: (msg) => {
                 if (isEn) {
                     if (msg.includes('جاري تشغيل')) setToastMessage('Playing audio...');
@@ -275,7 +276,7 @@ function Adia({ onBack, onNavigate }: AdiaProps) {
             className="h-screen flex flex-col relative transition-colors" 
             dir={isEn ? 'ltr' : 'rtl'}
             style={{ 
-                backgroundColor: isBlackTheme ? '#000000' : (theme.isDark ? '#0F172A' : '#F5F7FA') 
+                backgroundColor: isBlackTheme ? '#000000' : (theme.bgColor || (theme.isDark ? '#0F172A' : '#F5F7FA')) 
             }}
         >
             <header className="app-top-bar" dir={isEn ? 'ltr' : 'rtl'}>
@@ -310,7 +311,7 @@ function Adia({ onBack, onNavigate }: AdiaProps) {
                                 title={isEn ? "Adia Guide" : "دليل الأدعية"}
                                 aria-label={isEn ? "Adia Guide" : "دليل الأدعية"}
                             >
-                                <i className="fa-solid fa-circle-question text-lg text-black"></i>
+                                <i className="fa-solid fa-circle-question text-lg"></i>
                             </button>
                             <ThemePageLock />
                             <button
@@ -329,8 +330,12 @@ function Adia({ onBack, onNavigate }: AdiaProps) {
             <main ref={mainRef} className="w-full flex-1 overflow-y-auto px-4 pt-3 pb-6">
                 {/* Modern Borderless Search bar and View Mode Switch */}
                 <div className="mb-6 max-w-3xl mx-auto flex items-center gap-2.5 w-full" dir={isEn ? 'ltr' : 'rtl'}>
-                    <div className="relative flex-1 bg-slate-200/60 dark:bg-zinc-800/70 rounded-2xl transition-all shadow-none focus-within:ring-2 focus-within:ring-opacity-40 flex items-center overflow-hidden"
-                         style={{ '--tw-ring-color': primaryColor } as any}
+                    <div className="relative flex-1 rounded-2xl transition-all focus-within:ring-2 focus-within:ring-opacity-40 flex items-center overflow-hidden"
+                         style={{ 
+                             '--tw-ring-color': primaryColor,
+                             backgroundColor: isBlackTheme ? '#18181b' : (theme.isDark ? 'rgba(39, 39, 42, 0.7)' : '#FFFFFF'),
+                             boxShadow: theme.isDark ? 'none' : '0 4px 14px rgba(0, 0, 0, 0.04)'
+                         } as any}
                     >
                         <i 
                             className={`fa-solid fa-search absolute ${isEn ? 'left-4' : 'right-4'} top-1/2 transform -translate-y-1/2 opacity-45 pointer-events-none text-sm`} 
@@ -357,7 +362,13 @@ function Adia({ onBack, onNavigate }: AdiaProps) {
                     </div>
 
                     {/* View Mode Switch Chips */}
-                    <div className="flex items-center p-1 rounded-2xl bg-slate-200/60 dark:bg-zinc-800/70 shrink-0 gap-1">
+                    <div 
+                        className="flex items-center p-1 rounded-2xl shrink-0 gap-1"
+                        style={{
+                            backgroundColor: isBlackTheme ? '#18181b' : (theme.isDark ? 'rgba(39, 39, 42, 0.7)' : '#FFFFFF'),
+                            boxShadow: theme.isDark ? 'none' : '0 4px 14px rgba(0, 0, 0, 0.04)'
+                        }}
+                    >
                         <button
                             type="button"
                             onClick={() => setActiveTab('grid')}
@@ -414,7 +425,7 @@ function Adia({ onBack, onNavigate }: AdiaProps) {
                                     onClick={() => handleDecrement(duaa.id, currentCount)}
                                     style={{ 
                                         fontFamily: isEn ? 'sans-serif' : theme.font,
-                                        backgroundColor: isBlackTheme ? '#121212' : (theme.cardBg || (theme.isDark ? '#18181B' : '#FFFFFF')),
+                                        backgroundColor: isBlackTheme ? '#18181b' : (theme.isDark ? (theme.cardBg || '#18181B') : '#FFFFFF'),
                                         color: 'var(--text-color)'
                                     }}
                                 >

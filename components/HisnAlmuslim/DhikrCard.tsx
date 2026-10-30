@@ -127,6 +127,7 @@ const DhikrCard: React.FC<DhikrCardProps> = ({
         const isMorning = dhikr.category === 'أذكار الصباح';
         const isEvening = dhikr.category === 'أذكار المساء';
         playTTS(displayText, {
+            isEn,
             onToast: (msg) => {
                 if (isEn) {
                     if (msg.includes('جاري تشغيل')) setToastMessage?.('Playing audio...');
@@ -152,7 +153,7 @@ const DhikrCard: React.FC<DhikrCardProps> = ({
             onClick={onDecrement}
             dir={isEn ? 'ltr' : 'rtl'}
             style={{ 
-                backgroundColor: isBlackTheme ? '#121212' : (theme.cardBg || (theme.isDark ? '#18181B' : '#FFFFFF')),
+                backgroundColor: isBlackTheme ? '#18181b' : (theme.isDark ? (theme.cardBg || '#18181B') : '#FFFFFF'),
                 boxShadow: theme.isDark ? '0 4px 20px -2px rgba(0, 0, 0, 0.35)' : '0 4px 14px rgba(0, 0, 0, 0.04)',
                 color: 'var(--text-color)',
                 fontFamily: isEn ? 'sans-serif' : theme.font

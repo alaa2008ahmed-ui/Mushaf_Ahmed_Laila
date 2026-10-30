@@ -109,6 +109,7 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
             stopTTS();
         } else {
             playTTS(text, {
+                isEn,
                 onToast: (msg) => showToast(msg)
             });
         }
@@ -249,7 +250,7 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                                 title={isEn ? "Asmaul Husna Guide" : "دليل أسماء الله الحسنى"}
                                 aria-label={isEn ? "Asmaul Husna Guide" : "دليل أسماء الله الحسنى"}
                             >
-                                <i className="fa-solid fa-circle-question text-lg text-black"></i>
+                                <i className="fa-solid fa-circle-question text-lg"></i>
                             </button>
                             <ThemePageLock />
                             <button
@@ -333,7 +334,7 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
             </div>
 
             <main className="flex-1 overflow-hidden flex flex-col px-4 z-10">
-                <div className="flex-1 overflow-y-auto hide-scrollbar pt-1 pb-10">
+                <div className="flex-1 overflow-y-auto hide-scrollbar pt-1 pb-7 sm:pb-8 pb-[calc(env(safe-area-inset-bottom,0px)+1.75rem)]">
                     {filteredNames.length === 0 ? (
                         <div className="py-16 text-center opacity-60 font-bold">
                             <Search className="w-10 h-10 mb-3 mx-auto opacity-40" />
@@ -388,6 +389,8 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                                     </div>
                                 </motion.button>
                             ))}
+                            {/* Bottom Spacer for Mobile Phone Navigation Bar */}
+                            <div className="col-span-full h-8 sm:h-12 pointer-events-none" />
                         </div>
                     ) : (
                         /* List View - Zero Border Policy, Pure White Cards */
@@ -463,6 +466,8 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                                     </div>
                                 </div>
                             ))}
+                            {/* Bottom Spacer for Mobile Phone Navigation Bar */}
+                            <div className="w-full h-8 sm:h-12 pointer-events-none" />
                         </div>
                     )}
                 </div>

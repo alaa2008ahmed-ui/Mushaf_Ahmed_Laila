@@ -41,6 +41,8 @@ import {
 } from "lucide-react";
 import {
   THEMES,
+  LIGHT_THEME_IDS,
+  DARK_THEME_IDS,
   THEME_NAMES_EN,
   DEFAULT_SETTINGS,
   READERS,
@@ -56,9 +58,14 @@ import {
   TAFSEERS,
   JUZ_MAP,
   SURAH_NAMES_AR,
+  getCurrentLayoutContext,
+  getQuranThemeForLayout,
+  saveQuranThemeForLayout,
+  syncQuranThemeToStorage,
   SURAH_NAMES_EN,
   SAJDAH_LOCATIONS,
   toArabic,
+  isDarkQuranTheme,
 } from "./constants";
 import { quranData } from "../../utils/quranData";
 import { usePrayerTimes } from "../../context/PrayerTimesContext";
@@ -175,6 +182,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
   const { applyPresetTheme: applyGlobalTheme } = useTheme();
   const { t, translateMenuItem, language, isRTL, formatNumber } = useLanguage();
   const isEn = language === 'en';
+  const isDarkTheme = isDarkQuranTheme(currentTheme);
   const [selectedShortcuts, setSelectedShortcuts] = useState<string[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [tempShortcuts, setTempShortcuts] = useState<string[]>([]);
@@ -1096,105 +1104,9 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
           : `_${readingMode}_${isLandscape ? "h" : "v"}`;
 
     const modeSuffix = posSuffix;
-
-    localStorage.setItem("current_theme_id" + modeSuffix, themeId);
-
-    const themeColors = {
-      "top-toolbar": { bg: theme.barBg, border: theme.barBorder },
-      "bottom-toolbar": { bg: theme.barBg, border: theme.barBorder },
-      surah: {
-        bg: theme.btnBg,
-        text: theme.btnText,
-        border: (theme as any).btnBorder || theme.barBorder,
-        font: theme.font,
-      },
-      juz: {
-        bg: theme.btnBg,
-        text: theme.btnText,
-        border: (theme as any).btnBorder || theme.barBorder,
-        font: theme.font,
-      },
-      page: {
-        bg: theme.btnBg,
-        text: theme.btnText,
-        border: (theme as any).btnBorder || theme.barBorder,
-        font: theme.font,
-      },
-      audio: {
-        bg: theme.btnBg,
-        text: theme.btnText,
-        border: (theme as any).btnBorder || theme.barBorder,
-      },
-      "btn-settings": {
-        bg: theme.btnBg,
-        text: theme.btnText,
-        border: (theme as any).btnBorder || theme.barBorder,
-      },
-      "btn-home": {
-        bg: theme.btnBg,
-        text: theme.btnText,
-        border: (theme as any).btnBorder || theme.barBorder,
-      },
-      "btn-bookmark": {
-        bg: theme.btnBg,
-        text: theme.btnText,
-        border: (theme as any).btnBorder || theme.barBorder,
-      },
-      "btn-bookmarks-list": {
-        bg: theme.btnBg,
-        text: theme.btnText,
-        border: (theme as any).btnBorder || theme.barBorder,
-      },
-      "btn-themes": {
-        bg: theme.btnBg,
-        text: theme.btnText,
-        border: (theme as any).btnBorder || theme.barBorder,
-      },
-      "btn-autoscroll": {
-        bg: theme.btnBg,
-        text: theme.btnText,
-        border: (theme as any).btnBorder || theme.barBorder,
-      },
-      "btn-menu": {
-        bg: theme.btnBg,
-        text: theme.btnText,
-        border: (theme as any).btnBorder || theme.barBorder,
-      },
-      "btn-search": {
-        bg: theme.btnBg,
-        text: theme.btnText,
-        border: (theme as any).btnBorder || theme.barBorder,
-      },
-      "btn-share": {
-        bg: theme.btnBg,
-        text: theme.btnText,
-        border: (theme as any).btnBorder || theme.barBorder,
-      },
-    };
-
-    localStorage.setItem(
-      "toolbar_colors_v2" + modeSuffix,
-      JSON.stringify(themeColors),
-    );
-
-    const savedSettings = JSON.parse(
-      localStorage.getItem("quran_settings" + modeSuffix) || "{}",
-    );
-    const baseSettings = { ...DEFAULT_SETTINGS, ...savedSettings };
-    const updatedSettings = {
-      ...baseSettings,
-      bgColor: theme.bg || "#ffffff",
-      textColor: theme.text || "#000000",
-      fontFamily: theme.font,
-      ...(baseSettings.lockHighlightColor
-        ? {}
-        : { highlightTextColor: theme.highlightText || theme.accent || (theme as any).palette?.[0] }),
-      theme: themeId,
-    };
-    localStorage.setItem(
-      "quran_settings" + modeSuffix,
-      JSON.stringify(updatedSettings),
-    );
+    const layout = getCurrentLayoutContext();
+    saveQuranThemeForLayout(themeId, layout, modeSuffix);
+    syncQuranThemeToStorage(theme, modeSuffix);
 
     setThemeChangeTick((prev) => prev + 1);
     window.dispatchEvent(new Event("theme-change"));
@@ -1318,8 +1230,8 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                         style={{
                           backgroundColor: isSelected
                             ? (currentTheme.accent || "#10b981")
-                            : (currentTheme?.id === "night" ? "rgba(255,255,255,0.06)" : "#ffffff"),
-                          border: "none",
+                            : (isDarkTheme ? (currentTheme?.btnBg || "rgba(255,255,255,0.06)") : "#ffffff"),
+                          border: isDarkTheme && !isSelected ? "1px solid rgba(255,255,255,0.1)" : "none",
                         }}
                       >
                         <div
@@ -1330,7 +1242,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                         </div>
                         <span
                           className={`text-xs flex-1 truncate transition-all font-bold`}
-                          style={{ color: isSelected ? "#ffffff" : currentTheme.text }}
+                          style={{ color: isSelected ? "#ffffff" : (isDarkTheme ? (currentTheme?.btnText || currentTheme.text || "#ffffff") : currentTheme.text) }}
                         >
                           {translateMenuItem(shortcut.id, shortcut.label)}
                         </span>
@@ -1357,7 +1269,11 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                 <button
                   onClick={() => setIsAddModalOpen(false)}
                   className="px-4 py-2.5 rounded-xl font-bold text-xs quran-raised-btn border-0"
-                  style={{ backgroundColor: currentTheme?.id === "night" ? "rgba(255,255,255,0.08)" : "#ffffff", color: currentTheme.text, border: "none" }}
+                  style={{
+                    backgroundColor: isDarkTheme ? (currentTheme?.btnBg || "rgba(255,255,255,0.08)") : "#ffffff",
+                    color: isDarkTheme ? (currentTheme?.btnText || currentTheme.text || "#ffffff") : currentTheme.text,
+                    border: isDarkTheme ? "1px solid rgba(255,255,255,0.15)" : "none",
+                  }}
                 >
                   {isEn ? "Cancel" : "إلغاء"}
                 </button>
@@ -1373,7 +1289,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                 }}
               >
                 <div className="flex items-center gap-2">
-                  <Palette size={18} className="quran-3d-icon" style={{ color: iconColor }} />
+                  <Palette size={20} className="quran-3d-icon" style={{ color: iconColor }} />
                   <h3
                     className="font-extrabold text-xs"
                     style={{ color: currentTheme.text }}
@@ -1387,150 +1303,291 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                 <div className="space-y-4">
                   {/* Toggles Section */}
                   <div
-                    className="space-y-2.5 p-3 rounded-2xl quran-raised-card border-0"
+                    className="space-y-3 p-3 rounded-2xl quran-raised-card border-0"
                     style={{
-                      backgroundColor: currentTheme?.id === "night" ? "rgba(255,255,255,0.05)" : "#ffffff",
-                      border: "none",
+                      backgroundColor: isDarkTheme ? (currentTheme?.cardBg || "rgba(255,255,255,0.06)") : "#ffffff",
+                      border: isDarkTheme ? "1px solid rgba(255,255,255,0.12)" : "none",
                     }}
                   >
-                    <div className="flex items-center justify-between gap-1.5">
-                      <label
-                        className="text-[10px] font-bold opacity-80 leading-tight min-w-0 truncate"
-                        style={{ color: currentTheme.text }}
+                    {/* قفل لون التحديد */}
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => {
+                        const newVal = !settings?.lockHighlightColor;
+                        updateSetting("lockHighlightColor", newVal);
+                        showToast(
+                          newVal
+                            ? (isEn ? "Highlight color locked" : "تم قفل لون التحديد")
+                            : (isEn ? "Highlight color unlocked" : "تم إلغاء قفل لون التحديد")
+                        );
+                      }}
+                      className="flex items-center justify-between gap-2 cursor-pointer select-none group"
+                    >
+                      <span
+                        className="text-xs font-bold leading-tight min-w-0 truncate"
+                        style={{ color: isDarkTheme ? (currentTheme?.cardText || currentTheme?.text || "#ffffff") : currentTheme.text }}
                       >
                         {isEn ? "Lock Highlight Color" : "قفل لون التحديد"}
-                      </label>
-                      <div className="relative inline-block w-8 shrink-0 align-middle select-none">
-                        <input
-                          type="checkbox"
-                          id="menu-lock-highlight"
-                          checked={settings?.lockHighlightColor || false}
-                          onChange={(e) =>
-                            updateSetting(
-                              "lockHighlightColor",
-                              e.target.checked,
-                            )
-                          }
-                          className="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-2 appearance-none cursor-pointer"
-                        />
-                        <label
-                          htmlFor="menu-lock-highlight"
-                          className={`toggle-label block overflow-hidden h-4 rounded-full cursor-pointer ${settings?.lockHighlightColor ? "bg-emerald-500" : "bg-gray-300"}`}
-                        ></label>
+                      </span>
+                      {/* زر مجسم وبارز 3D */}
+                      <div
+                        dir="ltr"
+                        className="relative w-[35px] h-[19px] rounded-full p-0.5 shrink-0 transition-colors duration-300 flex items-center"
+                        style={{
+                          background: settings?.lockHighlightColor
+                            ? "linear-gradient(180deg, #10b981 0%, #059669 100%)"
+                            : "linear-gradient(180deg, #cbd5e1 0%, #94a3b8 100%)",
+                          boxShadow: "inset 0 2px 4px rgba(0,0,0,0.35), inset 0 1px 1px rgba(0,0,0,0.2), 0 1px 1px rgba(255,255,255,0.8)",
+                        }}
+                      >
+                        <div
+                          className="w-4 h-4 rounded-full flex items-center justify-center transition-transform duration-300 ease-out"
+                          style={{
+                            transform: settings?.lockHighlightColor ? "translateX(16px)" : "translateX(0px)",
+                            background: "linear-gradient(180deg, #ffffff 0%, #f1f5f9 60%, #e2e8f0 100%)",
+                            boxShadow: "0 2px 5px rgba(0,0,0,0.35), 0 1px 1px rgba(0,0,0,0.2), inset 0 1px 1px #ffffff",
+                          }}
+                        >
+                          <div
+                            className="w-1.5 h-1.5 rounded-full transition-colors duration-200"
+                            style={{
+                              backgroundColor: settings?.lockHighlightColor ? "#10b981" : "#cbd5e1",
+                            }}
+                          />
+                        </div>
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between gap-1.5">
-                      <label
-                        className="text-[10px] font-bold opacity-80 leading-tight min-w-0 truncate"
-                        style={{ color: currentTheme.text }}
+                    {/* إخفاء الأشرطة */}
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => {
+                        const newVal = !isTransparentMode;
+                        setIsTransparentMode(newVal);
+                        const modeSuffix =
+                          readingMode === "mushaf"
+                            ? isLandscape
+                              ? "_h"
+                              : "_v"
+                            : `_${readingMode}_${isLandscape ? "h" : "v"}`;
+                        localStorage.setItem(
+                          "transparent_mode" + modeSuffix,
+                          String(newVal),
+                        );
+                        window.dispatchEvent(new Event("settings-change"));
+                        showToast(
+                          newVal
+                            ? (isEn ? "Hide toolbars enabled" : "تم تفعيل إخفاء الأشرطة")
+                            : (isEn ? "Hide toolbars disabled" : "تم تعطيل إخفاء الأشرطة"),
+                        );
+                      }}
+                      className="flex items-center justify-between gap-2 cursor-pointer select-none group"
+                    >
+                      <span
+                        className="text-xs font-bold leading-tight min-w-0 truncate"
+                        style={{ color: isDarkTheme ? (currentTheme?.cardText || currentTheme?.text || "#ffffff") : currentTheme.text }}
                       >
                         {isEn ? "Hide Toolbars" : "إخفاء الأشرطة"}
-                      </label>
-                      <div className="relative inline-block w-8 shrink-0 align-middle select-none">
-                        <input
-                          type="checkbox"
-                          id="menu-hide-toolbars"
-                          checked={isTransparentMode}
-                          onChange={(e) => {
-                            setIsTransparentMode(e.target.checked);
-                            const modeSuffix =
-                              readingMode === "mushaf"
-                                ? isLandscape
-                                  ? "_h"
-                                  : "_v"
-                                : `_${readingMode}_${isLandscape ? "h" : "v"}`;
-                            localStorage.setItem(
-                              "transparent_mode" + modeSuffix,
-                              String(e.target.checked),
-                            );
-                            window.dispatchEvent(new Event("settings-change"));
-                            showToast(
-                              e.target.checked
-                                ? (isEn ? "Hide toolbars enabled" : "تم تفعيل إخفاء الأشرطة")
-                                : (isEn ? "Hide toolbars disabled" : "تم تعطيل إخفاء الأشرطة"),
-                            );
+                      </span>
+                      {/* زر مجسم وبارز 3D */}
+                      <div
+                        dir="ltr"
+                        className="relative w-[35px] h-[19px] rounded-full p-0.5 shrink-0 transition-colors duration-300 flex items-center"
+                        style={{
+                          background: isTransparentMode
+                            ? "linear-gradient(180deg, #10b981 0%, #059669 100%)"
+                            : "linear-gradient(180deg, #cbd5e1 0%, #94a3b8 100%)",
+                          boxShadow: "inset 0 2px 4px rgba(0,0,0,0.35), inset 0 1px 1px rgba(0,0,0,0.2), 0 1px 1px rgba(255,255,255,0.8)",
+                        }}
+                      >
+                        <div
+                          className="w-4 h-4 rounded-full flex items-center justify-center transition-transform duration-300 ease-out"
+                          style={{
+                            transform: isTransparentMode ? "translateX(16px)" : "translateX(0px)",
+                            background: "linear-gradient(180deg, #ffffff 0%, #f1f5f9 60%, #e2e8f0 100%)",
+                            boxShadow: "0 2px 5px rgba(0,0,0,0.35), 0 1px 1px rgba(0,0,0,0.2), inset 0 1px 1px #ffffff",
                           }}
-                          className="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-2 appearance-none cursor-pointer"
-                        />
-                        <label
-                          htmlFor="menu-hide-toolbars"
-                          className={`toggle-label block overflow-hidden h-4 rounded-full cursor-pointer ${isTransparentMode ? "bg-emerald-500" : "bg-gray-300"}`}
-                        ></label>
+                        >
+                          <div
+                            className="w-1.5 h-1.5 rounded-full transition-colors duration-200"
+                            style={{
+                              backgroundColor: isTransparentMode ? "#10b981" : "#cbd5e1",
+                            }}
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* Themes Grid */}
-                  <div className="grid grid-cols-3 gap-2">
-                    {Object.entries(THEMES).map(
-                      ([id, theme]: [string, any]) => {
-                        const activeModeSuffix = isMemorizationMode
-                          ? `_memorization_${isLandscape ? "h" : "v"}`
-                          : isWirdMode
-                            ? `_wird_${isLandscape ? "h" : "v"}`
-                            : readingMode === "mushaf"
-                              ? isLandscape
-                                ? "_h"
-                                : "_v"
-                              : `_${readingMode}_${isLandscape ? "h" : "v"}`;
-                        const isActiveTheme =
-                          (localStorage.getItem("current_theme_id" + activeModeSuffix) ||
-                            currentTheme?.id ||
-                            "black") === id;
+                  {/* Themes Grid - بدون إطارات بيضاء حول الدوائر (مصغرة بنسبة 15% وألوان مميزة غير متشابهة) */}
+                  {(() => {
+                    // دالة لتحديد لون الدائرة المميز لكل ثيم في الشريط الجانبي وتفادي تشابه الألوان
+                    const getSidebarCircleColor = (tId: string, tObj: any): string => {
+                      const distinctColors: Record<string, string> = {
+                        // الثيمات الفاتحة:
+                        // ثيم الافتراضي: كان يعرض سابقاً اللون الأخضر (#10b981) فيتشابه مع الأخضر والزمرد والغابة
+                        black: "#1e293b",
+                        // ثيم زيتوني: لتمييزه بوضوح عن الليموني
+                        olive: "#4d7c0f",
 
-                        return (
-                          <React.Fragment key={id}>
+                        // الثيمات الداكنة:
+                        // ثيم ملك الغروب: كان متطابقاً تماماً مع ثيم ذهبي (#fbbf24)
+                        i_sunset_royal: "#e11d48", // قرمزي غروبي ملكي
+                        // ثيم إستبرق: كان أصفر مكرراً أيضاً (#eab308)
+                        i_brocade: "#6366f1", // نيلي ملكي بنفسجي فاخر
+                        // ثيم الغابة: كان متطابقاً تماماً مع ثيم زمرد (#10b981)
+                        i_forest: "#15803d", // أخضر غابات غني مميز
+                        // ثيم عنبر: كان مطابقاً تقريباً للذهبي
+                        i_amber: "#d97706", // كهرماني عسلي دافئ
+                        // ثيم ملك الأعماق: كان مطابقاً للأزرق السماوي
+                        i_deep_ocean: "#0284c7", // أزرق محيطي عميق
+                        // ثيم فيروزي داكن: تمييزه بلون فيروزي بحري غني
+                        i_turquoise: "#0d9488", // فيروزي غني
+                        // ثيم ذهبي ملكي: ذهبي أندلسي عتيق مميز عن الذهبي المشع
+                        i_royal_gold: "#c59b27",
+                      };
+
+                      if (distinctColors[tId]) {
+                        return distinctColors[tId];
+                      }
+                      if (tId === "deep_black") {
+                        return "#000000";
+                      }
+                      return tObj?.accent || (tObj as any)?.palette?.[0] || tObj?.bg || "#ffffff";
+                    };
+
+                    return (
+                      <div className="grid grid-cols-3 gap-y-3 gap-x-2 justify-items-center items-center py-1">
+                        {/* المجموعة الأولى: الثيمات الفاتحة */}
+                        {LIGHT_THEME_IDS.map((id) => {
+                          const theme = THEMES[id as keyof typeof THEMES];
+                          if (!theme) return null;
+                          const activeModeSuffix = isMemorizationMode
+                            ? `_memorization_${isLandscape ? "h" : "v"}`
+                            : isWirdMode
+                              ? `_wird_${isLandscape ? "h" : "v"}`
+                              : readingMode === "mushaf"
+                                ? isLandscape
+                                  ? "_h"
+                                  : "_v"
+                                : `_${readingMode}_${isLandscape ? "h" : "v"}`;
+                          const isActiveTheme = currentTheme?.id === id;
+                          const themeCircleColor = getSidebarCircleColor(id, theme);
+                          const displayName = isEn ? (THEME_NAMES_EN[id] || t(`theme.${id}`, theme.name)) : theme.name;
+
+                          return (
                             <button
+                              key={id}
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 applyTheme(id);
                               }}
-                              className={`flex flex-col items-center justify-center p-2 rounded-2xl cursor-pointer min-w-0 border-0 transition-all ${
-                                isActiveTheme ? "quran-raised-btn-selected" : "quran-raised-btn"
-                              }`}
+                              className="flex items-center justify-center p-1 cursor-pointer bg-transparent border-0 shadow-none outline-none group transition-transform active:scale-95"
                               style={{
-                                backgroundColor: isActiveTheme
-                                  ? (currentTheme?.accent || "#10b981")
-                                  : (currentTheme?.id === "night" ? "rgba(255,255,255,0.06)" : "#ffffff"),
+                                background: "transparent",
                                 border: "none",
+                                boxShadow: "none",
                               }}
+                              title={displayName}
+                              aria-label={displayName}
                             >
                               <div
-                                className="w-5 h-5 rounded-full shadow-inner flex items-center justify-center shrink-0"
+                                className={`w-[24.65px] h-[24.65px] rounded-full flex items-center justify-center shrink-0 transition-all duration-200 ${
+                                  isActiveTheme ? "scale-110" : "group-hover:scale-108"
+                                }`}
                                 style={{
-                                  backgroundColor:
-                                    id === "black"
-                                      ? "#10b981"
-                                      : id === "deep_black"
-                                        ? "#000000"
-                                        : theme.accent ||
-                                          theme.palette?.[0] ||
-                                          theme.bg ||
-                                          "#ffffff",
+                                  width: "24.65px",
+                                  height: "24.65px",
+                                  backgroundColor: themeCircleColor,
+                                  boxShadow: isActiveTheme
+                                    ? `0 0 0 2px #ffffff, 0 0 0 3.5px ${themeCircleColor === "#ffffff" ? "#d4af37" : themeCircleColor}, 0 2.5px 6px rgba(0,0,0,0.3)`
+                                    : id === "deep_black"
+                                      ? "0 2px 4px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(255,255,255,0.25)"
+                                      : "0 2px 4px rgba(0,0,0,0.22), inset 0 1px 1.2px rgba(255,255,255,0.6), inset 0 -1.2px 1.5px rgba(0,0,0,0.2)",
                                 }}
                               >
                                 {isActiveTheme && (
                                   <div
-                                    className={`w-1.5 h-1.5 rounded-full ${id === "deep_black" ? "bg-emerald-500" : "bg-white"}`}
+                                    className={`w-1.5 h-1.5 rounded-full ${id === "deep_black" ? "bg-emerald-500" : "bg-white"} shadow-xs`}
                                   ></div>
                                 )}
                               </div>
-                              <span
-                                className="text-[9px] font-bold truncate w-full text-center mt-1.5 leading-tight"
+                            </button>
+                          );
+                        })}
+
+                        {/* فاصل صغير بين المجموعتين */}
+                        <div className="col-span-3 w-full py-1.5 flex items-center justify-center">
+                          <div 
+                            className="w-4/5 h-[1.5px] rounded-full opacity-20"
+                            style={{ backgroundColor: currentTheme?.text || "#94a3b8" }}
+                          />
+                        </div>
+
+                        {/* المجموعة الثانية: الثيمات الداكنة */}
+                        {DARK_THEME_IDS.map((id) => {
+                          const theme = THEMES[id as keyof typeof THEMES];
+                          if (!theme) return null;
+                          const activeModeSuffix = isMemorizationMode
+                            ? `_memorization_${isLandscape ? "h" : "v"}`
+                            : isWirdMode
+                              ? `_wird_${isLandscape ? "h" : "v"}`
+                              : readingMode === "mushaf"
+                                ? isLandscape
+                                  ? "_h"
+                                  : "_v"
+                                : `_${readingMode}_${isLandscape ? "h" : "v"}`;
+                          const isActiveTheme = currentTheme?.id === id;
+                          const themeCircleColor = getSidebarCircleColor(id, theme);
+                          const displayName = isEn ? (THEME_NAMES_EN[id] || t(`theme.${id}`, theme.name)) : theme.name;
+
+                          return (
+                            <button
+                              key={id}
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                applyTheme(id);
+                              }}
+                              className="flex items-center justify-center p-1 cursor-pointer bg-transparent border-0 shadow-none outline-none group transition-transform active:scale-95"
+                              style={{
+                                background: "transparent",
+                                border: "none",
+                                boxShadow: "none",
+                              }}
+                              title={displayName}
+                              aria-label={displayName}
+                            >
+                              <div
+                                className={`w-[24.65px] h-[24.65px] rounded-full flex items-center justify-center shrink-0 transition-all duration-200 ${
+                                  isActiveTheme ? "scale-110" : "group-hover:scale-108"
+                                }`}
                                 style={{
-                                  color: isActiveTheme ? "#ffffff" : currentTheme.text,
+                                  width: "24.65px",
+                                  height: "24.65px",
+                                  backgroundColor: themeCircleColor,
+                                  boxShadow: isActiveTheme
+                                    ? `0 0 0 2px #ffffff, 0 0 0 3.5px ${themeCircleColor === "#ffffff" ? "#d4af37" : themeCircleColor}, 0 2.5px 6px rgba(0,0,0,0.3)`
+                                    : id === "deep_black"
+                                      ? "0 2px 4px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(255,255,255,0.25)"
+                                      : "0 2px 4px rgba(0,0,0,0.22), inset 0 1px 1.2px rgba(255,255,255,0.6), inset 0 -1.2px 1.5px rgba(0,0,0,0.2)",
                                 }}
                               >
-                                {isEn ? (THEME_NAMES_EN[id] || t(`theme.${id}`, theme.name)) : theme.name}
-                              </span>
+                                {isActiveTheme && (
+                                  <div
+                                    className={`w-1.5 h-1.5 rounded-full ${id === "deep_black" ? "bg-emerald-500" : "bg-white"} shadow-xs`}
+                                  ></div>
+                                )}
+                              </div>
                             </button>
-                          </React.Fragment>
-                        );
-                      },
-                    )}
-                  </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
 
@@ -1544,9 +1601,9 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                   onClick={() => setCurrentView("main")}
                   className="w-full py-2.5 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 quran-raised-btn border-0"
                   style={{
-                    backgroundColor: currentTheme?.id === "night" ? "rgba(255,255,255,0.08)" : "#ffffff",
-                    color: currentTheme.text,
-                    border: "none",
+                    backgroundColor: isDarkTheme ? (currentTheme?.btnBg || "rgba(255,255,255,0.08)") : "#ffffff",
+                    color: isDarkTheme ? (currentTheme?.btnText || currentTheme.text || "#ffffff") : currentTheme.text,
+                    border: isDarkTheme ? "1px solid rgba(255,255,255,0.15)" : "none",
                   }}
                 >
                   {isEn ? "Back" : "رجوع"}
@@ -1607,7 +1664,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                   onClick={() => setCurrentView("main")}
                   className="w-full py-2.5 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 quran-raised-btn border-0"
                   style={{
-                    backgroundColor: currentTheme?.id === "night" ? "rgba(255,255,255,0.08)" : "#ffffff",
+                    backgroundColor: isDarkTheme ? (currentTheme?.btnBg || "rgba(255,255,255,0.08)") : "#ffffff",
                     color: currentTheme.text,
                     border: "none",
                   }}
@@ -1735,7 +1792,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                                   backgroundColor:
                                     isSelected
                                       ? (currentTheme?.accent || "#10b981")
-                                      : (currentTheme?.id === "night" ? "rgba(255,255,255,0.06)" : "#ffffff"),
+                                      : (isDarkTheme ? (currentTheme?.cardBg || "rgba(255,255,255,0.06)") : "#ffffff"),
                                   color: isSelected ? "#ffffff" : currentTheme.text,
                                   border: "none",
                                 }}
@@ -1773,7 +1830,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                   onClick={() => setCurrentView("main")}
                   className="w-full py-2.5 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 quran-raised-btn border-0"
                   style={{
-                    backgroundColor: currentTheme?.id === "night" ? "rgba(255,255,255,0.08)" : "#ffffff",
+                    backgroundColor: isDarkTheme ? (currentTheme?.btnBg || "rgba(255,255,255,0.08)") : "#ffffff",
                     color: currentTheme.text,
                     border: "none",
                   }}
@@ -1828,8 +1885,8 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                         style={{
                           backgroundColor:
                             isSelected
-                              ? (currentTheme?.id === "night" ? "rgba(255,255,255,0.12)" : `${currentTheme.accent}18`)
-                              : (currentTheme?.id === "night" ? "rgba(255,255,255,0.06)" : "#ffffff"),
+                              ? (isDarkTheme ? "rgba(255,255,255,0.12)" : `${currentTheme.accent}18`)
+                              : (isDarkTheme ? (currentTheme?.cardBg || "rgba(255,255,255,0.06)") : "#ffffff"),
                           color: currentTheme.text,
                           border: "none",
                         }}
@@ -1868,7 +1925,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                   onClick={() => setCurrentView("main")}
                   className="w-full py-2.5 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 quran-raised-btn border-0"
                   style={{
-                    backgroundColor: currentTheme?.id === "night" ? "rgba(255,255,255,0.08)" : "#ffffff",
+                    backgroundColor: isDarkTheme ? (currentTheme?.btnBg || "rgba(255,255,255,0.08)") : "#ffffff",
                     color: currentTheme.text,
                     border: "none",
                   }}
@@ -1924,7 +1981,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                   onClick={() => setCurrentView("main")}
                   className="w-full py-2.5 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 quran-raised-btn border-0"
                   style={{
-                    backgroundColor: currentTheme?.id === "night" ? "rgba(255,255,255,0.08)" : "#ffffff",
+                    backgroundColor: isDarkTheme ? (currentTheme?.btnBg || "rgba(255,255,255,0.08)") : "#ffffff",
                     color: currentTheme.text,
                     border: "none",
                   }}
@@ -1971,7 +2028,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                             backgroundColor:
                               selectedTafsir === t.id
                                 ? (currentTheme.accent || "#10b981")
-                                : (currentTheme?.id === "night" ? "rgba(255,255,255,0.06)" : "#ffffff"),
+                                : (isDarkTheme ? (currentTheme?.cardBg || "rgba(255,255,255,0.06)") : "#ffffff"),
                             color:
                               selectedTafsir === t.id
                                 ? "#ffffff"
@@ -2003,7 +2060,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                         style={{
                           backgroundColor: selectedSurahs.includes("all")
                             ? (currentTheme.accent || "#10b981")
-                            : (currentTheme?.id === "night" ? "rgba(255,255,255,0.06)" : "#ffffff"),
+                            : (isDarkTheme ? (currentTheme?.cardBg || "rgba(255,255,255,0.06)") : "#ffffff"),
                           color: selectedSurahs.includes("all") ? "#ffffff" : currentTheme.text,
                           border: "none",
                         }}
@@ -2025,8 +2082,8 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                               backgroundColor: isSelected
                                 ? (currentTheme.accent || "#10b981")
                                 : isDownloaded
-                                  ? (currentTheme?.id === "night" ? "rgba(16,185,129,0.2)" : "#d1fae5")
-                                  : (currentTheme?.id === "night" ? "rgba(255,255,255,0.06)" : "#ffffff"),
+                                  ? (isDarkTheme ? "rgba(16,185,129,0.2)" : "#d1fae5")
+                                  : (isDarkTheme ? (currentTheme?.cardBg || "rgba(255,255,255,0.06)") : "#ffffff"),
                               color: isSelected
                                 ? "#ffffff"
                                 : isDownloaded
@@ -2066,8 +2123,8 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                               backgroundColor: isSelected
                                 ? (currentTheme.accent || "#10b981")
                                 : isDownloaded
-                                  ? (currentTheme?.id === "night" ? "rgba(16,185,129,0.2)" : "#d1fae5")
-                                  : (currentTheme?.id === "night" ? "rgba(255,255,255,0.06)" : "#ffffff"),
+                                  ? (isDarkTheme ? "rgba(16,185,129,0.2)" : "#d1fae5")
+                                  : (isDarkTheme ? (currentTheme?.cardBg || "rgba(255,255,255,0.06)") : "#ffffff"),
                               color: isSelected
                                 ? "#ffffff"
                                 : isDownloaded
@@ -2127,7 +2184,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                     onClick={() => setCurrentView("main")}
                     className="px-4 py-2.5 rounded-2xl font-bold text-xs quran-raised-btn border-0 transition-all"
                     style={{
-                      backgroundColor: currentTheme?.id === "night" ? "rgba(255,255,255,0.08)" : "#ffffff",
+                      backgroundColor: isDarkTheme ? (currentTheme?.btnBg || "rgba(255,255,255,0.08)") : "#ffffff",
                       color: currentTheme.text,
                       border: "none",
                     }}
@@ -2177,7 +2234,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                   onClick={() => setCurrentView("main")}
                   className="w-full py-2.5 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 quran-raised-btn border-0"
                   style={{
-                    backgroundColor: currentTheme?.id === "night" ? "rgba(255,255,255,0.08)" : "#ffffff",
+                    backgroundColor: isDarkTheme ? (currentTheme?.btnBg || "rgba(255,255,255,0.08)") : "#ffffff",
                     color: currentTheme.text,
                     border: "none",
                   }}
@@ -2240,7 +2297,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                           placeholder={isEn ? "Search reciter..." : "ابحث عن قارئ..."}
                           className={`w-full py-2 ${isRTL ? "pr-8 pl-3" : "pl-8 pr-3"} text-xs rounded-xl border-0 outline-none quran-raised-card`}
                           style={{
-                            backgroundColor: currentTheme?.id === "night" ? "rgba(255,255,255,0.06)" : "#ffffff",
+                            backgroundColor: isDarkTheme ? (currentTheme?.cardBg || "rgba(255,255,255,0.06)") : "#ffffff",
                             color: currentTheme.text,
                             border: "none",
                           }}
@@ -2279,7 +2336,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                             backgroundColor:
                               selectedReader === r.id
                                 ? (currentTheme.accent || "#10b981")
-                                : (currentTheme?.id === "night" ? "rgba(255,255,255,0.06)" : "#ffffff"),
+                                : (isDarkTheme ? (currentTheme?.cardBg || "rgba(255,255,255,0.06)") : "#ffffff"),
                             color:
                               selectedReader === r.id
                                 ? "#ffffff"
@@ -2336,7 +2393,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                         style={{
                           backgroundColor: selectedSurahs.includes("all")
                             ? (currentTheme.accent || "#10b981")
-                            : (currentTheme?.id === "night" ? "rgba(255,255,255,0.06)" : "#ffffff"),
+                            : (isDarkTheme ? (currentTheme?.cardBg || "rgba(255,255,255,0.06)") : "#ffffff"),
                           color: selectedSurahs.includes("all") ? "#ffffff" : currentTheme.text,
                           border: "none",
                         }}
@@ -2360,8 +2417,8 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                               backgroundColor: isSelected
                                 ? (currentTheme.accent || "#10b981")
                                 : isDownloaded
-                                  ? (currentTheme?.id === "night" ? "rgba(16,185,129,0.2)" : "#d1fae5")
-                                  : (currentTheme?.id === "night" ? "rgba(255,255,255,0.06)" : "#ffffff"),
+                                  ? (isDarkTheme ? "rgba(16,185,129,0.2)" : "#d1fae5")
+                                  : (isDarkTheme ? (currentTheme?.cardBg || "rgba(255,255,255,0.06)") : "#ffffff"),
                               color: isSelected
                                 ? "#ffffff"
                                 : isDownloaded
@@ -2432,8 +2489,8 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                               backgroundColor: isSelected
                                 ? (currentTheme.accent || "#10b981")
                                 : isDownloaded
-                                  ? (currentTheme?.id === "night" ? "rgba(16,185,129,0.2)" : "#d1fae5")
-                                  : (currentTheme?.id === "night" ? "rgba(255,255,255,0.06)" : "#ffffff"),
+                                  ? (isDarkTheme ? "rgba(16,185,129,0.2)" : "#d1fae5")
+                                  : (isDarkTheme ? (currentTheme?.cardBg || "rgba(255,255,255,0.06)") : "#ffffff"),
                               color: isSelected
                                 ? "#ffffff"
                                 : isDownloaded
@@ -2508,7 +2565,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                     onClick={() => setCurrentView("download_quran_menu")}
                     className="px-4 py-2.5 rounded-2xl font-bold text-xs quran-raised-btn border-0 transition-all"
                     style={{
-                      backgroundColor: currentTheme?.id === "night" ? "rgba(255,255,255,0.08)" : "#ffffff",
+                      backgroundColor: isDarkTheme ? (currentTheme?.btnBg || "rgba(255,255,255,0.08)") : "#ffffff",
                       color: currentTheme.text,
                       border: "none",
                     }}
@@ -2554,7 +2611,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                         key={b.id}
                         className="p-3 rounded-2xl quran-raised-card flex items-center justify-between group transition-all cursor-pointer border-0"
                         style={{
-                          backgroundColor: currentTheme?.id === "night" ? "rgba(255,255,255,0.06)" : "#ffffff",
+                          backgroundColor: isDarkTheme ? (currentTheme?.cardBg || "rgba(255,255,255,0.06)") : "#ffffff",
                           color: currentTheme.text,
                           border: "none",
                         }}
@@ -2598,7 +2655,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                   onClick={() => setCurrentView("main")}
                   className="w-full py-2.5 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 quran-raised-btn border-0"
                   style={{
-                    backgroundColor: currentTheme?.id === "night" ? "rgba(255,255,255,0.08)" : "#ffffff",
+                    backgroundColor: isDarkTheme ? (currentTheme?.btnBg || "rgba(255,255,255,0.08)") : "#ffffff",
                     color: currentTheme.text,
                     border: "none",
                   }}
@@ -2646,7 +2703,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                         key={idx}
                         className="p-2.5 rounded-2xl quran-raised-card flex flex-col items-center gap-1 transition-all cursor-pointer border-0"
                         style={{
-                          backgroundColor: currentTheme?.id === "night" ? "rgba(255,255,255,0.06)" : "#ffffff",
+                          backgroundColor: isDarkTheme ? (currentTheme?.cardBg || "rgba(255,255,255,0.06)") : "#ffffff",
                           color: currentTheme.text,
                           border: "none",
                         }}
@@ -2689,7 +2746,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                   onClick={() => setCurrentView("main")}
                   className="w-full py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 quran-raised-btn border-0"
                   style={{
-                    backgroundColor: currentTheme?.id === "night" ? "rgba(255,255,255,0.08)" : "#ffffff",
+                    backgroundColor: isDarkTheme ? (currentTheme?.btnBg || "rgba(255,255,255,0.08)") : "#ffffff",
                     color: currentTheme.text,
                     border: "none",
                   }}
@@ -3007,6 +3064,7 @@ const NotificationSettingsContent: React.FC<{
   isEn?: boolean;
   isRTL?: boolean;
 }> = ({ showToast, modeSuffix, currentTheme, isEn = false, isRTL = true }) => {
+  const isDarkTheme = isDarkQuranTheme(currentTheme);
   const { config, updateConfig } = usePrayerTimes();
   const [activeTab, setActiveTab] = useState<"app" | "phone">("app");
 
@@ -3150,7 +3208,7 @@ const NotificationSettingsContent: React.FC<{
           className={`flex-1 py-2 text-[10px] font-bold flex items-center justify-center gap-1.5 rounded-xl transition-all border-0 ${activeTab === "app" ? "quran-raised-btn-selected text-white" : "quran-raised-btn"}`}
           style={{
             backgroundColor:
-              activeTab === "app" ? (currentTheme.accent || "#10b981") : (currentTheme?.id === "night" ? "rgba(255,255,255,0.06)" : "#ffffff"),
+              activeTab === "app" ? (currentTheme.accent || "#10b981") : (isDarkTheme ? (currentTheme?.cardBg || "rgba(255,255,255,0.06)") : "#ffffff"),
             color: activeTab === "app" ? "#ffffff" : currentTheme.text,
             border: "none",
           }}
@@ -3163,7 +3221,7 @@ const NotificationSettingsContent: React.FC<{
           className={`flex-1 py-2 text-[10px] font-bold flex items-center justify-center gap-1.5 rounded-xl transition-all border-0 ${activeTab === "phone" ? "quran-raised-btn-selected text-white" : "quran-raised-btn"}`}
           style={{
             backgroundColor:
-              activeTab === "phone" ? (currentTheme.accent || "#10b981") : (currentTheme?.id === "night" ? "rgba(255,255,255,0.06)" : "#ffffff"),
+              activeTab === "phone" ? (currentTheme.accent || "#10b981") : (isDarkTheme ? (currentTheme?.cardBg || "rgba(255,255,255,0.06)") : "#ffffff"),
             color: activeTab === "phone" ? "#ffffff" : currentTheme.text,
             border: "none",
           }}
@@ -3221,7 +3279,7 @@ const NotificationSettingsContent: React.FC<{
                 style={{
                   backgroundColor: appSettings[item.id]
                     ? `${currentTheme.accent}15`
-                    : (currentTheme?.id === "night" ? "rgba(255,255,255,0.06)" : "#ffffff"),
+                    : (isDarkTheme ? (currentTheme?.cardBg || "rgba(255,255,255,0.06)") : "#ffffff"),
                   color: currentTheme.text,
                   border: "none",
                 }}
@@ -3284,7 +3342,7 @@ const NotificationSettingsContent: React.FC<{
                     style={{
                       backgroundColor: isEnabled
                         ? `${currentTheme.accent}15`
-                        : (currentTheme?.id === "night" ? "rgba(255,255,255,0.06)" : "#ffffff"),
+                        : (isDarkTheme ? (currentTheme?.cardBg || "rgba(255,255,255,0.06)") : "#ffffff"),
                       color: currentTheme.text,
                       border: "none",
                     }}
@@ -3359,7 +3417,7 @@ const NotificationSettingsContent: React.FC<{
                       item.id as keyof typeof phoneSettings
                     ]
                       ? `${currentTheme.accent}15`
-                      : (currentTheme?.id === "night" ? "rgba(255,255,255,0.06)" : "#ffffff"),
+                      : (isDarkTheme ? (currentTheme?.cardBg || "rgba(255,255,255,0.06)") : "#ffffff"),
                     color: currentTheme.text,
                     border: "none",
                   }}
@@ -3429,7 +3487,7 @@ const NotificationSettingsContent: React.FC<{
                     className="py-1.5 px-1 text-[9px] font-bold rounded-xl quran-raised-btn border-0 transition-all"
                     style={{
                       color: currentTheme.text,
-                      backgroundColor: currentTheme?.id === "night" ? "rgba(255,255,255,0.06)" : "#ffffff",
+                      backgroundColor: isDarkTheme ? (currentTheme?.cardBg || "rgba(255,255,255,0.06)") : "#ffffff",
                       border: "none",
                     }}
                   >
@@ -3490,6 +3548,7 @@ const ToolbarColorPickerContent: React.FC<{
   isEn = false,
   isRTL = true,
 }) => {
+  const isDarkTheme = isDarkQuranTheme(currentTheme);
   const modeSuffix = isMemorizationMode
     ? `_memorization_${isLandscape ? "h" : "v"}`
     : isWirdMode
@@ -3558,7 +3617,7 @@ const ToolbarColorPickerContent: React.FC<{
         onClick={resetColors}
         className="w-full py-2.5 rounded-2xl text-xs font-bold quran-raised-btn border-0 transition-all"
         style={{
-          backgroundColor: currentTheme?.id === "night" ? "rgba(255,255,255,0.08)" : "#ffffff",
+          backgroundColor: isDarkTheme ? (currentTheme?.btnBg || "rgba(255,255,255,0.08)") : "#ffffff",
           color: currentTheme.text,
           border: "none",
         }}
@@ -3571,7 +3630,7 @@ const ToolbarColorPickerContent: React.FC<{
           key={section.id}
           className="p-3.5 rounded-2xl quran-raised-card border-0 space-y-3"
           style={{
-            backgroundColor: currentTheme?.id === "night" ? "rgba(255,255,255,0.06)" : "#ffffff",
+            backgroundColor: isDarkTheme ? (currentTheme?.cardBg || "rgba(255,255,255,0.06)") : "#ffffff",
             border: "none",
           }}
         >

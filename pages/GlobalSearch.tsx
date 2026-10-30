@@ -20,17 +20,28 @@ import {
     searchQuranEnglish, 
     getCachedQuranEnglishTranslation 
 } from '../utils/quranTranslationHelper';
+import { 
+    getQuranThemeIdForLayout, 
+    getQuranSettingsForLayout 
+} from '../utils/quranThemeHelper';
+import './QuranReader.css';
 
 // Helper to get reader theme
-const getReaderTheme = () => {
+const getReaderTheme = (isLandscape = false) => {
     try {
-        const themeId = localStorage.getItem('current_theme_id_v') || 'black';
-        const quranSettings = JSON.parse(localStorage.getItem('quran_settings_v') || '{}');
+        const suffix = isLandscape ? '_h' : '_v';
+        const themeId = getQuranThemeIdForLayout(suffix);
+        const quranSettings = getQuranSettingsForLayout(suffix) || {};
         const originalTheme = THEMES[themeId as keyof typeof THEMES] || THEMES.black;
         
         const bgColor = quranSettings.bgColor || originalTheme.bg;
         const textColor = quranSettings.textColor || originalTheme.text;
         const accent = quranSettings.highlightTextColor || originalTheme.accent;
+        const isDark =
+            textColor.toLowerCase() === '#ffffff' ||
+            themeId === 'deep_black' ||
+            themeId.startsWith('i_') ||
+            ['#000000', '#0a0a0a', '#18181b', '#09090b', '#022c22', '#450a0a', '#1e3a8a', '#422006', '#78350f', '#4c1d95', '#280a1e', '#041e3a', '#1e1b4b', '#0f172a', '#064e3b', '#134e4a', '#334155'].includes(bgColor.toLowerCase());
 
         return {
             ...originalTheme,
@@ -41,7 +52,7 @@ const getReaderTheme = () => {
             accent,
             palette: [accent, originalTheme.barText, originalTheme.btnBg],
             font: quranSettings.fontFamily || originalTheme.font,
-            isDark: ['#000000', '#0a0a0a', '#18181b', '#09090b', '#022c22', '#450a0a', '#1e3a8a', '#422006', '#78350f', '#4c1d95', '#0f172a', '#134e4a', '#334155'].includes(bgColor.toUpperCase())
+            isDark
         };
     } catch (e) {
         const defaultTheme = THEMES.black;
@@ -91,10 +102,19 @@ interface GlobalSearchProps {
 }
 
 const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navParams }) => {
-    const { setCurrentPage } = useTheme();
-    const { language, isRTL } = useLanguage();
+    const { theme: appTheme, themeKey, setCurrentPage } = useTheme();
+    const { language } = useLanguage();
     const isEn = language === 'en';
-    const [readerTheme, setReaderTheme] = useState(getReaderTheme());
+
+    const isFromQuran = Boolean(
+        navParams?.fromSidebar ||
+        navParams?.from === 'quran' ||
+        navParams?.from === 'quran-landscape' ||
+        (typeof navParams?.from === 'string' && navParams.from.startsWith('quran'))
+    );
+    const isQuranLandscape = navParams?.from === 'quran-landscape';
+
+    const [readerTheme, setReaderTheme] = useState(() => getReaderTheme(isQuranLandscape));
     const [initialHeight] = useState(() => typeof window !== 'undefined' ? window.innerHeight : 800);
 
     // Pre-fetch English Quran translation data if in English mode
@@ -129,10 +149,11 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
     }, []);
     
     useEffect(() => {
-        setCurrentPage('quran_search');
+        setCurrentPage(isFromQuran ? (isQuranLandscape ? 'quran_search_landscape' : 'quran_search') : 'search');
+        setReaderTheme(getReaderTheme(isQuranLandscape));
         
         const handleThemeChange = () => {
-            setReaderTheme(getReaderTheme());
+            setReaderTheme(getReaderTheme(isQuranLandscape));
         };
         
         window.addEventListener('theme-change', handleThemeChange);
@@ -141,9 +162,30 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
             window.removeEventListener('theme-change', handleThemeChange);
             window.removeEventListener('settings-change', handleThemeChange);
         };
-    }, [setCurrentPage]);
+    }, [setCurrentPage, isFromQuran, isQuranLandscape]);
 
-    const theme = readerTheme;
+    const isAppBlackTheme = themeKey === 'deep_black' || appTheme.bgColor === '#000000' || appTheme.name === 'اسود' || appTheme.name === 'أبيض وأسود';
+    const appIsDark = Boolean(isAppBlackTheme || appTheme.isDark);
+    const appAccent = isAppBlackTheme ? '#FFFFFF' : (appTheme.accent || appTheme.palette?.[0] || '#D97706');
+    const appBgColor = isAppBlackTheme ? '#000000' : (appTheme.bgColor || '#FEF9C3');
+    const appTextColor = isAppBlackTheme ? '#FFFFFF' : (appTheme.textColor || '#000000');
+
+    const appSearchTheme = {
+        ...appTheme,
+        bgColor: appBgColor,
+        bg: appBgColor,
+        textColor: appTextColor,
+        text: appTextColor,
+        accent: appAccent,
+        accentText: isAppBlackTheme ? '#000000' : '#ffffff',
+        palette: [appAccent, ...(appTheme.palette || [appAccent])],
+        btnBg: appIsDark ? (isAppBlackTheme ? '#18181b' : 'rgba(255,255,255,0.08)') : '#ffffff',
+        btnText: appTextColor,
+        isDark: appIsDark,
+    };
+
+    const theme = isFromQuran ? readerTheme : appSearchTheme;
+    const accentBadgeText = (theme.accent || theme.palette?.[0] || '').toUpperCase() === '#FFFFFF' ? '#000000' : '#ffffff';
     const [query, setQuery] = useState(searchCache.query);
     const [activeTab, setActiveTab] = useState(searchCache.activeTab);
     
@@ -584,18 +626,30 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
 
         if (query && totalResults === 0) {
             return (
-                <div className="flex flex-col items-center justify-center py-20 opacity-60">
-                    <Search className="w-16 h-16 mb-4 opacity-50" />
-                    <p className="font-bold">{isEn ? "No results found for your search" : "لا توجد نتائج لبحثك"}</p>
+                <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
+                    <div 
+                        className="w-20 h-20 rounded-3xl flex items-center justify-center mb-5 quran-raised-card border-0" 
+                        style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.06)' : (theme.btnBg || '#ffffff'), border: 'none' }}
+                    >
+                        <Search className="w-10 h-10 quran-3d-icon opacity-50" style={{ color: theme.accent || theme.palette[0] }} />
+                    </div>
+                    <p className="font-bold text-sm sm:text-base opacity-75" style={{ color: theme.textColor }}>
+                        {isEn ? "No results found for your search" : "لا توجد نتائج لبحثك"}
+                    </p>
                 </div>
             );
         }
 
         if (!query) {
             return (
-                <div className="flex flex-col items-center justify-center py-20 opacity-60">
-                    <Search className="w-16 h-16 mb-4 opacity-50" />
-                    <p className="font-bold text-center">
+                <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
+                    <div 
+                        className="w-20 h-20 rounded-3xl flex items-center justify-center mb-5 quran-raised-card border-0" 
+                        style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.06)' : (theme.btnBg || '#ffffff'), border: 'none' }}
+                    >
+                        <Search className="w-10 h-10 quran-3d-icon opacity-75" style={{ color: theme.accent || theme.palette[0] }} />
+                    </div>
+                    <p className="font-bold text-sm sm:text-base leading-relaxed opacity-75 max-w-sm" style={{ color: theme.textColor }}>
                         {isEn ? (
                             <>
                                 Search for a verse, English translation, or ayah number<br/>
@@ -630,25 +684,25 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                 {showQuran && quranResults.length > 0 && (
                     <div className="space-y-3">
                         {activeTab === 'all' ? (
-                            <div className="mb-2 border rounded-xl overflow-hidden shadow-sm" style={{ borderColor: `${theme.accent || theme.palette[0]}33` }}>
+                            <div className="mb-3 rounded-2xl quran-raised-card overflow-hidden border-0" style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.03)' : (theme.btnBg || '#ffffff'), border: 'none' }}>
                                 <button 
                                     onClick={() => setExpandedCategories(p => ({ ...p, quran: !p.quran }))}
-                                    className="w-full flex justify-between items-center p-4 transition-colors"
-                                    style={{ backgroundColor: `${theme.barBg}33` }}
+                                    className="w-full flex justify-between items-center p-4 transition-all quran-raised-btn border-0 rounded-2xl cursor-pointer"
+                                    style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.06)' : (theme.btnBg || '#ffffff'), color: theme.textColor, border: 'none' }}
                                 >
-                                    <h4 className="font-bold text-lg flex items-center gap-2" style={{ color: theme.accent || theme.palette[0] }}>
-                                        <BookOpen className="w-5 h-5" /> 
+                                    <h4 className="font-bold text-base flex items-center gap-2.5" style={{ color: theme.accent || theme.palette[0] }}>
+                                        <BookOpen className="w-5 h-5 quran-3d-icon" /> 
                                         {isEn ? "The Holy Quran" : "القرآن الكريم"}
                                     </h4>
                                     <div className="flex items-center gap-2">
-                                        <span className="text-xs font-bold px-2 py-1 rounded-full" style={{ backgroundColor: `${theme.accent || theme.palette[0]}33`, color: theme.accent || theme.palette[0] }}>
+                                        <span className="text-xs font-bold px-2.5 py-0.5 rounded-full quran-raised-card border-0" style={{ backgroundColor: theme.accent || theme.palette[0], color: accentBadgeText, border: 'none' }}>
                                             {isEn ? quranResults.length : toArabic(quranResults.length)}
                                         </span>
-                                        <ChevronLeft className={`w-5 h-5 transition-transform ${expandedCategories.quran ? (isEn ? 'rotate-90' : '-rotate-90') : (isEn ? 'rotate-180' : '')}`} />
+                                        <ChevronLeft className={`w-5 h-5 transition-transform quran-3d-icon ${expandedCategories.quran ? (isEn ? 'rotate-90' : '-rotate-90') : (isEn ? 'rotate-180' : '')}`} />
                                     </div>
                                 </button>
                                 {expandedCategories.quran && (
-                                    <div className="p-2 space-y-2" style={{ backgroundColor: `${theme.barBg}22` }}>
+                                    <div className="p-3 space-y-2.5" style={{ backgroundColor: theme.isDark ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.015)' }}>
                                         {sortedQuranSurahs.map(surahNum => {
                                             const group = groupedQuran[surahNum];
                                             const isExpanded = expandedSurahs[surahNum];
@@ -656,33 +710,33 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                                                 ? `Surah ${group.surahNameEn || SURAH_NAMES_EN[surahNum - 1] || group.surahName}` 
                                                 : `سورة ${group.surahName}`;
                                             return (
-                                                <div key={surahNum} className="mb-2 border rounded-xl overflow-hidden shadow-sm" style={{ borderColor: `${theme.accent || theme.palette[0]}33` }}>
+                                                <div key={surahNum} className="rounded-2xl quran-raised-card overflow-hidden border-0 mb-2" style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.04)' : '#ffffff', border: 'none' }}>
                                                     <button 
                                                         onClick={() => toggleSurah(surahNum)}
-                                                        className="w-full flex justify-between items-center p-4 transition-colors"
-                                                        style={{ backgroundColor: `${theme.barBg}33` }}
+                                                        className="w-full flex justify-between items-center p-3.5 transition-all quran-raised-btn border-0 rounded-2xl cursor-pointer"
+                                                        style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.06)' : '#ffffff', color: theme.textColor, border: 'none' }}
                                                     >
-                                                        <h4 className={`${isEn ? 'font-bold' : 'font-amiri-quran'} text-lg font-bold`} style={{ color: theme.accent || theme.palette[0] }}>
+                                                        <h4 className={`${isEn ? 'font-bold' : 'font-amiri-quran'} text-base font-bold`} style={{ color: theme.accent || theme.palette[0] }}>
                                                             {surahDisplayName}
                                                         </h4>
                                                         <div className="flex items-center gap-2">
-                                                            <span className="text-xs font-bold px-2 py-1 rounded-full" style={{ backgroundColor: `${theme.accent || theme.palette[0]}33`, color: theme.accent || theme.palette[0] }}>
+                                                            <span className="text-xs font-bold px-2 py-0.5 rounded-full quran-raised-card border-0" style={{ backgroundColor: theme.accent || theme.palette[0], color: accentBadgeText, border: 'none' }}>
                                                                 {isEn ? group.ayahs.length : toArabic(group.ayahs.length)}
                                                             </span>
-                                                            <ChevronLeft className={`w-5 h-5 transition-transform ${isExpanded ? (isEn ? 'rotate-90' : '-rotate-90') : (isEn ? 'rotate-180' : '')}`} />
+                                                            <ChevronLeft className={`w-4 h-4 transition-transform quran-3d-icon ${isExpanded ? (isEn ? 'rotate-90' : '-rotate-90') : (isEn ? 'rotate-180' : '')}`} />
                                                         </div>
                                                     </button>
                                                     
                                                     {isExpanded && (
-                                                        <div className="divide-y" style={{ backgroundColor: `${theme.barBg}11`, borderColor: `${theme.accent || theme.palette[0]}22` }}>
+                                                        <div className="p-2 space-y-2" style={{ backgroundColor: theme.isDark ? 'rgba(0,0,0,0.15)' : 'rgba(0,0,0,0.01)' }}>
                                                             {group.ayahs.map((r, idx) => (
                                                                 <button 
                                                                     key={`quran-${surahNum}-${idx}`} 
-                                                                    className={`w-full ${isEn ? 'text-left' : 'text-right'} p-4 transition-colors hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer`}
-                                                                    style={{ color: theme.textColor }}
+                                                                    className={`w-full ${isEn ? 'text-left' : 'text-right'} p-3.5 rounded-2xl quran-raised-card border-0 transition-all active:scale-[0.98] cursor-pointer`}
+                                                                    style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.05)' : '#ffffff', color: theme.textColor, border: 'none' }}
                                                                     onClick={() => onNavigate('quran', { surah: r.surah, ayah: r.ayah, readingMode: isEn ? 'translation' : undefined })}
                                                                 >
-                                                                    <div className="text-xs opacity-60 mb-2 flex items-center gap-1 font-bold">
+                                                                    <div className="text-[11px] opacity-60 mb-1.5 flex items-center gap-1.5 font-bold">
                                                                         <span>{isEn ? `Verse ${r.ayah}` : `آية ${toArabic(r.ayah)}`}</span>
                                                                         <span>•</span>
                                                                         <span>{isEn ? `Juz ${r.juz}` : `جزء ${toArabic(r.juz)}`}</span>
@@ -690,8 +744,8 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                                                                         <span>{isEn ? `Page ${r.page}` : `صفحة ${toArabic(r.page)}`}</span>
                                                                     </div>
                                                                     {isEn ? (
-                                                                        <div className="space-y-2">
-                                                                            <div className="text-base font-medium leading-relaxed" style={{ color: theme.textColor }}>
+                                                                        <div className="space-y-1.5">
+                                                                            <div className="text-sm font-medium leading-relaxed" style={{ color: theme.textColor }}>
                                                                                 {highlightText(r.textEn || r.text, r.highlightRegex)}
                                                                             </div>
                                                                             <div className="font-amiri-quran text-sm opacity-70 leading-loose text-right" dir="rtl">
@@ -699,7 +753,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                                                                             </div>
                                                                         </div>
                                                                     ) : (
-                                                                        <div className="font-amiri-quran text-lg leading-loose" dir="rtl">
+                                                                        <div className="font-amiri-quran text-base leading-loose" dir="rtl">
                                                                             {highlightText(r.text, r.highlightRegex)}
                                                                         </div>
                                                                     )}
@@ -715,10 +769,14 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                             </div>
                         ) : (
                             <>
-                                <h3 className="font-bold text-lg opacity-80 border-b pb-2 flex items-center gap-2" style={{ borderColor: theme.barBorder }}>
-                                    <BookOpen className="w-5 h-5" /> 
-                                    {isEn ? `The Holy Quran (${quranResults.length})` : `القرآن الكريم (${toArabic(quranResults.length)})`}
-                                </h3>
+                                <div className="flex items-center gap-2 mb-2 px-1">
+                                    <span className="p-2 rounded-xl quran-raised-card border-0" style={{ backgroundColor: `${theme.accent || theme.palette[0]}18`, color: theme.accent || theme.palette[0], border: 'none' }}>
+                                        <BookOpen className="w-4 h-4 quran-3d-icon" />
+                                    </span>
+                                    <h3 className="font-bold text-sm opacity-90" style={{ color: theme.textColor }}>
+                                        {isEn ? `The Holy Quran (${quranResults.length})` : `القرآن الكريم (${toArabic(quranResults.length)})`}
+                                    </h3>
+                                </div>
                                 {sortedQuranSurahs.map(surahNum => {
                                     const group = groupedQuran[surahNum];
                                     const isExpanded = expandedSurahs[surahNum];
@@ -726,33 +784,33 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                                         ? `Surah ${group.surahNameEn || SURAH_NAMES_EN[surahNum - 1] || group.surahName}` 
                                         : `سورة ${group.surahName}`;
                                     return (
-                                        <div key={surahNum} className="mb-2 border rounded-xl overflow-hidden shadow-sm" style={{ borderColor: `${theme.accent || theme.palette[0]}33` }}>
+                                        <div key={surahNum} className="mb-2.5 rounded-2xl quran-raised-card overflow-hidden border-0" style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.04)' : '#ffffff', border: 'none' }}>
                                             <button 
                                                 onClick={() => toggleSurah(surahNum)}
-                                                className="w-full flex justify-between items-center p-4 transition-colors"
-                                                style={{ backgroundColor: `${theme.barBg}33` }}
+                                                className="w-full flex justify-between items-center p-3.5 transition-all quran-raised-btn border-0 rounded-2xl cursor-pointer"
+                                                style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.06)' : '#ffffff', color: theme.textColor, border: 'none' }}
                                             >
-                                                <h4 className={`${isEn ? 'font-bold' : 'font-amiri-quran'} text-lg font-bold`} style={{ color: theme.accent || theme.palette[0] }}>
+                                                <h4 className={`${isEn ? 'font-bold' : 'font-amiri-quran'} text-base font-bold`} style={{ color: theme.accent || theme.palette[0] }}>
                                                     {surahDisplayName}
                                                 </h4>
                                                 <div className="flex items-center gap-2">
-                                                    <span className="text-xs font-bold px-2 py-1 rounded-full" style={{ backgroundColor: `${theme.accent || theme.palette[0]}33`, color: theme.accent || theme.palette[0] }}>
+                                                    <span className="text-xs font-bold px-2.5 py-0.5 rounded-full quran-raised-card border-0" style={{ backgroundColor: theme.accent || theme.palette[0], color: accentBadgeText, border: 'none' }}>
                                                         {isEn ? group.ayahs.length : toArabic(group.ayahs.length)}
                                                     </span>
-                                                    <ChevronLeft className={`w-5 h-5 transition-transform ${isExpanded ? (isEn ? 'rotate-90' : '-rotate-90') : (isEn ? 'rotate-180' : '')}`} />
+                                                    <ChevronLeft className={`w-4 h-4 transition-transform quran-3d-icon ${isExpanded ? (isEn ? 'rotate-90' : '-rotate-90') : (isEn ? 'rotate-180' : '')}`} />
                                                 </div>
                                             </button>
                                             
                                             {isExpanded && (
-                                                <div className="divide-y" style={{ backgroundColor: `${theme.barBg}11`, borderColor: `${theme.accent || theme.palette[0]}22` }}>
+                                                <div className="p-2.5 space-y-2" style={{ backgroundColor: theme.isDark ? 'rgba(0,0,0,0.15)' : 'rgba(0,0,0,0.015)' }}>
                                                     {group.ayahs.map((r, idx) => (
                                                         <button 
                                                             key={`quran-${surahNum}-${idx}`} 
-                                                            className={`w-full ${isEn ? 'text-left' : 'text-right'} p-4 transition-colors hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer`}
-                                                            style={{ color: theme.textColor }}
+                                                            className={`w-full ${isEn ? 'text-left' : 'text-right'} p-3.5 rounded-2xl quran-raised-card border-0 transition-all active:scale-[0.98] cursor-pointer`}
+                                                            style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.05)' : '#ffffff', color: theme.textColor, border: 'none' }}
                                                             onClick={() => onNavigate('quran', { surah: r.surah, ayah: r.ayah, readingMode: isEn ? 'translation' : undefined })}
                                                         >
-                                                            <div className="text-xs opacity-60 mb-2 flex items-center gap-1 font-bold">
+                                                            <div className="text-[11px] opacity-60 mb-1.5 flex items-center gap-1.5 font-bold">
                                                                 <span>{isEn ? `Verse ${r.ayah}` : `آية ${toArabic(r.ayah)}`}</span>
                                                                 <span>•</span>
                                                                 <span>{isEn ? `Juz ${r.juz}` : `جزء ${toArabic(r.juz)}`}</span>
@@ -760,8 +818,8 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                                                                 <span>{isEn ? `Page ${r.page}` : `صفحة ${toArabic(r.page)}`}</span>
                                                             </div>
                                                             {isEn ? (
-                                                                <div className="space-y-2">
-                                                                    <div className="text-base font-medium leading-relaxed" style={{ color: theme.textColor }}>
+                                                                <div className="space-y-1.5">
+                                                                    <div className="text-sm font-medium leading-relaxed" style={{ color: theme.textColor }}>
                                                                         {highlightText(r.textEn || r.text, r.highlightRegex)}
                                                                     </div>
                                                                     <div className="font-amiri-quran text-sm opacity-70 leading-loose text-right" dir="rtl">
@@ -769,7 +827,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                                                                     </div>
                                                                 </div>
                                                             ) : (
-                                                                <div className="font-amiri-quran text-lg leading-loose" dir="rtl">
+                                                                <div className="font-amiri-quran text-base leading-loose" dir="rtl">
                                                                     {highlightText(r.text, r.highlightRegex)}
                                                                 </div>
                                                             )}
@@ -786,35 +844,35 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                 )}
 
                 {showDua && duaResults.length > 0 && (
-                    <div className="space-y-3 mt-6">
+                    <div className="space-y-3 mt-4">
                         {activeTab === 'all' ? (
-                            <div className="mb-2 border rounded-xl overflow-hidden shadow-sm" style={{ borderColor: `${theme.accent || theme.palette[0]}33` }}>
+                            <div className="mb-3 rounded-2xl quran-raised-card overflow-hidden border-0" style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.03)' : (theme.btnBg || '#ffffff'), border: 'none' }}>
                                 <button 
                                     onClick={() => setExpandedCategories(p => ({ ...p, dua: !p.dua }))}
-                                    className="w-full flex justify-between items-center p-4 transition-colors"
-                                    style={{ backgroundColor: `${theme.barBg}33` }}
+                                    className="w-full flex justify-between items-center p-4 transition-all quran-raised-btn border-0 rounded-2xl cursor-pointer"
+                                    style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.06)' : (theme.btnBg || '#ffffff'), color: theme.textColor, border: 'none' }}
                                 >
-                                    <h4 className="font-bold text-lg flex items-center gap-2" style={{ color: theme.accent || theme.palette[0] }}>
-                                        <Heart className="w-5 h-5" /> 
+                                    <h4 className="font-bold text-base flex items-center gap-2.5" style={{ color: theme.accent || theme.palette[0] }}>
+                                        <Heart className="w-5 h-5 quran-3d-icon" /> 
                                         {isEn ? "Supplications (Duas)" : "الأدعية"}
                                     </h4>
                                     <div className="flex items-center gap-2">
-                                        <span className="text-xs font-bold px-2 py-1 rounded-full" style={{ backgroundColor: `${theme.accent || theme.palette[0]}33`, color: theme.accent || theme.palette[0] }}>
+                                        <span className="text-xs font-bold px-2.5 py-0.5 rounded-full quran-raised-card border-0" style={{ backgroundColor: theme.accent || theme.palette[0], color: accentBadgeText, border: 'none' }}>
                                             {isEn ? duaResults.length : toArabic(duaResults.length)}
                                         </span>
-                                        <ChevronLeft className={`w-5 h-5 transition-transform ${expandedCategories.dua ? (isEn ? 'rotate-90' : '-rotate-90') : (isEn ? 'rotate-180' : '')}`} />
+                                        <ChevronLeft className={`w-5 h-5 transition-transform quran-3d-icon ${expandedCategories.dua ? (isEn ? 'rotate-90' : '-rotate-90') : (isEn ? 'rotate-180' : '')}`} />
                                     </div>
                                 </button>
                                 {expandedCategories.dua && (
-                                    <div className="divide-y p-2 space-y-2" style={{ backgroundColor: `${theme.barBg}22`, borderColor: `${theme.accent || theme.palette[0]}22` }}>
+                                    <div className="p-3 space-y-2.5" style={{ backgroundColor: theme.isDark ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.015)' }}>
                                         {duaResults.map((r, idx) => (
                                             <button 
                                                 key={`dua-${idx}`} 
-                                                className={`w-full ${isEn ? 'text-left' : 'text-right'} p-3 rounded-lg transition-colors hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer`}
+                                                className={`w-full ${isEn ? 'text-left' : 'text-right'} p-3.5 rounded-2xl quran-raised-card border-0 transition-all active:scale-[0.98] cursor-pointer`}
                                                 onClick={() => onNavigate(r.targetPage || 'adia')}
-                                                style={{ color: theme.textColor }}
+                                                style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.05)' : '#ffffff', color: theme.textColor, border: 'none' }}
                                             >
-                                                <div className={`${isEn ? 'text-base font-medium' : 'font-qalam text-lg'} leading-relaxed mb-1 line-clamp-2`} style={{ color: theme.accent || theme.palette[0] }}>
+                                                <div className={`${isEn ? 'text-sm font-medium' : 'font-qalam text-base'} leading-relaxed mb-1 line-clamp-2`} style={{ color: theme.accent || theme.palette[0] }}>
                                                     {highlightText(isEn ? (r.textEn || r.text) : r.text, r.highlightRegex)}
                                                 </div>
                                                 <div className="text-[10px] opacity-60 font-bold">
@@ -827,18 +885,22 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                             </div>
                         ) : (
                             <>
-                                <h3 className="font-bold text-lg opacity-80 border-b pb-2 flex items-center gap-2" style={{ borderColor: theme.barBorder }}>
-                                    <Heart className="w-5 h-5" /> 
-                                    {isEn ? `Supplications (${duaResults.length})` : `الأدعية (${toArabic(duaResults.length)})`}
-                                </h3>
+                                <div className="flex items-center gap-2 mb-2 px-1">
+                                    <span className="p-2 rounded-xl quran-raised-card border-0" style={{ backgroundColor: `${theme.accent || theme.palette[0]}18`, color: theme.accent || theme.palette[0], border: 'none' }}>
+                                        <Heart className="w-4 h-4 quran-3d-icon" />
+                                    </span>
+                                    <h3 className="font-bold text-sm opacity-90" style={{ color: theme.textColor }}>
+                                        {isEn ? `Supplications (${duaResults.length})` : `الأدعية (${toArabic(duaResults.length)})`}
+                                    </h3>
+                                </div>
                                 {duaResults.map((r, idx) => (
                                     <button 
                                         key={`dua-${idx}`} 
-                                        className={`w-full ${isEn ? 'text-left' : 'text-right'} p-4 rounded-xl border shadow-sm transition-all hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer`}
-                                        style={{ backgroundColor: `${theme.barBg}33`, borderColor: theme.barBorder, color: theme.textColor }}
+                                        className={`w-full ${isEn ? 'text-left' : 'text-right'} p-4 rounded-2xl quran-raised-card border-0 transition-all active:scale-[0.98] cursor-pointer mb-2.5`}
+                                        style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.05)' : '#ffffff', color: theme.textColor, border: 'none' }}
                                         onClick={() => onNavigate(r.targetPage || 'adia')}
                                     >
-                                        <div className={`${isEn ? 'text-base font-medium' : 'font-qalam text-lg'} leading-relaxed mb-2`} style={{ color: theme.accent || theme.palette[0] }}>
+                                        <div className={`${isEn ? 'text-sm font-medium' : 'font-qalam text-base'} leading-relaxed mb-2`} style={{ color: theme.accent || theme.palette[0] }}>
                                             {highlightText(isEn ? (r.textEn || r.text) : r.text, r.highlightRegex)}
                                         </div>
                                         <div className="text-xs opacity-60 font-bold">
@@ -852,39 +914,39 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                 )}
 
                 {showAthkar && athkarResults.length > 0 && (
-                    <div className="space-y-3 mt-6">
+                    <div className="space-y-3 mt-4">
                         {activeTab === 'all' ? (
-                            <div className="mb-2 border rounded-xl overflow-hidden shadow-sm" style={{ borderColor: `${theme.accent || theme.palette[0]}33` }}>
+                            <div className="mb-3 rounded-2xl quran-raised-card overflow-hidden border-0" style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.03)' : (theme.btnBg || '#ffffff'), border: 'none' }}>
                                 <button 
                                     onClick={() => setExpandedCategories(p => ({ ...p, athkar: !p.athkar }))}
-                                    className="w-full flex justify-between items-center p-4 transition-colors"
-                                    style={{ backgroundColor: `${theme.barBg}33` }}
+                                    className="w-full flex justify-between items-center p-4 transition-all quran-raised-btn border-0 rounded-2xl cursor-pointer"
+                                    style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.06)' : (theme.btnBg || '#ffffff'), color: theme.textColor, border: 'none' }}
                                 >
-                                    <h4 className="font-bold text-lg flex items-center gap-2" style={{ color: theme.accent || theme.palette[0] }}>
-                                        <Sun className="w-5 h-5" /> 
+                                    <h4 className="font-bold text-base flex items-center gap-2.5" style={{ color: theme.accent || theme.palette[0] }}>
+                                        <Sun className="w-5 h-5 quran-3d-icon" /> 
                                         {isEn ? "Adhkar (Remembrances)" : "الأذكار"}
                                     </h4>
                                     <div className="flex items-center gap-2">
-                                        <span className="text-xs font-bold px-2 py-1 rounded-full" style={{ backgroundColor: `${theme.accent || theme.palette[0]}33`, color: theme.accent || theme.palette[0] }}>
+                                        <span className="text-xs font-bold px-2.5 py-0.5 rounded-full quran-raised-card border-0" style={{ backgroundColor: theme.accent || theme.palette[0], color: accentBadgeText, border: 'none' }}>
                                             {isEn ? athkarResults.length : toArabic(athkarResults.length)}
                                         </span>
-                                        <ChevronLeft className={`w-5 h-5 transition-transform ${expandedCategories.athkar ? (isEn ? 'rotate-90' : '-rotate-90') : (isEn ? 'rotate-180' : '')}`} />
+                                        <ChevronLeft className={`w-5 h-5 transition-transform quran-3d-icon ${expandedCategories.athkar ? (isEn ? 'rotate-90' : '-rotate-90') : (isEn ? 'rotate-180' : '')}`} />
                                     </div>
                                 </button>
                                 {expandedCategories.athkar && (
-                                    <div className="divide-y p-2 space-y-2" style={{ backgroundColor: `${theme.barBg}22`, borderColor: `${theme.accent || theme.palette[0]}22` }}>
+                                    <div className="p-3 space-y-2.5" style={{ backgroundColor: theme.isDark ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.015)' }}>
                                         {athkarResults.map((r, idx) => (
                                             <button 
                                                 key={`athkar-${idx}`} 
-                                                className={`w-full ${isEn ? 'text-left' : 'text-right'} p-3 rounded-lg transition-colors hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer`}
+                                                className={`w-full ${isEn ? 'text-left' : 'text-right'} p-3.5 rounded-2xl quran-raised-card border-0 transition-all active:scale-[0.98] cursor-pointer`}
                                                 onClick={() => onNavigate('sabah-masaa')}
-                                                style={{ color: theme.textColor }}
+                                                style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.05)' : '#ffffff', color: theme.textColor, border: 'none' }}
                                             >
-                                                <div className="text-[10px] opacity-60 mb-1 font-bold flex items-center gap-1">
-                                                    {r.kind === 'morning' ? <Sun className="w-3 h-3" style={{ color: theme.accent || theme.palette[0] }} /> : <Moon className="w-3 h-3" style={{ color: theme.accent || theme.palette[0] }} />}
+                                                <div className="text-[10px] opacity-60 mb-1 font-bold flex items-center gap-1.5">
+                                                    {r.kind === 'morning' ? <Sun className="w-3.5 h-3.5 quran-3d-icon" style={{ color: theme.accent || theme.palette[0] }} /> : <Moon className="w-3.5 h-3.5 quran-3d-icon" style={{ color: theme.accent || theme.palette[0] }} />}
                                                     <span>{r.kind === 'morning' ? (isEn ? 'Morning Adhkar' : 'أذكار الصباح') : (isEn ? 'Evening Adhkar' : 'أذكار المساء')}</span>
                                                 </div>
-                                                <div className={`${isEn ? 'text-base font-medium' : 'font-qalam text-lg'} leading-relaxed line-clamp-2`} style={{ color: theme.accent || theme.palette[0] }}>
+                                                <div className={`${isEn ? 'text-sm font-medium' : 'font-qalam text-base'} leading-relaxed line-clamp-2`} style={{ color: theme.accent || theme.palette[0] }}>
                                                     {highlightText(isEn ? (r.textEn || r.text) : r.text, r.highlightRegex)}
                                                 </div>
                                                 {(r.sourceEn || r.source) && (
@@ -899,22 +961,26 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                             </div>
                         ) : (
                             <>
-                                <h3 className="font-bold text-lg opacity-80 border-b pb-2 flex items-center gap-2" style={{ borderColor: theme.barBorder }}>
-                                    <Sun className="w-5 h-5" /> 
-                                    {isEn ? `Adhkar (${athkarResults.length})` : `الأذكار (${toArabic(athkarResults.length)})`}
-                                </h3>
+                                <div className="flex items-center gap-2 mb-2 px-1">
+                                    <span className="p-2 rounded-xl quran-raised-card border-0" style={{ backgroundColor: `${theme.accent || theme.palette[0]}18`, color: theme.accent || theme.palette[0], border: 'none' }}>
+                                        <Sun className="w-4 h-4 quran-3d-icon" />
+                                    </span>
+                                    <h3 className="font-bold text-sm opacity-90" style={{ color: theme.textColor }}>
+                                        {isEn ? `Adhkar (${athkarResults.length})` : `الأذكار (${toArabic(athkarResults.length)})`}
+                                    </h3>
+                                </div>
                                 {athkarResults.map((r, idx) => (
                                     <button 
                                         key={`athkar-${idx}`} 
-                                        className={`w-full ${isEn ? 'text-left' : 'text-right'} p-4 rounded-xl border shadow-sm transition-all hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer`}
-                                        style={{ backgroundColor: `${theme.barBg}33`, borderColor: theme.barBorder, color: theme.textColor }}
+                                        className={`w-full ${isEn ? 'text-left' : 'text-right'} p-4 rounded-2xl quran-raised-card border-0 transition-all active:scale-[0.98] cursor-pointer mb-2.5`}
+                                        style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.05)' : '#ffffff', color: theme.textColor, border: 'none' }}
                                         onClick={() => onNavigate('sabah-masaa')}
                                     >
-                                        <div className="text-[10px] opacity-60 mb-2 font-bold flex items-center gap-1">
-                                            {r.kind === 'morning' ? <Sun className="w-3 h-3" style={{ color: theme.accent || theme.palette[0] }} /> : <Moon className="w-3 h-3" style={{ color: theme.accent || theme.palette[0] }} />}
+                                        <div className="text-[10px] opacity-60 mb-2 font-bold flex items-center gap-1.5">
+                                            {r.kind === 'morning' ? <Sun className="w-3.5 h-3.5 quran-3d-icon" style={{ color: theme.accent || theme.palette[0] }} /> : <Moon className="w-3.5 h-3.5 quran-3d-icon" style={{ color: theme.accent || theme.palette[0] }} />}
                                             <span>{r.kind === 'morning' ? (isEn ? 'Morning Adhkar' : 'أذكار الصباح') : (isEn ? 'Evening Adhkar' : 'أذكار المساء')}</span>
                                         </div>
-                                        <div className={`${isEn ? 'text-base font-medium' : 'font-qalam text-lg'} leading-relaxed mb-1`} style={{ color: theme.accent || theme.palette[0] }}>
+                                        <div className={`${isEn ? 'text-sm font-medium' : 'font-qalam text-base'} leading-relaxed mb-1`} style={{ color: theme.accent || theme.palette[0] }}>
                                             {highlightText(isEn ? (r.textEn || r.text) : r.text, r.highlightRegex)}
                                         </div>
                                         {(r.sourceEn || r.source) && (
@@ -930,35 +996,35 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                 )}
 
                 {showHisn && hisnResults.length > 0 && (
-                    <div className="space-y-3 mt-6">
+                    <div className="space-y-3 mt-4">
                         {activeTab === 'all' ? (
-                            <div className="mb-2 border rounded-xl overflow-hidden shadow-sm" style={{ borderColor: `${theme.accent || theme.palette[0]}33` }}>
+                            <div className="mb-3 rounded-2xl quran-raised-card overflow-hidden border-0" style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.03)' : (theme.btnBg || '#ffffff'), border: 'none' }}>
                                 <button 
                                     onClick={() => setExpandedCategories(p => ({ ...p, hisn: !p.hisn }))}
-                                    className="w-full flex justify-between items-center p-4 transition-colors"
-                                    style={{ backgroundColor: `${theme.barBg}33` }}
+                                    className="w-full flex justify-between items-center p-4 transition-all quran-raised-btn border-0 rounded-2xl cursor-pointer"
+                                    style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.06)' : (theme.btnBg || '#ffffff'), color: theme.textColor, border: 'none' }}
                                 >
-                                    <h4 className="font-bold text-lg flex items-center gap-2" style={{ color: theme.accent || theme.palette[0] }}>
-                                        <BookOpen className="w-5 h-5" /> 
+                                    <h4 className="font-bold text-base flex items-center gap-2.5" style={{ color: theme.accent || theme.palette[0] }}>
+                                        <BookOpen className="w-5 h-5 quran-3d-icon" /> 
                                         {isEn ? "Hisn Al-Muslim" : "حصن المسلم"}
                                     </h4>
                                     <div className="flex items-center gap-2">
-                                        <span className="text-xs font-bold px-2 py-1 rounded-full" style={{ backgroundColor: `${theme.accent || theme.palette[0]}33`, color: theme.accent || theme.palette[0] }}>
+                                        <span className="text-xs font-bold px-2.5 py-0.5 rounded-full quran-raised-card border-0" style={{ backgroundColor: theme.accent || theme.palette[0], color: accentBadgeText, border: 'none' }}>
                                             {isEn ? hisnResults.length : toArabic(hisnResults.length)}
                                         </span>
-                                        <ChevronLeft className={`w-5 h-5 transition-transform ${expandedCategories.hisn ? (isEn ? 'rotate-90' : '-rotate-90') : (isEn ? 'rotate-180' : '')}`} />
+                                        <ChevronLeft className={`w-5 h-5 transition-transform quran-3d-icon ${expandedCategories.hisn ? (isEn ? 'rotate-90' : '-rotate-90') : (isEn ? 'rotate-180' : '')}`} />
                                     </div>
                                 </button>
                                 {expandedCategories.hisn && (
-                                    <div className="divide-y p-2 space-y-2" style={{ backgroundColor: `${theme.barBg}22`, borderColor: `${theme.accent || theme.palette[0]}22` }}>
+                                    <div className="p-3 space-y-2.5" style={{ backgroundColor: theme.isDark ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.015)' }}>
                                         {hisnResults.map((r, idx) => (
                                             <button 
                                                 key={`hisn-${idx}`} 
-                                                className={`w-full ${isEn ? 'text-left' : 'text-right'} p-3 rounded-lg transition-colors hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer`}
+                                                className={`w-full ${isEn ? 'text-left' : 'text-right'} p-3.5 rounded-2xl quran-raised-card border-0 transition-all active:scale-[0.98] cursor-pointer`}
                                                 onClick={() => onNavigate('hisn-muslim')}
-                                                style={{ color: theme.textColor }}
+                                                style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.05)' : '#ffffff', color: theme.textColor, border: 'none' }}
                                             >
-                                                <div className={`${isEn ? 'text-base font-medium' : 'font-qalam text-lg'} leading-relaxed mb-1 line-clamp-2`} style={{ color: theme.accent || theme.palette[0] }}>
+                                                <div className={`${isEn ? 'text-sm font-medium' : 'font-qalam text-base'} leading-relaxed mb-1 line-clamp-2`} style={{ color: theme.accent || theme.palette[0] }}>
                                                     {highlightText(isEn ? (r.textEn || r.text) : r.text, r.highlightRegex)}
                                                 </div>
                                                 <div className="text-[10px] opacity-60 font-bold">
@@ -971,18 +1037,22 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                             </div>
                         ) : (
                             <>
-                                <h3 className="font-bold text-lg opacity-80 border-b pb-2 flex items-center gap-2" style={{ borderColor: theme.barBorder }}>
-                                    <BookOpen className="w-5 h-5" /> 
-                                    {isEn ? `Hisn Al-Muslim (${hisnResults.length})` : `حصن المسلم (${toArabic(hisnResults.length)})`}
-                                </h3>
+                                <div className="flex items-center gap-2 mb-2 px-1">
+                                    <span className="p-2 rounded-xl quran-raised-card border-0" style={{ backgroundColor: `${theme.accent || theme.palette[0]}18`, color: theme.accent || theme.palette[0], border: 'none' }}>
+                                        <BookOpen className="w-4 h-4 quran-3d-icon" />
+                                    </span>
+                                    <h3 className="font-bold text-sm opacity-90" style={{ color: theme.textColor }}>
+                                        {isEn ? `Hisn Al-Muslim (${hisnResults.length})` : `حصن المسلم (${toArabic(hisnResults.length)})`}
+                                    </h3>
+                                </div>
                                 {hisnResults.map((r, idx) => (
                                     <button 
                                         key={`hisn-${idx}`} 
-                                        className={`w-full ${isEn ? 'text-left' : 'text-right'} p-4 rounded-xl border shadow-sm transition-all hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer`}
-                                        style={{ backgroundColor: `${theme.barBg}33`, borderColor: theme.barBorder, color: theme.textColor }}
+                                        className={`w-full ${isEn ? 'text-left' : 'text-right'} p-4 rounded-2xl quran-raised-card border-0 transition-all active:scale-[0.98] cursor-pointer mb-2.5`}
+                                        style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.05)' : '#ffffff', color: theme.textColor, border: 'none' }}
                                         onClick={() => onNavigate('hisn-muslim')}
                                     >
-                                        <div className={`${isEn ? 'text-base font-medium' : 'font-qalam text-lg'} leading-relaxed mb-2`} style={{ color: theme.accent || theme.palette[0] }}>
+                                        <div className={`${isEn ? 'text-sm font-medium' : 'font-qalam text-base'} leading-relaxed mb-2`} style={{ color: theme.accent || theme.palette[0] }}>
                                             {highlightText(isEn ? (r.textEn || r.text) : r.text, r.highlightRegex)}
                                         </div>
                                         <div className="text-xs opacity-60 font-bold">
@@ -996,38 +1066,38 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                 )}
 
                 {showNawawi && nawawiResults.length > 0 && (
-                    <div className="space-y-3 mt-6">
+                    <div className="space-y-3 mt-4">
                         {activeTab === 'all' ? (
-                            <div className="mb-2 border rounded-xl overflow-hidden shadow-sm" style={{ borderColor: `${theme.accent || theme.palette[0]}33` }}>
+                            <div className="mb-3 rounded-2xl quran-raised-card overflow-hidden border-0" style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.03)' : (theme.btnBg || '#ffffff'), border: 'none' }}>
                                 <button 
                                     onClick={() => setExpandedCategories(p => ({ ...p, nawawi: !p.nawawi }))}
-                                    className="w-full flex justify-between items-center p-4 transition-colors"
-                                    style={{ backgroundColor: `${theme.barBg}33` }}
+                                    className="w-full flex justify-between items-center p-4 transition-all quran-raised-btn border-0 rounded-2xl cursor-pointer"
+                                    style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.06)' : (theme.btnBg || '#ffffff'), color: theme.textColor, border: 'none' }}
                                 >
-                                    <h4 className="font-bold text-lg flex items-center gap-2" style={{ color: theme.accent || theme.palette[0] }}>
-                                        <BookOpen className="w-5 h-5" /> 
+                                    <h4 className="font-bold text-base flex items-center gap-2.5" style={{ color: theme.accent || theme.palette[0] }}>
+                                        <BookOpen className="w-5 h-5 quran-3d-icon" /> 
                                         {isEn ? "An-Nawawi's 40 Hadiths" : "الأربعون النووية"}
                                     </h4>
                                     <div className="flex items-center gap-2">
-                                        <span className="text-xs font-bold px-2 py-1 rounded-full" style={{ backgroundColor: `${theme.accent || theme.palette[0]}33`, color: theme.accent || theme.palette[0] }}>
+                                        <span className="text-xs font-bold px-2.5 py-0.5 rounded-full quran-raised-card border-0" style={{ backgroundColor: theme.accent || theme.palette[0], color: accentBadgeText, border: 'none' }}>
                                             {isEn ? nawawiResults.length : toArabic(nawawiResults.length)}
                                         </span>
-                                        <ChevronLeft className={`w-5 h-5 transition-transform ${expandedCategories.nawawi ? (isEn ? 'rotate-90' : '-rotate-90') : (isEn ? 'rotate-180' : '')}`} />
+                                        <ChevronLeft className={`w-5 h-5 transition-transform quran-3d-icon ${expandedCategories.nawawi ? (isEn ? 'rotate-90' : '-rotate-90') : (isEn ? 'rotate-180' : '')}`} />
                                     </div>
                                 </button>
                                 {expandedCategories.nawawi && (
-                                    <div className="divide-y p-2 space-y-2" style={{ backgroundColor: `${theme.barBg}22`, borderColor: `${theme.accent || theme.palette[0]}22` }}>
+                                    <div className="p-3 space-y-2.5" style={{ backgroundColor: theme.isDark ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.015)' }}>
                                         {nawawiResults.map((r, idx) => (
                                             <button 
                                                 key={`nawawi-${idx}`} 
-                                                className={`w-full ${isEn ? 'text-left' : 'text-right'} p-3 rounded-lg transition-colors hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer`}
+                                                className={`w-full ${isEn ? 'text-left' : 'text-right'} p-3.5 rounded-2xl quran-raised-card border-0 transition-all active:scale-[0.98] cursor-pointer`}
                                                 onClick={() => onNavigate('nawawi')}
-                                                style={{ color: theme.textColor }}
+                                                style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.05)' : '#ffffff', color: theme.textColor, border: 'none' }}
                                             >
-                                                <div className="text-[12px] opacity-80 mb-1 font-bold" style={{ color: theme.textColor }}>
+                                                <div className="text-[11px] opacity-80 mb-1 font-bold" style={{ color: theme.textColor }}>
                                                     {r.title}
                                                 </div>
-                                                <div className="font-qalam text-lg leading-relaxed line-clamp-2" style={{ color: theme.accent || theme.palette[0] }}>
+                                                <div className="font-qalam text-base leading-relaxed line-clamp-2" style={{ color: theme.accent || theme.palette[0] }}>
                                                     {r.hadith}
                                                 </div>
                                             </button>
@@ -1037,21 +1107,25 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                             </div>
                         ) : (
                             <>
-                                <h3 className="font-bold text-lg opacity-80 border-b pb-2 flex items-center gap-2" style={{ borderColor: theme.barBorder }}>
-                                    <BookOpen className="w-5 h-5" /> 
-                                    {isEn ? `An-Nawawi's 40 Hadiths (${nawawiResults.length})` : `الأربعون النووية (${toArabic(nawawiResults.length)})`}
-                                </h3>
+                                <div className="flex items-center gap-2 mb-2 px-1">
+                                    <span className="p-2 rounded-xl quran-raised-card border-0" style={{ backgroundColor: `${theme.accent || theme.palette[0]}18`, color: theme.accent || theme.palette[0], border: 'none' }}>
+                                        <BookOpen className="w-4 h-4 quran-3d-icon" />
+                                    </span>
+                                    <h3 className="font-bold text-sm opacity-90" style={{ color: theme.textColor }}>
+                                        {isEn ? `An-Nawawi's 40 Hadiths (${nawawiResults.length})` : `الأربعون النووية (${toArabic(nawawiResults.length)})`}
+                                    </h3>
+                                </div>
                                 {nawawiResults.map((r, idx) => (
                                     <button 
                                         key={`nawawi-${idx}`} 
-                                        className={`w-full ${isEn ? 'text-left' : 'text-right'} p-4 rounded-xl border shadow-sm transition-all hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer`}
-                                        style={{ backgroundColor: `${theme.barBg}33`, borderColor: theme.barBorder, color: theme.textColor }}
+                                        className={`w-full ${isEn ? 'text-left' : 'text-right'} p-4 rounded-2xl quran-raised-card border-0 transition-all active:scale-[0.98] cursor-pointer mb-2.5`}
+                                        style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.05)' : '#ffffff', color: theme.textColor, border: 'none' }}
                                         onClick={() => onNavigate('nawawi')}
                                     >
-                                        <div className="text-sm opacity-80 mb-2 font-bold" style={{ color: theme.textColor }}>
+                                        <div className="text-xs opacity-80 mb-2 font-bold" style={{ color: theme.textColor }}>
                                             {r.title}
                                         </div>
-                                        <div className="font-qalam text-lg leading-relaxed" style={{ color: theme.accent || theme.palette[0] }}>
+                                        <div className="font-qalam text-base leading-relaxed" style={{ color: theme.accent || theme.palette[0] }}>
                                             {r.hadith}
                                         </div>
                                     </button>
@@ -1065,110 +1139,100 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
     };
 
     return (
-        <div className="fixed top-0 left-0 right-0 z-[1500] flex items-center justify-center overflow-hidden" dir={isEn ? "ltr" : "rtl"} onClick={handleBack} style={{ backgroundColor: 'rgba(0,0,0,0.5)', height: `${initialHeight}px` }}>
-            <div className="w-full h-full max-w-lg overflow-hidden shadow-none relative flex flex-col pointer-events-auto border-[4px]" dir={isEn ? "ltr" : "rtl"} style={{ backgroundColor: theme.bgColor, borderColor: theme.accent || theme.palette[0] }} onClick={e => e.stopPropagation()}>
+        <div className={`fixed top-0 left-0 right-0 z-[1500] flex items-center justify-center overflow-hidden bg-black/40 backdrop-blur-sm ${theme.isDark ? 'dark' : ''}`} dir={isEn ? "ltr" : "rtl"} onClick={handleBack} style={{ height: `${initialHeight}px` }}>
+            <div 
+                className="w-full h-full max-w-lg md:max-w-2xl overflow-hidden shadow-2xl relative flex flex-col pointer-events-auto border-0" 
+                dir={isEn ? "ltr" : "rtl"} 
+                style={{ 
+                    backgroundColor: theme.bgColor, 
+                    border: 'none', 
+                    outline: 'none' 
+                }} 
+                onClick={e => e.stopPropagation()}
+            >
                 
-                {/* Header */}
-                <div className="p-3 border-b flex items-center justify-center shrink-0 relative" style={{ backgroundColor: theme.bgColor, borderColor: theme.isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)', paddingTop: 'calc(0.75rem + env(safe-area-inset-top))' }}>
-                    <h3 className="text-sm font-bold text-center" style={{ color: theme.textColor }}>
-                        {isEn ? "Advanced Search" : "البحث المتقدم"}
+                {/* Full Screen Modal Header - Exactly matching SettingsModal */}
+                <div className="p-3.5 flex items-center justify-center shrink-0 border-0" style={{ backgroundColor: theme.bgColor, paddingTop: 'calc(0.75rem + env(safe-area-inset-top))' }}>
+                    <h3 
+                        className="text-sm font-extrabold px-6 py-2 rounded-2xl quran-raised-card inline-flex items-center justify-center gap-2 tracking-wide border-0" 
+                        style={{ 
+                            backgroundColor: theme.isDark ? 'rgba(255,255,255,0.06)' : (theme.btnBg || '#ffffff'), 
+                            color: theme.textColor, 
+                            border: 'none' 
+                        }}
+                    >
+                        <Search className="w-4 h-4 quran-3d-icon" style={{ color: theme.accent || theme.palette[0] }} />
+                        <span>{isEn ? "Advanced Search" : "البحث المتقدم"}</span>
                     </h3>
                 </div>
 
-                {/* Sub-header with Search Input */}
-                <div className="p-4 border-b shrink-0 z-10" style={{ backgroundColor: `${theme.barBg}33`, borderColor: theme.barBorder }}>
+                {/* Sub-header with Search Input - Borderless & Sculpted */}
+                <div className="p-4 shrink-0 z-10 border-0" style={{ backgroundColor: theme.bgColor }}>
                     <div className="relative">
                         <input 
                             type="text" 
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}
                             placeholder={isEn ? "Search verse, translation, dhikr, dua, or Hisn al-Muslim..." : "ابحث عن آية، كلمة، ترجمة، ذكر، دعاء، أو حصن المسلم..."} 
-                            className={`w-full p-3 rounded-2xl focus:outline-none font-bold ${isEn ? 'pl-11 pr-11 text-left' : 'pr-11 pl-11 text-right'}`}
+                            className={`w-full p-3.5 rounded-2xl focus:outline-none font-bold quran-raised-card border-0 transition-all ${isEn ? 'pl-11 pr-11 text-left' : 'pr-11 pl-11 text-right'}`}
                             dir={isEn ? "ltr" : "rtl"}
                             style={{ 
-                                borderWidth: '2px',
-                                borderStyle: 'solid',
-                                borderColor: theme.accent || theme.palette[0],
-                                backgroundColor: theme.barBg, 
-                                color: theme.textColor 
+                                backgroundColor: theme.isDark ? 'rgba(255,255,255,0.07)' : (theme.btnBg || '#ffffff'), 
+                                color: theme.textColor,
+                                border: 'none',
+                                outline: 'none'
                             }}
                         />
-                        <Search className={`absolute ${isEn ? 'left-4' : 'right-4'} top-1/2 transform -translate-y-1/2 opacity-50`} style={{ color: theme.accent || theme.palette[0] }} />
+                        <Search className={`absolute ${isEn ? 'left-4' : 'right-4'} top-1/2 transform -translate-y-1/2 opacity-70 quran-3d-icon`} style={{ color: theme.accent || theme.palette[0] }} />
                         {query && (
                             <button 
                                 onClick={() => { setQuery(''); setTimeout(() => (document.querySelector('input') as HTMLElement)?.focus(), 10); }} 
-                                className={`absolute ${isEn ? 'right-3' : 'left-3'} top-1/2 transform -translate-y-1/2 opacity-80 hover:opacity-100 p-2 rounded-full bg-black/5 dark:bg-white/10 cursor-pointer`}
+                                className={`absolute ${isEn ? 'right-3' : 'left-3'} top-1/2 transform -translate-y-1/2 p-2 rounded-xl quran-raised-btn border-0 cursor-pointer flex items-center justify-center`}
+                                style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.08)' : '#f3f4f6', border: 'none' }}
                                 title={isEn ? "Clear" : "مسح"}
                             >
-                                <X className="w-4 h-4" style={{ color: theme.accent || theme.palette[0] }} />
+                                <X className="w-3.5 h-3.5 quran-3d-icon" style={{ color: theme.accent || theme.palette[0] }} />
                             </button>
                         )}
                     </div>
 
                     {query && totalResults > 0 && (
-                        <div className="flex overflow-x-auto gap-2 mt-4 hide-scrollbar">
-                            <button 
-                                onClick={() => setActiveTab('all')}
-                                className={`px-4 py-2 rounded-xl whitespace-nowrap text-xs font-bold transition-all border-[2px] cursor-pointer ${activeTab === 'all' ? 'text-white' : ''}`}
-                                style={{ 
-                                    backgroundColor: activeTab === 'all' ? (theme.accent || theme.palette[0]) : `${theme.barBg}`, 
-                                    borderColor: theme.accent || theme.palette[0],
-                                    color: activeTab === 'all' ? '#fff' : theme.textColor 
-                                }}
-                            >
-                                {isEn ? `All (${totalResults})` : `الكل (${toArabic(totalResults)})`}
-                            </button>
-                            <button 
-                                onClick={() => setActiveTab('quran')}
-                                className={`px-4 py-2 rounded-xl whitespace-nowrap text-xs font-bold transition-all border-[2px] cursor-pointer ${activeTab === 'quran' ? 'text-white' : ''}`}
-                                style={{ 
-                                    backgroundColor: activeTab === 'quran' ? (theme.accent || theme.palette[0]) : `${theme.barBg}`, 
-                                    borderColor: theme.accent || theme.palette[0],
-                                    color: activeTab === 'quran' ? '#fff' : theme.textColor 
-                                }}
-                            >
-                                {isEn ? `Quran (${quranResults.length})` : `القرآن (${toArabic(quranResults.length)})`}
-                            </button>
-                            <button 
-                                onClick={() => setActiveTab('dua')}
-                                className={`px-4 py-2 rounded-xl whitespace-nowrap text-xs font-bold transition-all border-[2px] cursor-pointer ${activeTab === 'dua' ? 'text-white' : ''}`}
-                                style={{ 
-                                    backgroundColor: activeTab === 'dua' ? (theme.accent || theme.palette[0]) : `${theme.barBg}`, 
-                                    borderColor: theme.accent || theme.palette[0],
-                                    color: activeTab === 'dua' ? '#fff' : theme.textColor 
-                                }}
-                            >
-                                {isEn ? `Duas (${duaResults.length})` : `الأدعية (${toArabic(duaResults.length)})`}
-                            </button>
-                            <button 
-                                onClick={() => setActiveTab('athkar')}
-                                className={`px-4 py-2 rounded-xl whitespace-nowrap text-xs font-bold transition-all border-[2px] cursor-pointer ${activeTab === 'athkar' ? 'text-white' : ''}`}
-                                style={{ 
-                                    backgroundColor: activeTab === 'athkar' ? (theme.accent || theme.palette[0]) : `${theme.barBg}`, 
-                                    borderColor: theme.accent || theme.palette[0],
-                                    color: activeTab === 'athkar' ? '#fff' : theme.textColor 
-                                }}
-                            >
-                                {isEn ? `Adhkar (${athkarResults.length})` : `الأذكار (${toArabic(athkarResults.length)})`}
-                            </button>
-                            <button 
-                                onClick={() => setActiveTab('hisn')}
-                                className={`px-4 py-2 rounded-xl whitespace-nowrap text-xs font-bold transition-all border-[2px] cursor-pointer ${activeTab === 'hisn' ? 'text-white' : ''}`}
-                                style={{ 
-                                    backgroundColor: activeTab === 'hisn' ? (theme.accent || theme.palette[0]) : `${theme.barBg}`, 
-                                    borderColor: theme.accent || theme.palette[0],
-                                    color: activeTab === 'hisn' ? '#fff' : theme.textColor 
-                                }}
-                            >
-                                {isEn ? `Hisn (${hisnResults.length})` : `حصن (${toArabic(hisnResults.length)})`}
-                            </button>
+                        <div className="flex overflow-x-auto gap-2.5 mt-3.5 pb-1 hide-scrollbar">
+                            {[
+                                { id: 'all', label: isEn ? `All (${totalResults})` : `الكل (${toArabic(totalResults)})` },
+                                { id: 'quran', label: isEn ? `Quran (${quranResults.length})` : `القرآن (${toArabic(quranResults.length)})` },
+                                { id: 'dua', label: isEn ? `Duas (${duaResults.length})` : `الأدعية (${toArabic(duaResults.length)})` },
+                                { id: 'athkar', label: isEn ? `Adhkar (${athkarResults.length})` : `الأذكار (${toArabic(athkarResults.length)})` },
+                                { id: 'hisn', label: isEn ? `Hisn (${hisnResults.length})` : `حصن (${toArabic(hisnResults.length)})` },
+                            ].map(tab => {
+                                const isSelected = activeTab === tab.id;
+                                return (
+                                    <button 
+                                        key={tab.id}
+                                        onClick={() => setActiveTab(tab.id as any)}
+                                        className={`px-4 py-2.5 rounded-2xl whitespace-nowrap text-xs font-bold transition-all border-0 cursor-pointer ${
+                                            isSelected 
+                                                ? 'quran-raised-btn-selected shadow-md' 
+                                                : 'quran-raised-btn'
+                                        }`}
+                                        style={{ 
+                                            backgroundColor: isSelected ? (theme.accent || theme.palette[0]) : (theme.isDark ? 'rgba(255,255,255,0.06)' : (theme.btnBg || '#ffffff')), 
+                                            color: isSelected ? accentBadgeText : theme.textColor,
+                                            border: 'none',
+                                            outline: 'none'
+                                        }}
+                                    >
+                                        {tab.label}
+                                    </button>
+                                );
+                            })}
                         </div>
                     )}
                 </div>
 
                 {/* Content */}
                 <div 
-                    className="flex-1 overflow-y-auto px-4 py-4" 
+                    className="flex-1 overflow-y-auto px-4 py-2" 
                     dir={isEn ? "ltr" : "rtl"} 
                     style={{ 
                         backgroundColor: theme.bgColor,
@@ -1178,12 +1242,23 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                     {renderResults()}
                 </div>
 
-                {/* Footer */}
-                <div className="p-3 border-t flex gap-2 shrink-0 z-10" style={{ backgroundColor: theme.bgColor, borderColor: theme.isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }}>
+                {/* Footer - Matching SettingsModal */}
+                <div 
+                    className="p-3.5 flex gap-2 shrink-0 z-10 border-0" 
+                    style={{ 
+                        backgroundColor: theme.bgColor,
+                        paddingBottom: 'calc(max(env(safe-area-inset-bottom, 0px), 56px) + 0.75rem)'
+                    }}
+                >
                     <button 
                         onClick={handleBack} 
-                        className="flex-1 py-4 rounded-xl text-xs font-bold w-full transition-all shadow-md active:scale-95 border-[2px] cursor-pointer"
-                        style={{ backgroundColor: theme.btnBg || (theme.text === '#ffffff' ? 'rgba(255,255,255,0.05)' : '#ffffff'), color: theme.btnText || theme.text, borderColor: theme.accent || theme.palette?.[0] || '#000' }}
+                        className="flex-1 py-3.5 rounded-2xl text-xs font-bold w-full transition-all quran-raised-btn border-0 active:scale-[0.98] cursor-pointer"
+                        style={{ 
+                            backgroundColor: theme.btnBg || (theme.isDark ? 'rgba(255,255,255,0.08)' : '#ffffff'), 
+                            color: theme.btnText || theme.textColor, 
+                            border: 'none',
+                            outline: 'none'
+                        }}
                     >
                         {isEn ? "Back" : "رجوع"}
                     </button>

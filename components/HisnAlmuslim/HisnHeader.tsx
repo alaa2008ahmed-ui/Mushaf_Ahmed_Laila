@@ -47,22 +47,22 @@ const HisnHeader: React.FC<HisnHeaderProps> = ({ title, subtitle, showThemePageL
                             <button
                                 type="button"
                                 onClick={onOpenGuide}
-                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer text-black"
+                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer text-[var(--top-bar-text,inherit)]"
                                 title={isEn ? "Hisn Guide" : "دليل حصن المسلم"}
                                 aria-label={isEn ? "Hisn Guide" : "دليل حصن المسلم"}
                             >
-                                <i className="fa-solid fa-circle-question text-lg text-black"></i>
+                                <i className="fa-solid fa-circle-question text-lg"></i>
                             </button>
                         )}
                         {showThemePageLock && <ThemePageLock />}
                         {onHome && (
                             <button
                                 onClick={onHome}
-                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer text-black"
+                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer text-[var(--top-bar-text,inherit)]"
                                 title={isEn ? "Home" : "الصفحة الرئيسية"}
                                 aria-label={isEn ? "Home" : "الصفحة الرئيسية"}
                             >
-                                <i className="fa-solid fa-house text-xl text-black"></i>
+                                <i className="fa-solid fa-house text-xl"></i>
                             </button>
                         )}
                     </div>

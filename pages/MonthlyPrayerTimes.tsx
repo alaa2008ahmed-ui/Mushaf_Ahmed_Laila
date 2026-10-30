@@ -218,7 +218,10 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
     const handleShare = async () => {
         setIsSharing(true);
         const heading = tPrayer('monthlyShareHeading', language, { m: monthNameDisplay });
-        const loc = tPrayer('locationLabel', language, { loc: getLocalizedLocationName(config.location.cityGov, language) });
+        const rawLoc = language === 'en'
+            ? (config.location?.cityGovEn || config.location?.cityGov)
+            : (config.location?.cityGovAr || config.location?.cityGov);
+        const loc = tPrayer('locationLabel', language, { loc: getLocalizedLocationName(rawLoc, language) });
         const by = tPrayer('generatedByLabel', language, { app: tPrayer('createdAppAttribution', language) });
         const text = `${heading}\n${loc}\n${by}`;
 
@@ -319,7 +322,7 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
     return (
         <div 
             dir={dir}
-            className="h-screen w-screen flex flex-col" 
+            className="h-[100dvh] w-screen flex flex-col overflow-hidden" 
             style={{ backgroundColor: isDefaultTheme ? '#FFFFFF' : theme.bgColor, color: isDefaultTheme ? '#000000' : theme.textColor }}
         >
             {/* Top Bar */}
@@ -440,10 +443,14 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
             </div>
 
             {/* Table */}
-            <main className="flex-1 flex flex-col overflow-hidden p-2" dir={dir}>
+            <main 
+                className="flex-1 flex flex-col overflow-hidden px-2 pt-1 pb-8 sm:pb-10" 
+                style={{ paddingBottom: 'calc(max(env(safe-area-inset-bottom, 0px), 18px) + 2rem)' }}
+                dir={dir}
+            >
                 <div 
                     id="monthly-table-container"
-                    className="max-w-4xl w-full mx-auto overflow-auto rounded-xl shadow-sm" 
+                    className="max-w-4xl w-full mx-auto overflow-auto rounded-xl shadow-sm mb-1" 
                     style={{ 
                         border: `2px solid ${tableBorderColor}`, 
                         borderColor: tableBorderColor,
@@ -568,7 +575,12 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
                             {tPrayer('monthlyShareHeading', language, { m: monthNameDisplay })}
                         </h1>
                         <p style={{ fontSize: '16px', color: '#666' }}>
-                            {tPrayer('locationLabel', language, { loc: getLocalizedLocationName(config.location.cityGov, language) })}
+                            {tPrayer('locationLabel', language, { 
+                                loc: getLocalizedLocationName(
+                                    (language === 'en' ? config.location?.cityGovEn : config.location?.cityGovAr) || config.location?.cityGov, 
+                                    language
+                                ) 
+                            })}
                         </p>
                         <p style={{ fontSize: '14px', color: '#888', marginTop: '5px' }}>
                             {tPrayer('generatedByLabel', language, { app: tPrayer('createdAppAttribution', language) })}

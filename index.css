@@ -150,39 +150,203 @@ input[type=number] {
   unicode-bidi: isolate;
 }
 
-/* Theme font overrides for all pages EXCEPT Quran reader */
-body:not(.quran-context) .font-cairo, 
-body:not(.quran-context) .font-amiri, 
-body:not(.quran-context) .font-kufi,
-body:not(.quran-context) .font-kufi-bold,
-body:not(.quran-context) .font-tajawal,
-body:not(.quran-context) .font-scheherazade,
-body:not(.quran-context) .font-amiri-quran,
-body:not(.quran-context) .font-noto,
-body:not(.quran-context) .font-messiri,
-body:not(.quran-context) .font-quran,
-body:not(.quran-context) .font-aref,
-body:not(.quran-context) .font-lateef,
-body:not(.quran-context) .font-hafs,
-body:not(.quran-context) .font-reem,
-body:not(.quran-context) .font-kufam,
-body:not(.quran-context) .font-mirza,
-body:not(.quran-context) .font-gulzar {
+/* Theme font overrides for all pages EXCEPT Quran reader and Modern Home */
+body:not(.quran-context):not(.modern-home-active) .font-cairo:not(.modern-home-layout *):not(.modern-home-layout):not([data-layout="modern"] *):not([data-layout="modern"]), 
+body:not(.quran-context):not(.modern-home-active) .font-amiri:not(.modern-home-layout *):not(.modern-home-layout):not([data-layout="modern"] *):not([data-layout="modern"]), 
+body:not(.quran-context):not(.modern-home-active) .font-kufi:not(.modern-home-layout *):not(.modern-home-layout):not([data-layout="modern"] *):not([data-layout="modern"]),
+body:not(.quran-context):not(.modern-home-active) .font-kufi-bold:not(.modern-home-layout *):not(.modern-home-layout):not([data-layout="modern"] *):not([data-layout="modern"]),
+body:not(.quran-context):not(.modern-home-active) .font-tajawal:not(.modern-home-layout *):not(.modern-home-layout):not([data-layout="modern"] *):not([data-layout="modern"]),
+body:not(.quran-context):not(.modern-home-active) .font-scheherazade:not(.modern-home-layout *):not(.modern-home-layout):not([data-layout="modern"] *):not([data-layout="modern"]),
+body:not(.quran-context):not(.modern-home-active) .font-amiri-quran:not(.modern-home-layout *):not(.modern-home-layout):not([data-layout="modern"] *):not([data-layout="modern"]),
+body:not(.quran-context):not(.modern-home-active) .font-noto:not(.modern-home-layout *):not(.modern-home-layout):not([data-layout="modern"] *):not([data-layout="modern"]),
+body:not(.quran-context):not(.modern-home-active) .font-messiri:not(.modern-home-layout *):not(.modern-home-layout):not([data-layout="modern"] *):not([data-layout="modern"]),
+body:not(.quran-context):not(.modern-home-active) .font-quran:not(.modern-home-layout *):not(.modern-home-layout):not([data-layout="modern"] *):not([data-layout="modern"]),
+body:not(.quran-context):not(.modern-home-active) .font-aref:not(.modern-home-layout *):not(.modern-home-layout):not([data-layout="modern"] *):not([data-layout="modern"]),
+body:not(.quran-context):not(.modern-home-active) .font-lateef:not(.modern-home-layout *):not(.modern-home-layout):not([data-layout="modern"] *):not([data-layout="modern"]),
+body:not(.quran-context):not(.modern-home-active) .font-hafs:not(.modern-home-layout *):not(.modern-home-layout):not([data-layout="modern"] *):not([data-layout="modern"]),
+body:not(.quran-context):not(.modern-home-active) .font-reem:not(.modern-home-layout *):not(.modern-home-layout):not([data-layout="modern"] *):not([data-layout="modern"]),
+body:not(.quran-context):not(.modern-home-active) .font-kufam:not(.modern-home-layout *):not(.modern-home-layout):not([data-layout="modern"] *):not([data-layout="modern"]),
+body:not(.quran-context):not(.modern-home-active) .font-mirza:not(.modern-home-layout *):not(.modern-home-layout):not([data-layout="modern"] *):not([data-layout="modern"]),
+body:not(.quran-context):not(.modern-home-active) .font-gulzar:not(.modern-home-layout *):not(.modern-home-layout):not([data-layout="modern"] *):not([data-layout="modern"]) {
     font-family: var(--theme-font) !important;
 }
 
-/* Quran Reader background rules: Pure white in default/light mode, clean dark in dark mode */
-body.quran-context {
-  background-color: var(--qr-bg, #ffffff) !important;
-  background-image: none !important;
+/* Strict Cairo font enforcement for Modern Home Layout: completely immune to any theme font */
+.modern-home-layout,
+.modern-home-layout *,
+body.modern-home-active,
+body.modern-home-active *:not(.quran-font):not(.font-quran),
+[data-layout="modern"],
+[data-layout="modern"] *:not(.quran-font):not(.font-quran) {
+    font-family: 'Cairo', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
 }
 
-html.dark body.quran-context {
-  background-color: var(--qr-bg, #000000) !important;
-  background-image: none !important;
+/* 3D Gleaming Gold Card for Modern Smart Design */
+.golden-3d-card {
+  background: linear-gradient(140deg, #FFFDF7 0%, #FEF8E7 18%, #FCE8AB 50%, #F5D374 80%, #E8BE48 100%) !important;
+  border: 1.5px solid rgba(217, 119, 6, 0.45) !important;
+  border-radius: 1.5rem !important;
+  box-shadow: 
+    0 12px 28px -4px rgba(180, 115, 20, 0.28),
+    0 6px 12px -2px rgba(180, 115, 20, 0.18),
+    inset 0 2px 2px rgba(255, 255, 255, 0.95),
+    inset 0 -3px 6px rgba(146, 64, 14, 0.16),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.6) !important;
+  position: relative;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* 3D Prominent Tactile Card & Touch/Press Interaction */
+.golden-3d-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 
+    0 16px 34px -4px rgba(180, 115, 20, 0.34),
+    0 8px 16px -2px rgba(180, 115, 20, 0.22),
+    inset 0 2px 2px rgba(255, 255, 255, 0.95),
+    inset 0 -3px 6px rgba(146, 64, 14, 0.16),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.7) !important;
+}
+
+.golden-3d-inset {
+  background: rgba(255, 255, 255, 0.82) !important;
+  border: 1px solid rgba(217, 119, 6, 0.35) !important;
+  box-shadow: 
+    inset 0 2px 4px rgba(180, 115, 20, 0.08),
+    0 2px 6px rgba(180, 115, 20, 0.06) !important;
+}
+
+.golden-3d-btn {
+  background: linear-gradient(135deg, #D97706 0%, #B45309 50%, #92400E 100%) !important;
+  color: #FFFFFF !important;
+  border: 1px solid rgba(254, 243, 199, 0.5) !important;
+  box-shadow: 
+    0 4px 10px rgba(180, 83, 9, 0.35),
+    inset 0 1px 1px rgba(255, 255, 255, 0.45) !important;
+  transition: all 0.15s ease !important;
+}
+
+.golden-3d-btn:active {
+  transform: scale(0.96) !important;
+  box-shadow: 0 2px 4px rgba(180, 83, 9, 0.3) !important;
+}
+
+.golden-3d-btn-light {
+  background: rgba(255, 255, 255, 0.88) !important;
+  color: #451A03 !important;
+  border: 1px solid rgba(217, 119, 6, 0.35) !important;
+  box-shadow: 
+    0 3px 8px rgba(180, 115, 20, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
+  transition: all 0.15s ease !important;
+}
+
+.golden-3d-btn-light:hover {
+  background: #FFFFFF !important;
+}
+
+.golden-3d-btn-light:active {
+  transform: scale(0.96) !important;
+  box-shadow: 0 1px 3px rgba(180, 115, 20, 0.15) !important;
+}
+
+/* 3D Embossed Pill Button (like in Screenshot 1: أذكار المساء >) */
+.golden-3d-pill-btn {
+  background: linear-gradient(180deg, #D97706 0%, #B45309 50%, #92400E 100%) !important;
+  color: #FFFFFF !important;
+  border: 1.5px solid rgba(254, 243, 199, 0.6) !important;
+  border-radius: 9999px !important;
+  box-shadow: 
+    0 4px 10px rgba(146, 64, 14, 0.35),
+    0 1.5px 3px rgba(0, 0, 0, 0.1),
+    inset 0 2px 1.5px rgba(255, 255, 255, 0.5),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.25) !important;
+  transition: all 0.15s ease !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.golden-3d-pill-btn:hover {
+  filter: brightness(1.05);
+  transform: translateY(-1px);
+  box-shadow: 
+    0 6px 14px rgba(146, 64, 14, 0.4),
+    inset 0 2px 1.5px rgba(255, 255, 255, 0.55) !important;
+}
+.golden-3d-pill-btn:active {
+  transform: scale(0.95) translateY(1px) !important;
+  box-shadow: 0 2px 4px rgba(146, 64, 14, 0.3), inset 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* 3D Embossed White Pill Button (like in Screenshot 3: مربي العبادات >) */
+.white-3d-pill-btn {
+  background: linear-gradient(180deg, #FFFFFF 0%, #FFFDF9 60%, #FEF9EE 100%) !important;
+  color: #451A03 !important;
+  border: 1.5px solid rgba(217, 119, 6, 0.35) !important;
+  border-radius: 9999px !important;
+  box-shadow: 
+    0 3.5px 8px rgba(180, 115, 20, 0.15),
+    0 1px 2px rgba(0, 0, 0, 0.05),
+    inset 0 2px 1.5px rgba(255, 255, 255, 1),
+    inset 0 -2px 3px rgba(217, 119, 6, 0.08) !important;
+  transition: all 0.15s ease !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.white-3d-pill-btn:hover {
+  background: #FFFFFF !important;
+  transform: translateY(-1px);
+  box-shadow: 0 5px 12px rgba(180, 115, 20, 0.2), inset 0 2px 1.5px rgba(255, 255, 255, 1) !important;
+}
+.white-3d-pill-btn:active {
+  transform: scale(0.95) translateY(1px) !important;
+  box-shadow: 0 1.5px 3px rgba(180, 115, 20, 0.15), inset 0 1.5px 3px rgba(180, 115, 20, 0.1) !important;
+}
+
+/* 3D Embossed White Card Container inside Big Golden Cards (البطاقات البيضاء البارزة والمجسمة داخل البطاقات الذهبية) */
+.white-3d-container-card {
+  background: linear-gradient(180deg, #FFFFFF 0%, #FFFFFF 70%, #FDFBF7 100%) !important;
+  border-radius: 1.35rem !important;
+  border: 1px solid rgba(255, 255, 255, 0.95) !important;
+  box-shadow: 
+    0 5px 0 rgba(217, 119, 6, 0.22),
+    0 12px 24px -2px rgba(180, 115, 20, 0.18),
+    0 3px 6px rgba(0, 0, 0, 0.04),
+    inset 0 2.5px 2px rgba(255, 255, 255, 1),
+    inset 0 -2px 3px rgba(217, 119, 6, 0.05) !important;
+  position: relative;
+}
+
+/* 3D Raised White Cards & Buttons inside Big Golden Cards (بدون إطار أو تحديد ملون - بارز ومجسم) */
+.white-3d-card-btn {
+  background: linear-gradient(180deg, #FFFFFF 0%, #FFFFFF 65%, #FDFBF7 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.95) !important;
+  border-radius: 1.15rem !important;
+  box-shadow: 
+    0 4.5px 0 rgba(217, 119, 6, 0.18),
+    0 8px 18px -2px rgba(180, 115, 20, 0.16),
+    0 2px 4px rgba(0, 0, 0, 0.04),
+    inset 0 2px 1px rgba(255, 255, 255, 1),
+    inset 0 -2px 3px rgba(217, 119, 6, 0.04) !important;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  position: relative;
+}
+.white-3d-card-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 
+    0 6.5px 0 rgba(217, 119, 6, 0.22),
+    0 12px 24px -2px rgba(180, 115, 20, 0.22),
+    0 3px 6px rgba(0, 0, 0, 0.06),
+    inset 0 2px 1px rgba(255, 255, 255, 1),
+    inset 0 -2px 3px rgba(217, 119, 6, 0.04) !important;
+}
+.white-3d-card-btn:active {
+  transform: translateY(2px) scale(0.96) !important;
+  box-shadow: 
+    0 1.5px 0 rgba(217, 119, 6, 0.2),
+    0 3px 6px rgba(180, 115, 20, 0.12),
+    inset 0 2px 3px rgba(0, 0, 0, 0.06) !important;
+}
+
 .tactile-3d-card-light {
   border-radius: 20px !important;
   border: 1px solid rgba(255, 255, 255, 0.95) !important;
@@ -220,3 +384,160 @@ html.dark body.quran-context {
   transform: translateY(4px) scale(0.99) !important;
   box-shadow: 0 2px 0 #0d0d10, 0 4px 10px rgba(0, 0, 0, 0.4), inset 0 2px 2px rgba(255, 255, 255, 0.25), inset 0 -1.5px 3px rgba(0, 0, 0, 0.4) !important;
 }
+
+/* Top bar buttons & icons */
+.app-top-bar button,
+.app-top-bar button i,
+.app-top-bar button svg,
+.app-top-bar i,
+.app-top-bar svg {
+    color: var(--top-bar-text, var(--text-color, #1e293b));
+}
+
+/* In Black Theme: All icons, buttons, and SVGs across all top bars & sub-page headers are pure white (#ffffff) */
+body.theme-black .app-top-bar:not(.quran-context) button,
+body.theme-black .app-top-bar:not(.quran-context) button i,
+body.theme-black .app-top-bar:not(.quran-context) button svg,
+body.theme-black .app-top-bar:not(.quran-context) i,
+body.theme-black .app-top-bar:not(.quran-context) svg,
+body.theme-black .app-top-bar:not(.quran-context) .fa-solid,
+body.theme-black .app-top-bar:not(.quran-context) .fas,
+body.theme-black .app-top-bar:not(.quran-context) .fa-house,
+body.theme-black .app-top-bar:not(.quran-context) .fa-circle-question,
+body.theme-black .app-top-bar:not(.quran-context) .fa-gear,
+body.theme-black .app-top-bar:not(.quran-context) .fa-arrow-right,
+body.theme-black .app-top-bar:not(.quran-context) .fa-arrow-left,
+body.theme-black .app-top-bar:not(.quran-context) .fa-location-crosshairs,
+body.theme-black header:not(.quran-reader-header):not(.quran-context) button,
+body.theme-black header:not(.quran-reader-header):not(.quran-context) button i,
+body.theme-black header:not(.quran-reader-header):not(.quran-context) button svg,
+body.theme-black header:not(.quran-reader-header):not(.quran-context) i,
+body.theme-black header:not(.quran-reader-header):not(.quran-context) svg,
+html.theme-black .app-top-bar:not(.quran-context) button,
+html.theme-black .app-top-bar:not(.quran-context) button i,
+html.theme-black .app-top-bar:not(.quran-context) button svg,
+html.theme-black .app-top-bar:not(.quran-context) i,
+html.theme-black .app-top-bar:not(.quran-context) svg,
+html.theme-black .app-top-bar:not(.quran-context) .fa-solid,
+html.theme-black .app-top-bar:not(.quran-context) .fas,
+html.theme-black .app-top-bar:not(.quran-context) .fa-house,
+html.theme-black .app-top-bar:not(.quran-context) .fa-circle-question,
+html.theme-black .app-top-bar:not(.quran-context) .fa-gear,
+html.theme-black .app-top-bar:not(.quran-context) .fa-arrow-right,
+html.theme-black .app-top-bar:not(.quran-context) .fa-arrow-left,
+html.theme-black .app-top-bar:not(.quran-context) .fa-location-crosshairs,
+html.theme-black header:not(.quran-reader-header):not(.quran-context) button,
+html.theme-black header:not(.quran-reader-header):not(.quran-context) button i,
+html.theme-black header:not(.quran-reader-header):not(.quran-context) button svg,
+html.theme-black header:not(.quran-reader-header):not(.quran-context) i,
+html.theme-black header:not(.quran-reader-header):not(.quran-context) svg {
+    color: #ffffff !important;
+    fill: #ffffff !important;
+}
+
+body.theme-black .app-top-bar:not(.quran-context) svg,
+body.theme-black header:not(.quran-reader-header):not(.quran-context) svg,
+html.theme-black .app-top-bar:not(.quran-context) svg,
+html.theme-black header:not(.quran-reader-header):not(.quran-context) svg {
+    stroke: #ffffff !important;
+}
+
+body.theme-black .app-top-bar:not(.quran-context) svg[fill="none"],
+body.theme-black header:not(.quran-reader-header):not(.quran-context) svg[fill="none"],
+html.theme-black .app-top-bar:not(.quran-context) svg[fill="none"],
+html.theme-black header:not(.quran-reader-header):not(.quran-context) svg[fill="none"] {
+    fill: none !important;
+}
+
+/* ==========================================================================
+   الثيم الذهبي اللامع (Shiny Gold Theme): بطاقات وأزرار ذهبية لامعة ومجسمة ونصوص سوداء
+   ========================================================================== */
+body.theme-shiny-gold {
+    background-color: #FEF9C3 !important;
+    color: #000000 !important;
+}
+
+body.theme-shiny-gold #app-title {
+    color: #78350F !important;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+}
+
+/* أزرار وأيقونات الشريط العلوي */
+body.theme-shiny-gold .app-top-bar:not(.quran-context) button,
+body.theme-shiny-gold .app-top-bar:not(.quran-context) button i,
+body.theme-shiny-gold .app-top-bar:not(.quran-context) button svg,
+body.theme-shiny-gold .app-top-bar:not(.quran-context) i,
+body.theme-shiny-gold .app-top-bar:not(.quran-context) svg,
+html.theme-shiny-gold .app-top-bar:not(.quran-context) button,
+html.theme-shiny-gold .app-top-bar:not(.quran-context) button i,
+html.theme-shiny-gold .app-top-bar:not(.quran-context) button svg,
+html.theme-shiny-gold .app-top-bar:not(.quran-context) i,
+html.theme-shiny-gold .app-top-bar:not(.quran-context) svg {
+    color: #000000 !important;
+    stroke: #000000 !important;
+}
+
+body.theme-shiny-gold .app-top-bar:not(.quran-context) svg[fill="none"],
+html.theme-shiny-gold .app-top-bar:not(.quran-context) svg[fill="none"] {
+    fill: none !important;
+}
+
+/* البطاقات الكلاسيكية في الصفحة الرئيسية: تجسيم وذهب لامع ونصوص سوداء */
+body.theme-shiny-gold .tactile-3d-card-light,
+body.theme-shiny-gold #main-prayer-status-card,
+body.theme-shiny-gold #islamic-events-card,
+body.theme-shiny-gold #on-this-day-card,
+body.theme-shiny-gold #history-memory-card,
+body.theme-shiny-gold #tawaf-counter-card,
+body.theme-shiny-gold #habit-tracker-card,
+body.theme-shiny-gold #share-app-card,
+body.theme-shiny-gold #web-app-card,
+html.theme-shiny-gold .tactile-3d-card-light {
+    background: linear-gradient(145deg, #FFFDEB 0%, #FEF08A 25%, #FACC15 58%, #EAB308 85%, #CA8A04 100%) !important;
+    border: 1.5px solid rgba(202, 138, 4, 0.75) !important;
+    box-shadow: 0 6.5px 0 #92400E, 0 14px 28px -2px rgba(146, 64, 14, 0.35), inset 0 2px 2px rgba(255, 255, 255, 0.95), inset 0 -2.5px 4px rgba(113, 63, 18, 0.25) !important;
+    color: #000000 !important;
+}
+
+/* النصوص والأرقام والعناوين داخل البطاقات تكون باللون الأسود الصريح */
+body.theme-shiny-gold .tactile-3d-card-light *,
+body.theme-shiny-gold #main-prayer-status-card *,
+body.theme-shiny-gold #islamic-events-card *,
+body.theme-shiny-gold #on-this-day-card *,
+body.theme-shiny-gold #history-memory-card *,
+body.theme-shiny-gold #tawaf-counter-card *,
+body.theme-shiny-gold #habit-tracker-card *,
+body.theme-shiny-gold #share-app-card *,
+body.theme-shiny-gold #web-app-card *,
+html.theme-shiny-gold .tactile-3d-card-light * {
+    color: #000000 !important;
+}
+
+/* الحاويات المصغرة والرقاقات داخل البطاقات */
+body.theme-shiny-gold .tactile-3d-card-light [class*="bg-slate-"],
+body.theme-shiny-gold .tactile-3d-card-light [class*="bg-gray-"],
+body.theme-shiny-gold .tactile-3d-card-light [class*="bg-amber-"],
+body.theme-shiny-gold #main-prayer-status-card [class*="bg-"] {
+    background-color: rgba(255, 255, 255, 0.72) !important;
+    border-color: rgba(202, 138, 4, 0.35) !important;
+    color: #000000 !important;
+}
+
+/* أزرار العمليات والتنقل داخل البطاقات */
+body.theme-shiny-gold .tactile-3d-card-light button,
+body.theme-shiny-gold #main-prayer-status-card button,
+body.theme-shiny-gold #islamic-events-card button,
+body.theme-shiny-gold #on-this-day-card button,
+body.theme-shiny-gold #history-memory-card button {
+    background: linear-gradient(180deg, #FFFFFF 0%, #FEF9C3 60%, #FEF08A 100%) !important;
+    color: #000000 !important;
+    border: 1px solid rgba(202, 138, 4, 0.5) !important;
+    box-shadow: 0 3px 0 #B45309, 0 4px 8px rgba(180, 83, 9, 0.2), inset 0 1px 1px #FFFFFF !important;
+}
+
+body.theme-shiny-gold .tactile-3d-card-light button *,
+body.theme-shiny-gold #main-prayer-status-card button * {
+    color: #000000 !important;
+}
+
+

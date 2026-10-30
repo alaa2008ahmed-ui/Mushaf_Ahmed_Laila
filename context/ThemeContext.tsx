@@ -64,27 +64,54 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
         }
     });
 
+    const [homeLayout, setHomeLayout] = useState<string>(() => {
+        try {
+            const saved = typeof localStorage !== 'undefined' ? localStorage.getItem('home_layout_system') : 'modern';
+            return (saved === 'classic' || saved === 'modern') ? saved : 'modern';
+        } catch {
+            return 'modern';
+        }
+    });
+
     const activeThemeKey = useMemo(() => {
-        const pageKey = currentPage === 'quran' || currentPage === 'quran-landscape' || (currentPage && currentPage.startsWith('quran_')) || currentPage === 'search' ? 'quran' : currentPage;
+        const isModern = homeLayout === 'modern' || (typeof localStorage !== 'undefined' && localStorage.getItem('home_layout_system') === 'modern');
+
+        const pageKey = currentPage === 'quran' || currentPage === 'quran-landscape' || (currentPage && currentPage.startsWith('quran_')) || currentPage === 'quran-search' ? 'quran' : currentPage;
+
+        let isGoldenLocked = true;
+        try {
+            const saved = typeof localStorage !== 'undefined' ? localStorage.getItem('modern_hub_golden_locked') : 'true';
+            if (saved !== null) {
+                isGoldenLocked = saved === 'true';
+            }
+        } catch (e) {}
 
         if (pageKey === 'quran') {
             const modeSuffix = (currentPage && currentPage.includes('landscape')) ? '_h' : '_v';
-            const savedQuranTheme = localStorage.getItem('current_theme_id' + modeSuffix);
+            const layoutKey = isModern ? 'current_theme_id_modern' : 'current_theme_id_classic';
+            const savedQuranTheme = localStorage.getItem(layoutKey + modeSuffix) || localStorage.getItem(layoutKey) || (isModern ? 'gold' : 'black');
             if (savedQuranTheme && presetThemes[savedQuranTheme]) return savedQuranTheme;
-            return settings.pageThemes?.['quran'] || 'default';
+            return isModern ? 'shiny_gold' : (settings.pageThemes?.['quran'] || 'default');
+        }
+
+        // فى التصميم الذكى الحديث: تفتح جميع الصفحات كلها ماعدا صفحة القرآن الكريم دائماً على الثيم الذهبى ولا تتأثر نهائياً بتغيير الثيمات من قائمة الصفحة الرئيسية
+        if (isModern) {
+            return 'shiny_gold';
         }
 
         if (pageKey === 'home') {
-            return settings.themeKey || 'default';
+            const homeKey = settings.themeKey || 'default';
+            return presetThemes[homeKey] ? homeKey : 'default';
         }
 
         const isLocked = settings.lockedPages?.includes(pageKey);
-        if (isLocked && settings.pageThemes[pageKey]) {
+        if (isLocked && settings.pageThemes[pageKey] && presetThemes[settings.pageThemes[pageKey]]) {
             return settings.pageThemes[pageKey];
         }
 
-        return settings.themeKey || 'default';
-    }, [settings, currentPage]);
+        const activeKey = settings.themeKey || 'default';
+        return presetThemes[activeKey] ? activeKey : 'default';
+    }, [settings, currentPage, homeLayout]);
 
     const theme = useMemo(() => {
         const baseTheme = presetThemes[activeThemeKey] || presetThemes.default;
@@ -145,17 +172,27 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
                     });
                 }
             } catch (e) {}
+            try {
+                const layout = localStorage.getItem('home_layout_system') || 'modern';
+                setHomeLayout(layout);
+            } catch (e) {}
+        };
+        const handleLayoutChange = (e: any) => {
+            const layout = (e && e.detail) || (typeof localStorage !== 'undefined' ? localStorage.getItem('home_layout_system') : 'modern') || 'modern';
+            setHomeLayout(layout);
         };
         window.addEventListener('themeChanged', syncTheme);
         window.addEventListener('storage', syncTheme);
+        window.addEventListener('home-layout-changed', handleLayoutChange);
         return () => {
             window.removeEventListener('themeChanged', syncTheme);
             window.removeEventListener('storage', syncTheme);
+            window.removeEventListener('home-layout-changed', handleLayoutChange);
         };
     }, []);
     
     const applyPresetTheme = (key: string) => {
-        const pageKey = currentPage === 'quran' || currentPage === 'quran-landscape' || (currentPage && currentPage.startsWith('quran_')) || currentPage === 'search' ? 'quran' : currentPage;
+        const pageKey = currentPage === 'quran' || currentPage === 'quran-landscape' || (currentPage && currentPage.startsWith('quran_')) || currentPage === 'quran-search' ? 'quran' : currentPage;
         const isLocked = settings.lockedPages?.includes(pageKey);
 
         let nextSettings = { ...settings };
@@ -246,7 +283,11 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
             document.body.classList.remove('hide-top-bars');
         }
 
-        if (settings.customBg) {
+        const isModern = homeLayout === 'modern' || (typeof localStorage !== 'undefined' && localStorage.getItem('home_layout_system') === 'modern');
+        const isModernHome = isHome && isModern;
+        const allowCustomBg = settings.customBg && (!isModern || isHome);
+
+        if (allowCustomBg && settings.customBg) {
             if (settings.customBg.isVideo && videoBg) {
                 videoBg.style.display = 'block';
                 videoBg.muted = true;
@@ -289,42 +330,71 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
                 const quranThemeId = localStorage.getItem('current_theme_id' + modeSuffix) || 'black';
                 const isDarkQuran = quranThemeId === 'deep_black' || quranThemeId.startsWith('i_');
                 document.body.style.backgroundColor = isDarkQuran ? '#000000' : '#ffffff';
+            } else if (isModernHome) {
+                document.body.style.backgroundColor = '#FFFFFF';
+                document.body.style.backgroundImage = 'none';
             } else {
-                document.body.style.backgroundColor = theme.bgColor || '#0D1B2A';
+                document.body.style.backgroundColor = theme.bgColor || '#DFE5EC';
                 document.body.style.backgroundImage = 'none';
             }
         }
 
-        document.body.style.color = theme.textColor;
-        document.body.style.fontFamily = theme.font;
-        root.style.setProperty('--theme-font', theme.font);
-
         const isBlackTheme = (theme.bgColor === '#000000') || theme.name === 'اسود' || theme.name === 'أبيض وأسود' || activeThemeKey === 'deep_black';
-
-        root.style.setProperty('--color-primary', isBlackTheme ? '#FFFFFF' : theme.palette[0]);
-        root.style.setProperty('--color-secondary', isBlackTheme ? '#FFFFFF' : (theme.palette[1] || theme.palette[0]));
-        
         const isDark = theme.isDark;
 
-        if (isDark) {
-            document.documentElement.classList.add('dark');
+        if (isModernHome) {
+            document.body.style.color = '#FFFFFF';
+            document.body.style.fontFamily = "'Cairo', sans-serif";
+            root.style.setProperty('--theme-font', "'Cairo', sans-serif");
+            document.documentElement.classList.remove('theme-black', 'dark');
+            document.body.classList.remove('theme-black', 'dark');
+            document.documentElement.classList.add('modern-home-active');
+            document.body.classList.add('modern-home-active');
         } else {
-            document.documentElement.classList.remove('dark');
+            document.documentElement.classList.remove('modern-home-active');
+            document.body.classList.remove('modern-home-active');
+            document.body.style.color = theme.textColor;
+            document.body.style.fontFamily = theme.font;
+            root.style.setProperty('--theme-font', theme.font);
+
+            if (isBlackTheme) {
+                document.documentElement.classList.add('theme-black');
+                document.body.classList.add('theme-black');
+            } else {
+                document.documentElement.classList.remove('theme-black');
+                document.body.classList.remove('theme-black');
+            }
+
+            const isShinyGold = activeThemeKey === 'shiny_gold' && pageKey !== 'quran';
+            if (isShinyGold) {
+                document.documentElement.classList.add('theme-shiny-gold');
+                document.body.classList.add('theme-shiny-gold');
+            } else {
+                document.documentElement.classList.remove('theme-shiny-gold');
+                document.body.classList.remove('theme-shiny-gold');
+            }
+
+            if (isDark) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
         }
 
         root.style.setProperty('--bg-color', pageKey === 'quran' ? '#ffffff' : (theme.bgColor || '#0D1B2A'));
         root.style.setProperty('--text-color', isBlackTheme ? '#FFFFFF' : theme.textColor);
         root.style.setProperty('--text-color-muted', isBlackTheme ? '#E2E8F0' : (isDark ? '#94a3b8' : '#64748b'));
 
-        const topBarBgColor = theme.topBarBg || theme.barBg || theme.palette[0];
+        const topBarBgColor = isBlackTheme ? '#000000' : (theme.topBarBg || theme.barBg || theme.palette[0]);
         const topBarRgb = hexToRgb(topBarBgColor);
-        root.style.setProperty('--top-bar-rgb', topBarRgb || '26, 35, 50');
+        root.style.setProperty('--top-bar-rgb', isBlackTheme ? '0, 0, 0' : (topBarRgb || '26, 35, 50'));
         root.style.setProperty('--top-bar-text', isBlackTheme ? '#FFFFFF' : (theme.topBarText || theme.textColor));
-        root.style.setProperty('--bottom-bar-bg', theme.barBg || (isDark ? '#1e293b' : '#ffffff'));
-        const barBorderColor = theme.barBorder ? theme.barBorder.split(' ')[2] : (isDark ? '#334155' : '#e2e8f0');
+        root.style.setProperty('--bottom-bar-bg', isBlackTheme ? '#000000' : (theme.barBg || (isDark ? '#1e293b' : '#ffffff')));
+        const barBorderColor = isBlackTheme ? '#333333' : (theme.barBorder ? theme.barBorder.split(' ')[2] : (isDark ? '#334155' : '#e2e8f0'));
         root.style.setProperty('--bottom-bar-border', barBorderColor);
-        root.style.setProperty('--qr-bar-bg', theme.barBg || (isDark ? '#1e293b' : '#ffffff'));
+        root.style.setProperty('--qr-bar-bg', isBlackTheme ? '#000000' : (theme.barBg || (isDark ? '#1e293b' : '#ffffff')));
         root.style.setProperty('--qr-bar-border', barBorderColor);
+        root.style.setProperty('--qr-bar-text', isBlackTheme ? '#FFFFFF' : (theme.topBarText || theme.textColor));
         
         const quranCardBg = theme.cardBg || (isDark ? '#1e293b' : '#ffffff');
         const quranCardBorder = theme.cardBorder || (isDark ? '#334155' : '#e2e8f0');
@@ -357,7 +427,7 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
         root.style.setProperty('--qr-modal-bg', isBlackTheme ? '#000000' : (theme.cardBg || (isDark ? '#1e293b' : '#ffffff')));
         root.style.setProperty('--qr-modal-text', isBlackTheme ? '#FFFFFF' : theme.textColor);
         root.style.setProperty('--qr-modal-border', isBlackTheme ? '#FFFFFF' : theme.palette[0]);
-    }, [settings.customBg, theme, currentPage]);
+    }, [settings.customBg, theme, currentPage, homeLayout]);
 
     useEffect(() => {
         // Instantly synchronize home screen theme colors with all widgets
@@ -365,13 +435,13 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
     }, [activeThemeKey, theme]);
 
     const isPageLocked = useMemo(() => {
-        const pageKey = currentPage === 'quran' || currentPage === 'quran-landscape' || (currentPage && currentPage.startsWith('quran_')) || currentPage === 'search' ? 'quran' : currentPage;
+        const pageKey = currentPage === 'quran' || currentPage === 'quran-landscape' || (currentPage && currentPage.startsWith('quran_')) || currentPage === 'quran-search' ? 'quran' : currentPage;
         if (pageKey === 'home') return false; // Home cannot be locked
         return settings.lockedPages?.includes(pageKey) || false;
     }, [settings.lockedPages, currentPage]);
 
     const togglePageLock = () => {
-        const pageKey = currentPage === 'quran' || currentPage === 'quran-landscape' || (currentPage && currentPage.startsWith('quran_')) || currentPage === 'search' ? 'quran' : currentPage;
+        const pageKey = currentPage === 'quran' || currentPage === 'quran-landscape' || (currentPage && currentPage.startsWith('quran_')) || currentPage === 'quran-search' ? 'quran' : currentPage;
         if (pageKey === 'quran' || pageKey === 'home') return;
 
         setSettings(prev => {
@@ -398,7 +468,7 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
     };
 
     const isQuranPage = useMemo(() => {
-        const pageKey = currentPage === 'quran' || currentPage === 'quran-landscape' || (currentPage && currentPage.startsWith('quran_')) || currentPage === 'search' ? 'quran' : currentPage;
+        const pageKey = currentPage === 'quran' || currentPage === 'quran-landscape' || (currentPage && currentPage.startsWith('quran_')) || currentPage === 'quran-search' ? 'quran' : currentPage;
         return pageKey === 'quran';
     }, [currentPage]);
 

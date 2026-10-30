@@ -219,7 +219,7 @@ const FitrAndUdhiyahCalculator: React.FC<FitrAndUdhiyahCalculatorProps> = ({
             <div 
                 id="fitr-udhiyah-subtabs" 
                 className="flex gap-1.5 p-1.5 rounded-2xl border-0"
-                style={{ backgroundColor: tokens.isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)' }}
+                style={{ backgroundColor: tokens.capsuleBg, boxShadow: tokens.cardShadow }}
             >
                 <button
                     type="button"

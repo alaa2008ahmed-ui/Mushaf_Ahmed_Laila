@@ -212,7 +212,7 @@ function Qibla({ onBack, onNavigate }: { onBack: () => void, onNavigate: (page: 
                                 title={isEn ? "Qibla Guide" : "دليل اتجاه القبلة"}
                                 aria-label={isEn ? "Qibla Guide" : "دليل اتجاه القبلة"}
                             >
-                                <i className="fa-solid fa-circle-question text-lg text-black"></i>
+                                <i className="fa-solid fa-circle-question text-lg"></i>
                             </button>
                             <ThemePageLock />
                             <button
@@ -274,7 +274,7 @@ function Qibla({ onBack, onNavigate }: { onBack: () => void, onNavigate: (page: 
                 </div>
             </div>
 
-            <main className="flex-1 w-full flex flex-col items-center justify-start p-4 gap-4 text-center overflow-y-auto overflow-x-hidden pb-24 z-10">
+            <main className="flex-1 w-full flex flex-col items-center justify-start p-4 gap-4 text-center overflow-y-auto overflow-x-hidden pb-8 sm:pb-10 pb-[calc(env(safe-area-inset-bottom,0px)+2rem)] z-10">
                  {error && (
                      <div 
                          className="p-3.5 rounded-2xl w-full max-w-md shrink-0 bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 font-bold text-xs" 
@@ -443,7 +443,8 @@ function Qibla({ onBack, onNavigate }: { onBack: () => void, onNavigate: (page: 
                         <ShadowQibla lat={config.location.lat} lng={config.location.lng} qiblaDirection={qiblaDirection} heading={heading} theme={theme} />
                     </div>
                 )}
-                <div className="w-full h-6 shrink-0"></div>
+                {/* Bottom Spacer for Mobile Phone Navigation Bar */}
+                <div className="w-full h-16 sm:h-24 shrink-0 pointer-events-none"></div>
             </main>
             <CommunitySpotlightGuide
                 isOpen={showGuide}

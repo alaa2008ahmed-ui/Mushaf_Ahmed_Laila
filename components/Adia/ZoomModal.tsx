@@ -53,6 +53,7 @@ const ZoomModal: React.FC<ZoomModalProps> = ({ zoomedDuaa, onClose, setToastMess
             stopTTS();
         } else {
             playTTS(cleanPlainText, {
+                isEn,
                 onToast: (msg) => {
                     if (setToastMessage) setToastMessage(msg);
                 }

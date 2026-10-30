@@ -371,7 +371,7 @@ export function Tasbeeh({ onBack, onNavigate }: TasbeehProps) {
             />
             
             <main 
-                className="px-4 flex-1 min-h-0 relative flex flex-col items-center overflow-y-auto overscroll-contain fade-in pb-6"
+                className="px-4 flex-1 min-h-0 relative flex flex-col items-center overflow-y-auto overscroll-contain fade-in pt-1 pb-7 sm:pb-8 pb-[calc(env(safe-area-inset-bottom,0px)+1.75rem)]"
             >
                  <TasbeehControls 
                     isBlackAndWhite={isBlackAndWhite}
@@ -397,7 +397,7 @@ export function Tasbeeh({ onBack, onNavigate }: TasbeehProps) {
                     cardBorderColor={cardBorderColor}
                  />
                 
-                <div className="w-full max-w-lg px-4 mt-6 mb-0">
+                <div className="w-full max-w-lg px-4 mt-6 mb-6">
                     <div className="grid grid-cols-2 gap-3">
                         <ThreeDButton 
                             label={tTasbeeh('reset', language)} 
@@ -443,6 +443,9 @@ export function Tasbeeh({ onBack, onNavigate }: TasbeehProps) {
                             )}
                         </div>
                     </motion.button>
+
+                    {/* Bottom Spacer for Mobile Phone Navigation Bar */}
+                    <div className="w-full h-2 sm:h-3 shrink-0 pointer-events-none" />
                 </div>
             </main>
             

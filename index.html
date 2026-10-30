@@ -93,6 +93,18 @@
       .font-kufi { font-family: 'Reem Kufi', sans-serif; }
       .font-scheherazade { font-family: 'Scheherazade New', serif; }
       
+      /* التصميم الذكي الحديث: خط كايرو ثابت وغير قابل للتغيير نهائياً */
+      .modern-home-layout,
+      .modern-home-layout *,
+      .modern-home-layout p,
+      .modern-home-layout span,
+      .modern-home-layout h1,
+      .modern-home-layout h2,
+      .modern-home-layout h3,
+      .modern-home-layout button {
+        font-family: 'Cairo', sans-serif !important;
+      }
+      
       .app-top-bar {
           background: rgb(var(--top-bar-rgb, 26, 34, 51));
           color: var(--top-bar-text, var(--text-color, #ffffff)); 
@@ -104,14 +116,65 @@
           align-items: center;
           justify-content: center;
       }
+      .app-top-bar button,
       .app-top-bar button i,
       .app-top-bar button svg,
-      .app-top-bar button,
-      .app-top-bar .fa-solid,
-      .app-top-bar .fas,
-      .app-top-bar .fa-house,
-      .app-top-bar .fa-circle-question {
-          color: #000000 !important;
+      .app-top-bar i,
+      .app-top-bar svg {
+          color: var(--top-bar-text, var(--text-color, #1e293b));
+      }
+
+      /* In Black Theme: All icons and buttons across all top bars & sub-page headers are pure white (#ffffff) */
+      body.theme-black .app-top-bar:not(.quran-context) button,
+      body.theme-black .app-top-bar:not(.quran-context) button i,
+      body.theme-black .app-top-bar:not(.quran-context) button svg,
+      body.theme-black .app-top-bar:not(.quran-context) i,
+      body.theme-black .app-top-bar:not(.quran-context) svg,
+      body.theme-black .app-top-bar:not(.quran-context) .fa-solid,
+      body.theme-black .app-top-bar:not(.quran-context) .fas,
+      body.theme-black .app-top-bar:not(.quran-context) .fa-house,
+      body.theme-black .app-top-bar:not(.quran-context) .fa-circle-question,
+      body.theme-black .app-top-bar:not(.quran-context) .fa-gear,
+      body.theme-black .app-top-bar:not(.quran-context) .fa-arrow-right,
+      body.theme-black .app-top-bar:not(.quran-context) .fa-arrow-left,
+      body.theme-black .app-top-bar:not(.quran-context) .fa-location-crosshairs,
+      body.theme-black header:not(.quran-reader-header):not(.quran-context) button,
+      body.theme-black header:not(.quran-reader-header):not(.quran-context) button i,
+      body.theme-black header:not(.quran-reader-header):not(.quran-context) button svg,
+      body.theme-black header:not(.quran-reader-header):not(.quran-context) i,
+      body.theme-black header:not(.quran-reader-header):not(.quran-context) svg,
+      html.theme-black .app-top-bar:not(.quran-context) button,
+      html.theme-black .app-top-bar:not(.quran-context) button i,
+      html.theme-black .app-top-bar:not(.quran-context) button svg,
+      html.theme-black .app-top-bar:not(.quran-context) i,
+      html.theme-black .app-top-bar:not(.quran-context) svg,
+      html.theme-black .app-top-bar:not(.quran-context) .fa-solid,
+      html.theme-black .app-top-bar:not(.quran-context) .fas,
+      html.theme-black .app-top-bar:not(.quran-context) .fa-house,
+      html.theme-black .app-top-bar:not(.quran-context) .fa-circle-question,
+      html.theme-black .app-top-bar:not(.quran-context) .fa-gear,
+      html.theme-black .app-top-bar:not(.quran-context) .fa-arrow-right,
+      html.theme-black .app-top-bar:not(.quran-context) .fa-arrow-left,
+      html.theme-black .app-top-bar:not(.quran-context) .fa-location-crosshairs,
+      html.theme-black header:not(.quran-reader-header):not(.quran-context) button,
+      html.theme-black header:not(.quran-reader-header):not(.quran-context) button i,
+      html.theme-black header:not(.quran-reader-header):not(.quran-context) button svg,
+      html.theme-black header:not(.quran-reader-header):not(.quran-context) i,
+      html.theme-black header:not(.quran-reader-header):not(.quran-context) svg {
+          color: #ffffff !important;
+          fill: #ffffff !important;
+      }
+      body.theme-black .app-top-bar:not(.quran-context) svg,
+      body.theme-black header:not(.quran-reader-header):not(.quran-context) svg,
+      html.theme-black .app-top-bar:not(.quran-context) svg,
+      html.theme-black header:not(.quran-reader-header):not(.quran-context) svg {
+          stroke: #ffffff !important;
+      }
+      body.theme-black .app-top-bar:not(.quran-context) svg[fill="none"],
+      body.theme-black header:not(.quran-reader-header):not(.quran-context) svg[fill="none"],
+      html.theme-black .app-top-bar:not(.quran-context) svg[fill="none"],
+      html.theme-black header:not(.quran-reader-header):not(.quran-context) svg[fill="none"] {
+          fill: none !important;
       }
       body.hide-top-bars .app-top-bar { display: none !important; }
       

@@ -36,7 +36,7 @@ public class DailyWirdAlarmReceiver extends BroadcastReceiver {
     public static final String EXTRA_PERIOD = "period"; // "morning" or "evening"
 
     private static final String CHANNEL_ID = "daily_wird_reminders_channel";
-    private static final String NOTIFICATION_GROUP = "com.mushaf.ahmedandlayla.APP_ALERTS_CARD";
+    private static final String NOTIFICATION_GROUP = "com.mushaf.ahmedandlayla.GENERAL_ALERTS_CARD";
     private static final int MORNING_NOTIF_ID = 9301;
     private static final int EVENING_NOTIF_ID = 9302;
     private static final int TOTAL_QURAN_PAGES = 604;
@@ -87,10 +87,38 @@ public class DailyWirdAlarmReceiver extends BroadcastReceiver {
 
         Calendar now = Calendar.getInstance();
 
-        // 1. Next Morning Alarm at 09:00 AM
+        // 1. Next Morning Alarm (at custom reminderTime or default 09:00 AM)
+        int morningHour = 9;
+        int morningMinute = 0;
+        try {
+            SharedPreferences storage = context.getSharedPreferences("CapacitorStorage", Context.MODE_PRIVATE);
+            String rawJson = storage.getString("dailyWirdSettings_v2", null);
+            if (rawJson != null) {
+                JSONObject root = new JSONObject(rawJson);
+                JSONArray profiles = root.optJSONArray("profiles");
+                String activeId = root.optString("activeId", "");
+                if (profiles != null && profiles.length() > 0) {
+                    JSONObject activeProfile = profiles.getJSONObject(0);
+                    for (int i = 0; i < profiles.length(); i++) {
+                        JSONObject p = profiles.getJSONObject(i);
+                        if (activeId.equals(p.optString("id"))) {
+                            activeProfile = p;
+                            break;
+                        }
+                    }
+                    String rTime = activeProfile.optString("reminderTime", "09:00");
+                    if (rTime != null && rTime.contains(":")) {
+                        String[] parts = rTime.split(":");
+                        morningHour = Integer.parseInt(parts[0].trim());
+                        morningMinute = Integer.parseInt(parts[1].trim());
+                    }
+                }
+            }
+        } catch (Exception ignored) {}
+
         Calendar morningCal = Calendar.getInstance();
-        morningCal.set(Calendar.HOUR_OF_DAY, 9);
-        morningCal.set(Calendar.MINUTE, 0);
+        morningCal.set(Calendar.HOUR_OF_DAY, morningHour);
+        morningCal.set(Calendar.MINUTE, morningMinute);
         morningCal.set(Calendar.SECOND, 0);
         morningCal.set(Calendar.MILLISECOND, 0);
         if (morningCal.getTimeInMillis() <= now.getTimeInMillis()) {
@@ -170,14 +198,16 @@ public class DailyWirdAlarmReceiver extends BroadcastReceiver {
             boolean isActive = activeProfile.optBoolean("isActive", true);
             boolean reminderEnabled = activeProfile.optBoolean("reminderEnabled", true);
             if (!isActive || !reminderEnabled) {
+                cancelActiveWirdNotifications(context);
                 return;
             }
 
-            // Check if user already marked today completed
+            // Check if user already marked today completed via lastCompletedDate
             String todayDateStr = new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new Date());
             String lastCompletedDate = activeProfile.optString("lastCompletedDate", "");
             if (lastCompletedDate != null && lastCompletedDate.startsWith(todayDateStr)) {
                 // Today's reading already finished! Do not notify today.
+                cancelActiveWirdNotifications(context);
                 return;
             }
 
@@ -196,6 +226,7 @@ public class DailyWirdAlarmReceiver extends BroadcastReceiver {
             int completedCount = completedSet.size();
             if (completedCount >= totalDays) {
                 // Khatma already completed!
+                cancelActiveWirdNotifications(context);
                 return;
             }
 
@@ -217,11 +248,27 @@ public class DailyWirdAlarmReceiver extends BroadcastReceiver {
 
             long diffMillis = Math.max(0, todayDate.getTime() - startDate.getTime());
             int calendarDaysElapsed = (int) (diffMillis / (1000L * 60 * 60 * 24));
+
+            // CRITICAL CHECK: If user already completed today's allocated portion:
+            // e.g. calendarDaysElapsed is 1 (day 2) and completedCount is 2 (day 2 completed),
+            // then today's wird is finished! No notification should be shown!
+            if (completedCount > calendarDaysElapsed) {
+                cancelActiveWirdNotifications(context);
+                return;
+            }
+
+            int currentDay = activeProfile.optInt("currentDay", 1);
+            if (completedSet.contains(currentDay)) {
+                cancelActiveWirdNotifications(context);
+                return;
+            }
+
             int expectedPastDays = Math.min(calendarDaysElapsed, totalDays);
             int missedDaysCount = Math.max(0, expectedPastDays - completedCount);
 
             int targetDayNumber = Math.min(completedCount + 1, totalDays);
             if (completedSet.contains(targetDayNumber)) {
+                cancelActiveWirdNotifications(context);
                 return;
             }
 
@@ -318,7 +365,7 @@ public class DailyWirdAlarmReceiver extends BroadcastReceiver {
 
     /**
      * Posts high-priority system phone notification with chime sound,
-     * status bar icon (ic_stat_name at max size), and group APP_ALERTS_CARD.
+     * status bar icon (ic_stat_name at max size), and group GENERAL_ALERTS_CARD.
      */
     private void showWirdPhoneNotification(Context context, int notifId, String title, String message) {
         try {
@@ -348,7 +395,7 @@ public class DailyWirdAlarmReceiver extends BroadcastReceiver {
                 channel.setBypassDnd(true);
                 channel.enableVibration(true);
                 channel.enableLights(true);
-                channel.setShowBadge(true);
+                channel.setShowBadge(false);
                 if (soundUri != null) {
                     channel.setSound(soundUri, alarmAudioAttributes);
                 }
@@ -377,6 +424,8 @@ public class DailyWirdAlarmReceiver extends BroadcastReceiver {
                 .setGroup(NOTIFICATION_GROUP)
                 .setGroupSummary(false)
                 .setSortKey("12_daily_wird")
+                .setBadgeIconType(NotificationCompat.BADGE_ICON_NONE)
+                .setNumber(0)
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC);
 
             if (soundUri != null) {
@@ -391,6 +440,21 @@ public class DailyWirdAlarmReceiver extends BroadcastReceiver {
             } catch (Exception ignored) {}
 
             nm.notify(notifId, builder.build());
+            AlertsGroupHelper.updateGroupSummary(context, nm);
+        } catch (Exception ignored) {}
+    }
+
+    /**
+     * Dismisses any active/delivered daily wird reminder notifications from the phone drawer
+     */
+    public static void cancelActiveWirdNotifications(Context context) {
+        if (context == null) return;
+        try {
+            NotificationManager nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+            if (nm != null) {
+                nm.cancel(MORNING_NOTIF_ID);
+                nm.cancel(EVENING_NOTIF_ID);
+            }
             AlertsGroupHelper.updateGroupSummary(context, nm);
         } catch (Exception ignored) {}
     }

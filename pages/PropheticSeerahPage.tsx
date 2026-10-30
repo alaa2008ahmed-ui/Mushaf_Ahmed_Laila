@@ -743,7 +743,7 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                                 title={isEn ? "Seerah Guide" : "دليل السيرة النبوية"}
                                 aria-label={isEn ? "Seerah Guide" : "دليل السيرة النبوية"}
                             >
-                                <i className="fa-solid fa-circle-question text-lg text-black"></i>
+                                <i className="fa-solid fa-circle-question text-lg"></i>
                             </button>
                             <ThemePageLock />
                             <button
@@ -865,7 +865,7 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
             )}
 
             {/* Main Content Body */}
-            <main ref={mainScrollRef} className="flex-1 overflow-y-auto hide-scrollbar px-4 pt-2 pb-6">
+            <main ref={mainScrollRef} className="flex-1 overflow-y-auto hide-scrollbar px-4 pt-2 pb-7 sm:pb-8 pb-[calc(env(safe-area-inset-bottom,0px)+1.75rem)]">
                 {/* 1. Milestone Detail View */}
                 {selectedMilestone && activeMilestone ? (
                     <div
@@ -2485,6 +2485,8 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                             </div>
                         </div>
                     )}
+                {/* Bottom Spacer for Mobile Phone Navigation Bar */}
+                <div className="w-full h-10 sm:h-14 shrink-0 pointer-events-none" />
             </main>
 
             {/* Zoom Modal - Matches identical style & behavior of Adia & Adkar */}

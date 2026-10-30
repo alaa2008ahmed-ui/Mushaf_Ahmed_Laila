@@ -95,7 +95,7 @@ const VoiceControlPage: React.FC<{ onBack: () => void, onNavigate: (pageId: stri
                                 title={isEn ? "Voice Control Guide" : "دليل التحكم الصوتي"}
                                 aria-label={isEn ? "Voice Control Guide" : "دليل التحكم الصوتي"}
                             >
-                                <i className="fa-solid fa-circle-question text-lg text-black"></i>
+                                <i className="fa-solid fa-circle-question text-lg"></i>
                             </button>
                             <ThemePageLock />
                             <button

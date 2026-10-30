@@ -476,7 +476,7 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, o
                                     title={ui.guideTooltip}
                                     aria-label={ui.guideTooltip}
                                 >
-                                    <i className="fa-solid fa-circle-question text-lg text-black"></i>
+                                    <i className="fa-solid fa-circle-question text-lg"></i>
                                 </button>
                             )}
                             <ThemePageLock />
@@ -605,7 +605,7 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, o
             {/* Main Content Area */}
             <main 
                 ref={mainScrollRef} 
-                className={`flex-1 overflow-y-auto px-3 sm:px-4 ${selectedCompanion ? 'py-3 sm:py-4' : 'py-3 sm:py-5'} hide-scrollbar relative promised-scalable-content`}
+                className="flex-1 overflow-y-auto px-3 sm:px-4 pt-3 sm:pt-4 pb-7 sm:pb-8 pb-[calc(env(safe-area-inset-bottom,0px)+1.75rem)] hide-scrollbar relative promised-scalable-content"
             >
                 {/* 1. LIST VIEW OF THE 10 COMPANIONS */}
                 {!selectedCompanion ? (
@@ -765,6 +765,8 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, o
                                 })}
                             </div>
                         )}
+                        {/* Bottom Spacer for Mobile Phone Navigation Bar */}
+                        <div className="w-full h-10 sm:h-14 shrink-0 pointer-events-none" />
                     </div>
                 ) : (
                     /* 2. COMPANION DETAILED PROFILE VIEW */
@@ -2310,6 +2312,8 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, o
                                 </button>
                             ) : <div className="flex-1" />}
                         </div>
+                        {/* Bottom Spacer for Mobile Phone Navigation Bar */}
+                        <div className="w-full h-10 sm:h-14 shrink-0 pointer-events-none" />
                     </div>
                 </div>
             )}

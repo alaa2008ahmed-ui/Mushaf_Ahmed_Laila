@@ -231,7 +231,7 @@ export const SunMoonQibla = ({ lat, lng, qiblaDirection, heading, theme }: any) 
     );
 
     return (
-        <div className="w-full shrink-0 flex flex-col gap-6 pb-8" dir={isEn ? 'ltr' : 'rtl'}>
+        <div className="w-full shrink-0 flex flex-col gap-6 pb-16 sm:pb-20" dir={isEn ? 'ltr' : 'rtl'}>
             <div className="bg-white dark:bg-[#1E293B] p-8 rounded-2xl flex flex-col items-center justify-center text-center relative overflow-hidden shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-slate-100 dark:border-white/5">
                 <div className={`absolute top-4 ${isEn ? 'left-4' : 'right-4'} text-yellow-500 opacity-10`}><i className="fa-solid fa-sun text-6xl"></i></div>
                 <h3 className="text-2xl font-bold mb-4" style={{ color: primaryColor }}>
@@ -325,7 +325,7 @@ export const ShadowQibla = ({ lat, lng, qiblaDirection, heading, theme }: any) =
     const shadowDiff = Math.abs(shadowHeading - qiblaDirection);
 
     return (
-        <div className="w-full shrink-0 flex flex-col items-center justify-start bg-white dark:bg-[#1E293B] p-8 rounded-2xl text-center relative overflow-hidden shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-slate-100 dark:border-white/5 mb-8" dir={isEn ? 'ltr' : 'rtl'}>
+        <div className="w-full shrink-0 flex flex-col items-center justify-start bg-white dark:bg-[#1E293B] p-6 sm:p-8 pb-8 sm:pb-10 rounded-2xl text-center relative overflow-hidden shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-slate-100 dark:border-white/5 mb-3 sm:mb-4" dir={isEn ? 'ltr' : 'rtl'}>
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-5 pointer-events-none">
                 <i className="fa-solid fa-person-rays text-[15rem]"></i>
             </div>
@@ -397,6 +397,9 @@ export const ShadowQibla = ({ lat, lng, qiblaDirection, heading, theme }: any) =
                             : `القبلة تبعد عن الظل بـ ${Math.round(shadowDiff)} درجة`}
                     </p>
                 </div>
+
+                {/* Bottom Spacer for Mobile Phone Navigation Bar */}
+                <div className="w-full h-1 sm:h-2 shrink-0 pointer-events-none" />
             </div>
         </div>
     );

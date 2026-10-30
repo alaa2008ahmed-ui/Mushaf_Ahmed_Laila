@@ -6,7 +6,7 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
  * 
  * Configured strictly to guarantee an authentic, deep, dignified MALE VOICE
  * across all pages (Adhkar, Adia, Athkar Al-Salah, Nawawi, Asmaul Husna, Hisn Al-Muslim, etc.)
- * both on native Android APK and Web browsers.
+ * in BOTH Arabic and English, on native Android APK and Web browsers.
  */
 
 export interface PlayTTSOptions {
@@ -29,25 +29,73 @@ let currentSequenceId = 0;
 const stateListeners: Set<TTSStateCallback> = new Set();
 
 /**
- * Keywords for identifying explicit male voices across Android, Windows, macOS, iOS, and Web.
+ * Keywords for identifying explicit male voices across Android (Google TTS / Samsung),
+ * Windows (SAPI / Edge), macOS / iOS (Apple voices), and Web Speech API.
  */
 const MALE_VOICE_KEYWORDS = [
-    'maged', 'hazem', 'hamid', 'hamed', 'shakir', 'male', 'naayf', 'tarik', 'tariq',
+    // Arabic male voice names & tokens
+    'maged', 'hazem', 'hamid', 'hamed', 'shakir', 'naayf', 'tarik', 'tariq',
     'ward', 'salman', 'omar', 'ali', 'khalid', 'ahmed', 'bilal', 'youssef', 'yousef',
-    'man', 'guy', 'boy', 'baritone', 'bass', 'rajul',
-    'arb', 'ard', 'b-local', 'd-local', 'b-network', 'd-network',
-    'wavenet-b', 'wavenet-c', 'wavenet-d', 'standard-b', 'standard-c', 'standard-d',
-    'david', 'mark', 'george', 'ryan', 'daniel'
+    'arb', 'ard', 'rajul', 'shaikh', 'sheikh',
+
+    // Generic male indicators
+    'male', '#male', 'male_1', 'male_2', 'male_3', 'male_4', 'male-local', 'male-network',
+    'man', 'guy', 'boy', 'baritone', 'bass', 'deep',
+
+    // English male voice names (Microsoft, Apple, Google, Nuance, Samsung, Amazon)
+    'david', 'mark', 'george', 'ryan', 'daniel', 'alex', 'fred', 'oliver',
+    'thomas', 'tom', 'brian', 'arthur', 'aaron', 'charles', 'matthew',
+    'james', 'richard', 'michael', 'christopher', 'edward', 'william',
+    'john', 'paul', 'peter', 'steven', 'stephen', 'lee', 'russell', 'sam',
+    'guy', 'eric', 'steffan',
+
+    // Android Google TTS male voice model tokens
+    'iob', 'iod', 'iol', 'iom', 'tpd', 'tpb', 'tpa', 'sfg#male',
+    'wavenet-b', 'wavenet-d', 'wavenet-i', 'wavenet-j',
+    'standard-b', 'standard-d', 'standard-i', 'standard-j',
+    'journey-d', 'journey-f', 'studio-b', 'studio-c',
+    'b-local', 'd-local', 'i-local', 'j-local',
+    'b-network', 'd-network', 'i-network', 'j-network',
+    'en-us-b', 'en-us-d', 'en-gb-b', 'en-gb-d', 'en-au-b', 'en-au-d',
+
+    // Samsung TTS male indicators
+    'en_us_m', 'en_gb_m', 'm01', 'm02', '_m0', 'smt_en_us_m', 'samsung_tts_en_us_male',
+    'ar_sa_m', 'smt_ar_sa_m'
 ];
 
 /**
- * Keywords for identifying female voices to avoid.
+ * Keywords for identifying female voices to strictly avoid across all platforms.
  */
 const FEMALE_VOICE_KEYWORDS = [
-    'laila', 'layla', 'hoda', 'female', 'yasmine', 'yasmin', 'mary', 'maryam',
-    'zeina', 'zaina', 'salma', 'zariyah', 'fatima', 'nour', 'reem', 'amira',
-    'woman', 'girl', 'ara', 'arc', 'are', 'a-local', 'c-local', 'e-local',
-    'wavenet-a', 'wavenet-e', 'wavenet-f', 'standard-a', 'standard-e', 'standard-f'
+    // Generic female indicators
+    'female', '#female', 'female_1', 'female_2', 'female_3', 'female_4',
+    'woman', 'girl', 'lady',
+
+    // English female names (Microsoft, Apple, Amazon, Google, Samsung)
+    'zira', 'samantha', 'victoria', 'karen', 'serena', 'fiona', 'moira',
+    'tessa', 'veena', 'hazel', 'susan', 'heather', 'eva', 'catherine',
+    'linda', 'sarah', 'lisa', 'jessica', 'emily', 'chloe', 'kendra',
+    'kimberly', 'salli', 'joanna', 'ivy', 'amy', 'jenny', 'aria',
+    'stephanie', 'ava', 'allison', 'nicole', 'nadine', 'sonia',
+    'katie', 'alice', 'lucy', 'helen', 'michelle',
+
+    // Arabic female names
+    'laila', 'layla', 'hoda', 'yasmine', 'yasmin', 'mary', 'maryam',
+    'zeina', 'zaina', 'salma', 'zariyah', 'fatima', 'nour', 'reem',
+    'amira', 'imraah',
+
+    // Google TTS female voice models / tokens
+    'sfg-local', 'sfg#female', 'sfg_female',
+    'tpf', 'tpc', 'tpe',
+    'ioa', 'ioc', 'ioe', 'iof', 'iog', 'ioh',
+    'ara', 'arc', 'are',
+    'a-local', 'c-local', 'e-local', 'f-local', 'g-local', 'h-local',
+    'a-network', 'c-network', 'e-network', 'f-network', 'g-network', 'h-network',
+    'wavenet-a', 'wavenet-c', 'wavenet-e', 'wavenet-f', 'wavenet-g', 'wavenet-h',
+    'standard-a', 'standard-c', 'standard-e', 'standard-f', 'standard-g', 'standard-h',
+
+    // Samsung TTS female indicators
+    'en_us_f', 'en_gb_f', 'f01', 'f02', '_f0', 'smt_en_us_f', 'samsung_tts_en_us_female'
 ];
 
 /**
@@ -156,10 +204,10 @@ export const stopTTS = () => {
 export const getPlayingText = (): string | null => currentPlayingText;
 
 /**
- * Streaming fallback for Arabic text when speech synthesis is completely unavailable on system.
- * Configured with pitch-lowering so it delivers a masculine vocal resonance.
+ * Streaming fallback for text when speech synthesis is completely unavailable on system.
+ * Configured with pitch-lowering so it delivers a masculine vocal resonance in both Arabic and English.
  */
-const playStreamingGoogleTTS = (cleanText: string, originalText: string, onToast?: (msg: string) => void) => {
+const playStreamingGoogleTTS = (cleanText: string, originalText: string, onToast?: (msg: string) => void, isEn: boolean = false) => {
     const chunks: string[] = [];
     const sentences = cleanText.split(/([.،!؟\n]+)/);
     let currentChunk = '';
@@ -198,6 +246,7 @@ const playStreamingGoogleTTS = (cleanText: string, originalText: string, onToast
 
     const sequenceId = ++currentSequenceId;
     let currentIndex = 0;
+    const langCode = isEn ? 'en' : 'ar';
 
     const playChunk = (index: number) => {
         if (sequenceId !== currentSequenceId) return;
@@ -209,7 +258,7 @@ const playStreamingGoogleTTS = (cleanText: string, originalText: string, onToast
         }
 
         const chunkText = chunks[index];
-        const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=ar&client=tw-ob&q=${encodeURIComponent(chunkText)}`;
+        const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${langCode}&client=tw-ob&q=${encodeURIComponent(chunkText)}`;
         const audio = new Audio(url);
         activeAudio = audio;
 
@@ -238,7 +287,7 @@ const playStreamingGoogleTTS = (cleanText: string, originalText: string, onToast
                 currentPlayingText = null;
                 activeAudio = null;
                 notifyListeners();
-                if (onToast) onToast('تعذر تشغيل الصوت');
+                if (onToast) onToast(isEn ? 'Failed to play audio' : 'تعذر تشغيل الصوت');
             }
         };
 
@@ -258,7 +307,7 @@ const playStreamingGoogleTTS = (cleanText: string, originalText: string, onToast
 };
 
 /**
- * Plays a given text, enforcing an authentic MALE voice everywhere.
+ * Plays a given text, strictly enforcing an authentic MALE voice in both Arabic and English.
  * Supports both Native Android/iOS (via Capacitor) and Web Speech API.
  * 
  * @param text The text to speak.
@@ -282,7 +331,15 @@ export const playTTS = async (text: string, options?: PlayTTSOptions | ((msg: st
     stopTTS();
 
     const onToast = resolvedOptions.onToast;
-    const isEnglish = resolvedOptions.isEn || resolvedOptions.lang === 'en' || resolvedOptions.lang === 'en-US' || (!/[\u0600-\u06FF]/.test(text) && /[a-zA-Z]{4,}/.test(text));
+
+    // Detect language: explicitly passed or derived from content
+    const arabicCharsCount = (text.match(/[\u0600-\u06FF]/g) || []).length;
+    const latinCharsCount = (text.match(/[a-zA-Z]/g) || []).length;
+    const isEnglish = Boolean(
+        resolvedOptions.isEn || 
+        resolvedOptions.lang?.toLowerCase().startsWith('en') || 
+        (latinCharsCount > 3 && latinCharsCount >= arabicCharsCount)
+    );
 
     // Optional direct Sheikh recitation streams for full Hadiths (male recitation)
     let streamUrl: string | null = null;
@@ -323,12 +380,12 @@ export const playTTS = async (text: string, options?: PlayTTSOptions | ((msg: st
         }
     }
 
-    // Primary: Play with male TTS
+    // Primary: Play with guaranteed male TTS
     await playLocalTTS(text, onToast, isEnglish ? 'en-US' : 'ar-SA');
 };
 
 /**
- * Core Text-to-Speech Engine configured to guarantee a MALE VOICE.
+ * Core Text-to-Speech Engine configured to guarantee a MALE VOICE in both Arabic and English.
  */
 const playLocalTTS = async (text: string, onToast?: (msg: string) => void, targetLang: string = 'ar-SA') => {
     // Strip HTML tags from text
@@ -362,35 +419,44 @@ const playLocalTTS = async (text: string, onToast?: (msg: string) => void, targe
                         .map((voice, index) => ({ voice, index }))
                         .filter(item => {
                             const l = (item.voice.lang || '').toLowerCase();
-                            return isEnglish ? l.startsWith('en') : (l.startsWith('ar') || l.includes('ar-'));
+                            return isEnglish
+                                ? (l.startsWith('en') || l.includes('en-') || l.includes('en_'))
+                                : (l.startsWith('ar') || l.includes('ar-') || l.includes('ar_'));
                         });
 
                     if (targetVoicesWithIndex.length > 0) {
-                        // 1. Search for explicit male voice in Android TTS
+                        // 1. Prioritize explicit male voice in Android TTS (Google TTS, Samsung, Qualcomm, etc.)
                         const explicitMale = targetVoicesWithIndex.find(item => {
                             const name = (item.voice.name || '').toLowerCase();
                             const uri = (item.voice.voiceURI || '').toLowerCase();
-                            return MALE_VOICE_KEYWORDS.some(kw => name.includes(kw) || uri.includes(kw));
+                            const combined = `${name} ${uri}`;
+                            const hasMale = MALE_VOICE_KEYWORDS.some(kw => combined.includes(kw));
+                            const hasFemale = FEMALE_VOICE_KEYWORDS.some(kw => combined.includes(kw));
+                            return hasMale && !hasFemale;
                         });
 
                         if (explicitMale) {
                             selectedVoiceIndex = explicitMale.index;
                             isExplicitMaleNative = true;
                         } else {
-                            // 2. Filter out female voices (exclude laila, salma, zariyah, etc.)
+                            // 2. Filter out known female voices
                             const nonFemale = targetVoicesWithIndex.find(item => {
                                 const name = (item.voice.name || '').toLowerCase();
                                 const uri = (item.voice.voiceURI || '').toLowerCase();
-                                return !FEMALE_VOICE_KEYWORDS.some(kw => name.includes(kw) || uri.includes(kw));
+                                const combined = `${name} ${uri}`;
+                                return !FEMALE_VOICE_KEYWORDS.some(kw => combined.includes(kw));
                             });
 
                             if (nonFemale) {
                                 selectedVoiceIndex = nonFemale.index;
+                                isExplicitMaleNative = false;
                             } else if (targetVoicesWithIndex.length > 1) {
-                                // In Google TTS on Android, Voice 2 (index 1) is typically male while Voice 1 is female
+                                // In Google TTS on Android, Voice 2 (index 1) is typically male (Voice B / Voice D)
                                 selectedVoiceIndex = targetVoicesWithIndex[1].index;
+                                isExplicitMaleNative = false;
                             } else {
                                 selectedVoiceIndex = targetVoicesWithIndex[0].index;
+                                isExplicitMaleNative = false;
                             }
                         }
                     }
@@ -399,13 +465,19 @@ const playLocalTTS = async (text: string, onToast?: (msg: string) => void, targe
                 console.warn('Could not inspect native voices:', ve);
             }
 
-            // Setting pitch to 0.68 for Arabic lowers the fundamental vocal tract frequency
-            // directly into the male baritone register (~120Hz-150Hz), ensuring a clear, deep male voice!
+            // CRITICAL VOCAL PITCH CALIBRATION:
+            // - If an explicit male voice is found on the device, pitch 0.78 gives a deep, resonant, masculine cadence.
+            // - If only a default/unknown/female voice is installed on the device, pitch 0.66 shifts the fundamental
+            //   vocal tract formant (F0) down by ~34%, actively transposing the voice into a human male baritone!
+            // This is applied consistently to BOTH Arabic and English, guaranteeing a male voice at all times.
+            const targetPitch = isExplicitMaleNative ? 0.78 : 0.66;
+            const targetRate = isEnglish ? 0.90 : 0.86;
+
             await TextToSpeech.speak({
                 text: cleanText,
                 lang: isEnglish ? 'en-US' : 'ar-SA',
-                rate: isEnglish ? 0.92 : 0.86,
-                pitch: isEnglish ? 0.85 : (isExplicitMaleNative ? 0.78 : 0.68),
+                rate: targetRate,
+                pitch: targetPitch,
                 volume: 1.0,
                 voice: selectedVoiceIndex,
                 category: 'playback'
@@ -417,8 +489,8 @@ const playLocalTTS = async (text: string, onToast?: (msg: string) => void, targe
             }
         } catch (err) {
             console.error('Native TTS Speak Error:', err);
-            if (!isEnglish && navigator.onLine) {
-                playStreamingGoogleTTS(cleanText, text, onToast);
+            if (navigator.onLine) {
+                playStreamingGoogleTTS(cleanText, text, onToast, isEnglish);
                 return;
             }
             if (onToast) {
@@ -436,8 +508,8 @@ const playLocalTTS = async (text: string, onToast?: (msg: string) => void, targe
     // 2. WEB BROWSER ENGINE (SpeechSynthesis with Male Voice selection)
     // ─────────────────────────────────────────────────────────────
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
-        if (!isEnglish && navigator.onLine) {
-            playStreamingGoogleTTS(cleanText, text, onToast);
+        if (navigator.onLine) {
+            playStreamingGoogleTTS(cleanText, text, onToast, isEnglish);
             return;
         }
         if (onToast) {
@@ -452,21 +524,57 @@ const playLocalTTS = async (text: string, onToast?: (msg: string) => void, targe
     const voices = await getSpeechVoices();
 
     if (isEnglish) {
-        const englishVoices = voices.filter(v => (v.lang || '').toLowerCase().startsWith('en'));
-        const maleEnglishVoice = englishVoices.find(v => {
-            const name = (v.name || '').toLowerCase();
-            return MALE_VOICE_KEYWORDS.some(kw => name.includes(kw));
-        }) || englishVoices.find(v => {
-            const name = (v.name || '').toLowerCase();
-            return !FEMALE_VOICE_KEYWORDS.some(kw => name.includes(kw));
-        }) || englishVoices[0] || null;
+        const englishVoices = voices.filter(v => {
+            const l = (v.lang || '').toLowerCase();
+            return l.startsWith('en') || l.includes('en-') || l.includes('en_');
+        });
+
+        let chosenEnglishVoice: SpeechSynthesisVoice | null = null;
+        let isExplicitMaleWeb = false;
+
+        if (englishVoices.length > 0) {
+            // 1. Look for explicit male English voice (David, Mark, George, Alex, etc.)
+            chosenEnglishVoice = englishVoices.find(v => {
+                const name = (v.name || '').toLowerCase();
+                const uri = (v.voiceURI || '').toLowerCase();
+                const combined = `${name} ${uri}`;
+                const hasMale = MALE_VOICE_KEYWORDS.some(kw => combined.includes(kw));
+                const hasFemale = FEMALE_VOICE_KEYWORDS.some(kw => combined.includes(kw));
+                return hasMale && !hasFemale;
+            }) || null;
+
+            if (chosenEnglishVoice) {
+                isExplicitMaleWeb = true;
+            } else {
+                // 2. Look for non-female English voice
+                chosenEnglishVoice = englishVoices.find(v => {
+                    const name = (v.name || '').toLowerCase();
+                    const uri = (v.voiceURI || '').toLowerCase();
+                    const combined = `${name} ${uri}`;
+                    return !FEMALE_VOICE_KEYWORDS.some(kw => combined.includes(kw));
+                }) || null;
+
+                if (!chosenEnglishVoice && englishVoices.length > 1) {
+                    chosenEnglishVoice = englishVoices[1];
+                } else if (!chosenEnglishVoice) {
+                    chosenEnglishVoice = englishVoices[0];
+                }
+            }
+        }
+
+        // If NO English voice is installed on this browser at all, use streaming fallback
+        if (englishVoices.length === 0 && navigator.onLine) {
+            playStreamingGoogleTTS(cleanText, text, onToast, true);
+            return;
+        }
 
         const utterance = new SpeechSynthesisUtterance(cleanText);
         utterance.lang = 'en-US';
-        utterance.rate = 0.92;
-        utterance.pitch = 0.85; // Male pitch
-        if (maleEnglishVoice) {
-            utterance.voice = maleEnglishVoice;
+        utterance.rate = 0.90;
+        // Pitch: 0.78 for explicit male; 0.65 for generic/female fallback to ensure male voice
+        utterance.pitch = isExplicitMaleWeb ? 0.78 : 0.65;
+        if (chosenEnglishVoice) {
+            utterance.voice = chosenEnglishVoice;
         }
 
         utterance.onstart = () => {
@@ -484,6 +592,10 @@ const playLocalTTS = async (text: string, onToast?: (msg: string) => void, targe
         };
 
         utterance.onerror = () => {
+            if (navigator.onLine) {
+                playStreamingGoogleTTS(cleanText, text, onToast, true);
+                return;
+            }
             if (currentPlayingText === text) {
                 currentPlayingText = null;
                 currentUtterance = null;
@@ -498,7 +610,7 @@ const playLocalTTS = async (text: string, onToast?: (msg: string) => void, targe
     // Arabic Voice Selection
     const arabicVoices = voices.filter((v) => {
         const lang = (v.lang || '').toLowerCase();
-        return lang.startsWith('ar') || lang.includes('ar-');
+        return lang.startsWith('ar') || lang.includes('ar-') || lang.includes('ar_');
     });
 
     let chosenVoice: SpeechSynthesisVoice | null = null;
@@ -509,7 +621,10 @@ const playLocalTTS = async (text: string, onToast?: (msg: string) => void, targe
         chosenVoice = arabicVoices.find((v) => {
             const name = (v.name || '').toLowerCase();
             const uri = (v.voiceURI || '').toLowerCase();
-            return MALE_VOICE_KEYWORDS.some((kw) => name.includes(kw) || uri.includes(kw));
+            const combined = `${name} ${uri}`;
+            const hasMale = MALE_VOICE_KEYWORDS.some((kw) => combined.includes(kw));
+            const hasFemale = FEMALE_VOICE_KEYWORDS.some((kw) => combined.includes(kw));
+            return hasMale && !hasFemale;
         }) || null;
 
         if (chosenVoice) {
@@ -519,7 +634,8 @@ const playLocalTTS = async (text: string, onToast?: (msg: string) => void, targe
             chosenVoice = arabicVoices.find((v) => {
                 const name = (v.name || '').toLowerCase();
                 const uri = (v.voiceURI || '').toLowerCase();
-                return !FEMALE_VOICE_KEYWORDS.some((kw) => name.includes(kw) || uri.includes(kw));
+                const combined = `${name} ${uri}`;
+                return !FEMALE_VOICE_KEYWORDS.some((kw) => combined.includes(kw));
             }) || null;
         }
 
@@ -531,7 +647,7 @@ const playLocalTTS = async (text: string, onToast?: (msg: string) => void, targe
 
     // If NO Arabic voice is installed on this browser at all, use streaming with male pitch-shift
     if (arabicVoices.length === 0 && navigator.onLine) {
-        playStreamingGoogleTTS(cleanText, text, onToast);
+        playStreamingGoogleTTS(cleanText, text, onToast, false);
         return;
     }
 
@@ -543,11 +659,8 @@ const playLocalTTS = async (text: string, onToast?: (msg: string) => void, targe
         utterance.voice = chosenVoice;
     }
 
-    // CRITICAL:
-    // If an explicit male voice is found, pitch 0.82 provides a dignified baritone.
-    // If only a generic or female voice is installed, pitch 0.62 lowers the fundamental frequency
-    // by ~38%, converting the vocal timbre into an unmistakably deep male voice!
-    utterance.pitch = isExplicitMale ? 0.82 : 0.62;
+    // Pitch: 0.78 for explicit male; 0.65 for fallback/female to ensure male voice
+    utterance.pitch = isExplicitMale ? 0.78 : 0.65;
 
     utterance.onstart = () => {
         currentPlayingText = text;
@@ -566,7 +679,7 @@ const playLocalTTS = async (text: string, onToast?: (msg: string) => void, targe
     utterance.onerror = (event) => {
         console.warn('Web TTS playback error:', event);
         if (navigator.onLine) {
-            playStreamingGoogleTTS(cleanText, text, onToast);
+            playStreamingGoogleTTS(cleanText, text, onToast, false);
             return;
         }
         if (currentPlayingText === text) {

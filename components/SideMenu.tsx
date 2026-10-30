@@ -8,6 +8,7 @@ import {
     ScrollText, Award
 } from 'lucide-react';
 import { THEMES } from './QuranReader/constants';
+import { getQuranThemeIdForLayout } from '../utils/quranThemeHelper';
 import { useShowNewBadge, useSeenPages, markPageAsSeen } from '../utils/badgeManager';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -26,7 +27,7 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onNavigate, onOpen
     const { t, translateMenuItem, isRTL } = useLanguage();
     const [readerTheme, setReaderTheme] = React.useState(() => {
         try {
-            const themeId = localStorage.getItem('current_theme_id_v') || 'black';
+            const themeId = getQuranThemeIdForLayout('_v');
             return THEMES[themeId as keyof typeof THEMES] || THEMES.black;
         } catch (e) {
             return THEMES.black;
@@ -36,7 +37,7 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onNavigate, onOpen
     React.useEffect(() => {
         const handleThemeChange = () => {
             try {
-                const themeId = localStorage.getItem('current_theme_id_v') || 'black';
+                const themeId = getQuranThemeIdForLayout('_v');
                 setReaderTheme(THEMES[themeId as keyof typeof THEMES] || THEMES.black);
             } catch (e) {}
         };
@@ -126,6 +127,7 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onNavigate, onOpen
                                             else if (item.id === 'notifications') onNavigate('phone-notifications');
                                             else if (item.id === 'settings' || item.id === 'readers' || item.id === 'font-type' || item.id === 'sajdah') onNavigate('settings');
                                             else if (item.id === 'home') onNavigate('home', { force: true });
+                                            else if (item.id === 'search' && (currentPage === 'quran' || currentPage === 'quran-landscape')) onNavigate('search', { from: currentPage });
                                             else onNavigate(item.id);
                                             onClose();
                                         }}

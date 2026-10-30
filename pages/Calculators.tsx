@@ -149,7 +149,7 @@ const Calculators: React.FC<CalculatorsProps> = ({ onBack, onNavigate }) => {
                                 title={isEn ? "Calculator Guide" : "دليل وشرح الحاسبة الشرعية"}
                                 aria-label={isEn ? "Calculator Guide" : "دليل وشرح الحاسبة الشرعية"}
                             >
-                                <i className="fa-solid fa-circle-question text-lg text-black"></i>
+                                <i className="fa-solid fa-circle-question text-lg"></i>
                             </button>
                             <ThemePageLock />
                             <button
@@ -169,7 +169,8 @@ const Calculators: React.FC<CalculatorsProps> = ({ onBack, onNavigate }) => {
             <div className="px-4 pt-3 pb-1 z-10 shrink-0 max-w-3xl mx-auto w-full">
                 <div 
                     id="calc-tabs-bar" 
-                    className="flex p-1.5 rounded-2xl bg-slate-200/70 dark:bg-zinc-800 gap-1.5 border-0 shadow-sm"
+                    className="flex p-1.5 rounded-2xl gap-1.5 border-0"
+                    style={{ backgroundColor: tokens.capsuleBg, boxShadow: tokens.cardShadow }}
                 >
                     {[
                         { id: 'zakat', label: isEn ? 'Zakat' : 'الزكاة' },

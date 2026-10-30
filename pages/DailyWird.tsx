@@ -58,7 +58,7 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
   // Dynamic Theme Colors
   const primaryColor = isBlackTheme ? '#FFFFFF' : (theme.accent || (isBlackAndWhite ? '#FFFFFF' : (theme.palette?.[0] || '#2E7D5E')));
   const secondaryColor = isBlackTheme ? '#A1A1AA' : (theme.palette?.[1] || theme.palette?.[0] || '#4B5563');
-  const btnTextColor = isBlackTheme ? '#000000' : (theme.btnText || (isBlackAndWhite ? '#000000' : '#FFFFFF'));
+  const btnTextColor = isBlackTheme ? '#000000' : '#FFFFFF';
 
   const [allSettings, setAllSettings] = useState<WirdSettings[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -100,14 +100,33 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
     const saved = localStorage.getItem('dailyWirdSettings_v2');
     if (saved) {
       const parsed = JSON.parse(saved);
-      const profiles = (parsed.profiles || []).map((p: any) => ({
-        ...p,
-        reminderEnabled: p.reminderEnabled !== false
-      }));
+      let wasSanitized = false;
+      const profiles = (parsed.profiles || []).map((p: any) => {
+        let sanitizedStartPage = p.startPage || 1;
+        // Fix corrupted startPage where startPage was mistakenly set to 21 or lastPageRead + 1
+        // during an edit while completedDays contains day 1 or currentDay > 1
+        if (sanitizedStartPage > 1 && (p.completedDays?.includes(1) || p.currentDay > 1)) {
+          sanitizedStartPage = 1;
+          wasSanitized = true;
+        }
+        return {
+          ...p,
+          startPage: sanitizedStartPage,
+          reminderEnabled: p.reminderEnabled !== false
+        };
+      });
       const activeProfileId = parsed.activeId || (profiles.length > 0 ? profiles[0].id : null);
       
       setAllSettings(profiles);
       setActiveId(activeProfileId);
+
+      if (wasSanitized) {
+        const dataStr = JSON.stringify({ profiles, activeId: activeProfileId });
+        localStorage.setItem('dailyWirdSettings_v2', dataStr);
+        try {
+          Preferences.set({ key: 'dailyWirdSettings_v2', value: dataStr });
+        } catch (e) {}
+      }
 
       if (activeProfileId) {
         const activeProfile = profiles.find((p: WirdSettings) => p.id === activeProfileId);
@@ -131,7 +150,7 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
               setTempMode(activeProfile.mode);
               setTempValue(activeProfile.value.toString());
               setTempName(activeProfile.name);
-              setCalcMethod('remaining');
+              setCalcMethod('total');
               setShowSettings(true);
             }, 0);
           }
@@ -144,7 +163,8 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
         const migrated: WirdSettings = {
           ...oldSettings,
           id: 'default',
-          name: 'المستخدم 1'
+          name: 'المستخدم 1',
+          startPage: 1
         };
         setAllSettings([migrated]);
         setActiveId('default');
@@ -182,16 +202,24 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
     const inputVal = parseInt(tempValue) || (tempMode === 'days' ? 30 : 20);
     let finalValue = inputVal;
     let startPage = 1;
+    let currentDay = settings ? settings.currentDay : 1;
+    let completedDays = settings ? settings.completedDays : [];
     const profileName = tempName.trim() || (isEn ? `User ${allSettings.length + 1}` : `مستخدم ${allSettings.length + 1}`);
 
     if (settings && settings.completedDays.length > 0) {
-      const lastPageRead = Math.max(0, ...settings.completedDays.map(d => getDayRange(d).end));
-      startPage = lastPageRead + 1;
-
-      if (tempMode === 'days' && calcMethod === 'total') {
-        const completedDaysCount = settings.completedDays.length;
-        finalValue = Math.max(1, inputVal - completedDaysCount);
+      if (calcMethod === 'remaining') {
+        const lastPageRead = Math.max(0, ...settings.completedDays.map(d => getDayRange(d).end));
+        startPage = lastPageRead + 1;
+        currentDay = 1;
+        completedDays = [];
+        finalValue = inputVal;
+      } else {
+        // 'total': Keep existing Khatma startPage and retain days progress
+        startPage = settings.startPage || 1;
+        finalValue = inputVal;
       }
+    } else if (settings) {
+      startPage = settings.startPage || 1;
     }
 
     const newWird: WirdSettings = {
@@ -200,14 +228,15 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
       mode: tempMode,
       value: finalValue,
       startDate: settings ? settings.startDate : new Date().toISOString(),
-      currentDay: settings ? settings.currentDay : 1,
-      completedDays: settings ? settings.completedDays : [],
+      currentDay: currentDay,
+      completedDays: completedDays,
       isActive: true,
       startPage: startPage,
       lastPage: settings?.lastPage,
       lastAyah: settings?.lastAyah,
       reminderEnabled: tempReminderEnabled,
-      reminderTime: tempReminderTime
+      reminderTime: tempReminderTime,
+      lastCompletedDate: settings?.lastCompletedDate
     };
 
     let newProfiles: WirdSettings[];
@@ -228,6 +257,7 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
     setTempName('');
     setTempReminderEnabled(true);
     setTempReminderTime('09:00');
+    setCalcMethod('total');
     setActiveId(null);
     setShowSettings(true);
   };
@@ -240,6 +270,7 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
     setTempName(profile.name);
     setTempReminderEnabled(profile.reminderEnabled !== false);
     setTempReminderTime(profile.reminderTime || '09:00');
+    setCalcMethod('total');
     setShowSettings(true);
     setShowProfileMenu(false);
   };
@@ -272,6 +303,7 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
       setTempName(settings.name);
       setTempReminderEnabled(settings.reminderEnabled !== false);
       setTempReminderTime(settings.reminderTime || '09:00');
+      setCalcMethod('total');
       setShowSettings(true);
     }
   };
@@ -1098,7 +1130,7 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
                 title={isEn ? "Daily Wird Guide" : "دليل الورد اليومي"}
                 aria-label={isEn ? "Daily Wird Guide" : "دليل الورد اليومي"}
               >
-                <i className="fa-solid fa-circle-question text-lg text-black"></i>
+                <i className="fa-solid fa-circle-question text-lg"></i>
               </button>
               <ThemePageLock />
               <button

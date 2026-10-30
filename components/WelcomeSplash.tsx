@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React from 'react';
+import { motion } from 'framer-motion';
 import InteractiveBackground from './InteractiveBackground';
 import { useLanguage, Language } from '../context/LanguageContext';
+
+import { Preferences } from '@capacitor/preferences';
 
 interface WelcomeSplashProps {
   onSelectLanguage: (lang: Language) => void;
@@ -9,45 +11,49 @@ interface WelcomeSplashProps {
 
 export const WelcomeSplash: React.FC<WelcomeSplashProps> = ({ onSelectLanguage }) => {
   const { language } = useLanguage();
-  const [isExiting, setIsExiting] = useState(false);
 
   const handleSelect = (lang: Language) => {
     try {
       localStorage.setItem('has_selected_initial_language', 'true');
+      localStorage.setItem('home_layout_system', 'modern');
+      Preferences.set({ key: 'has_selected_initial_language', value: 'true' }).catch(() => {});
+      Preferences.set({ key: 'home_layout_system', value: 'modern' }).catch(() => {});
     } catch (e) {}
-    setIsExiting(true);
-    setTimeout(() => {
-      onSelectLanguage(lang);
-    }, 350);
+    onSelectLanguage(lang);
+  };
+
+  const goldenParticlesTheme: any = {
+    name: 'golden_splash',
+    bgColor: '#F8FAFC',
+    textColor: '#78350F',
+    font: "'Cairo', sans-serif",
+    palette: ['#F59E0B', '#D97706', '#B45309', '#78350F']
   };
 
   return (
-    <AnimatePresence>
-      {!isExiting && (
-        <motion.div
-          key="welcome-splash"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0, scale: 0.98 }}
-          transition={{ duration: 0.35, ease: 'easeInOut' }}
-          className="fixed inset-0 z-[9999] bg-[#F8FAFC] flex flex-col justify-between items-center px-4 py-6 sm:py-8 select-none overflow-hidden"
-          dir="rtl"
-        >
-          {/* Interactive Particle Background from Home Page */}
-          <InteractiveBackground className="fixed inset-0 z-0 pointer-events-none opacity-70" />
+    <motion.div
+      key="welcome-splash"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.25, ease: 'easeOut' }}
+      className="fixed inset-0 z-[9999] bg-[#F8FAFC] flex flex-col justify-between items-center px-4 py-6 sm:py-8 select-none overflow-hidden"
+      dir="rtl"
+    >
+          {/* Interactive Particle Background with golden palette matching Modern Design */}
+          <InteractiveBackground themeOverride={goldenParticlesTheme} className="fixed inset-0 z-0 pointer-events-none opacity-60" />
 
-          {/* Ambient Accent Bokeh Circles (Matching Home Page & image_97ed01c8.png) */}
+          {/* Ambient Accent Bokeh Circles (Matching Home Page & Modern Golden Design) */}
           <div className="absolute top-12 left-10 w-3 h-3 rounded-full bg-[#1E293B]/70 blur-[0.5px] pointer-events-none" />
           <div className="absolute top-20 right-14 w-4 h-4 rounded-full bg-[#1E293B]/60 blur-[0.5px] pointer-events-none" />
           <div className="absolute top-36 left-8 w-3.5 h-3.5 rounded-full bg-[#A855F7]/80 blur-[0.5px] pointer-events-none" />
-          <div className="absolute top-44 left-24 w-2 h-2 rounded-full bg-[#10B981]/70 blur-[0.5px] pointer-events-none" />
-          <div className="absolute top-28 left-1/3 w-2.5 h-2.5 rounded-full bg-[#14B8A6]/70 blur-[0.5px] pointer-events-none" />
+          <div className="absolute top-44 left-24 w-2 h-2 rounded-full bg-[#F59E0B]/70 blur-[0.5px] pointer-events-none" />
+          <div className="absolute top-28 left-1/3 w-2.5 h-2.5 rounded-full bg-[#D97706]/70 blur-[0.5px] pointer-events-none" />
           <div className="absolute top-52 right-1/4 w-3 h-3 rounded-full bg-[#A855F7]/60 blur-[0.5px] pointer-events-none" />
-          <div className="absolute top-64 right-10 w-2.5 h-2.5 rounded-full bg-[#10B981]/60 blur-[0.5px] pointer-events-none" />
+          <div className="absolute top-64 right-10 w-2.5 h-2.5 rounded-full bg-[#F59E0B]/60 blur-[0.5px] pointer-events-none" />
           <div className="absolute bottom-40 left-6 w-3 h-3 rounded-full bg-[#A855F7]/80 blur-[0.5px] pointer-events-none" />
           <div className="absolute bottom-28 left-8 w-3.5 h-3.5 rounded-full bg-[#1E293B]/60 blur-[0.5px] pointer-events-none" />
-          <div className="absolute bottom-32 right-10 w-3 h-3 rounded-full bg-[#10B981]/70 blur-[0.5px] pointer-events-none" />
-          <div className="absolute bottom-24 right-20 w-2.5 h-2.5 rounded-full bg-[#14B8A6]/60 blur-[0.5px] pointer-events-none" />
+          <div className="absolute bottom-32 right-10 w-3 h-3 rounded-full bg-[#F59E0B]/70 blur-[0.5px] pointer-events-none" />
+          <div className="absolute bottom-24 right-20 w-2.5 h-2.5 rounded-full bg-[#D97706]/60 blur-[0.5px] pointer-events-none" />
           <div className="absolute bottom-10 left-1/3 w-2.5 h-2.5 rounded-full bg-[#A855F7]/70 blur-[0.5px] pointer-events-none" />
 
           {/* Top Basmalah */}
@@ -58,10 +64,10 @@ export const WelcomeSplash: React.FC<WelcomeSplashProps> = ({ onSelectLanguage }
             className="relative z-10 pt-2 text-center"
           >
             <h1
-              className="text-[#1B7A53] font-black text-xl sm:text-2xl tracking-wide select-none"
+              className="text-[#78350F] font-black text-xl sm:text-2xl tracking-wide select-none"
               style={{
                 fontFamily: "'Cairo', 'Amiri', 'Amiri Quran', serif",
-                textShadow: '0 1px 0 rgba(255, 255, 255, 0.95), 0 2px 0 rgba(27, 122, 83, 0.2), 0 3px 4px rgba(0, 0, 0, 0.12)'
+                textShadow: '0 1px 0 rgba(255, 255, 255, 0.95), 0 2px 0 rgba(217, 119, 6, 0.25), 0 3px 4px rgba(0, 0, 0, 0.12)'
               }}
             >
               بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
@@ -86,8 +92,8 @@ export const WelcomeSplash: React.FC<WelcomeSplashProps> = ({ onSelectLanguage }
               <div className="absolute inset-x-8 top-0 h-[2px] bg-gradient-to-r from-transparent via-white/95 to-transparent rounded-full pointer-events-none" />
               <div className="absolute inset-x-6 bottom-0 h-[2.5px] bg-black/8 rounded-b-[2.25rem] sm:rounded-b-[2.75rem] pointer-events-none" />
 
-              {/* Subtle inner highlight border matching the theme */}
-              <div className="absolute inset-1.5 rounded-[1.85rem] sm:rounded-[2.35rem] border border-emerald-500/20 pointer-events-none" />
+              {/* Subtle inner highlight border matching the golden theme */}
+              <div className="absolute inset-1.5 rounded-[1.85rem] sm:rounded-[2.35rem] border border-amber-400/35 shadow-[0_0_12px_rgba(245,158,11,0.2)] pointer-events-none" />
               <img
                 src="/app_icon.png"
                 alt="مصحف أحمد و ليلى"
@@ -103,10 +109,10 @@ export const WelcomeSplash: React.FC<WelcomeSplashProps> = ({ onSelectLanguage }
               className="text-center mt-5"
             >
               <h2
-                className="text-3xl sm:text-4xl font-black text-[#1B7A53] tracking-tight leading-snug select-none"
+                className="text-3xl sm:text-4xl font-black text-[#78350F] tracking-tight leading-snug select-none"
                 style={{
                   fontFamily: "'Cairo', sans-serif",
-                  textShadow: '0 1px 0 rgba(255, 255, 255, 0.95), 0 2px 0 rgba(27, 122, 83, 0.28), 0 3px 3px rgba(0, 0, 0, 0.12), 0 5px 8px rgba(0, 0, 0, 0.12)'
+                  textShadow: '0 1px 0 rgba(255, 255, 255, 0.95), 0 2px 0 rgba(217, 119, 6, 0.3), 0 3px 3px rgba(0, 0, 0, 0.12), 0 5px 8px rgba(180, 83, 9, 0.15)'
                 }}
               >
                 مصحف أحمد و ليلى
@@ -129,9 +135,9 @@ export const WelcomeSplash: React.FC<WelcomeSplashProps> = ({ onSelectLanguage }
               transition={{ delay: 0.3, duration: 0.5 }}
               className="my-3 sm:my-4 w-44 sm:w-56 flex items-center justify-center gap-2"
             >
-              <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent via-emerald-300 to-emerald-400" />
-              <div className="w-2 h-2 rotate-45 bg-[#1B7A53] rounded-[1px] shadow-sm" />
-              <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent via-emerald-300 to-emerald-400" />
+              <div className="h-[1.5px] flex-1 bg-gradient-to-r from-transparent via-amber-300 to-amber-500" />
+              <div className="w-2.5 h-2.5 rotate-45 bg-gradient-to-tr from-amber-600 via-amber-500 to-yellow-400 rounded-[1px] shadow-sm border border-amber-200/90" />
+              <div className="h-[1.5px] flex-1 bg-gradient-to-l from-transparent via-amber-300 to-amber-500" />
             </motion.div>
 
             {/* Language Prompt Label */}
@@ -168,18 +174,18 @@ export const WelcomeSplash: React.FC<WelcomeSplashProps> = ({ onSelectLanguage }
                 className="w-full h-14 relative overflow-hidden rounded-2xl font-black text-xl text-white flex items-center justify-center cursor-pointer select-none group focus:outline-none"
                 style={{
                   fontFamily: "'Cairo', sans-serif",
-                  background: 'linear-gradient(155deg, #248B5F 0%, #176B47 100%)',
-                  border: '1px solid rgba(255, 255, 255, 0.4)',
-                  boxShadow: '0 6px 0 #0F4930, 0 12px 24px -2px rgba(23, 107, 71, 0.42), inset 0 1.5px 2px rgba(255, 255, 255, 0.65), inset 0 -2px 4px rgba(0, 0, 0, 0.2)',
+                  background: 'linear-gradient(155deg, #F59E0B 0%, #D97706 40%, #B45309 80%, #92400E 100%)',
+                  border: '1.5px solid rgba(254, 243, 199, 0.7)',
+                  boxShadow: '0 6px 0 #78350F, 0 14px 28px -2px rgba(180, 83, 9, 0.45), inset 0 2px 2px rgba(255, 255, 255, 0.7), inset 0 -2px 4px rgba(0, 0, 0, 0.25)',
                   color: '#FFFFFF',
-                  textShadow: '0 1.5px 3px rgba(0, 0, 0, 0.45)',
+                  textShadow: '0 1.5px 3px rgba(0, 0, 0, 0.45), 0 1px 1px rgba(120, 53, 15, 0.8)',
                 }}
               >
                 {/* 3D Glossy specular sheen */}
-                <div className="absolute inset-x-2 top-0.5 h-[48%] rounded-t-[14px] bg-gradient-to-b from-white/35 via-white/12 to-transparent pointer-events-none" />
-                <div className="absolute inset-x-6 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/85 to-transparent rounded-full pointer-events-none" />
+                <div className="absolute inset-x-2 top-0.5 h-[48%] rounded-t-[14px] bg-gradient-to-b from-white/40 via-white/15 to-transparent pointer-events-none" />
+                <div className="absolute inset-x-6 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/95 to-transparent rounded-full pointer-events-none" />
                 <div className="absolute inset-x-4 bottom-0 h-[2px] bg-black/20 rounded-b-2xl pointer-events-none" />
-                <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-transparent via-white/18 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
 
                 <span className="relative z-10 drop-shadow-sm">العربية</span>
               </motion.button>
@@ -194,18 +200,18 @@ export const WelcomeSplash: React.FC<WelcomeSplashProps> = ({ onSelectLanguage }
                 className="w-full h-14 relative overflow-hidden rounded-2xl font-black text-xl flex items-center justify-center cursor-pointer select-none group focus:outline-none"
                 style={{
                   fontFamily: "'Cairo', 'Inter', sans-serif",
-                  background: 'linear-gradient(160deg, #FFFFFF 0%, #F4FAF7 100%)',
-                  border: '2px solid #1B7A53',
-                  boxShadow: '0 6px 0 #125539, 0 12px 24px -2px rgba(0, 0, 0, 0.12), inset 0 2px 2px rgba(255, 255, 255, 0.95), inset 0 -2px 4px rgba(27, 122, 83, 0.12)',
-                  color: '#1B7A53',
-                  textShadow: '0 1px 0 rgba(255, 255, 255, 0.95), 0 1.5px 2px rgba(27, 122, 83, 0.25)',
+                  background: 'linear-gradient(160deg, #FFFFFF 0%, #FFFDF9 60%, #FEF8E8 100%)',
+                  border: '2px solid #D97706',
+                  boxShadow: '0 6px 0 #92400E, 0 14px 28px -2px rgba(180, 83, 9, 0.18), inset 0 2px 2px rgba(255, 255, 255, 0.95), inset 0 -2px 4px rgba(217, 119, 6, 0.12)',
+                  color: '#78350F',
+                  textShadow: '0 1px 0 rgba(255, 255, 255, 0.95), 0 1.5px 2px rgba(217, 119, 6, 0.25)',
                 }}
               >
                 {/* 3D Glossy specular sheen */}
                 <div className="absolute inset-x-2 top-0.5 h-[48%] rounded-t-[14px] bg-gradient-to-b from-white/60 via-white/20 to-transparent pointer-events-none" />
                 <div className="absolute inset-x-6 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/95 to-transparent rounded-full pointer-events-none" />
-                <div className="absolute inset-x-4 bottom-0 h-[2px] bg-emerald-900/10 rounded-b-2xl pointer-events-none" />
-                <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-transparent via-emerald-100/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                <div className="absolute inset-x-4 bottom-0 h-[2px] bg-amber-900/10 rounded-b-2xl pointer-events-none" />
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-transparent via-amber-100/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
 
                 <span className="relative z-10 drop-shadow-xs">English</span>
               </motion.button>
@@ -263,8 +269,6 @@ export const WelcomeSplash: React.FC<WelcomeSplashProps> = ({ onSelectLanguage }
             </motion.div>
           </div>
         </motion.div>
-      )}
-    </AnimatePresence>
   );
 };
 

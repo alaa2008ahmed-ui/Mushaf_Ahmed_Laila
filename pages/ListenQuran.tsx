@@ -814,7 +814,7 @@ function ListenQuran({ onBack, onNavigate }: ListenQuranProps) {
                                 title={tListen('guide', language)}
                                 aria-label={tListen('guide', language)}
                             >
-                                <i className="fa-solid fa-circle-question text-lg text-black"></i>
+                                <i className="fa-solid fa-circle-question text-lg"></i>
                             </button>
                             <ThemePageLock />
                             <button

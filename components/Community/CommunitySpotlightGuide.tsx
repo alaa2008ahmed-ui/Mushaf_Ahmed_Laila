@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   Sparkles, ChevronRight, ChevronLeft, Check, X, HelpCircle, 
   Eye, Info, MessageSquare, Users, BookOpen, Send, Mic, Paperclip, Smile,
-  Clock, Bell, Calendar, Volume2, Settings, MapPin, Moon, FileText, Share2, Sliders, Compass
+  Clock, Bell, Calendar, Volume2, Settings, MapPin, Moon, FileText, Share2, Sliders, Compass, LayoutGrid
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 
@@ -16,7 +16,7 @@ export interface SpotlightStep {
   descEn: string;
   badgeAr?: string;
   badgeEn?: string;
-  iconName?: 'lang' | 'tab' | 'user' | 'country' | 'lock' | 'action' | 'nav' | 'profile' | 'quran' | 'search' | 'group' | 'block' | 'chat' | 'verse' | 'attach' | 'emoji' | 'text' | 'voice' | 'clock' | 'bell' | 'calendar' | 'volume' | 'gear' | 'map' | 'moon' | 'file' | 'share' | 'slider' | 'compass';
+  iconName?: 'lang' | 'tab' | 'user' | 'country' | 'lock' | 'action' | 'nav' | 'profile' | 'quran' | 'search' | 'group' | 'block' | 'chat' | 'verse' | 'attach' | 'emoji' | 'text' | 'voice' | 'clock' | 'bell' | 'calendar' | 'volume' | 'gear' | 'map' | 'moon' | 'file' | 'share' | 'slider' | 'compass' | 'widgets';
   accentColor: string; // e.g. '#0284c7', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'
   gradient: string; // e.g. 'from-sky-500 to-blue-600'
   preferredPlacement?: 'top' | 'bottom' | 'center';
@@ -65,6 +65,7 @@ export const resetCommunityGuides = (): void => {
       'tasbeeh_page_spotlight',
       'prophetic_seerah_page_spotlight',
       'prayer_times_page_spotlight',
+      'prayer_times_page_spotlight_v2',
       'monthly_prayer_times_spotlight',
       'prayer_settings_modal_spotlight',
       'daily_wird_progress_tour',
@@ -143,6 +144,8 @@ const renderStepIcon = (iconName: string | undefined, color: string) => {
       return <Sliders size={16} />;
     case 'compass':
       return <Compass size={16} />;
+    case 'widgets':
+      return <LayoutGrid size={16} />;
     default:
       return <Sparkles size={16} />;
   }
@@ -485,14 +488,16 @@ export const CommunitySpotlightGuide: React.FC<CommunitySpotlightGuideProps> = (
       cardPositionStyle = {
         top: Math.min(targetRect.bottom + margin, screenHeight - cardHeight - 20),
         left: computedLeft,
-        width: cardWidth
+        width: cardWidth,
+        maxHeight: Math.max(240, screenHeight - targetRect.bottom - margin - 18)
       };
     } else if (spaceAbove >= cardHeight + margin + 10) {
       pointerPlacement = 'bottom';
       cardPositionStyle = {
         top: Math.max(12, targetRect.top - cardHeight - margin),
         left: computedLeft,
-        width: cardWidth
+        width: cardWidth,
+        maxHeight: Math.max(240, targetRect.top - margin - 18)
       };
     } else {
       // If neither spaceBelow nor spaceAbove can fit the card comfortably, center it in the middle of the screen!
@@ -691,7 +696,7 @@ export const CommunitySpotlightGuide: React.FC<CommunitySpotlightGuideProps> = (
         </h3>
 
         {/* Detailed Explanation */}
-        <p className="text-xs sm:text-sm text-slate-200 leading-relaxed font-medium mb-4">
+        <p className="text-xs sm:text-sm text-slate-200 leading-relaxed font-medium mb-4 whitespace-pre-line">
           {effectiveIsEn ? (step.descEn || formatNumber(step.descAr)) : step.descAr}
         </p>
 

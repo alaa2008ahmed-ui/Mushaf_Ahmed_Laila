@@ -16,6 +16,7 @@ interface AutoSilentPluginInterface {
   cancelAllSilent(): Promise<{ success: boolean }>;
   updateWidget?(): Promise<{ success: boolean }>;
   updatePersistentNotification(): Promise<{ success: boolean }>;
+  updateAlertsGroupSummary?(): Promise<{ success: boolean }>;
   setPersistentNotificationEnabled(options: { enabled: boolean }): Promise<{ success: boolean; enabled: boolean }>;
   checkBatteryOptimization(): Promise<{ isIgnoring: boolean }>;
   requestBatteryOptimization(): Promise<void>;
@@ -24,6 +25,7 @@ interface AutoSilentPluginInterface {
   stopTone(): Promise<{ success: boolean }>;
   setAppLanguage?(options: { language: string }): Promise<{ success: boolean; language: string }>;
   getPendingShortcut?(): Promise<{ target?: string; seq?: number }>;
+  markShortcutConsumed?(options: { seq: number }): Promise<{ success: boolean }>;
 }
 
 export const AutoSilentMode = registerPlugin<AutoSilentPluginInterface>('AutoSilentMode');
@@ -102,6 +104,18 @@ export const updateNativePersistentNotification = async (): Promise<void> => {
     await AutoSilentMode.updatePersistentNotification();
   } catch (e) {
     console.warn('updateNativePersistentNotification error:', e);
+  }
+};
+
+/**
+ * Updates the native alerts group summary card in the Android notification drawer.
+ */
+export const updateNativeAlertsGroupSummary = async (): Promise<void> => {
+  if (Capacitor.getPlatform() !== 'android') return;
+  try {
+    await AutoSilentMode.updateAlertsGroupSummary?.();
+  } catch (e) {
+    console.warn('updateNativeAlertsGroupSummary error:', e);
   }
 };
 
@@ -231,6 +245,21 @@ export const getPendingShortcutInfo = async (): Promise<PendingShortcutResult | 
 export const getPendingShortcut = async (): Promise<string | null> => {
   const info = await getPendingShortcutInfo();
   return info ? info.target : null;
+};
+
+/**
+ * Marks a shortcut sequence as consumed so native Android cancels any queued dispatches
+ * and doesn't re-trigger it on resume.
+ */
+export const markNativeShortcutConsumed = async (seq?: number): Promise<void> => {
+  if (Capacitor.getPlatform() !== 'android') return;
+  try {
+    if (AutoSilentMode.markShortcutConsumed) {
+      await AutoSilentMode.markShortcutConsumed({ seq: seq || 0 });
+    }
+  } catch (e) {
+    console.warn('markNativeShortcutConsumed error:', e);
+  }
 };
 
 

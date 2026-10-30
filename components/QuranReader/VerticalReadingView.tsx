@@ -774,39 +774,82 @@ const VerticalReadingView: React.FC<VerticalReadingViewProps> = React.memo(({
                     if (item && item.type === 'ayah') {
                         // Detect Juz change
                         if (item.juz && lastNotifiedJuz.current !== null && item.juz !== lastNotifiedJuz.current) {
+                            const isBackward = item.juz < lastNotifiedJuz.current;
                             if (readingMode === 'bilingual') {
-                                showJuzNotification?.(`بداية الجزء ${toArabic(item.juz)} • Start of Juz ${item.juz}`);
+                                const text = isBackward
+                                    ? `نهاية الجزء ${toArabic(item.juz)} • End of Juz ${item.juz}`
+                                    : `بداية الجزء ${toArabic(item.juz)} • Start of Juz ${item.juz}`;
+                                showJuzNotification?.(text);
                             } else if (readingMode === 'translation') {
-                                showJuzNotification?.(`Start of Juz ${item.juz}`);
+                                const text = isBackward
+                                    ? `End of Juz ${item.juz}`
+                                    : `Start of Juz ${item.juz}`;
+                                showJuzNotification?.(text);
                             } else {
-                                showJuzNotification?.(`بداية الجزء ${toArabic(item.juz)}`);
+                                const text = isBackward
+                                    ? `نهاية الجزء ${toArabic(item.juz)}`
+                                    : `بداية الجزء ${toArabic(item.juz)}`;
+                                showJuzNotification?.(text);
                             }
                         }
                         lastNotifiedJuz.current = item.juz;
 
                         // Detect Quarter change
                         if (item.hizbQuarter && lastNotifiedQuarter.current !== null && item.hizbQuarter !== lastNotifiedQuarter.current) {
+                            const isBackward = item.hizbQuarter < lastNotifiedQuarter.current;
                             let label = '';
                             const qInHizb = ((item.hizbQuarter - 1) % 4) + 1;
                             const hizbNum = Math.ceil(item.hizbQuarter / 4);
+                            const prevHizbNum = Math.ceil(lastNotifiedQuarter.current / 4);
+
                             if (readingMode === 'bilingual') {
                                 let labelAr = '';
                                 let labelEn = '';
-                                if (qInHizb === 1) { labelAr = `بداية الحزب ${toArabic(hizbNum)}`; labelEn = `Start of Hizb ${hizbNum}`; }
-                                else if (qInHizb === 2) { labelAr = `ربع الحزب ${toArabic(hizbNum)}`; labelEn = `Quarter of Hizb ${hizbNum}`; }
-                                else if (qInHizb === 3) { labelAr = `نصف الحزب ${toArabic(hizbNum)}`; labelEn = `Half of Hizb ${hizbNum}`; }
-                                else if (qInHizb === 4) { labelAr = `ثلاثة أرباع الحزب ${toArabic(hizbNum)}`; labelEn = `Three Quarters of Hizb ${hizbNum}`; }
+                                if (isBackward) {
+                                    if (qInHizb === 4 || hizbNum < prevHizbNum) {
+                                        labelAr = `نهاية الحزب ${toArabic(hizbNum)}`;
+                                        labelEn = `End of Hizb ${hizbNum}`;
+                                    } else if (qInHizb === 3) {
+                                        labelAr = `نصف الحزب ${toArabic(hizbNum)}`;
+                                        labelEn = `Half of Hizb ${hizbNum}`;
+                                    } else if (qInHizb === 2) {
+                                        labelAr = `ربع الحزب ${toArabic(hizbNum)}`;
+                                        labelEn = `Quarter of Hizb ${hizbNum}`;
+                                    } else {
+                                        labelAr = `بداية الحزب ${toArabic(hizbNum)}`;
+                                        labelEn = `Start of Hizb ${hizbNum}`;
+                                    }
+                                } else {
+                                    if (qInHizb === 1) { labelAr = `بداية الحزب ${toArabic(hizbNum)}`; labelEn = `Start of Hizb ${hizbNum}`; }
+                                    else if (qInHizb === 2) { labelAr = `ربع الحزب ${toArabic(hizbNum)}`; labelEn = `Quarter of Hizb ${hizbNum}`; }
+                                    else if (qInHizb === 3) { labelAr = `نصف الحزب ${toArabic(hizbNum)}`; labelEn = `Half of Hizb ${hizbNum}`; }
+                                    else if (qInHizb === 4) { labelAr = `ثلاثة أرباع الحزب ${toArabic(hizbNum)}`; labelEn = `Three Quarters of Hizb ${hizbNum}`; }
+                                }
                                 label = `${labelAr} • ${labelEn}`;
                             } else if (readingMode === 'translation') {
-                                if (qInHizb === 1) label = `Start of Hizb ${hizbNum}`;
-                                else if (qInHizb === 2) label = `Quarter of Hizb ${hizbNum}`;
-                                else if (qInHizb === 3) label = `Half of Hizb ${hizbNum}`;
-                                else if (qInHizb === 4) label = `Three Quarters of Hizb ${hizbNum}`;
+                                if (isBackward) {
+                                    if (qInHizb === 4 || hizbNum < prevHizbNum) label = `End of Hizb ${hizbNum}`;
+                                    else if (qInHizb === 3) label = `Half of Hizb ${hizbNum}`;
+                                    else if (qInHizb === 2) label = `Quarter of Hizb ${hizbNum}`;
+                                    else label = `Start of Hizb ${hizbNum}`;
+                                } else {
+                                    if (qInHizb === 1) label = `Start of Hizb ${hizbNum}`;
+                                    else if (qInHizb === 2) label = `Quarter of Hizb ${hizbNum}`;
+                                    else if (qInHizb === 3) label = `Half of Hizb ${hizbNum}`;
+                                    else if (qInHizb === 4) label = `Three Quarters of Hizb ${hizbNum}`;
+                                }
                             } else {
-                                if (qInHizb === 1) label = `بداية الحزب ${toArabic(hizbNum)}`;
-                                else if (qInHizb === 2) label = `ربع الحزب ${toArabic(hizbNum)}`;
-                                else if (qInHizb === 3) label = `نصف الحزب ${toArabic(hizbNum)}`;
-                                else if (qInHizb === 4) label = `ثلاثة أرباع الحزب ${toArabic(hizbNum)}`;
+                                if (isBackward) {
+                                    if (qInHizb === 4 || hizbNum < prevHizbNum) label = `نهاية الحزب ${toArabic(hizbNum)}`;
+                                    else if (qInHizb === 3) label = `نصف الحزب ${toArabic(hizbNum)}`;
+                                    else if (qInHizb === 2) label = `ربع الحزب ${toArabic(hizbNum)}`;
+                                    else label = `بداية الحزب ${toArabic(hizbNum)}`;
+                                } else {
+                                    if (qInHizb === 1) label = `بداية الحزب ${toArabic(hizbNum)}`;
+                                    else if (qInHizb === 2) label = `ربع الحزب ${toArabic(hizbNum)}`;
+                                    else if (qInHizb === 3) label = `نصف الحزب ${toArabic(hizbNum)}`;
+                                    else if (qInHizb === 4) label = `ثلاثة أرباع الحزب ${toArabic(hizbNum)}`;
+                                }
                             }
                             
                             if (label) showMarkerNotification?.('quarter', label);

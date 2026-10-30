@@ -64,7 +64,35 @@ public class AutoSilentPlugin extends Plugin {
     @PluginMethod
     public void syncDailyWird(PluginCall call) {
         try {
-            DailyWirdAlarmReceiver.scheduleNextAlarms(getContext());
+            Context context = getContext();
+            if (context != null) {
+                // If today's reading is already finished, dismiss any active wird notifications from drawer immediately
+                SharedPreferences storage = context.getSharedPreferences("CapacitorStorage", Context.MODE_PRIVATE);
+                String rawJson = storage.getString("dailyWirdSettings_v2", null);
+                if (rawJson != null && !rawJson.trim().isEmpty()) {
+                    try {
+                        org.json.JSONObject root = new org.json.JSONObject(rawJson);
+                        org.json.JSONArray profiles = root.optJSONArray("profiles");
+                        String activeId = root.optString("activeId", "");
+                        if (profiles != null && profiles.length() > 0) {
+                            org.json.JSONObject activeProfile = profiles.getJSONObject(0);
+                            for (int i = 0; i < profiles.length(); i++) {
+                                org.json.JSONObject p = profiles.getJSONObject(i);
+                                if (activeId.equals(p.optString("id"))) {
+                                    activeProfile = p;
+                                    break;
+                                }
+                            }
+                            String todayDateStr = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(new java.util.Date());
+                            String lastCompleted = activeProfile.optString("lastCompletedDate", "");
+                            if (lastCompleted != null && lastCompleted.startsWith(todayDateStr)) {
+                                DailyWirdAlarmReceiver.cancelActiveWirdNotifications(context);
+                            }
+                        }
+                    } catch (Exception ignored) {}
+                }
+                DailyWirdAlarmReceiver.scheduleNextAlarms(context);
+            }
             call.resolve();
         } catch (Exception e) {
             call.reject("Could not sync daily wird alarms: " + e.getMessage());
@@ -217,6 +245,17 @@ public class AutoSilentPlugin extends Plugin {
     public void updatePersistentNotification(PluginCall call) {
         Context context = getContext();
         PersistentPrayerNotification.update(context);
+        JSObject ret = new JSObject();
+        ret.put("success", true);
+        call.resolve(ret);
+    }
+
+    @PluginMethod
+    public void updateAlertsGroupSummary(PluginCall call) {
+        Context context = getContext();
+        if (context != null) {
+            AlertsGroupHelper.updateGroupSummary(context, null);
+        }
         JSObject ret = new JSObject();
         ret.put("success", true);
         call.resolve(ret);
@@ -431,12 +470,20 @@ public class AutoSilentPlugin extends Plugin {
     public void getPendingShortcut(PluginCall call) {
         String target = MainActivity.pendingShortcut;
         long seq = MainActivity.pendingShortcutSeq;
+        if (seq > 0 && seq <= MainActivity.lastConsumedShortcutSeq) {
+            target = null;
+        }
         MainActivity.pendingShortcut = null;
         try {
             SharedPreferences prefs = getContext().getSharedPreferences("CapacitorStorage", Context.MODE_PRIVATE);
             if (target == null || target.isEmpty()) {
-                target = prefs.getString("pending_shortcut_target", null);
-                seq = prefs.getLong("pending_shortcut_seq", seq);
+                long storedSeq = prefs.getLong("pending_shortcut_seq", 0L);
+                if (storedSeq > 0 && storedSeq <= MainActivity.lastConsumedShortcutSeq) {
+                    target = null;
+                } else {
+                    target = prefs.getString("pending_shortcut_target", null);
+                    seq = storedSeq;
+                }
             }
             prefs.edit()
                     .remove("pending_shortcut_target")
@@ -444,9 +491,22 @@ public class AutoSilentPlugin extends Plugin {
                     .apply();
         } catch (Exception ignored) {}
 
+        if (seq > 0 && target != null && !target.isEmpty()) {
+            MainActivity.lastConsumedShortcutSeq = Math.max(MainActivity.lastConsumedShortcutSeq, seq);
+        }
+
         JSObject ret = new JSObject();
         ret.put("target", target != null ? target : "");
         ret.put("seq", seq);
+        call.resolve(ret);
+    }
+
+    @PluginMethod
+    public void markShortcutConsumed(PluginCall call) {
+        long seq = call.hasOption("seq") ? call.getLong("seq", 0L) : 0L;
+        MainActivity.clearPendingShortcutState(getContext(), seq);
+        JSObject ret = new JSObject();
+        ret.put("success", true);
         call.resolve(ret);
     }
 

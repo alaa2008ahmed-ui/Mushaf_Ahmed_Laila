@@ -966,13 +966,49 @@ export const PRAYER_TIMES_PAGE_STEPS: SpotlightStep[] = [
     targetSelector: '#prayer-top-bar-settings-btn',
     titleAr: 'إعدادات الصلاة والإشعارات',
     titleEn: 'Prayer Settings & Notifications',
-    descAr: 'اضغط هنا لفتح قائمة إعدادات الصلاة والإشعارات: تفعيل الإشعار المستمر لمواقيت الصلاة، كتم التنبيهات الصوتية مؤقتاً، وتنبيهات أذكار قيام الليل واليوم.',
-    descEn: 'Tap here to open prayer settings and notifications: manage persistent prayer notification, temporarily mute audio alerts, and customize night and daily athkar reminders.',
+    descAr: 'اضغط هنا لفتح قائمة إعدادات الصلاة والإشعارات: تفعيل الإشعار المستمر لمواقيت الصلاة، تخصيص التطبيقات المصغرة (الودجت)، كتم التنبيهات الصوتية مؤقتاً، وتنبيهات أذكار قيام الليل واليوم.',
+    descEn: 'Tap here to open prayer settings and notifications: manage persistent prayer notification, customize home screen widgets, temporarily mute audio alerts, and configure night and daily athkar reminders.',
     badgeAr: 'إعدادات الصلاة',
     badgeEn: 'Prayer Settings',
     iconName: 'gear',
     accentColor: '#8b5cf6',
     gradient: 'from-violet-500 to-purple-600'
+  },
+  {
+    id: 'prayer_home_widgets_guide',
+    targetSelector: '#prayer-top-bar-settings-btn',
+    preferredPlacement: 'top',
+    titleAr: 'التطبيقات المصغرة الثلاثة (ودجت الشاشة)',
+    titleEn: 'The 3 Home Screen Widgets & Settings',
+    descAr: `يوفر التطبيق 3 تطبيقات مصغرة (ودجت) يمكنك إضافتها على شاشة هاتفك الرئيسية لمتابعة مواقيت الصلاة لحظياً دون فتح التطبيق:
+• الودجت الشامل (الكبير): يعرض جدول الصلوات الست كاملاً، الصلاة القادمة بالعد التنازلي الحي، التاريخ الهجري والميلادي، وأوقات منتصف الليل والثلث الأخير.
+• ودجت البطاقة المتوسطة: بطاقة أنيقة تعرض المدينة والتاريخ مع إبراز الصلاة القادمة والعد التنازلي وشريط مواقيت الصلوات.
+• الودجت المدمج (الصغير): تصميم مختصر ومرتب يعرض اسم المدينة والصلاة القادمة وموعدها في مساحة مدمجة.
+
+🎨 التغير التلقائي مع الثيم:
+تتلون التطبيقات المصغرة الثلاثة وتتغير تصاميمها تلقائياً وفورياً لتنسجم مع أي ثيم تختاره داخل التطبيق (فاتح، داكن، ذهبي، أو افتراضي).
+
+⚙️ تثبيت اللون أو اللغة من الإعدادات:
+من زر الإعدادات (⚙️) بالأعلى ← قسم «التطبيقات المصغرة (الودجت)»، يمكنك:
+• تثبيت ثيم الودجت: للاحتفاظ بلون ومظهر الودجت الحالي ثابتاً على شاشة هاتفك دون أن يتأثر عند تغيير ثيم التطبيق لاحقاً.
+• تثبيت العربية أو الإنجليزية: لتثبيت لغة عرض الودجت بالعربية دائماً أو بالإنجليزية دائماً بشكل مستقل تماماً عن لغة التطبيق.`,
+    descEn: `The app provides 3 Home Screen Widgets you can add directly to your phone's home screen to track prayer times live without opening the app:
+• Full Comprehensive Widget: Displays all six daily prayer times, next prayer with live countdown, Hijri & Gregorian dates, plus Midnight and Last Third times.
+• Medium Card Widget: An elegant card showing your city and date while highlighting the upcoming prayer, countdown, and daily prayer strip.
+• Compact Mini Widget: A clean, space-saving layout showing your city, the next prayer, and its exact time.
+
+🎨 Automatic Theme Sync:
+All three widgets automatically and instantly adapt their colors and styling whenever you change the app theme (light, dark, golden, or default).
+
+⚙️ Lock Color or Language via Settings:
+Tap the Settings icon (⚙️) above → "Home Screen Widgets" section to:
+• Lock Widget Theme: Keep your widget's current color palette fixed on your phone screen even if you switch the app theme later.
+• Lock Arabic / Lock English: Pin the widget display language permanently to Arabic or English independently of the app language.`,
+    badgeAr: 'التطبيقات المصغرة • 3 أشكال',
+    badgeEn: '3 Home Widgets',
+    iconName: 'widgets',
+    accentColor: '#10b981',
+    gradient: 'from-emerald-500 to-teal-600'
   },
   {
     id: 'prayer_nearby_mosques',

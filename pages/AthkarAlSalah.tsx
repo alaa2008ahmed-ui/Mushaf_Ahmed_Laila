@@ -76,6 +76,7 @@ const SalahZikrCard = ({
         e.stopPropagation();
         const textToPlay = isEn ? (zikr.textEn || zikr.text) : zikr.text;
         playTTS(textToPlay, { 
+            isEn,
             onToast: (msg) => {
                 if (isEn) {
                     if (msg.includes('جاري تشغيل')) setToastMessage('Playing audio...');
@@ -415,7 +416,11 @@ function AthkarAlSalah({ onBack, onNavigate }: AthkarAlSalahProps) {
             : (isEn ? "Prayer Adhkar" : "أذكار الصلوات"));
 
     return (
-        <div className="h-screen flex flex-col overflow-hidden bg-transparent" dir={isEn ? 'ltr' : 'rtl'}>
+        <div 
+            className="h-screen flex flex-col overflow-hidden transition-colors" 
+            dir={isEn ? 'ltr' : 'rtl'}
+            style={{ backgroundColor: isBlackTheme ? '#000000' : (theme.bgColor || (theme.isDark ? '#0F172A' : '#F5F7FA')) }}
+        >
             <header className="app-top-bar" dir={isEn ? 'ltr' : 'rtl'}>
                 <div className="app-top-bar__inner">
                     <div className="relative flex items-center justify-center w-full min-h-[44px]">
@@ -448,7 +453,7 @@ function AthkarAlSalah({ onBack, onNavigate }: AthkarAlSalahProps) {
                                 title={isEn ? "Athkar Guide" : "دليل أذكار الصلاة"}
                                 aria-label={isEn ? "Athkar Guide" : "دليل أذكار الصلاة"}
                             >
-                                <i className="fa-solid fa-circle-question text-lg text-black"></i>
+                                <i className="fa-solid fa-circle-question text-lg"></i>
                             </button>
                             <ThemePageLock />
                             <button
@@ -464,20 +469,25 @@ function AthkarAlSalah({ onBack, onNavigate }: AthkarAlSalahProps) {
                 </div>
             </header>
 
-            <main className="flex-1 overflow-y-auto hide-scrollbar relative max-w-3xl mx-auto w-full px-4 pt-2 pb-4 flex flex-col">
+            <main className="flex-1 overflow-y-auto hide-scrollbar relative max-w-3xl mx-auto w-full px-4 pt-2 pb-7 sm:pb-8 pb-[calc(env(safe-area-inset-bottom,0px)+1.75rem)] flex flex-col">
                 {/* Controls Bar: Search and View Mode Switch - Matches Adia/OthersPage */}
                 <div className="mb-6 max-w-3xl mx-auto w-full flex items-center gap-2 z-10 shrink-0" dir={isEn ? 'ltr' : 'rtl'}>
                     {/* Search Input */}
                     <div 
-                        className="relative flex-1 border-2 rounded-2xl overflow-hidden focus-within:ring-2 transition-all shadow-sm" 
-                        style={{ borderColor: cardBorderColor, ...(isDefaultTheme ? { focusRingColor: '#000'} : { focusRingColor: theme.palette[0]}) }}
+                        className="relative flex-1 rounded-2xl overflow-hidden focus-within:ring-2 transition-all shadow-sm" 
+                        style={{ 
+                            backgroundColor: isBlackTheme ? '#111111' : (theme.isDark ? '#1e293b' : '#ffffff'),
+                            borderColor: cardBorderColor,
+                            boxShadow: theme.isDark ? 'none' : '0 4px 14px rgba(0, 0, 0, 0.04)',
+                            ...(isDefaultTheme ? { focusRingColor: '#000'} : { focusRingColor: theme.palette[0]}) 
+                        }}
                     >
                         <input 
                             type="text" 
                             placeholder={isEn ? "Search prayer remembrances..." : "ابحث في أذكار الصلاة..."} 
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className={`w-full bg-black/5 dark:bg-white/5 py-3 ${isEn ? 'pl-12 pr-10 text-left font-sans' : 'pr-12 pl-10 text-right font-kufi'} focus:outline-none placeholder-gray-500 dark:placeholder-gray-400`}
+                            className={`w-full bg-transparent py-3 ${isEn ? 'pl-12 pr-10 text-left font-sans' : 'pr-12 pl-10 text-right font-kufi'} focus:outline-none placeholder-gray-500 dark:placeholder-gray-400`}
                             style={{ color: 'var(--text-color)' }}
                         />
                         <i 
@@ -631,7 +641,7 @@ function AthkarAlSalah({ onBack, onNavigate }: AthkarAlSalahProps) {
                         </div>
                     </div>
                 )}
-                <div className="shrink-0 w-full h-32"></div>
+                <div className="shrink-0 w-full h-8"></div>
             </main>
 
             {/* Backdrop to close floating menu when clicking anywhere, absorbing the click */}
@@ -659,8 +669,8 @@ function AthkarAlSalah({ onBack, onNavigate }: AthkarAlSalahProps) {
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: menuOpenDirection === 'up' ? 20 : -20, scale: 0.9 }}
                             transition={{ duration: 0.2 }}
-                            className={`absolute ${isEn ? 'left-0 origin-bottom-left' : 'right-0 origin-bottom-right'} ${menuOpenDirection === 'up' ? 'bottom-full mb-4' : 'top-full mt-4'} themed-card rounded-2xl shadow-xl border p-2 flex flex-col gap-1 overflow-hidden w-52 z-0`}
-                            style={{ borderColor: 'var(--card-border)', color: 'var(--text-color)' }}
+                            className={`absolute ${isEn ? 'left-0 origin-bottom-left' : 'right-0 origin-bottom-right'} ${menuOpenDirection === 'up' ? 'bottom-full mb-4' : 'top-full mt-4'} bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md rounded-2xl shadow-xl border border-slate-100/80 dark:border-white/10 p-2 flex flex-col gap-1 overflow-hidden w-52 z-0`}
+                            style={{ color: 'var(--text-color)' }}
                             onClick={(e) => e.stopPropagation()}
                         >
                             <button 

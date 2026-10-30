@@ -6,6 +6,7 @@ import { ALL_DUAA } from '../data/adiaData';
 import { ADIA_EN_MAP } from '../data/adiaTranslationsEn';
 import { PhoneNotificationSettings } from '../hooks/useNotificationSettings';
 import { syncDailyWirdNotifications, ensureWirdNotificationChannel } from './dailyWirdNotificationService';
+import { updateNativeAlertsGroupSummary } from './silentMode';
 
 const ALL_ATHKAR = [...BASE_ADHKAR_MORNING, ...BASE_ADHKAR_EVENING];
 
@@ -459,7 +460,7 @@ export const setupNotifications = async (settings?: PhoneNotificationSettings, l
         return {
           ...rest,
           id: finalId,
-          group: 'com.mushaf.ahmedandlayla.APP_ALERTS_CARD',
+          group: 'com.mushaf.ahmedandlayla.GENERAL_ALERTS_CARD',
           groupSummary: false,
           smallIcon: 'ic_stat_name',
           iconColor: '#2E7D5E',
@@ -468,12 +469,14 @@ export const setupNotifications = async (settings?: PhoneNotificationSettings, l
         };
       });
       await LocalNotifications.schedule({ notifications: cleanAthkarNotifs });
+      await updateNativeAlertsGroupSummary();
     }
 
     // Synchronize Daily Wird reminders if active with app language
     try {
       await ensureWirdNotificationChannel(lang);
       await syncDailyWirdNotifications(lang);
+      await updateNativeAlertsGroupSummary();
     } catch (e) {
       console.warn('Error in syncDailyWirdNotifications from setupNotifications:', e);
     }

@@ -151,7 +151,9 @@ export const parseVoiceCommand = (
         'وردي': 'pink',
         'سماوي': 'cyan',
         'رمادي': 'gray',
-        'اسود': 'black'
+        'اسود': 'black',
+        'ذهبي': 'gold',
+        'ذهبي ملكي': 'i_royal_gold'
     };
 
     if (themeMatch) {

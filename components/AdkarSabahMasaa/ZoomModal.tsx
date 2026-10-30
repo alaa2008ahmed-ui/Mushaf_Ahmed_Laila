@@ -63,6 +63,7 @@ const ZoomModal: React.FC<ZoomModalProps> = ({ zoomedDhikr, onClose, setToastMes
             stopTTS();
         } else {
             playTTS(displayText, {
+                isEn,
                 onToast: (msg) => {
                     if (setToastMessage) setToastMessage(msg);
                 }

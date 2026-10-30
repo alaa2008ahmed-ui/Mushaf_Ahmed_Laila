@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { toArabic, SURAH_NAMES_EN } from './constants';
+import { toArabic, isDarkQuranTheme, SURAH_NAMES_EN } from './constants';
 import { X, ChevronLeft } from 'lucide-react';
 import { Keyboard } from '@capacitor/keyboard';
 import { Capacitor } from '@capacitor/core';
@@ -24,6 +24,7 @@ interface SearchModalProps {
 const SearchModal: React.FC<SearchModalProps> = ({ quranData, onSelect, onClose, isLandscape, initialQuery, readingMode = 'mushaf', currentTheme }) => {
     const { language, isRTL } = useLanguage();
     const isEn = language === 'en';
+    const isDarkTheme = isDarkQuranTheme(currentTheme);
     const modeSuffix = readingMode === 'mushaf' ? (isLandscape ? '_h' : '_v') : `_${readingMode}_${isLandscape ? 'h' : 'v'}`;
     const [initialHeight] = useState(() => typeof window !== 'undefined' ? window.innerHeight : 800);
 
@@ -295,7 +296,7 @@ const SearchModal: React.FC<SearchModalProps> = ({ quranData, onSelect, onClose,
                     
                     {/* Full Screen Modal Header without top back button */}
                     <div className="p-3 flex items-center justify-center shrink-0 relative" style={{ backgroundColor: currentTheme?.bg || '#ffffff', paddingTop: 'calc(0.75rem + env(safe-area-inset-top))' }}>
-                        <h3 className="text-sm font-extrabold px-6 py-2 rounded-xl quran-raised-card inline-flex items-center justify-center gap-2 tracking-wide" style={{ backgroundColor: currentTheme?.id === 'night' ? 'rgba(255,255,255,0.06)' : '#ffffff', color: currentTheme?.text }}>
+                        <h3 className="text-sm font-extrabold px-6 py-2 rounded-xl quran-raised-card inline-flex items-center justify-center gap-2 tracking-wide" style={{ backgroundColor: isDarkTheme ? (currentTheme?.btnBg || 'rgba(255,255,255,0.06)') : '#ffffff', color: currentTheme?.text }}>
                             <svg className="w-4 h-4 quran-3d-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: currentTheme?.accent || '#10b981' }}><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                             <span>{isEn ? "Advanced Search in Quran" : "البحث المتقدم"}</span>
                         </h3>
@@ -311,7 +312,7 @@ const SearchModal: React.FC<SearchModalProps> = ({ quranData, onSelect, onClose,
                                 placeholder={isEn ? "Search for an ayah, word, or in Hisn Al-Muslim..." : "ابحث عن آية، أو كلمة، أو في حصن المسلم..."} 
                                 className={`w-full p-3.5 ${isRTL ? "pl-12 pr-12" : "pr-12 pl-12"} rounded-2xl quran-raised-card font-bold border-none outline-none transition-all`}
                                 style={{ 
-                                    backgroundColor: currentTheme?.id === 'night' ? 'rgba(255,255,255,0.06)' : '#ffffff',
+                                    backgroundColor: isDarkTheme ? (currentTheme?.btnBg || 'rgba(255,255,255,0.06)') : '#ffffff',
                                     color: currentTheme?.text || '#000000',
                                     border: 'none',
                                     outline: 'none',
@@ -322,7 +323,7 @@ const SearchModal: React.FC<SearchModalProps> = ({ quranData, onSelect, onClose,
                                     onClick={() => handleSearchInput('')}
                                     className={`absolute ${isRTL ? "right-3" : "left-3"} top-1/2 transform -translate-y-1/2 w-7 h-7 rounded-lg quran-raised-btn flex items-center justify-center transition-all`}
                                     style={{ 
-                                        backgroundColor: currentTheme?.id === 'night' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+                                        backgroundColor: isDarkTheme ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
                                         color: currentTheme?.text 
                                     }}
                                     title={isEn ? "Clear Search" : "مسح البحث"}
@@ -379,7 +380,7 @@ const SearchModal: React.FC<SearchModalProps> = ({ quranData, onSelect, onClose,
                                     onClick={() => toggleSurah(surahNum)}
                                     className="w-full flex justify-between items-center p-3.5 quran-raised-btn rounded-2xl transition-all"
                                     style={{ 
-                                        backgroundColor: currentTheme?.id === 'night' ? 'rgba(255,255,255,0.06)' : '#ffffff',
+                                        backgroundColor: isDarkTheme ? (currentTheme?.btnBg || 'rgba(255,255,255,0.06)') : '#ffffff',
                                         color: currentTheme?.text,
                                         border: 'none',
                                     }}
@@ -401,11 +402,11 @@ const SearchModal: React.FC<SearchModalProps> = ({ quranData, onSelect, onClose,
                                 </button>
                                 
                                 {isExpanded && (
-                                    <div className={`p-2.5 mt-2 rounded-2xl ${isLandscape ? 'grid grid-cols-2 gap-2.5' : 'space-y-2.5'}`} style={{ backgroundColor: currentTheme?.id === 'night' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.015)' }}>
+                                    <div className={`p-2.5 mt-2 rounded-2xl ${isLandscape ? 'grid grid-cols-2 gap-2.5' : 'space-y-2.5'}`} style={{ backgroundColor: isDarkTheme ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.015)' }}>
                                         {group.ayahs.map((r, idx) => (
                                             <div key={idx} className="search-context-block search-main-ayah !mb-0 p-3.5 rounded-2xl quran-raised-card cursor-pointer transition-all active:scale-[0.98]" 
                                                 style={{ 
-                                                    backgroundColor: currentTheme?.id === 'night' ? 'rgba(255,255,255,0.05)' : '#ffffff',
+                                                    backgroundColor: isDarkTheme ? (currentTheme?.cardBg || 'rgba(255,255,255,0.05)') : '#ffffff',
                                                     border: 'none',
                                                 }}
                                                 onClick={() => { onSelect(r.surah, r.ayah); onClose(); }}>
@@ -444,7 +445,13 @@ const SearchModal: React.FC<SearchModalProps> = ({ quranData, onSelect, onClose,
                         </button>
                     )}
                 </div>
-                <div className="p-3.5 flex gap-2 shrink-0 z-10" style={{ backgroundColor: currentTheme?.bg || '#ffffff' }}>
+                <div 
+                    className="p-3.5 flex gap-2 shrink-0 z-10" 
+                    style={{ 
+                        backgroundColor: currentTheme?.bg || '#ffffff',
+                        paddingBottom: 'calc(max(env(safe-area-inset-bottom, 0px), 56px) + 0.75rem)'
+                    }}
+                >
                     <button 
                         onClick={onClose} 
                         className="flex-1 py-3.5 rounded-2xl text-xs font-bold w-full transition-all quran-raised-btn"

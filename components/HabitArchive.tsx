@@ -5,6 +5,7 @@ import moment from 'moment-hijri';
 import { useHabitTracker } from '../hooks/useHabitTracker';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
+import { getModernFlatTokens } from '../utils/flatDesignTokens';
 
 interface HabitArchiveProps {
     onBack: () => void;
@@ -17,13 +18,9 @@ const HabitArchive: React.FC<HabitArchiveProps> = ({ onBack, onHome, onSelectDat
     const { language } = useLanguage();
     const isEn = language === 'en';
 
-    const isBlackTheme = theme.bgColor === '#000000' || theme.name === 'أبيض وأسود' || themeKey === 'deep_black';
+    const tokens = getModernFlatTokens(theme, themeKey);
+    const isBlackTheme = tokens.isDeepBlack;
     const isDefaultTheme = themeKey === 'default' || !themeKey || theme.name?.includes('الافتراضي') || theme.name === 'Default';
-    const cardBorderColor = isDefaultTheme 
-      ? '#000000' 
-      : (isBlackTheme 
-          ? '#FFFFFF' 
-          : (theme.palette?.[0] || '#000000'));
     const hexColor = isBlackTheme ? '#FFFFFF' : (theme.palette && theme.palette.length > 0 ? theme.palette[0] : '#059669');
     
     // In default theme: Black (#000000). In black theme: White (#FFFFFF). In other themes: adapt with theme
@@ -98,8 +95,8 @@ const HabitArchive: React.FC<HabitArchiveProps> = ({ onBack, onHome, onSelectDat
 
     const renderComparisonTab = () => (
         <div 
-            className="bg-white/80 dark:bg-gray-800/80 rounded-2xl p-4 shadow-sm border mb-6"
-            style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+            className="rounded-2xl p-4 mb-6 border-0"
+            style={{ backgroundColor: tokens.cardBgColor, boxShadow: tokens.cardShadow }}
         >
             <h3 className="font-bold text-lg mb-4 text-gray-800 dark:text-gray-200 flex items-center gap-2">
                <BarChart2 className="w-5 h-5 opacity-70" style={{ color: hexColor }} />
@@ -134,8 +131,7 @@ const HabitArchive: React.FC<HabitArchiveProps> = ({ onBack, onHome, onSelectDat
             </div>
             
             <div 
-                className="flex justify-between items-center p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50 border"
-                style={{ borderColor: cardBorderColor, borderWidth: '1px', borderStyle: 'solid' }}
+                className="flex justify-between items-center p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50 border-0"
             >
                <div className="text-center">
                   <div className="text-xl font-bold font-sans" style={{ color: hexColor }}>{prog1}%</div>
@@ -160,8 +156,8 @@ const HabitArchive: React.FC<HabitArchiveProps> = ({ onBack, onHome, onSelectDat
         if (monthKeys.length < 2) {
              return (
                  <div 
-                     className="text-center p-8 opacity-70 text-sm font-bold dark:text-gray-300 bg-white/80 dark:bg-gray-800/80 rounded-2xl mb-6 border"
-                     style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                     className="text-center p-8 opacity-70 text-sm font-bold dark:text-gray-300 rounded-2xl mb-6 border-0"
+                     style={{ backgroundColor: tokens.cardBgColor, boxShadow: tokens.cardShadow }}
                  >
                      {isEn ? 'No data for more than one month to compare yet.' : 'لا توجد بيانات لأكثر من شهر للمقارنة حتى الآن.'}
                  </div>
@@ -174,8 +170,8 @@ const HabitArchive: React.FC<HabitArchiveProps> = ({ onBack, onHome, onSelectDat
 
         return (
             <div 
-                className="bg-white/80 dark:bg-gray-800/80 rounded-2xl p-4 shadow-sm border mb-6"
-                style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                className="rounded-2xl p-4 mb-6 border-0"
+                style={{ backgroundColor: tokens.cardBgColor, boxShadow: tokens.cardShadow }}
             >
                  <h3 className="font-bold text-lg mb-4 text-gray-800 dark:text-gray-200 flex items-center gap-2">
                    <CalendarDays className="w-5 h-5 opacity-70" style={{ color: hexColor }} />
@@ -210,8 +206,7 @@ const HabitArchive: React.FC<HabitArchiveProps> = ({ onBack, onHome, onSelectDat
                  </div>
                  
                  <div 
-                     className="flex justify-between items-center p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50 border"
-                     style={{ borderColor: cardBorderColor, borderWidth: '1px', borderStyle: 'solid' }}
+                     className="flex justify-between items-center p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50 border-0"
                  >
                     <div className="text-center">
                        <div className="text-xl font-bold font-sans" style={{ color: hexColor }}>{avg1}%</div>
@@ -234,7 +229,11 @@ const HabitArchive: React.FC<HabitArchiveProps> = ({ onBack, onHome, onSelectDat
     };
 
     return (
-        <div className="h-screen h-[100dvh] max-h-screen max-h-[100dvh] flex flex-col bg-transparent relative overflow-hidden" dir={isEn ? 'ltr' : 'rtl'}>
+        <div 
+            className="h-screen h-[100dvh] max-h-screen max-h-[100dvh] flex flex-col relative overflow-hidden" 
+            style={{ backgroundColor: tokens.pageBgColor, color: tokens.textColor }}
+            dir={isEn ? 'ltr' : 'rtl'}
+        >
             <header className="app-top-bar shrink-0">
                 <div className="app-top-bar__inner">
                     <div className="relative flex items-center justify-center w-full min-h-[44px]">
@@ -279,20 +278,20 @@ const HabitArchive: React.FC<HabitArchiveProps> = ({ onBack, onHome, onSelectDat
             >
                 {/* Tabs */}
                 <div 
-                    className="flex bg-gray-100 dark:bg-gray-800 rounded-xl p-1 mb-6 border"
-                    style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                    className="flex rounded-2xl p-1.5 mb-6 border-0 gap-1.5"
+                    style={{ backgroundColor: tokens.capsuleBg, boxShadow: tokens.cardShadow }}
                 >
                     <button 
-                        className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors ${activeTab === 'days' ? 'bg-white dark:bg-gray-700 shadow-sm' : 'text-gray-500 dark:text-gray-400'}`}
+                        className={`flex-1 py-2 text-sm font-bold rounded-xl transition-all cursor-pointer border-0 ${activeTab === 'days' ? 'shadow-sm' : 'opacity-60 hover:opacity-100'}`}
                         onClick={() => setActiveTab('days')}
-                        style={activeTab === 'days' ? { color: hexColor } : {}}
+                        style={activeTab === 'days' ? { backgroundColor: tokens.primaryColor, color: '#FFFFFF' } : { color: tokens.textColor }}
                     >
                         {isEn ? 'Days' : 'الأيام'}
                     </button>
                     <button 
-                        className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors ${activeTab === 'months' ? 'bg-white dark:bg-gray-700 shadow-sm' : 'text-gray-500 dark:text-gray-400'}`}
+                        className={`flex-1 py-2 text-sm font-bold rounded-xl transition-all cursor-pointer border-0 ${activeTab === 'months' ? 'shadow-sm' : 'opacity-60 hover:opacity-100'}`}
                         onClick={() => setActiveTab('months')}
-                        style={activeTab === 'months' ? { color: hexColor } : {}}
+                        style={activeTab === 'months' ? { backgroundColor: tokens.primaryColor, color: '#FFFFFF' } : { color: tokens.textColor }}
                     >
                         {isEn ? 'Months' : 'الشهور'}
                     </button>
@@ -333,8 +332,8 @@ const HabitArchive: React.FC<HabitArchiveProps> = ({ onBack, onHome, onSelectDat
                 <div className="space-y-3 pb-8">
                     {allDates.length === 0 && (
                         <div 
-                            className="text-center p-8 opacity-70 text-sm font-bold dark:text-gray-300 bg-white/80 dark:bg-gray-800/80 rounded-2xl border"
-                            style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                            className="text-center p-8 opacity-70 text-sm font-bold dark:text-gray-300 rounded-2xl border-0"
+                            style={{ backgroundColor: tokens.cardBgColor, boxShadow: tokens.cardShadow }}
                         >
                             {isEn 
                                 ? 'No achievements recorded yet. Click "Log past day" above to record any missed day.' 
@@ -346,8 +345,8 @@ const HabitArchive: React.FC<HabitArchiveProps> = ({ onBack, onHome, onSelectDat
                         return (
                            <div 
                                 key={date} 
-                                className="bg-white/80 dark:bg-gray-800/80 rounded-2xl p-4 shadow-sm border flex items-center justify-between gap-3"
-                                style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                                className="rounded-2xl p-4 border-0 flex items-center justify-between gap-3"
+                                style={{ backgroundColor: tokens.cardBgColor, boxShadow: tokens.cardShadow }}
                            >
                                 <div className="flex items-center gap-3 min-w-0 flex-1">
                                     <div className="p-2 rounded-xl bg-gray-100 dark:bg-gray-700 shrink-0" style={{ color: hexColor }}>

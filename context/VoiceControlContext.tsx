@@ -257,7 +257,7 @@ export const VoiceControlProvider: React.FC<{ children: React.ReactNode, onActio
         const startWebRecognition = () => {
             const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
             if (!SpeechRecognitionAPI) {
-                console.error("Speech Recognition API not supported in this browser.");
+                console.warn("Speech Recognition API not supported in this browser.");
                 setIsEnabled(false);
                 setIsListening(false);
                 isStartingRef.current = false;

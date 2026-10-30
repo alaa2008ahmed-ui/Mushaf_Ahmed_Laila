@@ -19,6 +19,7 @@ import com.getcapacitor.BridgeWebChromeClient;
 public class MainActivity extends BridgeActivity {
     public static volatile String pendingShortcut = null;
     public static volatile long pendingShortcutSeq = 0L;
+    public static volatile long lastConsumedShortcutSeq = 0L;
 
     private static synchronized long nextShortcutSeq() {
         long now = System.currentTimeMillis();
@@ -186,7 +187,10 @@ public class MainActivity extends BridgeActivity {
     }
 
     public static void clearPendingShortcutState(Context context, long consumedSeq) {
-        if (consumedSeq <= 0 || pendingShortcutSeq == consumedSeq) {
+        if (consumedSeq > 0) {
+            lastConsumedShortcutSeq = Math.max(lastConsumedShortcutSeq, consumedSeq);
+        }
+        if (consumedSeq <= 0 || pendingShortcutSeq <= consumedSeq) {
             pendingShortcut = null;
         }
         if (context != null) {
@@ -229,15 +233,17 @@ public class MainActivity extends BridgeActivity {
 
     private void dispatchShortcutToWebView(final String target, final long seq) {
         if (target == null || target.isEmpty()) return;
+        if (seq > 0 && seq <= lastConsumedShortcutSeq) return;
+
         final String safeTarget = target.replace("'", "\\'");
         final String js = "(function() {" +
                 "  var t = '" + safeTarget + "';" +
                 "  var s = " + seq + ";" +
-                "  window.__pendingShortcut = { target: t, seq: s };" +
-                "  try { localStorage.setItem('pending_shortcut_target', t); } catch(e){}" +
                 "  if (typeof window.handleNativeShortcut === 'function') {" +
                 "    return window.handleNativeShortcut(t, s);" +
                 "  } else {" +
+                "    window.__pendingShortcut = { target: t, seq: s };" +
+                "    try { localStorage.setItem('pending_shortcut_target', t); localStorage.setItem('pending_shortcut_seq', String(s)); } catch(e){}" +
                 "    window.dispatchEvent(new CustomEvent('nativeShortcutTriggered', { detail: { target: t, seq: s } }));" +
                 "    return 'queued';" +
                 "  }" +
@@ -245,6 +251,7 @@ public class MainActivity extends BridgeActivity {
 
         runOnUiThread(() -> {
             try {
+                if (seq > 0 && seq <= lastConsumedShortcutSeq) return;
                 if (bridge != null && bridge.getWebView() != null) {
                     bridge.getWebView().evaluateJavascript(js, value -> {
                         if (value != null && value.contains("handled")) {
@@ -316,81 +323,8 @@ public class MainActivity extends BridgeActivity {
             try {
                 android.content.pm.ShortcutManager shortcutManager = getSystemService(android.content.pm.ShortcutManager.class);
                 if (shortcutManager == null) return;
-
-                java.util.List<android.content.pm.ShortcutInfo> shortcuts = new java.util.ArrayList<>();
-                android.content.ComponentName mainComponent = new android.content.ComponentName(this, MainActivity.class);
-
-                // 1. Quran
-                Intent quranIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("com.mushaf.ahmedandlayla://quran"));
-                quranIntent.setComponent(mainComponent);
-                quranIntent.setPackage(getPackageName());
-                quranIntent.putExtra("shortcut_target", "quran");
-                quranIntent.putExtra("route", "quran");
-                shortcuts.add(new android.content.pm.ShortcutInfo.Builder(this, "shortcut_quran")
-                        .setShortLabel(isArabic ? "القرآن الكريم" : "Holy Quran")
-                        .setLongLabel(isArabic ? "تلاوة القرآن الكريم" : "Read Holy Quran")
-                        .setIcon(android.graphics.drawable.Icon.createWithResource(this, R.drawable.ic_shortcut_quran))
-                        .setIntent(quranIntent)
-                        .setRank(1)
-                        .build());
-
-                // 2. Prayer Times
-                Intent prayerIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("com.mushaf.ahmedandlayla://prayer-times"));
-                prayerIntent.setComponent(mainComponent);
-                prayerIntent.setPackage(getPackageName());
-                prayerIntent.putExtra("shortcut_target", "prayer-times");
-                prayerIntent.putExtra("route", "prayer-times");
-                shortcuts.add(new android.content.pm.ShortcutInfo.Builder(this, "shortcut_prayer")
-                        .setShortLabel(isArabic ? "أوقات الصلاة" : "Prayer Times")
-                        .setLongLabel(isArabic ? "مواقيت وأذان الصلاة" : "Prayer Times & Adhan")
-                        .setIcon(android.graphics.drawable.Icon.createWithResource(this, R.drawable.ic_shortcut_prayer))
-                        .setIntent(prayerIntent)
-                        .setRank(2)
-                        .build());
-
-                // 3. Qibla
-                Intent qiblaIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("com.mushaf.ahmedandlayla://qibla"));
-                qiblaIntent.setComponent(mainComponent);
-                qiblaIntent.setPackage(getPackageName());
-                qiblaIntent.putExtra("shortcut_target", "qibla");
-                qiblaIntent.putExtra("route", "qibla");
-                shortcuts.add(new android.content.pm.ShortcutInfo.Builder(this, "shortcut_qibla")
-                        .setShortLabel(isArabic ? "القبلة" : "Qibla")
-                        .setLongLabel(isArabic ? "بوصلة اتجاه القبلة" : "Qibla Compass")
-                        .setIcon(android.graphics.drawable.Icon.createWithResource(this, R.drawable.ic_shortcut_qibla))
-                        .setIntent(qiblaIntent)
-                        .setRank(3)
-                        .build());
-
-                // 4. Prophetic Seerah
-                Intent seerahIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("com.mushaf.ahmedandlayla://prophetic-seerah"));
-                seerahIntent.setComponent(mainComponent);
-                seerahIntent.setPackage(getPackageName());
-                seerahIntent.putExtra("shortcut_target", "prophetic-seerah");
-                seerahIntent.putExtra("route", "prophetic-seerah");
-                shortcuts.add(new android.content.pm.ShortcutInfo.Builder(this, "shortcut_seerah")
-                        .setShortLabel(isArabic ? "السيرة النبوية" : "Prophetic Seerah")
-                        .setLongLabel(isArabic ? "السيرة النبوية الشريفة" : "Prophetic Biography")
-                        .setIcon(android.graphics.drawable.Icon.createWithResource(this, R.drawable.ic_shortcut_seerah))
-                        .setIntent(seerahIntent)
-                        .setRank(4)
-                        .build());
-
-                // 5. Hisn Al-Muslim / Azkar
-                Intent azkarIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("com.mushaf.ahmedandlayla://hisn-muslim"));
-                azkarIntent.setComponent(mainComponent);
-                azkarIntent.setPackage(getPackageName());
-                azkarIntent.putExtra("shortcut_target", "hisn-muslim");
-                azkarIntent.putExtra("route", "hisn-muslim");
-                shortcuts.add(new android.content.pm.ShortcutInfo.Builder(this, "shortcut_azkar")
-                        .setShortLabel(isArabic ? "حصن المسلم" : "Hisn Al-Muslim")
-                        .setLongLabel(isArabic ? "الأذكار وحصن المسلم" : "Daily Athkar & Duas")
-                        .setIcon(android.graphics.drawable.Icon.createWithResource(this, R.drawable.ic_shortcut_azkar))
-                        .setIntent(azkarIntent)
-                        .setRank(5)
-                        .build());
-
-                shortcutManager.setDynamicShortcuts(shortcuts);
+                // Remove all shortcuts from the long-press launcher menu as requested
+                shortcutManager.removeAllDynamicShortcuts();
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -425,6 +359,7 @@ public class MainActivity extends BridgeActivity {
                 "iqama_alarm_channel",
                 "iqama_v3_chime_channel",
                 "prayer_silent_channel",
+                "prayer_silent_v3_chime_channel",
                 "night_times_channel",
                 "night_times_alarm_channel",
                 "athkar_reminders_channel",
@@ -438,13 +373,18 @@ public class MainActivity extends BridgeActivity {
                 "adhan_v4_azan1", "adhan_v4_azan2", "adhan_v4_azan3", "adhan_v4_azan4",
                 "adhan_v4_salah", "adhan_v4_shahadah", "adhan_v4_silent",
                 "persistent_prayer_channel_v1",
-                "persistent_prayer_channel_v2"
+                "persistent_prayer_channel_v2",
+                "persistent_prayer_channel_v3",
+                "persistent_prayer_channel_v4",
+                "prayer_alerts_summary_channel_v1",
+                "general_alerts_summary_channel_v1"
             };
             for (String oldId : legacyChannels) {
                 try {
                     nm.deleteNotificationChannel(oldId);
                 } catch (Exception ignored) {}
             }
+            PersistentPrayerNotification.createChannel(this, isArabic);
 
             AudioAttributes alarmAudioAttributes = new AudioAttributes.Builder()
                 .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
@@ -470,7 +410,7 @@ public class MainActivity extends BridgeActivity {
                 // Short gentle chime alerts (Preparation, Iqama, Silent Mode, Night, Athkar, Wird, Habits)
                 {"pre_adhan_v3_chime_channel", isArabic ? "تنبيه الاستعداد للصلاة" : "Prayer Preparation Alert", "chime"},
                 {"iqama_v4_chime_channel", isArabic ? "تنبيه إقامة الصلاة" : "Prayer Iqama Alert", "chime"},
-                {"prayer_silent_v3_chime_channel", isArabic ? "الصامت التلقائي للصلاة" : "Auto Silent Mode", "chime"},
+                {"prayer_silent_v4_chime_channel", isArabic ? "الصامت التلقائي للصلاة" : "Auto Silent Mode", "chime"},
                 {"night_times_v3_chime_channel", isArabic ? "تنبيهات أوقات الليل" : "Night Times Reminders", "chime"},
                 {"athkar_v3_chime_channel", isArabic ? "أذكار وتنبيهات عامة" : "General Adhkar & Reminders", "chime"},
                 {"daily_wird_reminders_channel", isArabic ? "تنبيهات الورد القرآني" : "Daily Wird Reminders", "chime"},
@@ -497,7 +437,7 @@ public class MainActivity extends BridgeActivity {
                     channel.setBypassDnd(true);
                     channel.enableVibration(true);
                     channel.enableLights(true);
-                    channel.setShowBadge(true);
+                    channel.setShowBadge(false); // Disabling badge prevents continuous "1" on launcher icon
 
                     int resId = getResources().getIdentifier(rawSound, "raw", getPackageName());
                     if (resId != 0) {
@@ -519,7 +459,7 @@ public class MainActivity extends BridgeActivity {
                 silentChan.setDescription(isArabic ? "إشعار الأذان بدون صوت مع أيقونة بالشريط العلوي" : "Silent Adhan notification with status bar icon");
                 silentChan.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
                 silentChan.enableVibration(false);
-                silentChan.setShowBadge(true);
+                silentChan.setShowBadge(false);
                 nm.createNotificationChannel(silentChan);
             } catch (Exception ignored) {}
         }

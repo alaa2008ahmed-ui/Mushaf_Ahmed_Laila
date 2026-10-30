@@ -66,6 +66,7 @@ const ZoomModal: React.FC<ZoomModalProps> = ({ zoomedZikr, currentPrayer, onClos
             stopTTS();
         } else {
             playTTS(cleanPlainText, {
+                isEn,
                 onToast: (msg) => {
                     if (setToastMessage) setToastMessage(msg);
                 }
@@ -100,8 +101,10 @@ const ZoomModal: React.FC<ZoomModalProps> = ({ zoomedZikr, currentPrayer, onClos
 
     const handleToggleZoom = (e: React.MouseEvent) => {
         e.stopPropagation();
-        setFontSize(prev => (prev >= 38 ? 22 : prev + 4));
+        setFontSize(prev => (prev >= 38 ? 20 : prev + 4));
     };
+
+    const baseFontSize = isEn ? fontSize : fontSize + 4;
 
     return (
         <AnimatePresence>
@@ -123,6 +126,35 @@ const ZoomModal: React.FC<ZoomModalProps> = ({ zoomedZikr, currentPrayer, onClos
                     }} 
                     onClick={e => e.stopPropagation()}
                 >
+                    {/* Scoped font-size scaling for zoom button to work across all content including HTML cards */}
+                    <style>{`
+                        .zoom-scalable-content {
+                            --zoom-fs: ${baseFontSize}px;
+                        }
+                        .zoom-scalable-content,
+                        .zoom-scalable-content p,
+                        .zoom-scalable-content span,
+                        .zoom-scalable-content div,
+                        .zoom-scalable-content b,
+                        .zoom-scalable-content strong,
+                        .zoom-scalable-content li,
+                        .zoom-scalable-content i {
+                            font-size: var(--zoom-fs) !important;
+                            line-height: ${isEn ? '1.75' : '2.2'} !important;
+                        }
+                        .zoom-scalable-content h3,
+                        .zoom-scalable-content h4 {
+                            font-size: calc(var(--zoom-fs) * 1.15) !important;
+                            line-height: 1.4 !important;
+                        }
+                        .zoom-scalable-content .text-xs,
+                        .zoom-scalable-content .text-sm,
+                        .zoom-scalable-content .text-\\[11px\\],
+                        .zoom-scalable-content small {
+                            font-size: calc(var(--zoom-fs) * 0.76) !important;
+                        }
+                    `}</style>
+
                     {/* Top Drag Handle without X button */}
                     <div className="pt-3 px-6 pb-2 shrink-0 flex flex-col items-center">
                         <div className="w-12 h-1.5 rounded-full bg-slate-300 dark:bg-zinc-700 mb-2" />
@@ -152,14 +184,14 @@ const ZoomModal: React.FC<ZoomModalProps> = ({ zoomedZikr, currentPrayer, onClos
 
                         {isEn ? (
                             <div 
-                                className="leading-relaxed font-sans font-medium text-center my-4 select-none text-balance"
+                                className="zoom-scalable-content leading-relaxed font-sans font-medium text-center my-4 select-none text-balance"
                                 style={{ fontSize: `${fontSize}px` }}
                                 dir="ltr"
                                 dangerouslySetInnerHTML={{ __html: displayText }}
                             />
                         ) : (
                             <div 
-                                className="leading-[2.4] font-amiri text-center select-none py-2"
+                                className="zoom-scalable-content leading-[2.4] font-amiri text-center select-none py-2"
                                 style={{ fontSize: `${fontSize + 4}px` }}
                                 dir="rtl"
                                 dangerouslySetInnerHTML={{ __html: displayText }}

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Star } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
 const RateUs: React.FC = () => {
@@ -41,7 +42,7 @@ const RateUs: React.FC = () => {
                 className="flex items-center justify-center w-14 h-14 rounded-full shadow-2xl border-2 border-white"
                 style={{ backgroundColor: primaryColor }}
             >
-                <i className="fa-solid fa-star text-white text-2xl drop-shadow-md"></i>
+                <Star className="w-7 h-7 text-white fill-white drop-shadow-md" />
             </div>
             <div className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-md border border-white">
                 قيّمنا

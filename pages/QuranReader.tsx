@@ -1,9 +1,35 @@
 import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo, FC } from 'react';
 import { ScreenOrientation } from '@capacitor/screen-orientation';
 import { Capacitor } from '@capacitor/core';
+import { Preferences } from '@capacitor/preferences';
 import { VoiceRecorder } from 'capacitor-voice-recorder';
 import './QuranReader.css'; 
-import { ReadingMode, JUZ_MAP, toArabic, THEMES, TAFSEERS, READERS, MEMORIZATION_READERS, ARABIC_READERS, BILINGUAL_READER, TRANSLATION_READER, BILINGUAL_READER_ID, TRANSLATION_READER_ID, getReadersForMode, getValidReaderForMode, DEFAULT_SETTINGS, FONTS, SURAH_NAMES_AR, SURAH_NAMES_EN, getTafseerDisplayName } from '../components/QuranReader/constants';
+import { 
+    ReadingMode, 
+    JUZ_MAP, 
+    toArabic, 
+    THEMES, 
+    TAFSEERS, 
+    READERS, 
+    MEMORIZATION_READERS, 
+    ARABIC_READERS, 
+    BILINGUAL_READER, 
+    TRANSLATION_READER, 
+    BILINGUAL_READER_ID, 
+    TRANSLATION_READER_ID, 
+    getReadersForMode, 
+    getValidReaderForMode, 
+    DEFAULT_SETTINGS, 
+    FONTS, 
+    SURAH_NAMES_AR, 
+    SURAH_NAMES_EN, 
+    getTafseerDisplayName,
+    getCurrentLayoutContext,
+    getQuranThemeForLayout,
+    saveQuranThemeForLayout,
+    getToolbarColorsForTheme,
+    syncQuranThemeToStorage
+} from '../components/QuranReader/constants';
 import SearchModal from '../components/QuranReader/SearchModal';
 import ThemesModal from '../components/QuranReader/ThemesModal';
 import SettingsModal from '../components/QuranReader/SettingsModal';
@@ -483,26 +509,25 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
     const [quranData, setQuranData] = useState(quranJsonData);
 
     const hasJumpedRef = useRef(false);
+    const saveFinalLastReadRef = useRef<() => void>(() => {});
 
-    const handleHomeClick = useCallback(async (targetPage?: string) => {
-        if (isLandscape) {
-            setIsLandscape(false);
-            try {
-                if (Capacitor.isNativePlatform()) {
-                    await ScreenOrientation.lock({ orientation: 'portrait' });
-                    // Give a small delay for orientation to settle
-                    await new Promise(resolve => setTimeout(resolve, 100));
-                }
-            } catch (e) {
-                console.error('Failed to lock orientation to portrait', e);
-            }
-        }
-        // عند فتح المصحف من صفحة الورد اليومي، يتم الرجوع لصفحة الورد اليومي
+    useEffect(() => {
+        return () => {
+            saveFinalLastReadRef.current?.();
+        };
+    }, []);
+
+    const handleHomeClick = useCallback((targetPage?: string) => {
+        try {
+            saveFinalLastReadRef.current?.();
+        } catch (e) {}
+
+        // الخروج المباشر واللحظي بدون تأخير زمني وبدون تغيير حالة isLandscape
+        // لمنع أي اهتزاز أو شوشرة بصرية قبل الانتقال للصفحة السابقة
         if (isWirdMode || navParams?.isWird) {
             onNavigate('daily-wird');
             return;
         }
-        // عند فتح المصحف من صفحة التحفيظ، يتم الرجوع لصفحة التحفيظ
         if (isMemorizationMode || localIsMemorizationMode || navParams?.isMemorization || navParams?.memorizationSettings) {
             onNavigate('memorization');
             return;
@@ -512,7 +537,7 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
         } else {
             onBack();
         }
-    }, [isLandscape, isWirdMode, isMemorizationMode, localIsMemorizationMode, navParams, onBack, onNavigate]);
+    }, [isWirdMode, isMemorizationMode, localIsMemorizationMode, navParams, onBack, onNavigate]);
 
     const [isLandscapeUIHidden, setIsLandscapeUIHidden] = useState(() => {
         if (initialLandscape) return true;
@@ -986,7 +1011,19 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
         }
     }, [currentAyah, isWirdMode, quranData]);
 
-    const [highlightedAyahId, setHighlightedAyahId] = useState<string | null>(null);
+    const selectedAyahRef = useRef<{ s: number; a: number; page: number; juz: number } | null>(null);
+    const [highlightedAyahId, setHighlightedAyahId] = useState<string | null>(() => {
+        try {
+            const saved = localStorage.getItem('last_read_ayah_global');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                if (parsed?.isExplicit && parsed?.s && parsed?.a) {
+                    return `ayah-${parsed.s}-${parsed.a}`;
+                }
+            }
+        } catch {}
+        return null;
+    });
     const [isTransparentMode, setIsTransparentMode] = useState(() => localStorage.getItem('transparent_mode' + modeSuffix) === 'true');
     const [isHideToolbarsEnabled, setIsHideToolbarsEnabled] = useState(() => {
         const saved = localStorage.getItem('hide_toolbars_enabled' + modeSuffix);
@@ -1078,31 +1115,15 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
     };
 
     useEffect(() => {
-        const lockOrientation = async () => {
-            try {
-                if (initialLandscape) {
-                    await ScreenOrientation.lock({ orientation: 'landscape' });
-                } else {
-                    await ScreenOrientation.unlock();
-                }
-            } catch (e) {
-                console.log('Screen orientation lock failed or not supported in this environment', e);
-            }
-        };
-        lockOrientation();
-        
+        // إدارة وضع الشاشة تتم مركزياً عبر App.tsx بدون تعارض أو ازدواجية
+        if (!Capacitor.isNativePlatform()) return;
+        if (initialLandscape) {
+            ScreenOrientation.lock({ orientation: 'landscape' }).catch(() => {});
+        }
         return () => {
-            const unlockOrientation = async () => {
-                try {
-                    if (Capacitor.isNativePlatform()) {
-                        await ScreenOrientation.lock({ orientation: 'portrait' });
-                    }
-                    await ScreenOrientation.unlock();
-                } catch (e) {
-                    console.log('Screen orientation unlock failed', e);
-                }
-            };
-            unlockOrientation();
+            if (initialLandscape) {
+                ScreenOrientation.lock({ orientation: 'portrait' }).catch(() => {});
+            }
         };
     }, [initialLandscape]);
 
@@ -1122,13 +1143,16 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
             return initialSettings;
         });
 
-        const themeId = localStorage.getItem('current_theme_id' + mode) || 'black';
-        const newTheme = THEMES[themeId as keyof typeof THEMES] || THEMES['black'];
+        const layout = getCurrentLayoutContext(navParams);
+        const themeId = getQuranThemeForLayout(layout, mode);
+        const newTheme = THEMES[themeId as keyof typeof THEMES] || (layout === 'classic' ? THEMES['black'] : THEMES['gold']);
         
         setCurrentTheme(prev => {
             if (prev?.id === newTheme.id) return prev;
             return newTheme;
         });
+        setToolbarColors(getToolbarColorsForTheme(newTheme));
+        syncQuranThemeToStorage(newTheme, mode);
         
         const transSetting = localStorage.getItem('transparent_mode' + mode) === 'true';
         setIsTransparentMode(transSetting);
@@ -1152,22 +1176,24 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
 
         const posKey = `last_pos${posSuffix}`;
         let lastPos = JSON.parse(localStorage.getItem(posKey) || '{}');
-        if (!lastPos || typeof lastPos.s !== 'number') {
-            const globalSaved = localStorage.getItem('last_read_ayah_global');
-            if (globalSaved) {
+        const globalSaved = localStorage.getItem('last_read_ayah_global');
+        if (globalSaved) {
+            try {
                 const parsed = JSON.parse(globalSaved);
                 if (parsed && typeof parsed.s === 'number') {
-                    lastPos = { s: parsed.s, a: parsed.a || 1 };
+                    lastPos = parsed;
                 }
-            }
-            if (!lastPos || typeof lastPos.s !== 'number') {
-                const vSaved = localStorage.getItem('last_pos_v');
-                if (vSaved) {
+            } catch {}
+        }
+        if (!lastPos || typeof lastPos.s !== 'number') {
+            const vSaved = localStorage.getItem('last_pos_v');
+            if (vSaved) {
+                try {
                     const parsed = JSON.parse(vSaved);
                     if (parsed && typeof parsed.s === 'number') {
-                        lastPos = { s: parsed.s, a: parsed.a || 1 };
+                        lastPos = parsed;
                     }
-                }
+                } catch {}
             }
         }
         
@@ -1192,9 +1218,10 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
             isJumpingRef.current = true;
             const targetS = lastPos.s || currentAyahRef.current?.s || 1;
             const targetA = lastPos.a || currentAyahRef.current?.a || 1;
+            const isExp = !!lastPos?.isExplicit;
             
             setTimeout(() => {
-                jumpToAyah(targetS, targetA, true);
+                jumpToAyah(targetS, targetA, true, false);
             }, 100);
         }
 
@@ -1215,22 +1242,7 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
             } catch (e) {}
         } else {
             const theme = THEMES['black'];
-            
-            setToolbarColors({
-                'top-toolbar': { bg: theme.barBg, border: theme.barBorder },
-                'bottom-toolbar': { bg: theme.barBg, border: theme.barBorder },
-                'surah': { bg: theme.btnBg, text: theme.btnText, border: (theme as any).btnBorder || theme.barBorder, font: theme.font },
-                'page': { bg: theme.btnBg, text: theme.btnText, border: (theme as any).btnBorder || theme.barBorder, font: theme.font },
-                'audio': { bg: theme.btnBg, text: theme.btnText, border: (theme as any).btnBorder || theme.barBorder },
-                'btn-settings': { bg: theme.btnBg, text: theme.btnText, border: (theme as any).btnBorder || theme.barBorder },
-                'btn-home': { bg: theme.btnBg, text: theme.btnText, border: (theme as any).btnBorder || theme.barBorder },
-                'btn-bookmark': { bg: theme.btnBg, text: theme.btnText, border: (theme as any).btnBorder || theme.barBorder },
-                'btn-bookmarks-list': { bg: theme.btnBg, text: theme.btnText, border: (theme as any).btnBorder || theme.barBorder },
-                'btn-themes': { bg: theme.btnBg, text: theme.btnText, border: (theme as any).btnBorder || theme.barBorder },
-                'btn-autoscroll': { bg: theme.btnBg, text: theme.btnText, border: (theme as any).btnBorder || theme.barBorder },
-                'btn-menu': { bg: theme.btnBg, text: theme.btnText, border: (theme as any).btnBorder || theme.barBorder },
-                'btn-share': { bg: theme.btnBg, text: theme.btnText, border: (theme as any).btnBorder || theme.barBorder }
-            });
+            setToolbarColors(getToolbarColorsForTheme(theme));
         }
     }, [themeSuffix, posSuffix, initialSurah, initialPage, localIsMemorizationMode, isWirdMode, isGlobalTheme]);
     
@@ -1675,8 +1687,9 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
 
     const [currentTheme, setCurrentTheme] = useState(() => {
         const mode = getScopedSuffix(readingMode, initialLandscape);
-        const themeId = localStorage.getItem('current_theme_id' + mode) || 'black';
-        return THEMES[themeId as keyof typeof THEMES] || THEMES['black'];
+        const layout = getCurrentLayoutContext(navParams);
+        const themeId = getQuranThemeForLayout(layout, mode);
+        return THEMES[themeId as keyof typeof THEMES] || (layout === 'classic' ? THEMES['black'] : THEMES['gold']);
     });
 
     // Keep screen awake logic
@@ -1723,33 +1736,10 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
 
     const [toolbarColors, setToolbarColors] = useState(() => {
         const mode = initialLandscape ? '_h' : '_v';
-        sanitizeRemovedThemeInStorage(mode);
-        const saved = localStorage.getItem('toolbar_colors_v2' + mode);
-        if (saved) {
-            try {
-                const parsed = JSON.parse(saved);
-                return parsed;
-            } catch (e) {}
-        }
-        
-        const theme = THEMES['black'];
-        
-        return {
-            'top-toolbar': { bg: theme.barBg, border: theme.barBorder },
-            'bottom-toolbar': { bg: theme.barBg, border: theme.barBorder },
-            'surah': { bg: theme.btnBg, text: theme.btnText, border: theme.barBorder, font: theme.font },
-            'juz': { bg: theme.btnBg, text: theme.btnText, border: theme.barBorder, font: theme.font },
-            'page': { bg: theme.btnBg, text: theme.btnText, border: theme.barBorder, font: theme.font },
-            'audio': { bg: theme.btnBg, text: theme.btnText, border: theme.barBorder },
-            'btn-settings': { bg: theme.btnBg, text: theme.btnText, border: theme.barBorder },
-            'btn-home': { bg: theme.btnBg, text: theme.btnText, border: theme.barBorder },
-            'btn-bookmark': { bg: theme.btnBg, text: theme.btnText, border: theme.barBorder },
-            'btn-bookmarks-list': { bg: theme.btnBg, text: theme.btnText, border: theme.barBorder },
-            'btn-themes': { bg: theme.btnBg, text: theme.btnText, border: theme.barBorder },
-            'btn-autoscroll': { bg: theme.btnBg, text: theme.btnText, border: theme.barBorder },
-            'btn-menu': { bg: theme.btnBg, text: theme.btnText, border: theme.barBorder },
-            'btn-share': { bg: theme.btnBg, text: theme.btnText, border: theme.barBorder }
-        };
+        const layout = getCurrentLayoutContext(navParams);
+        const themeId = getQuranThemeForLayout(layout, mode);
+        const theme = THEMES[themeId as keyof typeof THEMES] || (layout === 'classic' ? THEMES['black'] : THEMES['gold']);
+        return getToolbarColorsForTheme(theme);
     });
 
     const mushafContentRef = useRef<HTMLDivElement>(null);
@@ -2504,6 +2494,16 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
         if (!navParams || handledNavParamsRef.current === navParams) return;
         handledNavParamsRef.current = navParams;
 
+        const layout = getCurrentLayoutContext(navParams);
+        const mode = themeSuffix;
+        const targetThemeId = getQuranThemeForLayout(layout, mode);
+        const theme = THEMES[targetThemeId as keyof typeof THEMES] || (layout === 'classic' ? THEMES['black'] : THEMES['gold']);
+        if (theme) {
+            syncQuranThemeToStorage(theme, mode);
+            setCurrentTheme(theme);
+            setToolbarColors(getToolbarColorsForTheme(theme));
+        }
+
         if (navParams?.openSidebar || navParams?.openFloatingMenu || navParams?.openMenu) {
             setIsFloatingMenuOpen(true);
         }
@@ -2515,15 +2515,30 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
         }
     }, [navParams, openModal]);
     
-    const handleAyahClick = useCallback((s, a) => {
+    const handleAyahClick = useCallback((s: number, a: number, isExplicitSelection: boolean = true) => {
         setTimeout(() => {
-            setHighlightedAyahId(`ayah-${s}-${a}`);
+            const surah = quranData?.surahs?.[s - 1];
+            const ayahObj = surah?.ayahs?.[a - 1];
+            const pageNum = ayahObj?.page || 1;
+            const juzNum = ayahObj?.juz || (JUZ_MAP.slice().reverse().find(j => (s > j.s) || (s === j.s && a >= j.a))?.j || 1);
+
+            if (isExplicitSelection) {
+                selectedAyahRef.current = { s, a, page: pageNum, juz: juzNum };
+                setHighlightedAyahId(`ayah-${s}-${a}`);
+            } else {
+                selectedAyahRef.current = null;
+                setHighlightedAyahId(null);
+            }
+
             setCurrentAyah({ s, a });
             currentAyahRef.current = { s, a };
+            const savedObj = { s, a, page: pageNum, juz: juzNum, isExplicit: isExplicitSelection, ts: Date.now() };
             const key = `last_pos${posSuffix}`;
-            localStorage.setItem(key, JSON.stringify({ s, a }));
+            localStorage.setItem(key, JSON.stringify(savedObj));
+            localStorage.setItem('last_read_ayah_global', JSON.stringify(savedObj));
+            window.dispatchEvent(new Event('last_read_update'));
         }, 0);
-    }, [posSuffix]);
+    }, [posSuffix, quranData]);
 
     const handleAyahTextClick = useCallback((s: number, a: number) => {
         if (isFloatingMenuOpenRef.current || Date.now() - lastFloatingMenuCloseTimeRef.current < 500) {
@@ -2811,8 +2826,9 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
     useEffect(() => {
         const handleThemeChange = () => {
             const modeSuffix = themeSuffix;
-            const themeId = localStorage.getItem('current_theme_id' + modeSuffix) || 'black';
-            const newTheme = THEMES[themeId as keyof typeof THEMES] || THEMES['black'];
+            const layout = getCurrentLayoutContext(navParams);
+            const themeId = getQuranThemeForLayout(layout, modeSuffix);
+            const newTheme = THEMES[themeId as keyof typeof THEMES] || (layout === 'classic' ? THEMES['black'] : THEMES['gold']);
             
             setCurrentTheme(prev => {
                 if (prev?.id === newTheme.id) return prev;
@@ -2845,22 +2861,7 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
                 } catch (e) {}
             } else {
                 const theme = THEMES['black'];
-                const defaultColors = {
-                    'top-toolbar': { bg: theme.barBg, border: theme.barBorder },
-                    'bottom-toolbar': { bg: theme.barBg, border: theme.barBorder },
-                    'surah': { bg: theme.btnBg, text: theme.btnText, border: theme.barBorder, font: theme.font },
-                    'juz': { bg: theme.btnBg, text: theme.btnText, border: theme.barBorder, font: theme.font },
-                    'page': { bg: theme.btnBg, text: theme.btnText, border: theme.barBorder, font: theme.font },
-                    'audio': { bg: theme.btnBg, text: theme.btnText, border: theme.barBorder },
-                    'btn-settings': { bg: theme.btnBg, text: theme.btnText, border: theme.barBorder },
-                    'btn-home': { bg: theme.btnBg, text: theme.btnText, border: theme.barBorder },
-                    'btn-bookmark': { bg: theme.btnBg, text: theme.btnText, border: theme.barBorder },
-                    'btn-bookmarks-list': { bg: theme.btnBg, text: theme.btnText, border: theme.barBorder },
-                    'btn-themes': { bg: theme.btnBg, text: theme.btnText, border: theme.barBorder },
-                    'btn-autoscroll': { bg: theme.btnBg, text: theme.btnText, border: theme.barBorder },
-                    'btn-menu': { bg: theme.btnBg, text: theme.btnText, border: theme.barBorder },
-                    'btn-share': { bg: theme.btnBg, text: theme.btnText, border: theme.barBorder }
-                };
+                const defaultColors = getToolbarColorsForTheme(theme);
                 setToolbarColors(prev => {
                     if (JSON.stringify(prev) === JSON.stringify(defaultColors)) return prev;
                     return defaultColors;
@@ -2951,13 +2952,15 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
     useEffect(() => {
         const mode = themeSuffix;
         sanitizeRemovedThemeInStorage(mode);
-        const themeId = localStorage.getItem('current_theme_id' + mode) || 'black';
-        const newTheme = THEMES[themeId as keyof typeof THEMES] || THEMES['black'];
+        const layout = getCurrentLayoutContext(navParams);
+        const themeId = getQuranThemeForLayout(layout, mode);
+        const newTheme = THEMES[themeId as keyof typeof THEMES] || (layout === 'classic' ? THEMES['black'] : THEMES['gold']);
         
         setCurrentTheme(prev => {
             if (prev?.id === newTheme.id) return prev;
             return newTheme;
         });
+        setToolbarColors(getToolbarColorsForTheme(newTheme));
         
         const saved = localStorage.getItem('quran_settings' + mode);
         if (saved) {
@@ -2982,6 +2985,7 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
                         return settings.mode === 'days' ? settings.value : Math.ceil(TOTAL_PAGES_COUNT / settings.value);
                     };
                     
+                    const todayStr = new Date().toISOString().split('T')[0];
                     const newCompleted = [...activeProfile.completedDays, activeProfile.currentDay];
                     const totalDays = getTotalDaysCount(activeProfile);
                     const newCurrentDay = activeProfile.currentDay < totalDays ? activeProfile.currentDay + 1 : activeProfile.currentDay;
@@ -2990,10 +2994,17 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
                         ...activeProfile,
                         completedDays: newCompleted,
                         currentDay: newCurrentDay,
+                        lastPage: undefined,
+                        lastAyah: undefined,
+                        lastCompletedDate: todayStr
                     };
                     
                     const newProfiles = parsed.profiles.map((p: any) => p.id === activeProfile.id ? newProfile : p);
-                    localStorage.setItem('dailyWirdSettings_v2', JSON.stringify({ ...parsed, profiles: newProfiles }));
+                    const dataStr = JSON.stringify({ ...parsed, profiles: newProfiles });
+                    localStorage.setItem('dailyWirdSettings_v2', dataStr);
+                    try {
+                        Preferences.set({ key: 'dailyWirdSettings_v2', value: dataStr });
+                    } catch (e) {}
                     syncDailyWirdNotifications();
                     
                     if (shouldContinue) {
@@ -3180,7 +3191,22 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
                             if (lastNotifiedJuz.current !== null && newJuz !== lastNotifiedJuz.current) {
                                 if (notificationSettings.juz !== false) {
                                     if (juzTimeoutRef.current) clearTimeout(juzTimeoutRef.current);
-                                    setJuzNotification({ show: true, text: `بداية الجزء ${toArabic(newJuz)}` });
+                                    const isBackward = newJuz < lastNotifiedJuz.current;
+                                    let text = '';
+                                    if (readingMode === 'bilingual') {
+                                        text = isBackward
+                                            ? `نهاية الجزء ${toArabic(newJuz)} • End of Juz ${newJuz}`
+                                            : `بداية الجزء ${toArabic(newJuz)} • Start of Juz ${newJuz}`;
+                                    } else if (readingMode === 'translation') {
+                                        text = isBackward
+                                            ? `End of Juz ${newJuz}`
+                                            : `Start of Juz ${newJuz}`;
+                                    } else {
+                                        text = isBackward
+                                            ? `نهاية الجزء ${toArabic(newJuz)}`
+                                            : `بداية الجزء ${toArabic(newJuz)}`;
+                                    }
+                                    setJuzNotification({ show: true, text });
                                     juzTimeoutRef.current = setTimeout(() => {
                                         setJuzNotification(prev => ({ ...prev, show: false }));
                                         juzTimeoutRef.current = null;
@@ -3194,13 +3220,61 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
                         if (quarterAttr) {
                             const newQuarter = parseInt(quarterAttr, 10);
                             if (lastNotifiedQuarter.current !== null && newQuarter !== lastNotifiedQuarter.current) {
+                                const isBackward = newQuarter < lastNotifiedQuarter.current;
                                 let label = '';
                                 const qInHizb = ((newQuarter - 1) % 4) + 1;
                                 const hizbNum = Math.ceil(newQuarter / 4);
-                                if (qInHizb === 1) label = `بداية الحزب ${toArabic(hizbNum)}`;
-                                else if (qInHizb === 2) label = `ربع الحزب ${toArabic(hizbNum)}`;
-                                else if (qInHizb === 3) label = `نصف الحزب ${toArabic(hizbNum)}`;
-                                else if (qInHizb === 4) label = `ثلاثة أرباع الحزب ${toArabic(hizbNum)}`;
+                                const prevHizbNum = Math.ceil(lastNotifiedQuarter.current / 4);
+
+                                if (readingMode === 'bilingual') {
+                                    let labelAr = '';
+                                    let labelEn = '';
+                                    if (isBackward) {
+                                        if (qInHizb === 4 || hizbNum < prevHizbNum) {
+                                            labelAr = `نهاية الحزب ${toArabic(hizbNum)}`;
+                                            labelEn = `End of Hizb ${hizbNum}`;
+                                        } else if (qInHizb === 3) {
+                                            labelAr = `نصف الحزب ${toArabic(hizbNum)}`;
+                                            labelEn = `Half of Hizb ${hizbNum}`;
+                                        } else if (qInHizb === 2) {
+                                            labelAr = `ربع الحزب ${toArabic(hizbNum)}`;
+                                            labelEn = `Quarter of Hizb ${hizbNum}`;
+                                        } else {
+                                            labelAr = `بداية الحزب ${toArabic(hizbNum)}`;
+                                            labelEn = `Start of Hizb ${hizbNum}`;
+                                        }
+                                    } else {
+                                        if (qInHizb === 1) { labelAr = `بداية الحزب ${toArabic(hizbNum)}`; labelEn = `Start of Hizb ${hizbNum}`; }
+                                        else if (qInHizb === 2) { labelAr = `ربع الحزب ${toArabic(hizbNum)}`; labelEn = `Quarter of Hizb ${hizbNum}`; }
+                                        else if (qInHizb === 3) { labelAr = `نصف الحزب ${toArabic(hizbNum)}`; labelEn = `Half of Hizb ${hizbNum}`; }
+                                        else if (qInHizb === 4) { labelAr = `ثلاثة أرباع الحزب ${toArabic(hizbNum)}`; labelEn = `Three Quarters of Hizb ${hizbNum}`; }
+                                    }
+                                    label = `${labelAr} • ${labelEn}`;
+                                } else if (readingMode === 'translation') {
+                                    if (isBackward) {
+                                        if (qInHizb === 4 || hizbNum < prevHizbNum) label = `End of Hizb ${hizbNum}`;
+                                        else if (qInHizb === 3) label = `Half of Hizb ${hizbNum}`;
+                                        else if (qInHizb === 2) label = `Quarter of Hizb ${hizbNum}`;
+                                        else label = `Start of Hizb ${hizbNum}`;
+                                    } else {
+                                        if (qInHizb === 1) label = `Start of Hizb ${hizbNum}`;
+                                        else if (qInHizb === 2) label = `Quarter of Hizb ${hizbNum}`;
+                                        else if (qInHizb === 3) label = `Half of Hizb ${hizbNum}`;
+                                        else if (qInHizb === 4) label = `Three Quarters of Hizb ${hizbNum}`;
+                                    }
+                                } else {
+                                    if (isBackward) {
+                                        if (qInHizb === 4 || hizbNum < prevHizbNum) label = `نهاية الحزب ${toArabic(hizbNum)}`;
+                                        else if (qInHizb === 3) label = `نصف الحزب ${toArabic(hizbNum)}`;
+                                        else if (qInHizb === 2) label = `ربع الحزب ${toArabic(hizbNum)}`;
+                                        else label = `بداية الحزب ${toArabic(hizbNum)}`;
+                                    } else {
+                                        if (qInHizb === 1) label = `بداية الحزب ${toArabic(hizbNum)}`;
+                                        else if (qInHizb === 2) label = `ربع الحزب ${toArabic(hizbNum)}`;
+                                        else if (qInHizb === 3) label = `نصف الحزب ${toArabic(hizbNum)}`;
+                                        else if (qInHizb === 4) label = `ثلاثة أرباع الحزب ${toArabic(hizbNum)}`;
+                                    }
+                                }
                                 
                                 showMarkerNotification('quarter', label);
                             }
@@ -4250,19 +4324,25 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
     }, [currentPageNumber, quranData, readingMode]);
 
     const getManualRequiredSecondsForPage = useCallback((pageNum: number): number => {
-        const wordsOnPage = pageWordCountsMap.get(pageNum) || QURAN_READING_STANDARDS.STANDARD_WORDS_PER_PAGE;
-        const wordRatio = Math.min(1, Math.max(0.5, wordsOnPage / QURAN_READING_STANDARDS.STANDARD_WORDS_PER_PAGE));
-        // التمرير اليدوي: الحد الأدنى 10 دقائق للجزء الواحد (20 صفحة) = 30 ثانية للصفحة القياسية
-        const baseMinSeconds = Math.round(QURAN_READING_STANDARDS.MIN_SECONDS_PER_STANDARD_PAGE * wordRatio);
-        return Math.max(QURAN_READING_STANDARDS.MIN_SECONDS_SHORT_PAGE, baseMinSeconds);
-    }, [pageWordCountsMap]);
+        // ثالثاً: الصفحة الأولى والثانية بالمصحف يتم احتسابهما بأي وقت نظراً لصغر هاتين الصفحتين
+        if (pageNum === 1 || pageNum === 2) {
+            return 1;
+        }
+        // ثانياً: عند التمرير اليدوي يتم احتساب كل صفحة من 30 ثانية للصفحة الواحدة
+        return 30;
+    }, []);
 
     const getAutoScrollTargetSecondsForPage = useCallback((pageNum: number, scrollMinutes: number): number => {
-        const safeScrollMinutes = Math.max(1, Number(scrollMinutes) || QURAN_READING_STANDARDS.STANDARD_MINUTES_PER_JUZ);
+        // ثالثاً: الصفحة الأولى والثانية بالمصحف يتم احتسابهما بأي وقت نظراً لصغر هاتين الصفحتين
+        if (pageNum === 1 || pageNum === 2) {
+            return 1;
+        }
+        // أولاً: عند التمرير التلقائي عند اختيار أي وقت من 5 دقائق إلى 60 دقيقة يتم الاحتساب بأي سرعة للقراءة لكل صفحة
+        const safeScrollMinutes = Math.max(5, Math.min(60, Number(scrollMinutes) || QURAN_READING_STANDARDS.STANDARD_MINUTES_PER_JUZ));
         const expectedSecsPerStandardPage = (safeScrollMinutes * 60) / QURAN_READING_STANDARDS.PAGES_PER_JUZ;
         const wordsOnPage = pageWordCountsMap.get(pageNum) || QURAN_READING_STANDARDS.STANDARD_WORDS_PER_PAGE;
-        const wordRatio = Math.min(1, Math.max(0.45, wordsOnPage / QURAN_READING_STANDARDS.STANDARD_WORDS_PER_PAGE));
-        return Math.max(4, Math.round(expectedSecsPerStandardPage * wordRatio));
+        const wordRatio = Math.min(1.2, Math.max(0.4, wordsOnPage / QURAN_READING_STANDARDS.STANDARD_WORDS_PER_PAGE));
+        return Math.max(2, Math.round(expectedSecsPerStandardPage * wordRatio));
     }, [pageWordCountsMap]);
 
     useEffect(() => {
@@ -4291,7 +4371,6 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
             const now = Date.now();
             const isAutoScroll = autoScrollStateRef.current.isActive && !autoScrollStateRef.current.isPaused;
             const scrollMinutes = parseInt(String(settingsRef.current.scrollMinutes), 10) || QURAN_READING_STANDARDS.STANDARD_MINUTES_PER_JUZ;
-            const isAudioPlaying = isPlayingRef.current;
 
             const visiblePage = getCurrentlyVisiblePage();
 
@@ -4303,11 +4382,11 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
             const todayStr = moment().format('YYYY-MM-DD');
             const creditedTodaySet = new Set<number>(getVerifiedPagesReadForDate(todayStr));
 
-            // أ) حالة التمرير التلقائي: اعتماد كافة سرعات وأوقات التمرير التلقائي واحتساب صفحاتها كاملة
+            // أ) حالة التمرير التلقائي: عند اختيار أي وقت من 5 دقائق إلى 60 دقيقة يتم الاحتساب بأي سرعة للقراءة لكل صفحة
             if (isAutoScroll) {
                 const prevAutoPage = lastAutoScrollPageRef.current;
 
-                // عند إتمام تمرير صفحة تلقائياً والانتقال للصفحة التالية، نضمن احتساب الصفحة المنتهية حتى لو كانت أقصر طولاً أو بدأت من منتصفها
+                // عند إتمام تمرير صفحة تلقائياً والانتقال للصفحة التالية، نضمن احتساب الصفحة السابقة بأي سرعة كانت
                 if (
                     prevAutoPage !== null &&
                     prevAutoPage !== visiblePage &&
@@ -4316,10 +4395,11 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
                 ) {
                     const prevAutoSecs = autoScrollPageDwellSecsRef.current[prevAutoPage] || 0;
                     const prevTargetSecs = getAutoScrollTargetSecondsForPage(prevAutoPage, scrollMinutes);
-                    const minTransitionSecs = Math.max(
-                        QURAN_READING_STANDARDS.MIN_AUTO_SCROLL_SECONDS,
-                        Math.floor(prevTargetSecs * 0.35)
-                    );
+                    const isPrevShort = prevAutoPage === 1 || prevAutoPage === 2;
+                    const minTransitionSecs = isPrevShort 
+                        ? 1 
+                        : Math.max(1, Math.floor(prevTargetSecs * 0.25));
+
                     if (prevAutoSecs >= minTransitionSecs) {
                         creditedTodaySet.add(prevAutoPage);
                         autoScrollPageDwellSecsRef.current[prevAutoPage] = 0;
@@ -4336,26 +4416,28 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
                 const nextAutoSecs = (autoScrollPageDwellSecsRef.current[visiblePage] || 0) + 1;
                 autoScrollPageDwellSecsRef.current[visiblePage] = nextAutoSecs;
 
+                const isCurrentShort = visiblePage === 1 || visiblePage === 2;
                 const targetAutoSecs = getAutoScrollTargetSecondsForPage(visiblePage, scrollMinutes);
-                const inPageThresholdSecs = Math.max(
-                    QURAN_READING_STANDARDS.MIN_AUTO_SCROLL_SECONDS + 1,
-                    Math.floor(targetAutoSecs * 0.72)
-                );
+                const inPageThresholdSecs = isCurrentShort 
+                    ? 1 
+                    : Math.max(1, Math.floor(targetAutoSecs * 0.55));
 
                 if (nextAutoSecs >= inPageThresholdSecs) {
+                    creditedTodaySet.add(visiblePage);
                     autoScrollPageDwellSecsRef.current[visiblePage] = 0;
                     useHabitTracker.getState().recordQuranPageRead(visiblePage, nextAutoSecs, true);
                 }
                 return;
             }
 
-            // ب) حالة التمرير اليدوي: يُحتسب بدءاً من 10 دقائق فأكثر للجزء الواحد (30 ثانية للصفحة القياسية) مع منع التمرير السريع
+            // ب) حالة التمرير اليدوي: يتم احتساب كل صفحة من 30 ثانية للصفحة الواحدة، وإذا قل وقت التمرير عن ذلك لا يتم احتسابها
+            // الصفحتان الأولى والثانية بالمصحف يتم احتسابهما بأي وقت نظراً لصغرهما
             lastAutoScrollPageRef.current = null;
             if (isJumpingRef.current) return;
 
             if (showRapidScrollToast || now - lastRapidScrollDetectedTimeRef.current < 1500) {
                 const prevP = lastActiveHabitPageRef.current;
-                if (prevP !== null && continuousStaySecsRef.current < QURAN_READING_STANDARDS.TRANSIENT_SKIM_RESET_SECONDS) {
+                if (prevP !== null && !creditedTodaySet.has(prevP)) {
                     habitPageDwellSecsRef.current[prevP] = 0;
                 }
                 continuousStaySecsRef.current = 0;
@@ -4365,7 +4447,7 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
             let activeManualPage = visiblePage;
             const prevManualPage = lastActiveHabitPageRef.current;
 
-            // إذا أوشك القارئ يدوياً على إتمام آخر أسطر الصفحة السابقة (>= 75% من زمنها) ولا تزال ظاهرة بوضوح في الشاشة، نكمل الثواني المتبقية لها أولاً دون سرقة وقت من الصفحة التالية
+            // إذا أوشك القارئ يدوياً على إتمام آخر أسطر الصفحة السابقة ولا تزال ظاهرة في الشاشة
             if (
                 readingMode === 'mushaf' &&
                 prevManualPage !== null &&
@@ -4375,7 +4457,7 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
             ) {
                 const prevDwell = habitPageDwellSecsRef.current[prevManualPage] || 0;
                 const prevReq = getManualRequiredSecondsForPage(prevManualPage);
-                if (prevDwell >= Math.floor(prevReq * 0.75)) {
+                if (prevDwell >= Math.floor(prevReq * 0.8)) {
                     const content = mushafContentRef.current;
                     if (content) {
                         const containerRect = content.getBoundingClientRect();
@@ -4391,11 +4473,9 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
                 }
             }
 
+            // عند الانتقال من صفحة إلى أخرى: إذا قل وقت التمرير عن 30 ثانية (أو 1 ثانية للصفحتين 1 و 2)، لا يتم احتسابها ويُصفر عدادها
             if (prevManualPage !== null && prevManualPage !== activeManualPage) {
-                if (
-                    continuousStaySecsRef.current < QURAN_READING_STANDARDS.TRANSIENT_SKIM_RESET_SECONDS &&
-                    !creditedTodaySet.has(prevManualPage)
-                ) {
+                if (!creditedTodaySet.has(prevManualPage)) {
                     habitPageDwellSecsRef.current[prevManualPage] = 0;
                 }
                 continuousStaySecsRef.current = 0;
@@ -4407,18 +4487,13 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
                 return;
             }
 
-            manualActiveReadingSecsRef.current += 1;
+            const requiredManualSecs = getManualRequiredSecondsForPage(activeManualPage);
             const nextManualSecs = (habitPageDwellSecsRef.current[activeManualPage] || 0) + 1;
             habitPageDwellSecsRef.current[activeManualPage] = nextManualSecs;
 
-            const requiredManualSecs = getManualRequiredSecondsForPage(activeManualPage);
-            const nextManualCumulativeRequired = manualCumulativeRequiredSecsRef.current + requiredManualSecs;
-
-            if (
-                nextManualSecs >= requiredManualSecs &&
-                manualActiveReadingSecsRef.current >= nextManualCumulativeRequired
-            ) {
-                manualCumulativeRequiredSecsRef.current = nextManualCumulativeRequired;
+            // إذا استوفت الصفحة الوقت المطلوب (30 ثانية للصفحة العادية، أو بأي وقت للصفحتين 1 و 2) يتم احتسابها
+            if (nextManualSecs >= requiredManualSecs) {
+                creditedTodaySet.add(activeManualPage);
                 habitPageDwellSecsRef.current[activeManualPage] = 0;
                 useHabitTracker.getState().recordQuranPageRead(activeManualPage, nextManualSecs, false);
             }

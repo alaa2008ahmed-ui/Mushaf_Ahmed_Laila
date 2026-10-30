@@ -52,7 +52,7 @@ const TasbeehHeader: React.FC<TasbeehHeaderProps> = ({ onBack, onHome, onOpenGui
                                 title={language === 'en' ? "Tasbeeh Guide" : "دليل السبحة"}
                                 aria-label={language === 'en' ? "Tasbeeh Guide" : "دليل السبحة"}
                             >
-                                <i className="fa-solid fa-circle-question text-lg text-black"></i>
+                                <i className="fa-solid fa-circle-question text-lg"></i>
                             </button>
                         )}
                         <ThemePageLock />

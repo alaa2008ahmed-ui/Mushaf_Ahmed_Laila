@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { shareAsImage } from '../../utils/shareAsImage';
+import { playTTS, stopTTS, subscribeTTS } from '../../utils/ttsEngine';
 
 interface BottomSalahGuidesProps {
     theme: any;
@@ -23,24 +24,54 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
 }) => {
     const isBlack = isBlackTheme || theme?.bgColor === '#000000' || theme?.name === 'أبيض وأسود' || theme?.name === 'اسود';
     const primaryColor = isBlack ? '#FFFFFF' : (theme?.palette?.[0] || theme?.accent || '#2E7D5E');
-    const tintedBg = isBlack ? 'rgba(255, 255, 255, 0.05)' : `${primaryColor}14`;
+    const tintedBg = isBlack ? '#18181b' : (theme?.isDark ? '#1E293B' : '#FFFFFF');
 
-    // All cards are folded (collapsed) by default as requested
-    const [openCards, setOpenCards] = useState<{ [key: string]: boolean }>({});
+    // Only one card open at a time (accordion behavior: opening any closes all others)
+    const [openCardId, setOpenCardId] = useState<string | null>(null);
+    const [playingId, setPlayingId] = useState<string | null>(null);
+    const [copiedId, setCopiedId] = useState<string | null>(null);
+
+    useEffect(() => {
+        const unsubscribe = subscribeTTS((playingText) => {
+            if (!playingText) {
+                setPlayingId(null);
+            }
+        });
+        return () => {
+            unsubscribe();
+            stopTTS();
+        };
+    }, []);
 
     const toggleCard = (id: string) => {
-        setOpenCards(prev => ({
-            ...prev,
-            [id]: !prev[id]
-        }));
+        setOpenCardId(prev => (prev === id ? null : id));
     };
 
-    const handleCopy = (text: string, title: string) => {
+    const handleCopyCard = (id: string, textOrHtml: string, title: string) => {
         const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = text;
-        const cleanText = tempDiv.textContent || tempDiv.innerText || text;
+        tempDiv.innerHTML = textOrHtml;
+        const cleanText = tempDiv.textContent || tempDiv.innerText || textOrHtml;
         navigator.clipboard.writeText(`${title}\n\n${cleanText}\n\nمصحف أحمد و ليلى`);
+        setCopiedId(id);
+        setTimeout(() => setCopiedId(null), 2000);
         setToastMessage(isEn ? 'Copied to clipboard 📋' : 'تم النسخ إلى الحافظة 📋');
+    };
+
+    const handlePlayAudio = (id: string, textOrHtml: string) => {
+        if (playingId === id) {
+            stopTTS();
+            setPlayingId(null);
+        } else {
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = textOrHtml;
+            const cleanText = tempDiv.textContent || tempDiv.innerText || textOrHtml;
+            setPlayingId(id);
+            playTTS(cleanText, {
+                isSalah: true,
+                isEn,
+                onToast: (msg) => setToastMessage(msg)
+            });
+        }
     };
 
     // --- Content for Sunan Rawatib ---
@@ -303,12 +334,12 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                     backgroundColor: tintedBg
                 }}
             >
-                {/* Header (Accordion Toggle) - No arrows */}
+                {/* Header (Accordion Toggle) */}
                 <button
                     onClick={() => toggleCard('sunan')}
                     className="w-full p-4 flex items-center justify-between gap-3 text-right cursor-pointer select-none transition-colors hover:bg-black/5 dark:hover:bg-white/5"
                     dir={isEn ? 'ltr' : 'rtl'}
-                    aria-expanded={!!openCards['sunan']}
+                    aria-expanded={openCardId === 'sunan'}
                 >
                     <div className="flex items-center gap-3 flex-1 min-w-0">
                         <div
@@ -335,14 +366,14 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                             className="text-[11px] font-bold px-2.5 py-1 rounded-lg"
                             style={{ backgroundColor: `${primaryColor}20`, color: primaryColor }}
                         >
-                            {openCards['sunan'] ? (isEn ? 'Hide' : 'إخفاء') : (isEn ? 'View' : 'عرض')}
+                            {openCardId === 'sunan' ? (isEn ? 'Hide' : 'إخفاء') : (isEn ? 'View' : 'عرض')}
                         </span>
                     </div>
                 </button>
 
                 {/* Collapsible Content */}
                 <AnimatePresence initial={false}>
-                    {openCards['sunan'] && (
+                    {openCardId === 'sunan' && (
                         <motion.div
                             initial={{ height: 0, opacity: 0 }}
                             animate={{ height: 'auto', opacity: 1 }}
@@ -351,6 +382,57 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                             className="overflow-hidden border-t border-black/5 dark:border-white/5 bg-white/80 dark:bg-slate-900/40 backdrop-blur-sm"
                         >
                             <div className="p-4 sm:p-5">
+                                {/* 4 Action Icons: Audio, Share, Copy, Zoom - أعلى البطاقة */}
+                                <div className="flex items-center justify-center gap-3 sm:gap-4 mb-4 pb-3.5 border-b border-card-border" dir={isEn ? 'ltr' : 'rtl'}>
+                                    <button
+                                        type="button"
+                                        onClick={() => handlePlayAudio('sunan', isEn ? "Daily Sunnah Prayers: 12 Confirmed Daily Rak'ahs. Fajr Prayer: 2 Rak'ahs Before. Dhuhr Prayer: 4 Before and 2 After. Asr Prayer: No confirmed Sunnah. Maghrib Prayer: 2 Rak'ahs After. Isha Prayer: 2 Rak'ahs After. Total: 12 Rak'ahs daily." : "سنن الصلوات الرواتب، اثنتا عشرة ركعة مؤكدة يومياً: صلاة الفجر: ركعتان قبلية. صلاة الظهر: أربع ركعات قبلية وركعتان بعدية. صلاة العصر: ليس لها سنة راتبة. صلاة المغرب: ركعتان بعدية. صلاة العشاء: ركعتان بعدية. المجموع: اثنتا عشرة ركعة في اليوم والليلة.")}
+                                        className={`w-10 h-10 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 active:scale-95 transition-all ${isBlack ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}
+                                        style={{ color: playingId === 'sunan' ? '#ef4444' : (isBlack ? '#ffffff' : undefined) }}
+                                        title={isEn ? (playingId === 'sunan' ? 'Stop audio' : 'Play audio') : (playingId === 'sunan' ? 'إيقاف الصوت' : 'استماع صوتي')}
+                                        aria-label={isEn ? 'Audio' : 'استماع صوتي'}
+                                    >
+                                        <i className={`fa-solid ${playingId === 'sunan' ? 'fa-circle-pause text-red-500 animate-pulse text-base' : 'fa-volume-high text-sm'}`}></i>
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => handleShareCard(sunanTitle, isEn ? sunanHtmlEn : sunanHtmlAr)}
+                                        className={`w-10 h-10 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 active:scale-95 transition-all ${isBlack ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}
+                                        title={isEn ? 'Share Image' : 'مشاركة كصورة'}
+                                        aria-label={isEn ? 'Share' : 'مشاركة كصورة'}
+                                    >
+                                        <i className="fa-solid fa-share-nodes text-sm"></i>
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => handleCopyCard('sunan', isEn ? sunanHtmlEn : sunanHtmlAr, sunanTitle)}
+                                        className={`w-10 h-10 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 active:scale-95 transition-all ${isBlack ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}
+                                        title={isEn ? 'Copy' : 'نسخ'}
+                                        aria-label={isEn ? 'Copy' : 'نسخ'}
+                                    >
+                                        <i className={`fa-${copiedId === 'sunan' ? 'solid fa-check text-emerald-500' : 'regular fa-copy'} text-sm`}></i>
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => onZoom({
+                                            title: sunanTitle,
+                                            titleEn: sunanTitle,
+                                            text: sunanHtmlAr,
+                                            textEn: sunanHtmlEn,
+                                            note: isEn ? "Confirmed Daily Sunan" : "الرواتب المؤكدة",
+                                            noteEn: "Confirmed Daily Sunan"
+                                        })}
+                                        className={`w-10 h-10 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 active:scale-95 transition-all ${isBlack ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}
+                                        title={isEn ? 'Zoom' : 'تكبير وقراءة'}
+                                        aria-label={isEn ? 'Zoom' : 'تكبير وقراءة'}
+                                    >
+                                        <i className="fa-solid fa-magnifying-glass-plus text-sm"></i>
+                                    </button>
+                                </div>
+
                                 <div className={`space-y-2 text-sm ${isEn ? 'font-sans' : 'font-amiri'} themed-text-muted`} dir={isEn ? 'ltr' : 'rtl'}>
                                     <div className="flex justify-between border-b border-card-border pb-1.5">
                                         <span>{isEn ? 'Fajr Prayer:' : 'صلاة الفجر:'}</span>
@@ -376,41 +458,6 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                                         {isEn ? 'Total: 12 Rak\'ahs daily' : 'المجموع: ١٢ ركعة في اليوم والليلة'}
                                     </div>
                                 </div>
-
-                                {/* Action Buttons */}
-                                <div className="flex items-center justify-between mt-4 pt-3 border-t border-card-border gap-2">
-                                    <button
-                                        onClick={() => onZoom({
-                                            title: sunanTitle,
-                                            titleEn: sunanTitle,
-                                            text: sunanHtmlAr,
-                                            textEn: sunanHtmlEn,
-                                            note: isEn ? "Confirmed Daily Sunan" : "الرواتب المؤكدة",
-                                            noteEn: "Confirmed Daily Sunan"
-                                        })}
-                                        className="flex-1 py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors"
-                                        title={isEn ? "Zoom" : "تكبير وقراءة"}
-                                    >
-                                        <i className="fa-solid fa-magnifying-glass-plus"></i>
-                                        <span>{isEn ? 'Zoom' : 'تكبير وقراءة'}</span>
-                                    </button>
-                                    <button
-                                        onClick={() => handleShareCard(sunanTitle, isEn ? sunanHtmlEn : sunanHtmlAr)}
-                                        className="flex-1 py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 text-white shadow-sm transition-opacity hover:opacity-90"
-                                        style={{ backgroundColor: theme.palette[0] }}
-                                        title={isEn ? "Share Image" : "مشاركة كصورة"}
-                                    >
-                                        <i className="fa-solid fa-share-nodes"></i>
-                                        <span>{isEn ? 'Share Image' : 'مشاركة كصورة'}</span>
-                                    </button>
-                                    <button
-                                        onClick={() => handleCopy(isEn ? sunanHtmlEn : sunanHtmlAr, sunanTitle)}
-                                        className="py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors"
-                                        title={isEn ? "Copy" : "نسخ"}
-                                    >
-                                        <i className="fa-regular fa-copy"></i>
-                                    </button>
-                                </div>
                             </div>
                         </motion.div>
                     )}
@@ -424,12 +471,12 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                     backgroundColor: tintedBg
                 }}
             >
-                {/* Header (Accordion Toggle) - No arrows */}
+                {/* Header (Accordion Toggle) */}
                 <button
                     onClick={() => toggleCard('hadiths')}
                     className="w-full p-4 flex items-center justify-between gap-3 text-right cursor-pointer select-none transition-colors hover:bg-black/5 dark:hover:bg-white/5"
                     dir={isEn ? 'ltr' : 'rtl'}
-                    aria-expanded={!!openCards['hadiths']}
+                    aria-expanded={openCardId === 'hadiths'}
                 >
                     <div className="flex items-center gap-3 flex-1 min-w-0">
                         <div
@@ -456,14 +503,14 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                             className="text-[11px] font-bold px-2.5 py-1 rounded-lg"
                             style={{ backgroundColor: `${primaryColor}20`, color: primaryColor }}
                         >
-                            {openCards['hadiths'] ? (isEn ? 'Hide' : 'إخفاء') : (isEn ? 'View' : 'عرض')}
+                            {openCardId === 'hadiths' ? (isEn ? 'Hide' : 'إخفاء') : (isEn ? 'View' : 'عرض')}
                         </span>
                     </div>
                 </button>
 
                 {/* Collapsible Content */}
                 <AnimatePresence initial={false}>
-                    {openCards['hadiths'] && (
+                    {openCardId === 'hadiths' && (
                         <motion.div
                             initial={{ height: 0, opacity: 0 }}
                             animate={{ height: 'auto', opacity: 1 }}
@@ -472,6 +519,57 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                             className="overflow-hidden border-t border-black/5 dark:border-white/5 bg-white/80 dark:bg-slate-900/40 backdrop-blur-sm"
                         >
                             <div className="p-4 sm:p-5">
+                                {/* 4 Action Icons: Audio, Share, Copy, Zoom - أعلى البطاقة */}
+                                <div className="flex items-center justify-center gap-3 sm:gap-4 mb-4 pb-3.5 border-b border-card-border" dir={isEn ? 'ltr' : 'rtl'}>
+                                    <button
+                                        type="button"
+                                        onClick={() => handlePlayAudio('hadiths', isEn ? hadithsHtmlEn : hadithsHtmlAr)}
+                                        className={`w-10 h-10 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 active:scale-95 transition-all ${isBlack ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}
+                                        style={{ color: playingId === 'hadiths' ? '#ef4444' : (isBlack ? '#ffffff' : undefined) }}
+                                        title={isEn ? (playingId === 'hadiths' ? 'Stop audio' : 'Play audio') : (playingId === 'hadiths' ? 'إيقاف الصوت' : 'استماع صوتي')}
+                                        aria-label={isEn ? 'Audio' : 'استماع صوتي'}
+                                    >
+                                        <i className={`fa-solid ${playingId === 'hadiths' ? 'fa-circle-pause text-red-500 animate-pulse text-base' : 'fa-volume-high text-sm'}`}></i>
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => handleShareCard(hadithsTitle, isEn ? hadithsHtmlEn : hadithsHtmlAr)}
+                                        className={`w-10 h-10 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 active:scale-95 transition-all ${isBlack ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}
+                                        title={isEn ? 'Share Image' : 'مشاركة كصورة'}
+                                        aria-label={isEn ? 'Share' : 'مشاركة كصورة'}
+                                    >
+                                        <i className="fa-solid fa-share-nodes text-sm"></i>
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => handleCopyCard('hadiths', isEn ? hadithsHtmlEn : hadithsHtmlAr, hadithsTitle)}
+                                        className={`w-10 h-10 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 active:scale-95 transition-all ${isBlack ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}
+                                        title={isEn ? 'Copy' : 'نسخ'}
+                                        aria-label={isEn ? 'Copy' : 'نسخ'}
+                                    >
+                                        <i className={`fa-${copiedId === 'hadiths' ? 'solid fa-check text-emerald-500' : 'regular fa-copy'} text-sm`}></i>
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => onZoom({
+                                            title: hadithsTitle,
+                                            titleEn: hadithsTitle,
+                                            text: hadithsHtmlAr,
+                                            textEn: hadithsHtmlEn,
+                                            note: isEn ? "Authentic Hadiths" : "أحاديث صحيحة",
+                                            noteEn: "Authentic Hadiths"
+                                        })}
+                                        className={`w-10 h-10 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 active:scale-95 transition-all ${isBlack ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}
+                                        title={isEn ? 'Zoom' : 'تكبير وقراءة'}
+                                        aria-label={isEn ? 'Zoom' : 'تكبير وقراءة'}
+                                    >
+                                        <i className="fa-solid fa-magnifying-glass-plus text-sm"></i>
+                                    </button>
+                                </div>
+
                                 <div className={`space-y-4 text-sm ${isEn ? 'font-sans' : 'font-amiri'} themed-text-muted`} dir={isEn ? 'ltr' : 'rtl'}>
                                     <div className={`bg-card-bg-hover p-3 rounded-xl ${isEn ? 'border-l-3' : 'border-r-3'}`} style={isEn ? { borderLeftColor: theme.palette[0] } : { borderRightColor: theme.palette[0] }}>
                                         <p className="leading-relaxed">
@@ -517,60 +615,25 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                                         <p className={`${isEn ? 'text-right' : 'text-left'} text-[11px] mt-1.5 opacity-70`}>{isEn ? '- At-Tirmidhi & Abu Dawud' : '- رواه الترمذي وأبو داود'}</p>
                                     </div>
                                 </div>
-
-                                {/* Action Buttons */}
-                                <div className="flex items-center justify-between mt-4 pt-3 border-t border-card-border gap-2">
-                                    <button
-                                        onClick={() => onZoom({
-                                            title: hadithsTitle,
-                                            titleEn: hadithsTitle,
-                                            text: hadithsHtmlAr,
-                                            textEn: hadithsHtmlEn,
-                                            note: isEn ? "Authentic Hadiths" : "أحاديث صحيحة",
-                                            noteEn: "Authentic Hadiths"
-                                        })}
-                                        className="flex-1 py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors"
-                                        title={isEn ? "Zoom" : "تكبير وقراءة"}
-                                    >
-                                        <i className="fa-solid fa-magnifying-glass-plus"></i>
-                                        <span>{isEn ? 'Zoom' : 'تكبير وقراءة'}</span>
-                                    </button>
-                                    <button
-                                        onClick={() => handleShareCard(hadithsTitle, isEn ? hadithsHtmlEn : hadithsHtmlAr)}
-                                        className="flex-1 py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 text-white shadow-sm transition-opacity hover:opacity-90"
-                                        style={{ backgroundColor: theme.palette[1] }}
-                                        title={isEn ? "Share Image" : "مشاركة كصورة"}
-                                    >
-                                        <i className="fa-solid fa-share-nodes"></i>
-                                        <span>{isEn ? 'Share Image' : 'مشاركة كصورة'}</span>
-                                    </button>
-                                    <button
-                                        onClick={() => handleCopy(isEn ? hadithsHtmlEn : hadithsHtmlAr, hadithsTitle)}
-                                        className="py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors"
-                                        title={isEn ? "Copy" : "نسخ"}
-                                    >
-                                        <i className="fa-regular fa-copy"></i>
-                                    </button>
-                                </div>
                             </div>
                         </motion.div>
                     )}
                 </AnimatePresence>
             </div>
 
-            {/* --- CARD 3: Sujood As-Sahw (سهو الصلاة) - NEW FEATURE --- */}
+            {/* --- CARD 3: Sujood As-Sahw (سهو الصلاة) --- */}
             <div
                 className="rounded-2xl transition-all duration-300 overflow-hidden shadow-[0_4px_20px_-4px_rgba(0,0,0,0.04)] hover:shadow-md border border-slate-100/60 dark:border-white/5"
                 style={{
                     backgroundColor: tintedBg
                 }}
             >
-                {/* Header (Accordion Toggle) - No arrows */}
+                {/* Header (Accordion Toggle) */}
                 <button
                     onClick={() => toggleCard('sahw')}
                     className="w-full p-4 flex items-center justify-between gap-3 text-right cursor-pointer select-none transition-colors hover:bg-black/5 dark:hover:bg-white/5"
                     dir={isEn ? 'ltr' : 'rtl'}
-                    aria-expanded={!!openCards['sahw']}
+                    aria-expanded={openCardId === 'sahw'}
                 >
                     <div className="flex items-center gap-3 flex-1 min-w-0">
                         <div
@@ -597,14 +660,14 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                             className="text-[11px] font-bold px-2.5 py-1 rounded-lg"
                             style={{ backgroundColor: `${primaryColor}20`, color: primaryColor }}
                         >
-                            {openCards['sahw'] ? (isEn ? 'Hide' : 'إخفاء') : (isEn ? 'View' : 'عرض')}
+                            {openCardId === 'sahw' ? (isEn ? 'Hide' : 'إخفاء') : (isEn ? 'View' : 'عرض')}
                         </span>
                     </div>
                 </button>
 
                 {/* Collapsible Content */}
                 <AnimatePresence initial={false}>
-                    {openCards['sahw'] && (
+                    {openCardId === 'sahw' && (
                         <motion.div
                             initial={{ height: 0, opacity: 0 }}
                             animate={{ height: 'auto', opacity: 1 }}
@@ -613,13 +676,41 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                             className="overflow-hidden border-t border-black/5 dark:border-white/10 bg-white/80 dark:bg-slate-900/40 backdrop-blur-sm"
                         >
                             <div className="p-4 sm:p-5">
-                                <div 
-                                    dangerouslySetInnerHTML={{ __html: isEn ? sahwHtmlEn : sahwHtmlAr }}
-                                />
-
-                                {/* Action Buttons */}
-                                <div className="flex items-center justify-between mt-5 pt-3.5 border-t border-card-border gap-2">
+                                {/* 4 Action Icons: Audio, Share, Copy, Zoom - أعلى البطاقة */}
+                                <div className="flex items-center justify-center gap-3 sm:gap-4 mb-4 pb-3.5 border-b border-card-border" dir={isEn ? 'ltr' : 'rtl'}>
                                     <button
+                                        type="button"
+                                        onClick={() => handlePlayAudio('sahw', isEn ? sahwHtmlEn : sahwHtmlAr)}
+                                        className={`w-10 h-10 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 active:scale-95 transition-all ${isBlack ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}
+                                        style={{ color: playingId === 'sahw' ? '#ef4444' : (isBlack ? '#ffffff' : undefined) }}
+                                        title={isEn ? (playingId === 'sahw' ? 'Stop audio' : 'Play audio') : (playingId === 'sahw' ? 'إيقاف الصوت' : 'استماع صوتي')}
+                                        aria-label={isEn ? 'Audio' : 'استماع صوتي'}
+                                    >
+                                        <i className={`fa-solid ${playingId === 'sahw' ? 'fa-circle-pause text-red-500 animate-pulse text-base' : 'fa-volume-high text-sm'}`}></i>
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => handleShareCard(sahwTitle, isEn ? sahwHtmlEn : sahwHtmlAr)}
+                                        className={`w-10 h-10 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 active:scale-95 transition-all ${isBlack ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}
+                                        title={isEn ? 'Share Image' : 'مشاركة كصورة'}
+                                        aria-label={isEn ? 'Share' : 'مشاركة كصورة'}
+                                    >
+                                        <i className="fa-solid fa-share-nodes text-sm"></i>
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => handleCopyCard('sahw', isEn ? sahwHtmlEn : sahwHtmlAr, sahwTitle)}
+                                        className={`w-10 h-10 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 active:scale-95 transition-all ${isBlack ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}
+                                        title={isEn ? 'Copy' : 'نسخ'}
+                                        aria-label={isEn ? 'Copy' : 'نسخ'}
+                                    >
+                                        <i className={`fa-${copiedId === 'sahw' ? 'solid fa-check text-emerald-500' : 'regular fa-copy'} text-sm`}></i>
+                                    </button>
+
+                                    <button
+                                        type="button"
                                         onClick={() => onZoom({
                                             title: sahwTitle,
                                             titleEn: sahwTitle,
@@ -628,29 +719,17 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                                             note: isEn ? "Fiqh of Salah & Sujood As-Sahw" : "فقه الصلاة وأحكام سجود السهو",
                                             noteEn: "Fiqh of Salah & Sujood As-Sahw"
                                         })}
-                                        className="flex-1 py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors"
-                                        title={isEn ? "Zoom" : "تكبير وقراءة موسعة"}
+                                        className={`w-10 h-10 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 active:scale-95 transition-all ${isBlack ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}
+                                        title={isEn ? 'Zoom' : 'تكبير وقراءة'}
+                                        aria-label={isEn ? 'Zoom' : 'تكبير وقراءة'}
                                     >
-                                        <i className="fa-solid fa-magnifying-glass-plus"></i>
-                                        <span>{isEn ? 'Zoom' : 'تكبير وقراءة'}</span>
-                                    </button>
-                                    <button
-                                        onClick={() => handleShareCard(sahwTitle, isEn ? sahwHtmlEn : sahwHtmlAr)}
-                                        className="flex-1 py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 text-white shadow-sm transition-opacity hover:opacity-90"
-                                        style={{ backgroundColor: theme.palette[0] }}
-                                        title={isEn ? "Share Image" : "مشاركة كصورة"}
-                                    >
-                                        <i className="fa-solid fa-share-nodes"></i>
-                                        <span>{isEn ? 'Share Image' : 'مشاركة كصورة'}</span>
-                                    </button>
-                                    <button
-                                        onClick={() => handleCopy(isEn ? sahwHtmlEn : sahwHtmlAr, sahwTitle)}
-                                        className="py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors"
-                                        title={isEn ? "Copy" : "نسخ النص"}
-                                    >
-                                        <i className="fa-regular fa-copy"></i>
+                                        <i className="fa-solid fa-magnifying-glass-plus text-sm"></i>
                                     </button>
                                 </div>
+
+                                <div 
+                                    dangerouslySetInnerHTML={{ __html: isEn ? sahwHtmlEn : sahwHtmlAr }}
+                                />
                             </div>
                         </motion.div>
                     )}

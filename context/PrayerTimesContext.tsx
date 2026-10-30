@@ -8,10 +8,10 @@ import { prayerNamesAr, ADHAN_CHANNELS_CONFIG } from '../data/prayerTimesData';
 import { checkSupportsDST, calculateNightTimes, playNotificationSound, stopNotificationSound } from '../utils/prayerTimesUtils';
 import { updateAndroidWidget } from '../utils/widgetUtils';
 import { LocalNotifications } from '@capacitor/local-notifications';
-import { scheduleDeviceSilentWindows, cancelAllDeviceSilentWindows, setDeviceSilentNow } from '../utils/silentMode';
+import { scheduleDeviceSilentWindows, cancelAllDeviceSilentWindows, setDeviceSilentNow, updateNativeAlertsGroupSummary } from '../utils/silentMode';
 import { useTheme } from './ThemeContext';
 import { useLanguage } from './LanguageContext';
-import { PRAYER_NAMES_EN, LOCATION_TRANSLATIONS } from '../utils/prayerTimesTranslations';
+import { PRAYER_NAMES_EN, LOCATION_TRANSLATIONS, getLocalizedLocationName } from '../utils/prayerTimesTranslations';
 
 // --- Types ---
 interface PrayerConfig {
@@ -25,6 +25,10 @@ interface PrayerConfig {
         combinedCode: string;
         lat: number;
         lng: number;
+        cityGovAr?: string;
+        cityGovEn?: string;
+        fullCountryAr?: string;
+        fullCountryEn?: string;
     };
     isSummerTime?: boolean;
     syncWidgetTheme?: boolean;
@@ -75,7 +79,17 @@ const DEFAULT_CONFIG: PrayerConfig = {
     prayerOffsets: { Fajr: 0, Sunrise: 0, Dhuhr: 0, Asr: 0, Maghrib: 0, Isha: 0 },
     tones: {},
     mutedPrayers: { Sunrise: true },
-    location: { cityGov: "الدمام - الشرقية", fullCountry: "المملكة العربية السعودية", combinedCode: "+966013", lat: 26.4207, lng: 50.0888 },
+    location: { 
+        cityGov: "الدمام - الشرقية", 
+        fullCountry: "المملكة العربية السعودية", 
+        combinedCode: "+966013", 
+        lat: 26.4207, 
+        lng: 50.0888,
+        cityGovAr: "الدمام - الشرقية",
+        cityGovEn: "Dammam - Eastern Province",
+        fullCountryAr: "المملكة العربية السعودية",
+        fullCountryEn: "Saudi Arabia"
+    },
     isSummerTime: false,
     syncWidgetTheme: true,
     nightNotifications: { firstThird: true, midnight: true, lastThird: true },
@@ -134,6 +148,18 @@ const getCountryInfo = (countryCode: string, countryName: string, cityName: stri
         'dj': 'جمهورية جيبوتي'
     };
 
+    const fullNamesEn: Record<string, string> = {
+        'sa': 'Saudi Arabia', 'eg': 'Egypt', 'ae': 'United Arab Emirates',
+        'kw': 'Kuwait', 'qa': 'Qatar', 'bh': 'Bahrain', 'om': 'Oman',
+        'jo': 'Jordan', 'sy': 'Syria', 'lb': 'Lebanon',
+        'ps': 'Palestine', 'iq': 'Iraq', 'ye': 'Yemen', 'sd': 'Sudan',
+        'ly': 'Libya', 'tn': 'Tunisia', 'dz': 'Algeria',
+        'ma': 'Morocco', 'mr': 'Mauritania', 'so': 'Somalia',
+        'dj': 'Djibouti', 'tr': 'Turkey', 'us': 'United States',
+        'gb': 'United Kingdom', 'fr': 'France', 'de': 'Germany',
+        'it': 'Italy', 'es': 'Spain', 'ca': 'Canada', 'au': 'Australia'
+    };
+
     const saudiCities: Record<string, string> = {
         'الرياض': '11', 'الخرج': '11', 'مكة': '12', 'مكة المكرمة': '12', 'جدة': '12', 'الطائف': '12',
         'الدمام': '13', 'الخبر': '13', 'الظهران': '13', 'الجبيل': '13', 'الأحساء': '13', 'الهفوف': '13', 'حفر الباطن': '13',
@@ -152,13 +178,14 @@ const getCountryInfo = (countryCode: string, countryName: string, cityName: stri
     };
 
     let baseDialCode = dialCodes[code] || '';
-    let fullName = fullNames[code] || countryName;
+    let fullNameAr = fullNames[code] || countryName;
+    let fullNameEn = fullNamesEn[code] || countryName;
     let combinedCode = baseDialCode; // Keep it simple: just the dial code
 
-    return { fullName, combinedCode };
+    return { fullName: fullNameAr, fullNameAr, fullNameEn, combinedCode };
 };
 
-const getCalculationParams = (date: Date, locationData?: any) => {
+export const getCalculationParams = (date: Date, locationData?: any) => {
     let params = CalculationMethod.MuslimWorldLeague();
     let methodId = 3; // MWL
 
@@ -192,6 +219,71 @@ const getCalculationParams = (date: Date, locationData?: any) => {
     }
 
     return { params, methodId };
+};
+
+export const computeTimesSync = (locationData: any, date: Date = new Date(), isEn: boolean = false) => {
+    if (!locationData || typeof locationData.lat !== 'number' || typeof locationData.lng !== 'number') {
+        return null;
+    }
+    try {
+        const { params } = getCalculationParams(date, locationData);
+        const coordinates = new Coordinates(locationData.lat, locationData.lng);
+        const prayerTimes = new AdhanPrayerTimes(coordinates, date, params);
+
+        const formatTime = (d: Date) => {
+            return d.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+        };
+
+        const isRamadan = moment(date).iMonth() === 8;
+        const country = locationData?.fullCountry || '';
+        const code = locationData?.combinedCode || '';
+        let ishaTime = prayerTimes.isha;
+        if (isRamadan && (code.startsWith('+966') || country.includes('السعودية') || code.startsWith('+974') || country.includes('قطر'))) {
+            const diffMinutes = (ishaTime.getTime() - prayerTimes.maghrib.getTime()) / 60000;
+            if (diffMinutes < 110) {
+                ishaTime = new Date(ishaTime.getTime() + 30 * 60000);
+            }
+        }
+
+        const timings = {
+            Fajr: formatTime(prayerTimes.fajr),
+            Sunrise: formatTime(prayerTimes.sunrise),
+            Dhuhr: formatTime(prayerTimes.dhuhr),
+            Asr: formatTime(prayerTimes.asr),
+            Maghrib: formatTime(prayerTimes.maghrib),
+            Isha: formatTime(ishaTime),
+        };
+
+        let hijriDate = "";
+        let gregorianDate = "";
+        try {
+            const hijriFormatter = new Intl.DateTimeFormat(isEn ? 'en-US-u-ca-islamic' : 'ar-SA-u-ca-islamic', {
+                day: 'numeric', month: 'long', year: 'numeric'
+            });
+            hijriDate = hijriFormatter.format(date);
+        } catch {
+            hijriDate = moment(date).format('iYYYY/iM/iD');
+        }
+
+        try {
+            const gregorianFormatter = new Intl.DateTimeFormat(isEn ? 'en-US' : 'ar-EG', {
+                day: 'numeric', month: 'long', year: 'numeric'
+            });
+            gregorianDate = gregorianFormatter.format(date);
+        } catch {
+            gregorianDate = date.toLocaleDateString();
+        }
+
+        return {
+            timings,
+            dates: {
+                hijri: hijriDate,
+                gregorian: gregorianDate
+            }
+        };
+    } catch (e) {
+        return null;
+    }
 };
 
 const PrayerTimesContext = createContext<PrayerTimesContextType | undefined>(undefined);
@@ -352,24 +444,29 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
 
     // --- Calculation Logic ---
     const fetchTimesForLocation = useCallback(async (locationData: any) => {
+        if (!locationData) return;
         const { lat, lng } = locationData;
         try {
             const date = new Date();
-            const { params, methodId } = getCalculationParams(date, locationData);
             
-            let timings: any = null;
-            let hijriDate = "";
-            let gregorianDate = "";
+            // 1. Immediately calculate locally so UI updates in 0 milliseconds!
+            const localResult = computeTimesSync(locationData, date, isEn);
+            if (localResult) {
+                setTimes(localResult.timings);
+                setDates(localResult.dates);
+                localStorage.setItem('grandPrayersCache', JSON.stringify(localResult));
+            }
 
-            // Try AlAdhan API first for maximum accuracy and official times
+            // 2. Fetch AlAdhan API in background to refine official times/dates if online
             try {
+                const { methodId } = getCalculationParams(date, locationData);
                 const timestamp = Math.floor(date.getTime() / 1000);
                 const apiRes = await fetchWithTimeout(`https://api.aladhan.com/v1/timings/${timestamp}?latitude=${lat}&longitude=${lng}&method=${methodId}`, {}, 5000);
                 const apiData = await apiRes.json();
                 
                 if (apiData && apiData.code === 200) {
                     const data = apiData.data;
-                    timings = {
+                    const timings = {
                         Fajr: data.timings.Fajr,
                         Sunrise: data.timings.Sunrise,
                         Dhuhr: data.timings.Dhuhr,
@@ -378,7 +475,6 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                         Isha: data.timings.Isha,
                     };
                     
-                    // Use API dates for consistency
                     const gregorianMonthsArMap: Record<string, string> = {
                         'January': 'يناير', 'February': 'فبراير', 'March': 'مارس',
                         'April': 'أبريل', 'May': 'مايو', 'June': 'يونيو',
@@ -387,130 +483,135 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                     };
                     const gMonthRaw = data.date.gregorian.month.en;
                     const gMonthLocalized = isEn ? gMonthRaw : (gregorianMonthsArMap[gMonthRaw] || data.date.gregorian.month.ar || gMonthRaw);
-                    hijriDate = `${data.date.hijri.day} ${data.date.hijri.month.ar} ${data.date.hijri.year}`;
-                    gregorianDate = `${data.date.gregorian.day} ${gMonthLocalized} ${data.date.gregorian.year}`;
+                    const hijriDate = `${data.date.hijri.day} ${data.date.hijri.month.ar} ${data.date.hijri.year}`;
+                    const gregorianDate = `${data.date.gregorian.day} ${gMonthLocalized} ${data.date.gregorian.year}`;
+                    const datesData = { hijri: hijriDate, gregorian: gregorianDate };
+
+                    setTimes(timings);
+                    setDates(datesData);
+                    localStorage.setItem('grandPrayersCache', JSON.stringify({ timings, dates: datesData }));
                     
-                    // Store timezone offset for countdown logic
                     const timezone = data.meta.timezone;
-                    localStorage.setItem('grandLocationTimezone', timezone);
+                    if (timezone) localStorage.setItem('grandLocationTimezone', timezone);
                 }
             } catch (apiErr) {
-                console.warn("AlAdhan API failed, falling back to local calculation:", apiErr);
+                // AlAdhan API failed or offline: local times already computed and rendered in 0ms!
             }
-
-            // Fallback to local calculation if API fails
-            if (!timings) {
-                const coordinates = new Coordinates(lat, lng);
-                const prayerTimes = new AdhanPrayerTimes(coordinates, date, params);
-
-                const formatTime = (d: Date) => {
-                    return d.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
-                };
-
-                // Ramadan Isha Adjustment for specific countries (Saudi Arabia, Qatar)
-                const isRamadan = moment(date).iMonth() === 8;
-                const country = locationData?.fullCountry || '';
-                const code = locationData?.combinedCode || '';
-                let ishaTime = prayerTimes.isha;
-                if (isRamadan && (code.startsWith('+966') || country.includes('السعودية') || code.startsWith('+974') || country.includes('قطر'))) {
-                    const diffMinutes = (ishaTime.getTime() - prayerTimes.maghrib.getTime()) / 60000;
-                    if (diffMinutes < 110) {
-                        ishaTime = new Date(ishaTime.getTime() + 30 * 60000);
-                    }
-                }
-
-                timings = {
-                    Fajr: formatTime(prayerTimes.fajr),
-                    Sunrise: formatTime(prayerTimes.sunrise),
-                    Dhuhr: formatTime(prayerTimes.dhuhr),
-                    Asr: formatTime(prayerTimes.asr),
-                    Maghrib: formatTime(prayerTimes.maghrib),
-                    Isha: formatTime(ishaTime),
-                };
-
-                const hijriFormatter = new Intl.DateTimeFormat('ar-SA-u-ca-islamic', {
-                    day: 'numeric', month: 'long', year: 'numeric'
-                });
-                hijriDate = hijriFormatter.format(date);
-                
-                const gregorianFormatter = new Intl.DateTimeFormat('ar-EG', {
-                    day: 'numeric', month: 'long', year: 'numeric'
-                });
-                gregorianDate = gregorianFormatter.format(date);
-            }
-
-            const datesData = { hijri: hijriDate, gregorian: gregorianDate };
-
-            setTimes(timings);
-            setDates(datesData);
-            
-            // Cache for offline use
-            localStorage.setItem('grandPrayersCache', JSON.stringify({ timings, dates: datesData }));
-            
         } catch(e) { console.error("Failed to calculate prayer times:", e); }
-    }, []);
+    }, [isEn]);
 
     const refreshLocation = useCallback(async (isManualUserAction: boolean = false) => {
         return new Promise<void>(async (resolve, reject) => {
             const resetOffsets = { Fajr: 0, Sunrise: 0, Dhuhr: 0, Asr: 0, Maghrib: 0, Isha: 0 };
-            const fetchByIP = async () => {
+            
+            const fetchByIP = async (): Promise<boolean> => {
                 const fallbacks = [
                     {
-                        url: 'https://ipapi.co/json/',
-                        parser: (data: any) => ({
-                            lat: data.latitude,
-                            lng: data.longitude,
-                            cityGov: `${data.city} - ${data.region}`,
-                            fullCountry: data.country_name,
-                            combinedCode: data.country_calling_code
-                        })
+                        url: 'https://ipwho.is/',
+                        parser: (data: any) => {
+                            const rawCityGov = `${data.city || ''}${data.region ? ` - ${data.region}` : ''}`;
+                            const rawCountry = data.country || '';
+                            const cityGovAr = getLocalizedLocationName(rawCityGov, 'ar');
+                            const cityGovEn = getLocalizedLocationName(rawCityGov, 'en');
+                            const fullCountryAr = getLocalizedLocationName(rawCountry, 'ar');
+                            const fullCountryEn = getLocalizedLocationName(rawCountry, 'en');
+                            return {
+                                lat: parseFloat(data.latitude),
+                                lng: parseFloat(data.longitude),
+                                cityGov: isEn ? cityGovEn : cityGovAr,
+                                fullCountry: isEn ? fullCountryEn : fullCountryAr,
+                                cityGovAr,
+                                cityGovEn,
+                                fullCountryAr,
+                                fullCountryEn,
+                                combinedCode: data.calling_code ? `+${data.calling_code}` : ''
+                            };
+                        }
                     },
                     {
-                        url: 'https://ipwho.is/',
-                        parser: (data: any) => ({
-                            lat: data.latitude,
-                            lng: data.longitude,
-                            cityGov: `${data.city} - ${data.region}`,
-                            fullCountry: data.country,
-                            combinedCode: data.calling_code ? `+${data.calling_code}` : ''
-                        })
+                        url: 'https://ipapi.co/json/',
+                        parser: (data: any) => {
+                            const rawCityGov = `${data.city || ''}${data.region ? ` - ${data.region}` : ''}`;
+                            const rawCountry = data.country_name || '';
+                            const cityGovAr = getLocalizedLocationName(rawCityGov, 'ar');
+                            const cityGovEn = getLocalizedLocationName(rawCityGov, 'en');
+                            const fullCountryAr = getLocalizedLocationName(rawCountry, 'ar');
+                            const fullCountryEn = getLocalizedLocationName(rawCountry, 'en');
+                            return {
+                                lat: parseFloat(data.latitude),
+                                lng: parseFloat(data.longitude),
+                                cityGov: isEn ? cityGovEn : cityGovAr,
+                                fullCountry: isEn ? fullCountryEn : fullCountryAr,
+                                cityGovAr,
+                                cityGovEn,
+                                fullCountryAr,
+                                fullCountryEn,
+                                combinedCode: data.country_calling_code || ''
+                            };
+                        }
                     },
                     {
                         url: 'https://freeipapi.com/api/json',
-                        parser: (data: any) => ({
-                            lat: data.latitude,
-                            lng: data.longitude,
-                            cityGov: `${data.cityName} - ${data.regionName}`,
-                            fullCountry: data.countryName,
-                            combinedCode: data.countryCode
-                        })
+                        parser: (data: any) => {
+                            const rawCityGov = `${data.cityName || ''}${data.regionName ? ` - ${data.regionName}` : ''}`;
+                            const rawCountry = data.countryName || '';
+                            const cityGovAr = getLocalizedLocationName(rawCityGov, 'ar');
+                            const cityGovEn = getLocalizedLocationName(rawCityGov, 'en');
+                            const fullCountryAr = getLocalizedLocationName(rawCountry, 'ar');
+                            const fullCountryEn = getLocalizedLocationName(rawCountry, 'en');
+                            return {
+                                lat: parseFloat(data.latitude),
+                                lng: parseFloat(data.longitude),
+                                cityGov: isEn ? cityGovEn : cityGovAr,
+                                fullCountry: isEn ? fullCountryEn : fullCountryAr,
+                                cityGovAr,
+                                cityGovEn,
+                                fullCountryAr,
+                                fullCountryEn,
+                                combinedCode: data.countryCode || ''
+                            };
+                        }
                     }
                 ];
 
                 for (const service of fallbacks) {
                     try {
-                        const res = await fetchWithTimeout(service.url, { cache: 'no-cache' }, 5000);
+                        const res = await fetchWithTimeout(service.url, { cache: 'no-cache' }, 3500);
                         if (!res.ok) continue;
                         const data = await res.json();
                         const newLoc = service.parser(data);
-                        if (newLoc.lat && newLoc.lng) {
+                        if (newLoc && !isNaN(newLoc.lat) && !isNaN(newLoc.lng)) {
+                            // Instantly compute and set times
+                            const immediateTimes = computeTimesSync(newLoc, new Date(), isEn);
+                            if (immediateTimes) {
+                                setTimes(immediateTimes.timings);
+                                setDates(immediateTimes.dates);
+                                localStorage.setItem('grandPrayersCache', JSON.stringify(immediateTimes));
+                            }
                             setConfig(prev => ({ 
                                 ...prev, 
                                 location: newLoc,
                                 ...(isManualUserAction ? { prayerOffsets: resetOffsets } : {})
                             }));
-                            resolve();
-                            return;
+                            return true;
                         }
                     } catch (e) {
                         console.warn(`IP location fetch failed for ${service.url}:`, e);
                     }
                 }
-                if (isManualUserAction) {
-                    setConfig(prev => ({ ...prev, prayerOffsets: resetOffsets }));
-                }
-                reject(new Error("Failed to fetch location by IP from all services"));
+                return false;
             };
+
+            // Fast path for automatic first launch: Run IP lookup immediately to provide instant sub-second location
+            let ipResolved = false;
+            if (!isManualUserAction) {
+                fetchByIP().then(success => {
+                    if (success) {
+                        ipResolved = true;
+                        resolve();
+                    }
+                }).catch(() => {});
+            }
 
             try {
                 if (Capacitor.isNativePlatform()) {
@@ -523,23 +624,47 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                     }
                 }
 
-                const pos = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 10000 });
+                // If on automatic run, use a brisk 4-second timeout so we don't hang if GPS is searching for lock
+                const timeoutVal = isManualUserAction ? 10000 : 4000;
+                const pos = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: timeoutVal });
                 const { latitude, longitude } = pos.coords;
                 let newLoc = {
                     lat: latitude, lng: longitude,
-                    cityGov: 'موقعي الحالي', fullCountry: '', combinedCode: ''
+                    cityGov: isEn ? 'Current Location' : 'موقعي الحالي',
+                    fullCountry: '', combinedCode: '',
+                    cityGovAr: 'موقعي الحالي', cityGovEn: 'Current Location',
+                    fullCountryAr: '', fullCountryEn: ''
                 };
+
+                // Instantly calculate times for GPS coordinates
+                const immediateGpsTimes = computeTimesSync(newLoc, new Date(), isEn);
+                if (immediateGpsTimes) {
+                    setTimes(immediateGpsTimes.timings);
+                    setDates(immediateGpsTimes.dates);
+                    localStorage.setItem('grandPrayersCache', JSON.stringify(immediateGpsTimes));
+                }
+
                 try {
-                    const res = await fetchWithTimeout(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&accept-language=ar`, {}, 7000);
+                    const langParam = isEn ? 'en,ar' : 'ar,en';
+                    const res = await fetchWithTimeout(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&accept-language=${langParam}`, {}, 5000);
                     const data = await res.json();
                     if (data && data.address) {
                         const addr = data.address;
-                        const city = addr.village || addr.town || addr.city || "موقعي";
+                        const city = addr.village || addr.town || addr.city || (isEn ? "Current Location" : "موقعي");
                         const countryInfo = getCountryInfo(addr.country_code, addr.country, city);
+                        const rawCityGov = `${city}${addr.state ? ` - ${addr.state}` : ''}`;
+                        const cityGovAr = getLocalizedLocationName(rawCityGov, 'ar');
+                        const cityGovEn = getLocalizedLocationName(rawCityGov, 'en');
+                        const fullCountryAr = countryInfo.fullNameAr || getLocalizedLocationName(countryInfo.fullName, 'ar');
+                        const fullCountryEn = countryInfo.fullNameEn || getLocalizedLocationName(countryInfo.fullName, 'en');
                         newLoc = {
                             ...newLoc,
-                            cityGov: `${city}${addr.state ? ` - ${addr.state}` : ''}`,
-                            fullCountry: countryInfo.fullName,
+                            cityGov: isEn ? cityGovEn : cityGovAr,
+                            fullCountry: isEn ? fullCountryEn : fullCountryAr,
+                            cityGovAr,
+                            cityGovEn,
+                            fullCountryAr,
+                            fullCountryEn,
                             combinedCode: countryInfo.combinedCode
                         };
                     } else {
@@ -547,20 +672,31 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                     }
                 } catch(e) {
                     try {
-                        const res2 = await fetchWithTimeout(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=ar`, {}, 7000);
+                        const res2 = await fetchWithTimeout(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=${isEn ? 'en' : 'ar'}`, {}, 5000);
                         const data2 = await res2.json();
                         if (data2 && data2.countryName) {
+                            const rawCity = data2.city || data2.locality || (isEn ? "Current Location" : "موقعي الحالي");
+                            const cityGovAr = getLocalizedLocationName(rawCity, 'ar');
+                            const cityGovEn = getLocalizedLocationName(rawCity, 'en');
+                            const fullCountryAr = getLocalizedLocationName(data2.countryName, 'ar');
+                            const fullCountryEn = getLocalizedLocationName(data2.countryName, 'en');
                             newLoc = {
                                 ...newLoc,
-                                cityGov: data2.city || data2.locality || "موقعي الحالي",
-                                fullCountry: data2.countryName,
+                                cityGov: isEn ? cityGovEn : cityGovAr,
+                                fullCountry: isEn ? fullCountryEn : fullCountryAr,
+                                cityGovAr,
+                                cityGovEn,
+                                fullCountryAr,
+                                fullCountryEn,
                                 combinedCode: ""
                             };
                         } else {
                             throw new Error("No data");
                         }
                     } catch (err) {
-                        newLoc.cityGov = "موقعي الحالي";
+                        newLoc.cityGov = isEn ? "Current Location" : "موقعي الحالي";
+                        newLoc.cityGovAr = "موقعي الحالي";
+                        newLoc.cityGovEn = "Current Location";
                     }
                 }
                 setConfig(prev => ({ 
@@ -570,25 +706,45 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                 }));
                 resolve();
             } catch (err) {
-                console.warn("Geolocation failed, falling back to IP:", err);
-                fetchByIP();
+                console.warn("Geolocation GPS failed or timed out, trying/relying on IP:", err);
+                if (!ipResolved) {
+                    const ok = await fetchByIP();
+                    if (ok) {
+                        resolve();
+                    } else {
+                        if (isManualUserAction) {
+                            setConfig(prev => ({ ...prev, prayerOffsets: resetOffsets }));
+                        }
+                        reject(err);
+                    }
+                }
             }
         });
-    }, []);
+    }, [isEn]);
 
     const manualSearch = useCallback(async (query: string) => {
         if(!query) return;
         try {
-            const res = await fetchWithTimeout(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&addressdetails=1&accept-language=ar&limit=1`, {}, 5000);
+            const langParam = isEn ? 'en,ar' : 'ar,en';
+            const res = await fetchWithTimeout(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&addressdetails=1&accept-language=${langParam}&limit=1`, {}, 5000);
             const data = await res.json();
             if(data && data.length > 0) {
                 const addr = data[0].address;
                 const name = addr.city || addr.town || addr.village || query;
                 const province = addr.state || "";
                 const countryInfo = getCountryInfo(addr.country_code, addr.country, name);
+                const rawCityGov = `${name}${province ? ` - ${province}` : ''}`;
+                const cityGovAr = getLocalizedLocationName(rawCityGov, 'ar');
+                const cityGovEn = getLocalizedLocationName(rawCityGov, 'en');
+                const fullCountryAr = countryInfo.fullNameAr || getLocalizedLocationName(countryInfo.fullName, 'ar');
+                const fullCountryEn = countryInfo.fullNameEn || getLocalizedLocationName(countryInfo.fullName, 'en');
                 const newLocation = {
-                    cityGov: `${name} - ${province}`,
-                    fullCountry: countryInfo.fullName,
+                    cityGov: isEn ? cityGovEn : cityGovAr,
+                    fullCountry: isEn ? fullCountryEn : fullCountryAr,
+                    cityGovAr,
+                    cityGovEn,
+                    fullCountryAr,
+                    fullCountryEn,
                     combinedCode: countryInfo.combinedCode,
                     lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon)
                 };
@@ -605,7 +761,7 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
         } catch(e) { 
             throw e;
         } 
-    }, []);
+    }, [isEn]);
 
     const updateConfig = useCallback((newConfig: Partial<PrayerConfig>) => {
         if (newConfig.mutedPrayers) {
@@ -1154,7 +1310,7 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                         return {
                             ...rest,
                             id: finalId,
-                            group: 'com.mushaf.ahmedandlayla.APP_ALERTS_CARD',
+                            group: 'com.mushaf.ahmedandlayla.PRAYER_ALERTS_CARD',
                             groupSummary: false,
                             smallIcon: 'ic_stat_name',
                             iconColor: '#2E7D5E',
@@ -1163,7 +1319,8 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                         };
                     });
                     await LocalNotifications.schedule({ notifications: cleanPrayerNotifs });
-                    console.log(`[Capacitor] Scheduled ${cleanPrayerNotifs.length} prayer/iqama notifications under group com.mushaf.ahmedandlayla.APP_ALERTS_CARD.`);
+                    console.log(`[Capacitor] Scheduled ${cleanPrayerNotifs.length} prayer/iqama notifications under group com.mushaf.ahmedandlayla.PRAYER_ALERTS_CARD.`);
+                    await updateNativeAlertsGroupSummary();
                 }
             } catch (err) {
                 console.warn('Error scheduling via LocalNotifications:', err);
@@ -1269,8 +1426,10 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
             return Date.now() + (pDate.getTime() - cityNow.getTime());
         };
 
-        const rawCity = (config.location?.cityGov || '').split(' - ')[0].trim();
-        const localizedCity = isWidgetEn ? (LOCATION_TRANSLATIONS[rawCity] || rawCity) : rawCity;
+        const rawCity = isWidgetEn
+            ? ((config.location as any)?.cityGovEn || config.location?.cityGov || '').split(' - ')[0].trim()
+            : ((config.location as any)?.cityGovAr || config.location?.cityGov || '').split(' - ')[0].trim();
+        const localizedCity = getLocalizedLocationName(rawCity, isWidgetEn ? 'en' : 'ar');
 
         const gregorianMonthsMap: Record<string, string> = {
             'January': 'يناير', 'February': 'فبراير', 'March': 'مارس',
@@ -1701,19 +1860,30 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
         if (cached) {
             try {
                 const prayerData = JSON.parse(cached);
-                setTimes(prayerData.timings);
-                setDates(prayerData.dates);
+                if (prayerData && prayerData.timings) setTimes(prayerData.timings);
+                if (prayerData && prayerData.dates) setDates(prayerData.dates);
             } catch(e) {}
         }
         if (config.location) {
+            // Instantly compute synchronous adhan times so there is zero delay in rendering
+            const syncTimes = computeTimesSync(config.location, new Date(), isEn);
+            if (syncTimes) {
+                setTimes(prev => (prev && Object.keys(prev).length > 0) ? prev : syncTimes.timings);
+                setDates(prev => (prev && prev.hijri && !prev.hijri.includes('--')) ? prev : syncTimes.dates);
+            }
             fetchTimesForLocation(config.location);
         }
-        // Only auto-locate on very first app launch if no saved config exists
-        const saved = localStorage.getItem('prayerFinal_v34') || localStorage.getItem('prayerFinal_v33');
-        if (!saved) {
-            refreshLocation(false).catch(() => {});
+
+        // Auto-locate automatically and instantly on first launch
+        const hasAutoLocated = localStorage.getItem('prayer_has_auto_located_v2');
+        if (!hasAutoLocated) {
+            refreshLocation(false).then(() => {
+                try {
+                    localStorage.setItem('prayer_has_auto_located_v2', 'true');
+                } catch (e) {}
+            }).catch(() => {});
         }
-    }, [fetchTimesForLocation, refreshLocation]);
+    }, [fetchTimesForLocation, refreshLocation, isEn]);
 
     return (
         <PrayerTimesContext.Provider value={{ 

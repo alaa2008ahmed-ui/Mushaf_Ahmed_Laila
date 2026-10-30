@@ -28,7 +28,7 @@ public class PrayerSilentReceiver extends BroadcastReceiver {
 
     private static final String PREFS_NAME = "PrayerSilentPrefs";
     private static final String KEY_ORIGINAL_RINGER_MODE = "original_ringer_mode";
-    private static final String CHANNEL_ID = "prayer_silent_v3_chime_channel";
+    private static final String CHANNEL_ID = "prayer_silent_v4_chime_channel";
 
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -68,6 +68,10 @@ public class PrayerSilentReceiver extends BroadcastReceiver {
             prayerName = "الصلاة";
         }
 
+        SharedPreferences langPrefs = context.getSharedPreferences("CapacitorStorage", Context.MODE_PRIVATE);
+        String appLang = langPrefs.getString("app_language", "ar");
+        boolean isArabic = !"en".equalsIgnoreCase(appLang);
+
         if (ACTION_START_SILENT.equals(action)) {
             // Save current ringer mode before muting (only if not already muted)
             int currentMode = audioManager.getRingerMode();
@@ -79,11 +83,23 @@ public class PrayerSilentReceiver extends BroadcastReceiver {
             applySilentMode(context, audioManager);
             PersistentPrayerNotification.update(context);
 
+            String startTitle = isArabic ? "الوضع الصامت التلقائي" : "Auto Silent Mode";
+            String startMsg = isArabic 
+                ? "تم تفعيل الوضع الصامت لصلاة " + prayerName 
+                : "Silent mode enabled for " + prayerName;
+            showNotification(context, 9401, startTitle, startMsg);
+
         } else if (ACTION_END_SILENT.equals(action)) {
             // Restore original ringer mode
             int originalMode = prefs.getInt(KEY_ORIGINAL_RINGER_MODE, AudioManager.RINGER_MODE_NORMAL);
             restoreRingerMode(context, audioManager, originalMode);
             PersistentPrayerNotification.update(context);
+
+            String endTitle = isArabic ? "الوضع الصامت التلقائي" : "Auto Silent Mode";
+            String endMsg = isArabic 
+                ? "تم إلغاء الوضع الصامت وانتهاء صلاة " + prayerName 
+                : "Silent mode ended for " + prayerName;
+            showNotification(context, 9402, endTitle, endMsg);
         }
     }
 
@@ -154,10 +170,11 @@ public class PrayerSilentReceiver extends BroadcastReceiver {
             NotificationManager nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
             if (nm == null) return;
 
-            // Delete legacy channel
+            // Delete legacy channels
             try {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     nm.deleteNotificationChannel("prayer_silent_channel");
+                    nm.deleteNotificationChannel("prayer_silent_v3_chime_channel");
                 }
             } catch (Exception ignored) {}
 
@@ -190,6 +207,7 @@ public class PrayerSilentReceiver extends BroadcastReceiver {
                 channel.setBypassDnd(true);
                 channel.enableVibration(true);
                 channel.enableLights(true);
+                channel.setShowBadge(false); // Do not show app icon launcher badge
                 if (soundUri != null) {
                     channel.setSound(soundUri, alarmAudioAttributes);
                 }
@@ -212,9 +230,11 @@ public class PrayerSilentReceiver extends BroadcastReceiver {
                 .setContentIntent(pendingIntent)
                 .setPriority(NotificationCompat.PRIORITY_MAX)
                 .setCategory(NotificationCompat.CATEGORY_ALARM)
-                .setGroup("com.mushaf.ahmedandlayla.APP_ALERTS_CARD")
+                .setGroup(AlertsGroupHelper.PRAYER_GROUP_KEY)
                 .setGroupSummary(false)
                 .setSortKey("10_alert")
+                .setBadgeIconType(NotificationCompat.BADGE_ICON_NONE)
+                .setNumber(0)
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC);
 
             if (soundUri != null) {

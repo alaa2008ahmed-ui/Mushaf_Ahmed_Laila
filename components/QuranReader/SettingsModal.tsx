@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { READERS, TAFSEERS, THEMES, DEFAULT_SETTINGS, toArabic, ReadingMode, getReadersForMode, getValidReaderForMode, ENGLISH_FONTS } from './constants';
-import { ChevronDown, ChevronUp, Settings } from 'lucide-react';
+import { READERS, TAFSEERS, THEMES, DEFAULT_SETTINGS, toArabic, isDarkQuranTheme, ReadingMode, getReadersForMode, getValidReaderForMode, ENGLISH_FONTS } from './constants';
+import { getQuranThemeIdForLayout } from '../../utils/quranThemeHelper';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 
 import SurahHeader from './SurahHeader';
@@ -64,7 +65,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, sho
         return saved !== null ? saved === 'true' : false;
     });
 
-    const activeThemeId = localStorage.getItem('current_theme_id' + modeSuffix) || settings.theme || 'black';
+    const activeThemeId = getQuranThemeIdForLayout(modeSuffix) || settings.theme || 'black';
     const modalTheme = THEMES[activeThemeId as keyof typeof THEMES] || THEMES.black;
     const currentDesign = Number(settings.surahHeaderDesign) || 1;
 
@@ -141,32 +142,24 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, sho
     };
 
     const currentTheme = THEMES[settings.theme] || Object.values(THEMES)[0];
+    const isDarkTheme = isDarkQuranTheme(currentTheme);
 
     return (
         <div className="fixed z-[1200] bg-black/40 backdrop-blur-sm flex items-center justify-center overflow-hidden" style={{ top: 0, bottom: 0, left: 0, right: 0 }} dir="rtl" onClick={handleClose}>
             <div className="w-full h-full flex flex-col overflow-hidden shadow-2xl border-0" style={{ backgroundColor: currentTheme.bg || '#ffffff', border: 'none', outline: 'none' }} onClick={e => e.stopPropagation()}>
                 <div className="flex-1 w-full flex flex-col overflow-hidden" style={{ color: currentTheme.text || '#000000' }}>
-                    
-                    {/* Full Screen Modal Header */}
-                    <div className="p-3 flex items-center justify-center shrink-0" style={{ backgroundColor: currentTheme.bg || '#ffffff', paddingTop: 'calc(0.75rem + env(safe-area-inset-top))' }}>
-                        <h3 
-                            className="text-sm font-extrabold px-6 py-2 rounded-xl quran-raised-card inline-flex items-center justify-center gap-2 tracking-wide border-0" 
-                            style={{ backgroundColor: currentTheme?.id === 'night' ? 'rgba(255,255,255,0.06)' : '#ffffff', color: currentTheme.text, border: 'none' }}
-                        >
-                            <Settings className="w-4 h-4 quran-3d-icon" style={{ color: currentTheme?.accent || '#10b981' }} />
-                            <span>{isEn ? "Settings" : "الإعدادات"}</span>
-                        </h3>
-                    </div>
-
-                    <div className={`p-3 overflow-y-auto text-center flex-1 scrollbar-hide ${isLandscape ? 'grid grid-cols-2 gap-x-6 gap-y-3' : 'space-y-3'}`}>
+                    <div 
+                        className={`p-3 overflow-y-auto text-center flex-1 scrollbar-hide ${isLandscape ? 'grid grid-cols-2 gap-x-6 gap-y-3' : 'space-y-3'}`}
+                        style={{ paddingTop: 'calc(0.75rem + env(safe-area-inset-top))' }}
+                    >
                     {/* خامسا: صف موحد يجمع حجم الخط مع سماكة الخط وتخصيص الخط */}
-                    <div id="font-controls-row" className={`${isLandscape ? 'col-span-2' : ''} p-3 rounded-2xl quran-raised-card space-y-2 border-0`} style={{ backgroundColor: currentTheme?.id === 'night' ? 'rgba(255,255,255,0.05)' : '#ffffff' }}>
+                    <div id="font-controls-row" className={`${isLandscape ? 'col-span-2' : ''} p-3 rounded-2xl quran-raised-card space-y-2 border-0`} style={{ backgroundColor: isDarkTheme ? (currentTheme?.cardBg || 'rgba(255,255,255,0.05)') : '#ffffff' }}>
                         <div className="grid grid-cols-12 gap-2 items-center">
                             {/* حجم الخط: يأخذ النصف الأول من الصف */}
                             <div id="font-size-section" className="col-span-6 flex flex-col justify-center">
                                 <div className="flex items-center justify-between mb-1.5">
                                     <label className="text-xs font-bold opacity-80">{isEn ? "Font Size" : "حجم الخط"}</label>
-                                    <span className="text-[11px] px-2 py-0.5 rounded-lg quran-raised-card font-bold" style={{ backgroundColor: currentTheme?.id === 'night' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)', border: 'none' }}>{formatFontSize(settings.fontSize)}</span>
+                                    <span className="text-[11px] px-2 py-0.5 rounded-lg quran-raised-card font-bold" style={{ backgroundColor: isDarkTheme ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)', border: 'none' }}>{formatFontSize(settings.fontSize)}</span>
                                 </div>
                                 <input 
                                     type="range" 
@@ -191,7 +184,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, sho
                                         onClick={() => updateSetting('isBold', !settings.isBold)} 
                                         className={`col-span-2 p-1 text-[11px] h-8 rounded-xl flex justify-center items-center font-bold transition-all border-0 ${settings.isBold ? 'quran-raised-btn-selected text-white' : 'quran-raised-btn'}`} 
                                         style={{ 
-                                            backgroundColor: settings.isBold ? (currentTheme?.accent || '#10b981') : (currentTheme?.id === 'night' ? 'rgba(255,255,255,0.08)' : '#ffffff'),
+                                            backgroundColor: settings.isBold ? (currentTheme?.accent || '#10b981') : (isDarkTheme ? (currentTheme?.btnBg || 'rgba(255,255,255,0.08)') : '#ffffff'),
                                             border: 'none',
                                         }}
                                         title={isEn ? "Toggle bold font weight" : "تفعيل/إلغاء سماكة الخط (Bold)"}
@@ -203,7 +196,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, sho
                                         onClick={() => onOpenModal('font-modal')} 
                                         className="col-span-3 p-1 text-[11px] h-8 rounded-xl quran-raised-btn flex justify-between items-center px-2.5 font-bold border-0"
                                         style={{ 
-                                            backgroundColor: currentTheme?.id === 'night' ? 'rgba(255,255,255,0.08)' : '#ffffff',
+                                            backgroundColor: isDarkTheme ? (currentTheme?.btnBg || 'rgba(255,255,255,0.08)') : '#ffffff',
                                             color: currentTheme?.text,
                                             border: 'none',
                                         }}
@@ -217,7 +210,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, sho
                     </div>
 
                     {/* ثانيا: بطاقة الألوان الثلاثة في صف واحد مدمج */}
-                    <div id="colors-section" className={`${isLandscape ? 'col-span-2' : ''} p-3 rounded-2xl quran-raised-card border-0`} style={{ backgroundColor: currentTheme?.id === 'night' ? 'rgba(255,255,255,0.05)' : '#ffffff' }}>
+                    <div id="colors-section" className={`${isLandscape ? 'col-span-2' : ''} p-3 rounded-2xl quran-raised-card border-0`} style={{ backgroundColor: isDarkTheme ? (currentTheme?.cardBg || 'rgba(255,255,255,0.05)') : '#ffffff' }}>
                         <div className="grid grid-cols-3 gap-2">
                             {/* لون النص */}
                             <div className="flex flex-col items-center">
@@ -260,7 +253,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, sho
                         </div>
                         
                         {activeColorField && (
-                            <div className="p-3 rounded-2xl quran-raised-card mt-3 animate-fadeIn border-0" style={{ backgroundColor: currentTheme?.id === 'night' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.03)' }}>
+                            <div className="p-3 rounded-2xl quran-raised-card mt-3 animate-fadeIn border-0" style={{ backgroundColor: isDarkTheme ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.03)' }}>
                                 <div className="flex justify-between items-center mb-2">
                                     <span className="text-xs font-bold" style={{ color: currentTheme?.text }}>
                                         {isEn 
@@ -294,7 +287,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, sho
                             <button 
                                 onClick={() => onOpenModal('reciter-modal')} 
                                 className="w-full p-2.5 text-xs h-9 rounded-xl quran-raised-btn flex justify-between items-center px-3 font-bold border-0"
-                                style={{ backgroundColor: currentTheme?.id === 'night' ? 'rgba(255,255,255,0.06)' : '#ffffff', color: currentTheme?.text, border: 'none' }}
+                                style={{ 
+                                    backgroundColor: isDarkTheme ? (currentTheme?.btnBg || 'rgba(255,255,255,0.08)') : '#ffffff', 
+                                    color: isDarkTheme ? (currentTheme?.btnText || currentTheme?.text || '#ffffff') : currentTheme?.text, 
+                                    border: isDarkTheme ? '1px solid rgba(255,255,255,0.12)' : 'none' 
+                                }}
                             >
                                 <span className="truncate">{getReaderName(settings.reader)}</span>
                                 <i className="fa-solid fa-chevron-left opacity-50 shrink-0 text-[10px] quran-3d-icon"></i>
@@ -305,7 +302,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, sho
                             <button 
                                 onClick={() => onOpenModal('tafseer-selection-modal')} 
                                 className="w-full p-2.5 text-xs h-9 rounded-xl quran-raised-btn flex justify-between items-center px-3 font-bold border-0"
-                                style={{ backgroundColor: currentTheme?.id === 'night' ? 'rgba(255,255,255,0.06)' : '#ffffff', color: currentTheme?.text, border: 'none' }}
+                                style={{ 
+                                    backgroundColor: isDarkTheme ? (currentTheme?.btnBg || 'rgba(255,255,255,0.08)') : '#ffffff', 
+                                    color: isDarkTheme ? (currentTheme?.btnText || currentTheme?.text || '#ffffff') : currentTheme?.text, 
+                                    border: isDarkTheme ? '1px solid rgba(255,255,255,0.12)' : 'none' 
+                                }}
                             >
                                 <span className="truncate">{getTafseerName(settings.tafseer)}</span>
                                 <i className="fa-solid fa-chevron-left opacity-50 shrink-0 text-[10px] quran-3d-icon"></i>
@@ -318,7 +319,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, sho
                         {/* تكرار الآية */}
                         <div id="ayah-repeat-section" className="flex flex-col text-right">
                             <label className="text-xs font-bold opacity-80 mb-1.5 truncate">{isEn ? "Ayah Repeat" : "تكرار الآية"}</label>
-                            <div className="h-9 flex items-center justify-around px-2 rounded-xl quran-raised-card border-0" style={{ backgroundColor: currentTheme?.id === 'night' ? 'rgba(255,255,255,0.06)' : '#ffffff', border: 'none' }}>
+                            <div className="h-9 flex items-center justify-around px-2 rounded-xl quran-raised-card border-0" style={{ backgroundColor: isDarkTheme ? (currentTheme?.btnBg || 'rgba(255,255,255,0.06)') : '#ffffff', border: 'none' }}>
                                 {[1, 2, 3, 4, 5].map(num => (
                                     <button
                                         key={num}
@@ -343,7 +344,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, sho
                             <button 
                                 onClick={() => onOpenModal('notification-settings-modal')} 
                                 className="w-full p-2.5 text-xs h-9 rounded-xl quran-raised-btn flex justify-between items-center px-3 font-bold border-0"
-                                style={{ backgroundColor: currentTheme?.id === 'night' ? 'rgba(255,255,255,0.06)' : '#ffffff', color: currentTheme?.text, border: 'none' }}
+                                style={{ backgroundColor: isDarkTheme ? (currentTheme?.btnBg || 'rgba(255,255,255,0.06)') : '#ffffff', color: currentTheme?.text, border: 'none' }}
                             >
                                 <span className="flex items-center gap-1.5 truncate">
                                     <i className="fa-solid fa-bell text-[11px] quran-3d-icon" style={{ color: currentTheme?.accent || '#10b981' }}></i>
@@ -364,7 +365,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, sho
                                 type="button"
                                 onClick={() => onOpenModal('surah-design-picker')} 
                                 className="w-full rounded-2xl p-2 transition-all relative overflow-hidden quran-raised-btn border-0 flex items-center justify-center"
-                                style={{ backgroundColor: currentTheme?.id === 'night' ? 'rgba(255,255,255,0.06)' : '#ffffff', border: 'none' }}
+                                style={{ backgroundColor: isDarkTheme ? (currentTheme?.btnBg || 'rgba(255,255,255,0.06)') : '#ffffff', border: 'none' }}
                                 title={isEn ? "Choose Surah Header Design" : "اختيار تصميم رأس السورة"}
                             >
                                 <div className="pointer-events-none w-full">
@@ -390,7 +391,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, sho
                             <button 
                                 onClick={() => onOpenModal('scroll-speed-modal')} 
                                 className="w-full p-2.5 text-xs h-9 rounded-xl quran-raised-btn flex justify-between items-center px-3 font-bold border-0"
-                                style={{ backgroundColor: currentTheme?.id === 'night' ? 'rgba(255,255,255,0.06)' : '#ffffff', color: currentTheme?.text, border: 'none' }}
+                                style={{ backgroundColor: isDarkTheme ? (currentTheme?.btnBg || 'rgba(255,255,255,0.06)') : '#ffffff', color: currentTheme?.text, border: 'none' }}
                             >
                                 <span>{settings.scrollMinutes} {isEn ? "min" : "دقيقة"}</span>
                                 <i className="fa-solid fa-chevron-left opacity-50 shrink-0 text-[10px] quran-3d-icon"></i>
@@ -400,7 +401,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, sho
                         {/* إخفاء الأشرطة */}
                         <div id="hide-toolbars-section" className="flex flex-col text-right">
                             <label className="text-xs font-bold opacity-80 mb-1.5">{isEn ? "Hide Toolbars" : "إخفاء الأشرطة"}</label>
-                            <div className="h-9 flex items-center justify-between px-3 rounded-xl quran-raised-card border-0" style={{ backgroundColor: currentTheme?.id === 'night' ? 'rgba(255,255,255,0.06)' : '#ffffff', border: 'none' }}>
+                            <div className="h-9 flex items-center justify-between px-3 rounded-xl quran-raised-card border-0" style={{ backgroundColor: isDarkTheme ? (currentTheme?.btnBg || 'rgba(255,255,255,0.06)') : '#ffffff', border: 'none' }}>
                                 <span className="text-[11px] opacity-70 font-bold">{isHideToolbarsEnabled ? (isEn ? "Enabled" : "مفعّل") : (isEn ? "Disabled" : "معطّل")}</span>
                                 <div className="relative inline-block w-8 align-middle select-none">
                                     <input 
@@ -427,7 +428,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, sho
                                 {/* بطاقة السجدة */}
                                 <div id="sajdah-section" className="flex flex-col text-right">
                                     <label className="text-xs font-bold opacity-80 mb-1.5 truncate">{isEn ? "Show Sajdah Card" : "إظهار بطاقة السجدة"}</label>
-                                    <div className="h-9 flex items-center justify-between px-3 rounded-xl quran-raised-card border-0" style={{ backgroundColor: currentTheme?.id === 'night' ? 'rgba(255,255,255,0.06)' : '#ffffff', border: 'none' }}>
+                                    <div className="h-9 flex items-center justify-between px-3 rounded-xl quran-raised-card border-0" style={{ backgroundColor: isDarkTheme ? (currentTheme?.btnBg || 'rgba(255,255,255,0.06)') : '#ffffff', border: 'none' }}>
                                         <span className="text-[11px] opacity-70 font-bold">{showSajdahCard ? (isEn ? "Enabled" : "مفعّل") : (isEn ? "Disabled" : "معطّل")}</span>
                                         <div className="relative inline-block w-8 align-middle select-none">
                                             <input 
@@ -449,7 +450,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, sho
                                 {/* الإطار الخارجي */}
                                 <div id="page-border-section" className="flex flex-col text-right">
                                     <label className="text-xs font-bold opacity-80 mb-1.5 truncate">{isEn ? "Show Page Border" : "إظهار الإطار الخارجي"}</label>
-                                    <div className="h-9 flex items-center justify-between px-3 rounded-xl quran-raised-card border-0" style={{ backgroundColor: currentTheme?.id === 'night' ? 'rgba(255,255,255,0.06)' : '#ffffff', border: 'none' }}>
+                                    <div className="h-9 flex items-center justify-between px-3 rounded-xl quran-raised-card border-0" style={{ backgroundColor: isDarkTheme ? (currentTheme?.btnBg || 'rgba(255,255,255,0.06)') : '#ffffff', border: 'none' }}>
                                         <span className="text-[11px] opacity-70 font-bold">{settings.showPageBorder !== false ? (isEn ? "Enabled" : "مفعّل") : (isEn ? "Disabled" : "معطّل")}</span>
                                         <div className="relative inline-block w-8 align-middle select-none">
                                             <input 
@@ -476,7 +477,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, sho
 
                     <div id="downloads-section" className="space-y-2 py-0.5">
                         <div>
-                            <button id="interface-customization-btn" onClick={() => onOpenModal('toolbar-color-picker-modal')} className="text-xs h-9 w-full text-right px-3 flex items-center justify-between rounded-xl quran-raised-btn font-bold border-0" style={{ backgroundColor: currentTheme?.id === 'night' ? 'rgba(255,255,255,0.06)' : '#ffffff', color: currentTheme?.text, border: 'none' }}>
+                            <button id="interface-customization-btn" onClick={() => onOpenModal('toolbar-color-picker-modal')} className="text-xs h-9 w-full text-right px-3 flex items-center justify-between rounded-xl quran-raised-btn font-bold border-0" style={{ backgroundColor: isDarkTheme ? (currentTheme?.btnBg || 'rgba(255,255,255,0.06)') : '#ffffff', color: currentTheme?.text, border: 'none' }}>
                                 <span>{isEn ? "Customize Interface" : "تخصيص الواجهة"}</span>
                                 <i className="fa-solid fa-chevron-left opacity-50 text-xs quran-3d-icon"></i>
                             </button>
@@ -489,7 +490,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, sho
                                     id="quran-download-btn" 
                                     onClick={() => { onOpenModal('quran-download-modal'); }} 
                                     className="text-xs h-9 w-full text-right px-3 flex items-center justify-between rounded-xl quran-raised-btn font-bold border-0"
-                                    style={{ backgroundColor: currentTheme?.id === 'night' ? 'rgba(255,255,255,0.06)' : '#ffffff', color: currentTheme?.text, border: 'none' }}
+                                    style={{ backgroundColor: isDarkTheme ? (currentTheme?.btnBg || 'rgba(255,255,255,0.06)') : '#ffffff', color: currentTheme?.text, border: 'none' }}
                                 >
                                     <span className="truncate">{isEn ? "Download Quran" : "تحميل القرآن الكريم"}</span>
                                     <i className="fa-solid fa-chevron-left opacity-50 text-xs shrink-0 quran-3d-icon"></i>
@@ -499,7 +500,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, sho
                                     id="tafseer-download-btn" 
                                     onClick={() => { onOpenModal('tafsir-download-modal'); }} 
                                     className="text-xs h-9 w-full text-right px-3 flex items-center justify-between rounded-xl quran-raised-btn font-bold border-0"
-                                    style={{ backgroundColor: currentTheme?.id === 'night' ? 'rgba(255,255,255,0.06)' : '#ffffff', color: currentTheme?.text, border: 'none' }}
+                                    style={{ backgroundColor: isDarkTheme ? (currentTheme?.btnBg || 'rgba(255,255,255,0.06)') : '#ffffff', color: currentTheme?.text, border: 'none' }}
                                 >
                                     <span className="truncate">{isEn ? "Download Tafseer" : "تحميل التفسير"}</span>
                                     <i className="fa-solid fa-chevron-left opacity-50 text-xs shrink-0 quran-3d-icon"></i>
@@ -509,7 +510,13 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, sho
                     </div>
                 </div>
                 </div>
-                <div className="p-3.5 flex gap-2 shrink-0 z-10" style={{ backgroundColor: currentTheme.bg }}>
+                <div 
+                    className="p-3.5 flex gap-2 shrink-0 z-10" 
+                    style={{ 
+                        backgroundColor: currentTheme.bg,
+                        paddingBottom: 'calc(max(env(safe-area-inset-bottom, 0px), 56px) + 0.75rem)'
+                    }}
+                >
                     <button
                         onClick={handleClose}
                         className="flex-1 py-3.5 rounded-2xl text-xs font-bold w-full transition-all quran-raised-btn border-0"

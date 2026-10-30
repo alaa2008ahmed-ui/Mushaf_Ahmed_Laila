@@ -10,6 +10,14 @@ interface PrayerTimesHeaderProps {
     cityGov: string;
     fullCountry: string;
     combinedCode?: string;
+    location?: {
+        cityGov?: string;
+        fullCountry?: string;
+        cityGovAr?: string;
+        cityGovEn?: string;
+        fullCountryAr?: string;
+        fullCountryEn?: string;
+    };
     topBarTextColor: string;
     onBack?: () => void;
     onHome?: () => void;
@@ -55,6 +63,7 @@ const PrayerTimesHeader: React.FC<PrayerTimesHeaderProps> = ({
     cityGov = '',
     fullCountry = '',
     combinedCode,
+    location,
     topBarTextColor,
     onBack,
     onHome,
@@ -66,8 +75,16 @@ const PrayerTimesHeader: React.FC<PrayerTimesHeaderProps> = ({
     const subtitleRef = useRef<HTMLDivElement>(null);
     const lastWidthRef = useRef<number>(0);
 
-    const displayCityGov = getLocalizedLocationName(cityGov, language);
-    const displayFullCountry = getLocalizedLocationName(fullCountry, language);
+    const rawCityGov = language === 'en'
+        ? (location?.cityGovEn || cityGov)
+        : (location?.cityGovAr || cityGov);
+
+    const rawFullCountry = language === 'en'
+        ? (location?.fullCountryEn || fullCountry)
+        : (location?.fullCountryAr || fullCountry);
+
+    const displayCityGov = getLocalizedLocationName(rawCityGov || cityGov, language);
+    const displayFullCountry = getLocalizedLocationName(rawFullCountry || fullCountry, language);
 
     const [titleFontSize, setTitleFontSize] = useState<number>(() => 
         getInitialTitleSize(displayCityGov, typeof window !== 'undefined' ? window.innerWidth < 640 : true)
@@ -204,7 +221,7 @@ const PrayerTimesHeader: React.FC<PrayerTimesHeaderProps> = ({
                         {/* عنوان المدينة/المحافظة بخط تلقائي الحجم وثابت */}
                         <h1 
                             ref={titleRef}
-                            className="app-top-bar__title font-kufi font-bold whitespace-nowrap overflow-hidden text-ellipsis max-w-full leading-tight"
+                            className={`app-top-bar__title ${language === 'en' ? 'font-sans font-bold' : 'font-kufi font-bold'} whitespace-nowrap overflow-hidden text-ellipsis max-w-full leading-tight`}
                             style={{ 
                                 fontSize: `${titleFontSize}px`,
                                 color: topBarTextColor || undefined 
@@ -240,7 +257,7 @@ const PrayerTimesHeader: React.FC<PrayerTimesHeaderProps> = ({
                                 title={language === 'en' ? "Prayer Times Guide" : "دليل وشرح مواقيت الصلاة"}
                                 aria-label={language === 'en' ? "Prayer Times Guide" : "دليل وشرح مواقيت الصلاة"}
                             >
-                                <i className="fa-solid fa-circle-question text-lg text-black"></i>
+                                <i className="fa-solid fa-circle-question text-lg"></i>
                             </button>
                         )}
                         <ThemePageLock />

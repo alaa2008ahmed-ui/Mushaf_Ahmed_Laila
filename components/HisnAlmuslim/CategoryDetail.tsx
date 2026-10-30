@@ -128,6 +128,7 @@ const HisnItemCard: React.FC<HisnItemCardProps> = ({
     const handlePlayAudio = (e: React.MouseEvent) => {
         e.stopPropagation();
         playTTS(displayText, {
+            isEn,
             onToast: (msg) => {
                 if (isEn) {
                     if (msg.includes('جاري تشغيل')) setToastMessage('Playing audio...');

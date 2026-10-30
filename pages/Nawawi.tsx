@@ -89,7 +89,7 @@ const HadithModal: React.FC<HadithModalProps> = ({
             if (isHadithPlaying) {
                 stopTTS();
             } else {
-                playTTS(activeHadithText, { hadithId: hadith.id });
+                playTTS(activeHadithText, { hadithId: hadith.id, isEn });
             }
         } else if (activeExplanation) {
             if (isExplanationPlaying) {
@@ -101,7 +101,7 @@ const HadithModal: React.FC<HadithModalProps> = ({
                 } else {
                     combinedExplanationSpeech = `الشرح المختصر: ${activeExplanation.summary}. الفوائد العقدية: ${activeExplanation.creedBenefits.join('. ')}. الفوائد الفقهية: ${activeExplanation.fiqhBenefits.join('. ')}. الفوائد التربوية: ${activeExplanation.valuesBenefits.join('. ')}.`;
                 }
-                playTTS(combinedExplanationSpeech);
+                playTTS(combinedExplanationSpeech, { isEn });
             }
         }
     };
@@ -530,7 +530,7 @@ const Nawawi: React.FC<NawawiProps> = ({ onBack, onNavigate }) => {
             stopTTS();
             setPlayingText(null);
         } else {
-            playTTS(textToPlay, { hadithId: hadithItem.id });
+            playTTS(textToPlay, { hadithId: hadithItem.id, isEn });
         }
     };
 
@@ -617,7 +617,7 @@ const Nawawi: React.FC<NawawiProps> = ({ onBack, onNavigate }) => {
                                 title={isEn ? "Nawawi Guide" : "دليل وشرح الأربعون النووية"}
                                 aria-label={isEn ? "Nawawi Guide" : "دليل وشرح الأربعون النووية"}
                             >
-                                <i className="fa-solid fa-circle-question text-lg text-black"></i>
+                                <i className="fa-solid fa-circle-question text-lg"></i>
                             </button>
                             <ThemePageLock />
                             <button

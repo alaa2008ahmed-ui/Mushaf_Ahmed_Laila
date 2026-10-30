@@ -240,8 +240,8 @@ const ChecklistScreen = ({ tokens, cardTextScale, onZoom }: { tokens: any, cardT
     return (
         <section className="space-y-4">
             <div 
-                className="rounded-[18px] p-4.5 text-center relative border-0 shadow-sm" 
-                style={{ backgroundColor: hexToRgba(tokens.primaryColor, 0.08) }}
+                className="rounded-[18px] p-4.5 text-center relative border-0" 
+                style={{ backgroundColor: tokens.cardBgColor, boxShadow: tokens.cardShadow }}
             >
                 <p className="text-sm font-bold px-4" style={{ color: tokens.primaryColor, fontSize: `${14 * cardTextScale}px` }}>
                     {tHajj('checklistHeader', language)}
@@ -359,8 +359,8 @@ const CountersScreen = ({ tokens, cardTextScale, onZoom }: { tokens: any, cardTe
         <section className="space-y-4">
             {/* Header info */}
             <div 
-                className="rounded-[18px] p-4.5 text-center relative border-0 shadow-sm" 
-                style={{ backgroundColor: hexToRgba(tokens.primaryColor, 0.08) }}
+                className="rounded-[18px] p-4.5 text-center relative border-0" 
+                style={{ backgroundColor: tokens.cardBgColor, boxShadow: tokens.cardShadow }}
             >
                 <h3 className="font-bold text-base mb-1" style={{ color: tokens.primaryColor, fontSize: `${16 * cardTextScale}px` }}>
                     {tHajj('counterHeaderTitle', language)}
@@ -371,7 +371,10 @@ const CountersScreen = ({ tokens, cardTextScale, onZoom }: { tokens: any, cardTe
             </div>
 
             {/* Tawaf vs Sa'i switch - Zero Border */}
-            <div className="flex p-1.5 rounded-2xl bg-slate-100 dark:bg-zinc-800 gap-1.5 border-0">
+            <div 
+                className="flex p-1.5 rounded-2xl gap-1.5 border-0"
+                style={{ backgroundColor: tokens.capsuleBg, boxShadow: tokens.cardShadow }}
+            >
                 <button 
                     type="button"
                     onClick={() => switchTab('tawaf')} 
@@ -563,8 +566,8 @@ const HomeScreen = ({ setScreen, tokens, cardTextScale, onZoom }: { setScreen: a
 
             {/* Warning Card */}
             <div 
-                className="col-span-1 md:col-span-2 rounded-[18px] p-5 text-start relative border-0 shadow-sm" 
-                style={{ backgroundColor: 'rgba(249, 115, 22, 0.08)' }}
+                className="col-span-1 md:col-span-2 rounded-[18px] p-5 text-start relative border-0" 
+                style={{ backgroundColor: tokens.cardBgColor, boxShadow: tokens.cardShadow }}
             >
                 <div className="flex items-center justify-between mb-1.5 gap-2">
                     <h3 className="font-bold text-orange-600 dark:text-orange-400 text-base" style={{ fontSize: `${15 * cardTextScale}px` }}>
@@ -608,8 +611,8 @@ const UmrahScreen = ({ tokens, onSelectDetail, cardTextScale, onZoom }: { tokens
      <section id="umrah-screen" className="space-y-4">
         {/* Intro Banner */}
         <div 
-            className="rounded-[18px] p-5 text-center shadow-sm border-0" 
-            style={{ backgroundColor: hexToRgba(tokens.primaryColor, 0.08) }}
+            className="rounded-[18px] p-5 text-center border-0" 
+            style={{ backgroundColor: tokens.cardBgColor, boxShadow: tokens.cardShadow }}
         >
             <p className="font-amiri text-base font-bold text-amber-800 dark:text-amber-300 px-4" style={{ fontSize: `${16 * cardTextScale}px` }}>
                 {tHajj('umrahIntroVerse', language)}
@@ -752,7 +755,7 @@ const UmrahScreen = ({ tokens, onSelectDetail, cardTextScale, onZoom }: { tokens
                     quranAyah: isEn ? '﴿ So whoever has made Hajj obligatory upon himself therein, there is [to be for him] no sexual relations and no disobedience and no disputing during Hajj ﴾ [Al-Baqarah: 197]' : '﴿ فَمَن فَرَضَ فِيهِنَّ الْحَجَّ فَلَا رَفَثَ وَلَا فُسُوقَ وَلَا جِدَالَ فِي الْحَجِّ ﴾ [البقرة: 197]'
                 })}
                 className="rounded-[18px] p-4 text-start hover:scale-[1.02] transition-all group cursor-pointer border-0" 
-                style={{ backgroundColor: 'rgba(249, 115, 22, 0.08)' }}
+                style={{ backgroundColor: tokens.cardBgColor, boxShadow: tokens.cardShadow }}
             >
                 <div className="flex items-center justify-between mb-1.5">
                     <span className="font-bold text-xs text-orange-600 dark:text-orange-400" style={{ fontSize: `${12 * cardTextScale}px` }}>
@@ -841,8 +844,8 @@ const HajjScreen = ({ hajjType, setHajjType, onSelectDetail, cardTextScale, onZo
     <section id="hajj-screen" className="space-y-4">
         {/* Intro */}
         <div 
-            className="rounded-[18px] p-5 text-center shadow-sm border-0" 
-            style={{ backgroundColor: hexToRgba(tokens.primaryColor, 0.08) }}
+            className="rounded-[18px] p-5 text-center border-0" 
+            style={{ backgroundColor: tokens.cardBgColor, boxShadow: tokens.cardShadow }}
         >
             <p className="font-amiri text-base font-bold text-amber-800 dark:text-amber-300 px-4" style={{ fontSize: `${16 * cardTextScale}px` }}>
                 {tHajj('hajjIntroVerse', language)}
@@ -858,7 +861,10 @@ const HajjScreen = ({ hajjType, setHajjType, onSelectDetail, cardTextScale, onZo
                 <span>{tHajj('hajjTypesSectionTitle', language)}</span>
             </h3>
 
-            <div className="grid grid-cols-3 gap-2 p-1.5 rounded-2xl bg-slate-100 dark:bg-zinc-800 border-0">
+            <div 
+                className="grid grid-cols-3 gap-2 p-1.5 rounded-2xl border-0"
+                style={{ backgroundColor: tokens.capsuleBg, boxShadow: tokens.cardShadow }}
+            >
                 {typesList.map((t: any) => {
                     const isSelected = hajjType === t.id;
                     return (
@@ -1042,8 +1048,8 @@ const DuaaScreen = ({ openDuaaId, onToggle, onZoom, cardTextScale, tokens }: { o
     return (
         <section id="duaa-screen" className="space-y-4">
              <div 
-                className="rounded-[18px] p-4.5 text-center mb-3 border-0 shadow-sm"
-                style={{ backgroundColor: hexToRgba(tokens.primaryColor, 0.08) }}
+                className="rounded-[18px] p-4.5 text-center mb-3 border-0"
+                style={{ backgroundColor: tokens.cardBgColor, boxShadow: tokens.cardShadow }}
              >
                 <p className="text-xs sm:text-sm font-bold px-4" style={{ color: tokens.primaryColor, fontSize: `${13 * cardTextScale}px` }}>
                     {tHajj('duaaScreenHeader', language)}
@@ -1367,7 +1373,7 @@ const HajjUmrah: FC<{ onBack: () => void, onNavigate: (page: string) => void }> 
                                 title={isEn ? "Hajj & Umrah Guide" : "دليل الحج والعمرة"}
                                 aria-label={isEn ? "Hajj & Umrah Guide" : "دليل الحج والعمرة"}
                             >
-                                <i className="fa-solid fa-circle-question text-base sm:text-lg text-black"></i>
+                                <i className="fa-solid fa-circle-question text-base sm:text-lg"></i>
                             </button>
 
                             {screen === 'home' && <ThemePageLock />}

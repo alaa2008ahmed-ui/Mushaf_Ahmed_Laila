@@ -307,7 +307,7 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack, onNavigate }) => {
                 sound: 'chime.mp3',
                 smallIcon: 'ic_stat_name',
                 iconColor: '#2E7D5E',
-                group: 'com.mushaf.ahmedandlayla.APP_ALERTS_CARD',
+                group: 'com.mushaf.ahmedandlayla.GENERAL_ALERTS_CARD',
                 groupSummary: false,
                 extra: { page: 'habit-tracker', playSound: true, soundFile: 'chime.mp3' }
               },
@@ -320,7 +320,7 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack, onNavigate }) => {
                 sound: 'chime.mp3',
                 smallIcon: 'ic_stat_name',
                 iconColor: '#2E7D5E',
-                group: 'com.mushaf.ahmedandlayla.APP_ALERTS_CARD',
+                group: 'com.mushaf.ahmedandlayla.GENERAL_ALERTS_CARD',
                 groupSummary: false,
                 extra: { page: 'habit-tracker', playSound: true, soundFile: 'chime.mp3' }
               }
@@ -691,7 +691,7 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack, onNavigate }) => {
                                 title={isEn ? "Worship Mentor Guide" : "دليل وشرح مربي العبادات"}
                                 aria-label={isEn ? "Worship Mentor Guide" : "دليل وشرح مربي العبادات"}
                             >
-                                <i className="fa-solid fa-circle-question text-lg text-black"></i>
+                                <i className="fa-solid fa-circle-question text-lg"></i>
                             </button>
                             <ThemePageLock />
                             <button

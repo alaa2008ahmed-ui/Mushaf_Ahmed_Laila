@@ -41,9 +41,19 @@ function AdkarSabahMasaa({ onBack, onNavigate }: AdkarSabahMasaaProps) {
     const isEn = language === 'en';
     const isBlackTheme = theme.bgColor === '#000000' || themeKey === 'deep_black' || theme.name === 'اسود' || theme.name === 'أبيض وأسود';
     const primaryColor = isBlackTheme ? '#FFFFFF' : (theme.palette?.[0] || theme.accent || '#2E7D5E');
-    const btnTextColor = isBlackTheme ? '#000000' : (theme.btnText || '#FFFFFF');
+    const btnTextColor = isBlackTheme ? '#000000' : '#FFFFFF';
 
-    const [adhkarTab, setAdhkarTab] = useState<'morning' | 'evening' | 'favorites'>('morning');
+    const [adhkarTab, setAdhkarTab] = useState<'morning' | 'evening' | 'favorites'>(() => {
+        try {
+            const pref = localStorage.getItem('adhkar_preferred_tab');
+            if (pref === 'morning' || pref === 'evening') {
+                localStorage.removeItem('adhkar_preferred_tab');
+                return pref;
+            }
+        } catch {}
+        const hour = new Date().getHours();
+        return (hour >= 3 && hour < 15) ? 'morning' : 'evening';
+    });
     const [activeTabMode, setActiveTabMode] = useState<'grid' | 'list'>('list');
     const [favorites, setFavorites] = useState<string[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
@@ -243,7 +253,7 @@ function AdkarSabahMasaa({ onBack, onNavigate }: AdkarSabahMasaaProps) {
             className="h-screen flex flex-col relative transition-colors" 
             dir={isEn ? 'ltr' : 'rtl'}
             style={{ 
-                backgroundColor: isBlackTheme ? '#000000' : (theme.isDark ? '#0F172A' : '#F5F7FA') 
+                backgroundColor: isBlackTheme ? '#000000' : (theme.bgColor || (theme.isDark ? '#0F172A' : '#F5F7FA')) 
             }}
         >
             <AdkarHeader 
@@ -257,8 +267,12 @@ function AdkarSabahMasaa({ onBack, onNavigate }: AdkarSabahMasaaProps) {
             <main ref={mainRef} className="w-full flex-1 overflow-y-auto px-4 pt-3 pb-6">
                 {/* Modern Borderless Search bar and View Mode Switch */}
                 <div className="mb-6 max-w-3xl mx-auto flex items-center gap-2.5 w-full" dir={isEn ? 'ltr' : 'rtl'}>
-                    <div className="relative flex-1 bg-slate-200/60 dark:bg-zinc-800/70 rounded-2xl transition-all shadow-none focus-within:ring-2 focus-within:ring-opacity-40 flex items-center overflow-hidden"
-                         style={{ '--tw-ring-color': primaryColor } as any}
+                    <div className="relative flex-1 rounded-2xl transition-all focus-within:ring-2 focus-within:ring-opacity-40 flex items-center overflow-hidden"
+                         style={{ 
+                             '--tw-ring-color': primaryColor,
+                             backgroundColor: isBlackTheme ? '#18181b' : (theme.isDark ? 'rgba(39, 39, 42, 0.7)' : '#FFFFFF'),
+                             boxShadow: theme.isDark ? 'none' : '0 4px 14px rgba(0, 0, 0, 0.04)'
+                         } as any}
                     >
                         <i 
                             className={`fa-solid fa-search absolute ${isEn ? 'left-4' : 'right-4'} top-1/2 transform -translate-y-1/2 opacity-45 pointer-events-none text-sm`} 
@@ -285,7 +299,13 @@ function AdkarSabahMasaa({ onBack, onNavigate }: AdkarSabahMasaaProps) {
                     </div>
 
                     {/* View Mode Switch Chips */}
-                    <div className="flex items-center p-1 rounded-2xl bg-slate-200/60 dark:bg-zinc-800/70 shrink-0 gap-1">
+                    <div 
+                        className="flex items-center p-1 rounded-2xl shrink-0 gap-1"
+                        style={{
+                            backgroundColor: isBlackTheme ? '#18181b' : (theme.isDark ? 'rgba(39, 39, 42, 0.7)' : '#FFFFFF'),
+                            boxShadow: theme.isDark ? 'none' : '0 4px 14px rgba(0, 0, 0, 0.04)'
+                        }}
+                    >
                         <button
                             type="button"
                             onClick={() => setActiveTabMode('grid')}

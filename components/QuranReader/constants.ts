@@ -15,7 +15,7 @@ export const THEMES = {
     blue: { id: "blue", name: "نيلي فاتح", bg: "#ffffff", text: "#000000", font: "var(--font-amiri)", barBg: "#ffffff", barText: "#4f46e5", barBorder: "#4f46e5", btnBg: "#ffffff", btnText: "#4f46e5", accent: "#4f46e5", accentText: "#ffffff", modalBg: "#ffffff", modalText: "#000000", headerBg: "#ffffff", headerText: "#4f46e5", cardBg: "#ffffff", cardText: "#000000", cardBorder: "#4f46e5", sajdah: "#d97706", highlightText: "#4f46e5", verseBracket: "#ea580c" },
     purple: { id: "purple", name: "بنفسجي", bg: "#ffffff", text: "#000000", font: "var(--font-amiri)", barBg: "#ffffff", barText: "#9333ea", barBorder: "#9333ea", btnBg: "#ffffff", btnText: "#9333ea", accent: "#9333ea", accentText: "#ffffff", modalBg: "#ffffff", modalText: "#000000", headerBg: "#ffffff", headerText: "#9333ea", cardBg: "#ffffff", cardText: "#000000", cardBorder: "#9333ea", sajdah: "#d97706", highlightText: "#9333ea", verseBracket: "#16a34a" },
     orange: { id: "orange", name: "برتقالي", bg: "#ffffff", text: "#000000", font: "var(--font-amiri)", barBg: "#ffffff", barText: "#ea580c", barBorder: "#ea580c", btnBg: "#ffffff", btnText: "#ea580c", accent: "#ea580c", accentText: "#ffffff", modalBg: "#ffffff", modalText: "#000000", headerBg: "#ffffff", headerText: "#ea580c", cardBg: "#ffffff", cardText: "#000000", cardBorder: "#ea580c", sajdah: "#2563eb", highlightText: "#ea580c", verseBracket: "#2563eb" },
-    sky: { id: "sky", name: "سماوي فاتح", bg: "#ffffff", text: "#000000", font: "var(--font-amiri)", barBg: "#ffffff", barText: "#0ea5e9", barBorder: "#0ea5e9", btnBg: "#ffffff", btnText: "#0ea5e9", accent: "#0ea5e9", accentText: "#ffffff", modalBg: "#ffffff", modalText: "#000000", headerBg: "#ffffff", headerText: "#0ea5e9", cardBg: "#ffffff", cardText: "#000000", cardBorder: "#0ea5e9", sajdah: "#d97706", highlightText: "#0ea5e9", verseBracket: "#d97706" },
+    gold: { id: "gold", name: "ذهبي", bg: "#ffffff", text: "#000000", font: "var(--font-amiri)", barBg: "#ffffff", barText: "#b45309", barBorder: "#d4af37", btnBg: "#ffffff", btnText: "#b45309", btnBorder: "#d4af37", accent: "#d4af37", accentText: "#ffffff", modalBg: "#ffffff", modalText: "#000000", headerBg: "#ffffff", headerText: "#b45309", cardBg: "#ffffff", cardText: "#000000", cardBorder: "#d4af37", sajdah: "#d97706", highlightText: "#d4af37", verseBracket: "#d4af37" },
     amber_light: { id: "amber_light", name: "كهرماني", bg: "#ffffff", text: "#000000", font: "var(--font-amiri)", barBg: "#ffffff", barText: "#f59e0b", barBorder: "#f59e0b", btnBg: "#ffffff", btnText: "#f59e0b", accent: "#f59e0b", accentText: "#ffffff", modalBg: "#ffffff", modalText: "#000000", headerBg: "#ffffff", headerText: "#f59e0b", cardBg: "#ffffff", cardText: "#000000", cardBorder: "#f59e0b", sajdah: "#d97706", highlightText: "#f59e0b", verseBracket: "#3b82f6" },
     mint: { id: "mint", name: "نعناعي", bg: "#ffffff", text: "#000000", font: "var(--font-amiri)", barBg: "#ffffff", barText: "#4ade80", barBorder: "#4ade80", btnBg: "#ffffff", btnText: "#4ade80", accent: "#4ade80", accentText: "#ffffff", modalBg: "#ffffff", modalText: "#000000", headerBg: "#ffffff", headerText: "#4ade80", cardBg: "#ffffff", cardText: "#000000", cardBorder: "#4ade80", sajdah: "#d97706", highlightText: "#4ade80", verseBracket: "#dc2626" },
     pink: { id: "pink", name: "وردي", bg: "#ffffff", text: "#000000", font: "var(--font-amiri)", barBg: "#ffffff", barText: "#db2777", barBorder: "#db2777", btnBg: "#ffffff", btnText: "#db2777", accent: "#db2777", accentText: "#ffffff", modalBg: "#ffffff", modalText: "#000000", headerBg: "#ffffff", headerText: "#db2777", cardBg: "#ffffff", cardText: "#000000", cardBorder: "#db2777", sajdah: "#d97706", highlightText: "#db2777", verseBracket: "#16a34a" },
@@ -34,10 +34,33 @@ export const THEMES = {
     i_deep_ocean: { id: "i_deep_ocean", name: "ملك الأعماق", bg: "#041e3a", text: "#ffffff", font: "var(--font-amiri)", barBg: "#041e3a", barText: "#ffffff", barBorder: "#ffffff", btnBg: "#062c54", btnText: "#ffffff", btnBorder: "#ffffff", accent: "#22d3ee", accentText: "#000000", modalBg: "#041e3a", modalText: "#ffffff", headerBg: "#041e3a", headerText: "#22d3ee", cardBg: "#062c54", cardText: "#ffffff", cardBorder: "#ffffff", sajdah: "#d97706", highlightText: "#22d3ee", verseBracket: "#fbbf24" },
     i_brocade: { id: "i_brocade", name: "إستبرق", bg: "#1e1b4b", text: "#ffffff", font: "var(--font-amiri)", barBg: "#1e1b4b", barText: "#ffffff", barBorder: "#ffffff", btnBg: "#312e81", btnText: "#ffffff", btnBorder: "#ffffff", accent: "#eab308", accentText: "#ffffff", modalBg: "#1e1b4b", modalText: "#ffffff", headerBg: "#1e1b4b", headerText: "#eab308", cardBg: "#312e81", cardText: "#ffffff", cardBorder: "#ffffff", sajdah: "#d97706", highlightText: "#eab308", verseBracket: "#60a5fa" },
     i_midnight: { id: "i_midnight", name: "ليل", bg: "#0f172a", text: "#ffffff", font: "var(--font-amiri)", barBg: "#0f172a", barText: "#ffffff", barBorder: "#ffffff", btnBg: "#1e293b", btnText: "#ffffff", btnBorder: "#ffffff", accent: "#38bdf8", accentText: "#ffffff", modalBg: "#0f172a", modalText: "#ffffff", headerBg: "#0f172a", headerText: "#38bdf8", cardBg: "#1e293b", cardText: "#ffffff", cardBorder: "#ffffff", sajdah: "#d97706", highlightText: "#38bdf8", verseBracket: "#fbbf24" },
-    i_obsidian: { id: "i_obsidian", name: "بركان", bg: "#09090b", text: "#ffffff", font: "var(--font-amiri)", barBg: "#09090b", barText: "#ffffff", barBorder: "#ffffff", btnBg: "#18181b", btnText: "#ffffff", btnBorder: "#ffffff", accent: "#71717a", accentText: "#ffffff", modalBg: "#09090b", modalText: "#ffffff", headerBg: "#09090b", headerText: "#71717a", cardBg: "#18181b", cardText: "#ffffff", cardBorder: "#ffffff", sajdah: "#d97706", highlightText: "#71717a", verseBracket: "#fbbf24" },
+    i_royal_gold: { id: "i_royal_gold", name: "ذهبي ملكي", bg: "#18150c", text: "#ffffff", font: "var(--font-amiri)", barBg: "#18150c", barText: "#fbbf24", barBorder: "#d4af37", btnBg: "#292213", btnText: "#fbbf24", btnBorder: "#d4af37", accent: "#d4af37", accentText: "#18150c", modalBg: "#18150c", modalText: "#ffffff", headerBg: "#18150c", headerText: "#fbbf24", cardBg: "#292213", cardText: "#ffffff", cardBorder: "#d4af37", sajdah: "#f59e0b", highlightText: "#fbbf24", verseBracket: "#fbbf24" },
     i_forest: { id: "i_forest", name: "غابة", bg: "#064e3b", text: "#ffffff", font: "var(--font-amiri)", barBg: "#064e3b", barText: "#ffffff", barBorder: "#ffffff", btnBg: "#059669", btnText: "#ffffff", btnBorder: "#ffffff", accent: "#10b981", accentText: "#ffffff", modalBg: "#064e3b", modalText: "#ffffff", headerBg: "#064e3b", headerText: "#10b981", cardBg: "#059669", cardText: "#ffffff", cardBorder: "#ffffff", sajdah: "#d97706", highlightText: "#10b981", verseBracket: "#fbbf24" },
     i_turquoise: { id: "i_turquoise", name: "فيروزي داكن", bg: "#134e4a", text: "#ffffff", font: "var(--font-amiri)", barBg: "#134e4a", barText: "#ffffff", barBorder: "#ffffff", btnBg: "#14b8a6", btnText: "#ffffff", btnBorder: "#ffffff", accent: "#2dd4bf", accentText: "#ffffff", modalBg: "#134e4a", modalText: "#ffffff", headerBg: "#134e4a", headerText: "#2dd4bf", cardBg: "#14b8a6", cardText: "#ffffff", cardBorder: "#ffffff", sajdah: "#d97706", highlightText: "#2dd4bf", verseBracket: "#fbbf24" },
     i_slate: { id: "i_slate", name: "حجري", bg: "#334155", text: "#ffffff", font: "var(--font-amiri)", barBg: "#334155", barText: "#ffffff", barBorder: "#ffffff", btnBg: "#475569", btnText: "#ffffff", btnBorder: "#ffffff", accent: "#94a3b8", accentText: "#ffffff", modalBg: "#334155", modalText: "#ffffff", headerBg: "#334155", headerText: "#94a3b8", cardBg: "#475569", cardText: "#ffffff", cardBorder: "#ffffff", sajdah: "#d97706", highlightText: "#94a3b8", verseBracket: "#fbbf24" }
+};
+
+export const LIGHT_THEME_IDS = [
+    'black', 'night_sky', 'green', 'red', 'maroon', 'olive', 
+    'blue', 'purple', 'orange', 'gold', 'amber_light', 'mint', 
+    'pink', 'cyan', 'lime'
+];
+
+export const DARK_THEME_IDS = [
+    'deep_black', 'i_emerald', 'i_ruby', 'i_lapis', 'i_gold', 
+    'i_amber', 'i_amethyst', 'i_sunset_royal', 'i_deep_ocean', 
+    'i_brocade', 'i_midnight', 'i_royal_gold', 'i_forest', 
+    'i_turquoise', 'i_slate'
+];
+
+export const isDarkQuranTheme = (theme?: any): boolean => {
+    if (!theme) return false;
+    const themeId = typeof theme === 'string' ? theme : theme.id;
+    if (themeId && (DARK_THEME_IDS.includes(themeId) || themeId === 'night' || themeId === 'deep_black')) return true;
+    const bg = typeof theme?.bg === 'string' ? theme.bg.toLowerCase() : '';
+    const text = typeof theme?.text === 'string' ? theme.text.toLowerCase() : '';
+    if (text === '#ffffff' && bg && bg !== '#ffffff') return true;
+    return false;
 };
 
 export const THEME_NAMES_EN: Record<string, string> = {
@@ -50,6 +73,7 @@ export const THEME_NAMES_EN: Record<string, string> = {
     blue: "Light Indigo",
     purple: "Purple",
     orange: "Orange",
+    gold: "Gold",
     sky: "Light Sky",
     amber_light: "Amber",
     mint: "Mint",
@@ -68,6 +92,7 @@ export const THEME_NAMES_EN: Record<string, string> = {
     i_brocade: "Brocade",
     i_midnight: "Midnight",
     i_obsidian: "Obsidian",
+    i_royal_gold: "Royal Gold",
     i_forest: "Forest",
     i_turquoise: "Dark Turquoise",
     i_slate: "Slate"
@@ -498,4 +523,81 @@ export const DEFAULT_SETTINGS = {
     ayahRepeatCount: 1,
     showPageBorder: false,
     surahHeaderDesign: 1
+};
+
+export const getCurrentLayoutContext = (navParams?: any): 'classic' | 'modern' => {
+    if (navParams?.from === 'modern_home') return 'modern';
+    if (navParams?.from === 'home') return 'classic';
+    try {
+        const layout = typeof localStorage !== 'undefined' ? localStorage.getItem('home_layout_system') : null;
+        if (layout === 'classic' || layout === 'modern') return layout;
+    } catch {}
+    return 'modern';
+};
+
+export const getQuranThemeForLayout = (layout: 'classic' | 'modern', modeSuffix: string = ''): string => {
+    const isClassic = layout === 'classic';
+    const defaultTheme = isClassic ? 'black' : 'gold';
+    const scopedKey = isClassic ? 'current_theme_id_classic' : 'current_theme_id_modern';
+    const altKey = `quran_layout_${layout}_theme${modeSuffix}`;
+    try {
+        const saved = localStorage.getItem(scopedKey + modeSuffix) || localStorage.getItem(scopedKey) || localStorage.getItem(altKey);
+        if (saved && (THEMES as any)[saved]) {
+            return saved;
+        }
+    } catch {}
+    return defaultTheme;
+};
+
+export const saveQuranThemeForLayout = (themeId: string, layout: 'classic' | 'modern', modeSuffix: string = '') => {
+    const isClassic = layout === 'classic';
+    const scopedKey = isClassic ? 'current_theme_id_classic' : 'current_theme_id_modern';
+    const altKey = `quran_layout_${layout}_theme${modeSuffix}`;
+    try {
+        localStorage.setItem(scopedKey + modeSuffix, themeId);
+        localStorage.setItem(scopedKey, themeId);
+        localStorage.setItem(altKey, themeId);
+        localStorage.setItem('current_theme_id' + modeSuffix, themeId);
+        localStorage.setItem('current_theme_id', themeId);
+        localStorage.setItem('quran_user_chosen_theme' + modeSuffix, themeId);
+        localStorage.setItem('quran_user_chosen_theme', themeId);
+        localStorage.setItem('quran_theme_changed', 'true');
+    } catch {}
+};
+
+export const getToolbarColorsForTheme = (theme: any) => ({
+    'top-toolbar': { bg: theme.barBg, border: theme.barBorder },
+    'bottom-toolbar': { bg: theme.barBg, border: theme.barBorder },
+    'surah': { bg: theme.btnBg, text: theme.btnText, border: (theme as any).btnBorder || theme.barBorder, font: theme.font },
+    'juz': { bg: theme.btnBg, text: theme.btnText, border: (theme as any).btnBorder || theme.barBorder, font: theme.font },
+    'page': { bg: theme.btnBg, text: theme.btnText, border: (theme as any).btnBorder || theme.barBorder, font: theme.font },
+    'audio': { bg: theme.btnBg, text: theme.btnText, border: (theme as any).btnBorder || theme.barBorder },
+    'btn-settings': { bg: theme.btnBg, text: theme.btnText, border: (theme as any).btnBorder || theme.barBorder },
+    'btn-home': { bg: theme.btnBg, text: theme.btnText, border: (theme as any).btnBorder || theme.barBorder },
+    'btn-bookmark': { bg: theme.btnBg, text: theme.btnText, border: (theme as any).btnBorder || theme.barBorder },
+    'btn-bookmarks-list': { bg: theme.btnBg, text: theme.btnText, border: (theme as any).btnBorder || theme.barBorder },
+    'btn-themes': { bg: theme.btnBg, text: theme.btnText, border: (theme as any).btnBorder || theme.barBorder },
+    'btn-autoscroll': { bg: theme.btnBg, text: theme.btnText, border: (theme as any).btnBorder || theme.barBorder },
+    'btn-menu': { bg: theme.btnBg, text: theme.btnText, border: (theme as any).btnBorder || theme.barBorder },
+    'btn-search': { bg: theme.btnBg, text: theme.btnText, border: (theme as any).btnBorder || theme.barBorder },
+    'btn-share': { bg: theme.btnBg, text: theme.btnText, border: (theme as any).btnBorder || theme.barBorder }
+});
+
+export const syncQuranThemeToStorage = (theme: any, modeSuffix: string = '') => {
+    try {
+        localStorage.setItem('current_theme_id' + modeSuffix, theme.id);
+        const colors = getToolbarColorsForTheme(theme);
+        localStorage.setItem('toolbar_colors_v2' + modeSuffix, JSON.stringify(colors));
+        const saved = JSON.parse(localStorage.getItem('quran_settings' + modeSuffix) || '{}');
+        const updated = {
+            ...DEFAULT_SETTINGS,
+            ...saved,
+            bgColor: theme.bg,
+            textColor: theme.text,
+            fontFamily: theme.font,
+            ...(saved.lockHighlightColor ? {} : { highlightTextColor: theme.highlightText || theme.accent }),
+            theme: theme.id
+        };
+        localStorage.setItem('quran_settings' + modeSuffix, JSON.stringify(updated));
+    } catch {}
 };

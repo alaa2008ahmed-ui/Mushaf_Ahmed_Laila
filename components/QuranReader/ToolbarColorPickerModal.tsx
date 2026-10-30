@@ -359,7 +359,12 @@ const ToolbarColorPickerModal: React.FC<ToolbarColorPickerModalProps> = ({ onClo
                     </div>
                 </div>
 
-                <div className="p-4 flex justify-center">
+                <div 
+                    className="p-4 flex justify-center shrink-0"
+                    style={{
+                        paddingBottom: 'calc(max(env(safe-area-inset-bottom, 0px), 56px) + 0.75rem)'
+                    }}
+                >
                     <button 
                         onClick={handleClose} 
                         className="quran-raised-btn-selected w-full py-3.5 rounded-xl font-bold shadow-lg transition-all flex items-center justify-center gap-2 text-sm cursor-pointer border-0"

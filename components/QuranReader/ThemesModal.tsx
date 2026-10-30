@@ -1,5 +1,15 @@
 import React from 'react';
-import { THEMES, THEME_NAMES_EN, DEFAULT_SETTINGS } from './constants';
+import { 
+    THEMES, 
+    LIGHT_THEME_IDS, 
+    DARK_THEME_IDS, 
+    THEME_NAMES_EN, 
+    DEFAULT_SETTINGS,
+    getCurrentLayoutContext,
+    getQuranThemeForLayout,
+    saveQuranThemeForLayout,
+    syncQuranThemeToStorage
+} from './constants';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 
@@ -15,8 +25,9 @@ const ThemesModal: React.FC<ThemesModalProps> = ({ onClose, showToast, isLandsca
     const { applyPresetTheme: _unused } = useTheme();
     const { language, isRTL, t: langT } = useLanguage();
     const isEn = language === 'en';
-    const currentThemeId = localStorage.getItem('current_theme_id' + modeSuffix) || 'black';
-    const activeTheme = THEMES[currentThemeId as keyof typeof THEMES] || THEMES['black'];
+    const layout = getCurrentLayoutContext();
+    const currentThemeId = getQuranThemeForLayout(layout, modeSuffix);
+    const activeTheme = THEMES[currentThemeId as keyof typeof THEMES] || (layout === 'classic' ? THEMES['black'] : THEMES['gold']);
 
     React.useEffect(() => {
         const activeEl = document.getElementById(`theme-btn-${currentThemeId}`);
@@ -59,41 +70,9 @@ const ThemesModal: React.FC<ThemesModalProps> = ({ onClose, showToast, isLandsca
         const theme = THEMES[themeId as keyof typeof THEMES];
         if (!theme) return;
 
-        localStorage.getItem('current_theme_id' + modeSuffix);
-        localStorage.setItem('current_theme_id' + modeSuffix, themeId);
-        
-        const themeColors = { 
-            'top-toolbar': { bg: theme.barBg, border: theme.barBorder }, 
-            'bottom-toolbar': { bg: theme.barBg, border: theme.barBorder }, 
-            'surah': { bg: theme.btnBg, text: theme.btnText, border: (theme as any).btnBorder || theme.barBorder, font: theme.font }, 
-            'juz': { bg: theme.btnBg, text: theme.btnText, border: (theme as any).btnBorder || theme.barBorder, font: theme.font }, 
-            'page': { bg: theme.btnBg, text: theme.btnText, border: (theme as any).btnBorder || theme.barBorder, font: theme.font }, 
-            'audio': { bg: theme.btnBg, text: theme.btnText, border: (theme as any).btnBorder || theme.barBorder }, 
-            'btn-settings': { bg: theme.btnBg, text: theme.btnText, border: (theme as any).btnBorder || theme.barBorder }, 
-            'btn-home': { bg: theme.btnBg, text: theme.btnText, border: (theme as any).btnBorder || theme.barBorder }, 
-            'btn-bookmark': { bg: theme.btnBg, text: theme.btnText, border: (theme as any).btnBorder || theme.barBorder }, 
-            'btn-bookmarks-list': { bg: theme.btnBg, text: theme.btnText, border: (theme as any).btnBorder || theme.barBorder }, 
-            'btn-themes': { bg: theme.btnBg, text: theme.btnText, border: (theme as any).btnBorder || theme.barBorder }, 
-            'btn-autoscroll': { bg: theme.btnBg, text: theme.btnText, border: (theme as any).btnBorder || theme.barBorder }, 
-            'btn-menu': { bg: theme.btnBg, text: theme.btnText, border: (theme as any).btnBorder || theme.barBorder }, 
-            'btn-search': { bg: theme.btnBg, text: theme.btnText, border: (theme as any).btnBorder || theme.barBorder },
-            'btn-share': { bg: theme.btnBg, text: theme.btnText, border: (theme as any).btnBorder || theme.barBorder }
-        };
-
-        localStorage.setItem('toolbar_colors_v2' + modeSuffix, JSON.stringify(themeColors));
-
-        // Update quran_settings to match the theme's colors and font
-        const savedSettings = JSON.parse(localStorage.getItem('quran_settings' + modeSuffix) || '{}');
-        const baseSettings = { ...DEFAULT_SETTINGS, ...savedSettings };
-        const updatedSettings = {
-            ...baseSettings,
-            bgColor: theme.bg,
-            textColor: theme.text,
-            fontFamily: theme.font,
-            ...(baseSettings.lockHighlightColor ? {} : { highlightTextColor: theme.highlightText || theme.accent }),
-            theme: themeId
-        };
-        localStorage.setItem('quran_settings' + modeSuffix, JSON.stringify(updatedSettings));
+        const currentLayout = getCurrentLayoutContext();
+        saveQuranThemeForLayout(themeId, currentLayout, modeSuffix);
+        syncQuranThemeToStorage(theme, modeSuffix);
 
         // Dispatch a custom event to notify the main component to reload theme
         window.dispatchEvent(new Event('theme-change'));
@@ -136,7 +115,9 @@ const ThemesModal: React.FC<ThemesModalProps> = ({ onClose, showToast, isLandsca
                     </button>
                 </div>
                 <div className={`overflow-y-auto p-4 grid ${isLandscape ? 'grid-cols-3 sm:grid-cols-4' : 'grid-cols-2'} gap-3.5 flex-1 scrollbar-hide`} style={{ backgroundColor: activeTheme.bg }}>
-                    {Object.entries(THEMES).map(([key, t]: [string, any]) => {
+                    {LIGHT_THEME_IDS.map((key) => {
+                        const t = THEMES[key as keyof typeof THEMES];
+                        if (!t) return null;
                         const nameDisplay = isEn ? (THEME_NAMES_EN[key] || langT(`theme.${key}`, t.name)) : t.name;
                         const isSelected = currentThemeId === key;
                         return (
@@ -163,15 +144,63 @@ const ThemesModal: React.FC<ThemesModalProps> = ({ onClose, showToast, isLandsca
                                     <div className="w-full h-5 rounded-md" style={{ backgroundColor: t.barBg }}></div>
                                     <p className="text-xs truncate font-bold" style={{ color: t.text, fontFamily: t.font }}>بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>
                                     <div className="flex items-center justify-end gap-1.5 mt-1">
-                                        <div className="w-3.5 h-3.5 rounded-full shadow-sm" style={{ backgroundColor: t.btnBg }}></div>
-                                        <div className="w-3.5 h-3.5 rounded-full shadow-sm" style={{ backgroundColor: key === 'black' ? '#10b981' : t.accent }}></div>
+                                        <div className="w-[11px] h-[11px] rounded-full shadow-sm" style={{ backgroundColor: t.btnBg }}></div>
+                                        <div className="w-[11px] h-[11px] rounded-full shadow-sm" style={{ backgroundColor: key === 'black' ? '#10b981' : t.accent }}></div>
+                                    </div>
+                                </div>
+                            </button>
+                        );
+                    })}
+
+                    {/* فاصل صغير بين المجموعتين */}
+                    <div className={`${isLandscape ? 'col-span-3 sm:col-span-4' : 'col-span-2'} py-2 flex items-center justify-center`}>
+                        <div className="w-full h-[1.5px] rounded-full opacity-25" style={{ backgroundColor: activeTheme.text || '#94a3b8' }} />
+                    </div>
+
+                    {DARK_THEME_IDS.map((key) => {
+                        const t = THEMES[key as keyof typeof THEMES];
+                        if (!t) return null;
+                        const nameDisplay = isEn ? (THEME_NAMES_EN[key] || langT(`theme.${key}`, t.name)) : t.name;
+                        const isSelected = currentThemeId === key;
+                        return (
+                            <button 
+                                id={`theme-btn-${key}`}
+                                key={key} 
+                                onClick={() => applyTheme(key)} 
+                                className={`theme-card text-center p-3 rounded-2xl border-0 transition-all ${isSelected ? 'quran-raised-btn-selected shadow-xl scale-[1.02]' : 'quran-raised-card hover:scale-[1.01]'}`}
+                                style={isSelected ? { 
+                                    backgroundColor: t.accent, 
+                                    color: t.accentText,
+                                    border: 'none'
+                                } as React.CSSProperties : { 
+                                    backgroundColor: 'var(--qr-card-bg)', 
+                                    color: 'var(--qr-card-text)',
+                                    border: 'none'
+                                }}
+                            >
+                                <div className="font-bold mb-2 text-sm flex items-center justify-center gap-2">
+                                    {isSelected && <i className="fa-solid fa-check-circle quran-3d-icon"></i>}
+                                    <span>{nameDisplay}</span>
+                                </div>
+                                <div className="w-full h-20 rounded-xl p-2 shadow-inner flex flex-col justify-between" style={{ backgroundColor: t.bg }}>
+                                    <div className="w-full h-5 rounded-md" style={{ backgroundColor: t.barBg }}></div>
+                                    <p className="text-xs truncate font-bold" style={{ color: t.text, fontFamily: t.font }}>بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>
+                                    <div className="flex items-center justify-end gap-1.5 mt-1">
+                                        <div className="w-[11px] h-[11px] rounded-full shadow-sm" style={{ backgroundColor: t.btnBg }}></div>
+                                        <div className="w-[11px] h-[11px] rounded-full shadow-sm" style={{ backgroundColor: key === 'black' ? '#10b981' : t.accent }}></div>
                                     </div>
                                 </div>
                             </button>
                         );
                     })}
                 </div>
-                <div className="p-3 border-0 flex gap-2 shrink-0 z-10" style={{ backgroundColor: activeTheme.bg || '#ffffff' }}>
+                <div 
+                    className="p-3 border-0 flex gap-2 shrink-0 z-10" 
+                    style={{ 
+                        backgroundColor: activeTheme.bg || '#ffffff',
+                        paddingBottom: 'calc(max(env(safe-area-inset-bottom, 0px), 56px) + 0.75rem)'
+                    }}
+                >
                     <button 
                         onClick={onClose} 
                         className="flex-1 py-3.5 rounded-2xl text-xs sm:text-sm font-bold w-full transition-all border-0 quran-raised-btn-selected flex items-center justify-center gap-2"

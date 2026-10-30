@@ -26,13 +26,13 @@ export function getModernFlatTokens(theme: Theme, themeKey?: string): ModernFlat
     const isDeepBlack = theme.bgColor === '#000000' || theme.name === 'أبيض وأسود' || themeKey === 'deep_black';
     const primaryColor = isDeepBlack ? 'rgba(255, 255, 255, 0.25)' : (theme.palette?.[0] || theme.accent || '#059669');
     const secondaryColor = isDeepBlack ? '#E2E8F0' : (theme.palette?.[1] || theme.palette?.[0] || primaryColor);
-    const themeActiveTextColor = isDeepBlack ? '#FFFFFF' : (theme.accentText || '#FFFFFF');
+    const themeActiveTextColor = '#FFFFFF';
     const textColor = isDark ? '#FFFFFF' : (theme.textColor || '#1E293B');
     const subtextColor = isDark ? 'rgba(255, 255, 255, 0.65)' : '#64748B';
 
-    // Light mode: Clean Off-white (#F5F7FA) background, Pure White (#FFFFFF) cards
+    // Light/Custom mode: Dynamic theme background (e.g. Golden #FEF9C3), Pure White (#FFFFFF) cards
     // Dark mode: Dynamic theme background and card background
-    const pageBgColor = isDark ? (theme.bgColor || '#0B0F19') : '#F5F7FA';
+    const pageBgColor = isDeepBlack ? '#000000' : (theme.bgColor || (isDark ? '#0B0F19' : '#F5F7FA'));
     const cardBgColor = isDark ? (isDeepBlack ? '#111111' : (theme.cardBg || '#161F30')) : '#FFFFFF';
     
     // Soft drop shadows without harsh outlines
@@ -43,11 +43,11 @@ export function getModernFlatTokens(theme: Theme, themeKey?: string): ModernFlat
         ? '0 8px 30px -2px rgba(0, 0, 0, 0.45)'
         : '0 8px 24px rgba(0, 0, 0, 0.07)';
 
-    // Modern flat surfaces for capsule tabs, filled inputs, and chips
-    const capsuleBg = isDark ? 'rgba(255, 255, 255, 0.08)' : '#E8EDF3';
-    const filledInputBg = isDark ? 'rgba(255, 255, 255, 0.07)' : '#F1F4F9';
-    const chipInactiveBg = isDark ? 'rgba(255, 255, 255, 0.07)' : '#F1F4F9';
-    const chipInactiveHoverBg = isDark ? 'rgba(255, 255, 255, 0.12)' : '#E4E9F2';
+    // Modern flat surfaces for capsule tabs, filled inputs, and chips (Pure White in light/golden themes)
+    const capsuleBg = isDark ? 'rgba(255, 255, 255, 0.08)' : '#FFFFFF';
+    const filledInputBg = isDark ? 'rgba(255, 255, 255, 0.07)' : '#FFFFFF';
+    const chipInactiveBg = isDark ? 'rgba(255, 255, 255, 0.07)' : '#FFFFFF';
+    const chipInactiveHoverBg = isDark ? 'rgba(255, 255, 255, 0.12)' : '#F8FAFC';
     const actionBtnBg = isDark ? 'rgba(255, 255, 255, 0.08)' : '#F1F4F9';
     const actionBtnHoverBg = isDark ? 'rgba(255, 255, 255, 0.14)' : '#E4E9F2';
     const subtleDivider = isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)';

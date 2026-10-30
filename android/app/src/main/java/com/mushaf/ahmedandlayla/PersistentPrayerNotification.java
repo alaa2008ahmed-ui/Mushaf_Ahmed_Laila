@@ -13,8 +13,9 @@ import org.json.JSONObject;
 
 public class PersistentPrayerNotification {
 
-    public static final String CHANNEL_ID = "persistent_prayer_channel_v3";
+    public static final String CHANNEL_ID = "persistent_prayer_channel_v5";
     public static final int NOTIFICATION_ID = 9901;
+    public static final String GROUP_KEY = "com.mushaf.ahmedandlayla.PERSISTENT_PRAYER_CARD";
 
     public static void createChannel(Context context) {
         createChannel(context, true);
@@ -28,6 +29,8 @@ public class PersistentPrayerNotification {
             try {
                 nm.deleteNotificationChannel("persistent_prayer_channel_v1");
                 nm.deleteNotificationChannel("persistent_prayer_channel_v2");
+                nm.deleteNotificationChannel("persistent_prayer_channel_v3");
+                nm.deleteNotificationChannel("persistent_prayer_channel_v4");
             } catch (Exception ignored) {}
 
             // IMPORTANCE_LOW shows the icon in the status bar beside the clock
@@ -40,7 +43,8 @@ public class PersistentPrayerNotification {
             channel.setDescription(isArabic
                 ? "يعرض الصلاة القادمة والوقت المتبقي مع إظهار أيقونة التطبيق في الشريط العلوي للهاتف بجوار الساعة"
                 : "Displays next prayer and countdown with app icon in the status bar beside the clock");
-            channel.setShowBadge(true);
+            // Disabling badge ensures Samsung One UI Home and Android launchers never display number "1"
+            channel.setShowBadge(false);
             channel.enableVibration(false);
             channel.setSound(null, null);
             channel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
@@ -309,8 +313,14 @@ public class PersistentPrayerNotification {
                 .setOnlyAlertOnce(true)
                 .setShowWhen(false)
                 .setUsesChronometer(false)
+                .setGroup(GROUP_KEY)
+                .setGroupSummary(false)
+                .setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_ALL)
+                .setSortKey("00_persistent")
                 .setPriority(NotificationCompat.PRIORITY_LOW)
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .setBadgeIconType(NotificationCompat.BADGE_ICON_NONE)
+                .setNumber(0)
                 .setContentText(summary.toString())
                 .setCustomContentView(collapsedView)
                 .setCustomBigContentView(expandedView)
@@ -322,6 +332,9 @@ public class PersistentPrayerNotification {
             notification.flags |= Notification.FLAG_NO_CLEAR;
 
             nm.notify(NOTIFICATION_ID, notification);
+
+            // Keep the non-persistent app alerts summary in sync in its own completely separate card
+            AlertsGroupHelper.updateGroupSummary(context, nm);
 
             // Schedule background alarms to ensure continuous accuracy even when app is closed
             scheduleAlarms(context, targetTimeMillis);
@@ -410,6 +423,7 @@ public class PersistentPrayerNotification {
         NotificationManager nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
         if (nm != null) {
             nm.cancel(NOTIFICATION_ID);
+            AlertsGroupHelper.updateGroupSummary(context, nm);
         }
         try {
             android.app.AlarmManager am = (android.app.AlarmManager) context.getSystemService(Context.ALARM_SERVICE);

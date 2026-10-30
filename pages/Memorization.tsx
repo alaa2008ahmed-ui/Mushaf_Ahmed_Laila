@@ -64,7 +64,7 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
     // Dynamic theme primary and accent colors
     const primaryColor = isBlackTheme ? '#FFFFFF' : (theme.accent || (isBlackAndWhite ? '#FFFFFF' : (theme.palette?.[0] || '#2E7D5E')));
     const secondaryColor = isBlackTheme ? '#A1A1AA' : (theme.palette?.[1] || theme.palette?.[0] || '#4B5563');
-    const btnTextColor = isBlackTheme ? '#000000' : (theme.btnText || (isBlackAndWhite ? '#000000' : '#FFFFFF'));
+    const btnTextColor = isBlackTheme ? '#000000' : '#FFFFFF';
     
     const [selectedReader, setSelectedReader] = useState(MEMORIZATION_READERS[1].id); // Default to Abdul Basit
     
@@ -367,7 +367,7 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                                     title={isEn ? "Memorization Guide" : "دليل وشرح التحفيظ"}
                                     aria-label={isEn ? "Memorization Guide" : "دليل وشرح التحفيظ"}
                                 >
-                                    <i className="fa-solid fa-circle-question text-lg text-black"></i>
+                                    <i className="fa-solid fa-circle-question text-lg"></i>
                                 </button>
                                 <ThemePageLock />
                                 <button

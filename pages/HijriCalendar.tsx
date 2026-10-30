@@ -549,7 +549,7 @@ function HijriCalendar({ onBack, onNavigate }: { onBack: () => void; onNavigate:
                                 title={language === 'en' ? "Calendar Guide" : "دليل التقويم"}
                                 aria-label={language === 'en' ? "Calendar Guide" : "دليل التقويم"}
                             >
-                                <i className="fa-solid fa-circle-question text-lg text-black"></i>
+                                <i className="fa-solid fa-circle-question text-lg"></i>
                             </button>
                             <ThemePageLock />
                             <button

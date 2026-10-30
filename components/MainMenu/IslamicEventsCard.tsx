@@ -5,7 +5,7 @@ import {
   Share2, 
   ChevronLeft, 
   ChevronRight, 
-  Check 
+  Check
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTheme } from '../../context/ThemeContext';

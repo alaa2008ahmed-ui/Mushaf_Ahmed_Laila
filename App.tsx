@@ -31,6 +31,7 @@ import { ScreenOrientation } from '@capacitor/screen-orientation';
 import { APP_VERSION, REMOTE_VERSION_URL, GOOGLE_PLAY_URL } from './constants';
 import UpdateNotificationModal from './components/UpdateNotificationModal';
 import { recordAppLaunch, markPageAsSeen } from './utils/badgeManager';
+import { recordAppVisit } from './utils/favoriteAppsManager';
 import WirdAlertModal from './components/DailyWird/WirdAlertModal';
 import { 
   WirdAlertData, 
@@ -42,7 +43,7 @@ import {
   checkWirdAlertOnAppResume, 
   markWirdAlertShownToday 
 } from './utils/dailyWirdNotificationService';
-import { getPendingShortcutInfo } from './utils/silentMode';
+import { getPendingShortcutInfo, markNativeShortcutConsumed, updateNativeAlertsGroupSummary } from './utils/silentMode';
 
 // --- Main App Component ---
 function App() {
@@ -69,7 +70,13 @@ function App() {
   const initialShortcut = React.useMemo(() => {
     try {
       const stored = localStorage.getItem('pending_shortcut_target');
+      const storedSeqStr = localStorage.getItem('pending_shortcut_seq');
       localStorage.removeItem('pending_shortcut_target');
+      localStorage.removeItem('pending_shortcut_seq');
+      const storedSeq = storedSeqStr ? parseInt(storedSeqStr, 10) : 0;
+      if (storedSeq > 0) {
+        lastHandledShortcutSeqRef.current = storedSeq;
+      }
       if (typeof window !== 'undefined' && (window as any).__pendingShortcut) {
         const rawPending = (window as any).__pendingShortcut;
         delete (window as any).__pendingShortcut;
@@ -91,12 +98,15 @@ function App() {
     return null;
   }, [normalizeShortcutTarget]);
 
+  const launchUrlHandledRef = React.useRef<boolean>(Boolean(initialShortcut));
+  const currentOrientationRef = React.useRef<'portrait' | 'landscape'>('portrait');
+
   const [splashStage, setSplashStage] = useState<'video' | 'welcome' | 'app'>(() => {
     if (initialShortcut) return 'app';
     return 'video';
   });
 
-  // Track app launch count for "جديد" badge and sync first-time language preference
+  // Track app launch count for "جديد" badge and sync first-time preferences
   useEffect(() => {
     recordAppLaunch();
     try {
@@ -107,11 +117,24 @@ function App() {
           } catch (e) {}
         }
       }).catch(() => {});
+      Preferences.get({ key: 'home_layout_system' }).then(({ value }) => {
+        if (value === 'classic' || value === 'modern') {
+          try {
+            localStorage.setItem('home_layout_system', value);
+          } catch (e) {}
+        }
+      }).catch(() => {});
     } catch (e) {}
   }, []);
 
   const [history, setHistory] = useState<string[]>(() => {
-    if (initialShortcut) {
+    // Clear any previous saved history/page so fresh app launch from icon always opens directly on the home page
+    try {
+      localStorage.removeItem('last_active_history');
+      localStorage.removeItem('last_active_page');
+    } catch (e) {}
+
+    if (initialShortcut && initialShortcut !== 'home') {
       return ['home', initialShortcut];
     }
     return ['home'];
@@ -165,11 +188,24 @@ function App() {
 
   useEffect(() => {
     const currentPage = history[history.length - 1];
-    setCurrentPage(currentPage);
+    const prevInHistory = history.length >= 2 ? history[history.length - 2] : undefined;
+    if (
+      currentPage === 'search' &&
+      (prevInHistory === 'quran' ||
+        prevInHistory === 'quran-landscape' ||
+        navParams?.from === 'quran' ||
+        navParams?.from === 'quran-landscape' ||
+        navParams?.fromSidebar)
+    ) {
+      const isLandscapeOrigin = prevInHistory === 'quran-landscape' || navParams?.from === 'quran-landscape';
+      setCurrentPage(isLandscapeOrigin ? 'quran_search_landscape' : 'quran_search');
+    } else {
+      setCurrentPage(currentPage);
+    }
     if (currentPage && currentPage !== 'home') {
       markPageAsSeen(currentPage);
     }
-  }, [history, setCurrentPage]);
+  }, [history, navParams, setCurrentPage]);
 
   useEffect(() => {
     if (!history.includes('search')) {
@@ -180,29 +216,43 @@ function App() {
       setLastMenuPage(currentPage);
     }
 
-    // --- Orientation Management ---
-    const handleOrientation = async () => {
-      if (!Capacitor.isNativePlatform()) return;
-      
-      try {
-        if (currentPage === 'quran-landscape') {
-          await ScreenOrientation.lock({ orientation: 'landscape' });
-        } else {
-          // If we are not in a landscape page, and we were previously in one (or just to be safe)
-          // we ensure portrait mode. 
-          // Note: ScreenOrientation.unlock() allows normal rotation, 
-          // but usually the main UI is better off in portrait.
-          await ScreenOrientation.lock({ orientation: 'portrait' });
-        }
-      } catch (e) {
-        console.error('Orientation management failed:', e);
+    // --- Orientation Management (سلاسة وسرعة لحظية بدون تكرار أو تعليق) ---
+    if (Capacitor.isNativePlatform()) {
+      const targetOrientation = currentPage === 'quran-landscape' ? 'landscape' : 'portrait';
+      if (currentOrientationRef.current !== targetOrientation) {
+        currentOrientationRef.current = targetOrientation;
+        ScreenOrientation.lock({ orientation: targetOrientation }).catch((e) => {
+          console.warn('Orientation management failed:', e);
+        });
       }
-    };
-    handleOrientation();
+    }
   }, [history]);
 
   const handleNavigate = useCallback((pageId: string, params?: any) => {
     setIsSideMenuOpen(false);
+
+    const rawPageId = pageId;
+    // Normalize any legacy/alternative aliases to canonical page IDs
+    const pageAliasMap: Record<string, string> = {
+      'quran-search': 'search',
+      'global-search': 'search',
+      'athkar-salah': 'salah-adhkar',
+      'adhkar': 'sabah-masaa',
+      'athkar-sabah-massa': 'sabah-masaa',
+      'roqya': 'others',
+      'ruqyah': 'others',
+      'asma-allah': 'asmaul-husna',
+      'asmaa-allah': 'asmaul-husna',
+      'seerah': 'prophetic-seerah',
+      'hadith': 'nawawi',
+      'misbaha': 'tasbeeh',
+      'sebha': 'tasbeeh',
+    };
+    pageId = pageAliasMap[pageId] || pageId;
+    if (rawPageId === 'quran-search') {
+      params = { ...(params || {}), from: params?.from || 'quran' };
+    }
+
     const validPages = [
       'home', 'quran', 'quran-landscape', 'quran-download', 'salah-adhkar', 'calendar', 'listen', 'tasbeeh', 
       'hajj-umrah', 'hisn-muslim', 'prayer-times', 'monthly-prayer-times', 'qibla', 
@@ -232,6 +282,7 @@ function App() {
     if (validPages.includes(pageId)) {
       if (pageId !== 'home') {
         markPageAsSeen(pageId);
+        recordAppVisit(pageId);
       }
       setNavParams(params || null);
       setHistory(prev => {
@@ -327,11 +378,13 @@ function App() {
   useEffect(() => {
     setupNotifications();
 
-    let listener: any = null;
+    let actionListener: any = null;
+    let receivedListener: any = null;
     if (Capacitor.isNativePlatform()) {
       // On native APK, notifications & alerts appear ONLY in the phone's top status bar.
       // Tapping a notification in the status bar navigates directly without opening any in-app alert modal.
-      listener = LocalNotifications.addListener('localNotificationActionPerformed', (notificationAction) => {
+      actionListener = LocalNotifications.addListener('localNotificationActionPerformed', (notificationAction) => {
+        updateNativeAlertsGroupSummary();
         const extra = notificationAction.notification.extra;
         const page = extra?.page;
         const params = extra?.params;
@@ -344,11 +397,18 @@ function App() {
           handleNavigate('prayer-times');
         }
       });
+
+      receivedListener = LocalNotifications.addListener('localNotificationReceived', () => {
+        updateNativeAlertsGroupSummary();
+      });
     }
 
     return () => {
-      if (listener) {
-        listener.then((l: any) => l.remove());
+      if (actionListener) {
+        actionListener.then((l: any) => l.remove());
+      }
+      if (receivedListener) {
+        receivedListener.then((l: any) => l.remove());
       }
     };
   }, [handleNavigate]);
@@ -397,14 +457,27 @@ function App() {
       if (!target) return;
       if (typeof seq === 'number' && seq > 0) {
         if (seq <= lastHandledShortcutSeqRef.current) {
+          try {
+            localStorage.removeItem('pending_shortcut_target');
+            localStorage.removeItem('pending_shortcut_seq');
+            delete (window as any).__pendingShortcut;
+          } catch (e) {}
           return;
         }
         lastHandledShortcutSeqRef.current = seq;
       }
       try {
         localStorage.removeItem('pending_shortcut_target');
+        localStorage.removeItem('pending_shortcut_seq');
         delete (window as any).__pendingShortcut;
+        if (typeof window !== 'undefined' && window.location.hash) {
+          window.history.replaceState(null, '', window.location.pathname + window.location.search);
+        }
       } catch (e) {}
+
+      // Notify native Android that shortcut has been consumed so any pending runnables cancel
+      markNativeShortcutConsumed(seq);
+
       const cleanTarget = normalizeShortcutTarget(target);
       console.log('[Shortcut] Navigating directly to target:', cleanTarget, 'seq:', seq);
       setIsThemeSelectorOpen(false);
@@ -426,9 +499,12 @@ function App() {
     const checkImmediateMemory = () => {
       try {
         const stored = localStorage.getItem('pending_shortcut_target');
+        const storedSeqStr = localStorage.getItem('pending_shortcut_seq');
+        const storedSeq = storedSeqStr ? parseInt(storedSeqStr, 10) : 0;
+        localStorage.removeItem('pending_shortcut_target');
+        localStorage.removeItem('pending_shortcut_seq');
         if (stored && stored.trim()) {
-          localStorage.removeItem('pending_shortcut_target');
-          consumeAndNavigate(stored.trim());
+          consumeAndNavigate(stored.trim(), storedSeq > 0 ? storedSeq : undefined);
         }
         const rawPending = (window as any).__pendingShortcut;
         if (rawPending) {
@@ -445,10 +521,12 @@ function App() {
     const checkNativePendingShortcut = async () => {
       checkImmediateMemory();
 
-      if (Capacitor.isNativePlatform()) {
+      // Only check getLaunchUrl once during initial cold boot if not yet handled
+      if (Capacitor.isNativePlatform() && !launchUrlHandledRef.current) {
         try {
           const launch = await CapacitorApp.getLaunchUrl();
-          if (isMounted && launch && launch.url) {
+          if (isMounted && launch && launch.url && !launchUrlHandledRef.current) {
+            launchUrlHandledRef.current = true;
             consumeAndNavigate(launch.url);
           }
         } catch (e) {}
@@ -465,17 +543,15 @@ function App() {
         const { value } = await Preferences.get({ key: 'pending_shortcut_target' });
         if (isMounted && value && value.trim()) {
           await Preferences.remove({ key: 'pending_shortcut_target' }).catch(() => {});
+          await Preferences.remove({ key: 'pending_shortcut_seq' }).catch(() => {});
           consumeAndNavigate(value.trim());
         }
       } catch (e) {}
     };
 
-    // 1. Check multiple times as the bridge, preferences, and webview initialize
+    // 1. Initial check on mount
     checkNativePendingShortcut();
-    const t1 = setTimeout(checkNativePendingShortcut, 100);
-    const t2 = setTimeout(checkNativePendingShortcut, 350);
-    const t3 = setTimeout(checkNativePendingShortcut, 800);
-    const t4 = setTimeout(checkNativePendingShortcut, 1500);
+    const t1 = setTimeout(checkNativePendingShortcut, 150);
 
     // 2. Listen for fresh native shortcut events dispatched on cold start or onNewIntent
     const onNativeShortcut = (e: any) => {
@@ -487,16 +563,11 @@ function App() {
     };
     window.addEventListener('nativeShortcutTriggered', onNativeShortcut);
 
-    // 3. When app resumes from background or receives URL, navigate immediately
+    // 3. Listen to appUrlOpen when a widget or deep link is tapped while app is running in background.
+    // NOTE: We deliberately do NOT listen to appStateChange to trigger shortcuts.
+    // Resuming from background (e.g. after minimizing the app to show phone screen) must always keep the user on their last opened page!
     let urlSub: any = null;
-    let stateSub: any = null;
     if (Capacitor.isNativePlatform()) {
-      stateSub = CapacitorApp.addListener('appStateChange', (state: any) => {
-        if (state && state.isActive) {
-          checkNativePendingShortcut();
-        }
-      });
-
       urlSub = CapacitorApp.addListener('appUrlOpen', (data: any) => {
         if (data && data.url) {
           consumeAndNavigate(data.url);
@@ -508,15 +579,9 @@ function App() {
       isMounted = false;
       delete (window as any).handleNativeShortcut;
       clearTimeout(t1);
-      clearTimeout(t2);
-      clearTimeout(t3);
-      clearTimeout(t4);
       window.removeEventListener('nativeShortcutTriggered', onNativeShortcut);
       if (urlSub) {
         urlSub.then((listener: any) => listener.remove()).catch(() => {});
-      }
-      if (stateSub) {
-        stateSub.then((listener: any) => listener.remove()).catch(() => {});
       }
     };
   }, [handleNavigate, normalizeShortcutTarget]);
@@ -565,7 +630,8 @@ function App() {
       window.dispatchEvent(new CustomEvent('voice-command', { detail: { action, text, params } }));
     }
     else if (action === 'open_search' || (action === 'ui_click' && params?.label?.includes('بحث'))) {
-      handleNavigate('search');
+      const currentActive = history[history.length - 1];
+      handleNavigate('search', (currentActive === 'quran' || currentActive === 'quran-landscape') ? { from: currentActive } : undefined);
     }
     else if (action === 'open_themes' || (action === 'ui_click' && params?.label?.includes('ثيم'))) {
       if (page === 'quran') {
@@ -592,64 +658,63 @@ function App() {
         }
       });
     }
-  }, [handleNavigate, applyPresetTheme, performUiClick, navigateBack]);
+  }, [handleNavigate, applyPresetTheme, performUiClick, navigateBack, history]);
 
   const page = history[history.length - 1];
-
-  if (splashStage === 'video') {
-    return (
-      <VideoSplash
-        onEnded={() => {
-          let hasChosenLanguage = false;
-          try {
-            hasChosenLanguage = localStorage.getItem('has_selected_initial_language') === 'true';
-          } catch (e) {
-            hasChosenLanguage = false;
-          }
-          if (hasChosenLanguage) {
-            setSplashStage('app');
-          } else {
-            setSplashStage('welcome');
-          }
-        }}
-      />
-    );
-  }
-
-  if (splashStage === 'welcome') {
-    return (
-      <WelcomeSplash
-        onSelectLanguage={(lang) => {
-          try {
-            localStorage.setItem('has_selected_initial_language', 'true');
-            Preferences.set({ key: 'has_selected_initial_language', value: 'true' }).catch(() => {});
-          } catch (e) {}
-          setLanguage(lang);
-          setSplashStage('app');
-        }}
-      />
-    );
-  }
 
   return (
     <TutorialProvider>
       <PrayerTimesProvider>
         <VoiceControlProvider onAction={handleVoiceAction}>
-          <AppContent 
-            page={page} 
-            history={history}
-            navParams={navParams}
-            isThemeSelectorOpen={isThemeSelectorOpen}
-            showExitConfirm={showExitConfirm}
-            isSideMenuOpen={isSideMenuOpen}
-            setIsSideMenuOpen={setIsSideMenuOpen}
-            handleNavigate={handleNavigate}
-            navigateBack={navigateBack}
-            setIsThemeSelectorOpen={setIsThemeSelectorOpen}
-            setShowExitConfirm={setShowExitConfirm}
-            updateInfo={updateInfo}
-            setUpdateInfo={setUpdateInfo}
-          />
+          {splashStage === 'video' ? (
+            <VideoSplash
+              onEnded={() => {
+                let hasChosenLanguage = false;
+                try {
+                  hasChosenLanguage = localStorage.getItem('has_selected_initial_language') === 'true';
+                } catch (e) {
+                  hasChosenLanguage = false;
+                }
+                if (hasChosenLanguage) {
+                  setSplashStage('app');
+                } else {
+                  setSplashStage('welcome');
+                }
+              }}
+            />
+          ) : (
+            <>
+              <AppContent 
+                page={page} 
+                history={history}
+                navParams={navParams}
+                isThemeSelectorOpen={isThemeSelectorOpen}
+                showExitConfirm={showExitConfirm}
+                isSideMenuOpen={isSideMenuOpen}
+                setIsSideMenuOpen={setIsSideMenuOpen}
+                handleNavigate={handleNavigate}
+                navigateBack={navigateBack}
+                setIsThemeSelectorOpen={setIsThemeSelectorOpen}
+                setShowExitConfirm={setShowExitConfirm}
+                updateInfo={updateInfo}
+                setUpdateInfo={setUpdateInfo}
+              />
+              {splashStage === 'welcome' && (
+                <WelcomeSplash
+                  onSelectLanguage={(lang) => {
+                    try {
+                      localStorage.setItem('has_selected_initial_language', 'true');
+                      localStorage.setItem('home_layout_system', 'modern');
+                      Preferences.set({ key: 'has_selected_initial_language', value: 'true' }).catch(() => {});
+                      Preferences.set({ key: 'home_layout_system', value: 'modern' }).catch(() => {});
+                    } catch (e) {}
+                    setLanguage(lang);
+                    setSplashStage('app');
+                  }}
+                />
+              )}
+            </>
+          )}
         </VoiceControlProvider>
       </PrayerTimesProvider>
     </TutorialProvider>
@@ -739,9 +804,11 @@ function AppContent({
     history,
     isThemeSelectorOpen,
     showExitConfirm,
+    isSideMenuOpen,
     navigateBack,
     setIsThemeSelectorOpen,
-    setShowExitConfirm
+    setShowExitConfirm,
+    setIsSideMenuOpen
   });
 
   const [isLandscape, setIsLandscape] = useState(window.innerWidth > window.innerHeight);
@@ -780,7 +847,14 @@ function AppContent({
           setIsSideMenuOpen(true);
           window.dispatchEvent(new CustomEvent('quran-stop-audio'));
         }}
-        navParams={navParams}
+        navParams={
+          page === 'search' &&
+          history.length >= 2 &&
+          (history[history.length - 2] === 'quran' || history[history.length - 2] === 'quran-landscape') &&
+          !navParams?.from
+            ? { ...(navParams || {}), from: history[history.length - 2] }
+            : navParams
+        }
       />
 
       <SideMenu 

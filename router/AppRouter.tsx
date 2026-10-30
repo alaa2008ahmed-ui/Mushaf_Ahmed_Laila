@@ -44,12 +44,16 @@ const AppRouter: React.FC<AppRouterProps> = ({ page, onBack, onNavigate, onOpenT
       case 'quran-download':
         return <QuranDownload onBack={onBack} onNavigate={onNavigate} />;
       case 'salah-adhkar':
+      case 'athkar-salah':
+      case 'athkar_salah':
         return <AthkarAlSalah onBack={onBack} onNavigate={onNavigate} />;
       case 'calendar':
         return <HijriCalendar onBack={onBack} onNavigate={onNavigate} />;
       case 'listen':
         return <ListenQuran onBack={onBack} onNavigate={onNavigate} onOpenThemes={onOpenThemes} />;
       case 'tasbeeh':
+      case 'misbaha':
+      case 'sebha':
         return <Tasbeeh onBack={onBack} onNavigate={onNavigate} />;
       case 'hajj-umrah':
         return <HajjUmrah onBack={onBack} onNavigate={onNavigate} />;
@@ -62,10 +66,13 @@ const AppRouter: React.FC<AppRouterProps> = ({ page, onBack, onNavigate, onOpenT
       case 'qibla':
         return <Qibla onBack={onBack} onNavigate={onNavigate} />;
       case 'sabah-masaa':
+      case 'adhkar':
+      case 'athkar-sabah-massa':
         return <AdkarSabahMasaa onBack={onBack} onNavigate={onNavigate} />;
       case 'adia':
         return <Adia onBack={onBack} onNavigate={onNavigate} />;
       case 'nawawi':
+      case 'hadith':
         return <Nawawi onBack={onBack} onNavigate={onNavigate} />;
       case 'calculators':
         return <Calculators onBack={onBack} onNavigate={onNavigate} />;
@@ -76,16 +83,23 @@ const AppRouter: React.FC<AppRouterProps> = ({ page, onBack, onNavigate, onOpenT
       case 'memorization':
         return <Memorization onBack={onBack} onNavigate={onNavigate} />;
       case 'search':
+      case 'global-search':
+      case 'quran-search':
         return <GlobalSearch onBack={onBack} onNavigate={onNavigate} navParams={navParams} />;
       case 'asmaul-husna':
+      case 'asma-allah':
+      case 'asmaa-allah':
         return <AsmaulHusna onBack={onBack} onNavigate={onNavigate} />;
       case 'habit-tracker':
         return <HabitTracker onBack={onBack} onNavigate={onNavigate} />;
       case 'others':
+      case 'roqya':
+      case 'ruqyah':
         return <OthersPage onBack={onBack} onNavigate={onNavigate} onOpenThemes={onOpenThemes} />;
       case 'islamic-sites':
         return <IslamicSitesPage onBack={onBack} onNavigate={onNavigate} />;
       case 'prophetic-seerah':
+      case 'seerah':
         return <PropheticSeerahPage onBack={onBack} onNavigate={onNavigate} navParams={navParams} />;
       case 'ten-promised':
         return <TenPromisedPage onBack={onBack} onNavigate={onNavigate} onOpenThemes={onOpenThemes} navParams={navParams} />;

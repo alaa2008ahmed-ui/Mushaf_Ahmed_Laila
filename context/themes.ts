@@ -72,6 +72,28 @@ export const presetThemes: { [key: string]: Theme } = {
         modalText: "#FFFFFF",
         sajdah: "#FFFFFF"
     },
+    shiny_gold: {
+        name: "الذهبي اللامع",
+        bgColor: "#FEF9C3",
+        textColor: "#000000",
+        font: "'Cairo', sans-serif",
+        palette: ["#D97706", "#F59E0B", "#B45309", "#78350F"],
+        barBg: "#FDE047",
+        barBorder: "1px solid #D97706",
+        topBarBg: "#FDE047",
+        topBarText: "#000000",
+        btnBg: "#EAB308",
+        btnText: "#000000",
+        btnBorder: "1.5px solid #CA8A04",
+        accent: "#D97706",
+        accentText: "#000000",
+        cardBg: "#FDE047",
+        cardText: "#000000",
+        cardBorder: "1.5px solid #D97706",
+        modalBg: "#FEF9C3",
+        modalText: "#000000",
+        sajdah: "#B45309"
+    },
     fajr_light: {
         name: "نور الفجر",
         bgColor: "#F0F9FF",
@@ -112,20 +134,6 @@ export const presetThemes: { [key: string]: Theme } = {
         cardBorder: "#F3F4F6",
         modalBg: "#FFFFFF",
         modalText: "#111827"
-    },
-    islamic_heritage: {
-        name: "أصالة التراث",
-        bgColor: "#FDFCF0",
-        textColor: "#45322E",
-        font: "'Amiri', serif",
-        palette: ["#8B4513", "#556B2F", "#A0522D"],
-        barBg: "#F5F5DC",
-        barBorder: "1px solid #8B4513",
-        accent: "#8B4513",
-        cardBg: "#FFFFFF",
-        cardBorder: "#F5F5DC",
-        modalBg: "#FDFCF0",
-        modalText: "#45322E"
     },
     evening_tranquility: {
         name: "سكينة المساء",

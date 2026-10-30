@@ -175,23 +175,25 @@ export interface DailyScoreBreakdown {
 }
 
 /**
- * المعايير الرسمية لمعدل تلاوة القرآن الكريم وفق طبعة مجمع الملك فهد لطباعة المصحف الشريف بالمدينة المنورة:
- * - عدد صفحات المصحف الشريف: 604 صفحات (بمعدل 20 صفحة لكل جزء، و15 سطراً للصفحة القياسية بمتوسط ~75 كلمة).
- * - المعدل الرسمي المعتمد لقراءة الصفحة الواحدة (مرتبة الحدر المتقن): دقيقة واحدة (60 ثانية) للصفحة = 20 دقيقة للجزء.
- * - النطاق الزمني المعتمد لقراءة الجزء الكامل: يبدأ من 10 دقائق (حدر سريع متقن = 30 ثانية كحد أدنى للصفحة القياسية)
- *   إلى 20 دقيقة فأكثر (الحدر المعتاد والتدوير والترتيل).
+ * المعايير والضوابط لربط قراءة القرآن الكريم بمربي العبادات:
+ * 1) عند التمرير التلقائي (من 5 دقائق إلى 60 دقيقة): يتم الاحتساب بأي سرعة للقراءة لكل صفحة.
+ * 2) عند التمرير اليدوي: يتم احتساب كل صفحة من 30 ثانية للصفحة الواحدة، وإذا قل وقت التمرير عن ذلك للصفحة لا يتم احتسابها.
+ * 3) الصفحة الأولى والثانية بالمصحف: يتم احتساب تمريرهما بأي وقت نظراً لصغر هاتين الصفحتين.
  */
 export const QURAN_READING_STANDARDS = {
   TOTAL_MUSHAF_PAGES: 604,
   PAGES_PER_JUZ: 20,
   STANDARD_WORDS_PER_PAGE: 75,
   STANDARD_SECONDS_PER_PAGE: 60,
-  MIN_MINUTES_PER_JUZ: 10,
+  MIN_AUTO_SCROLL_MINUTES: 5,        // نطاق التمرير التلقائي من 5 دقائق إلى 60 دقيقة
+  MAX_AUTO_SCROLL_MINUTES: 60,
+  MIN_MINUTES_PER_JUZ: 5,
   STANDARD_MINUTES_PER_JUZ: 20,
-  MIN_SECONDS_PER_STANDARD_PAGE: 30,
-  MIN_SECONDS_SHORT_PAGE: 15,
-  MIN_AUTO_SCROLL_SECONDS: 3,
-  TRANSIENT_SKIM_RESET_SECONDS: 6,
+  MANUAL_MIN_SECONDS_PER_PAGE: 30,   // التمرير اليدوي: 30 ثانية للصفحة الواحدة كحد أدنى
+  MIN_SECONDS_PER_STANDARD_PAGE: 30, // للتوافق
+  MIN_SECONDS_SHORT_PAGE: 1,         // الصفحتان الأولى والثانية بأي وقت
+  MIN_AUTO_SCROLL_SECONDS: 1,        // التمرير التلقائي بأي سرعة
+  TRANSIENT_SKIM_RESET_SECONDS: 4,
 } as const;
 
 interface VerifiedQuranSyncData {
@@ -345,11 +347,20 @@ export const useHabitTracker = create<HabitTrackerState>()(
       recordQuranPageRead: (pageNum, verifiedSeconds = 0, isAutoScroll = false) => {
         if (!get().autoSyncEnabled) return;
         if (!pageNum || pageNum < 1 || pageNum > QURAN_READING_STANDARDS.TOTAL_MUSHAF_PAGES) return;
-        // في التمرير التلقائي يتم اعتماد كافة أوقات التمرير التلقائي، أما التمرير اليدوي فيشترط حد القراءة الفعلي (10 دقائق فأكثر للجزء)
-        const minAllowedSeconds = isAutoScroll
-          ? QURAN_READING_STANDARDS.MIN_AUTO_SCROLL_SECONDS
-          : QURAN_READING_STANDARDS.MIN_SECONDS_SHORT_PAGE;
-        if (verifiedSeconds < minAllowedSeconds) return;
+
+        // الضوابط المحددة:
+        // ثالثاً: الصفحة الأولى والثانية بالمصحف يتم احتساب تمريرهما بأي وقت نظراً لصغر هاتين الصفحتين
+        const isShortFirstTwoPages = pageNum === 1 || pageNum === 2;
+
+        if (!isShortFirstTwoPages) {
+          if (isAutoScroll) {
+            // أولاً: عند التمرير التلقائي (من 5 دقائق إلى 60 دقيقة) يتم الاحتساب بأي سرعة للقراءة لكل صفحة
+            if (verifiedSeconds < 1) return;
+          } else {
+            // ثانياً: عند التمرير اليدوي يتم احتساب كل صفحة من 30 ثانية للصفحة الواحدة، وإذا قل وقت التمرير عن ذلك لا يتم احتسابها
+            if (verifiedSeconds < 30) return;
+          }
+        }
 
         const today = moment().format('YYYY-MM-DD');
         const syncData = readVerifiedSyncData(today);

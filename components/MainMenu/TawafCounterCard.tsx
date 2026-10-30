@@ -4,13 +4,15 @@ import { getTawafCounterState, saveTawafCounterState, subscribeTawafCounter, Taw
 import { useLanguage } from '../../context/LanguageContext';
 
 interface TawafCounterCardProps {
-  theme: any;
+  theme?: any;
+  isGolden?: boolean;
   onNavigate?: (pageId: string, params?: any) => void;
 }
 
-export const TawafCounterCard: React.FC<TawafCounterCardProps> = ({ theme }) => {
+export const TawafCounterCard: React.FC<TawafCounterCardProps> = ({ theme, isGolden = false, onNavigate }) => {
   const { language, dir, t, formatNumber } = useLanguage();
   const [state, setState] = useState<TawafCounterState>(getTawafCounterState());
+  const isEn = language === 'en';
 
   useEffect(() => {
     return subscribeTawafCounter((updated) => {
@@ -22,9 +24,8 @@ export const TawafCounterCard: React.FC<TawafCounterCardProps> = ({ theme }) => 
     return null;
   }
 
-  const isBlackTheme = theme?.bgColor === '#000000' || theme?.name === 'اسود' || theme?.name === 'black';
+  const isBlackTheme = !isGolden && (theme?.bgColor === '#000000' || theme?.name === 'اسود' || theme?.name === 'black');
   const primaryAccent = isBlackTheme ? '#FFFFFF' : (theme?.palette?.[0] || '#10b981');
-  const cardBg = theme?.cardBg || 'rgba(255, 255, 255, 0.85)';
   const currentCount = state.activeTab === 'tawaf' ? state.tawafCount : state.saiCount;
   const isComplete = currentCount >= 7;
 
@@ -66,6 +67,140 @@ export const TawafCounterCard: React.FC<TawafCounterCardProps> = ({ theme }) => 
     saveTawafCounterState({ activeTab: tab });
   };
 
+  // --- التصميم الذكي الحديث (البطاقات الذهبية 3D) ---
+  if (isGolden) {
+    return (
+      <div
+        id="modern-tawaf-counter-card"
+        className="w-full golden-3d-card p-4 sm:p-5 select-none transition-all duration-300 flex flex-col gap-3.5"
+        style={{ fontFamily: "'Cairo', sans-serif" }}
+        dir={dir}
+      >
+        {/* 1. الترويسة مع العنوان وأزرار التبديل وزر إعادة الضبط */}
+        <div className="flex items-center justify-between w-full relative gap-2">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-xl bg-amber-100/90 text-amber-900 border border-amber-300/80 flex items-center justify-center shrink-0 shadow-2xs">
+              <RotateCcw className="w-4 h-4 text-amber-800" />
+            </div>
+            <span className="text-sm sm:text-base font-bold text-[#451A03] font-cairo truncate">
+              {isEn ? 'Laps Counter' : 'عداد الأشواط'}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-1.5 shrink-0">
+            {/* مبدل الطواف / السعي بألوان البطاقات الذهبية */}
+            <div className="flex p-0.5 rounded-xl golden-3d-inset text-[11px] font-bold">
+              <button
+                type="button"
+                onClick={(e) => handleSwitchTab('tawaf', e)}
+                className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                  state.activeTab === 'tawaf'
+                    ? 'golden-3d-btn font-extrabold shadow-2xs'
+                    : 'text-amber-950/80 hover:text-amber-950'
+                }`}
+              >
+                {isEn ? 'Tawaf' : 'الطواف'}
+              </button>
+              <button
+                type="button"
+                onClick={(e) => handleSwitchTab('sai', e)}
+                className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                  state.activeTab === 'sai'
+                    ? 'golden-3d-btn font-extrabold shadow-2xs'
+                    : 'text-amber-950/80 hover:text-amber-950'
+                }`}
+              >
+                {isEn ? "Sa'i" : 'السعي'}
+              </button>
+            </div>
+
+            {/* زر إعادة ضبط العداد بالنمط الذهبي الفاتح */}
+            <button
+              type="button"
+              onClick={handleReset}
+              title={t('tawaf.reset_tooltip', 'إعادة ضبط العداد')}
+              className="w-8 h-8 rounded-xl golden-3d-btn-light flex items-center justify-center transition-all active:scale-90 cursor-pointer"
+            >
+              <RotateCcw className="w-3.5 h-3.5 text-amber-900" />
+            </button>
+          </div>
+        </div>
+
+        {/* 2. مؤشر الأشواط السبعة (7 Laps Stepper Dots) بنمط ذهبي مجسم */}
+        <div className="flex items-center justify-between gap-1.5 px-0.5 py-1">
+          {[1, 2, 3, 4, 5, 6, 7].map((lap) => {
+            const isPassed = lap <= currentCount;
+            const isCurrent = lap === currentCount + 1 && !isComplete;
+
+            return (
+              <div key={lap} className="flex-1 flex flex-col items-center gap-1.5">
+                <div
+                  className={`w-full h-3.5 rounded-full transition-all duration-300 ${
+                    isPassed
+                      ? 'bg-gradient-to-r from-amber-600 via-yellow-500 to-amber-500 shadow-2xs'
+                      : isCurrent
+                      ? 'bg-white ring-2 ring-amber-500 ring-offset-1 animate-pulse shadow-2xs'
+                      : 'golden-3d-inset opacity-50'
+                  }`}
+                />
+                <span 
+                  className={`text-[10px] font-mono font-bold ${
+                    isPassed || isCurrent ? 'text-amber-950 font-black' : 'text-amber-900/40'
+                  }`}
+                >
+                  {formatNumber(lap)}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* 3. زر الضغط الرئيسي لاحتساب الشوط بالزر الذهبي المجسم 3D */}
+        <div className="w-full">
+          <button
+            type="button"
+            onClick={() => handleIncrement()}
+            disabled={isComplete}
+            className={`w-full py-2.5 px-4 rounded-2xl font-bold flex items-center justify-between transition-all relative overflow-hidden select-none ${
+              isComplete
+                ? 'cursor-default shadow-md'
+                : 'active:scale-[0.98] active:translate-y-0.5 cursor-pointer golden-3d-pill-btn'
+            }`}
+            style={isComplete ? {
+              background: 'linear-gradient(135deg, #15803D 0%, #16A34A 50%, #B45309 100%)',
+              border: '1.5px solid rgba(254, 243, 199, 0.7)',
+              boxShadow: '0 4px 12px rgba(22, 163, 74, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.6)'
+            } : undefined}
+          >
+            {/* 3D Glossy specular sheen */}
+            <div className="absolute inset-x-1 top-0.5 h-[45%] rounded-t-[14px] bg-gradient-to-b from-white/35 via-white/12 to-transparent pointer-events-none" />
+            <div className="absolute inset-x-3 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/85 to-transparent rounded-full pointer-events-none" />
+            <div className="absolute inset-x-2 bottom-0 h-[2px] bg-black/15 rounded-b-2xl pointer-events-none" />
+            
+            <div className="w-full flex items-center justify-center text-center">
+              <span className="text-sm sm:text-base font-bold leading-tight font-cairo text-white flex items-center gap-1.5 justify-center">
+                {isComplete ? (
+                  t('tawaf.completed_title', 'اكتملت 7 أشواط مباركة!')
+                ) : language === 'en' ? (
+                  <>
+                    <span>Record Lap</span>
+                    <span className="text-lg sm:text-xl font-black">({formatNumber(currentCount)})</span>
+                  </>
+                ) : (
+                  <>
+                    <span>تسجيل الشوط</span>
+                    <span className="text-lg sm:text-xl font-black">({formatNumber(currentCount)})</span>
+                  </>
+                )}
+              </span>
+            </div>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // --- التصميم الكلاسيكي الأصلي ---
   return (
     <div
       className={`w-full mt-2 py-3.5 px-4 sm:px-5 relative overflow-hidden flex flex-col gap-3 select-none ${
@@ -84,7 +219,7 @@ export const TawafCounterCard: React.FC<TawafCounterCardProps> = ({ theme }) => 
       {/* 1. Header with Mode Tabs, Quick reset and Title */}
       <div className="flex items-center justify-between z-10 w-full relative gap-2">
         <span className="text-sm md:text-base font-bold font-kufi truncate" style={{ color: primaryAccent }}>
-          {state.activeTab === 'tawaf' ? t('tawaf.title', 'عداد أشواط الطواف') : t('sai.title', 'عداد أشواط السعي')}
+          {isEn ? 'Laps Counter' : 'عداد الأشواط'}
         </span>
 
         {/* Controls: Tawaf/Sai Toggle + Reset */}
@@ -104,7 +239,7 @@ export const TawafCounterCard: React.FC<TawafCounterCardProps> = ({ theme }) => 
                 boxShadow: state.activeTab === 'tawaf' ? '0 2px 0 rgba(0,0,0,0.15), inset 0 1px 1px rgba(255,255,255,0.4)' : 'none'
               }}
             >
-              {t('tawaf.tab', 'طواف')}
+              {isEn ? 'Tawaf' : 'الطواف'}
             </button>
             <button
               onClick={(e) => handleSwitchTab('sai', e)}
@@ -119,7 +254,7 @@ export const TawafCounterCard: React.FC<TawafCounterCardProps> = ({ theme }) => 
                 boxShadow: state.activeTab === 'sai' ? '0 2px 0 rgba(0,0,0,0.15), inset 0 1px 1px rgba(255,255,255,0.4)' : 'none'
               }}
             >
-              {t('sai.tab', 'سعي')}
+              {isEn ? "Sa'i" : 'السعي'}
             </button>
           </div>
 
@@ -175,7 +310,7 @@ export const TawafCounterCard: React.FC<TawafCounterCardProps> = ({ theme }) => 
         <button
           onClick={() => handleIncrement()}
           disabled={isComplete}
-          className={`w-full py-3.5 px-5 rounded-2xl font-bold flex items-center justify-between transition-all relative overflow-hidden select-none ${
+          className={`w-full py-2.5 px-4 rounded-2xl font-bold flex items-center justify-between transition-all relative overflow-hidden select-none ${
             isComplete
               ? 'bg-emerald-600 text-white cursor-default'
               : 'active:scale-[0.98] active:translate-y-0.5 cursor-pointer'
@@ -197,22 +332,22 @@ export const TawafCounterCard: React.FC<TawafCounterCardProps> = ({ theme }) => 
           <div className="absolute inset-x-1 top-0.5 h-[45%] rounded-t-[14px] bg-gradient-to-b from-white/35 via-white/12 to-transparent pointer-events-none" />
           <div className="absolute inset-x-3 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/85 to-transparent rounded-full pointer-events-none" />
           <div className="absolute inset-x-2 bottom-0 h-[2px] bg-black/15 rounded-b-2xl pointer-events-none" />
-          <div className="text-start">
-            <span className="block text-base md:text-lg font-bold leading-tight font-kufi">
-              {isComplete 
-                ? t('tawaf.completed_title', 'اكتملت 7 أشواط مباركة!') 
-                : (language === 'en' 
-                    ? `Record Lap (${formatNumber(currentCount + 1)})` 
-                    : `تسجيل الشوط (${formatNumber(currentCount + 1)})`)}
+          <div className="w-full flex items-center justify-center text-center">
+            <span className="text-sm sm:text-base font-bold leading-tight font-kufi flex items-center gap-1.5 justify-center">
+              {isComplete ? (
+                t('tawaf.completed_title', 'اكتملت 7 أشواط مباركة!')
+              ) : language === 'en' ? (
+                <>
+                  <span>Record Lap</span>
+                  <span className="text-lg sm:text-xl font-black">({formatNumber(currentCount)})</span>
+                </>
+              ) : (
+                <>
+                  <span>تسجيل الشوط</span>
+                  <span className="text-lg sm:text-xl font-black">({formatNumber(currentCount)})</span>
+                </>
+              )}
             </span>
-            <span className="block text-xs opacity-85 mt-1 font-medium">
-              {isComplete ? t('tawaf.completed_subtitle', 'تقبل الله نسككم وطاعتكم') : t('tawaf.tap_hint', 'اضغط بعد كل شوط لاحتساب الرقم')}
-            </span>
-          </div>
-
-          <div className="text-center font-mono">
-            <span className="text-3xl font-black leading-none">{formatNumber(currentCount)}</span>
-            <span className="block text-[10px] opacity-80 font-sans font-bold mt-0.5">{t('tawaf.of_seven', 'من 7')}</span>
           </div>
         </button>
       </div>

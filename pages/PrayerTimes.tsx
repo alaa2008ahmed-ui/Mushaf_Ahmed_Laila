@@ -40,6 +40,7 @@ function PrayerTimes({ onBack, onNavigate }) {
     const isDefaultTheme = themeKey === 'default' || !themeKey || theme.name?.includes('الافتراضي') || theme.name === 'Default';
     const isBlackAndWhite = themeKey === 'deep_black' || theme.name === 'اسود';
     const isBlackTheme = theme.bgColor === '#000000' || theme.name === 'أبيض وأسود' || theme.name === 'اسود' || themeKey === 'deep_black';
+    const isGoldenTheme = themeKey === 'shiny_gold' || theme.name === 'الذهبي اللامع' || theme.cardBg === '#FDE047';
     const primaryColor = isBlackTheme ? '#FFFFFF' : (theme.palette?.[0] || theme.accent || theme.btnBg || '#2E7D5E');
     const secondaryColor = isBlackTheme ? '#A1A1AA' : (theme.palette?.[1] || theme.palette?.[0] || '#4B5563');
     const pageBgColor = isBlackTheme ? '#000000' : (theme.bgColor || '#F8FAFC');
@@ -66,7 +67,7 @@ function PrayerTimes({ onBack, onNavigate }) {
 
     useEffect(() => {
         markPageAsSeen('prayer_times');
-        if (!getGuideSeen('prayer_times_page_spotlight')) {
+        if (!getGuideSeen('prayer_times_page_spotlight_v2')) {
             const timer = setTimeout(() => {
                 setShowGuide(true);
             }, 300);
@@ -304,6 +305,7 @@ function PrayerTimes({ onBack, onNavigate }) {
                 cityGov={config.location.cityGov}
                 fullCountry={config.location.fullCountry}
                 combinedCode={config.location.combinedCode}
+                location={config.location}
                 topBarTextColor={topBarTextColor}
                 onBack={handleBack}
                 onHome={handleGoHome}
@@ -484,6 +486,7 @@ function PrayerTimes({ onBack, onNavigate }) {
                                         isBlackAndWhite={isBlackAndWhite}
                                         isDefaultTheme={isDefaultTheme}
                                         isBlackTheme={isBlackTheme}
+                                        isGoldenTheme={isGoldenTheme}
                                         themePalette1={theme.palette[1]}
                                         cardBorderColor={cardBorderColor}
                                         nextPrayerBorderColor={nextPrayerBorderColor}
@@ -565,7 +568,7 @@ function PrayerTimes({ onBack, onNavigate }) {
             )}
 
             <CommunitySpotlightGuide
-                guideKey="prayer_times_page_spotlight"
+                guideKey="prayer_times_page_spotlight_v2"
                 steps={PRAYER_TIMES_PAGE_STEPS}
                 isOpen={showGuide}
                 onClose={() => setShowGuide(false)}

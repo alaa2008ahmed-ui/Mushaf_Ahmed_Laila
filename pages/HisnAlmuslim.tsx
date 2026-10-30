@@ -188,7 +188,7 @@ function HisnAlmuslim({ onBack, onNavigate }) {
             className="h-screen flex flex-col overflow-hidden" 
             dir={isEn ? 'ltr' : 'rtl'}
             style={{ 
-                backgroundColor: theme.bgColor,
+                backgroundColor: tokens.pageBgColor,
                 fontFamily: isEn ? 'sans-serif' : theme.font
             }}
         >
@@ -247,8 +247,8 @@ function HisnAlmuslim({ onBack, onNavigate }) {
                                 onClick={() => setActiveTab('grid')}
                                 className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTab === 'grid' ? 'shadow-sm' : 'opacity-60 hover:opacity-100'}`}
                                 style={activeTab === 'grid' ? {
-                                    backgroundColor: tokens.cardBgColor,
-                                    color: tokens.primaryColor
+                                    backgroundColor: tokens.primaryColor,
+                                    color: '#FFFFFF'
                                 } : { color: 'var(--text-color)' }}
                                 title={isEn ? "Grid View" : "عرض شبكي"}
                             >
@@ -259,8 +259,8 @@ function HisnAlmuslim({ onBack, onNavigate }) {
                                 onClick={() => setActiveTab('list')}
                                 className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTab === 'list' ? 'shadow-sm' : 'opacity-60 hover:opacity-100'}`}
                                 style={activeTab === 'list' ? {
-                                    backgroundColor: tokens.cardBgColor,
-                                    color: tokens.primaryColor
+                                    backgroundColor: tokens.primaryColor,
+                                    color: '#FFFFFF'
                                 } : { color: 'var(--text-color)' }}
                                 title={isEn ? "List View" : "عرض القوائم"}
                             >
@@ -320,8 +320,8 @@ function HisnAlmuslim({ onBack, onNavigate }) {
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: menuOpenDirection === 'up' ? 20 : -20, scale: 0.9 }}
                             transition={{ duration: 0.2 }}
-                            className={`absolute right-0 ${menuOpenDirection === 'up' ? 'bottom-full mb-4 origin-bottom-right' : 'top-full mt-4 origin-top-right'} themed-card rounded-2xl shadow-xl border p-2 flex flex-col gap-1 overflow-hidden w-52 z-0`}
-                            style={{ borderColor: 'var(--card-border)', color: 'var(--text-color)' }}
+                            className={`absolute right-0 ${menuOpenDirection === 'up' ? 'bottom-full mb-4 origin-bottom-right' : 'top-full mt-4 origin-top-right'} bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md rounded-2xl shadow-xl border border-slate-100/80 dark:border-white/10 p-2 flex flex-col gap-1 overflow-hidden w-52 z-0`}
+                            style={{ color: 'var(--text-color)' }}
                             onClick={(e) => e.stopPropagation()}
                         >
                             <button 

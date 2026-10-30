@@ -60,13 +60,15 @@ const NavButton: React.FC<NavButtonProps> = ({
                     backdropFilter: isGlass ? 'blur(12px) saturate(180%)' : 'none',
                     WebkitBackdropFilter: isGlass ? 'blur(12px) saturate(180%)' : 'none',
                     color: isBlackButton ? '#FFFFFF' : (btnText || '#FFFFFF'),
-                    border: border !== undefined ? border : (isBlackButton ? '1px solid rgba(255, 255, 255, 0.25)' : (isGlass ? (color ? `1px solid ${color}80` : '1px solid rgba(255, 255, 255, 0.4)') : 'none')),
+                    border: border !== undefined ? border : (isBlackButton ? '1px solid rgba(255, 255, 255, 0.25)' : (isGlass ? (color ? `1px solid ${color}80` : '1px solid rgba(255, 255, 255, 0.4)') : (btnText === '#000000' ? '1.5px solid #CA8A04' : 'none'))),
                     boxShadow: isGlass 
                         ? (color ? `0 5.5px 0 ${color}40, 0 8px 24px 0 rgba(0,0,0,0.1), inset 0 1.5px 1.5px rgba(255,255,255,0.4)` : '0 8px 32px 0 rgba(31, 38, 135, 0.07)') 
                         : (isBlackButton 
                             ? '0 5.5px 0 #222222, 0 8px 16px rgba(0,0,0,0.6), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.3)' 
-                            : '0 5.5px 0 rgba(0, 0, 0, 0.22), 0 8px 18px -2px rgba(0, 0, 0, 0.16), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.6), inset 0 -2px 4px rgba(0, 0, 0, 0.15)'),
-                    textShadow: isGlass ? 'none' : (isBlackButton ? '0 1px 2px rgba(0,0,0,0.8)' : '0 1.5px 3px rgba(0, 0, 0, 0.35)'),
+                            : (btnText === '#000000'
+                                ? '0 5px 0 #92400E, 0 8px 18px -2px rgba(146, 64, 14, 0.35), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.9), inset 0 -2px 4px rgba(113, 63, 18, 0.25)'
+                                : '0 5.5px 0 rgba(0, 0, 0, 0.22), 0 8px 18px -2px rgba(0, 0, 0, 0.16), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.6), inset 0 -2px 4px rgba(0, 0, 0, 0.15)')),
+                    textShadow: isGlass ? 'none' : (isBlackButton ? '0 1px 2px rgba(0,0,0,0.8)' : (btnText === '#000000' || btnText === 'black' ? '0 1px 0 rgba(255, 255, 255, 0.7)' : '0 1.5px 3px rgba(0, 0, 0, 0.35)')),
                     textRendering: 'optimizeLegibility',
                     WebkitFontSmoothing: 'antialiased'
                 }}
@@ -91,7 +93,7 @@ const NavButton: React.FC<NavButtonProps> = ({
 
                 <div className={`relative z-10 flex items-center justify-center gap-1 sm:gap-1.5 max-w-full min-w-0 ${rightAction ? 'pr-8 pl-2' : (leftAction ? 'pl-8 pr-2' : 'px-0.5')}`}>
                     {icon && (
-                        <span className="shrink-0 text-white/95 flex items-center justify-center pointer-events-none drop-shadow-sm">
+                        <span className={`shrink-0 ${btnText === '#000000' || btnText === 'black' ? 'text-black' : 'text-white/95'} flex items-center justify-center pointer-events-none drop-shadow-sm`}>
                             {icon}
                         </span>
                     )}

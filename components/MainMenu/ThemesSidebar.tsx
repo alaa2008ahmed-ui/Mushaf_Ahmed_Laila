@@ -1,6 +1,5 @@
 import React, { useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { RotateCcw, Image } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { presetThemes } from '../../context/themes';
@@ -13,12 +12,12 @@ interface ThemesSidebarProps {
 // ألوان الدوائر المميزة لكل ثيم من ثيمات الصفحة الرئيسية
 const getThemeCircleColor = (key: string, t: any) => {
   if (key === 'deep_black') return '#000000';
+  if (key === 'shiny_gold') return '#EAB308';
   if (key === 'default') return '#059669';
   if (key === 'fajr_light') return '#0284C7';
   if (key === 'golden_sand') return '#B45309';
   if (key === 'olive_grove') return '#4D7C0F';
   if (key === 'kaaba_kiswa') return '#111827';
-  if (key === 'islamic_heritage') return '#8B4513';
   if (key === 'evening_tranquility') return '#2563EB';
   if (key === 'morning_dew') return '#10B981';
   if (key === 'madinah_rose') return '#BE123C';
@@ -43,7 +42,6 @@ const getThemeCircleColor = (key: string, t: any) => {
   return (t?.palette && t.palette[0]) || t?.accent || t?.bgColor || '#10B981';
 };
 
-
 // Helper: Calculate relative perceived luminance of a hex color (0 = black, 1 = white)
 const getLuminance = (hexColor: string): number => {
   if (!hexColor || typeof hexColor !== 'string') return 0.5;
@@ -60,39 +58,14 @@ const getLuminance = (hexColor: string): number => {
 };
 
 export const ThemesSidebar: React.FC<ThemesSidebarProps> = ({ isOpen, onClose }) => {
-  const { theme, themeKey, applyPresetTheme, setCustomBackground, resetBackground } = useTheme();
-  const { isRTL, language } = useLanguage();
-  const isEn = language === 'en';
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { theme, themeKey, applyPresetTheme } = useTheme();
+  const { isRTL } = useLanguage();
   const asideRef = useRef<HTMLElement>(null);
-
-  const handleBgUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files && event.target.files[0]) {
-      const file = event.target.files[0];
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const result = e.target?.result as string;
-        const isVideo = file.type.startsWith('video/');
-        setCustomBackground(result, isVideo);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
 
   const isBlackTheme = themeKey === 'deep_black' || theme.bgColor === '#000000' || theme.name === 'اسود' || theme.name === 'black';
   const sidebarBg = isBlackTheme ? '#000000' : (theme.bgColor || '#DFE5EC');
   const sidebarLum = getLuminance(sidebarBg);
   const isDarkBg = isBlackTheme || sidebarLum < 0.45;
-
-  const rawPrimary = theme.palette?.[0] || theme.accent || '#2E7D5E';
-  const header3DIconColor = isBlackTheme
-    ? '#FFFFFF'
-    : (isDarkBg && getLuminance(rawPrimary) < 0.45
-        ? (theme.accent && getLuminance(theme.accent) >= 0.45 ? theme.accent : '#FFFFFF')
-        : rawPrimary);
-  const header3DIconFilter = isBlackTheme || isDarkBg
-    ? 'drop-shadow(0 2px 3px rgba(255,255,255,0.4)) drop-shadow(0 4px 6px rgba(0,0,0,0.9))'
-    : 'drop-shadow(0 1px 0 rgba(255,255,255,0.95)) drop-shadow(0 2px 3px rgba(0,0,0,0.32)) drop-shadow(0 4px 5px rgba(0,0,0,0.22))';
 
   return (
     <AnimatePresence>
@@ -134,58 +107,10 @@ export const ThemesSidebar: React.FC<ThemesSidebarProps> = ({ isOpen, onClose })
             }}
           >
             {/* Quick Actions Row: Standalone 3D Embossed Icons (No Button Boxes) */}
-            <div 
-              className="px-2 pt-2.5 pb-0.5 grid grid-cols-2 gap-x-2 place-items-center shrink-0 relative z-10"
-              style={{ backgroundColor: 'transparent', borderBottom: 'none' }}
-            >
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="p-1 flex items-center justify-center transition-all duration-150 active:scale-90 hover:scale-110 cursor-pointer select-none bg-transparent border-none outline-none"
-                title={isEn ? "Custom Background" : "تخصيص خلفية مخصصة"}
-                aria-label={isEn ? "Custom Background" : "تخصيص خلفية مخصصة"}
-              >
-                <Image
-                  strokeWidth={2.3}
-                  className="w-[19.5px] h-[19.5px] sm:w-[21px] sm:h-[21px] pointer-events-none transition-transform"
-                  style={{
-                    color: header3DIconColor,
-                    filter: header3DIconFilter
-                  }}
-                />
-              </button>
-
-              <button
-                type="button"
-                onClick={() => resetBackground()}
-                className="p-1 flex items-center justify-center transition-all duration-150 active:scale-90 hover:scale-110 cursor-pointer select-none bg-transparent border-none outline-none"
-                title={isEn ? "Reset Background" : "استعادة الخلفية"}
-                aria-label={isEn ? "Reset Background" : "استعادة الخلفية"}
-              >
-                <RotateCcw
-                  strokeWidth={2.3}
-                  className="w-[19.5px] h-[19.5px] sm:w-[21px] sm:h-[21px] pointer-events-none transition-transform"
-                  style={{
-                    color: header3DIconColor,
-                    filter: header3DIconFilter
-                  }}
-                />
-              </button>
-            </div>
-
-            {/* Hidden File Input */}
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              accept="image/*,video/*" 
-              className="hidden" 
-              onChange={handleBgUpload} 
-            />
-
             {/* Scrollable Theme Circles */}
-            <div className="flex-1 overflow-y-auto px-2 pt-0.5 pb-2.5 scrollbar-hide relative z-10" style={{ backgroundColor: 'transparent' }}>
+            <div className="flex-1 overflow-y-auto px-2 pt-3 pb-3 scrollbar-hide relative z-10" style={{ backgroundColor: 'transparent' }}>
               <div 
-                className="grid grid-cols-2 gap-y-[10.7px] gap-x-2 place-items-center pt-1 pb-2"
+                className="grid grid-cols-2 gap-y-[10.7px] gap-x-2 place-items-center pt-0.5 pb-2"
                 style={{ rowGap: '10.7px' }}
               >
                 {Object.entries(presetThemes).map(([key, t]: [string, any]) => {
@@ -241,7 +166,7 @@ export const ThemesSidebar: React.FC<ThemesSidebarProps> = ({ isOpen, onClose })
                       aria-label={t.name}
                     >
                       <div
-                        className={`w-[30px] h-[30px] rounded-full transition-all flex items-center justify-center relative overflow-hidden group/circle ${
+                        className={`w-[21.5px] h-[21.5px] rounded-full transition-all flex items-center justify-center relative overflow-hidden group/circle ${
                           isSelected
                             ? 'scale-110'
                             : 'hover:scale-105'
@@ -250,8 +175,8 @@ export const ThemesSidebar: React.FC<ThemesSidebarProps> = ({ isOpen, onClose })
                           backgroundColor: circleBg,
                           border: isDarkCircle ? '1px solid rgba(255,255,255,0.4)' : '1px solid rgba(255,255,255,0.7)',
                           boxShadow: isSelected 
-                            ? `0 5px 0 0 ${isDarkCircle ? '#059669' : '#047857'}, 0 8px 16px rgba(0,0,0,0.4), inset 0 1.5px 1.5px rgba(255,255,255,0.7), inset 0 -2px 3px rgba(0,0,0,0.3)`
-                            : `0 4.5px 0 0 ${isDarkCircle ? '#111111' : 'rgba(0,0,0,0.35)'}, 0 6px 14px -2px rgba(0,0,0,0.25), inset 0 1.5px 1.5px rgba(255,255,255,0.65), inset 0 -2px 3px rgba(0,0,0,0.25)`
+                            ? `0 4px 0 0 ${isDarkCircle ? '#059669' : '#047857'}, 0 6px 13px rgba(0,0,0,0.4), inset 0 1.2px 1.2px rgba(255,255,255,0.7), inset 0 -1.5px 2.5px rgba(0,0,0,0.3)`
+                            : `0 3.5px 0 0 ${isDarkCircle ? '#111111' : 'rgba(0,0,0,0.35)'}, 0 5px 11px -2px rgba(0,0,0,0.25), inset 0 1.2px 1.2px rgba(255,255,255,0.65), inset 0 -1.5px 2.5px rgba(0,0,0,0.25)`
                         }}
                       >
                         {/* 3D Glossy specular sheen across top half */}
@@ -259,7 +184,7 @@ export const ThemesSidebar: React.FC<ThemesSidebarProps> = ({ isOpen, onClose })
 
                         {isSelected && (
                           <div
-                            className="w-2.5 h-2.5 rounded-full shadow-md relative z-10"
+                            className="w-2 h-2 rounded-full shadow-md relative z-10"
                             style={{
                               backgroundColor: isDarkCircle ? '#10B981' : '#FFFFFF',
                               border: isDarkCircle 

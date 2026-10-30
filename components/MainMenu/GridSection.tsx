@@ -203,6 +203,12 @@ const GridSection: React.FC<GridSectionProps> = ({
 
     const getCategoryColor = (id: string) => {
         if (isBlackTheme) return { color: '#000000', gradient: undefined };
+        if (themeKey === 'shiny_gold') {
+            return { 
+                color: '#EAB308', 
+                gradient: 'linear-gradient(155deg, #FFFDEB 0%, #FEF08A 25%, #FACC15 65%, #EAB308 100%)' 
+            };
+        }
         
         if (['listen', 'daily-wird', 'memorization'].includes(id)) {
             return { 
@@ -240,9 +246,9 @@ const GridSection: React.FC<GridSectionProps> = ({
         if (!isVisible && !isEditMode) return null;
 
         const { color: buttonColor, gradient: buttonGradient } = getCategoryColor(item.id);
-        const textColor = '#FFFFFF';
+        const textColor = themeKey === 'shiny_gold' ? '#000000' : '#FFFFFF';
 
-        const isForcedNew = item.id === 'others' || item.id === 'islamic-sites';
+        const isForcedNew = item.id === 'others' || item.id === 'islamic-sites' || item.id === 'prophetic-seerah' || item.id === 'ten-promised';
         const showBadge = (isForcedNew || showNewBadges) && NEW_BADGE_ITEMS.includes(item.id) && !isPageSeen(item.id);
 
         return (
@@ -295,15 +301,19 @@ const GridSection: React.FC<GridSectionProps> = ({
         // Distinguished dignified slate-violet gradient for Quran hero card
         const buttonColor = isBlackTheme
             ? '#000000'
-            : (themeKey === 'default'
-                ? QURAN_HERO_VIOLET
-                : (theme.palette[1] || theme.palette[0] || QURAN_HERO_VIOLET));
+            : (themeKey === 'shiny_gold'
+                ? '#EAB308'
+                : (themeKey === 'default'
+                    ? QURAN_HERO_VIOLET
+                    : (theme.palette[1] || theme.palette[0] || QURAN_HERO_VIOLET)));
 
         const buttonGradient = isBlackTheme
             ? undefined
-            : (themeKey === 'default'
-                ? QURAN_HERO_GRADIENT
-                : undefined);
+            : (themeKey === 'shiny_gold'
+                ? 'linear-gradient(155deg, #FFFDEB 0%, #FEF08A 25%, #FACC15 65%, #EAB308 100%)'
+                : (themeKey === 'default'
+                    ? QURAN_HERO_GRADIENT
+                    : undefined));
 
         return (
             <motion.div
@@ -331,15 +341,17 @@ const GridSection: React.FC<GridSectionProps> = ({
                     className={`w-full rounded-2xl p-3 sm:p-3.5 relative flex items-center justify-between cursor-pointer select-none group transition-all overflow-hidden ${isEditMode ? 'cursor-move animate-pulse opacity-80' : ''}`}
                     style={{
                         background: theme.isGlass ? (buttonColor ? `${buttonColor}60` : 'rgba(255, 255, 255, 0.25)') : (buttonGradient || buttonColor),
-                        border: buttonBorder,
-                        color: '#FFFFFF',
+                        border: themeKey === 'shiny_gold' ? '1.5px solid #CA8A04' : buttonBorder,
+                        color: themeKey === 'shiny_gold' ? '#000000' : '#FFFFFF',
                         backdropFilter: theme.isGlass ? 'blur(12px)' : 'none',
                         WebkitBackdropFilter: theme.isGlass ? 'blur(12px)' : 'none',
-                        boxShadow: isBlackTheme
-                            ? '0 5.5px 0 #222222, 0 8px 16px rgba(0,0,0,0.6), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.3)'
-                            : (theme.isGlass
-                                ? `0 6px 0 ${buttonColor}40, 0 8px 24px rgba(0,0,0,0.1), inset 0 1px 1px rgba(255,255,255,0.4)`
-                                : '0 6px 0 rgba(0, 0, 0, 0.25), 0 12px 28px -2px rgba(60, 48, 88, 0.35), inset 0 1.5px 2px rgba(255, 255, 255, 0.65), inset 0 -2.5px 5px rgba(0, 0, 0, 0.18)'),
+                        boxShadow: themeKey === 'shiny_gold'
+                            ? '0 6px 0 #92400E, 0 12px 28px -2px rgba(146, 64, 14, 0.35), inset 0 2px 2px rgba(255, 255, 255, 0.95), inset 0 -2.5px 4px rgba(113, 63, 18, 0.25)'
+                            : (isBlackTheme
+                                ? '0 5.5px 0 #222222, 0 8px 16px rgba(0,0,0,0.6), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.3)'
+                                : (theme.isGlass
+                                    ? `0 6px 0 ${buttonColor}40, 0 8px 24px rgba(0,0,0,0.1), inset 0 1px 1px rgba(255,255,255,0.4)`
+                                    : '0 6px 0 rgba(0, 0, 0, 0.25), 0 12px 28px -2px rgba(60, 48, 88, 0.35), inset 0 1.5px 2px rgba(255, 255, 255, 0.65), inset 0 -2.5px 5px rgba(0, 0, 0, 0.18)')),
                     }}
                 >
                     {/* Inner 3D gloss & specular sheen for Quran hero card */}
@@ -361,15 +373,15 @@ const GridSection: React.FC<GridSectionProps> = ({
 
                     <div className="flex items-center gap-2.5 min-w-0 flex-1 px-1 relative z-10">
                         {/* أيقونة المصحف الشريف المسطحة */}
-                        <div className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center shrink-0 text-white">
-                            <BookOpen className="w-6 h-6 sm:w-7 sm:h-7 text-white drop-shadow-sm" strokeWidth={2.3} />
+                        <div className={`w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center shrink-0 ${themeKey === 'shiny_gold' ? 'text-black' : 'text-white'}`}>
+                            <BookOpen className={`w-6 h-6 sm:w-7 sm:h-7 ${themeKey === 'shiny_gold' ? 'text-black' : 'text-white'} drop-shadow-sm`} strokeWidth={2.3} />
                         </div>
 
                         <div className="flex flex-col min-w-0 text-start">
-                            <span className={`${isEn ? 'font-sans tracking-tight' : 'font-kufi'} font-black text-base sm:text-lg text-white leading-tight truncate drop-shadow-sm`}>
+                            <span className={`${isEn ? 'font-sans tracking-tight' : 'font-kufi'} font-black text-base sm:text-lg ${themeKey === 'shiny_gold' ? 'text-black' : 'text-white'} leading-tight truncate drop-shadow-sm`}>
                                 {isEn ? "The Noble Qur'an" : "القرآن الكريم"}
                             </span>
-                            <span className="text-[11px] sm:text-xs text-white/95 font-medium leading-normal truncate drop-shadow-xs">
+                            <span className={`text-[11px] sm:text-xs ${themeKey === 'shiny_gold' ? 'text-black/85' : 'text-white/95'} font-medium leading-normal truncate drop-shadow-xs`}>
                                 {isEn ? 'Recitation, Exegesis & Reflection' : 'قراءة وتدبر المصحف الشريف'}
                             </span>
                         </div>
@@ -390,20 +402,22 @@ const GridSection: React.FC<GridSectionProps> = ({
                                     onNavigate('quran-landscape');
                                 }
                             }}
-                            className="rounded-xl px-2.5 py-1.5 flex items-center gap-1.5 cursor-pointer transition-all hover:scale-105 active:scale-95 text-white relative z-20 flex-shrink-0 ms-2 overflow-hidden select-none"
+                            className={`rounded-xl px-2.5 py-1.5 flex items-center gap-1.5 cursor-pointer transition-all hover:scale-105 active:scale-95 ${themeKey === 'shiny_gold' ? 'text-black' : 'text-white'} relative z-20 flex-shrink-0 ms-2 overflow-hidden select-none`}
                             style={{ 
-                                backgroundColor: isBlackTheme ? '#1F2937' : 'rgba(0, 0, 0, 0.32)',
-                                border: '1px solid rgba(255, 255, 255, 0.45)',
-                                color: '#FFFFFF',
-                                boxShadow: '0 3px 0 rgba(0, 0, 0, 0.3), 0 4px 8px rgba(0, 0, 0, 0.18), inset 0 1px 1px rgba(255, 255, 255, 0.5)',
+                                backgroundColor: isBlackTheme ? '#1F2937' : (themeKey === 'shiny_gold' ? 'rgba(255, 255, 255, 0.75)' : 'rgba(0, 0, 0, 0.32)'),
+                                border: themeKey === 'shiny_gold' ? '1px solid rgba(146, 64, 14, 0.35)' : '1px solid rgba(255, 255, 255, 0.45)',
+                                color: themeKey === 'shiny_gold' ? '#000000' : '#FFFFFF',
+                                boxShadow: themeKey === 'shiny_gold'
+                                    ? '0 3px 0 #B45309, 0 4px 8px rgba(180, 83, 9, 0.2), inset 0 1px 1px #FFFFFF'
+                                    : '0 3px 0 rgba(0, 0, 0, 0.3), 0 4px 8px rgba(0, 0, 0, 0.18), inset 0 1px 1px rgba(255, 255, 255, 0.5)',
                             }}
                             title={t('common.landscape_mode', 'وضع العرض')}
                             aria-label={t('common.landscape_mode', 'وضع العرض')}
                         >
                             {/* Top gloss for landscape button */}
                             <div className="absolute inset-x-1 top-0 h-1/2 rounded-t-lg bg-gradient-to-b from-white/35 to-transparent pointer-events-none"></div>
-                            <i className="fa-solid fa-arrows-rotate text-xs text-white pointer-events-none drop-shadow-xs"></i>
-                            <span className={`text-[11px] font-black ${isEn ? 'font-sans' : 'font-kufi'} text-white inline drop-shadow-xs`}>
+                            <i className={`fa-solid fa-arrows-rotate text-xs ${themeKey === 'shiny_gold' ? 'text-black' : 'text-white'} pointer-events-none drop-shadow-xs`}></i>
+                            <span className={`text-[11px] font-black ${isEn ? 'font-sans' : 'font-kufi'} ${themeKey === 'shiny_gold' ? 'text-black' : 'text-white'} inline drop-shadow-xs`}>
                                 {isEn ? 'Landscape' : 'عرضي'}
                             </span>
                         </div>
@@ -425,6 +439,16 @@ const GridSection: React.FC<GridSectionProps> = ({
                 border: '1px solid rgba(255, 255, 255, 0.2)',
                 borderRadius: '22px',
                 boxShadow: '0 6px 0 #0d0d10, 0 10px 24px -2px rgba(0, 0, 0, 0.7), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.22), inset 0 -2px 4px rgba(0, 0, 0, 0.45)',
+            } as React.CSSProperties;
+        }
+
+        if (themeKey === 'shiny_gold') {
+            return {
+                background: 'linear-gradient(145deg, #FFFDEB 0%, #FEF08A 25%, #FACC15 58%, #EAB308 85%, #CA8A04 100%)',
+                border: '1.5px solid rgba(202, 138, 4, 0.7)',
+                borderRadius: '22px',
+                boxShadow: '0 6.5px 0 #92400E, 0 14px 28px -2px rgba(146, 64, 14, 0.35), inset 0 2px 2px rgba(255, 255, 255, 0.95), inset 0 -2.5px 4px rgba(113, 63, 18, 0.25)',
+                color: '#000000',
             } as React.CSSProperties;
         }
 
@@ -621,12 +645,12 @@ const GridSection: React.FC<GridSectionProps> = ({
                                 }
                             }} 
                             className="w-full h-full shadow-lg"
-                            color={isBlackTheme ? '#000000' : (themeKey === 'default' ? SECTION_2_GREEN : (theme.palette[0] || SECTION_2_GREEN))} 
-                            gradient={!isBlackTheme && themeKey === 'default' ? SECTION_2_GRADIENT : undefined}
-                            border={buttonBorder} 
+                            color={isBlackTheme ? '#000000' : (themeKey === 'shiny_gold' ? '#EAB308' : (themeKey === 'default' ? SECTION_2_GREEN : (theme.palette[0] || SECTION_2_GREEN)))} 
+                            gradient={!isBlackTheme && (themeKey === 'shiny_gold' ? 'linear-gradient(155deg, #FFFDEB 0%, #FEF08A 25%, #FACC15 65%, #EAB308 100%)' : (themeKey === 'default' ? SECTION_2_GRADIENT : undefined))}
+                            border={themeKey === 'shiny_gold' ? '1.5px solid #CA8A04' : buttonBorder} 
                             isEditMode={isEditMode}
                             isGlass={theme.isGlass}
-                            btnText="#FFFFFF"
+                            btnText={themeKey === 'shiny_gold' ? '#000000' : '#FFFFFF'}
                         />
                     </div>
                     <VoiceControlToggle />
