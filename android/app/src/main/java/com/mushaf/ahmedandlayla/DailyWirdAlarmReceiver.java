@@ -423,6 +423,7 @@ public class DailyWirdAlarmReceiver extends BroadcastReceiver {
                 .setCategory(NotificationCompat.CATEGORY_REMINDER)
                 .setGroup(NOTIFICATION_GROUP)
                 .setGroupSummary(false)
+                .setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_CHILDREN)
                 .setSortKey("12_daily_wird")
                 .setBadgeIconType(NotificationCompat.BADGE_ICON_NONE)
                 .setNumber(0)

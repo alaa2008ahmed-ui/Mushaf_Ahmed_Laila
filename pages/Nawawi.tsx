@@ -442,9 +442,10 @@ const HadithModal: React.FC<HadithModalProps> = ({
 interface NawawiProps {
     onBack: () => void;
     onNavigate?: (page: string) => void;
+    navParams?: any;
 }
 
-const Nawawi: React.FC<NawawiProps> = ({ onBack, onNavigate }) => {
+const Nawawi: React.FC<NawawiProps> = ({ onBack, onNavigate, navParams }) => {
     const { theme, themeKey } = useTheme();
     const tokens = getModernFlatTokens(theme, themeKey);
     const { language } = useLanguage();
@@ -458,6 +459,16 @@ const Nawawi: React.FC<NawawiProps> = ({ onBack, onNavigate }) => {
     const [showGuide, setShowGuide] = useState(false);
     const [activeTabMode, setActiveTabMode] = useState<'grid' | 'list'>('grid');
     const [playingText, setPlayingText] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (navParams?.hadithId || navParams?.highlightId) {
+            const id = Number(navParams.hadithId || navParams.highlightId);
+            const found = NAWAWI_DATA.find(h => h.id === id);
+            if (found) {
+                setSelectedHadith(found);
+            }
+        }
+    }, [navParams]);
 
     useEffect(() => {
         const unsubscribe = subscribeTTS(setPlayingText);

@@ -662,54 +662,64 @@ function App() {
 
   const page = history[history.length - 1];
 
+  const hasChosenInitialLanguage = (() => {
+    try {
+      return localStorage.getItem('has_selected_initial_language') === 'true';
+    } catch (e) {
+      return false;
+    }
+  })();
+
   return (
     <TutorialProvider>
       <PrayerTimesProvider>
         <VoiceControlProvider onAction={handleVoiceAction}>
-          {splashStage === 'video' ? (
-            <VideoSplash
-              onEnded={() => {
-                let hasChosenLanguage = false;
+          {splashStage === 'welcome' ? (
+            <WelcomeSplash
+              onSelectLanguage={(lang) => {
                 try {
-                  hasChosenLanguage = localStorage.getItem('has_selected_initial_language') === 'true';
-                } catch (e) {
-                  hasChosenLanguage = false;
-                }
-                if (hasChosenLanguage) {
-                  setSplashStage('app');
-                } else {
-                  setSplashStage('welcome');
-                }
+                  localStorage.setItem('has_selected_initial_language', 'true');
+                  localStorage.setItem('home_layout_system', 'modern');
+                  Preferences.set({ key: 'has_selected_initial_language', value: 'true' }).catch(() => {});
+                  Preferences.set({ key: 'home_layout_system', value: 'modern' }).catch(() => {});
+                } catch (e) {}
+                setLanguage(lang);
+                setSplashStage('app');
               }}
             />
           ) : (
             <>
-              <AppContent 
-                page={page} 
-                history={history}
-                navParams={navParams}
-                isThemeSelectorOpen={isThemeSelectorOpen}
-                showExitConfirm={showExitConfirm}
-                isSideMenuOpen={isSideMenuOpen}
-                setIsSideMenuOpen={setIsSideMenuOpen}
-                handleNavigate={handleNavigate}
-                navigateBack={navigateBack}
-                setIsThemeSelectorOpen={setIsThemeSelectorOpen}
-                setShowExitConfirm={setShowExitConfirm}
-                updateInfo={updateInfo}
-                setUpdateInfo={setUpdateInfo}
-              />
-              {splashStage === 'welcome' && (
-                <WelcomeSplash
-                  onSelectLanguage={(lang) => {
+              {(splashStage === 'app' || (splashStage === 'video' && hasChosenInitialLanguage)) && (
+                <AppContent 
+                  page={page} 
+                  history={history}
+                  navParams={navParams}
+                  isThemeSelectorOpen={isThemeSelectorOpen}
+                  showExitConfirm={showExitConfirm}
+                  isSideMenuOpen={isSideMenuOpen}
+                  setIsSideMenuOpen={setIsSideMenuOpen}
+                  handleNavigate={handleNavigate}
+                  navigateBack={navigateBack}
+                  setIsThemeSelectorOpen={setIsThemeSelectorOpen}
+                  setShowExitConfirm={setShowExitConfirm}
+                  updateInfo={updateInfo}
+                  setUpdateInfo={setUpdateInfo}
+                />
+              )}
+              {splashStage === 'video' && (
+                <VideoSplash
+                  onEnded={() => {
+                    let hasChosenLanguage = false;
                     try {
-                      localStorage.setItem('has_selected_initial_language', 'true');
-                      localStorage.setItem('home_layout_system', 'modern');
-                      Preferences.set({ key: 'has_selected_initial_language', value: 'true' }).catch(() => {});
-                      Preferences.set({ key: 'home_layout_system', value: 'modern' }).catch(() => {});
-                    } catch (e) {}
-                    setLanguage(lang);
-                    setSplashStage('app');
+                      hasChosenLanguage = localStorage.getItem('has_selected_initial_language') === 'true';
+                    } catch (e) {
+                      hasChosenLanguage = false;
+                    }
+                    if (hasChosenLanguage) {
+                      setSplashStage('app');
+                    } else {
+                      setSplashStage('welcome');
+                    }
                   }}
                 />
               )}

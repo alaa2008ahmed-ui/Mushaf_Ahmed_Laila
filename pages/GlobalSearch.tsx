@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { ChevronLeft, Search, BookOpen, Sun, Moon, Heart, X } from 'lucide-react';
+import { ChevronLeft, Search, BookOpen, Sun, Moon, Heart, Shield, Sparkles, UserCheck, Compass, Users, CheckCircle2, X } from 'lucide-react';
 import { Keyboard } from '@capacitor/keyboard';
 import { Capacitor } from '@capacitor/core';
 import { useTheme } from '../context/ThemeContext';
@@ -14,6 +14,11 @@ import { ADIA_EN_MAP } from '../data/adiaTranslationsEn';
 import { BASE_ADHKAR_MORNING, BASE_ADHKAR_EVENING } from '../data/adkarSabahMasaaData';
 import { ADKAR_EN_MAP } from '../data/adkarTranslationsEn';
 import { RUQYAH_DATA } from '../data/ruqyahData';
+import { asmaulHusna } from '../data/asmaulHusnaData';
+import { PROPHETIC_SEERAH_DATA, PROPHETIC_STANCES_DATA } from '../data/propheticSeerahData';
+import { umrahVirtues, umrahSteps } from '../data/hajjUmrahData';
+import { TEN_PROMISED_COMPANIONS } from '../data/tenPromisedData';
+import { baseAthkar, fajrDhikr, fajrMaghribDhikr, specialZikr } from '../data/athkarAlSalahData';
 import { registerBackInterceptor } from '../hooks/useBackButton';
 import { 
     loadQuranEnglishTranslation, 
@@ -75,12 +80,18 @@ const getReaderTheme = (isLandscape = false) => {
 
 export let searchCache = {
     query: '',
-    activeTab: 'all' as 'all' | 'quran' | 'athkar' | 'dua' | 'nawawi' | 'hisn',
+    activeTab: 'all' as string,
     quranResults: [] as any[],
     athkarResults: [] as any[],
+    salahAthkarResults: [] as any[],
     duaResults: [] as any[],
+    ruqyahResults: [] as any[],
     hisnResults: [] as any[],
     nawawiResults: [] as any[],
+    asmaulHusnaResults: [] as any[],
+    seerahResults: [] as any[],
+    hajjUmrahResults: [] as any[],
+    tenPromisedResults: [] as any[],
 };
 
 export const clearSearchCache = () => {
@@ -89,9 +100,15 @@ export const clearSearchCache = () => {
         activeTab: 'all',
         quranResults: [],
         athkarResults: [],
+        salahAthkarResults: [],
         duaResults: [],
+        ruqyahResults: [],
         hisnResults: [],
         nawawiResults: [],
+        asmaulHusnaResults: [],
+        seerahResults: [],
+        hajjUmrahResults: [],
+        tenPromisedResults: [],
     };
 };
 
@@ -186,17 +203,37 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
 
     const theme = isFromQuran ? readerTheme : appSearchTheme;
     const accentBadgeText = (theme.accent || theme.palette?.[0] || '').toUpperCase() === '#FFFFFF' ? '#000000' : '#ffffff';
+    
     const [query, setQuery] = useState(searchCache.query);
     const [activeTab, setActiveTab] = useState(searchCache.activeTab);
     
     const [quranResults, setQuranResults] = useState<any[]>(searchCache.quranResults);
     const [athkarResults, setAthkarResults] = useState<any[]>(searchCache.athkarResults);
+    const [salahAthkarResults, setSalahAthkarResults] = useState<any[]>(searchCache.salahAthkarResults);
     const [duaResults, setDuaResults] = useState<any[]>(searchCache.duaResults);
+    const [ruqyahResults, setRuqyahResults] = useState<any[]>(searchCache.ruqyahResults);
     const [hisnResults, setHisnResults] = useState<any[]>(searchCache.hisnResults);
     const [nawawiResults, setNawawiResults] = useState<any[]>(searchCache.nawawiResults);
+    const [asmaulHusnaResults, setAsmaulHusnaResults] = useState<any[]>(searchCache.asmaulHusnaResults);
+    const [seerahResults, setSeerahResults] = useState<any[]>(searchCache.seerahResults);
+    const [hajjUmrahResults, setHajjUmrahResults] = useState<any[]>(searchCache.hajjUmrahResults);
+    const [tenPromisedResults, setTenPromisedResults] = useState<any[]>(searchCache.tenPromisedResults);
+
     const [isSearching, setIsSearching] = useState(false);
     const [expandedSurahs, setExpandedSurahs] = useState<Record<number, boolean>>({});
-    const [expandedCategories, setExpandedCategories] = useState<{quran: boolean, dua: boolean, athkar: boolean, hisn: boolean, nawawi: boolean}>({quran: false, dua: false, athkar: false, hisn: false, nawawi: false});
+    const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({
+        quran: false, 
+        dua: false, 
+        ruqyah: false,
+        athkar: false, 
+        salahAthkar: false,
+        hisn: false, 
+        nawawi: false,
+        asmaulHusna: false,
+        seerah: false,
+        hajjUmrah: false,
+        tenPromised: false,
+    });
     
     useEffect(() => {
         const numSurahs = new Set(quranResults.map(r => r.surah)).size;
@@ -233,14 +270,19 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
         if (!text) return '';
         let normalized = stripTajweedTags(text);
         return normalized
-            .replace(/\u0670/g, "ا")
+            .replace(/[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06ED\u0640]/g, "")
             .replace(/\u06E6/g, "ي")
             .replace(/\u06E5/g, "و")
-            .replace(/[\u0610-\u061A\u064B-\u065F\u06D6-\u06ED]/g, "")
-            .replace(/\u0640/g, "")
             .replace(/[أإآٱ]/g, "ا")
             .replace(/ة/g, "ه")
-            .replace(/[ىي]/g, "ي");
+            .replace(/[ىي]/g, "ي")
+            .replace(/ذالِك/g, "ذلك")
+            .replace(/\bذالك\b/g, "ذلك")
+            .replace(/\bالرحمان\b/g, "الرحمن")
+            .replace(/\bهاذا\b/g, "هذا")
+            .replace(/\bإلااه\b/g, "إله")
+            .replace(/\s+/g, " ")
+            .trim();
     };
 
     const performSearch = useCallback(async (currentQuery: string) => {
@@ -248,17 +290,18 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
         if (!q) {
             setQuranResults([]);
             setAthkarResults([]);
+            setSalahAthkarResults([]);
             setDuaResults([]);
+            setRuqyahResults([]);
             setHisnResults([]);
             setNawawiResults([]);
+            setAsmaulHusnaResults([]);
+            setSeerahResults([]);
+            setHajjUmrahResults([]);
+            setTenPromisedResults([]);
             setIsSearching(false);
             
-            searchCache.query = '';
-            searchCache.quranResults = [];
-            searchCache.athkarResults = [];
-            searchCache.duaResults = [];
-            searchCache.hisnResults = [];
-            searchCache.nawawiResults = [];
+            clearSearchCache();
             return;
         }
 
@@ -275,8 +318,10 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
 
         const normQ = normalizeArabic(q);
         
+        const normQNoSpaces = normQ.replace(/\s+/g, '');
+        
         // Regex for Quran Arabic text
-        const gap = '[\\u0610-\\u061A\\u064B-\\u065F\\u0670\\u06D6-\\u06ED\\u0640]*';
+        const gap = '[\\u0610-\\u061A\\u064B-\\u065F\\u0670\\u06D6-\\u06ED\\u0640\\s]*';
         const highlightPattern = normQ.split('').map(c => (
             c === 'ا' ? '[أإآٱا]' : 
             (c === 'ه' ? '[هة]' : 
@@ -309,87 +354,27 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
         const isNumberSearch = /^[0-9\u0660-\u0669]+$/.test(q);
         const searchNum = isNumberSearch ? parseInt(q.replace(/[٠-٩]/g, d => '0123456789'['٠١٢٣٤٥٦٧٨٩'.indexOf(d)]), 10) : -1;
 
-        // 1. Search Quran (English Translation or Arabic Quran)
-        const foundQuran: any[] = [];
-        const seenAyahKeys = new Set<string>();
-
-        if (hasLatinChars && enQuranData && enQuranData.length > 0) {
-            // Search English Translation in en.json
-            const enResults = searchQuranEnglish(q, enQuranData, quranData);
-            enResults.forEach(item => {
-                const key = `${item.surah}:${item.ayah}`;
-                if (!seenAyahKeys.has(key)) {
-                    seenAyahKeys.add(key);
-                    foundQuran.push(item);
-                }
-            });
-        } else {
-            // Search Arabic Quran or Ayah number
-            if (arabicRegex || isNumberSearch) {
-                for (let sIdx = 0; sIdx < quranData.surahs.length; sIdx++) {
-                    const surah = quranData.surahs[sIdx];
-                    for (let aIdx = 0; aIdx < surah.ayahs.length; aIdx++) {
-                        const ayah = surah.ayahs[aIdx];
-                        const key = `${surah.number}:${ayah.numberInSurah}`;
-                        const enVerse = enQuranData?.[sIdx]?.verses?.[aIdx];
-                        const enTransText = enVerse?.translation || '';
-                        const surahNameEn = SURAH_NAMES_EN[surah.number - 1] || surah.name;
-
-                        if (isNumberSearch && ayah.numberInSurah === searchNum) {
-                            seenAyahKeys.add(key);
-                            foundQuran.push({ 
-                                type: 'quran',
-                                text: fixQuranText(ayah.text), 
-                                textEn: enTransText,
-                                surah: surah.number, 
-                                surahName: surah.name, 
-                                surahNameEn,
-                                ayah: ayah.numberInSurah, 
-                                page: ayah.page,
-                                juz: ayah.juz,
-                                highlightRegex: null
-                            });
-                        } else if (!isNumberSearch && arabicRegex) {
-                            const cleanText = stripTajweedTags(ayah.text);
-                            if (arabicRegex.test(cleanText)) {
-                                seenAyahKeys.add(key);
-                                foundQuran.push({ 
-                                    type: 'quran',
-                                    text: fixQuranText(ayah.text), 
-                                    textEn: enTransText,
-                                    surah: surah.number, 
-                                    surahName: surah.name, 
-                                    surahNameEn,
-                                    ayah: ayah.numberInSurah, 
-                                    page: ayah.page,
-                                    juz: ayah.juz,
-                                    highlightRegex: isEnglishSearch && enTransText ? englishRegex : arabicRegex
-                                });
-                            }
-                        }
-                    }
-                }
-            }
-
-            // If in English UI and query also matched any translation terms
-            if (isEn && !isNumberSearch && enQuranData && enQuranData.length > 0) {
-                const enExtra = searchQuranEnglish(q, enQuranData, quranData);
-                enExtra.forEach(item => {
-                    const key = `${item.surah}:${item.ayah}`;
-                    if (!seenAyahKeys.has(key)) {
-                        seenAyahKeys.add(key);
-                        foundQuran.push(item);
-                    }
-                });
-            }
-        }
-
-        // Helpers for matching other texts
+        // Helpers for matching Arabic / English
         const searchWordsAr = normQ.split(/\s+/).filter(Boolean);
         const matchArabic = (text: string) => {
             if (!text) return false;
             const normText = normalizeArabic(text);
-            return searchWordsAr.every(word => normText.includes(word));
+            if (!normText) return false;
+
+            if (normText.includes(normQ)) return true;
+
+            const normTextNoSpaces = normText.replace(/\s+/g, '');
+            if (normQNoSpaces.length >= 2 && normTextNoSpaces.includes(normQNoSpaces)) return true;
+
+            if (searchWordsAr.length > 0) {
+                return searchWordsAr.every(word => {
+                    if (normText.includes(word)) return true;
+                    const wNoSpace = word.replace(/\s+/g, '');
+                    return wNoSpace.length > 1 && normTextNoSpaces.includes(wNoSpace);
+                });
+            }
+
+            return false;
         };
 
         const matchEnglish = (text: string) => {
@@ -415,7 +400,79 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
 
         const activeHighlightRegex = hasLatinChars || isEn ? englishRegex : arabicRegex;
 
-        // 2. Search Athkar
+        // 1. Search Quran
+        const foundQuran: any[] = [];
+        const seenAyahKeys = new Set<string>();
+
+        if (hasLatinChars && enQuranData && enQuranData.length > 0) {
+            const enResults = searchQuranEnglish(q, enQuranData, quranData);
+            enResults.forEach(item => {
+                const key = `${item.surah}:${item.ayah}`;
+                if (!seenAyahKeys.has(key)) {
+                    seenAyahKeys.add(key);
+                    foundQuran.push(item);
+                }
+            });
+        } else {
+            if (arabicRegex || isNumberSearch) {
+                for (let sIdx = 0; sIdx < quranData.surahs.length; sIdx++) {
+                    const surah = quranData.surahs[sIdx];
+                    for (let aIdx = 0; aIdx < surah.ayahs.length; aIdx++) {
+                        const ayah = surah.ayahs[aIdx];
+                        const key = `${surah.number}:${ayah.numberInSurah}`;
+                        const enVerse = enQuranData?.[sIdx]?.verses?.[aIdx];
+                        const enTransText = enVerse?.translation || '';
+                        const surahNameEn = SURAH_NAMES_EN[surah.number - 1] || surah.name;
+
+                        if (isNumberSearch && ayah.numberInSurah === searchNum) {
+                            seenAyahKeys.add(key);
+                            foundQuran.push({ 
+                                type: 'quran',
+                                text: fixQuranText(ayah.text), 
+                                textEn: enTransText,
+                                surah: surah.number, 
+                                surahName: surah.name, 
+                                surahNameEn,
+                                ayah: ayah.numberInSurah, 
+                                page: ayah.page,
+                                juz: ayah.juz,
+                                highlightRegex: null
+                            });
+                        } else if (!isNumberSearch) {
+                            const cleanText = stripTajweedTags(ayah.text);
+                            if (matchArabic(cleanText) || (arabicRegex && arabicRegex.test(cleanText))) {
+                                seenAyahKeys.add(key);
+                                foundQuran.push({ 
+                                    type: 'quran',
+                                    text: fixQuranText(ayah.text), 
+                                    textEn: enTransText,
+                                    surah: surah.number, 
+                                    surahName: surah.name, 
+                                    surahNameEn,
+                                    ayah: ayah.numberInSurah, 
+                                    page: ayah.page,
+                                    juz: ayah.juz,
+                                    highlightRegex: isEnglishSearch && enTransText ? englishRegex : arabicRegex
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (isEn && !isNumberSearch && enQuranData && enQuranData.length > 0) {
+                const enExtra = searchQuranEnglish(q, enQuranData, quranData);
+                enExtra.forEach(item => {
+                    const key = `${item.surah}:${item.ayah}`;
+                    if (!seenAyahKeys.has(key)) {
+                        seenAyahKeys.add(key);
+                        foundQuran.push(item);
+                    }
+                });
+            }
+        }
+
+        // 2. Search Morning & Evening Athkar
         const foundAthkar: any[] = [];
         BASE_ADHKAR_MORNING.forEach((item, idx) => {
             const enTrans = ADKAR_EN_MAP[item.text] || ADKAR_EN_MAP[item.text.trim()];
@@ -452,7 +509,26 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
             }
         });
 
-        // 3. Search Dua (Adia and Ruqyah supplications)
+        // 3. Search Prayer Adhkar
+        const foundSalahAthkar: any[] = [];
+        const allSalahItems = [...baseAthkar, fajrDhikr, fajrMaghribDhikr, specialZikr];
+        allSalahItems.forEach((item, idx) => {
+            if (matchItem(item.text, item.textEn, item.title, item.titleEn)) {
+                foundSalahAthkar.push({
+                    type: 'salahAthkar',
+                    text: item.text,
+                    textEn: item.textEn,
+                    title: item.title,
+                    titleEn: item.titleEn,
+                    note: item.note,
+                    noteEn: item.noteEn,
+                    id: item.id || idx,
+                    highlightRegex: activeHighlightRegex
+                });
+            }
+        });
+
+        // 4. Search Duas
         const foundDua: any[] = [];
         ALL_DUAA.forEach((item, idx) => {
             const enDua = ADIA_EN_MAP[item.id];
@@ -471,23 +547,25 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
             }
         });
 
-        // Also search Ruqyah items under supplications
+        // 5. Search Ruqyah Shariah
+        const foundRuqyah: any[] = [];
         RUQYAH_DATA.forEach((item) => {
             if (matchItem(item.text, item.textEn, item.source, item.sourceEn) || matchItem(item.title, item.titleEn)) {
-                foundDua.push({
-                    type: 'dua',
+                foundRuqyah.push({
+                    type: 'ruqyah',
+                    title: item.title,
+                    titleEn: item.titleEn,
                     text: item.text,
                     textEn: item.textEn,
                     source: item.source,
                     sourceEn: item.sourceEn,
                     id: item.id,
-                    targetPage: 'others',
                     highlightRegex: activeHighlightRegex
                 });
             }
         });
 
-        // 4. Search Hisn Al-Muslim
+        // 6. Search Hisn Al-Muslim
         const foundHisn: any[] = [];
         Object.keys(HISN_ALMUSLIM_DATA).forEach((catId) => {
             const category = HISN_ALMUSLIM_CATEGORIES.find(c => c.id === catId);
@@ -514,7 +592,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
             });
         });
 
-        // 5. Search Nawawi
+        // 7. Search Nawawi
         const foundNawawi: any[] = [];
         NAWAWI_DATA.forEach((item) => {
             if (matchArabic(item.hadith) || matchArabic(item.title) || (hasLatinChars && matchEnglish(item.title))) {
@@ -528,19 +606,136 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
             }
         });
 
+        // 8. Search Asmaul Husna
+        const foundAsmaulHusna: any[] = [];
+        asmaulHusna.forEach((item) => {
+            if (matchItem(item.name, item.transliteration, item.meaning, item.meaningEn) || matchItem(item.evidence, item.evidenceEn)) {
+                foundAsmaulHusna.push({
+                    type: 'asmaulHusna',
+                    name: item.name,
+                    transliteration: item.transliteration,
+                    meaning: item.meaning,
+                    meaningEn: item.meaningEn,
+                    evidence: item.evidence,
+                    evidenceEn: item.evidenceEn,
+                    id: item.id,
+                    highlightRegex: activeHighlightRegex
+                });
+            }
+        });
+
+        // 9. Search Prophetic Seerah
+        const foundSeerah: any[] = [];
+        PROPHETIC_SEERAH_DATA.forEach((item) => {
+            if (matchItem(item.title, '', item.summary, '') || matchArabic(item.details) || (item.badge && matchArabic(item.badge))) {
+                foundSeerah.push({
+                    type: 'seerah',
+                    kind: 'milestone',
+                    title: item.title,
+                    eraLabel: item.eraLabel,
+                    yearGregorian: item.yearGregorian,
+                    summary: item.summary,
+                    details: item.details,
+                    id: item.id,
+                    highlightRegex: activeHighlightRegex
+                });
+            }
+        });
+        PROPHETIC_STANCES_DATA.forEach((item) => {
+            if (matchItem(item.title, '', item.situation, '') || matchArabic(item.quote) || matchArabic(item.moralLesson)) {
+                foundSeerah.push({
+                    type: 'seerah',
+                    kind: 'stance',
+                    title: item.title,
+                    category: item.category,
+                    situation: item.situation,
+                    quote: item.quote,
+                    id: item.id,
+                    highlightRegex: activeHighlightRegex
+                });
+            }
+        });
+
+        // 10. Search Hajj & Umrah
+        const foundHajjUmrah: any[] = [];
+        umrahVirtues.forEach((v, idx) => {
+            if (matchItem(v.title, '', v.text, '') || matchArabic(v.explanation)) {
+                foundHajjUmrah.push({
+                    type: 'hajjUmrah',
+                    kind: 'virtue',
+                    title: v.title,
+                    text: v.text,
+                    explanation: v.explanation,
+                    id: `v_${idx}`,
+                    highlightRegex: activeHighlightRegex
+                });
+            }
+        });
+        umrahSteps.forEach((s) => {
+            if (matchItem(s.title, '', s.subtitle, '') || matchArabic(s.quranAyah) || matchArabic(s.hadith)) {
+                foundHajjUmrah.push({
+                    type: 'hajjUmrah',
+                    kind: 'step',
+                    title: s.title,
+                    subtitle: s.subtitle,
+                    quranAyah: s.quranAyah,
+                    hadith: s.hadith,
+                    id: s.title,
+                    highlightRegex: activeHighlightRegex
+                });
+            }
+        });
+
+        // 11. Search Ten Promised Paradise
+        const foundTenPromised: any[] = [];
+        TEN_PROMISED_COMPANIONS.forEach((c) => {
+            if (
+                matchItem(c.nameAr, c.nameEn, c.fullNameAr, c.fullNameEn) || 
+                matchItem(c.titleBadgeAr, c.titleBadgeEn, c.keyQuoteAr, c.keyQuoteEn) ||
+                matchItem(c.gladTidingsHadithAr, c.gladTidingsHadithEn)
+            ) {
+                foundTenPromised.push({
+                    type: 'tenPromised',
+                    nameAr: c.nameAr,
+                    nameEn: c.nameEn,
+                    titleBadgeAr: c.titleBadgeAr,
+                    titleBadgeEn: c.titleBadgeEn,
+                    hadithAr: c.gladTidingsHadithAr,
+                    hadithEn: c.gladTidingsHadithEn,
+                    quoteAr: c.keyQuoteAr,
+                    quoteEn: c.keyQuoteEn,
+                    id: c.id,
+                    highlightRegex: activeHighlightRegex
+                });
+            }
+        });
+
         setQuranResults(foundQuran);
         setAthkarResults(foundAthkar);
+        setSalahAthkarResults(foundSalahAthkar);
         setDuaResults(foundDua);
+        setRuqyahResults(foundRuqyah);
         setHisnResults(foundHisn);
         setNawawiResults(foundNawawi);
+        setAsmaulHusnaResults(foundAsmaulHusna);
+        setSeerahResults(foundSeerah);
+        setHajjUmrahResults(foundHajjUmrah);
+        setTenPromisedResults(foundTenPromised);
+
         setIsSearching(false);
         
         searchCache.query = q;
         searchCache.quranResults = foundQuran;
         searchCache.athkarResults = foundAthkar;
+        searchCache.salahAthkarResults = foundSalahAthkar;
         searchCache.duaResults = foundDua;
+        searchCache.ruqyahResults = foundRuqyah;
         searchCache.hisnResults = foundHisn;
         searchCache.nawawiResults = foundNawawi;
+        searchCache.asmaulHusnaResults = foundAsmaulHusna;
+        searchCache.seerahResults = foundSeerah;
+        searchCache.hajjUmrahResults = foundHajjUmrah;
+        searchCache.tenPromisedResults = foundTenPromised;
     }, [isEn]);
 
     useEffect(() => {
@@ -556,23 +751,23 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
         if (query.trim() === '') {
             setQuranResults([]);
             setAthkarResults([]);
+            setSalahAthkarResults([]);
             setDuaResults([]);
+            setRuqyahResults([]);
             setHisnResults([]);
             setNawawiResults([]);
+            setAsmaulHusnaResults([]);
+            setSeerahResults([]);
+            setHajjUmrahResults([]);
+            setTenPromisedResults([]);
             setIsSearching(false);
-            
-            searchCache.query = '';
-            searchCache.quranResults = [];
-            searchCache.athkarResults = [];
-            searchCache.duaResults = [];
-            searchCache.hisnResults = [];
-            searchCache.nawawiResults = [];
+            clearSearchCache();
             return;
         }
         setIsSearching(true);
         searchTimeoutRef.current = setTimeout(() => {
             performSearch(query);
-        }, 350);
+        }, 300);
     }, [query, performSearch]);
 
     const highlightText = (text: string, regex: RegExp | null) => {
@@ -612,14 +807,25 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
         }
     };
 
-    const totalResults = quranResults.length + athkarResults.length + duaResults.length + hisnResults.length + nawawiResults.length;
+    const totalResults = 
+        quranResults.length + 
+        athkarResults.length + 
+        salahAthkarResults.length + 
+        duaResults.length + 
+        ruqyahResults.length + 
+        hisnResults.length + 
+        nawawiResults.length + 
+        asmaulHusnaResults.length + 
+        seerahResults.length + 
+        hajjUmrahResults.length + 
+        tenPromisedResults.length;
 
     const renderResults = () => {
         if (isSearching) {
             return (
                 <div className="flex flex-col items-center justify-center py-20 opacity-60">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 mb-4" style={{ borderBottomColor: theme.accent || theme.palette[0] }}></div>
-                    <p className="font-bold">{isEn ? "Searching..." : "جاري البحث..."}</p>
+                    <p className="font-bold">{isEn ? "Searching..." : "جاري البحث الشامل..."}</p>
                 </div>
             );
         }
@@ -634,7 +840,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                         <Search className="w-10 h-10 quran-3d-icon opacity-50" style={{ color: theme.accent || theme.palette[0] }} />
                     </div>
                     <p className="font-bold text-sm sm:text-base opacity-75" style={{ color: theme.textColor }}>
-                        {isEn ? "No results found for your search" : "لا توجد نتائج لبحثك"}
+                        {isEn ? "No results found for your search" : "لا توجد نتائج لبحثك في جميع صفحات التطبيق"}
                     </p>
                 </div>
             );
@@ -642,7 +848,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
 
         if (!query) {
             return (
-                <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
+                <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
                     <div 
                         className="w-20 h-20 rounded-3xl flex items-center justify-center mb-5 quran-raised-card border-0" 
                         style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.06)' : (theme.btnBg || '#ffffff'), border: 'none' }}
@@ -652,13 +858,13 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                     <p className="font-bold text-sm sm:text-base leading-relaxed opacity-75 max-w-sm" style={{ color: theme.textColor }}>
                         {isEn ? (
                             <>
-                                Search for a verse, English translation, or ayah number<br/>
-                                or search across adhkar, supplications, and Hisn Al-Muslim
+                                Search across all application sections:<br/>
+                                Quran, Adhkar, Prayers, Supplications, Ruqyah, Hisn Al-Muslim, Seerah, Asmaul Husna, Hajj & Umrah, and Ten Promised Paradise.
                             </>
                         ) : (
                             <>
-                                ابحث عن آية أو رقمها أو ترجمتها<br/>
-                                أو ابحث في الأذكار والأدعية وحصن المسلم
+                                ابحث في جميع أقسام وصفحات التطبيق:<br/>
+                                القرآن الكريم، الأذكار، أذكار الصلاة، الأدعية والرقية الشرعية، حصن المسلم، أسماء الله الحسنى، السيرة النبوية، الحج والعمرة، والعشرة المبشرين بالجنة.
                             </>
                         )}
                     </p>
@@ -668,9 +874,15 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
 
         const showQuran = activeTab === 'all' || activeTab === 'quran';
         const showAthkar = activeTab === 'all' || activeTab === 'athkar';
+        const showSalahAthkar = activeTab === 'all' || activeTab === 'salahAthkar';
         const showDua = activeTab === 'all' || activeTab === 'dua';
+        const showRuqyah = activeTab === 'all' || activeTab === 'ruqyah';
         const showHisn = activeTab === 'all' || activeTab === 'hisn';
         const showNawawi = activeTab === 'all' || activeTab === 'nawawi';
+        const showAsmaulHusna = activeTab === 'all' || activeTab === 'asmaulHusna';
+        const showSeerah = activeTab === 'all' || activeTab === 'seerah';
+        const showHajjUmrah = activeTab === 'all' || activeTab === 'hajjUmrah';
+        const showTenPromised = activeTab === 'all' || activeTab === 'tenPromised';
         
         const groupedQuran = quranResults.reduce((acc, r) => {
             if (!acc[r.surah]) acc[r.surah] = { surahName: r.surahName, surahNameEn: r.surahNameEn, ayahs: [] };
@@ -681,6 +893,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
 
         return (
             <div className="space-y-4 pb-20">
+                {/* 1. Quran Results */}
                 {showQuran && quranResults.length > 0 && (
                     <div className="space-y-3">
                         {activeTab === 'all' ? (
@@ -843,76 +1056,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                     </div>
                 )}
 
-                {showDua && duaResults.length > 0 && (
-                    <div className="space-y-3 mt-4">
-                        {activeTab === 'all' ? (
-                            <div className="mb-3 rounded-2xl quran-raised-card overflow-hidden border-0" style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.03)' : (theme.btnBg || '#ffffff'), border: 'none' }}>
-                                <button 
-                                    onClick={() => setExpandedCategories(p => ({ ...p, dua: !p.dua }))}
-                                    className="w-full flex justify-between items-center p-4 transition-all quran-raised-btn border-0 rounded-2xl cursor-pointer"
-                                    style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.06)' : (theme.btnBg || '#ffffff'), color: theme.textColor, border: 'none' }}
-                                >
-                                    <h4 className="font-bold text-base flex items-center gap-2.5" style={{ color: theme.accent || theme.palette[0] }}>
-                                        <Heart className="w-5 h-5 quran-3d-icon" /> 
-                                        {isEn ? "Supplications (Duas)" : "الأدعية"}
-                                    </h4>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-xs font-bold px-2.5 py-0.5 rounded-full quran-raised-card border-0" style={{ backgroundColor: theme.accent || theme.palette[0], color: accentBadgeText, border: 'none' }}>
-                                            {isEn ? duaResults.length : toArabic(duaResults.length)}
-                                        </span>
-                                        <ChevronLeft className={`w-5 h-5 transition-transform quran-3d-icon ${expandedCategories.dua ? (isEn ? 'rotate-90' : '-rotate-90') : (isEn ? 'rotate-180' : '')}`} />
-                                    </div>
-                                </button>
-                                {expandedCategories.dua && (
-                                    <div className="p-3 space-y-2.5" style={{ backgroundColor: theme.isDark ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.015)' }}>
-                                        {duaResults.map((r, idx) => (
-                                            <button 
-                                                key={`dua-${idx}`} 
-                                                className={`w-full ${isEn ? 'text-left' : 'text-right'} p-3.5 rounded-2xl quran-raised-card border-0 transition-all active:scale-[0.98] cursor-pointer`}
-                                                onClick={() => onNavigate(r.targetPage || 'adia')}
-                                                style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.05)' : '#ffffff', color: theme.textColor, border: 'none' }}
-                                            >
-                                                <div className={`${isEn ? 'text-sm font-medium' : 'font-qalam text-base'} leading-relaxed mb-1 line-clamp-2`} style={{ color: theme.accent || theme.palette[0] }}>
-                                                    {highlightText(isEn ? (r.textEn || r.text) : r.text, r.highlightRegex)}
-                                                </div>
-                                                <div className="text-[10px] opacity-60 font-bold">
-                                                    {isEn ? (r.sourceEn || r.source) : r.source}
-                                                </div>
-                                            </button>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        ) : (
-                            <>
-                                <div className="flex items-center gap-2 mb-2 px-1">
-                                    <span className="p-2 rounded-xl quran-raised-card border-0" style={{ backgroundColor: `${theme.accent || theme.palette[0]}18`, color: theme.accent || theme.palette[0], border: 'none' }}>
-                                        <Heart className="w-4 h-4 quran-3d-icon" />
-                                    </span>
-                                    <h3 className="font-bold text-sm opacity-90" style={{ color: theme.textColor }}>
-                                        {isEn ? `Supplications (${duaResults.length})` : `الأدعية (${toArabic(duaResults.length)})`}
-                                    </h3>
-                                </div>
-                                {duaResults.map((r, idx) => (
-                                    <button 
-                                        key={`dua-${idx}`} 
-                                        className={`w-full ${isEn ? 'text-left' : 'text-right'} p-4 rounded-2xl quran-raised-card border-0 transition-all active:scale-[0.98] cursor-pointer mb-2.5`}
-                                        style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.05)' : '#ffffff', color: theme.textColor, border: 'none' }}
-                                        onClick={() => onNavigate(r.targetPage || 'adia')}
-                                    >
-                                        <div className={`${isEn ? 'text-sm font-medium' : 'font-qalam text-base'} leading-relaxed mb-2`} style={{ color: theme.accent || theme.palette[0] }}>
-                                            {highlightText(isEn ? (r.textEn || r.text) : r.text, r.highlightRegex)}
-                                        </div>
-                                        <div className="text-xs opacity-60 font-bold">
-                                            {isEn ? (r.sourceEn || r.source) : r.source}
-                                        </div>
-                                    </button>
-                                ))}
-                            </>
-                        )}
-                    </div>
-                )}
-
+                {/* 2. Morning/Evening Athkar */}
                 {showAthkar && athkarResults.length > 0 && (
                     <div className="space-y-3 mt-4">
                         {activeTab === 'all' ? (
@@ -924,7 +1068,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                                 >
                                     <h4 className="font-bold text-base flex items-center gap-2.5" style={{ color: theme.accent || theme.palette[0] }}>
                                         <Sun className="w-5 h-5 quran-3d-icon" /> 
-                                        {isEn ? "Adhkar (Remembrances)" : "الأذكار"}
+                                        {isEn ? "Daily Adhkar (Morning & Evening)" : "أذكار الصباح والمساء"}
                                     </h4>
                                     <div className="flex items-center gap-2">
                                         <span className="text-xs font-bold px-2.5 py-0.5 rounded-full quran-raised-card border-0" style={{ backgroundColor: theme.accent || theme.palette[0], color: accentBadgeText, border: 'none' }}>
@@ -966,7 +1110,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                                         <Sun className="w-4 h-4 quran-3d-icon" />
                                     </span>
                                     <h3 className="font-bold text-sm opacity-90" style={{ color: theme.textColor }}>
-                                        {isEn ? `Adhkar (${athkarResults.length})` : `الأذكار (${toArabic(athkarResults.length)})`}
+                                        {isEn ? `Daily Adhkar (${athkarResults.length})` : `أذكار الصباح والمساء (${toArabic(athkarResults.length)})`}
                                     </h3>
                                 </div>
                                 {athkarResults.map((r, idx) => (
@@ -995,6 +1139,224 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                     </div>
                 )}
 
+                {/* 3. Prayer Adhkar */}
+                {showSalahAthkar && salahAthkarResults.length > 0 && (
+                    <div className="space-y-3 mt-4">
+                        {activeTab === 'all' ? (
+                            <div className="mb-3 rounded-2xl quran-raised-card overflow-hidden border-0" style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.03)' : (theme.btnBg || '#ffffff'), border: 'none' }}>
+                                <button 
+                                    onClick={() => setExpandedCategories(p => ({ ...p, salahAthkar: !p.salahAthkar }))}
+                                    className="w-full flex justify-between items-center p-4 transition-all quran-raised-btn border-0 rounded-2xl cursor-pointer"
+                                    style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.06)' : (theme.btnBg || '#ffffff'), color: theme.textColor, border: 'none' }}
+                                >
+                                    <h4 className="font-bold text-base flex items-center gap-2.5" style={{ color: theme.accent || theme.palette[0] }}>
+                                        <CheckCircle2 className="w-5 h-5 quran-3d-icon" /> 
+                                        {isEn ? "Prayer Adhkar" : "أذكار الصلاة"}
+                                    </h4>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs font-bold px-2.5 py-0.5 rounded-full quran-raised-card border-0" style={{ backgroundColor: theme.accent || theme.palette[0], color: accentBadgeText, border: 'none' }}>
+                                            {isEn ? salahAthkarResults.length : toArabic(salahAthkarResults.length)}
+                                        </span>
+                                        <ChevronLeft className={`w-5 h-5 transition-transform quran-3d-icon ${expandedCategories.salahAthkar ? (isEn ? 'rotate-90' : '-rotate-90') : (isEn ? 'rotate-180' : '')}`} />
+                                    </div>
+                                </button>
+                                {expandedCategories.salahAthkar && (
+                                    <div className="p-3 space-y-2.5" style={{ backgroundColor: theme.isDark ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.015)' }}>
+                                        {salahAthkarResults.map((r, idx) => (
+                                            <button 
+                                                key={`salahAthkar-${idx}`} 
+                                                className={`w-full ${isEn ? 'text-left' : 'text-right'} p-3.5 rounded-2xl quran-raised-card border-0 transition-all active:scale-[0.98] cursor-pointer`}
+                                                onClick={() => onNavigate('athkar-salah')}
+                                                style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.05)' : '#ffffff', color: theme.textColor, border: 'none' }}
+                                            >
+                                                {r.title && (
+                                                    <div className="text-[11px] font-bold opacity-75 mb-1" style={{ color: theme.textColor }}>
+                                                        {isEn ? (r.titleEn || r.title) : r.title}
+                                                    </div>
+                                                )}
+                                                <div className={`${isEn ? 'text-sm font-medium' : 'font-qalam text-base'} leading-relaxed line-clamp-2`} style={{ color: theme.accent || theme.palette[0] }}>
+                                                    {highlightText(isEn ? (r.textEn || r.text) : r.text, r.highlightRegex)}
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <>
+                                <div className="flex items-center gap-2 mb-2 px-1">
+                                    <span className="p-2 rounded-xl quran-raised-card border-0" style={{ backgroundColor: `${theme.accent || theme.palette[0]}18`, color: theme.accent || theme.palette[0], border: 'none' }}>
+                                        <CheckCircle2 className="w-4 h-4 quran-3d-icon" />
+                                    </span>
+                                    <h3 className="font-bold text-sm opacity-90" style={{ color: theme.textColor }}>
+                                        {isEn ? `Prayer Adhkar (${salahAthkarResults.length})` : `أذكار الصلاة (${toArabic(salahAthkarResults.length)})`}
+                                    </h3>
+                                </div>
+                                {salahAthkarResults.map((r, idx) => (
+                                    <button 
+                                        key={`salahAthkar-${idx}`} 
+                                        className={`w-full ${isEn ? 'text-left' : 'text-right'} p-4 rounded-2xl quran-raised-card border-0 transition-all active:scale-[0.98] cursor-pointer mb-2.5`}
+                                        style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.05)' : '#ffffff', color: theme.textColor, border: 'none' }}
+                                        onClick={() => onNavigate('athkar-salah')}
+                                    >
+                                        {r.title && (
+                                            <div className="text-xs font-bold opacity-75 mb-1.5" style={{ color: theme.textColor }}>
+                                                {isEn ? (r.titleEn || r.title) : r.title}
+                                            </div>
+                                        )}
+                                        <div className={`${isEn ? 'text-sm font-medium' : 'font-qalam text-base'} leading-relaxed mb-1`} style={{ color: theme.accent || theme.palette[0] }}>
+                                            {highlightText(isEn ? (r.textEn || r.text) : r.text, r.highlightRegex)}
+                                        </div>
+                                    </button>
+                                ))}
+                            </>
+                        )}
+                    </div>
+                )}
+
+                {/* 4. Duas */}
+                {showDua && duaResults.length > 0 && (
+                    <div className="space-y-3 mt-4">
+                        {activeTab === 'all' ? (
+                            <div className="mb-3 rounded-2xl quran-raised-card overflow-hidden border-0" style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.03)' : (theme.btnBg || '#ffffff'), border: 'none' }}>
+                                <button 
+                                    onClick={() => setExpandedCategories(p => ({ ...p, dua: !p.dua }))}
+                                    className="w-full flex justify-between items-center p-4 transition-all quran-raised-btn border-0 rounded-2xl cursor-pointer"
+                                    style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.06)' : (theme.btnBg || '#ffffff'), color: theme.textColor, border: 'none' }}
+                                >
+                                    <h4 className="font-bold text-base flex items-center gap-2.5" style={{ color: theme.accent || theme.palette[0] }}>
+                                        <Heart className="w-5 h-5 quran-3d-icon" /> 
+                                        {isEn ? "Supplications (Duas)" : "الأدعية الشاملة"}
+                                    </h4>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs font-bold px-2.5 py-0.5 rounded-full quran-raised-card border-0" style={{ backgroundColor: theme.accent || theme.palette[0], color: accentBadgeText, border: 'none' }}>
+                                            {isEn ? duaResults.length : toArabic(duaResults.length)}
+                                        </span>
+                                        <ChevronLeft className={`w-5 h-5 transition-transform quran-3d-icon ${expandedCategories.dua ? (isEn ? 'rotate-90' : '-rotate-90') : (isEn ? 'rotate-180' : '')}`} />
+                                    </div>
+                                </button>
+                                {expandedCategories.dua && (
+                                    <div className="p-3 space-y-2.5" style={{ backgroundColor: theme.isDark ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.015)' }}>
+                                        {duaResults.map((r, idx) => (
+                                            <button 
+                                                key={`dua-${idx}`} 
+                                                className={`w-full ${isEn ? 'text-left' : 'text-right'} p-3.5 rounded-2xl quran-raised-card border-0 transition-all active:scale-[0.98] cursor-pointer`}
+                                                onClick={() => onNavigate('adia')}
+                                                style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.05)' : '#ffffff', color: theme.textColor, border: 'none' }}
+                                            >
+                                                <div className={`${isEn ? 'text-sm font-medium' : 'font-qalam text-base'} leading-relaxed mb-1 line-clamp-2`} style={{ color: theme.accent || theme.palette[0] }}>
+                                                    {highlightText(isEn ? (r.textEn || r.text) : r.text, r.highlightRegex)}
+                                                </div>
+                                                <div className="text-[10px] opacity-60 font-bold">
+                                                    {isEn ? (r.sourceEn || r.source) : r.source}
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <>
+                                <div className="flex items-center gap-2 mb-2 px-1">
+                                    <span className="p-2 rounded-xl quran-raised-card border-0" style={{ backgroundColor: `${theme.accent || theme.palette[0]}18`, color: theme.accent || theme.palette[0], border: 'none' }}>
+                                        <Heart className="w-4 h-4 quran-3d-icon" />
+                                    </span>
+                                    <h3 className="font-bold text-sm opacity-90" style={{ color: theme.textColor }}>
+                                        {isEn ? `Supplications (${duaResults.length})` : `الأدعية (${toArabic(duaResults.length)})`}
+                                    </h3>
+                                </div>
+                                {duaResults.map((r, idx) => (
+                                    <button 
+                                        key={`dua-${idx}`} 
+                                        className={`w-full ${isEn ? 'text-left' : 'text-right'} p-4 rounded-2xl quran-raised-card border-0 transition-all active:scale-[0.98] cursor-pointer mb-2.5`}
+                                        style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.05)' : '#ffffff', color: theme.textColor, border: 'none' }}
+                                        onClick={() => onNavigate('adia')}
+                                    >
+                                        <div className={`${isEn ? 'text-sm font-medium' : 'font-qalam text-base'} leading-relaxed mb-2`} style={{ color: theme.accent || theme.palette[0] }}>
+                                            {highlightText(isEn ? (r.textEn || r.text) : r.text, r.highlightRegex)}
+                                        </div>
+                                        <div className="text-xs opacity-60 font-bold">
+                                            {isEn ? (r.sourceEn || r.source) : r.source}
+                                        </div>
+                                    </button>
+                                ))}
+                            </>
+                        )}
+                    </div>
+                )}
+
+                {/* 5. Ruqyah Shariah */}
+                {showRuqyah && ruqyahResults.length > 0 && (
+                    <div className="space-y-3 mt-4">
+                        {activeTab === 'all' ? (
+                            <div className="mb-3 rounded-2xl quran-raised-card overflow-hidden border-0" style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.03)' : (theme.btnBg || '#ffffff'), border: 'none' }}>
+                                <button 
+                                    onClick={() => setExpandedCategories(p => ({ ...p, ruqyah: !p.ruqyah }))}
+                                    className="w-full flex justify-between items-center p-4 transition-all quran-raised-btn border-0 rounded-2xl cursor-pointer"
+                                    style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.06)' : (theme.btnBg || '#ffffff'), color: theme.textColor, border: 'none' }}
+                                >
+                                    <h4 className="font-bold text-base flex items-center gap-2.5" style={{ color: theme.accent || theme.palette[0] }}>
+                                        <Shield className="w-5 h-5 quran-3d-icon" /> 
+                                        {isEn ? "Ruqyah Shariah" : "الرقية الشرعية"}
+                                    </h4>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs font-bold px-2.5 py-0.5 rounded-full quran-raised-card border-0" style={{ backgroundColor: theme.accent || theme.palette[0], color: accentBadgeText, border: 'none' }}>
+                                            {isEn ? ruqyahResults.length : toArabic(ruqyahResults.length)}
+                                        </span>
+                                        <ChevronLeft className={`w-5 h-5 transition-transform quran-3d-icon ${expandedCategories.ruqyah ? (isEn ? 'rotate-90' : '-rotate-90') : (isEn ? 'rotate-180' : '')}`} />
+                                    </div>
+                                </button>
+                                {expandedCategories.ruqyah && (
+                                    <div className="p-3 space-y-2.5" style={{ backgroundColor: theme.isDark ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.015)' }}>
+                                        {ruqyahResults.map((r, idx) => (
+                                            <button 
+                                                key={`ruqyah-${idx}`} 
+                                                className={`w-full ${isEn ? 'text-left' : 'text-right'} p-3.5 rounded-2xl quran-raised-card border-0 transition-all active:scale-[0.98] cursor-pointer`}
+                                                onClick={() => onNavigate('others', { section: 'ruqyah', highlightId: r.id, itemId: r.id })}
+                                                style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.05)' : '#ffffff', color: theme.textColor, border: 'none' }}
+                                            >
+                                                <div className="text-[11px] font-bold opacity-80 mb-1" style={{ color: theme.textColor }}>
+                                                    {isEn ? (r.titleEn || r.title) : r.title}
+                                                </div>
+                                                <div className={`${isEn ? 'text-sm font-medium' : 'font-qalam text-base'} leading-relaxed line-clamp-2`} style={{ color: theme.accent || theme.palette[0] }}>
+                                                    {highlightText(isEn ? (r.textEn || r.text) : r.text, r.highlightRegex)}
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <>
+                                <div className="flex items-center gap-2 mb-2 px-1">
+                                    <span className="p-2 rounded-xl quran-raised-card border-0" style={{ backgroundColor: `${theme.accent || theme.palette[0]}18`, color: theme.accent || theme.palette[0], border: 'none' }}>
+                                        <Shield className="w-4 h-4 quran-3d-icon" />
+                                    </span>
+                                    <h3 className="font-bold text-sm opacity-90" style={{ color: theme.textColor }}>
+                                        {isEn ? `Ruqyah Shariah (${ruqyahResults.length})` : `الرقية الشرعية (${toArabic(ruqyahResults.length)})`}
+                                    </h3>
+                                </div>
+                                {ruqyahResults.map((r, idx) => (
+                                    <button 
+                                        key={`ruqyah-${idx}`} 
+                                        className={`w-full ${isEn ? 'text-left' : 'text-right'} p-4 rounded-2xl quran-raised-card border-0 transition-all active:scale-[0.98] cursor-pointer mb-2.5`}
+                                        style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.05)' : '#ffffff', color: theme.textColor, border: 'none' }}
+                                        onClick={() => onNavigate('others', { section: 'ruqyah', highlightId: r.id, itemId: r.id })}
+                                    >
+                                        <div className="text-xs font-bold opacity-80 mb-2" style={{ color: theme.textColor }}>
+                                            {isEn ? (r.titleEn || r.title) : r.title}
+                                        </div>
+                                        <div className={`${isEn ? 'text-sm font-medium' : 'font-qalam text-base'} leading-relaxed mb-1`} style={{ color: theme.accent || theme.palette[0] }}>
+                                            {highlightText(isEn ? (r.textEn || r.text) : r.text, r.highlightRegex)}
+                                        </div>
+                                    </button>
+                                ))}
+                            </>
+                        )}
+                    </div>
+                )}
+
+                {/* 6. Hisn Al-Muslim */}
                 {showHisn && hisnResults.length > 0 && (
                     <div className="space-y-3 mt-4">
                         {activeTab === 'all' ? (
@@ -1065,6 +1427,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                     </div>
                 )}
 
+                {/* 7. An-Nawawi 40 Hadiths */}
                 {showNawawi && nawawiResults.length > 0 && (
                     <div className="space-y-3 mt-4">
                         {activeTab === 'all' ? (
@@ -1134,9 +1497,318 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                         )}
                     </div>
                 )}
+
+                {/* 8. Asmaul Husna */}
+                {showAsmaulHusna && asmaulHusnaResults.length > 0 && (
+                    <div className="space-y-3 mt-4">
+                        {activeTab === 'all' ? (
+                            <div className="mb-3 rounded-2xl quran-raised-card overflow-hidden border-0" style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.03)' : (theme.btnBg || '#ffffff'), border: 'none' }}>
+                                <button 
+                                    onClick={() => setExpandedCategories(p => ({ ...p, asmaulHusna: !p.asmaulHusna }))}
+                                    className="w-full flex justify-between items-center p-4 transition-all quran-raised-btn border-0 rounded-2xl cursor-pointer"
+                                    style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.06)' : (theme.btnBg || '#ffffff'), color: theme.textColor, border: 'none' }}
+                                >
+                                    <h4 className="font-bold text-base flex items-center gap-2.5" style={{ color: theme.accent || theme.palette[0] }}>
+                                        <Sparkles className="w-5 h-5 quran-3d-icon" /> 
+                                        {isEn ? "Names of Allah (Asmaul Husna)" : "أسماء الله الحسنى"}
+                                    </h4>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs font-bold px-2.5 py-0.5 rounded-full quran-raised-card border-0" style={{ backgroundColor: theme.accent || theme.palette[0], color: accentBadgeText, border: 'none' }}>
+                                            {isEn ? asmaulHusnaResults.length : toArabic(asmaulHusnaResults.length)}
+                                        </span>
+                                        <ChevronLeft className={`w-5 h-5 transition-transform quran-3d-icon ${expandedCategories.asmaulHusna ? (isEn ? 'rotate-90' : '-rotate-90') : (isEn ? 'rotate-180' : '')}`} />
+                                    </div>
+                                </button>
+                                {expandedCategories.asmaulHusna && (
+                                    <div className="p-3 space-y-2.5" style={{ backgroundColor: theme.isDark ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.015)' }}>
+                                        {asmaulHusnaResults.map((r, idx) => (
+                                            <button 
+                                                key={`asmaulHusna-${idx}`} 
+                                                className={`w-full ${isEn ? 'text-left' : 'text-right'} p-3.5 rounded-2xl quran-raised-card border-0 transition-all active:scale-[0.98] cursor-pointer`}
+                                                onClick={() => onNavigate('asma-allah')}
+                                                style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.05)' : '#ffffff', color: theme.textColor, border: 'none' }}
+                                            >
+                                                <div className="font-bold text-base mb-1" style={{ color: theme.accent || theme.palette[0] }}>
+                                                    {r.name} {isEn && `(${r.transliteration})`}
+                                                </div>
+                                                <div className="text-xs leading-relaxed opacity-80 line-clamp-2" style={{ color: theme.textColor }}>
+                                                    {highlightText(isEn ? r.meaningEn : r.meaning, r.highlightRegex)}
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <>
+                                <div className="flex items-center gap-2 mb-2 px-1">
+                                    <span className="p-2 rounded-xl quran-raised-card border-0" style={{ backgroundColor: `${theme.accent || theme.palette[0]}18`, color: theme.accent || theme.palette[0], border: 'none' }}>
+                                        <Sparkles className="w-4 h-4 quran-3d-icon" />
+                                    </span>
+                                    <h3 className="font-bold text-sm opacity-90" style={{ color: theme.textColor }}>
+                                        {isEn ? `Names of Allah (${asmaulHusnaResults.length})` : `أسماء الله الحسنى (${toArabic(asmaulHusnaResults.length)})`}
+                                    </h3>
+                                </div>
+                                {asmaulHusnaResults.map((r, idx) => (
+                                    <button 
+                                        key={`asmaulHusna-${idx}`} 
+                                        className={`w-full ${isEn ? 'text-left' : 'text-right'} p-4 rounded-2xl quran-raised-card border-0 transition-all active:scale-[0.98] cursor-pointer mb-2.5`}
+                                        style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.05)' : '#ffffff', color: theme.textColor, border: 'none' }}
+                                        onClick={() => onNavigate('asma-allah')}
+                                    >
+                                        <div className="font-bold text-lg mb-1.5" style={{ color: theme.accent || theme.palette[0] }}>
+                                            {r.name} {isEn && `(${r.transliteration})`}
+                                        </div>
+                                        <div className="text-sm leading-relaxed opacity-80 mb-2" style={{ color: theme.textColor }}>
+                                            {highlightText(isEn ? r.meaningEn : r.meaning, r.highlightRegex)}
+                                        </div>
+                                        {r.evidence && (
+                                            <div className="text-xs opacity-60 font-bold border-t pt-2 mt-2 border-black/10 dark:border-white/10">
+                                                {isEn ? (r.evidenceEn || r.evidence) : r.evidence}
+                                            </div>
+                                        )}
+                                    </button>
+                                ))}
+                            </>
+                        )}
+                    </div>
+                )}
+
+                {/* 9. Prophetic Seerah */}
+                {showSeerah && seerahResults.length > 0 && (
+                    <div className="space-y-3 mt-4">
+                        {activeTab === 'all' ? (
+                            <div className="mb-3 rounded-2xl quran-raised-card overflow-hidden border-0" style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.03)' : (theme.btnBg || '#ffffff'), border: 'none' }}>
+                                <button 
+                                    onClick={() => setExpandedCategories(p => ({ ...p, seerah: !p.seerah }))}
+                                    className="w-full flex justify-between items-center p-4 transition-all quran-raised-btn border-0 rounded-2xl cursor-pointer"
+                                    style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.06)' : (theme.btnBg || '#ffffff'), color: theme.textColor, border: 'none' }}
+                                >
+                                    <h4 className="font-bold text-base flex items-center gap-2.5" style={{ color: theme.accent || theme.palette[0] }}>
+                                        <UserCheck className="w-5 h-5 quran-3d-icon" /> 
+                                        {isEn ? "Prophetic Seerah" : "السيرة النبوية الشريفة"}
+                                    </h4>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs font-bold px-2.5 py-0.5 rounded-full quran-raised-card border-0" style={{ backgroundColor: theme.accent || theme.palette[0], color: accentBadgeText, border: 'none' }}>
+                                            {isEn ? seerahResults.length : toArabic(seerahResults.length)}
+                                        </span>
+                                        <ChevronLeft className={`w-5 h-5 transition-transform quran-3d-icon ${expandedCategories.seerah ? (isEn ? 'rotate-90' : '-rotate-90') : (isEn ? 'rotate-180' : '')}`} />
+                                    </div>
+                                </button>
+                                {expandedCategories.seerah && (
+                                    <div className="p-3 space-y-2.5" style={{ backgroundColor: theme.isDark ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.015)' }}>
+                                        {seerahResults.map((r, idx) => (
+                                            <button 
+                                                key={`seerah-${idx}`} 
+                                                className={`w-full ${isEn ? 'text-left' : 'text-right'} p-3.5 rounded-2xl quran-raised-card border-0 transition-all active:scale-[0.98] cursor-pointer`}
+                                                onClick={() => onNavigate('prophetic-seerah', { eventId: r.id })}
+                                                style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.05)' : '#ffffff', color: theme.textColor, border: 'none' }}
+                                            >
+                                                <div className="text-[11px] font-bold opacity-75 mb-1" style={{ color: theme.textColor }}>
+                                                    {r.title}
+                                                </div>
+                                                <div className="text-xs leading-relaxed opacity-80 line-clamp-2" style={{ color: theme.accent || theme.palette[0] }}>
+                                                    {highlightText(r.summary || r.situation || r.details, r.highlightRegex)}
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <>
+                                <div className="flex items-center gap-2 mb-2 px-1">
+                                    <span className="p-2 rounded-xl quran-raised-card border-0" style={{ backgroundColor: `${theme.accent || theme.palette[0]}18`, color: theme.accent || theme.palette[0], border: 'none' }}>
+                                        <UserCheck className="w-4 h-4 quran-3d-icon" />
+                                    </span>
+                                    <h3 className="font-bold text-sm opacity-90" style={{ color: theme.textColor }}>
+                                        {isEn ? `Prophetic Seerah (${seerahResults.length})` : `السيرة النبوية (${toArabic(seerahResults.length)})`}
+                                    </h3>
+                                </div>
+                                {seerahResults.map((r, idx) => (
+                                    <button 
+                                        key={`seerah-${idx}`} 
+                                        className={`w-full ${isEn ? 'text-left' : 'text-right'} p-4 rounded-2xl quran-raised-card border-0 transition-all active:scale-[0.98] cursor-pointer mb-2.5`}
+                                        style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.05)' : '#ffffff', color: theme.textColor, border: 'none' }}
+                                        onClick={() => onNavigate('prophetic-seerah', { eventId: r.id })}
+                                    >
+                                        <div className="text-sm font-bold opacity-90 mb-1.5" style={{ color: theme.textColor }}>
+                                            {r.title}
+                                        </div>
+                                        <div className="text-xs leading-relaxed opacity-80" style={{ color: theme.accent || theme.palette[0] }}>
+                                            {highlightText(r.summary || r.situation || r.details, r.highlightRegex)}
+                                        </div>
+                                    </button>
+                                ))}
+                            </>
+                        )}
+                    </div>
+                )}
+
+                {/* 10. Hajj & Umrah */}
+                {showHajjUmrah && hajjUmrahResults.length > 0 && (
+                    <div className="space-y-3 mt-4">
+                        {activeTab === 'all' ? (
+                            <div className="mb-3 rounded-2xl quran-raised-card overflow-hidden border-0" style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.03)' : (theme.btnBg || '#ffffff'), border: 'none' }}>
+                                <button 
+                                    onClick={() => setExpandedCategories(p => ({ ...p, hajjUmrah: !p.hajjUmrah }))}
+                                    className="w-full flex justify-between items-center p-4 transition-all quran-raised-btn border-0 rounded-2xl cursor-pointer"
+                                    style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.06)' : (theme.btnBg || '#ffffff'), color: theme.textColor, border: 'none' }}
+                                >
+                                    <h4 className="font-bold text-base flex items-center gap-2.5" style={{ color: theme.accent || theme.palette[0] }}>
+                                        <Compass className="w-5 h-5 quran-3d-icon" /> 
+                                        {isEn ? "Hajj & Umrah" : "الحج والعمرة"}
+                                    </h4>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs font-bold px-2.5 py-0.5 rounded-full quran-raised-card border-0" style={{ backgroundColor: theme.accent || theme.palette[0], color: accentBadgeText, border: 'none' }}>
+                                            {isEn ? hajjUmrahResults.length : toArabic(hajjUmrahResults.length)}
+                                        </span>
+                                        <ChevronLeft className={`w-5 h-5 transition-transform quran-3d-icon ${expandedCategories.hajjUmrah ? (isEn ? 'rotate-90' : '-rotate-90') : (isEn ? 'rotate-180' : '')}`} />
+                                    </div>
+                                </button>
+                                {expandedCategories.hajjUmrah && (
+                                    <div className="p-3 space-y-2.5" style={{ backgroundColor: theme.isDark ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.015)' }}>
+                                        {hajjUmrahResults.map((r, idx) => (
+                                            <button 
+                                                key={`hajjUmrah-${idx}`} 
+                                                className={`w-full ${isEn ? 'text-left' : 'text-right'} p-3.5 rounded-2xl quran-raised-card border-0 transition-all active:scale-[0.98] cursor-pointer`}
+                                                onClick={() => onNavigate('hajj-umrah')}
+                                                style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.05)' : '#ffffff', color: theme.textColor, border: 'none' }}
+                                            >
+                                                <div className="text-[11px] font-bold opacity-80 mb-1" style={{ color: theme.textColor }}>
+                                                    {r.title}
+                                                </div>
+                                                <div className="text-xs leading-relaxed opacity-80 line-clamp-2" style={{ color: theme.accent || theme.palette[0] }}>
+                                                    {highlightText(r.text || r.subtitle || r.explanation, r.highlightRegex)}
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <>
+                                <div className="flex items-center gap-2 mb-2 px-1">
+                                    <span className="p-2 rounded-xl quran-raised-card border-0" style={{ backgroundColor: `${theme.accent || theme.palette[0]}18`, color: theme.accent || theme.palette[0], border: 'none' }}>
+                                        <Compass className="w-4 h-4 quran-3d-icon" />
+                                    </span>
+                                    <h3 className="font-bold text-sm opacity-90" style={{ color: theme.textColor }}>
+                                        {isEn ? `Hajj & Umrah (${hajjUmrahResults.length})` : `الحج والعمرة (${toArabic(hajjUmrahResults.length)})`}
+                                    </h3>
+                                </div>
+                                {hajjUmrahResults.map((r, idx) => (
+                                    <button 
+                                        key={`hajjUmrah-${idx}`} 
+                                        className={`w-full ${isEn ? 'text-left' : 'text-right'} p-4 rounded-2xl quran-raised-card border-0 transition-all active:scale-[0.98] cursor-pointer mb-2.5`}
+                                        style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.05)' : '#ffffff', color: theme.textColor, border: 'none' }}
+                                        onClick={() => onNavigate('hajj-umrah')}
+                                    >
+                                        <div className="text-xs font-bold opacity-80 mb-2" style={{ color: theme.textColor }}>
+                                            {r.title}
+                                        </div>
+                                        <div className="text-xs leading-relaxed opacity-80" style={{ color: theme.accent || theme.palette[0] }}>
+                                            {highlightText(r.text || r.subtitle || r.explanation, r.highlightRegex)}
+                                        </div>
+                                    </button>
+                                ))}
+                            </>
+                        )}
+                    </div>
+                )}
+
+                {/* 11. Ten Promised Paradise */}
+                {showTenPromised && tenPromisedResults.length > 0 && (
+                    <div className="space-y-3 mt-4">
+                        {activeTab === 'all' ? (
+                            <div className="mb-3 rounded-2xl quran-raised-card overflow-hidden border-0" style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.03)' : (theme.btnBg || '#ffffff'), border: 'none' }}>
+                                <button 
+                                    onClick={() => setExpandedCategories(p => ({ ...p, tenPromised: !p.tenPromised }))}
+                                    className="w-full flex justify-between items-center p-4 transition-all quran-raised-btn border-0 rounded-2xl cursor-pointer"
+                                    style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.06)' : (theme.btnBg || '#ffffff'), color: theme.textColor, border: 'none' }}
+                                >
+                                    <h4 className="font-bold text-base flex items-center gap-2.5" style={{ color: theme.accent || theme.palette[0] }}>
+                                        <Users className="w-5 h-5 quran-3d-icon" /> 
+                                        {isEn ? "Ten Promised Paradise" : "العشرة المبشرون بالجنة"}
+                                    </h4>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs font-bold px-2.5 py-0.5 rounded-full quran-raised-card border-0" style={{ backgroundColor: theme.accent || theme.palette[0], color: accentBadgeText, border: 'none' }}>
+                                            {isEn ? tenPromisedResults.length : toArabic(tenPromisedResults.length)}
+                                        </span>
+                                        <ChevronLeft className={`w-5 h-5 transition-transform quran-3d-icon ${expandedCategories.tenPromised ? (isEn ? 'rotate-90' : '-rotate-90') : (isEn ? 'rotate-180' : '')}`} />
+                                    </div>
+                                </button>
+                                {expandedCategories.tenPromised && (
+                                    <div className="p-3 space-y-2.5" style={{ backgroundColor: theme.isDark ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.015)' }}>
+                                        {tenPromisedResults.map((r, idx) => (
+                                            <button 
+                                                key={`tenPromised-${idx}`} 
+                                                className={`w-full ${isEn ? 'text-left' : 'text-right'} p-3.5 rounded-2xl quran-raised-card border-0 transition-all active:scale-[0.98] cursor-pointer`}
+                                                onClick={() => onNavigate('ten-promised', { companionId: r.id })}
+                                                style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.05)' : '#ffffff', color: theme.textColor, border: 'none' }}
+                                            >
+                                                <div className="font-bold text-sm mb-1" style={{ color: theme.accent || theme.palette[0] }}>
+                                                    {isEn ? r.nameEn : r.nameAr}
+                                                </div>
+                                                <div className="text-xs leading-relaxed opacity-80 line-clamp-2" style={{ color: theme.textColor }}>
+                                                    {highlightText(isEn ? (r.titleBadgeEn || r.hadithEn) : (r.titleBadgeAr || r.hadithAr), r.highlightRegex)}
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <>
+                                <div className="flex items-center gap-2 mb-2 px-1">
+                                    <span className="p-2 rounded-xl quran-raised-card border-0" style={{ backgroundColor: `${theme.accent || theme.palette[0]}18`, color: theme.accent || theme.palette[0], border: 'none' }}>
+                                        <Users className="w-4 h-4 quran-3d-icon" />
+                                    </span>
+                                    <h3 className="font-bold text-sm opacity-90" style={{ color: theme.textColor }}>
+                                        {isEn ? `Ten Promised Paradise (${tenPromisedResults.length})` : `العشرة المبشرون بالجنة (${toArabic(tenPromisedResults.length)})`}
+                                    </h3>
+                                </div>
+                                {tenPromisedResults.map((r, idx) => (
+                                    <button 
+                                        key={`tenPromised-${idx}`} 
+                                        className={`w-full ${isEn ? 'text-left' : 'text-right'} p-4 rounded-2xl quran-raised-card border-0 transition-all active:scale-[0.98] cursor-pointer mb-2.5`}
+                                        style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.05)' : '#ffffff', color: theme.textColor, border: 'none' }}
+                                        onClick={() => onNavigate('ten-promised', { companionId: r.id })}
+                                    >
+                                        <div className="font-bold text-base mb-1.5" style={{ color: theme.accent || theme.palette[0] }}>
+                                            {isEn ? r.nameEn : r.nameAr}
+                                        </div>
+                                        <div className="text-xs leading-relaxed opacity-80 mb-2" style={{ color: theme.textColor }}>
+                                            {highlightText(isEn ? r.titleBadgeEn : r.titleBadgeAr, r.highlightRegex)}
+                                        </div>
+                                        {(r.hadithAr || r.hadithEn) && (
+                                            <div className="text-xs opacity-70 font-semibold border-t pt-2 mt-2 border-black/10 dark:border-white/10">
+                                                {highlightText(isEn ? r.hadithEn : r.hadithAr, r.highlightRegex)}
+                                            </div>
+                                        )}
+                                    </button>
+                                ))}
+                            </>
+                        )}
+                    </div>
+                )}
             </div>
         );
     };
+
+    const tabsList = [
+        { id: 'all', label: isEn ? `All (${totalResults})` : `الكل (${toArabic(totalResults)})`, count: totalResults },
+        { id: 'quran', label: isEn ? `Quran (${quranResults.length})` : `القرآن (${toArabic(quranResults.length)})`, count: quranResults.length },
+        { id: 'athkar', label: isEn ? `Athkar (${athkarResults.length})` : `أذكار اليوم (${toArabic(athkarResults.length)})`, count: athkarResults.length },
+        { id: 'salahAthkar', label: isEn ? `Prayer Athkar (${salahAthkarResults.length})` : `أذكار الصلاة (${toArabic(salahAthkarResults.length)})`, count: salahAthkarResults.length },
+        { id: 'dua', label: isEn ? `Duas (${duaResults.length})` : `الأدعية (${toArabic(duaResults.length)})`, count: duaResults.length },
+        { id: 'ruqyah', label: isEn ? `Ruqyah (${ruqyahResults.length})` : `الرقية الشرعية (${toArabic(ruqyahResults.length)})`, count: ruqyahResults.length },
+        { id: 'hisn', label: isEn ? `Hisn (${hisnResults.length})` : `حصن المسلم (${toArabic(hisnResults.length)})`, count: hisnResults.length },
+        { id: 'nawawi', label: isEn ? `Nawawi 40 (${nawawiResults.length})` : `الأربعون النووية (${toArabic(nawawiResults.length)})`, count: nawawiResults.length },
+        { id: 'asmaulHusna', label: isEn ? `Asmaul Husna (${asmaulHusnaResults.length})` : `أسماء الله الحسنى (${toArabic(asmaulHusnaResults.length)})`, count: asmaulHusnaResults.length },
+        { id: 'seerah', label: isEn ? `Seerah (${seerahResults.length})` : `السيرة النبوية (${toArabic(seerahResults.length)})`, count: seerahResults.length },
+        { id: 'hajjUmrah', label: isEn ? `Hajj & Umrah (${hajjUmrahResults.length})` : `الحج والعمرة (${toArabic(hajjUmrahResults.length)})`, count: hajjUmrahResults.length },
+        { id: 'tenPromised', label: isEn ? `Ten Promised (${tenPromisedResults.length})` : `العشرة المبشرون (${toArabic(tenPromisedResults.length)})`, count: tenPromisedResults.length },
+    ].filter(t => t.id === 'all' || t.count > 0 || !query);
 
     return (
         <div className={`fixed top-0 left-0 right-0 z-[1500] flex items-center justify-center overflow-hidden bg-black/40 backdrop-blur-sm ${theme.isDark ? 'dark' : ''}`} dir={isEn ? "ltr" : "rtl"} onClick={handleBack} style={{ height: `${initialHeight}px` }}>
@@ -1151,7 +1823,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                 onClick={e => e.stopPropagation()}
             >
                 
-                {/* Full Screen Modal Header - Exactly matching SettingsModal */}
+                {/* Full Screen Modal Header */}
                 <div className="p-3.5 flex items-center justify-center shrink-0 border-0" style={{ backgroundColor: theme.bgColor, paddingTop: 'calc(0.75rem + env(safe-area-inset-top))' }}>
                     <h3 
                         className="text-sm font-extrabold px-6 py-2 rounded-2xl quran-raised-card inline-flex items-center justify-center gap-2 tracking-wide border-0" 
@@ -1162,18 +1834,18 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                         }}
                     >
                         <Search className="w-4 h-4 quran-3d-icon" style={{ color: theme.accent || theme.palette[0] }} />
-                        <span>{isEn ? "Advanced Search" : "البحث المتقدم"}</span>
+                        <span>{isEn ? "Advanced Global Search" : "البحث الشامل والمتقدم"}</span>
                     </h3>
                 </div>
 
-                {/* Sub-header with Search Input - Borderless & Sculpted */}
+                {/* Sub-header with Search Input */}
                 <div className="p-4 shrink-0 z-10 border-0" style={{ backgroundColor: theme.bgColor }}>
                     <div className="relative">
                         <input 
                             type="text" 
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}
-                            placeholder={isEn ? "Search verse, translation, dhikr, dua, or Hisn al-Muslim..." : "ابحث عن آية، كلمة، ترجمة، ذكر، دعاء، أو حصن المسلم..."} 
+                            placeholder={isEn ? "Search in Quran, Athkar, Duas, Ruqyah, Hisn, Seerah, Asmaul Husna..." : "ابحث في القرآن، الأذكار، الأدعية، الرقية، حصن المسلم، السيرة، الأسماء الحسنى..."} 
                             className={`w-full p-3.5 rounded-2xl focus:outline-none font-bold quran-raised-card border-0 transition-all ${isEn ? 'pl-11 pr-11 text-left' : 'pr-11 pl-11 text-right'}`}
                             dir={isEn ? "ltr" : "rtl"}
                             style={{ 
@@ -1197,20 +1869,14 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                     </div>
 
                     {query && totalResults > 0 && (
-                        <div className="flex overflow-x-auto gap-2.5 mt-3.5 pb-1 hide-scrollbar">
-                            {[
-                                { id: 'all', label: isEn ? `All (${totalResults})` : `الكل (${toArabic(totalResults)})` },
-                                { id: 'quran', label: isEn ? `Quran (${quranResults.length})` : `القرآن (${toArabic(quranResults.length)})` },
-                                { id: 'dua', label: isEn ? `Duas (${duaResults.length})` : `الأدعية (${toArabic(duaResults.length)})` },
-                                { id: 'athkar', label: isEn ? `Adhkar (${athkarResults.length})` : `الأذكار (${toArabic(athkarResults.length)})` },
-                                { id: 'hisn', label: isEn ? `Hisn (${hisnResults.length})` : `حصن (${toArabic(hisnResults.length)})` },
-                            ].map(tab => {
+                        <div className="flex overflow-x-auto gap-2 mt-3.5 pb-1 hide-scrollbar">
+                            {tabsList.map(tab => {
                                 const isSelected = activeTab === tab.id;
                                 return (
                                     <button 
                                         key={tab.id}
                                         onClick={() => setActiveTab(tab.id as any)}
-                                        className={`px-4 py-2.5 rounded-2xl whitespace-nowrap text-xs font-bold transition-all border-0 cursor-pointer ${
+                                        className={`px-3.5 py-2 rounded-2xl whitespace-nowrap text-xs font-bold transition-all border-0 cursor-pointer ${
                                             isSelected 
                                                 ? 'quran-raised-btn-selected shadow-md' 
                                                 : 'quran-raised-btn'
@@ -1242,7 +1908,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                     {renderResults()}
                 </div>
 
-                {/* Footer - Matching SettingsModal */}
+                {/* Footer */}
                 <div 
                     className="p-3.5 flex gap-2 shrink-0 z-10 border-0" 
                     style={{ 

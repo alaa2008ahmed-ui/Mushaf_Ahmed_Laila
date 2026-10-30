@@ -71,7 +71,7 @@ interface ZoomedCardData {
     isVerseOrProof?: boolean;
 }
 
-const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, onOpenThemes }) => {
+const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, navParams, onOpenThemes }) => {
     const { theme, themeKey } = useTheme();
     const { language, isRTL } = useLanguage();
     const isEn = language === 'en';
@@ -102,6 +102,16 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, o
 
     // Selected Companion for detailed profile view
     const [selectedCompanion, setSelectedCompanion] = useState<CompanionInfo | null>(null);
+
+    useEffect(() => {
+        if (navParams?.companionId || navParams?.highlightId) {
+            const targetId = navParams.companionId || navParams.highlightId;
+            const found = TEN_PROMISED_COMPANIONS.find(c => c.id === targetId);
+            if (found) {
+                setSelectedCompanion(found);
+            }
+        }
+    }, [navParams]);
 
     // Sub-tab within companion detail view
     const [detailTab, setDetailTab] = useState<'profile' | 'stances' | 'traits' | 'virtues' | 'sayings' | 'preIslam' | 'conversion' | 'legacy' | 'lessons'>('profile');

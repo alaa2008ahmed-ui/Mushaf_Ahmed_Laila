@@ -72,7 +72,7 @@ interface ZoomedCardData {
 }
 
 
-const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNavigate, onOpenThemes }) => {
+const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNavigate, navParams, onOpenThemes }) => {
     const { theme, themeKey } = useTheme();
     const { language, isRTL } = useLanguage();
     const isEn = language === 'en';
@@ -109,10 +109,26 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
     // Sub-tab for Lineage View
     const [lineageTab, setLineageTab] = useState<'tree' | 'mother' | 'names' | 'nurses' | 'characteristics' | 'virtues'>('tree');
 
-
     // Selected Milestone or Stance for Detailed Modal/View
     const [selectedMilestone, setSelectedMilestone] = useState<SeerahMilestone | null>(null);
     const [selectedStance, setSelectedStance] = useState<PropheticStance | null>(null);
+
+    useEffect(() => {
+        if (navParams?.eventId || navParams?.highlightId) {
+            const targetId = navParams.eventId || navParams.highlightId;
+            const foundMilestone = PROPHETIC_SEERAH_DATA.find(m => m.id === targetId);
+            if (foundMilestone) {
+                setActiveTab('timeline');
+                setSelectedMilestone(getTranslatedMilestone(foundMilestone, isEn));
+                return;
+            }
+            const foundStance = PROPHETIC_STANCES_DATA.find(s => s.id === targetId);
+            if (foundStance) {
+                setActiveTab('stances');
+                setSelectedStance(getTranslatedStance(foundStance, isEn));
+            }
+        }
+    }, [navParams, isEn]);
 
     // Zoom Modal State for Cards
     const [zoomedCard, setZoomedCard] = useState<ZoomedCardData | null>(null);

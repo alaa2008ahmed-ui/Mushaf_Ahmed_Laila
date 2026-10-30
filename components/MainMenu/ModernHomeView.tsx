@@ -833,17 +833,20 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
       >
         {/* قسم تابع تلاوة المصحف (في أعلى البطاقة تماماً تلبية لطلب المستخدم) */}
         <div className="w-full mb-3.5">
-          <div className="w-full rounded-2xl p-2.5 sm:p-3 golden-3d-inset flex items-center justify-between gap-2 sm:gap-3">
+          <div className="w-full rounded-2xl p-3 sm:p-3.5 white-3d-container-card flex items-center justify-between gap-2 sm:gap-3 border border-amber-300/50 shadow-md transition-all hover:scale-[1.01]">
             <div 
               onClick={() => onNavigate('quran', { from: 'modern_home', surah: lastReadQuran.surah, ayah: lastReadQuran.ayah, page: lastReadQuran.page })}
               className="flex flex-col min-w-0 flex-1 text-start cursor-pointer group"
             >
               <div className="flex items-center gap-2">
-                <span className="text-xs sm:text-sm font-bold text-[#451A03] truncate group-hover:text-amber-900 transition-colors font-cairo">
+                <div className="w-7 h-7 rounded-lg bg-amber-100/90 text-amber-900 border border-amber-300/80 flex items-center justify-center shrink-0 shadow-2xs">
+                  <BookOpen className="w-4 h-4 text-amber-800" />
+                </div>
+                <span className="text-xs sm:text-sm font-black text-[#451A03] truncate group-hover:text-amber-900 transition-colors font-cairo">
                   {isEn ? 'Continue Quran Recitation' : 'تابع تلاوة المصحف'}
                 </span>
               </div>
-              <div className="flex items-center gap-1.5 flex-nowrap whitespace-nowrap text-[10.5px] sm:text-xs text-amber-900/90 font-medium mt-1 min-w-0">
+              <div className="flex items-center gap-1.5 flex-nowrap whitespace-nowrap text-[10.5px] sm:text-xs text-amber-900/90 font-medium mt-1.5 min-w-0">
                 <span className="font-bold text-[#451A03] truncate">{lastReadQuran.surahName}</span>
                 <div className="inline-flex items-center gap-1.5 sm:gap-2 shrink-0 text-[#5B2605] font-bold bg-amber-100/90 px-2 py-0.5 rounded-md border border-amber-300/80 shadow-2xs">
                   <span>{isEn ? `Ayah ${lastReadQuran.ayah}` : `آية ${formatNumber(lastReadQuran.ayah)}`}</span>
@@ -856,7 +859,7 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
             <button
               type="button"
               onClick={() => onNavigate('quran-landscape', { from: 'modern_home', surah: lastReadQuran.surah, ayah: lastReadQuran.ayah, page: lastReadQuran.page })}
-              className="px-3.5 py-1.5 rounded-xl golden-3d-pill-btn font-bold text-xs flex items-center justify-center shrink-0 active:scale-95 transition-all shadow-2xs cursor-pointer text-white"
+              className="px-3.5 py-1.5 rounded-xl golden-3d-pill-btn font-bold text-xs flex items-center justify-center shrink-0 active:scale-95 transition-all shadow-md cursor-pointer text-white"
               title={isEn ? 'Landscape Reading' : 'تلاوة عرضية للمصحف'}
             >
               <span className="text-xs text-white font-bold">{isEn ? 'Landscape' : 'عرضي'}</span>
@@ -1064,10 +1067,10 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
             className="flex-1 min-w-0 cursor-pointer flex items-center gap-2.5 sm:gap-3 p-2 px-3 rounded-2xl sm:rounded-3xl white-3d-card-btn hover:brightness-[1.02] transition-all"
           >
             <div className="flex flex-col min-w-0 flex-1 text-start">
-              <span className="text-xs sm:text-sm font-bold text-[#451A03] font-cairo whitespace-normal leading-snug">
+              <span className="text-[11px] min-[380px]:text-xs sm:text-sm font-bold text-[#451A03] font-cairo whitespace-normal leading-snug">
                 {isEn ? 'Search Quran, Adhkar, Hadith...' : 'ابحث في القرآن، الأذكار، الأحاديث...'}
               </span>
-              <span className="text-[10px] sm:text-[11px] text-amber-900/80 font-medium mt-0.5">
+              <span className="text-[9.5px] min-[380px]:text-[10px] sm:text-[11px] text-amber-900/80 font-medium mt-0.5">
                 {isEn ? 'Instant search across entire app content' : 'بحث فوري في كامل محتويات التطبيق'}
               </span>
             </div>
@@ -1176,103 +1179,7 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
         </div>
       </div>
 
-      {/* 4. بطاقة مربي الصلوات الخمس (Habit Tracker Card) */}
-      <div 
-        className="w-full golden-3d-card p-4 sm:p-5 select-none transition-all"
-      >
-        {/* الترويسة */}
-        <div className="flex items-center justify-between w-full mb-3.5">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-amber-100/90 text-amber-900 border border-amber-300/80 flex items-center justify-center shrink-0 shadow-2xs">
-              <Sparkles className="w-5 h-5 text-amber-700" strokeWidth={2.2} />
-            </div>
-            <div className="flex flex-col text-start">
-              <span className="text-xs sm:text-sm font-bold text-[#451A03] font-cairo">
-                {isEn ? 'Five Daily Prayers Tracker' : 'مربي الصلوات الخمس'}
-              </span>
-              <span className="text-[11px] text-amber-900/85 font-medium">
-                {isEn 
-                  ? `Completed ${completedPrayersCount} of 5 (${prayersPercentage}%)`
-                  : `أنجزت ${formatNumber(completedPrayersCount)} من ٥ صلوات (${formatNumber(prayersPercentage)}%)`}
-              </span>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => onNavigate('habit-tracker')}
-            className="px-3.5 py-1.5 rounded-full golden-3d-pill-btn font-bold text-xs flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer shadow-xs"
-          >
-            <span>{isEn ? 'Habit Tracker' : 'مربي العبادات'}</span>
-            <ChevronLeft className={`w-3.5 h-3.5 ${isRTL ? '' : 'rotate-180'}`} />
-          </button>
-        </div>
-
-        {/* أزرار الصلوات الخمس التفاعلية بالأيقونات المجسمة */}
-        <div className="grid grid-cols-5 gap-1.5 sm:gap-2 my-2">
-          {[
-            { key: 'fajr', label: isEn ? 'Fajr' : 'الفجر', iconSrc: '/assets/3d_icons/icon_prayer_fajr.png' },
-            { key: 'dhuhr', label: isEn ? 'Dhuhr' : 'الظهر', iconSrc: '/assets/3d_icons/icon_prayer_dhuhr.png' },
-            { key: 'asr', label: isEn ? 'Asr' : 'العصر', iconSrc: '/assets/3d_icons/icon_prayer_asr.png' },
-            { key: 'maghrib', label: isEn ? 'Maghrib' : 'المغرب', iconSrc: '/assets/3d_icons/icon_prayer_maghrib.png' },
-            { key: 'isha', label: isEn ? 'Isha' : 'العشاء', iconSrc: '/assets/3d_icons/icon_prayer_isha.png' },
-          ].map((item) => {
-            const isDone = !!todayHabits.prayers?.[item.key as keyof typeof todayHabits.prayers];
-            return (
-              <button
-                key={item.key}
-                type="button"
-                onClick={(e) => handleTogglePrayer(e, item.key as any)}
-                className={`group flex flex-col items-center justify-between p-1.5 sm:p-2.5 rounded-2xl transition-all duration-150 active:scale-90 cursor-pointer relative white-3d-card-btn min-h-[88px] sm:min-h-[96px] ${
-                  isDone
-                    ? 'ring-2 ring-emerald-500/80 shadow-md'
-                    : ''
-                }`}
-              >
-                <div className="w-10 h-10 sm:w-12 sm:h-12 relative flex items-center justify-center my-auto">
-                  <img
-                    src={item.iconSrc}
-                    alt={item.label}
-                    className={`w-full h-full object-contain pointer-events-none transition-transform duration-200 drop-shadow-[0_2px_4px_rgba(0,0,0,0.12)] ${
-                      isDone ? 'scale-105' : 'group-hover:scale-105'
-                    }`}
-                    loading="lazy"
-                  />
-                  {isDone && (
-                    <div className="absolute -top-1 -right-1 w-4 h-4 sm:w-4.5 sm:h-4.5 rounded-full bg-emerald-600 text-white flex items-center justify-center shadow-md border-1.5 border-white animate-in zoom-in-75 duration-150">
-                      <Check className="w-2.5 h-2.5 sm:w-3 sm:h-3 stroke-[3]" />
-                    </div>
-                  )}
-                </div>
-                <span 
-                  className="text-[11px] sm:text-xs font-black tracking-tight font-cairo select-none text-[#1C1917] mt-0.5"
-                  style={{ textShadow: '0 1px 1px rgba(255,255,255,0.8)' }}
-                >
-                  {item.label}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* الإنجاز اليومي والورد القرآني */}
-        <div className="flex items-center justify-between text-xs font-semibold pt-2.5 mt-2 border-t border-amber-300/60">
-          <span className="text-amber-950 font-bold">
-            {isEn ? `Daily Progress: ${totalDailyProgress}%` : `الإنجاز اليومي: ${formatNumber(totalDailyProgress)}%`}
-          </span>
-          <button
-            type="button"
-            onClick={() => onNavigate('daily-wird')}
-            className="px-3.5 py-1.5 rounded-full golden-3d-pill-btn font-bold text-xs flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer shadow-xs"
-            title={isEn ? 'Daily Quran Wird' : 'متابعة الورد القرآني'}
-          >
-            <span>{isEn ? 'Daily Wird' : 'متابعة الورد القرآني'}</span>
-            <ChevronLeft className={`w-3.5 h-3.5 ${isRTL ? '' : 'rotate-180'}`} />
-          </button>
-        </div>
-      </div>
-
-      {/* 5. قسم التطبيقات والخدمات (Applications & Services) */}
+      {/* 4. قسم التطبيقات والخدمات (Applications & Services) */}
       <div 
         id="modern-islamic-apps-card"
         className="w-full golden-3d-card select-none transition-all duration-300 overflow-hidden"
@@ -1444,6 +1351,102 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
         )}
       </div>
 
+      {/* 5. بطاقة مربي الصلوات الخمس (Habit Tracker Card) */}
+      <div 
+        className="w-full golden-3d-card p-4 sm:p-5 select-none transition-all"
+      >
+        {/* الترويسة */}
+        <div className="flex items-center justify-between w-full mb-3.5">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-amber-100/90 text-amber-900 border border-amber-300/80 flex items-center justify-center shrink-0 shadow-2xs">
+              <Sparkles className="w-5 h-5 text-amber-700" strokeWidth={2.2} />
+            </div>
+            <div className="flex flex-col text-start">
+              <span className="text-xs sm:text-sm font-bold text-[#451A03] font-cairo">
+                {isEn ? 'Five Daily Prayers Tracker' : 'مربي الصلوات الخمس'}
+              </span>
+              <span className="text-[11px] text-amber-900/85 font-medium">
+                {isEn 
+                  ? `Completed ${completedPrayersCount} of 5 (${prayersPercentage}%)`
+                  : `أنجزت ${formatNumber(completedPrayersCount)} من ٥ صلوات (${formatNumber(prayersPercentage)}%)`}
+              </span>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => onNavigate('habit-tracker')}
+            className="px-3.5 py-1.5 rounded-full golden-3d-pill-btn font-bold text-xs flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer shadow-xs"
+          >
+            <span>{isEn ? 'Habit Tracker' : 'مربي العبادات'}</span>
+            <ChevronLeft className={`w-3.5 h-3.5 ${isRTL ? '' : 'rotate-180'}`} />
+          </button>
+        </div>
+
+        {/* أزرار الصلوات الخمس التفاعلية بالأيقونات المجسمة */}
+        <div className="grid grid-cols-5 gap-1.5 sm:gap-2 my-2">
+          {[
+            { key: 'fajr', label: isEn ? 'Fajr' : 'الفجر', iconSrc: '/assets/3d_icons/icon_prayer_fajr.png' },
+            { key: 'dhuhr', label: isEn ? 'Dhuhr' : 'الظهر', iconSrc: '/assets/3d_icons/icon_prayer_dhuhr.png' },
+            { key: 'asr', label: isEn ? 'Asr' : 'العصر', iconSrc: '/assets/3d_icons/icon_prayer_asr.png' },
+            { key: 'maghrib', label: isEn ? 'Maghrib' : 'المغرب', iconSrc: '/assets/3d_icons/icon_prayer_maghrib.png' },
+            { key: 'isha', label: isEn ? 'Isha' : 'العشاء', iconSrc: '/assets/3d_icons/icon_prayer_isha.png' },
+          ].map((item) => {
+            const isDone = !!todayHabits.prayers?.[item.key as keyof typeof todayHabits.prayers];
+            return (
+              <button
+                key={item.key}
+                type="button"
+                onClick={(e) => handleTogglePrayer(e, item.key as any)}
+                className={`group flex flex-col items-center justify-between p-1.5 sm:p-2.5 rounded-2xl transition-all duration-150 active:scale-90 cursor-pointer relative white-3d-card-btn min-h-[88px] sm:min-h-[96px] ${
+                  isDone
+                    ? 'ring-2 ring-emerald-500/80 shadow-md'
+                    : ''
+                }`}
+              >
+                <div className="w-10 h-10 sm:w-12 sm:h-12 relative flex items-center justify-center my-auto">
+                  <img
+                    src={item.iconSrc}
+                    alt={item.label}
+                    className={`w-full h-full object-contain pointer-events-none transition-transform duration-200 drop-shadow-[0_2px_4px_rgba(0,0,0,0.12)] ${
+                      isDone ? 'scale-105' : 'group-hover:scale-105'
+                    }`}
+                    loading="lazy"
+                  />
+                  {isDone && (
+                    <div className="absolute -top-1 -right-1 w-4 h-4 sm:w-4.5 sm:h-4.5 rounded-full bg-emerald-600 text-white flex items-center justify-center shadow-md border-1.5 border-white animate-in zoom-in-75 duration-150">
+                      <Check className="w-2.5 h-2.5 sm:w-3 sm:h-3 stroke-[3]" />
+                    </div>
+                  )}
+                </div>
+                <span 
+                  className="text-[11px] sm:text-xs font-black tracking-tight font-cairo select-none text-[#1C1917] mt-0.5"
+                  style={{ textShadow: '0 1px 1px rgba(255,255,255,0.8)' }}
+                >
+                  {item.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* الإنجاز اليومي والورد القرآني */}
+        <div className="flex items-center justify-between text-xs font-semibold pt-2.5 mt-2 border-t border-amber-300/60">
+          <span className="text-amber-950 font-bold">
+            {isEn ? `Daily Progress: ${totalDailyProgress}%` : `الإنجاز اليومي: ${formatNumber(totalDailyProgress)}%`}
+          </span>
+          <button
+            type="button"
+            onClick={() => onNavigate('daily-wird')}
+            className="px-3.5 py-1.5 rounded-full golden-3d-pill-btn font-bold text-xs flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer shadow-xs"
+            title={isEn ? 'Daily Quran Wird' : 'متابعة الورد القرآني'}
+          >
+            <span>{isEn ? 'Daily Wird' : 'متابعة الورد القرآني'}</span>
+            <ChevronLeft className={`w-3.5 h-3.5 ${isRTL ? '' : 'rotate-180'}`} />
+          </button>
+        </div>
+      </div>
+
       {/* بطاقة عداد الأشواط (طواف وسعي) في الحج والعمرة - تظهر تحت بطاقة التطبيقات الإسلامية عند تفعيلها */}
       <TawafCounterCard 
         theme={theme}
@@ -1464,11 +1467,11 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
             </span>
           </div>
 
-          <div className="flex items-center justify-center gap-1 p-1 rounded-full golden-3d-inset text-xs font-bold overflow-x-auto scrollbar-none max-w-full">
+          <div className="flex items-center justify-center gap-0.5 p-1 rounded-full golden-3d-inset text-xs font-bold overflow-x-auto scrollbar-none max-w-full">
             <button
               type="button"
               onClick={() => setActiveEventTab('occasions')}
-              className={`px-2.5 min-[380px]:px-3 py-1.5 rounded-full transition-all cursor-pointer text-[11px] min-[380px]:text-xs flex items-center justify-center shrink-0 ${
+              className={`px-2 min-[380px]:px-2.5 py-1 rounded-full transition-all cursor-pointer text-[11px] min-[380px]:text-xs flex items-center justify-center shrink-0 ${
                 activeEventTab === 'occasions' 
                   ? 'golden-3d-pill-btn font-extrabold text-white shadow-xs' 
                   : 'text-amber-950/85 hover:text-amber-950 font-bold active:scale-95'
@@ -1479,7 +1482,7 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
             <button
               type="button"
               onClick={() => setActiveEventTab('wisdom')}
-              className={`px-2.5 min-[380px]:px-3 py-1.5 rounded-full transition-all cursor-pointer text-[11px] min-[380px]:text-xs flex items-center justify-center shrink-0 ${
+              className={`px-2 min-[380px]:px-2.5 py-1 rounded-full transition-all cursor-pointer text-[11px] min-[380px]:text-xs flex items-center justify-center shrink-0 ${
                 activeEventTab === 'wisdom' 
                   ? 'golden-3d-pill-btn font-extrabold text-white shadow-xs' 
                   : 'text-amber-950/85 hover:text-amber-950 font-bold active:scale-95'
@@ -1490,7 +1493,7 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
             <button
               type="button"
               onClick={() => setActiveEventTab('memory')}
-              className={`px-2.5 min-[380px]:px-3 py-1.5 rounded-full transition-all cursor-pointer text-[11px] min-[380px]:text-xs flex items-center justify-center shrink-0 ${
+              className={`px-2 min-[380px]:px-2.5 py-1 rounded-full transition-all cursor-pointer text-[11px] min-[380px]:text-xs flex items-center justify-center shrink-0 ${
                 activeEventTab === 'memory' 
                   ? 'golden-3d-pill-btn font-extrabold text-white shadow-xs' 
                   : 'text-amber-950/85 hover:text-amber-950 font-bold active:scale-95'
@@ -1501,7 +1504,7 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
             <button
               type="button"
               onClick={() => setActiveEventTab('event')}
-              className={`px-2.5 min-[380px]:px-3 py-1.5 rounded-full transition-all cursor-pointer text-[11px] min-[380px]:text-xs flex items-center justify-center shrink-0 ${
+              className={`px-2 min-[380px]:px-2.5 py-1 rounded-full transition-all cursor-pointer text-[11px] min-[380px]:text-xs flex items-center justify-center shrink-0 ${
                 activeEventTab === 'event' 
                   ? 'golden-3d-pill-btn font-extrabold text-white shadow-xs' 
                   : 'text-amber-950/85 hover:text-amber-950 font-bold active:scale-95'

@@ -72,6 +72,15 @@ public class PrayerSilentReceiver extends BroadcastReceiver {
         String appLang = langPrefs.getString("app_language", "ar");
         boolean isArabic = !"en".equalsIgnoreCase(appLang);
 
+        // Ensure any lingering duplicate auto-silent notification (ID 9401 / 9402) is cancelled
+        try {
+            NotificationManager nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+            if (nm != null) {
+                nm.cancel(9401);
+                nm.cancel(9402);
+            }
+        } catch (Exception ignored) {}
+
         if (ACTION_START_SILENT.equals(action)) {
             // Save current ringer mode before muting (only if not already muted)
             int currentMode = audioManager.getRingerMode();
@@ -81,25 +90,18 @@ public class PrayerSilentReceiver extends BroadcastReceiver {
 
             // Apply Silent Mode
             applySilentMode(context, audioManager);
-            PersistentPrayerNotification.update(context);
 
-            String startTitle = isArabic ? "الوضع الصامت التلقائي" : "Auto Silent Mode";
-            String startMsg = isArabic 
-                ? "تم تفعيل الوضع الصامت لصلاة " + prayerName 
-                : "Silent mode enabled for " + prayerName;
-            showNotification(context, 9401, startTitle, startMsg);
+            // Note: The detailed silent notification ("تم تفعيل وضع الصامت (صلاة ...)") is
+            // managed by LocalNotifications in PrayerTimesContext to prevent duplicate notifications.
+            PersistentPrayerNotification.update(context);
 
         } else if (ACTION_END_SILENT.equals(action)) {
             // Restore original ringer mode
             int originalMode = prefs.getInt(KEY_ORIGINAL_RINGER_MODE, AudioManager.RINGER_MODE_NORMAL);
             restoreRingerMode(context, audioManager, originalMode);
-            PersistentPrayerNotification.update(context);
 
-            String endTitle = isArabic ? "الوضع الصامت التلقائي" : "Auto Silent Mode";
-            String endMsg = isArabic 
-                ? "تم إلغاء الوضع الصامت وانتهاء صلاة " + prayerName 
-                : "Silent mode ended for " + prayerName;
-            showNotification(context, 9402, endTitle, endMsg);
+            // Note: End-of-silent notification is managed by LocalNotifications to avoid duplication.
+            PersistentPrayerNotification.update(context);
         }
     }
 
@@ -232,6 +234,7 @@ public class PrayerSilentReceiver extends BroadcastReceiver {
                 .setCategory(NotificationCompat.CATEGORY_ALARM)
                 .setGroup(AlertsGroupHelper.PRAYER_GROUP_KEY)
                 .setGroupSummary(false)
+                .setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_CHILDREN)
                 .setSortKey("10_alert")
                 .setBadgeIconType(NotificationCompat.BADGE_ICON_NONE)
                 .setNumber(0)

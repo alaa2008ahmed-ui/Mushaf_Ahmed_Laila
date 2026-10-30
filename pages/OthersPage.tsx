@@ -31,9 +31,10 @@ interface OthersPageProps {
   onBack: () => void;
   onNavigate: (pageId: string, params?: any) => void;
   onOpenThemes?: () => void;
+  navParams?: any;
 }
 
-const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, onOpenThemes }) => {
+const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, onOpenThemes, navParams }) => {
   const { theme, themeKey } = useTheme();
   const { language } = useLanguage();
   const isEn = language === 'en';
@@ -62,6 +63,16 @@ const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, onOpenTheme
       setShowGuide(true);
     }
   }, []);
+
+  useEffect(() => {
+    if (navParams?.highlightId || navParams?.itemId) {
+      const targetId = navParams.highlightId || navParams.itemId;
+      const found = RUQYAH_DATA.find(i => i.id === targetId);
+      if (found) {
+        setZoomedDuaa(found);
+      }
+    }
+  }, [navParams]);
 
   // Subscribe to TTS playing changes
   useEffect(() => {

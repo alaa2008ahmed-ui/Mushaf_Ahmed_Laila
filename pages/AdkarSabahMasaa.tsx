@@ -33,9 +33,10 @@ function hexToRgba(hex?: string, alpha: number = 1): string {
 interface AdkarSabahMasaaProps {
     onBack: () => void;
     onNavigate: (page: string, params?: any) => void;
+    navParams?: any;
 }
 
-function AdkarSabahMasaa({ onBack, onNavigate }: AdkarSabahMasaaProps) {
+function AdkarSabahMasaa({ onBack, onNavigate, navParams }: AdkarSabahMasaaProps) {
     const { theme, themeKey } = useTheme();
     const { language } = useLanguage();
     const isEn = language === 'en';

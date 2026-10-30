@@ -313,7 +313,7 @@ public class PersistentPrayerNotification {
                 .setOnlyAlertOnce(true)
                 .setShowWhen(false)
                 .setUsesChronometer(false)
-                .setGroup(GROUP_KEY)
+                .setGroup(null)
                 .setGroupSummary(false)
                 .setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_ALL)
                 .setSortKey("00_persistent")

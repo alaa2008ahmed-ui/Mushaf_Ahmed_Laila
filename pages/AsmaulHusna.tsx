@@ -15,7 +15,7 @@ import { getModernFlatTokens, hexToRgba } from '../utils/flatDesignTokens';
 
 const toArabicNumerals = (num: number) => String(num).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[+d]);
 
-const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, params?: any) => void; }> = ({ onBack, onNavigate }) => {
+const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, params?: any) => void; navParams?: any; }> = ({ onBack, onNavigate, navParams }) => {
     const { theme, themeKey } = useTheme();
     const tokens = getModernFlatTokens(theme, themeKey);
     const { language } = useLanguage();
@@ -33,6 +33,16 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
         e.stopPropagation();
         setModalFontSize(prev => prev >= 27 ? 16 : prev + 3);
     };
+
+    useEffect(() => {
+        if (navParams?.nameId || navParams?.highlightId) {
+            const id = Number(navParams.nameId || navParams.highlightId);
+            const found = asmaulHusna.find(item => item.id === id);
+            if (found) {
+                setSelectedName(found);
+            }
+        }
+    }, [navParams]);
 
     useEffect(() => {
         markPageAsSeen('asmaul_husna');

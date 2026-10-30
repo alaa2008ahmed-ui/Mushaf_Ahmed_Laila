@@ -28,6 +28,41 @@ import {
 } from '../utils/prayerTimesUtils';
 import { tPrayer, getPrayerDisplayName } from '../utils/prayerTimesTranslations';
 
+class ModalErrorBoundary extends React.Component<{ children: React.ReactNode; onClose?: () => void }, { hasError: boolean }> {
+    constructor(props: any) {
+        super(props);
+        this.state = { hasError: false };
+    }
+    static getDerivedStateFromError() {
+        return { hasError: true };
+    }
+    componentDidCatch(error: any, errorInfo: any) {
+        console.error("PrayerTimes Modal error caught by boundary:", error, errorInfo);
+    }
+    render() {
+        if (this.state.hasError) {
+            return (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[1300] flex items-center justify-center p-4">
+                    <div className="bg-white dark:bg-zinc-900 text-slate-800 dark:text-white p-6 rounded-2xl max-w-sm w-full text-center space-y-4 shadow-xl">
+                        <p className="font-bold text-sm">حدث خطأ غير متوقع أثناء فتح الإعدادات</p>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                this.setState({ hasError: false });
+                                if (this.props.onClose) this.props.onClose();
+                            }}
+                            className="px-4 py-2 bg-emerald-600 text-white font-bold text-xs rounded-xl cursor-pointer"
+                        >
+                            إغلاق
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+        return this.props.children;
+    }
+}
+
 // Main Component
 function PrayerTimes({ onBack, onNavigate }) {
     const { theme, themeKey } = useTheme();
@@ -509,56 +544,60 @@ function PrayerTimes({ onBack, onNavigate }) {
                 <div className="w-full h-12 shrink-0"></div>
             </main>
 
-            <PrayerTimesSettingsModal 
-                isOpen={isModalOpen}
-                currentEditingKey={currentEditingKey}
-                prayerNamesAr={prayerNamesAr}
-                primaryColor={primaryColor}
-                secondaryColor={secondaryColor}
-                isBlackAndWhite={isBlackAndWhite}
-                isBlackTheme={isBlackTheme}
-                cardBorderColor={cardBorderColor}
-                isDefaultTheme={isDefaultTheme}
-                closeModal={closeModal}
-                tempOffset={tempOffset}
-                setTempOffset={setTempOffset}
-                tempIqama={tempIqama}
-                setTempIqama={setTempIqama}
-                tempIqamaEnabled={tempIqamaEnabled}
-                setTempIqamaEnabled={setTempIqamaEnabled}
-                times={times}
-                formatTime12_EN={formatTime12_EN}
-                applyOffset={applyOffset}
-                configTones={config.tones}
-                internetTones={internetTones}
-                handleToneSelection={handleToneSelection}
-                handleToneUpload={handleToneUpload}
-                saveUserConfig={saveUserConfig}
-                isSummerTime={isSummerTimeActive}
-                isGlobalPreReminderActive={config.preAthanReminder?.enabled !== false}
-                globalPreReminderMinutes={config.preAthanReminder?.minutes || 15}
-                tempPreReminderEnabled={tempPreReminderEnabled}
-                setTempPreReminderEnabled={setTempPreReminderEnabled}
-                tempPreReminderMinutes={tempPreReminderMinutes}
-                setTempPreReminderMinutes={setTempPreReminderMinutes}
-                isGlobalAutoSilentActive={!!config.autoSilent}
-                globalAutoSilentDuration={config.autoSilentDuration || 15}
-                tempAutoSilentEnabled={tempAutoSilentEnabled}
-                setTempAutoSilentEnabled={setTempAutoSilentEnabled}
-                tempAutoSilentDuration={tempAutoSilentDuration}
-                setTempAutoSilentDuration={setTempAutoSilentDuration}
-            />
+            <ModalErrorBoundary onClose={closeModal}>
+                <PrayerTimesSettingsModal 
+                    isOpen={isModalOpen}
+                    currentEditingKey={currentEditingKey}
+                    prayerNamesAr={prayerNamesAr}
+                    primaryColor={primaryColor}
+                    secondaryColor={secondaryColor}
+                    isBlackAndWhite={isBlackAndWhite}
+                    isBlackTheme={isBlackTheme}
+                    cardBorderColor={cardBorderColor}
+                    isDefaultTheme={isDefaultTheme}
+                    closeModal={closeModal}
+                    tempOffset={tempOffset}
+                    setTempOffset={setTempOffset}
+                    tempIqama={tempIqama}
+                    setTempIqama={setTempIqama}
+                    tempIqamaEnabled={tempIqamaEnabled}
+                    setTempIqamaEnabled={setTempIqamaEnabled}
+                    times={times}
+                    formatTime12_EN={formatTime12_EN}
+                    applyOffset={applyOffset}
+                    configTones={config.tones}
+                    internetTones={internetTones}
+                    handleToneSelection={handleToneSelection}
+                    handleToneUpload={handleToneUpload}
+                    saveUserConfig={saveUserConfig}
+                    isSummerTime={isSummerTimeActive}
+                    isGlobalPreReminderActive={config.preAthanReminder?.enabled !== false}
+                    globalPreReminderMinutes={config.preAthanReminder?.minutes || 15}
+                    tempPreReminderEnabled={tempPreReminderEnabled}
+                    setTempPreReminderEnabled={setTempPreReminderEnabled}
+                    tempPreReminderMinutes={tempPreReminderMinutes}
+                    setTempPreReminderMinutes={setTempPreReminderMinutes}
+                    isGlobalAutoSilentActive={!!config.autoSilent}
+                    globalAutoSilentDuration={config.autoSilentDuration || 15}
+                    tempAutoSilentEnabled={tempAutoSilentEnabled}
+                    setTempAutoSilentEnabled={setTempAutoSilentEnabled}
+                    tempAutoSilentDuration={tempAutoSilentDuration}
+                    setTempAutoSilentDuration={setTempAutoSilentDuration}
+                />
+            </ModalErrorBoundary>
 
             {isNotifModalOpen && (
-                <NotificationSettingsModal 
-                    onClose={() => setIsNotifModalOpen(false)}
-                    showToast={showToast}
-                    isLandscape={false}
-                    modeSuffix="_prayer_times"
-                    initialTab="phone"
-                    hideAppTab={true}
-                    phoneTabTitle={language === 'en' ? 'Prayer Settings & Notifications' : 'إعدادات الصلاة والإشعارات'}
-                />
+                <ModalErrorBoundary onClose={() => setIsNotifModalOpen(false)}>
+                    <NotificationSettingsModal 
+                        onClose={() => setIsNotifModalOpen(false)}
+                        showToast={showToast}
+                        isLandscape={false}
+                        modeSuffix="_prayer_times"
+                        initialTab="phone"
+                        hideAppTab={true}
+                        phoneTabTitle={language === 'en' ? 'Prayer Settings & Notifications' : 'إعدادات الصلاة والإشعارات'}
+                    />
+                </ModalErrorBoundary>
             )}
 
             {toastMessage && (

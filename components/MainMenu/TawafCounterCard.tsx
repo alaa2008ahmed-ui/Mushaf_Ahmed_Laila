@@ -156,7 +156,7 @@ export const TawafCounterCard: React.FC<TawafCounterCardProps> = ({ theme, isGol
         </div>
 
         {/* 3. زر الضغط الرئيسي لاحتساب الشوط بالزر الذهبي المجسم 3D */}
-        <div className="w-full">
+        <div className="w-full flex flex-col gap-2">
           <button
             type="button"
             onClick={() => handleIncrement()}
@@ -195,6 +195,31 @@ export const TawafCounterCard: React.FC<TawafCounterCardProps> = ({ theme, isGol
               </span>
             </div>
           </button>
+
+          {/* 4. زرين بصف واحد: الحج والعمرة (يمين) - أدعية وأذكار (يسار) بنفس لون زر تسجيل الشوط */}
+          <div className="flex items-center justify-center gap-2 w-full" dir={dir}>
+            <button
+              type="button"
+              onClick={() => onNavigate?.('hajj-umrah')}
+              className="w-auto py-1.5 px-3 rounded-2xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 active:scale-95 transition-all golden-3d-pill-btn cursor-pointer relative overflow-hidden text-white shadow-2xs"
+            >
+              <div className="absolute inset-x-1 top-0.5 h-[45%] rounded-t-[10px] bg-gradient-to-b from-white/35 via-white/12 to-transparent pointer-events-none" />
+              <span className="relative z-10 text-white font-bold font-cairo whitespace-nowrap">
+                {isEn ? 'Hajj & Umrah' : 'الحج والعمرة'}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => onNavigate?.('hajj-umrah', { screen: 'duaa' })}
+              className="w-auto py-1.5 px-3 rounded-2xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 active:scale-95 transition-all golden-3d-pill-btn cursor-pointer relative overflow-hidden text-white shadow-2xs"
+            >
+              <div className="absolute inset-x-1 top-0.5 h-[45%] rounded-t-[10px] bg-gradient-to-b from-white/35 via-white/12 to-transparent pointer-events-none" />
+              <span className="relative z-10 text-white font-bold font-cairo whitespace-nowrap">
+                {isEn ? 'Duas & Adhkar' : 'أدعية وأذكار'}
+              </span>
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -306,7 +331,7 @@ export const TawafCounterCard: React.FC<TawafCounterCardProps> = ({ theme, isGol
       </div>
 
       {/* 3. Main Lap Counter */}
-      <div className="w-full">
+      <div className="w-full flex flex-col gap-2">
         <button
           onClick={() => handleIncrement()}
           disabled={isComplete}
@@ -350,6 +375,41 @@ export const TawafCounterCard: React.FC<TawafCounterCardProps> = ({ theme, isGol
             </span>
           </div>
         </button>
+
+        {/* 4. Navigation Buttons: Hajj & Umrah / Duas & Adhkar */}
+        <div className="flex items-center justify-center gap-2 w-full" dir={dir}>
+          <button
+            type="button"
+            onClick={() => onNavigate?.('hajj-umrah')}
+            className="w-auto py-1.5 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center transition-all active:scale-95 cursor-pointer text-center"
+            style={{
+              backgroundColor: isBlackTheme ? '#FFFFFF' : primaryAccent,
+              color: isBlackTheme ? '#000000' : '#FFFFFF',
+              boxShadow: isBlackTheme
+                ? '0 3.5px 0 #222222, 0 6px 12px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.3)'
+                : '0 3.5px 0 rgba(0, 0, 0, 0.2), 0 6px 12px rgba(0, 0, 0, 0.12), inset 0 1px 1px rgba(255, 255, 255, 0.6)',
+              border: 'none',
+            }}
+          >
+            <span className="whitespace-nowrap font-kufi">{isEn ? 'Hajj & Umrah' : 'الحج والعمرة'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onNavigate?.('hajj-umrah', { screen: 'duaa' })}
+            className="w-auto py-1.5 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center transition-all active:scale-95 cursor-pointer text-center"
+            style={{
+              backgroundColor: isBlackTheme ? '#FFFFFF' : primaryAccent,
+              color: isBlackTheme ? '#000000' : '#FFFFFF',
+              boxShadow: isBlackTheme
+                ? '0 3.5px 0 #222222, 0 6px 12px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.3)'
+                : '0 3.5px 0 rgba(0, 0, 0, 0.2), 0 6px 12px rgba(0, 0, 0, 0.12), inset 0 1px 1px rgba(255, 255, 255, 0.6)',
+              border: 'none',
+            }}
+          >
+            <span className="whitespace-nowrap font-kufi">{isEn ? 'Duas & Adhkar' : 'أدعية وأذكار'}</span>
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -49,12 +49,6 @@ const VideoSplash: React.FC<VideoSplashProps> = ({ onEnded }) => {
   }, [onEnded]);
 
   const handleEnded = () => {
-    try {
-      const hasChosen = localStorage.getItem('has_selected_initial_language') === 'true';
-      document.body.style.backgroundColor = hasChosen ? '#FFFFFF' : '#F8FAFC';
-    } catch (e) {
-      document.body.style.backgroundColor = '#FFFFFF';
-    }
     setIsFading(true);
     // Remove the splash slightly before the fade ends to ensure the next screen is visible
     setTimeout(onEnded, 450); 

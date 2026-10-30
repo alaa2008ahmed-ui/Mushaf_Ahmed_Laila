@@ -35,9 +35,10 @@ function hexToRgba(hex?: string, alpha: number = 1): string {
 interface AdiaProps {
     onBack: () => void;
     onNavigate: (page: string, params?: any) => void;
+    navParams?: any;
 }
 
-function Adia({ onBack, onNavigate }: AdiaProps) {
+function Adia({ onBack, onNavigate, navParams }: AdiaProps) {
     const { theme, themeKey } = useTheme();
     const { language } = useLanguage();
     const isEn = language === 'en';

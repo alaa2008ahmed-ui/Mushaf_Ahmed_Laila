@@ -46,7 +46,7 @@ const AppRouter: React.FC<AppRouterProps> = ({ page, onBack, onNavigate, onOpenT
       case 'salah-adhkar':
       case 'athkar-salah':
       case 'athkar_salah':
-        return <AthkarAlSalah onBack={onBack} onNavigate={onNavigate} />;
+        return <AthkarAlSalah onBack={onBack} onNavigate={onNavigate} navParams={navParams} />;
       case 'calendar':
         return <HijriCalendar onBack={onBack} onNavigate={onNavigate} />;
       case 'listen':
@@ -56,9 +56,9 @@ const AppRouter: React.FC<AppRouterProps> = ({ page, onBack, onNavigate, onOpenT
       case 'sebha':
         return <Tasbeeh onBack={onBack} onNavigate={onNavigate} />;
       case 'hajj-umrah':
-        return <HajjUmrah onBack={onBack} onNavigate={onNavigate} />;
+        return <HajjUmrah onBack={onBack} onNavigate={onNavigate} navParams={navParams} />;
       case 'hisn-muslim':
-        return <HisnAlmuslim onBack={onBack} onNavigate={onNavigate} />;
+        return <HisnAlmuslim onBack={onBack} onNavigate={onNavigate} navParams={navParams} />;
       case 'prayer-times':
         return <PrayerTimes onBack={onBack} onNavigate={onNavigate} />;
       case 'monthly-prayer-times':
@@ -68,12 +68,12 @@ const AppRouter: React.FC<AppRouterProps> = ({ page, onBack, onNavigate, onOpenT
       case 'sabah-masaa':
       case 'adhkar':
       case 'athkar-sabah-massa':
-        return <AdkarSabahMasaa onBack={onBack} onNavigate={onNavigate} />;
+        return <AdkarSabahMasaa onBack={onBack} onNavigate={onNavigate} navParams={navParams} />;
       case 'adia':
-        return <Adia onBack={onBack} onNavigate={onNavigate} />;
+        return <Adia onBack={onBack} onNavigate={onNavigate} navParams={navParams} />;
       case 'nawawi':
       case 'hadith':
-        return <Nawawi onBack={onBack} onNavigate={onNavigate} />;
+        return <Nawawi onBack={onBack} onNavigate={onNavigate} navParams={navParams} />;
       case 'calculators':
         return <Calculators onBack={onBack} onNavigate={onNavigate} />;
       case 'voice-control':
@@ -89,13 +89,13 @@ const AppRouter: React.FC<AppRouterProps> = ({ page, onBack, onNavigate, onOpenT
       case 'asmaul-husna':
       case 'asma-allah':
       case 'asmaa-allah':
-        return <AsmaulHusna onBack={onBack} onNavigate={onNavigate} />;
+        return <AsmaulHusna onBack={onBack} onNavigate={onNavigate} navParams={navParams} />;
       case 'habit-tracker':
         return <HabitTracker onBack={onBack} onNavigate={onNavigate} />;
       case 'others':
       case 'roqya':
       case 'ruqyah':
-        return <OthersPage onBack={onBack} onNavigate={onNavigate} onOpenThemes={onOpenThemes} />;
+        return <OthersPage onBack={onBack} onNavigate={onNavigate} onOpenThemes={onOpenThemes} navParams={navParams} />;
       case 'islamic-sites':
         return <IslamicSitesPage onBack={onBack} onNavigate={onNavigate} />;
       case 'prophetic-seerah':

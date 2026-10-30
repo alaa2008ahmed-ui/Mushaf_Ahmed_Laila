@@ -14,12 +14,17 @@ import { LayoutGrid, ListFilter, Search, HelpCircle } from 'lucide-react';
 import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/CommunitySpotlightGuide';
 import { HISN_ALMUSLIM_PAGE_STEPS } from '../components/Community/communityTourSteps';
 import { markPageAsSeen } from '../utils/badgeManager';
-
-import { getModernFlatTokens, hexToRgba } from '../utils/flatDesignTokens';
+import { getModernFlatTokens } from '../utils/flatDesignTokens';
 
 const HISN_STATUS_KEY = 'hisn_almuslim_counts_v1';
 
-function HisnAlmuslim({ onBack, onNavigate }) {
+interface HisnAlmuslimProps {
+    onBack: () => void;
+    onNavigate: (page: string, params?: any) => void;
+    navParams?: any;
+}
+
+function HisnAlmuslim({ onBack, onNavigate, navParams }: HisnAlmuslimProps) {
     const { theme, themeKey } = useTheme();
     const { language } = useLanguage();
     const tokens = getModernFlatTokens(theme, themeKey);

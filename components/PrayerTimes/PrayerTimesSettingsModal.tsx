@@ -98,7 +98,10 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
 
     useEffect(() => {
         if (isOpen && Capacitor.getPlatform() === 'android') {
-            isDndPermissionGranted().then(setHasDndPermission);
+            isDndPermissionGranted().then(setHasDndPermission).catch((err) => {
+                console.warn('isDndPermissionGranted error:', err);
+                setHasDndPermission(true);
+            });
         }
     }, [isOpen]);
 

@@ -224,9 +224,10 @@ const SalahZikrCard = ({
 interface AthkarAlSalahProps {
     onBack: () => void;
     onNavigate: (page: string, params?: any) => void;
+    navParams?: any;
 }
 
-function AthkarAlSalah({ onBack, onNavigate }: AthkarAlSalahProps) {
+function AthkarAlSalah({ onBack, onNavigate, navParams }: AthkarAlSalahProps) {
     const { theme, themeKey } = useTheme();
     const { language } = useLanguage();
     const isEn = language === 'en';

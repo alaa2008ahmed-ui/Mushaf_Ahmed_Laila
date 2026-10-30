@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Bell, Check, X, Smartphone, AppWindow, VolumeX, Shuffle, ShieldCheck, Zap, BellRing, LayoutGrid, Palette, HelpCircle } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Check, X, Smartphone, AppWindow, VolumeX, Shuffle, LayoutGrid, Palette, HelpCircle, BellRing, Bell, ShieldCheck, Zap } from 'lucide-react';
 import { toArabic } from './constants';
 import { usePrayerTimes } from '../../context/PrayerTimesContext';
 import { setupNotifications } from '../../utils/notifications';
@@ -7,16 +7,14 @@ import { useNotificationSettings, PhoneNotificationSettings } from '../../hooks/
 import { useLanguage } from '../../context/LanguageContext';
 import { useTheme } from '../../context/ThemeContext';
 import { syncWidgetThemeColors } from '../../utils/widgetUtils';
-import { 
-    setNativePersistentNotificationEnabled, 
-    updateNativePersistentNotification, 
-    checkNativeBatteryOptimization, 
+import { Preferences } from '@capacitor/preferences';
+import { Capacitor } from '@capacitor/core';
+import {
+    setNativePersistentNotificationEnabled,
+    checkNativeBatteryOptimization,
     requestNativeBatteryOptimization,
     openNativeNotificationSettings
 } from '../../utils/silentMode';
-import { LocalNotifications } from '@capacitor/local-notifications';
-import { Preferences } from '@capacitor/preferences';
-import { Capacitor } from '@capacitor/core';
 
 const toEnglishDigits = (val: string | number): string =>
     String(val ?? '')
@@ -177,74 +175,39 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
         };
     });
 
-    const [isPersistentNotificationEnabled, setIsPersistentNotificationEnabled] = useState<boolean>(() => {
-        const saved = localStorage.getItem('persistent_prayer_notification_enabled');
-        if (saved !== null) {
-            return saved !== 'false';
-        }
-        return true; // Enabled by default as requested
-    });
+    const { theme, themeKey } = useTheme();
 
+    // Persistent Prayer Times Notification State
+    const [isPersistentNotificationEnabled, setIsPersistentNotificationEnabled] = useState<boolean>(() => {
+        const saved = localStorage.getItem('persistent_prayer_notification');
+        return saved !== 'false';
+    });
     const [isBatteryIgnored, setIsBatteryIgnored] = useState<boolean>(true);
 
     useEffect(() => {
         if (Capacitor.getPlatform() === 'android') {
-            checkNativeBatteryOptimization().then(isIgnored => {
-                setIsBatteryIgnored(isIgnored);
-            });
+            checkNativeBatteryOptimization().then(setIsBatteryIgnored).catch(() => {});
         }
     }, []);
 
     const togglePersistentNotification = async () => {
-        const newState = !isPersistentNotificationEnabled;
-        
-        // If enabling, ensure notification permissions are granted
-        if (newState && Capacitor.isNativePlatform()) {
-            try {
-                const perm = await LocalNotifications.checkPermissions();
-                if (perm.display !== 'granted') {
-                    const req = await LocalNotifications.requestPermissions();
-                    if (req.display !== 'granted') {
-                        showToast(isEn ? 'Notification permission is required' : 'إذن الإشعارات مطلوب لتشغيل الإشعار المستمر');
-                        return;
-                    }
-                }
-            } catch (e) {
-                console.warn('Notification permission check failed:', e);
-            }
-        }
-
-        setIsPersistentNotificationEnabled(newState);
-        localStorage.setItem('persistent_prayer_notification_enabled', newState ? 'true' : 'false');
-        try {
-            await Preferences.set({
-                key: 'persistent_prayer_notification_enabled',
-                value: newState ? 'true' : 'false'
-            });
-        } catch (e) {
-            console.warn('Preferences set error:', e);
-        }
-
-        await setNativePersistentNotificationEnabled(newState);
-        if (newState) {
-            await updateNativePersistentNotification();
-        }
-
-        showToast(newState 
-            ? (isEn ? 'Persistent prayer notification enabled' : 'تم تفعيل الإشعار المستمر لمواقيت الصلاة') 
-            : (isEn ? 'Persistent prayer notification disabled' : 'تم تعطيل الإشعار المستمر لمواقيت الصلاة')
+        const nextState = !isPersistentNotificationEnabled;
+        setIsPersistentNotificationEnabled(nextState);
+        localStorage.setItem('persistent_prayer_notification', nextState ? 'true' : 'false');
+        await setNativePersistentNotificationEnabled(nextState);
+        showToast(nextState
+            ? (isEn ? 'Persistent prayer notification enabled' : 'تم تفعيل إشعار الصلاة المستمر')
+            : (isEn ? 'Persistent prayer notification disabled' : 'تم تعطيل إشعار الصلاة المستمر')
         );
     };
 
     const handleRequestBatteryOptimization = async () => {
         await requestNativeBatteryOptimization();
         setTimeout(async () => {
-            const isIgnored = await checkNativeBatteryOptimization();
-            setIsBatteryIgnored(isIgnored);
-        }, 1500);
+            const ignored = await checkNativeBatteryOptimization();
+            setIsBatteryIgnored(ignored);
+        }, 2000);
     };
-
-    const { theme, themeKey } = useTheme();
 
     // Widget language lock: 'ar' | 'en' | null (both disabled by default)
     const [widgetLockLang, setWidgetLockLang] = useState<'ar' | 'en' | null>(() => {

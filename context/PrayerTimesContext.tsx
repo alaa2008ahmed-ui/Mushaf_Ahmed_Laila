@@ -892,7 +892,7 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                         desc: isEn ? 'Chime alert when prayer Iqama begins' : 'نغمة تنبيه وإشعار مرئي عند حلول موعد إقامة الصلاة' 
                     },
                     { 
-                        id: 'prayer_silent_v3_chime_channel', 
+                        id: 'prayer_silent_v4_chime_channel', 
                         name: isEn ? 'Auto Silent for Prayer' : 'الصامت التلقائي للصلاة', 
                         desc: isEn ? 'Short alert when silent mode activates or deactivates' : 'تنبيه قصير عند تفعيل أو إنهاء وضع الصامت للصلاة' 
                     },
@@ -1174,7 +1174,7 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                                 ? `Device muted automatically for ${silentDuration} minutes for ${prayerNameLocal} prayer.`
                                 : `تم كتم صوت الهاتف تلقائياً لمدة ${silentDuration} دقيقة لأداء صلاة ${prayerNameLocal}`,
                             schedule: { at: silentStart, allowWhileIdle: true },
-                            channelId: shouldPlaySilentChime ? 'prayer_silent_v3_chime_channel' : 'adhan_v5_silent',
+                            channelId: shouldPlaySilentChime ? 'prayer_silent_v4_chime_channel' : 'adhan_v5_silent',
                             sound: shouldPlaySilentChime ? 'chime.mp3' : undefined,
                             smallIcon: 'ic_stat_name',
                             extra: { type: 'auto_silent_start', prayer: key, playSound: shouldPlaySilentChime, soundFile: shouldPlaySilentChime ? 'chime.mp3' : undefined }
@@ -1193,7 +1193,7 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                                 ? `Device sound and media restored after ${prayerNameLocal} prayer. May Allah accept our prayers.`
                                 : `تم إعادة تفعيل صوت الهاتف والوسائط بعد انتهاء صلاة ${prayerNameLocal} تقبل الله منا ومنكم`,
                             schedule: { at: silentEnd, allowWhileIdle: true },
-                            channelId: 'prayer_silent_v3_chime_channel',
+                            channelId: 'prayer_silent_v4_chime_channel',
                             sound: 'chime.mp3',
                             smallIcon: 'ic_stat_name',
                             extra: { type: 'auto_silent_end', prayer: key, playSound: true, soundFile: 'chime.mp3' }

@@ -1075,18 +1075,31 @@ const DuaaScreen = ({ openDuaaId, onToggle, onZoom, cardTextScale, tokens }: { o
     );
 };
 
-const HajjUmrah: FC<{ onBack: () => void, onNavigate: (page: string) => void }> = ({ onBack, onNavigate }) => {
+const HajjUmrah: FC<{ onBack: () => void, onNavigate: (page: string) => void, navParams?: any }> = ({ onBack, onNavigate, navParams }) => {
     const { theme, themeKey } = useTheme();
     const tokens = getModernFlatTokens(theme, themeKey);
     const { language, isRTL } = useLanguage();
     const isEn = language === 'en';
     const dir = isRTL ? 'rtl' : 'ltr';
 
-    const [screen, setScreen] = useState<'home' | 'umrah' | 'hajj' | 'duaa' | 'checklist' | 'counters'>('home');
+    const [screen, setScreen] = useState<'home' | 'umrah' | 'hajj' | 'duaa' | 'checklist' | 'counters'>(() => {
+        const target = navParams?.screen || navParams?.tab || navParams?.initialScreen;
+        if (target && ['home', 'umrah', 'hajj', 'duaa', 'checklist', 'counters'].includes(target)) {
+            return target;
+        }
+        return 'home';
+    });
     const [hajjType, setHajjType] = useState<'tamattu' | 'ifrad' | 'qiran'>('tamattu');
     const [selectedDetail, setSelectedDetail] = useState<any>(null);
     const [openDuaaId, setOpenDuaaId] = useState<number | null>(1);
     const [tawafState, setTawafState] = useState(getTawafCounterState());
+
+    useEffect(() => {
+        const target = navParams?.screen || navParams?.tab || navParams?.initialScreen;
+        if (target && ['home', 'umrah', 'hajj', 'duaa', 'checklist', 'counters'].includes(target)) {
+            setScreen(target);
+        }
+    }, [navParams]);
 
     useEffect(() => {
         return subscribeTawafCounter((updated) => {
