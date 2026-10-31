@@ -344,30 +344,8 @@ export const QURAN_SURAH_JUZ_STEPS: QuranGuideStep[] = [
   },
 ];
 
-export const QURAN_BOOKMARKS_STEPS: QuranGuideStep[] = [
-  {
-    id: 'bookmarks_list',
-    titleAr: 'سجل العلامات المرجعية وحفظ الختمات',
-    titleEn: 'Bookmarks & Khatmah Progress',
-    descAr: 'يحتفظ هذا السجل بجميع مواضع قراءتك السابقة موثقة باسم السورة ورقم الآية والتاريخ الهجري والميلادي والوقت الدقيق لحفظ العلامة.',
-    descEn: 'Stores all your reading marks with Surah name, Ayah number, and precise date & time for seamless Khatmah tracking.',
-    badgeAr: 'العلامات المرجعية',
-    badgeEn: 'Bookmarks',
-    iconType: 'bookmark',
-    accentColor: '#f59e0b',
-  },
-  {
-    id: 'bookmarks_action',
-    titleAr: 'الانتقال والحذف السريع',
-    titleEn: 'Jump & Quick Management',
-    descAr: 'اضغط على أي علامة مرجعية لفتح المصحف عندها مباشرة ومواصلة التلاوة، أو اضغط زر سلة المهملات لحذف العلامات القديمة.',
-    descEn: 'Tap any bookmark to jump right back into your recitation, or tap the delete button to remove markers you no longer need.',
-    badgeAr: 'متابعة القراءة',
-    badgeEn: 'Resume',
-    iconType: 'ayah',
-    accentColor: '#10b981',
-  },
-];
+export const QURAN_BOOKMARKS_STEPS: QuranGuideStep[] = [];
+
 
 export const QURAN_AYAH_ACTION_STEPS: QuranGuideStep[] = [
   {

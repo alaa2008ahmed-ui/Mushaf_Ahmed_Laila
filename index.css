@@ -215,18 +215,24 @@ body.modern-home-active *:not(.quran-font):not(.font-quran),
 }
 
 .golden-3d-btn {
-  background: linear-gradient(135deg, #D97706 0%, #B45309 50%, #92400E 100%) !important;
+  background: #c25e00 !important;
   color: #FFFFFF !important;
-  border: 1px solid rgba(254, 243, 199, 0.5) !important;
-  box-shadow: 
-    0 4px 10px rgba(180, 83, 9, 0.35),
-    inset 0 1px 1px rgba(255, 255, 255, 0.45) !important;
+  border: none !important;
+  box-shadow: none !important;
+  font-weight: 800 !important;
+  font-family: 'Cairo', sans-serif !important;
   transition: all 0.15s ease !important;
 }
 
+.golden-3d-btn:hover {
+  background: #a85200 !important;
+  box-shadow: none !important;
+}
+
 .golden-3d-btn:active {
+  background: #8e4500 !important;
   transform: scale(0.96) !important;
-  box-shadow: 0 2px 4px rgba(180, 83, 9, 0.3) !important;
+  box-shadow: none !important;
 }
 
 .golden-3d-btn-light {
@@ -248,32 +254,30 @@ body.modern-home-active *:not(.quran-font):not(.font-quran),
   box-shadow: 0 1px 3px rgba(180, 115, 20, 0.15) !important;
 }
 
-/* 3D Embossed Pill Button (like in Screenshot 1: أذكار المساء >) */
+/* Flat Dark Orange Pill Button (like in Screenshots: مربي العبادات > | متابعة الورد القرآني >) */
 .golden-3d-pill-btn {
-  background: linear-gradient(180deg, #D97706 0%, #B45309 50%, #92400E 100%) !important;
+  background: #c25e00 !important;
   color: #FFFFFF !important;
-  border: 1.5px solid rgba(254, 243, 199, 0.6) !important;
+  border: none !important;
   border-radius: 9999px !important;
-  box-shadow: 
-    0 4px 10px rgba(146, 64, 14, 0.35),
-    0 1.5px 3px rgba(0, 0, 0, 0.1),
-    inset 0 2px 1.5px rgba(255, 255, 255, 0.5),
-    inset 0 -2px 3px rgba(0, 0, 0, 0.25) !important;
+  box-shadow: none !important;
+  font-weight: 800 !important;
+  font-family: 'Cairo', sans-serif !important;
   transition: all 0.15s ease !important;
   display: inline-flex;
   align-items: center;
   justify-content: center;
 }
 .golden-3d-pill-btn:hover {
-  filter: brightness(1.05);
-  transform: translateY(-1px);
-  box-shadow: 
-    0 6px 14px rgba(146, 64, 14, 0.4),
-    inset 0 2px 1.5px rgba(255, 255, 255, 0.55) !important;
+  background: #a85200 !important;
+  box-shadow: none !important;
+  transform: none !important;
+  filter: none !important;
 }
 .golden-3d-pill-btn:active {
-  transform: scale(0.95) translateY(1px) !important;
-  box-shadow: 0 2px 4px rgba(146, 64, 14, 0.3), inset 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+  background: #8e4500 !important;
+  transform: scale(0.95) !important;
+  box-shadow: none !important;
 }
 
 /* 3D Embossed White Pill Button (like in Screenshot 3: مربي العبادات >) */
@@ -539,5 +543,176 @@ body.theme-shiny-gold .tactile-3d-card-light button *,
 body.theme-shiny-gold #main-prayer-status-card button * {
     color: #000000 !important;
 }
+
+/* في الثيم الذهبي: تغيير لون الصفوف والبطاقات في نوافذ إعدادات مواقيت الصلاة والإشعارات من الذهبي إلى الأبيض */
+body.theme-shiny-gold .modal-skinned .quran-raised-btn,
+body.theme-shiny-gold .modal-skinned .quran-raised-btn-selected,
+body.theme-shiny-gold .modal-skinned .quran-raised-card,
+html.theme-shiny-gold .modal-skinned .quran-raised-btn,
+html.theme-shiny-gold .modal-skinned .quran-raised-btn-selected,
+html.theme-shiny-gold .modal-skinned .quran-raised-card,
+body.theme-shiny-gold #setting-adhan-adjustment > div,
+body.theme-shiny-gold #setting-pre-reminder,
+body.theme-shiny-gold #setting-iqama-alert,
+body.theme-shiny-gold #setting-auto-silent,
+body.theme-shiny-gold #setting-tone-selector button,
+html.theme-shiny-gold #setting-adhan-adjustment > div,
+html.theme-shiny-gold #setting-pre-reminder,
+html.theme-shiny-gold #setting-iqama-alert,
+html.theme-shiny-gold #setting-auto-silent,
+html.theme-shiny-gold #setting-tone-selector button {
+    background-color: #FFFFFF !important;
+    background: #FFFFFF !important;
+    color: #1F2937 !important;
+    border-color: rgba(217, 119, 6, 0.28) !important;
+    box-shadow: 0 2px 5px rgba(180, 115, 20, 0.08), inset 0 1px 1px #FFFFFF !important;
+}
+
+body.theme-shiny-gold .modal-skinned .quran-raised-btn *,
+body.theme-shiny-gold .modal-skinned .quran-raised-btn-selected:not(button[style*="var(--qr-accent)"]) *,
+body.theme-shiny-gold .modal-skinned .quran-raised-card * {
+    color: #1F2937 !important;
+}
+
+/* جدول الإمساكية في صفحة مواقيت الشهر باللون الأبيض */
+body.theme-shiny-gold #monthly-table-container,
+body.theme-shiny-gold #monthly-table-container table,
+html.theme-shiny-gold #monthly-table-container,
+html.theme-shiny-gold #monthly-table-container table {
+    background-color: #FFFFFF !important;
+    background: #FFFFFF !important;
+}
+
+/* ==========================================================================
+   الوضع الليلي: ثيم الأسود والذهبي (Black & Gold Night Mode)
+   ========================================================================== */
+body.theme-black-gold,
+html.theme-black-gold {
+    background-color: #000000 !important;
+    background-image: none !important;
+    color: #F59E0B !important;
+}
+
+body.theme-black-gold #app-title {
+    color: #F59E0B !important;
+    text-shadow: 0 1px 2px rgba(245, 158, 11, 0.4) !important;
+}
+
+/* أزرار وأيقونات الشريط العلوي بالوضع الليلي */
+body.theme-black-gold .app-top-bar:not(.quran-context) button,
+body.theme-black-gold .app-top-bar:not(.quran-context) button i,
+body.theme-black-gold .app-top-bar:not(.quran-context) button svg,
+body.theme-black-gold .app-top-bar:not(.quran-context) i,
+body.theme-black-gold .app-top-bar:not(.quran-context) svg,
+body.theme-black-gold header:not(.quran-reader-header):not(.quran-context) button,
+body.theme-black-gold header:not(.quran-reader-header):not(.quran-context) button i,
+body.theme-black-gold header:not(.quran-reader-header):not(.quran-context) button svg,
+body.theme-black-gold header:not(.quran-reader-header):not(.quran-context) i,
+body.theme-black-gold header:not(.quran-reader-header):not(.quran-context) svg,
+html.theme-black-gold .app-top-bar:not(.quran-context) button,
+html.theme-black-gold .app-top-bar:not(.quran-context) button i,
+html.theme-black-gold .app-top-bar:not(.quran-context) button svg,
+html.theme-black-gold .app-top-bar:not(.quran-context) i,
+html.theme-black-gold .app-top-bar:not(.quran-context) svg,
+html.theme-black-gold header:not(.quran-reader-header):not(.quran-context) button,
+html.theme-black-gold header:not(.quran-reader-header):not(.quran-context) button i,
+html.theme-black-gold header:not(.quran-reader-header):not(.quran-context) button svg,
+html.theme-black-gold header:not(.quran-reader-header):not(.quran-context) i,
+html.theme-black-gold header:not(.quran-reader-header):not(.quran-context) svg {
+    color: #F59E0B !important;
+    stroke: #F59E0B !important;
+}
+
+body.theme-black-gold .app-top-bar:not(.quran-context) svg[fill="none"],
+body.theme-black-gold header:not(.quran-reader-header):not(.quran-context) svg[fill="none"],
+html.theme-black-gold .app-top-bar:not(.quran-context) svg[fill="none"],
+html.theme-black-gold header:not(.quran-reader-header):not(.quran-context) svg[fill="none"] {
+    fill: none !important;
+}
+
+/* بطاقات التصميم الحديث والكلاسيكي بالأسود والذهبي */
+body.theme-black-gold .golden-3d-card,
+body.theme-black-gold .tactile-3d-card-light,
+body.theme-black-gold .tactile-3d-card-dark,
+body.theme-black-gold #main-prayer-status-card,
+body.theme-black-gold #islamic-events-card,
+body.theme-black-gold #on-this-day-card,
+body.theme-black-gold #history-memory-card,
+body.theme-black-gold #tawaf-counter-card,
+body.theme-black-gold #habit-tracker-card,
+body.theme-black-gold #share-app-card,
+body.theme-black-gold #web-app-card,
+html.theme-black-gold .golden-3d-card,
+html.theme-black-gold .tactile-3d-card-light,
+html.theme-black-gold .tactile-3d-card-dark {
+    background: linear-gradient(145deg, #18181b 0%, #111111 60%, #09090b 100%) !important;
+    border: 1.5px solid rgba(217, 119, 6, 0.75) !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8), inset 0 1px 1px rgba(245, 158, 11, 0.2) !important;
+    color: #F59E0B !important;
+}
+
+body.theme-black-gold .white-3d-container-card,
+body.theme-black-gold .white-3d-card-btn,
+body.theme-black-gold .golden-3d-inset,
+body.theme-black-gold .white-3d-pill-btn,
+html.theme-black-gold .white-3d-container-card,
+html.theme-black-gold .white-3d-card-btn,
+html.theme-black-gold .golden-3d-inset,
+html.theme-black-gold .white-3d-pill-btn {
+    background: linear-gradient(180deg, #1f1f23 0%, #121215 100%) !important;
+    border: 1px solid rgba(217, 119, 6, 0.4) !important;
+    color: #F59E0B !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6) !important;
+}
+
+body.theme-black-gold .golden-3d-btn,
+body.theme-black-gold .golden-3d-pill-btn,
+html.theme-black-gold .golden-3d-btn,
+html.theme-black-gold .golden-3d-pill-btn {
+    background: linear-gradient(180deg, #D97706 0%, #B45309 100%) !important;
+    color: #000000 !important;
+    border: 1px solid #F59E0B !important;
+}
+
+/* النصوص داخل البطاقات باللون الذهبي */
+body.theme-black-gold .golden-3d-card *,
+body.theme-black-gold .tactile-3d-card-light *,
+body.theme-black-gold .tactile-3d-card-dark *,
+body.theme-black-gold .white-3d-container-card *,
+body.theme-black-gold .white-3d-card-btn *,
+body.theme-black-gold #main-prayer-status-card *,
+body.theme-black-gold #islamic-events-card *,
+body.theme-black-gold #on-this-day-card *,
+body.theme-black-gold #history-memory-card *,
+html.theme-black-gold .golden-3d-card *,
+html.theme-black-gold .white-3d-container-card * {
+    color: #F59E0B !important;
+}
+
+body.theme-black-gold .golden-3d-btn *,
+body.theme-black-gold .golden-3d-pill-btn * {
+    color: #000000 !important;
+}
+
+/* في الوضع الليلي: أسماء التطبيقات والخدمات بلون أحادي ذهبي خالص وبدون أي ظلال بيضاء أو ألوان متداخلة */
+body.theme-black-gold .app-name-label,
+html.theme-black-gold .app-name-label,
+body.theme-black-gold .modern-home-layout .app-name-label,
+html.theme-black-gold .modern-home-layout .app-name-label,
+body.theme-black-gold [data-layout="modern"] .app-name-label,
+body.theme-black-gold [data-layout="classic"] .app-name-label,
+body.theme-black-gold [data-item-id] button,
+body.theme-black-gold [data-item-id] span,
+body.theme-black-gold .white-3d-container-card button span,
+body.theme-black-gold .white-3d-card-btn span,
+html.theme-black-gold .white-3d-container-card button span,
+html.theme-black-gold .white-3d-card-btn span {
+    color: #F59E0B !important;
+    -webkit-text-fill-color: #F59E0B !important;
+    text-shadow: none !important;
+}
+
+
+
 
 

@@ -6,6 +6,7 @@ import { shareAsImage } from '../../utils/shareAsImage';
 import { playTTS, stopTTS, subscribeTTS } from '../../utils/ttsEngine';
 import { HISN_ITEMS_EN, HISN_CATEGORIES_EN, HisnItemTranslation } from '../../data/hisnAlmuslimTranslationsEn';
 import { getModernFlatTokens, hexToRgba } from '../../utils/flatDesignTokens';
+import { scrollToNextCard } from '../../utils/cardScrollHelper';
 
 interface CategoryDetailProps {
     selectedCategory: any;
@@ -149,8 +150,20 @@ const HisnItemCard: React.FC<HisnItemCardProps> = ({
 
     return (
         <div 
-            className={`p-5 pb-3.5 rounded-[18px] relative overflow-hidden group mb-4 transition-all duration-300 border-0 ${isFinished ? 'opacity-65' : 'cursor-pointer active:scale-[0.99]'}`}
-            onClick={!isFinished ? onDecrement : undefined}
+            data-card-item="true"
+            className={`p-5 pb-3.5 rounded-[18px] relative overflow-hidden group mb-4 transition-all duration-300 border-0 ${isFinished ? 'opacity-65 cursor-pointer' : 'cursor-pointer active:scale-[0.99]'}`}
+            onClick={(e) => {
+                if (!isFinished) {
+                    onDecrement();
+                    if (currentCount <= 1) {
+                        const cardEl = e.currentTarget as HTMLElement;
+                        setTimeout(() => scrollToNextCard(cardEl), 60);
+                    }
+                } else {
+                    const cardEl = e.currentTarget as HTMLElement;
+                    scrollToNextCard(cardEl);
+                }
+            }}
             dir={isEn ? 'ltr' : 'rtl'}
             style={{ 
                 backgroundColor: tokens.cardBgColor,

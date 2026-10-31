@@ -12,6 +12,7 @@ import { RUQYAH_DATA, RUQYAH_GUIDE_STEPS, RuqyahItem } from '../data/ruqyahData'
 import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/CommunitySpotlightGuide';
 import { RUQYAH_PAGE_STEPS } from '../components/Community/communityTourSteps';
 import ZoomModal from '../components/Ruqyah/ZoomModal';
+import { scrollToNextCard } from '../utils/cardScrollHelper';
 
 function hexToRgba(hex?: string, alpha: number = 1): string {
     if (!hex) return `rgba(46, 125, 94, ${alpha})`;
@@ -380,7 +381,12 @@ const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, onOpenTheme
                     return (
                       <div 
                         key={item.id} 
-                        className="p-5 pb-3 rounded-[18px] relative transition-all duration-300 overflow-hidden group shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-none hover:shadow-[0_6px_25px_rgba(0,0,0,0.06)] border border-slate-100/80 dark:border-white/5 flex flex-col justify-between" 
+                        data-card-item="true"
+                        className="p-5 pb-3 rounded-[18px] relative transition-all duration-300 overflow-hidden group shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-none hover:shadow-[0_6px_25px_rgba(0,0,0,0.06)] border border-slate-100/80 dark:border-white/5 flex flex-col justify-between cursor-pointer" 
+                        onClick={(e) => {
+                          const cardEl = e.currentTarget as HTMLElement;
+                          setTimeout(() => scrollToNextCard(cardEl), 60);
+                        }}
                         style={{ 
                           fontFamily: isEn ? 'inherit' : theme.font,
                           backgroundColor: isBlackTheme ? '#18181b' : (theme.isDark ? (theme.cardBg || '#18181B') : '#FFFFFF'),

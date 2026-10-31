@@ -26,7 +26,7 @@ const ThemesModal: React.FC<ThemesModalProps> = ({ onClose, showToast, isLandsca
     const { language, isRTL, t: langT } = useLanguage();
     const isEn = language === 'en';
     const layout = getCurrentLayoutContext();
-    const currentThemeId = getQuranThemeForLayout(layout, modeSuffix);
+    const currentThemeId = getQuranThemeForLayout(layout, modeSuffix, readingMode);
     const activeTheme = THEMES[currentThemeId as keyof typeof THEMES] || (layout === 'classic' ? THEMES['black'] : THEMES['gold']);
 
     React.useEffect(() => {
@@ -71,7 +71,7 @@ const ThemesModal: React.FC<ThemesModalProps> = ({ onClose, showToast, isLandsca
         if (!theme) return;
 
         const currentLayout = getCurrentLayoutContext();
-        saveQuranThemeForLayout(themeId, currentLayout, modeSuffix);
+        saveQuranThemeForLayout(themeId, currentLayout, modeSuffix, readingMode);
         syncQuranThemeToStorage(theme, modeSuffix);
 
         // Dispatch a custom event to notify the main component to reload theme

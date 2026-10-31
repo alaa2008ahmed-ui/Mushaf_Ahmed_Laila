@@ -4,6 +4,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { shareAsImage } from '../../utils/shareAsImage';
 import { playTTS, stopTTS, subscribeTTS } from '../../utils/ttsEngine';
 import { getAdhkarTranslation } from '../../data/adkarTranslationsEn';
+import { scrollToNextCard } from '../../utils/cardScrollHelper';
 
 interface DhikrCardProps {
     dhikr: {
@@ -147,10 +148,17 @@ const DhikrCard: React.FC<DhikrCardProps> = ({
 
     return (
         <div 
+            data-card-item="true"
             className={`p-5 pb-3.5 rounded-[18px] relative overflow-hidden group transition-all duration-300 flex flex-col justify-between border-0 ${
                 isFinished ? 'opacity-65 cursor-pointer' : 'cursor-pointer'
             }`} 
-            onClick={onDecrement}
+            onClick={(e) => {
+                onDecrement();
+                if (currentCount <= 1 || isFinished) {
+                    const cardEl = e.currentTarget as HTMLElement;
+                    setTimeout(() => scrollToNextCard(cardEl), 60);
+                }
+            }}
             dir={isEn ? 'ltr' : 'rtl'}
             style={{ 
                 backgroundColor: isBlackTheme ? '#18181b' : (theme.isDark ? (theme.cardBg || '#18181B') : '#FFFFFF'),

@@ -274,6 +274,23 @@
     color: var(--qr-highlight-text, #fbbf24) !important;
 }
 
+/* ثيم اسود غامق: الآية المحددة باللون الأبيض ورقم الآية والأقواس باللون الأبيض */
+.quran-reader-container[data-quran-theme="deep_black"] .ayah-text-block.highlighted,
+.quran-reader-container[data-quran-theme="deep_black"] .ayah-text-block.highlighted *,
+.dark .quran-reader-container[data-quran-theme="deep_black"] .ayah-text-block.highlighted,
+.dark .quran-reader-container[data-quran-theme="deep_black"] .ayah-text-block.highlighted * { 
+    background-color: transparent !important; 
+    color: #ffffff !important;
+    text-shadow: 0 0 2px rgba(255, 255, 255, 0.8) !important;
+}
+
+.quran-reader-container[data-quran-theme="deep_black"] .verse-bracket,
+.quran-reader-container[data-quran-theme="deep_black"] .verse-num-inner,
+.dark .quran-reader-container[data-quran-theme="deep_black"] .verse-bracket,
+.dark .quran-reader-container[data-quran-theme="deep_black"] .verse-num-inner {
+    color: #ffffff !important;
+}
+
 .ayah-text-block.hide-text {
     color: transparent !important;
     text-shadow: none !important;

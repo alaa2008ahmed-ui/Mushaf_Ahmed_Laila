@@ -11,6 +11,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { BottomSalahGuides } from '../components/AthkarAlSalah/BottomSalahGuides';
 import { LayoutGrid, ListFilter, Search, HelpCircle } from 'lucide-react';
 import ZoomModal from '../components/AthkarAlSalah/ZoomModal';
+import { scrollToNextCard } from '../utils/cardScrollHelper';
 import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/CommunitySpotlightGuide';
 import { ATHKAR_SALAH_PAGE_STEPS } from '../components/Community/communityTourSteps';
 import { markPageAsSeen } from '../utils/badgeManager';
@@ -134,8 +135,15 @@ const SalahZikrCard = ({
 
     return (
         <div 
-            className={`bg-white dark:bg-[#1E293B] p-5 pb-3 rounded-2xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05),0_2px_6px_-1px_rgba(0,0,0,0.02)] border border-slate-100/80 dark:border-white/5 relative overflow-hidden group mb-4 transition-all duration-300 ${isFinished ? 'opacity-60' : 'cursor-pointer hover:shadow-md'}`} 
-            onClick={onDecrement}
+            data-card-item="true"
+            className={`bg-white dark:bg-[#1E293B] p-5 pb-3 rounded-2xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05),0_2px_6px_-1px_rgba(0,0,0,0.02)] border border-slate-100/80 dark:border-white/5 relative overflow-hidden group mb-4 transition-all duration-300 ${isFinished ? 'opacity-60 cursor-pointer' : 'cursor-pointer hover:shadow-md'}`} 
+            onClick={(e) => {
+                onDecrement();
+                if (zikr.currentCount <= 1 || isFinished) {
+                    const cardEl = e.currentTarget as HTMLElement;
+                    setTimeout(() => scrollToNextCard(cardEl), 60);
+                }
+            }}
         >
             <div className={`flex justify-between items-start mb-2 ${isEn ? 'flex-row' : ''}`}>
                 <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold" style={{ backgroundColor: `${primaryColor}14`, color: primaryColor }}>

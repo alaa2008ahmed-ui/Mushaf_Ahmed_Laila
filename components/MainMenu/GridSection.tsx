@@ -29,6 +29,7 @@ import VoiceControlToggle from '../VoiceControlToggle';
 import { useVoiceControl } from '../../context/VoiceControlContext';
 import { useShowNewBadge, useSeenPages, markPageAsSeen } from '../../utils/badgeManager';
 import { useLanguage } from '../../context/LanguageContext';
+import { useTheme } from '../../context/ThemeContext';
 
 interface GridSectionProps {
     menuItems: any[];
@@ -72,6 +73,7 @@ const GridSection: React.FC<GridSectionProps> = ({
     const showNewBadges = useShowNewBadge();
     const { isPageSeen } = useSeenPages();
     const { t, translateMenuItem, dir, language } = useLanguage();
+    const { isNightMode } = useTheme();
     const isEn = language === "en";
 
     const getButtonIcon = (id: string) => {
@@ -246,7 +248,7 @@ const GridSection: React.FC<GridSectionProps> = ({
         if (!isVisible && !isEditMode) return null;
 
         const { color: buttonColor, gradient: buttonGradient } = getCategoryColor(item.id);
-        const textColor = themeKey === 'shiny_gold' ? '#000000' : '#FFFFFF';
+        const textColor = isNightMode ? '#F59E0B' : (themeKey === 'shiny_gold' ? '#000000' : '#FFFFFF');
 
         const isForcedNew = item.id === 'others' || item.id === 'islamic-sites' || item.id === 'prophetic-seerah' || item.id === 'ten-promised';
         const showBadge = (isForcedNew || showNewBadges) && NEW_BADGE_ITEMS.includes(item.id) && !isPageSeen(item.id);
@@ -378,10 +380,10 @@ const GridSection: React.FC<GridSectionProps> = ({
                         </div>
 
                         <div className="flex flex-col min-w-0 text-start">
-                            <span className={`${isEn ? 'font-sans tracking-tight' : 'font-kufi'} font-black text-base sm:text-lg ${themeKey === 'shiny_gold' ? 'text-black' : 'text-white'} leading-tight truncate drop-shadow-sm`}>
+                            <span className={`${isEn ? 'font-sans tracking-tight' : 'font-kufi'} font-black text-base sm:text-lg ${isNightMode ? 'text-amber-500' : (themeKey === 'shiny_gold' ? 'text-black' : 'text-white')} leading-tight truncate drop-shadow-sm`}>
                                 {isEn ? "The Noble Qur'an" : "القرآن الكريم"}
                             </span>
-                            <span className={`text-[11px] sm:text-xs ${themeKey === 'shiny_gold' ? 'text-black/85' : 'text-white/95'} font-medium leading-normal truncate drop-shadow-xs`}>
+                            <span className={`text-[11px] sm:text-xs ${isNightMode ? 'text-amber-400' : (themeKey === 'shiny_gold' ? 'text-black/85' : 'text-white/95')} font-medium leading-normal truncate drop-shadow-xs`}>
                                 {isEn ? 'Recitation, Exegesis & Reflection' : 'قراءة وتدبر المصحف الشريف'}
                             </span>
                         </div>

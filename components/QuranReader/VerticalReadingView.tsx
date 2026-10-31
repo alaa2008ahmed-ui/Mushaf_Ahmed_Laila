@@ -408,7 +408,7 @@ const VerticalReadingView: React.FC<VerticalReadingViewProps> = React.memo(({
                     case 'night_sky': return { num: '#9333ea', bracket: '#9333ea' };
                     case 'green': return { num: '#dc2626', bracket: '#dc2626' };
                     case 'red': return { num: '#2563eb', bracket: '#2563eb' };
-                    case 'deep_black': return { num: '#f59e0b', bracket: '#f59e0b' };
+                    case 'deep_black': return { num: '#ffffff', bracket: '#ffffff' };
                     default: return { num: numColor, bracket: bracketColor };
                 }
             };
@@ -610,7 +610,7 @@ const VerticalReadingView: React.FC<VerticalReadingViewProps> = React.memo(({
                              paddingTop: '4px',
                              paddingBottom: '2px',
                              WebkitTextStroke: settings.isBold ? '0.5px currentColor' : '0px',
-                             color: shouldHide ? 'transparent' : (isHighlighted ? (settings.highlightTextColor || currentTheme.highlightText || currentTheme.accent) : (settings.textColor || currentTheme.text)),
+                             color: shouldHide ? 'transparent' : (isHighlighted ? (settings.highlightTextColor || (currentTheme?.id === 'deep_black' ? '#ffffff' : currentTheme.highlightText || currentTheme.accent)) : (settings.textColor || currentTheme.text)),
                              backgroundColor: shouldHide ? `${settings.highlightTextColor || currentTheme.accent}33` : 'transparent',
                              borderRadius: shouldHide ? '8px' : '0',
                              letterSpacing: 0,
@@ -624,7 +624,7 @@ const VerticalReadingView: React.FC<VerticalReadingViewProps> = React.memo(({
                         <span className="inline-flex items-center justify-center mr-2 font-bold opacity-80 cursor-pointer active:scale-95 transition-transform"
                               style={{ 
                                   fontSize: '0.9em',
-                                  color: currentTheme.accent
+                                  color: currentTheme?.id === 'deep_black' ? '#ffffff' : currentTheme.accent
                               }}
                               onPointerDown={(e) => handleNumberPointerDown(item.surahNumber, item.ayahNumber, e)}
                               onPointerUp={handleNumberPointerUp}

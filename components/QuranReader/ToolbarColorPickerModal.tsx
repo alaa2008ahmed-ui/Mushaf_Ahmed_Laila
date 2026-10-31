@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { registerBackInterceptor } from '../../hooks/useBackButton';
 import { X, Palette, Check, Type, ChevronLeft } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface ToolbarColorPickerModalProps {
     onClose: () => void;
@@ -13,6 +14,8 @@ interface ToolbarColorPickerModalProps {
 }
 
 const ToolbarColorPickerModal: React.FC<ToolbarColorPickerModalProps> = ({ onClose, onOpenModal, showToast, currentTheme, toolbarColors, isLandscape, modeSuffix }) => {
+    const { language } = useLanguage();
+    const isEn = language === 'en';
     const [isClosing, setIsClosing] = useState(false);
 
     const handleClose = () => {
@@ -116,12 +119,13 @@ const ToolbarColorPickerModal: React.FC<ToolbarColorPickerModalProps> = ({ onClo
         localStorage.setItem('toolbar_colors_v2' + modeSuffix, JSON.stringify(colors));
         window.dispatchEvent(new Event('theme-change'));
         setEditingType(null);
-        showToast('تم حفظ التعديلات');
+        showToast(isEn ? 'Changes saved successfully' : 'تم حفظ التعديلات');
     };
 
     const getName = (type: string) => {
-        const map: Record<string, string> = { 'top-toolbar': 'الشريط العلوى', 'bottom-toolbar': 'الشريط السفلى', 'surah': 'زر السورة', 'juz': 'زر الجزء', 'page': 'زر الصفحة', 'audio': 'زر الصوت', 'btn-settings': 'زر الإعدادات', 'btn-home': 'زر الرئيسية', 'btn-bookmark': 'زر الحفظ', 'btn-bookmarks-list': 'زر القائمة', 'btn-themes': 'زر الثيمات', 'btn-autoscroll': 'زر التمرير', 'btn-menu': 'زر القائمة الجانبية', 'btn-share': 'زر المشاركة', 'all': 'الكل' };
-        return map[type] || type;
+        const arMap: Record<string, string> = { 'top-toolbar': 'الشريط العلوى', 'bottom-toolbar': 'الشريط السفلى', 'surah': 'زر السورة', 'juz': 'زر الجزء', 'page': 'زر الصفحة', 'audio': 'زر الصوت', 'btn-settings': 'زر الإعدادات', 'btn-home': 'زر الرئيسية', 'btn-bookmark': 'زر الحفظ', 'btn-bookmarks-list': 'زر القائمة', 'btn-themes': 'زر الثيمات', 'btn-autoscroll': 'زر التمرير', 'btn-menu': 'زر القائمة الجانبية', 'btn-share': 'زر المشاركة', 'all': 'الكل' };
+        const enMap: Record<string, string> = { 'top-toolbar': 'Top Bar', 'bottom-toolbar': 'Bottom Bar', 'surah': 'Surah Button', 'juz': 'Juz Button', 'page': 'Page Button', 'audio': 'Audio Button', 'btn-settings': 'Settings Button', 'btn-home': 'Home Button', 'btn-bookmark': 'Bookmark Button', 'btn-bookmarks-list': 'List Button', 'btn-themes': 'Themes Button', 'btn-autoscroll': 'Scroll Button', 'btn-menu': 'Sidebar Button', 'btn-share': 'Share Button', 'all': 'All' };
+        return isEn ? (enMap[type] || type) : (arMap[type] || type);
     };
 
     const renderCheckerboard = (color: string) => {
@@ -137,12 +141,12 @@ const ToolbarColorPickerModal: React.FC<ToolbarColorPickerModalProps> = ({ onClo
 
     if (editingType) {
         return (
-            <div className={`fixed inset-0 z-[1200] bg-black/40 backdrop-blur-sm flex items-center justify-center ${isLandscape ? 'p-0' : 'p-4'} animate-fadeIn`} onClick={() => setEditingType(null)}>
+            <div className={`fixed inset-0 z-[1200] bg-black/40 backdrop-blur-sm flex items-center justify-center ${isLandscape ? 'p-0' : 'p-4'} animate-fadeIn`} dir={isEn ? "ltr" : "rtl"} onClick={() => setEditingType(null)}>
                 <div className={`modal-skinned w-full ${isLandscape ? 'max-w-4xl h-full rounded-none max-h-screen' : 'max-w-md rounded-3xl max-h-[85vh]'} shadow-2xl overflow-hidden animate-modal-enter flex flex-col border-0`} onClick={e => e.stopPropagation()} style={{ backgroundColor: currentTheme.bg, color: currentTheme.text, border: 'none', outline: 'none' }}>
                     <div className="p-4 flex justify-between items-center">
                         <div className="flex items-center gap-2">
                             <Palette className="w-5 h-5 quran-3d-icon" />
-                            <h3 className="font-bold text-lg">تخصيص: {getName(editingType)}</h3>
+                            <h3 className="font-bold text-lg">{isEn ? 'Customize:' : 'تخصيص:'} {getName(editingType)}</h3>
                         </div>
                         <button onClick={() => setEditingType(null)} className="w-8 h-8 rounded-xl flex items-center justify-center transition-all quran-raised-btn">
                             <X className="w-5 h-5 quran-3d-icon" />
@@ -154,7 +158,7 @@ const ToolbarColorPickerModal: React.FC<ToolbarColorPickerModalProps> = ({ onClo
                             <div className={isLandscape ? 'col-span-1' : ''}>
                                 <div className="flex items-center gap-2 mb-2">
                                     <Type className="w-4 h-4 opacity-70" />
-                                    <label className="text-sm font-bold opacity-80">نوع الخط</label>
+                                    <label className="text-sm font-bold opacity-80">{isEn ? 'Font Type' : 'نوع الخط'}</label>
                                 </div>
                                 <select 
                                     value={editConfig.font} 
@@ -162,35 +166,35 @@ const ToolbarColorPickerModal: React.FC<ToolbarColorPickerModalProps> = ({ onClo
                                     className="w-full p-3 rounded-xl quran-raised-card font-bold text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all border-0"
                                     style={{ border: 'none', outline: 'none' }}
                                 >
-                                    <option value="">افتراضي</option>
-                                    <option value="var(--font-amiri-quran)">حفص</option>
-                                    <option value="var(--font-amiri)">نسخ</option>
-                                    <option value="var(--font-scheherazade)">مجود</option>
-                                    <option value="var(--font-lateef)">تراثي</option>
-                                    <option value="var(--font-harmattan)">ورش</option>
-                                    <option value="var(--font-aref)">رقعة</option>
-                                    <option value="var(--font-gulzar)">نستعليق</option>
-                                    <option value="var(--font-kufi)">كوفي</option>
-                                    <option value="var(--font-kufam)">كوفي حديث</option>
-                                    <option value="var(--font-noto)">نسخ حديث</option>
-                                    <option value="var(--font-cairo)">القاهرة</option>
-                                    <option value="var(--font-messiri)">المسيري</option>
-                                    <option value="var(--font-rakkas)">رقاص</option>
-                                    <option value="var(--font-lalezar)">لالزار</option>
-                                    <option value="var(--font-katibeh)">قطيبة</option>
-                                    <option value="var(--font-tajawal)">تجوّل</option>
-                                    <option value="var(--font-changa)">شنقة</option>
-                                    <option value="var(--font-mirza)">ميرزا</option>
-                                    <option value="var(--font-qalam)">قلم</option>
-                                    <option value="var(--font-thuluth)">ثلوث</option>
-                                    <option value="var(--font-digital)">رقمي</option>
+                                    <option value="">{isEn ? 'Default' : 'افتراضي'}</option>
+                                    <option value="var(--font-amiri-quran)">{isEn ? 'Hafs' : 'حفص'}</option>
+                                    <option value="var(--font-amiri)">{isEn ? 'Naskh' : 'نسخ'}</option>
+                                    <option value="var(--font-scheherazade)">{isEn ? 'Mujawwad' : 'مجود'}</option>
+                                    <option value="var(--font-lateef)">{isEn ? 'Traditional' : 'تراثي'}</option>
+                                    <option value="var(--font-harmattan)">{isEn ? 'Warsh' : 'ورش'}</option>
+                                    <option value="var(--font-aref)">{isEn ? 'Ruq\'ah' : 'رقعة'}</option>
+                                    <option value="var(--font-gulzar)">{isEn ? 'Nasta\'liq' : 'نستعليق'}</option>
+                                    <option value="var(--font-kufi)">{isEn ? 'Kufi' : 'كوفي'}</option>
+                                    <option value="var(--font-kufam)">{isEn ? 'Modern Kufi' : 'كوفي حديث'}</option>
+                                    <option value="var(--font-noto)">{isEn ? 'Modern Naskh' : 'نسخ حديث'}</option>
+                                    <option value="var(--font-cairo)">{isEn ? 'Cairo' : 'القاهرة'}</option>
+                                    <option value="var(--font-messiri)">{isEn ? 'El Messiri' : 'المسيري'}</option>
+                                    <option value="var(--font-rakkas)">{isEn ? 'Rakkas' : 'رقاص'}</option>
+                                    <option value="var(--font-lalezar)">{isEn ? 'Lalezar' : 'لالزار'}</option>
+                                    <option value="var(--font-katibeh)">{isEn ? 'Katibeh' : 'قطيبة'}</option>
+                                    <option value="var(--font-tajawal)">{isEn ? 'Tajawal' : 'تجوّل'}</option>
+                                    <option value="var(--font-changa)">{isEn ? 'Changa' : 'شنقة'}</option>
+                                    <option value="var(--font-mirza)">{isEn ? 'Mirza' : 'ميرزا'}</option>
+                                    <option value="var(--font-qalam)">{isEn ? 'Qalam' : 'قلم'}</option>
+                                    <option value="var(--font-thuluth)">{isEn ? 'Thuluth' : 'ثلوث'}</option>
+                                    <option value="var(--font-digital)">{isEn ? 'Digital' : 'رقمي'}</option>
                                 </select>
                             </div>
                         )}
 
                         <div className={`grid gap-4 ${isLandscape && editingType.includes('toolbar') ? 'col-span-2 grid-cols-3' : (editingType.includes('toolbar') ? 'grid-cols-2' : 'grid-cols-3')}`}>
                             <div className="space-y-2">
-                                <label className="text-xs font-bold opacity-60 px-1">لون الخلفية</label>
+                                <label className="text-xs font-bold opacity-60 px-1">{isEn ? 'Background Color' : 'لون الخلفية'}</label>
                                 <button 
                                     className={`h-12 w-full rounded-xl transition-all flex items-center justify-center cursor-pointer ${activeColorField === 'bg' ? 'quran-raised-btn-selected shadow-lg scale-[1.02]' : 'quran-raised-btn'}`}
                                     style={{ border: 'none', ...renderCheckerboard(editConfig.bg) }}
@@ -202,7 +206,7 @@ const ToolbarColorPickerModal: React.FC<ToolbarColorPickerModalProps> = ({ onClo
 
                             {!editingType.includes('toolbar') && (
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold opacity-60 px-1">لون النص/الأيقونة</label>
+                                    <label className="text-xs font-bold opacity-60 px-1">{isEn ? 'Text/Icon Color' : 'لون النص/الأيقونة'}</label>
                                     <button 
                                         className={`h-12 w-full rounded-xl transition-all flex items-center justify-center cursor-pointer ${activeColorField === 'text' ? 'quran-raised-btn-selected shadow-lg scale-[1.02]' : 'quran-raised-btn'}`}
                                         style={{ border: 'none', ...renderCheckerboard(editConfig.text) }}
@@ -214,7 +218,7 @@ const ToolbarColorPickerModal: React.FC<ToolbarColorPickerModalProps> = ({ onClo
                             )}
 
                             <div className="space-y-2">
-                                <label className="text-xs font-bold opacity-60 px-1">لون الحدود</label>
+                                <label className="text-xs font-bold opacity-60 px-1">{isEn ? 'Border Color' : 'لون الحدود'}</label>
                                 <button 
                                     className={`h-12 w-full rounded-xl transition-all flex items-center justify-center cursor-pointer ${activeColorField === 'border' ? 'quran-raised-btn-selected shadow-lg scale-[1.02]' : 'quran-raised-btn'}`}
                                     style={{ border: 'none', ...renderCheckerboard(editConfig.border) }}
@@ -250,7 +254,7 @@ const ToolbarColorPickerModal: React.FC<ToolbarColorPickerModalProps> = ({ onClo
                             style={{ backgroundColor: 'var(--qr-accent)', color: 'var(--qr-accent-text, #ffffff)', border: 'none' }}
                         >
                             <Check className="w-5 h-5 quran-3d-icon" />
-                            تطبيق التغييرات
+                            {isEn ? 'Apply Changes' : 'تطبيق التغييرات'}
                         </button>
                     </div>
                 </div>
@@ -259,12 +263,12 @@ const ToolbarColorPickerModal: React.FC<ToolbarColorPickerModalProps> = ({ onClo
     }
     
     return (
-        <div className={`fixed inset-0 bg-black/40 backdrop-blur-sm z-[1200] flex items-center justify-center ${isLandscape ? 'p-0' : 'p-4'} animate-fadeIn`} onClick={handleClose}>
+        <div className={`fixed inset-0 bg-black/40 backdrop-blur-sm z-[1200] flex items-center justify-center ${isLandscape ? 'p-0' : 'p-4'} animate-fadeIn`} dir={isEn ? "ltr" : "rtl"} onClick={handleClose}>
             <div className={`modal-skinned w-full ${isLandscape ? 'max-w-5xl h-full rounded-none max-h-screen' : 'max-w-md rounded-2xl max-h-[85vh]'} shadow-2xl overflow-hidden flex flex-col animate-modal-enter border-0`} onClick={e => e.stopPropagation()} style={{ backgroundColor: currentTheme.bg, color: currentTheme.text, border: 'none', outline: 'none' }}>
                 <div className="p-4 flex justify-between items-center">
                     <div className="flex items-center gap-2">
                         <Palette className="w-5 h-5 quran-3d-icon" />
-                        <h3 className="font-bold text-lg">تخصيص الواجهة</h3>
+                        <h3 className="font-bold text-lg">{isEn ? 'Customize Interface' : 'تخصيص الواجهة'}</h3>
                     </div>
                     <button onClick={handleClose} className="w-8 h-8 rounded-xl flex items-center justify-center transition-all quran-raised-btn">
                         <X className="w-5 h-5 quran-3d-icon" />
@@ -276,20 +280,20 @@ const ToolbarColorPickerModal: React.FC<ToolbarColorPickerModalProps> = ({ onClo
                     <div className="space-y-3">
                         <h4 className="text-sm font-bold opacity-60 px-2 flex items-center gap-2">
                             <div className="w-1.5 h-4 rounded-full" style={{ backgroundColor: 'var(--qr-accent)' }}></div>
-                            الأشرطة الرئيسية
+                            {isEn ? 'Main Toolbars' : 'الأشرطة الرئيسية'}
                         </h4>
                         <div className="grid grid-cols-2 gap-4">
-                            <button onClick={() => openEditModal('top-toolbar')} className="quran-raised-card p-4 rounded-2xl shadow-md transition-all group relative overflow-hidden text-right cursor-pointer border-0" style={{ border: 'none' }}>
+                            <button onClick={() => openEditModal('top-toolbar')} className={`quran-raised-card p-4 rounded-2xl shadow-md transition-all group relative overflow-hidden ${isEn ? 'text-left' : 'text-right'} cursor-pointer border-0`} style={{ border: 'none' }}>
                                 <div className="absolute top-0 left-0 w-full h-1 opacity-50" style={{ backgroundColor: 'var(--qr-accent)' }}></div>
                                 <div className="flex flex-col items-center gap-2">
-                                    <span className="font-bold text-sm">الشريط العلوى</span>
+                                    <span className="font-bold text-sm">{getName('top-toolbar')}</span>
                                     <div className="h-6 w-12 rounded quran-raised-btn" style={{ border: 'none', ...renderCheckerboard(getStyleForType('top-toolbar').bg) }}></div>
                                 </div>
                             </button>
-                            <button onClick={() => openEditModal('bottom-toolbar')} className="quran-raised-card p-4 rounded-2xl shadow-md transition-all group relative overflow-hidden text-right cursor-pointer border-0" style={{ border: 'none' }}>
+                            <button onClick={() => openEditModal('bottom-toolbar')} className={`quran-raised-card p-4 rounded-2xl shadow-md transition-all group relative overflow-hidden ${isEn ? 'text-left' : 'text-right'} cursor-pointer border-0`} style={{ border: 'none' }}>
                                 <div className="absolute bottom-0 left-0 w-full h-1 opacity-50" style={{ backgroundColor: 'var(--qr-accent)' }}></div>
                                 <div className="flex flex-col items-center gap-2">
-                                    <span className="font-bold text-sm">الشريط السفلى</span>
+                                    <span className="font-bold text-sm">{getName('bottom-toolbar')}</span>
                                     <div className="h-6 w-12 rounded quran-raised-btn" style={{ border: 'none', ...renderCheckerboard(getStyleForType('bottom-toolbar').bg) }}></div>
                                 </div>
                             </button>
@@ -301,10 +305,10 @@ const ToolbarColorPickerModal: React.FC<ToolbarColorPickerModalProps> = ({ onClo
                         <div className="flex justify-between items-center px-2">
                             <h4 className="text-sm font-bold opacity-60 flex items-center gap-2">
                                 <div className="w-1.5 h-4 bg-emerald-500 rounded-full"></div>
-                                أزرار الشريط العلوى
+                                {isEn ? 'Top Bar Buttons' : 'أزرار الشريط العلوى'}
                             </h4>
                             <div className="flex items-center gap-2 px-2.5 py-1 rounded-xl quran-raised-btn">
-                                <label className="text-[10px] font-bold text-emerald-600">توحيد</label>
+                                <label className="text-[10px] font-bold text-emerald-600">{isEn ? 'Unify' : 'توحيد'}</label>
                                 <input type="checkbox" checked={headerSync} onChange={e => setHeaderSync(e.target.checked)} className="w-3.5 h-3.5 accent-emerald-500 cursor-pointer"/>
                             </div>
                         </div>
@@ -326,10 +330,10 @@ const ToolbarColorPickerModal: React.FC<ToolbarColorPickerModalProps> = ({ onClo
                         <div className="flex justify-between items-center px-2">
                             <h4 className="text-sm font-bold opacity-60 flex items-center gap-2">
                                 <div className="w-1.5 h-4 bg-emerald-500 rounded-full"></div>
-                                أزرار الشريط السفلى
+                                {isEn ? 'Bottom Bar Buttons' : 'أزرار الشريط السفلى'}
                             </h4>
                             <div className="flex items-center gap-2 px-2.5 py-1 rounded-xl quran-raised-btn">
-                                <label className="text-[10px] font-bold text-emerald-600">توحيد</label>
+                                <label className="text-[10px] font-bold text-emerald-600">{isEn ? 'Unify' : 'توحيد'}</label>
                                 <input type="checkbox" checked={footerSync} onChange={e => setFooterSync(e.target.checked)} className="w-3.5 h-3.5 accent-emerald-500 cursor-pointer"/>
                             </div>
                         </div>
@@ -354,24 +358,20 @@ const ToolbarColorPickerModal: React.FC<ToolbarColorPickerModalProps> = ({ onClo
                             style={{ border: 'none' }}
                         >
                             <Palette className="w-4 h-4 quran-3d-icon" />
-                            تطبيق لون موحد لجميع الأزرار
+                            {isEn ? 'Apply Unified Color to All Buttons' : 'تطبيق لون موحد لجميع الأزرار'}
                         </button>
                     </div>
                 </div>
 
-                <div 
-                    className="p-4 flex justify-center shrink-0"
-                    style={{
-                        paddingBottom: 'calc(max(env(safe-area-inset-bottom, 0px), 56px) + 0.75rem)'
-                    }}
-                >
+                {/* Sticky/Fixed Bottom Footer - Back to Settings Button */}
+                <div className="p-3.5 sm:p-4 shrink-0 border-t border-black/5 dark:border-white/10">
                     <button 
                         onClick={handleClose} 
-                        className="quran-raised-btn-selected w-full py-3.5 rounded-xl font-bold shadow-lg transition-all flex items-center justify-center gap-2 text-sm cursor-pointer border-0"
+                        className="quran-raised-btn-selected w-full py-3.5 rounded-xl font-bold shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2 text-sm cursor-pointer border-0"
                         style={{ backgroundColor: 'var(--qr-accent)', color: 'var(--qr-accent-text, #ffffff)', border: 'none' }}
                     >
-                        <ChevronLeft className="w-4 h-4 quran-3d-icon" />
-                        الرجوع للإعدادات
+                        <ChevronLeft className={`w-4 h-4 quran-3d-icon ${isEn ? 'rotate-180' : ''}`} />
+                        {isEn ? 'Back to Settings' : 'الرجوع للإعدادات'}
                     </button>
                 </div>
             </div>

@@ -161,24 +161,14 @@ export const TawafCounterCard: React.FC<TawafCounterCardProps> = ({ theme, isGol
             type="button"
             onClick={() => handleIncrement()}
             disabled={isComplete}
-            className={`w-full py-2.5 px-4 rounded-2xl font-bold flex items-center justify-between transition-all relative overflow-hidden select-none ${
+            className={`w-full py-2.5 px-4 rounded-2xl font-extrabold flex items-center justify-between transition-all select-none ${
               isComplete
-                ? 'cursor-default shadow-md'
-                : 'active:scale-[0.98] active:translate-y-0.5 cursor-pointer golden-3d-pill-btn'
+                ? 'cursor-default shadow-none bg-emerald-600 text-white'
+                : 'active:scale-[0.98] cursor-pointer golden-3d-pill-btn'
             }`}
-            style={isComplete ? {
-              background: 'linear-gradient(135deg, #15803D 0%, #16A34A 50%, #B45309 100%)',
-              border: '1.5px solid rgba(254, 243, 199, 0.7)',
-              boxShadow: '0 4px 12px rgba(22, 163, 74, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.6)'
-            } : undefined}
           >
-            {/* 3D Glossy specular sheen */}
-            <div className="absolute inset-x-1 top-0.5 h-[45%] rounded-t-[14px] bg-gradient-to-b from-white/35 via-white/12 to-transparent pointer-events-none" />
-            <div className="absolute inset-x-3 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/85 to-transparent rounded-full pointer-events-none" />
-            <div className="absolute inset-x-2 bottom-0 h-[2px] bg-black/15 rounded-b-2xl pointer-events-none" />
-            
             <div className="w-full flex items-center justify-center text-center">
-              <span className="text-sm sm:text-base font-bold leading-tight font-cairo text-white flex items-center gap-1.5 justify-center">
+              <span className="text-sm sm:text-base font-extrabold leading-tight font-cairo text-white flex items-center gap-1.5 justify-center">
                 {isComplete ? (
                   t('tawaf.completed_title', 'اكتملت 7 أشواط مباركة!')
                 ) : language === 'en' ? (
@@ -201,10 +191,9 @@ export const TawafCounterCard: React.FC<TawafCounterCardProps> = ({ theme, isGol
             <button
               type="button"
               onClick={() => onNavigate?.('hajj-umrah')}
-              className="w-auto py-1.5 px-3 rounded-2xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 active:scale-95 transition-all golden-3d-pill-btn cursor-pointer relative overflow-hidden text-white shadow-2xs"
+              className="w-auto py-1.5 px-3 rounded-2xl font-extrabold text-xs sm:text-sm flex items-center justify-center gap-1.5 active:scale-95 transition-all golden-3d-pill-btn cursor-pointer text-white shadow-none"
             >
-              <div className="absolute inset-x-1 top-0.5 h-[45%] rounded-t-[10px] bg-gradient-to-b from-white/35 via-white/12 to-transparent pointer-events-none" />
-              <span className="relative z-10 text-white font-bold font-cairo whitespace-nowrap">
+              <span className="text-white font-extrabold font-cairo whitespace-nowrap">
                 {isEn ? 'Hajj & Umrah' : 'الحج والعمرة'}
               </span>
             </button>
@@ -212,10 +201,9 @@ export const TawafCounterCard: React.FC<TawafCounterCardProps> = ({ theme, isGol
             <button
               type="button"
               onClick={() => onNavigate?.('hajj-umrah', { screen: 'duaa' })}
-              className="w-auto py-1.5 px-3 rounded-2xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 active:scale-95 transition-all golden-3d-pill-btn cursor-pointer relative overflow-hidden text-white shadow-2xs"
+              className="w-auto py-1.5 px-3 rounded-2xl font-extrabold text-xs sm:text-sm flex items-center justify-center gap-1.5 active:scale-95 transition-all golden-3d-pill-btn cursor-pointer text-white shadow-none"
             >
-              <div className="absolute inset-x-1 top-0.5 h-[45%] rounded-t-[10px] bg-gradient-to-b from-white/35 via-white/12 to-transparent pointer-events-none" />
-              <span className="relative z-10 text-white font-bold font-cairo whitespace-nowrap">
+              <span className="text-white font-extrabold font-cairo whitespace-nowrap">
                 {isEn ? 'Duas & Adhkar' : 'أدعية وأذكار'}
               </span>
             </button>

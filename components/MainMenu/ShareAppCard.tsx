@@ -29,7 +29,7 @@ export const ShareAppCard: React.FC<ShareAppCardProps> = ({
   const [showQrModal, setShowQrModal] = useState(false);
 
   const isBlackTheme = themeKey === 'deep_black' || theme.bgColor === '#000000' || theme.name === 'اسود' || theme.name === 'black';
-  const primaryColor = isBlackTheme ? '#10b981' : (theme.palette?.[0] || '#059669');
+  const primaryColor = isBlackTheme ? '#fbbf24' : (theme.palette?.[0] || '#b45309');
 
   const textToShare = language === 'en' ? shareTextEn : shareTextAr;
 
@@ -97,7 +97,7 @@ export const ShareAppCard: React.FC<ShareAppCardProps> = ({
           <div
             className="w-8 h-8 sm:w-9 sm:h-9 rounded-2xl flex items-center justify-center shrink-0 transition-colors shadow-xs"
             style={{
-              backgroundColor: isBlackTheme ? 'rgba(16, 185, 129, 0.18)' : `${primaryColor}14`,
+              backgroundColor: isBlackTheme ? 'rgba(251, 191, 36, 0.18)' : `${primaryColor}14`,
               color: primaryColor,
               boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.4)',
             }}
@@ -113,8 +113,8 @@ export const ShareAppCard: React.FC<ShareAppCardProps> = ({
         <div 
           className={`w-full py-2 sm:py-2.5 px-3 rounded-xl text-center border transition-all flex flex-col items-center justify-center gap-1 relative z-10 ${
             isBlackTheme 
-              ? 'bg-white/[0.04] border-white/10' 
-              : 'border-emerald-100/80'
+              ? 'bg-white/[0.04] border-amber-500/20' 
+              : 'border-amber-200'
           }`}
           style={{
             backgroundColor: isBlackTheme ? undefined : `${primaryColor}0d`,
@@ -123,7 +123,7 @@ export const ShareAppCard: React.FC<ShareAppCardProps> = ({
         >
           <p 
             className="font-amiri text-[15px] sm:text-base font-bold leading-relaxed tracking-wide"
-            style={{ color: isBlackTheme ? '#34d399' : primaryColor }}
+            style={{ color: isBlackTheme ? '#fbbf24' : primaryColor }}
           >
             {t('app_share.ayah', 'قال تعالى: ﴿ وَتَعَاوَنُوا عَلَى الْبِرِّ وَالتَّقْوَىٰ ﴾')}
           </p>
@@ -152,10 +152,10 @@ export const ShareAppCard: React.FC<ShareAppCardProps> = ({
             onClick={handleShareApp}
             className="py-2.5 px-2 sm:px-3 rounded-2xl font-bold font-kufi text-xs sm:text-sm text-white flex items-center justify-center gap-1.5 active:scale-95 active:translate-y-0.5 transition-all cursor-pointer relative overflow-hidden select-none"
             style={{
-              backgroundColor: isBlackTheme ? '#10b981' : primaryColor,
+              backgroundColor: isBlackTheme ? '#d97706' : primaryColor,
               boxShadow: isBlackTheme
-                ? '0 4px 0 #059669, 0 6px 14px rgba(0, 0, 0, 0.6), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.3)'
-                : '0 4px 0 rgba(0, 0, 0, 0.22), 0 6px 14px rgba(0, 0, 0, 0.15), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.65)',
+                ? '0 4px 0 #b45309, 0 6px 14px rgba(0, 0, 0, 0.6), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.3)'
+                : '0 4px 0 rgba(180, 83, 9, 0.4), 0 6px 14px rgba(180, 83, 9, 0.25), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.65)',
               border: 'none',
               color: '#FFFFFF'
             }}
@@ -174,10 +174,10 @@ export const ShareAppCard: React.FC<ShareAppCardProps> = ({
             onClick={() => setShowQrModal(true)}
             className="py-2.5 px-2 sm:px-3 rounded-2xl font-bold font-kufi text-xs sm:text-sm text-white flex items-center justify-center gap-1.5 active:scale-95 active:translate-y-0.5 transition-all cursor-pointer relative overflow-hidden select-none"
             style={{
-              backgroundColor: isBlackTheme ? '#10b981' : primaryColor,
+              backgroundColor: isBlackTheme ? '#d97706' : primaryColor,
               boxShadow: isBlackTheme
-                ? '0 4px 0 #059669, 0 6px 14px rgba(0, 0, 0, 0.6), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.3)'
-                : '0 4px 0 rgba(0, 0, 0, 0.22), 0 6px 14px rgba(0, 0, 0, 0.15), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.65)',
+                ? '0 4px 0 #b45309, 0 6px 14px rgba(0, 0, 0, 0.6), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.3)'
+                : '0 4px 0 rgba(180, 83, 9, 0.4), 0 6px 14px rgba(180, 83, 9, 0.25), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.65)',
               border: 'none',
               color: '#FFFFFF'
             }}
@@ -196,10 +196,10 @@ export const ShareAppCard: React.FC<ShareAppCardProps> = ({
             onClick={handleCopyText}
             className="py-2.5 px-2 sm:px-3 rounded-2xl font-bold font-kufi text-xs sm:text-sm text-white flex items-center justify-center gap-1.5 active:scale-95 active:translate-y-0.5 transition-all cursor-pointer relative overflow-hidden select-none"
             style={{
-              backgroundColor: isBlackTheme ? '#10b981' : primaryColor,
+              backgroundColor: isBlackTheme ? '#d97706' : primaryColor,
               boxShadow: isBlackTheme
-                ? '0 4px 0 #059669, 0 6px 14px rgba(0, 0, 0, 0.6), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.3)'
-                : '0 4px 0 rgba(0, 0, 0, 0.22), 0 6px 14px rgba(0, 0, 0, 0.15), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.65)',
+                ? '0 4px 0 #b45309, 0 6px 14px rgba(0, 0, 0, 0.6), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.3)'
+                : '0 4px 0 rgba(180, 83, 9, 0.4), 0 6px 14px rgba(180, 83, 9, 0.25), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.65)',
               border: 'none',
               color: '#FFFFFF'
             }}

@@ -186,8 +186,28 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
   shareTextEn
 }) => {
   const { language, isRTL, dir, t, formatNumber } = useLanguage();
+  const { isNightMode } = useTheme();
   const isEn = language === 'en';
-  const { times, config } = usePrayerTimes();
+  const { times, config, refreshLocation } = usePrayerTimes();
+  const [isRefreshingLocation, setIsRefreshingLocation] = useState(false);
+
+  const handleRefreshLocation = async (e?: React.MouseEvent) => {
+    e?.stopPropagation?.();
+    if (isRefreshingLocation) return;
+    setIsRefreshingLocation(true);
+    setToastMessage?.(isEn ? 'Updating location... 📍' : 'جاري تحديث الموقع تلقائياً... 📍');
+    try {
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        try { navigator.vibrate(30); } catch {}
+      }
+      await refreshLocation?.(true);
+      setToastMessage?.(isEn ? 'Location updated successfully 📍' : 'تم تحديث الموقع بنجاح 📍');
+    } catch {
+      setToastMessage?.(isEn ? 'Failed to update location' : 'تعذر تحديث الموقع');
+    } finally {
+      setIsRefreshingLocation(false);
+    }
+  };
   const { records, toggleHabit, getDailyProgress } = useHabitTracker();
   const { isEnabled, toggleEnabled } = useVoiceControl();
   const { isPageSeen } = useSeenPages();
@@ -214,6 +234,7 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
   const [showQrModal, setShowQrModal] = useState(false);
   const [copiedShare, setCopiedShare] = useState(false);
   const [copiedWebLink, setCopiedWebLink] = useState(false);
+  const [activeBottomCardTab, setActiveBottomCardTab] = useState<'share' | 'browse' | 'support'>('share');
 
   useEffect(() => {
     if (!showQrModal) return;
@@ -270,7 +291,7 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
   useEffect(() => {
     const loadLastRead = () => {
       try {
-        const savedGlobal = localStorage.getItem('last_read_ayah_global');
+        const savedGlobal = localStorage.getItem('last_read_ayah_global') || localStorage.getItem('last_read_pos_mushaf');
         if (savedGlobal) {
           const parsed = JSON.parse(savedGlobal);
           if (parsed && parsed.s && parsed.a) {
@@ -564,7 +585,7 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
     {
       id: 'daily-wird',
       title: isEn ? 'Daily Quran Wird' : 'الورد اليومي',
-      category: 'tools',
+      category: 'worship',
       icon: BookmarkCheck,
       circleBg: 'bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-800/40',
       isNew: false
@@ -648,7 +669,7 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
     {
       id: 'hisn-muslim',
       title: isEn ? 'Hisn Al-Muslim' : 'حصن المسلم',
-      category: 'library',
+      category: 'worship',
       icon: ShieldCheck,
       circleBg: 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800/40',
       isNew: false
@@ -656,7 +677,7 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
     {
       id: 'hajj-umrah',
       title: isEn ? 'Hajj & Umrah' : 'الحج والعمرة',
-      category: 'tools',
+      category: 'worship',
       icon: Tent,
       circleBg: 'bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 border-orange-100 dark:border-orange-800/40',
       isNew: false
@@ -674,7 +695,7 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
     {
       id: 'habit-tracker',
       title: isEn ? 'Habit Tracker' : 'مربّي العبادات',
-      category: 'tools',
+      category: 'worship',
       icon: CheckSquare,
       circleBg: 'bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400 border-sky-100 dark:border-sky-800/40',
       isNew: false
@@ -826,7 +847,7 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
   const currentOccasion = upcomingEvents?.[eventIndex] || null;
 
   return (
-    <div data-layout="modern" className="flex flex-col gap-3.5 w-full max-w-md mx-auto pt-0 pb-4 modern-home-layout font-cairo" style={{ fontFamily: "'Cairo', sans-serif" }} dir={dir}>
+    <div data-layout="modern" className="flex flex-col gap-3.5 w-full max-w-md mx-auto pt-0 pb-1.5 modern-home-layout font-cairo" style={{ fontFamily: "'Cairo', sans-serif" }} dir={dir}>
       {/* 1. بطاقة الصلاة القادمة والختمة القرآنية (Prayer Times & Quran Card) */}
       <div 
         className="w-full golden-3d-card p-4 sm:p-5 select-none transition-all"
@@ -842,12 +863,12 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
                 <div className="w-7 h-7 rounded-lg bg-amber-100/90 text-amber-900 border border-amber-300/80 flex items-center justify-center shrink-0 shadow-2xs">
                   <BookOpen className="w-4 h-4 text-amber-800" />
                 </div>
-                <span className="text-xs sm:text-sm font-black text-[#451A03] truncate group-hover:text-amber-900 transition-colors font-cairo">
+                <span className="text-xs sm:text-sm font-black truncate group-hover:text-amber-900 transition-colors font-cairo" style={{ color: isNightMode ? '#F59E0B' : '#451A03' }}>
                   {isEn ? 'Continue Quran Recitation' : 'تابع تلاوة المصحف'}
                 </span>
               </div>
               <div className="flex items-center gap-1.5 flex-nowrap whitespace-nowrap text-[10.5px] sm:text-xs text-amber-900/90 font-medium mt-1.5 min-w-0">
-                <span className="font-bold text-[#451A03] truncate">{lastReadQuran.surahName}</span>
+                <span className="font-bold truncate" style={{ color: isNightMode ? '#F59E0B' : '#451A03' }}>{lastReadQuran.surahName}</span>
                 <div className="inline-flex items-center gap-1.5 sm:gap-2 shrink-0 text-[#5B2605] font-bold bg-amber-100/90 px-2 py-0.5 rounded-md border border-amber-300/80 shadow-2xs">
                   <span>{isEn ? `Ayah ${lastReadQuran.ayah}` : `آية ${formatNumber(lastReadQuran.ayah)}`}</span>
                   <span>{isEn ? `Page ${lastReadQuran.page}` : `صفحة ${formatNumber(lastReadQuran.page)}`}</span>
@@ -869,15 +890,28 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
 
         {/* فاصل وقسم مواقيت الصلاة والعد التنازلي */}
         <div className="pt-3.5 border-t border-amber-300/60">
-          {/* صف الموقع والشارة الذكية (يظهر فقط اسم المدينة مع أيقونة الصلاة تماماً كما بالصورة المرفقة) */}
+          {/* صف الموقع وزر القبلة الذكي */}
           <div className="flex items-center justify-between w-full mb-3">
-            <div className="flex items-center gap-1.5 text-xs font-bold text-amber-950">
+            <button
+              type="button"
+              onClick={handleRefreshLocation}
+              disabled={isRefreshingLocation}
+              className="flex items-center gap-1.5 text-xs font-bold text-amber-950 hover:text-amber-800 active:scale-95 transition-all cursor-pointer bg-transparent border-none p-0 outline-none max-w-[80%]"
+              title={isEn ? 'Click to refresh location automatically' : 'انقر لتحديث الموقع تلقائياً'}
+            >
               <span className="truncate">{prayerData.cityName}</span>
-              <MapPin className="w-3.5 h-3.5 text-amber-800 shrink-0" />
-            </div>
-            <div className="w-8 h-8 rounded-full golden-3d-inset border border-amber-300/80 flex items-center justify-center shadow-2xs shrink-0">
-              <PrayerIcon className="w-4 h-4 text-amber-800" />
-            </div>
+              <MapPin className={`w-3.5 h-3.5 text-amber-800 shrink-0 ${isRefreshingLocation ? 'animate-bounce' : ''}`} />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => onNavigate('qibla')}
+              className="w-8 h-8 rounded-full golden-3d-inset border border-amber-300/80 flex items-center justify-center shadow-2xs shrink-0 cursor-pointer hover:scale-105 active:scale-95 transition-all text-amber-800"
+              title={isEn ? 'Qibla Direction' : 'اتجاه القبلة'}
+              aria-label={isEn ? 'Qibla Direction' : 'اتجاه القبلة'}
+            >
+              <Compass className="w-4.5 h-4.5 text-amber-800 stroke-[2.2]" />
+            </button>
           </div>
 
           {/* العد التنازلي وموعد الأذان المتغير لونه حسب الصلاة */}
@@ -1040,8 +1074,11 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
                     />
                   </div>
                   <span 
-                    className="text-[8px] min-[340px]:text-[8.5px] min-[370px]:text-[9px] min-[410px]:text-[10px] sm:text-[11px] font-black text-[#1C1917] font-cairo text-center mt-1 leading-none tracking-tighter select-none whitespace-nowrap w-full"
-                    style={{ textShadow: '0 1px 1px rgba(255,255,255,0.9)' }}
+                    className="app-name-label text-[8px] min-[340px]:text-[8.5px] min-[370px]:text-[9px] min-[410px]:text-[10px] sm:text-[11px] font-black font-cairo text-center mt-1 leading-none tracking-tighter select-none whitespace-nowrap w-full"
+                    style={{ 
+                      color: isNightMode ? '#F59E0B' : '#1C1917',
+                      textShadow: isNightMode ? 'none' : '0 1px 1px rgba(255,255,255,0.9)' 
+                    }}
                     title={btn.label}
                   >
                     {btn.label}
@@ -1128,7 +1165,7 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
                 <Star className="w-3 h-3 fill-amber-600 text-amber-600" />
               </div>
               <span className="text-xs sm:text-[13px] font-black text-[#451A03] font-cairo">
-                {isEn ? 'Favorite Apps' : 'التطبيقات المفضلة'}
+                {isEn ? 'Your Daily Apps' : 'تطبيقاتك اليومية'}
               </span>
             </div>
             <span className="text-[10px] font-bold text-amber-900/75">
@@ -1165,8 +1202,11 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
                       />
                     </div>
                     <span 
-                      className="text-[7.5px] min-[340px]:text-[8px] min-[370px]:text-[8.5px] min-[410px]:text-[9.5px] sm:text-[10.5px] font-black text-[#1C1917] font-cairo text-center mt-1 leading-[1.15] tracking-tight select-none whitespace-normal break-words w-full px-0.5"
-                      style={{ textShadow: '0 1px 1px rgba(255,255,255,0.9)' }}
+                      className="app-name-label text-[7.5px] min-[340px]:text-[8px] min-[370px]:text-[8.5px] min-[410px]:text-[9.5px] sm:text-[10.5px] font-black font-cairo text-center mt-1 leading-[1.15] tracking-tight select-none whitespace-normal break-words w-full px-0.5"
+                      style={{ 
+                        color: isNightMode ? '#F59E0B' : '#1C1917',
+                        textShadow: isNightMode ? 'none' : '0 1px 1px rgba(255,255,255,0.9)' 
+                      }}
                       title={service.title}
                     >
                       {service.title}
@@ -1331,8 +1371,11 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
                         )}
                       </div>
                       <span 
-                        className="text-[11px] sm:text-[12px] font-black text-[#1C1917] text-center leading-tight whitespace-pre-line w-full font-cairo select-none mt-1"
-                        style={{ textShadow: '0 1px 1px rgba(255,255,255,0.9)' }}
+                        className="app-name-label text-[11px] sm:text-[12px] font-black text-center leading-tight whitespace-pre-line w-full font-cairo select-none mt-1"
+                        style={{ 
+                          color: isNightMode ? '#F59E0B' : '#1C1917',
+                          textShadow: isNightMode ? 'none' : '0 1px 1px rgba(255,255,255,0.9)' 
+                        }}
                       >
                         {(() => {
                           const parts = service.title.trim().split(/\s+/);
@@ -1420,8 +1463,11 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
                   )}
                 </div>
                 <span 
-                  className="text-[11px] sm:text-xs font-black tracking-tight font-cairo select-none text-[#1C1917] mt-0.5"
-                  style={{ textShadow: '0 1px 1px rgba(255,255,255,0.8)' }}
+                  className="app-name-label text-[11px] sm:text-xs font-black tracking-tight font-cairo select-none mt-0.5"
+                  style={{ 
+                    color: isNightMode ? '#F59E0B' : '#1C1917',
+                    textShadow: isNightMode ? 'none' : '0 1px 1px rgba(255,255,255,0.8)' 
+                  }}
                 >
                   {item.label}
                 </span>
@@ -1467,14 +1513,14 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
             </span>
           </div>
 
-          <div className="flex items-center justify-center gap-0.5 p-1 rounded-full golden-3d-inset text-xs font-bold overflow-x-auto scrollbar-none max-w-full">
+          <div className="flex items-center justify-center gap-1 sm:gap-1.5 text-xs font-bold overflow-x-auto scrollbar-none max-w-full py-0.5">
             <button
               type="button"
               onClick={() => setActiveEventTab('occasions')}
-              className={`px-2 min-[380px]:px-2.5 py-1 rounded-full transition-all cursor-pointer text-[11px] min-[380px]:text-xs flex items-center justify-center shrink-0 ${
+              className={`px-2.5 min-[380px]:px-3 py-1 rounded-full transition-all cursor-pointer text-[11px] min-[380px]:text-xs flex items-center justify-center shrink-0 ${
                 activeEventTab === 'occasions' 
-                  ? 'golden-3d-pill-btn font-extrabold text-white shadow-xs' 
-                  : 'text-amber-950/85 hover:text-amber-950 font-bold active:scale-95'
+                  ? 'bg-[#c25e00] font-extrabold text-white shadow-none' 
+                  : 'bg-transparent text-[#78350F] hover:text-[#451A03] font-bold active:scale-95'
               }`}
             >
               {isEn ? 'Occasions' : 'المناسبات'}
@@ -1482,10 +1528,10 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
             <button
               type="button"
               onClick={() => setActiveEventTab('wisdom')}
-              className={`px-2 min-[380px]:px-2.5 py-1 rounded-full transition-all cursor-pointer text-[11px] min-[380px]:text-xs flex items-center justify-center shrink-0 ${
+              className={`px-2.5 min-[380px]:px-3 py-1 rounded-full transition-all cursor-pointer text-[11px] min-[380px]:text-xs flex items-center justify-center shrink-0 ${
                 activeEventTab === 'wisdom' 
-                  ? 'golden-3d-pill-btn font-extrabold text-white shadow-xs' 
-                  : 'text-amber-950/85 hover:text-amber-950 font-bold active:scale-95'
+                  ? 'bg-[#c25e00] font-extrabold text-white shadow-none' 
+                  : 'bg-transparent text-[#78350F] hover:text-[#451A03] font-bold active:scale-95'
               }`}
             >
               {isEn ? 'Wisdom' : 'حكمة اليوم'}
@@ -1493,10 +1539,10 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
             <button
               type="button"
               onClick={() => setActiveEventTab('memory')}
-              className={`px-2 min-[380px]:px-2.5 py-1 rounded-full transition-all cursor-pointer text-[11px] min-[380px]:text-xs flex items-center justify-center shrink-0 ${
+              className={`px-2.5 min-[380px]:px-3 py-1 rounded-full transition-all cursor-pointer text-[11px] min-[380px]:text-xs flex items-center justify-center shrink-0 ${
                 activeEventTab === 'memory' 
-                  ? 'golden-3d-pill-btn font-extrabold text-white shadow-xs' 
-                  : 'text-amber-950/85 hover:text-amber-950 font-bold active:scale-95'
+                  ? 'bg-[#c25e00] font-extrabold text-white shadow-none' 
+                  : 'bg-transparent text-[#78350F] hover:text-[#451A03] font-bold active:scale-95'
               }`}
             >
               {isEn ? 'Islamic Memory' : 'ذاكرة الإسلام'}
@@ -1504,10 +1550,10 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
             <button
               type="button"
               onClick={() => setActiveEventTab('event')}
-              className={`px-2 min-[380px]:px-2.5 py-1 rounded-full transition-all cursor-pointer text-[11px] min-[380px]:text-xs flex items-center justify-center shrink-0 ${
+              className={`px-2.5 min-[380px]:px-3 py-1 rounded-full transition-all cursor-pointer text-[11px] min-[380px]:text-xs flex items-center justify-center shrink-0 ${
                 activeEventTab === 'event' 
-                  ? 'golden-3d-pill-btn font-extrabold text-white shadow-xs' 
-                  : 'text-amber-950/85 hover:text-amber-950 font-bold active:scale-95'
+                  ? 'bg-[#c25e00] font-extrabold text-white shadow-none' 
+                  : 'bg-transparent text-[#78350F] hover:text-[#451A03] font-bold active:scale-95'
               }`}
             >
               {isEn ? 'Event of the Day' : 'حدث اليوم'}
@@ -1721,123 +1767,186 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
         />
       )}
 
-      {/* 7. بطاقة تصفح التطبيق (Web App Card) */}
-      <div 
-        className="w-full golden-3d-card p-4 sm:p-5 select-none transition-all"
-      >
-        <div className="flex items-center gap-2 mb-2">
-          <div className="w-8 h-8 rounded-full bg-amber-100/90 text-amber-900 border border-amber-300/80 flex items-center justify-center shrink-0">
-            <Globe className="w-4 h-4 text-amber-800" />
+      {/* 7 & 8. بطاقة مدمجة: شارك التطبيق | تصفح التطبيق | الدعم الفني */}
+      <div className="w-full golden-3d-card p-4 sm:p-5 select-none transition-all">
+        {/* شريط التبويبات الثلاثة السفلية */}
+        <div className="grid grid-cols-3 gap-1 mb-4 py-0.5">
+          <button
+            type="button"
+            onClick={() => setActiveBottomCardTab('share')}
+            className={`py-1.5 px-1 rounded-full text-[11px] sm:text-xs font-bold font-cairo flex items-center justify-center transition-all cursor-pointer whitespace-nowrap ${
+              activeBottomCardTab === 'share'
+                ? 'bg-[#c25e00] text-white font-extrabold shadow-none'
+                : 'bg-transparent text-[#78350F] hover:text-[#451A03] font-bold active:scale-95'
+            }`}
+          >
+            <span>{isEn ? 'Share App' : 'شارك التطبيق'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveBottomCardTab('browse')}
+            className={`py-1.5 px-1 rounded-full text-[11px] sm:text-xs font-bold font-cairo flex items-center justify-center transition-all cursor-pointer whitespace-nowrap ${
+              activeBottomCardTab === 'browse'
+                ? 'bg-[#c25e00] text-white font-extrabold shadow-none'
+                : 'bg-transparent text-[#78350F] hover:text-[#451A03] font-bold active:scale-95'
+            }`}
+          >
+            <span>{isEn ? 'Browse App' : 'تصفح التطبيق'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveBottomCardTab('support')}
+            className={`py-1.5 px-1 rounded-full text-[11px] sm:text-xs font-bold font-cairo flex items-center justify-center transition-all cursor-pointer whitespace-nowrap ${
+              activeBottomCardTab === 'support'
+                ? 'bg-[#c25e00] text-white font-extrabold shadow-none'
+                : 'bg-transparent text-[#78350F] hover:text-[#451A03] font-bold active:scale-95'
+            }`}
+          >
+            <span>{isEn ? 'Tech Support' : 'الدعم الفني'}</span>
+          </button>
+        </div>
+
+        {/* محتوى التبويب الأول: شارك التطبيق */}
+        {activeBottomCardTab === 'share' && (
+          <div className="space-y-3 animate-fadeIn">
+            {/* المربع القرآني */}
+            <div className="w-full p-3.5 rounded-2xl golden-3d-inset text-center flex flex-col items-center gap-1">
+              <p className="font-cairo text-sm sm:text-base font-bold text-[#451A03]">
+                {t('app_share.ayah', 'قال تعالى: ( وَتَعَاوَنُوا عَلَى الْبِرِّ وَالتَّقْوَىٰ )')}
+              </p>
+              <p className="text-xs font-semibold text-amber-950 font-cairo">
+                {t('app_share.hadith', '« مَنْ دَلَّ عَلَى خَيْرٍ فَلَهُ مِثْلُ أَجْرِ فَاعِلِهِ »')}
+              </p>
+            </div>
+
+            <p className="text-xs text-amber-900/90 font-medium leading-relaxed text-center px-2 font-cairo">
+              {t('app_share.desc', 'اذا اعجبك التطبيق قم بنشره على وسائل التواصل ليكون لك الاجر ولمن تحب ان شاء الله .')}
+            </p>
+
+            {/* الأزرار الثلاثة: مشاركة، الكيوار، نسخ */}
+            <div className="grid grid-cols-3 gap-2 pt-1">
+              <button
+                type="button"
+                onClick={handleShareAppGeneral}
+                className="py-2.5 px-3 rounded-2xl golden-3d-btn font-bold text-xs flex items-center justify-center gap-1.5 active:scale-95 transition-all font-cairo cursor-pointer"
+              >
+                <Share2 className="w-3.5 h-3.5" />
+                <span>{isEn ? 'Share' : 'مشاركة'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowQrModal(true)}
+                className="py-2.5 px-3 rounded-2xl golden-3d-btn font-bold text-xs flex items-center justify-center gap-1.5 active:scale-95 transition-all font-cairo cursor-pointer"
+              >
+                <QrCode className="w-3.5 h-3.5" />
+                <span>{isEn ? 'QR Code' : 'الكيو ار'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleCopyShareAppText}
+                className="py-2.5 px-3 rounded-2xl golden-3d-btn font-bold text-xs flex items-center justify-center gap-1.5 active:scale-95 transition-all font-cairo cursor-pointer"
+              >
+                {copiedShare ? (
+                  <>
+                    <Check className="w-3.5 h-3.5 text-amber-900" />
+                    <span>{isEn ? 'Copied' : 'تم'}</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>{isEn ? 'Copy' : 'نسخ'}</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
-          <span className="text-sm font-bold text-[#451A03] font-cairo">
-            {isEn ? 'Browse App' : 'تصفح التطبيق'}
-          </span>
-        </div>
+        )}
 
-        <p className="text-xs text-amber-900/90 font-medium leading-relaxed my-2 text-start">
-          {isEn ? 'To open the app on your browser or iPhone, tap the link' : 'لمشاهدة التطبيق على المتصفح او الايفون اضغط على الرابط'}
-        </p>
+        {/* محتوى التبويب الثاني: تصفح التطبيق */}
+        {activeBottomCardTab === 'browse' && (
+          <div className="space-y-3 animate-fadeIn">
+            <p className="text-xs sm:text-sm text-amber-900/90 font-medium leading-relaxed text-center py-2 px-2 font-cairo">
+              {isEn ? 'To open the app on your browser or iPhone, tap the link' : 'لمشاهدة التطبيق على المتصفح او الايفون اضغط على الرابط'}
+            </p>
 
-        <div className="flex items-center justify-between gap-2.5 mt-3 pt-2">
-          <a
-            href={WEB_APP_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex-1 py-2.5 px-4 rounded-2xl golden-3d-btn font-bold text-xs sm:text-sm flex items-center justify-center gap-2 active:scale-98 transition-all"
-          >
-            <span>{isEn ? 'Open Link' : 'فتح الرابط'}</span>
-            <ExternalLink className="w-4 h-4" />
-          </a>
+            <div className="flex items-center justify-between gap-2.5 pt-1">
+              <a
+                href={WEB_APP_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 py-2.5 px-4 rounded-2xl golden-3d-btn font-bold text-xs sm:text-sm flex items-center justify-center gap-2 active:scale-98 transition-all"
+              >
+                <span>{isEn ? 'Open Link' : 'فتح الرابط'}</span>
+                <ExternalLink className="w-4 h-4" />
+              </a>
 
-          <button
-            type="button"
-            onClick={handleCopyWebUrl}
-            className="w-10 h-10 rounded-2xl golden-3d-btn-light flex items-center justify-center active:scale-90 transition-all cursor-pointer"
-            title={isEn ? 'Copy Link' : 'نسخ الرابط'}
-          >
-            {copiedWebLink ? <Check className="w-4 h-4 text-amber-700" /> : <Copy className="w-4 h-4" />}
-          </button>
+              <button
+                type="button"
+                onClick={handleCopyWebUrl}
+                className="w-10 h-10 rounded-2xl golden-3d-btn-light flex items-center justify-center active:scale-90 transition-all cursor-pointer"
+                title={isEn ? 'Copy Link' : 'نسخ الرابط'}
+              >
+                {copiedWebLink ? <Check className="w-4 h-4 text-amber-800" /> : <Copy className="w-4 h-4" />}
+              </button>
 
-          <button
-            type="button"
-            onClick={handleShareWebUrl}
-            className="w-10 h-10 rounded-2xl golden-3d-btn-light flex items-center justify-center active:scale-90 transition-all cursor-pointer"
-            title={isEn ? 'Share Link' : 'مشاركة الرابط'}
-          >
-            <Share2 className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-
-      {/* 8. بطاقة شارك التطبيق (Share App Card) */}
-      <div 
-        className="w-full golden-3d-card p-4 sm:p-5 select-none transition-all"
-      >
-        <div className="flex items-center gap-2 mb-3">
-          <div className="w-8 h-8 rounded-full bg-amber-100/90 text-amber-900 border border-amber-300/80 flex items-center justify-center shrink-0">
-            <HeartHandshake className="w-4 h-4 text-amber-800" />
+              <button
+                type="button"
+                onClick={handleShareWebUrl}
+                className="w-10 h-10 rounded-2xl golden-3d-btn-light flex items-center justify-center active:scale-90 transition-all cursor-pointer"
+                title={isEn ? 'Share Link' : 'مشاركة الرابط'}
+              >
+                <Share2 className="w-4 h-4" />
+              </button>
+            </div>
           </div>
-          <span className="text-sm font-bold text-[#451A03] font-cairo">
-            {isEn ? 'Share the App' : 'شارك التطبيق'}
-          </span>
-        </div>
+        )}
 
-        {/* المربع القرآني */}
-        <div className="w-full p-3.5 rounded-2xl golden-3d-inset text-center flex flex-col items-center gap-1 mb-3">
-          <p className="font-cairo text-sm sm:text-base font-bold text-[#451A03]">
-            {t('app_share.ayah', 'قال تعالى: ( وَتَعَاوَنُوا عَلَى الْبِرِّ وَالتَّقْوَىٰ )')}
-          </p>
-          <p className="text-xs font-semibold text-amber-950 font-cairo">
-            {t('app_share.hadith', '« مَنْ دَلَّ عَلَى خَيْرٍ فَلَهُ مِثْلُ أَجْرِ فَاعِلِهِ »')}
-          </p>
-        </div>
+        {/* محتوى التبويب الثالث: الدعم الفني (الواتساب) */}
+        {activeBottomCardTab === 'support' && (
+          <div className="space-y-3 animate-fadeIn">
+            {/* بطاقة معلومات التواصل مع علاء أحمد */}
+            <div className="w-full p-3.5 rounded-2xl golden-3d-inset text-center flex flex-col items-center gap-1">
+              <div className="w-10 h-10 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center mb-1 text-emerald-700 dark:text-emerald-400">
+                <svg viewBox="0 0 24 24" className="w-6 h-6 fill-current">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.361.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                </svg>
+              </div>
+              <h4 className="font-cairo text-sm sm:text-base font-bold text-[#451A03]">
+                {isEn ? 'Direct Support & Suggestions' : 'للتواصل المباشر والاقتراحات'}
+              </h4>
+              <p className="text-xs font-bold text-amber-900 font-cairo">
+                {isEn ? 'Alaa Ahmed' : 'علاء أحمد'}
+              </p>
+              <p className="text-[11px] font-mono font-bold text-amber-800/80 dir-ltr">
+                +966 59 216 6023
+              </p>
+            </div>
 
-        <p className="text-xs text-amber-900/90 font-medium leading-relaxed text-center px-2 mb-3 font-cairo">
-          {t('app_share.desc', 'اذا اعجبك التطبيق قم بنشره على وسائل التواصل ليكون لك الاجر ولمن تحب ان شاء الله .')}
-        </p>
-
-        {/* الأزرار الثلاثة: مشاركة، الكيوار، نسخ */}
-        <div className="grid grid-cols-3 gap-2 pt-1">
-          <button
-            type="button"
-            onClick={handleShareAppGeneral}
-            className="py-2.5 px-3 rounded-2xl golden-3d-btn font-bold text-xs flex items-center justify-center gap-1.5 active:scale-95 transition-all font-cairo cursor-pointer"
-          >
-            <Share2 className="w-3.5 h-3.5" />
-            <span>{isEn ? 'Share' : 'مشاركة'}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setShowQrModal(true)}
-            className="py-2.5 px-3 rounded-2xl golden-3d-btn font-bold text-xs flex items-center justify-center gap-1.5 active:scale-95 transition-all font-cairo cursor-pointer"
-          >
-            <QrCode className="w-3.5 h-3.5" />
-            <span>{isEn ? 'QR Code' : 'الكيو ار'}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={handleCopyShareAppText}
-            className="py-2.5 px-3 rounded-2xl golden-3d-btn font-bold text-xs flex items-center justify-center gap-1.5 active:scale-95 transition-all font-cairo cursor-pointer"
-          >
-            {copiedShare ? (
-              <>
-                <Check className="w-3.5 h-3.5" />
-                <span>{isEn ? 'Copied' : 'تم'}</span>
-              </>
-            ) : (
-              <>
-                <Copy className="w-3.5 h-3.5" />
-                <span>{isEn ? 'Copy' : 'نسخ'}</span>
-              </>
-            )}
-          </button>
-        </div>
+            {/* زر فتح تطبيق الواتساب وبدء المحادثة مباشرة باللون الذهبي */}
+            <div className="pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  window.open('https://wa.me/966592166023', '_blank');
+                }}
+                className="w-full py-3 px-4 rounded-2xl golden-3d-btn font-extrabold text-xs sm:text-sm text-white flex items-center justify-center gap-2 active:scale-98 transition-all font-cairo cursor-pointer shadow-none"
+              >
+                <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current shrink-0 text-white">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.361.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                </svg>
+                <span>{isEn ? 'Start WhatsApp Chat' : 'محادثة عبر الواتساب'}</span>
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* الدعاء في الأسفل */}
-      <div className="flex items-center justify-center gap-2 min-h-11 mt-1 px-4" dir={dir}>
+      <div className="flex items-center justify-center gap-2 mt-1 mb-0.5 px-4" dir={dir}>
         <p 
           className="text-sm font-black font-cairo leading-tight text-center relative z-10" 
           style={{ 

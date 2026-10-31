@@ -62,11 +62,12 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
     const todayRowRef = useRef<HTMLTableRowElement>(null);
 
     const isDefaultTheme = themeKey === 'default';
+    const isShinyGold = themeKey === 'shiny_gold';
     const isBlackAndWhite = themeKey === 'deep_black' || theme.bgColor === '#000000' || theme.name === 'اسود' || theme.name === 'black';
     const primaryColor = isDefaultTheme ? '#000000' : (isBlackAndWhite ? '#FFFFFF' : theme.palette[0]);
     const secondaryColor = isDefaultTheme ? '#000000' : (isBlackAndWhite ? '#FFFFFF' : theme.palette[1]);
     const topBarTextColor = isDefaultTheme ? '#000000' : (theme.topBarText || (isBlackAndWhite ? '#FFFFFF' : theme.palette[0]));
-    const tableBorderColor = isDefaultTheme ? '#000000' : (isBlackAndWhite ? '#FFFFFF' : (theme.palette?.[0] || '#000000'));
+    const tableBorderColor = isShinyGold ? '#D97706' : (isDefaultTheme ? '#000000' : (isBlackAndWhite ? '#FFFFFF' : (theme.palette?.[0] || '#000000')));
 
     useEffect(() => {
         if (!getGuideSeen('monthly_prayer_times_spotlight')) {
@@ -450,42 +451,43 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
             >
                 <div 
                     id="monthly-table-container"
-                    className="max-w-4xl w-full mx-auto overflow-auto rounded-xl shadow-sm mb-1" 
+                    className="max-w-4xl w-full mx-auto overflow-auto rounded-xl shadow-sm mb-1 bg-white" 
                     style={{ 
                         border: `2px solid ${tableBorderColor}`, 
                         borderColor: tableBorderColor,
-                        backgroundColor: isDefaultTheme ? '#FFFFFF' : (theme.cardBg || 'var(--card-bg)') 
+                        backgroundColor: '#FFFFFF' 
                     }}
                 >
                     <table 
-                        className="w-full text-center text-[11px] xs:text-xs border-collapse" 
+                        className="w-full text-center text-[11px] xs:text-xs border-collapse bg-white" 
                         dir={dir} 
                         style={{ 
                             border: `1.5px solid ${tableBorderColor}`,
-                            borderColor: tableBorderColor 
+                            borderColor: tableBorderColor,
+                            backgroundColor: '#FFFFFF'
                         }}
                     >
-                        <thead className="z-20" style={{ color: isDefaultTheme ? '#000000' : '#fff' }}>
-                            <tr style={{ borderBottom: `1.5px solid ${tableBorderColor}` }}>
-                                <th className="sticky top-0 px-1 py-2 font-bold z-10" style={{ border: `1.5px solid ${tableBorderColor}`, backgroundColor: isDefaultTheme ? '#f3f4f6' : (isBlackAndWhite ? '#222222' : primaryColor), color: isDefaultTheme ? '#000000' : '#FFFFFF' }}>
+                        <thead className="z-20">
+                            <tr style={{ borderBottom: `2px solid ${tableBorderColor}` }}>
+                                <th className="sticky top-0 px-1 py-2 font-bold z-10" style={{ border: `1.5px solid ${tableBorderColor}`, backgroundColor: isDefaultTheme ? '#f3f4f6' : (isBlackAndWhite ? '#222222' : (isShinyGold ? '#D97706' : primaryColor)), color: isDefaultTheme ? '#000000' : '#FFFFFF' }}>
                                     {tPrayer('dayHeader', language)}
                                 </th>
-                                <th className="sticky top-0 px-1 py-2 font-bold z-10" style={{ border: `1.5px solid ${tableBorderColor}`, backgroundColor: isDefaultTheme ? '#f3f4f6' : (isBlackAndWhite ? '#222222' : primaryColor), color: isDefaultTheme ? '#000000' : '#FFFFFF' }}>
+                                <th className="sticky top-0 px-1 py-2 font-bold z-10" style={{ border: `1.5px solid ${tableBorderColor}`, backgroundColor: isDefaultTheme ? '#f3f4f6' : (isBlackAndWhite ? '#222222' : (isShinyGold ? '#D97706' : primaryColor)), color: isDefaultTheme ? '#000000' : '#FFFFFF' }}>
                                     {tPrayer('dateHeader', language)}
                                 </th>
-                                <th className="sticky top-0 px-1 py-2 font-bold z-10" style={{ border: `1.5px solid ${tableBorderColor}`, backgroundColor: isDefaultTheme ? '#f3f4f6' : (isBlackAndWhite ? '#222222' : primaryColor), color: isDefaultTheme ? '#000000' : '#FFFFFF' }}>
+                                <th className="sticky top-0 px-1 py-2 font-bold z-10" style={{ border: `1.5px solid ${tableBorderColor}`, backgroundColor: isDefaultTheme ? '#f3f4f6' : (isBlackAndWhite ? '#222222' : (isShinyGold ? '#D97706' : primaryColor)), color: isDefaultTheme ? '#000000' : '#FFFFFF' }}>
                                     {getPrayerDisplayName('Fajr', language)}
                                 </th>
-                                <th className="sticky top-0 px-1 py-2 font-bold z-10" style={{ border: `1.5px solid ${tableBorderColor}`, backgroundColor: isDefaultTheme ? '#f3f4f6' : (isBlackAndWhite ? '#222222' : primaryColor), color: isDefaultTheme ? '#000000' : '#FFFFFF' }}>
+                                <th className="sticky top-0 px-1 py-2 font-bold z-10" style={{ border: `1.5px solid ${tableBorderColor}`, backgroundColor: isDefaultTheme ? '#f3f4f6' : (isBlackAndWhite ? '#222222' : (isShinyGold ? '#D97706' : primaryColor)), color: isDefaultTheme ? '#000000' : '#FFFFFF' }}>
                                     {getPrayerDisplayName('Dhuhr', language)}
                                 </th>
-                                <th className="sticky top-0 px-1 py-2 font-bold z-10" style={{ border: `1.5px solid ${tableBorderColor}`, backgroundColor: isDefaultTheme ? '#f3f4f6' : (isBlackAndWhite ? '#222222' : primaryColor), color: isDefaultTheme ? '#000000' : '#FFFFFF' }}>
+                                <th className="sticky top-0 px-1 py-2 font-bold z-10" style={{ border: `1.5px solid ${tableBorderColor}`, backgroundColor: isDefaultTheme ? '#f3f4f6' : (isBlackAndWhite ? '#222222' : (isShinyGold ? '#D97706' : primaryColor)), color: isDefaultTheme ? '#000000' : '#FFFFFF' }}>
                                     {getPrayerDisplayName('Asr', language)}
                                 </th>
-                                <th className="sticky top-0 px-1 py-2 font-bold z-10" style={{ border: `1.5px solid ${tableBorderColor}`, backgroundColor: isDefaultTheme ? '#f3f4f6' : (isBlackAndWhite ? '#222222' : primaryColor), color: isDefaultTheme ? '#000000' : '#FFFFFF' }}>
+                                <th className="sticky top-0 px-1 py-2 font-bold z-10" style={{ border: `1.5px solid ${tableBorderColor}`, backgroundColor: isDefaultTheme ? '#f3f4f6' : (isBlackAndWhite ? '#222222' : (isShinyGold ? '#D97706' : primaryColor)), color: isDefaultTheme ? '#000000' : '#FFFFFF' }}>
                                     {getPrayerDisplayName('Maghrib', language)}
                                 </th>
-                                <th className="sticky top-0 px-1 py-2 font-bold z-10" style={{ border: `1.5px solid ${tableBorderColor}`, backgroundColor: isDefaultTheme ? '#f3f4f6' : (isBlackAndWhite ? '#222222' : primaryColor), color: isDefaultTheme ? '#000000' : '#FFFFFF' }}>
+                                <th className="sticky top-0 px-1 py-2 font-bold z-10" style={{ border: `1.5px solid ${tableBorderColor}`, backgroundColor: isDefaultTheme ? '#f3f4f6' : (isBlackAndWhite ? '#222222' : (isShinyGold ? '#D97706' : primaryColor)), color: isDefaultTheme ? '#000000' : '#FFFFFF' }}>
                                     {getPrayerDisplayName('Isha', language)}
                                 </th>
                             </tr>
@@ -494,9 +496,9 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
                             {monthData.map((day, idx) => {
                                 const isToday = day.gregorianDateStr === `${new Date().getFullYear()}/${new Date().getMonth() + 1}/${new Date().getDate()}`;
                                 
-                                let rowBg: string | undefined = undefined;
-                                let rowTextColor = isDefaultTheme ? '#000000' : 'inherit';
-                                let rowBorderColor = tableBorderColor;
+                                let rowBg = '#FFFFFF';
+                                let rowTextColor = '#1F2937';
+                                let rowBorderColor = isShinyGold ? 'rgba(217, 119, 6, 0.28)' : (isDefaultTheme ? '#E5E7EB' : tableBorderColor);
 
                                 if (isToday) {
                                     if (isBlackAndWhite) {
@@ -508,9 +510,10 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
                                         rowTextColor = '#FFFFFF';
                                         rowBorderColor = '#FFFFFF';
                                     } else {
-                                        rowBg = `${primaryColor}25`;
-                                        rowTextColor = primaryColor;
-                                        rowBorderColor = primaryColor;
+                                        // Golden row for today's date
+                                        rowBg = '#FEF08A';
+                                        rowTextColor = '#78350F';
+                                        rowBorderColor = '#D97706';
                                     }
                                 }
 
@@ -519,16 +522,17 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
                                     borderColor: rowBorderColor,
                                     borderWidth: '1.5px',
                                     borderStyle: 'solid',
-                                    backgroundColor: rowBg
+                                    backgroundColor: isToday ? rowBg : '#FFFFFF',
+                                    color: rowTextColor
                                 };
 
                                 return (
                                     <tr 
                                         key={idx} 
                                         ref={isToday ? todayRowRef : null}
-                                        className={`transition-colors ${isToday ? 'font-bold' : 'hover:bg-black/5 dark:hover:bg-white/5'}`} 
+                                        className={`transition-colors ${isToday ? 'font-bold shadow-xs' : 'hover:bg-amber-50/40'}`} 
                                         style={{ 
-                                            backgroundColor: rowBg,
+                                            backgroundColor: isToday ? rowBg : '#FFFFFF',
                                             color: rowTextColor 
                                         }}
                                     >
@@ -536,8 +540,8 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
                                         <td className="px-1 py-2 font-mono text-[9px] xs:text-[10px]" style={cellStyle} dir="ltr">
                                             <span className="font-bold" style={{ 
                                                 color: isToday 
-                                                    ? (isBlackAndWhite ? '#FDE047' : (isDefaultTheme ? '#FFFFFF' : primaryColor)) 
-                                                    : (isDefaultTheme ? '#000000' : (isBlackAndWhite ? '#FFFFFF' : primaryColor)) 
+                                                    ? '#78350F' 
+                                                    : (isShinyGold ? '#B45309' : (isDefaultTheme ? '#000000' : (isBlackAndWhite ? '#FFFFFF' : primaryColor))) 
                                             }}>
                                                 {day.hijriDay}
                                             </span>

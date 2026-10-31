@@ -77,7 +77,6 @@ import { QuranSpotlightGuide, getQuranGuideSeen } from '../components/QuranReade
 import { 
     QURAN_PAGE_STEPS, 
     QURAN_SURAH_JUZ_STEPS, 
-    QURAN_BOOKMARKS_STEPS, 
     QuranGuideStep
 } from '../components/QuranReader/quranGuideSteps';
 import { syncDailyWirdNotifications } from '../utils/dailyWirdNotificationService';
@@ -278,7 +277,7 @@ const sanitizeRemovedThemeInStorage = (modeSuffix: string) => {
 };
 
 const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: string, params?: any) => void, onOpenThemes?: () => void, initialLandscape?: boolean, initialSurah?: number, initialAyah?: number, initialPage?: number, isWirdMode?: boolean, isMemorizationMode?: boolean, memorizationSettings?: any, navParams?: any }> = ({ page, onBack, onNavigate, onOpenThemes, initialLandscape = false, initialSurah, initialAyah, initialPage, isWirdMode = false, isMemorizationMode = false, memorizationSettings, navParams }) => {
-    const { setCurrentPage, isGlobalTheme, themeKey } = useTheme();
+    const { setCurrentPage, isGlobalTheme, themeKey, isNightMode } = useTheme();
     const { language, isRTL, formatNumber } = useLanguage();
     const isEn = language === 'en';
 
@@ -1108,8 +1107,11 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
     }, [ayahContextMenu.isOpen]);
 
     const updateSetting = (key: string, value: any) => {
+        const layout = getCurrentLayoutContext(navParams);
+        const scopedSettingsKey = `quran_settings_${layout}_${readingMode}_${isLandscape ? 'h' : 'v'}`;
         const newSettings = { ...settings, [key]: value };
         setSettings(newSettings);
+        localStorage.setItem(scopedSettingsKey, JSON.stringify(newSettings));
         localStorage.setItem('quran_settings' + themeSuffix, JSON.stringify(newSettings));
         window.dispatchEvent(new Event('settings-change'));
     };
@@ -1132,7 +1134,9 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
         const mode = themeSuffix;
         sanitizeRemovedThemeInStorage(mode);
         
-        const savedSettings = localStorage.getItem('quran_settings' + mode);
+        const layout = getCurrentLayoutContext(navParams);
+        const scopedSettingsKey = `quran_settings_${layout}_${readingMode}_${isLandscape ? 'h' : 'v'}`;
+        const savedSettings = localStorage.getItem(scopedSettingsKey) || localStorage.getItem('quran_settings' + mode);
         const baseSettings = savedSettings ? JSON.parse(savedSettings) : {};
         const validatedReader = getValidReaderForMode(localIsMemorizationMode ? 'mushaf' : readingMode, baseSettings.reader);
         const initialSettings = { ...DEFAULT_SETTINGS, ...baseSettings, reader: validatedReader };
@@ -1143,16 +1147,21 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
             return initialSettings;
         });
 
-        const layout = getCurrentLayoutContext(navParams);
-        const themeId = getQuranThemeForLayout(layout, mode);
-        const newTheme = THEMES[themeId as keyof typeof THEMES] || (layout === 'classic' ? THEMES['black'] : THEMES['gold']);
+        const themeId = getQuranThemeForLayout(layout, mode, readingMode);
         
-        setCurrentTheme(prev => {
-            if (prev?.id === newTheme.id) return prev;
-            return newTheme;
-        });
+        const newTheme = THEMES[themeId as keyof typeof THEMES] || THEMES['gold'];
+        
+        setCurrentTheme(newTheme);
         setToolbarColors(getToolbarColorsForTheme(newTheme));
         syncQuranThemeToStorage(newTheme, mode);
+
+        setSettings(prev => ({
+            ...prev,
+            bgColor: newTheme.bg,
+            textColor: newTheme.text,
+            highlightTextColor: prev.lockHighlightColor ? prev.highlightTextColor : (newTheme.highlightText || newTheme.accent),
+            theme: newTheme.id
+        }));
         
         const transSetting = localStorage.getItem('transparent_mode' + mode) === 'true';
         setIsTransparentMode(transSetting);
@@ -1174,16 +1183,22 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
             if (!isHideToolbarsEnabledRef.current && isLandscapeUIHidden !== false) setIsLandscapeUIHidden(false);
         }
 
-        const posKey = `last_pos${posSuffix}`;
-        let lastPos = JSON.parse(localStorage.getItem(posKey) || '{}');
-        const globalSaved = localStorage.getItem('last_read_ayah_global');
-        if (globalSaved) {
-            try {
-                const parsed = JSON.parse(globalSaved);
-                if (parsed && typeof parsed.s === 'number') {
-                    lastPos = parsed;
-                }
-            } catch {}
+        const modePosKey = `last_read_pos_${readingMode}`;
+        let lastPos = JSON.parse(localStorage.getItem(modePosKey) || '{}');
+        if (!lastPos || typeof lastPos.s !== 'number') {
+            const posKey = `last_pos${posSuffix}`;
+            lastPos = JSON.parse(localStorage.getItem(posKey) || '{}');
+        }
+        if (!lastPos || typeof lastPos.s !== 'number') {
+            const globalSaved = localStorage.getItem('last_read_ayah_global');
+            if (globalSaved) {
+                try {
+                    const parsed = JSON.parse(globalSaved);
+                    if (parsed && typeof parsed.s === 'number') {
+                        lastPos = parsed;
+                    }
+                } catch {}
+            }
         }
         if (!lastPos || typeof lastPos.s !== 'number') {
             const vSaved = localStorage.getItem('last_pos_v');
@@ -1244,7 +1259,7 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
             const theme = THEMES['black'];
             setToolbarColors(getToolbarColorsForTheme(theme));
         }
-    }, [themeSuffix, posSuffix, initialSurah, initialPage, localIsMemorizationMode, isWirdMode, isGlobalTheme]);
+    }, [themeSuffix, posSuffix, initialSurah, initialPage, localIsMemorizationMode, isWirdMode, isGlobalTheme, isNightMode]);
     
     useEffect(() => {
         if (!isLandscape) return;
@@ -1517,7 +1532,6 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
         if (isWirdMode || isMemorizationMode || navParams?.openModal) return false;
         return !getQuranGuideSeen('main_reader');
     });
-    const [isBookmarksGuideOpen, setIsBookmarksGuideOpen] = useState(false);
     const [isSurahJuzGuideOpen, setIsSurahJuzGuideOpen] = useState(false);
 
     // 1. Quran page main guide: triggers immediately when page is opened and no other menu/modal is open
@@ -1530,17 +1544,6 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
         }
     }, [activeModals, isFloatingMenuOpen, tafseerInfo.isOpen, tafseerSelectionInfo.isOpen, isWirdMode, isMemorizationMode, navParams?.openModal]);
 
-    // 4. Bookmarks modal guide: triggers only when bookmarks modal is opened
-    useEffect(() => {
-        if (activeModals.includes('bookmarks-modal') && !getQuranGuideSeen('bookmarks_modal')) {
-            const timer = setTimeout(() => {
-                setIsBookmarksGuideOpen(true);
-            }, 350);
-            return () => clearTimeout(timer);
-        } else {
-            setIsBookmarksGuideOpen(false);
-        }
-    }, [activeModals]);
 
     // 5. Surah & Juz modal guide: triggers only when surah/juz modal is opened
     useEffect(() => {
@@ -1671,8 +1674,10 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
     const [settings, setSettings] = useState(() => {
         const mode = getScopedSuffix(readingMode, initialLandscape);
         sanitizeRemovedThemeInStorage(mode);
+        const layout = getCurrentLayoutContext(navParams);
+        const targetThemeId = getQuranThemeForLayout(layout, mode);
+        const defaultTheme = THEMES[targetThemeId as keyof typeof THEMES] || THEMES['gold'];
         const saved = localStorage.getItem('quran_settings' + mode);
-        const defaultTheme = THEMES['black'];
         const base = saved ? JSON.parse(saved) : {};
         const validatedReader = getValidReaderForMode(readingMode, base.reader);
         return {
@@ -1680,8 +1685,9 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
             ...base,
             reader: validatedReader,
             fontFamily: base.fontFamily || defaultTheme.font,
-            textColor: base.textColor || "",
-            bgColor: base.bgColor || ""
+            textColor: base.textColor || defaultTheme.text,
+            bgColor: base.bgColor || defaultTheme.bg,
+            theme: defaultTheme.id
         };
     });
 
@@ -1689,7 +1695,7 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
         const mode = getScopedSuffix(readingMode, initialLandscape);
         const layout = getCurrentLayoutContext(navParams);
         const themeId = getQuranThemeForLayout(layout, mode);
-        return THEMES[themeId as keyof typeof THEMES] || (layout === 'classic' ? THEMES['black'] : THEMES['gold']);
+        return THEMES[themeId as keyof typeof THEMES] || THEMES['gold'];
     });
 
     // Keep screen awake logic
@@ -1737,8 +1743,8 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
     const [toolbarColors, setToolbarColors] = useState(() => {
         const mode = initialLandscape ? '_h' : '_v';
         const layout = getCurrentLayoutContext(navParams);
-        const themeId = getQuranThemeForLayout(layout, mode);
-        const theme = THEMES[themeId as keyof typeof THEMES] || (layout === 'classic' ? THEMES['black'] : THEMES['gold']);
+        const themeId = getQuranThemeForLayout(layout, mode, readingMode);
+        const theme = THEMES[themeId as keyof typeof THEMES] || THEMES['gold'];
         return getToolbarColorsForTheme(theme);
     });
 
@@ -2496,12 +2502,19 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
 
         const layout = getCurrentLayoutContext(navParams);
         const mode = themeSuffix;
-        const targetThemeId = getQuranThemeForLayout(layout, mode);
-        const theme = THEMES[targetThemeId as keyof typeof THEMES] || (layout === 'classic' ? THEMES['black'] : THEMES['gold']);
+        const targetThemeId = getQuranThemeForLayout(layout, mode, readingMode);
+        const theme = THEMES[targetThemeId as keyof typeof THEMES] || THEMES['gold'];
         if (theme) {
             syncQuranThemeToStorage(theme, mode);
             setCurrentTheme(theme);
             setToolbarColors(getToolbarColorsForTheme(theme));
+            setSettings(prev => ({
+                ...prev,
+                bgColor: theme.bg,
+                textColor: theme.text,
+                highlightTextColor: prev.lockHighlightColor ? prev.highlightTextColor : (theme.highlightText || theme.accent),
+                theme: theme.id
+            }));
         }
 
         if (navParams?.openSidebar || navParams?.openFloatingMenu || navParams?.openMenu) {
@@ -2533,9 +2546,15 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
             setCurrentAyah({ s, a });
             currentAyahRef.current = { s, a };
             const savedObj = { s, a, page: pageNum, juz: juzNum, isExplicit: isExplicitSelection, ts: Date.now() };
+            const modePosKey = `last_read_pos_${readingModeRef.current}`;
+            localStorage.setItem(modePosKey, JSON.stringify(savedObj));
+            
+            if (readingModeRef.current === 'mushaf') {
+                localStorage.setItem('last_read_ayah_global', JSON.stringify(savedObj));
+            }
+
             const key = `last_pos${posSuffix}`;
             localStorage.setItem(key, JSON.stringify(savedObj));
-            localStorage.setItem('last_read_ayah_global', JSON.stringify(savedObj));
             window.dispatchEvent(new Event('last_read_update'));
         }, 0);
     }, [posSuffix, quranData]);
@@ -2827,7 +2846,7 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
         const handleThemeChange = () => {
             const modeSuffix = themeSuffix;
             const layout = getCurrentLayoutContext(navParams);
-            const themeId = getQuranThemeForLayout(layout, modeSuffix);
+            const themeId = localStorage.getItem('current_theme_id' + modeSuffix) || getQuranThemeForLayout(layout, modeSuffix);
             const newTheme = THEMES[themeId as keyof typeof THEMES] || (layout === 'classic' ? THEMES['black'] : THEMES['gold']);
             
             setCurrentTheme(prev => {
@@ -2954,24 +2973,25 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
         sanitizeRemovedThemeInStorage(mode);
         const layout = getCurrentLayoutContext(navParams);
         const themeId = getQuranThemeForLayout(layout, mode);
-        const newTheme = THEMES[themeId as keyof typeof THEMES] || (layout === 'classic' ? THEMES['black'] : THEMES['gold']);
+        const newTheme = THEMES[themeId as keyof typeof THEMES] || THEMES['gold'];
         
-        setCurrentTheme(prev => {
-            if (prev?.id === newTheme.id) return prev;
-            return newTheme;
-        });
+        setCurrentTheme(newTheme);
         setToolbarColors(getToolbarColorsForTheme(newTheme));
+        syncQuranThemeToStorage(newTheme, mode);
         
         const saved = localStorage.getItem('quran_settings' + mode);
         if (saved) {
             const parsed = JSON.parse(saved);
-            const newSettings = { ...DEFAULT_SETTINGS, ...parsed };
-            setSettings(prev => {
-                if (JSON.stringify(prev) === JSON.stringify(newSettings)) return prev;
-                return newSettings;
-            });
+            const newSettings = { 
+                ...DEFAULT_SETTINGS, 
+                ...parsed,
+                bgColor: parsed.bgColor || newTheme.bg,
+                textColor: parsed.textColor || newTheme.text,
+                theme: newTheme.id
+            };
+            setSettings(newSettings);
         }
-    }, [themeSuffix, getOtherOrientSuffix]);
+    }, [themeSuffix, getOtherOrientSuffix, isNightMode]);
 
     const handleMarkWirdCompleted = useCallback((shouldContinue = false) => {
         const saved = localStorage.getItem('dailyWirdSettings_v2');
@@ -4587,7 +4607,11 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
     if (isLoading) { return <div id="loader" className="fixed inset-0 bg-[#1f2937] text-white z-[9999] flex flex-col items-center justify-center"><div className="text-2xl font-bold mb-4">جاري تحميل المصحف...</div><div className="w-64 h-2 bg-gray-700 rounded-full overflow-hidden"><div id="progress-bar" className="h-full bg-green-500 transition-all duration-300" style={{width: `${loadingProgress}%`}}></div></div><div id="loader-status" className="mt-2 text-sm text-gray-400">{loadingStatus}</div></div> }
 
     return (
-        <div className={`quran-reader-container ${isPageInputActive ? 'force-ui-visible' : ''} ${isLandscape ? 'landscape-mode' : ''} ${isLandscapeUIHidden ? 'landscape-ui-hidden' : ''} ${!isLandscape ? 'vertical-page' : ''} ${isTransparentMode ? 'is-transparent-mode' : ''} ${settings.showPageBorder === false ? 'no-border' : ''} ${(isHideToolbarsEnabled && isLandscapeUIHidden) ? 'hide-toolbars-autoscroll' : ''}`} id="app-container" style={{ 
+        <div 
+            className={`quran-reader-container ${isPageInputActive ? 'force-ui-visible' : ''} ${isLandscape ? 'landscape-mode' : ''} ${isLandscapeUIHidden ? 'landscape-ui-hidden' : ''} ${!isLandscape ? 'vertical-page' : ''} ${isTransparentMode ? 'is-transparent-mode' : ''} ${settings.showPageBorder === false ? 'no-border' : ''} ${(isHideToolbarsEnabled && isLandscapeUIHidden) ? 'hide-toolbars-autoscroll' : ''}`} 
+            id="app-container" 
+            data-quran-theme={currentTheme.id}
+            style={{ 
             backgroundColor: settings.bgColor || currentTheme.bg || '#ffffff', 
             color: settings.textColor, 
             fontFamily: settings.fontFamily, 
@@ -5164,13 +5188,7 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
                 onStepChange={handleMainGuideStepChange}
                 isEn={isEn}
             />
-            <QuranSpotlightGuide
-                guideKey="bookmarks_modal"
-                steps={QURAN_BOOKMARKS_STEPS}
-                isOpen={isBookmarksGuideOpen}
-                onClose={() => setIsBookmarksGuideOpen(false)}
-                isEn={isEn}
-            />
+
             <QuranSpotlightGuide
                 guideKey="surah_juz_modal_v2"
                 steps={QURAN_SURAH_JUZ_STEPS}

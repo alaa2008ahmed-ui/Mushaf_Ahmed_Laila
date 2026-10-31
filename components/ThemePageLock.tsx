@@ -2,7 +2,7 @@ import React from 'react';
 import { useTheme } from '../context/ThemeContext';
 
 const ThemePageLock: React.FC = () => {
-    const { isPageLocked, togglePageLock, isQuranPage, currentPage } = useTheme();
+    const { isPageLocked, togglePageLock, isQuranPage } = useTheme();
 
     // Only show on Quran page
     if (!isQuranPage) return null;

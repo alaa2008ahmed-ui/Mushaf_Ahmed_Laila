@@ -62,7 +62,7 @@ const VideoSplash: React.FC<VideoSplashProps> = ({ onEnded }) => {
       <video
         ref={videoRef}
         className={`w-full h-full object-cover pointer-events-none transition-opacity duration-300 ${isReady ? 'opacity-100' : 'opacity-0'}`}
-        src="/splash.mp4"
+        src="/assets/aistudio/video_2026-10-31_11-52-03_38f59f9f.mp4"
         autoPlay
         muted
         playsInline

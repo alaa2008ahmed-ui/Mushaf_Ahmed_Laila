@@ -151,7 +151,7 @@ const MushafPage: React.FC<MushafPageProps> = React.memo(({ pageNum, pageData, h
             case 'night_sky': return { num: '#9333ea', bracket: '#9333ea' }; // Purple for both
             case 'green': return { num: '#dc2626', bracket: '#dc2626' }; // Red for both
             case 'red': return { num: '#2563eb', bracket: '#2563eb' }; // Blue for both
-            case 'deep_black': return { num: '#10B981', bracket: '#10B981' }; // Turquoise Green for both
+            case 'deep_black': return { num: '#ffffff', bracket: '#ffffff' }; // White for both in deep black
             default: return { 
                 num: numColor, 
                 bracket: bracketColor 
@@ -255,6 +255,7 @@ const MushafPage: React.FC<MushafPageProps> = React.memo(({ pageNum, pageData, h
                             <span 
                                 id={id} 
                                 className={`ayah-text-block ${highlightedAyahId === id ? 'highlighted' : ''} ${isSajdah ? 'ayah-sajdah' : ''} ${shouldHide ? 'hide-text' : ''}`} 
+                                style={highlightedAyahId === id && currentTheme?.id === 'deep_black' ? { color: '#ffffff', textShadow: '0 0 2px rgba(255, 255, 255, 0.8)' } : undefined}
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     if (!isLongPressTriggered.current) {
@@ -307,9 +308,9 @@ const MushafPage: React.FC<MushafPageProps> = React.memo(({ pageNum, pageData, h
                                         e.stopPropagation();
                                     }}
                                 >
-                                    <span className="verse-bracket" style={{ color: currentTheme?.verseBracket || currentTheme?.accent || '#d97706' }}>﴿</span>
-                                    <span className="verse-num-inner" style={{ color: currentTheme?.accent || '#1d4ed8' }}>{toArabic(ayah.numberInSurah)}</span>
-                                    <span className="verse-bracket" style={{ color: currentTheme?.verseBracket || currentTheme?.accent || '#d97706' }}>﴾</span>
+                                    <span className="verse-bracket" style={{ color: currentTheme?.id === 'deep_black' ? '#ffffff' : (currentTheme?.verseBracket || currentTheme?.accent || '#d97706') }}>﴿</span>
+                                    <span className="verse-num-inner" style={{ color: currentTheme?.id === 'deep_black' ? '#ffffff' : (currentTheme?.accent || '#1d4ed8') }}>{toArabic(ayah.numberInSurah)}</span>
+                                    <span className="verse-bracket" style={{ color: currentTheme?.id === 'deep_black' ? '#ffffff' : (currentTheme?.verseBracket || currentTheme?.accent || '#d97706') }}>﴾</span>
                                 </span>
                             </span>
                         </React.Fragment>

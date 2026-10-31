@@ -44,6 +44,7 @@ import {
   markWirdAlertShownToday 
 } from './utils/dailyWirdNotificationService';
 import { getPendingShortcutInfo, markNativeShortcutConsumed, updateNativeAlertsGroupSummary } from './utils/silentMode';
+import ScrollToTopFAB from './components/ScrollToTopFAB';
 
 // --- Main App Component ---
 function App() {
@@ -948,6 +949,7 @@ function AppContent({
         />
       )}
 
+      <ScrollToTopFAB currentPage={history[history.length - 1]} />
     </div>
   );
 }

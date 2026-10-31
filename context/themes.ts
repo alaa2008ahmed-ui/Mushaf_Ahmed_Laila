@@ -31,6 +31,30 @@ export interface Theme {
 }
 
 export const presetThemes: { [key: string]: Theme } = {
+    black_gold: {
+        name: "الأسود والذهبي",
+        bgColor: "#000000",
+        isDark: true,
+        textColor: "#F59E0B",
+        font: "'Cairo', sans-serif",
+        palette: ["#F59E0B", "#D97706", "#B45309", "#78350F"],
+        barBg: "#0B0B0B",
+        barBorder: "1px solid #D97706",
+        topBarBg: "#000000",
+        topBarText: "#F59E0B",
+        btnBg: "#141414",
+        btnText: "#F59E0B",
+        btnBorder: "1.5px solid #D97706",
+        accent: "#F59E0B",
+        accentText: "#000000",
+        highlightText: "#FBBF24",
+        cardBg: "#111111",
+        cardText: "#F59E0B",
+        cardBorder: "1.5px solid #D97706",
+        modalBg: "#0A0A0A",
+        modalText: "#F59E0B",
+        sajdah: "#F59E0B"
+    },
     default: {
         name: "الافتراضي",
         bgColor: "#DFE5EC",

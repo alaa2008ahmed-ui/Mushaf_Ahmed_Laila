@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { READERS, TAFSEERS, THEMES, DEFAULT_SETTINGS, toArabic, isDarkQuranTheme, ReadingMode, getReadersForMode, getValidReaderForMode, ENGLISH_FONTS } from './constants';
+import { READERS, TAFSEERS, THEMES, DEFAULT_SETTINGS, toArabic, isDarkQuranTheme, ReadingMode, getReadersForMode, getValidReaderForMode, ENGLISH_FONTS, getTafseerDisplayName } from './constants';
 import { getQuranThemeIdForLayout } from '../../utils/quranThemeHelper';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
+import { getReciterDisplayName } from '../../utils/listenQuranTranslations';
 
 import SurahHeader from './SurahHeader';
 
@@ -102,14 +103,14 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, sho
         setShowSajdahCard(checked);
         localStorage.setItem('show_sajdah_card' + modeSuffix, String(checked));
         window.dispatchEvent(new Event('settings-change'));
-        showToast(checked ? 'تم تفعيل بطاقة السجدة الكبرى' : 'تم إيقاف بطاقة السجدة الكبرى');
+        showToast(checked ? (isEn ? 'Sajdah card enabled' : 'تم تفعيل بطاقة السجدة الكبرى') : (isEn ? 'Sajdah card disabled' : 'تم إيقاف بطاقة السجدة الكبرى'));
     };
 
     const handleHideToolbarsToggle = (checked: boolean) => {
         setIsHideToolbarsEnabled(checked);
         localStorage.setItem('hide_toolbars_enabled' + modeSuffix, String(checked));
         window.dispatchEvent(new Event('settings-change'));
-        showToast(checked ? 'تم تفعيل إخفاء الأشرطة' : 'تم تعطيل إخفاء الأشرطة');
+        showToast(checked ? (isEn ? 'Hide toolbars enabled' : 'تم تفعيل إخفاء الأشرطة') : (isEn ? 'Hide toolbars disabled' : 'تم تعطيل إخفاء الأشرطة'));
     };
 
 
@@ -119,9 +120,13 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, sho
     const getReaderName = (id: string) => {
         const validId = getValidReaderForMode(readingMode as ReadingMode, id);
         const modeList = getReadersForMode(readingMode as ReadingMode);
-        return modeList.find(r => r.id === validId)?.name || READERS.find(r => r.id === validId)?.name || validId;
+        const readerObj = modeList.find(r => r.id === validId) || READERS.find(r => r.id === validId);
+        if (isEn) {
+            return getReciterDisplayName(validId, 'en', readerObj?.name || validId);
+        }
+        return readerObj?.name || validId;
     };
-    const getTafseerName = (id: string) => TAFSEERS.find(t => t.id === id)?.name || id;
+    const getTafseerName = (id: string) => getTafseerDisplayName(id, isEn ? 'en' : 'ar');
     const getFontName = (val: string) => {
         if (readingMode === 'translation') {
             const found = ENGLISH_FONTS.find(f => f.id === val);
@@ -129,14 +134,14 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, sho
             return "EB Garamond (Sacred)";
         }
         const fontMap: Record<string, string> = {
-            "var(--font-amiri-quran)": "حفص", "var(--font-amiri)": "نسخ", "var(--font-scheherazade)": "مجود",
-            "var(--font-lateef)": "تراثي", "var(--font-harmattan)": "ورش", "var(--font-aref)": "رقعة",
-            "var(--font-gulzar)": "نستعليق", "var(--font-kufi)": "كوفي", "var(--font-kufam)": "كوفي حديث",
-            "var(--font-noto)": "نسخ حديث", "var(--font-cairo)": "القاهرة", "var(--font-messiri)": "المسيري",
-            "var(--font-rakkas)": "رقاص", "var(--font-lalezar)": "لالزار", "var(--font-katibeh)": "قطيبة",
-            "var(--font-tajawal)": "تجوّل", "var(--font-changa)": "شنقة", "var(--font-mirza)": "ميرزا",
-            "var(--font-qalam)": "قلم", "var(--font-thuluth)": "ثلوث", "var(--font-digital)": "رقمي",
-            "'KFGQPC Uthman Taha Naskh'": "مجمع الملك فهد", "'Me Quran'": "خط المصحف"
+            "var(--font-amiri-quran)": isEn ? "Hafs" : "حفص", "var(--font-amiri)": isEn ? "Naskh" : "نسخ", "var(--font-scheherazade)": isEn ? "Mujawwad" : "مجود",
+            "var(--font-lateef)": isEn ? "Traditional" : "تراثي", "var(--font-harmattan)": isEn ? "Warsh" : "ورش", "var(--font-aref)": isEn ? "Ruq'ah" : "رقعة",
+            "var(--font-gulzar)": isEn ? "Nasta'liq" : "نستعليق", "var(--font-kufi)": isEn ? "Kufi" : "كوفي", "var(--font-kufam)": isEn ? "Modern Kufi" : "كوفي حديث",
+            "var(--font-noto)": isEn ? "Modern Naskh" : "نسخ حديث", "var(--font-cairo)": isEn ? "Cairo" : "القاهرة", "var(--font-messiri)": isEn ? "El Messiri" : "المسيري",
+            "var(--font-rakkas)": isEn ? "Rakkas" : "رقاص", "var(--font-lalezar)": isEn ? "Lalezar" : "لالزار", "var(--font-katibeh)": isEn ? "Katibeh" : "قطيبة",
+            "var(--font-tajawal)": isEn ? "Tajawal" : "تجوّل", "var(--font-changa)": isEn ? "Changa" : "شنقة", "var(--font-mirza)": isEn ? "Mirza" : "ميرزا",
+            "var(--font-qalam)": isEn ? "Qalam" : "قلم", "var(--font-thuluth)": isEn ? "Thuluth" : "ثلوث", "var(--font-digital)": isEn ? "Digital" : "رقمي",
+            "'KFGQPC Uthman Taha Naskh'": isEn ? "King Fahd Complex" : "مجمع الملك فهد", "'Me Quran'": isEn ? "Mushaf Font" : "خط المصحف"
         };
         return fontMap[val] || (isEn ? "Default" : "افتراضي");
     };
@@ -145,66 +150,65 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, sho
     const isDarkTheme = isDarkQuranTheme(currentTheme);
 
     return (
-        <div className="fixed z-[1200] bg-black/40 backdrop-blur-sm flex items-center justify-center overflow-hidden" style={{ top: 0, bottom: 0, left: 0, right: 0 }} dir="rtl" onClick={handleClose}>
+        <div className="fixed z-[1200] bg-black/40 backdrop-blur-sm flex items-center justify-center overflow-hidden" style={{ top: 0, bottom: 0, left: 0, right: 0 }} dir={isEn ? "ltr" : "rtl"} onClick={handleClose}>
             <div className="w-full h-full flex flex-col overflow-hidden shadow-2xl border-0" style={{ backgroundColor: currentTheme.bg || '#ffffff', border: 'none', outline: 'none' }} onClick={e => e.stopPropagation()}>
                 <div className="flex-1 w-full flex flex-col overflow-hidden" style={{ color: currentTheme.text || '#000000' }}>
                     <div 
                         className={`p-3 overflow-y-auto text-center flex-1 scrollbar-hide ${isLandscape ? 'grid grid-cols-2 gap-x-6 gap-y-3' : 'space-y-3'}`}
                         style={{ paddingTop: 'calc(0.75rem + env(safe-area-inset-top))' }}
                     >
-                    {/* خامسا: صف موحد يجمع حجم الخط مع سماكة الخط وتخصيص الخط */}
-                    <div id="font-controls-row" className={`${isLandscape ? 'col-span-2' : ''} p-3 rounded-2xl quran-raised-card space-y-2 border-0`} style={{ backgroundColor: isDarkTheme ? (currentTheme?.cardBg || 'rgba(255,255,255,0.05)') : '#ffffff' }}>
-                        <div className="grid grid-cols-12 gap-2 items-center">
-                            {/* حجم الخط: يأخذ النصف الأول من الصف */}
-                            <div id="font-size-section" className="col-span-6 flex flex-col justify-center">
-                                <div className="flex items-center justify-between mb-1.5">
-                                    <label className="text-xs font-bold opacity-80">{isEn ? "Font Size" : "حجم الخط"}</label>
-                                    <span className="text-[11px] px-2 py-0.5 rounded-lg quran-raised-card font-bold" style={{ backgroundColor: isDarkTheme ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)', border: 'none' }}>{formatFontSize(settings.fontSize)}</span>
-                                </div>
-                                <input 
-                                    type="range" 
-                                    min="0.5" 
-                                    max="4.5" 
-                                    step="0.05" 
-                                    value={parseFloat(formatFontSize(settings.fontSize))} 
-                                    onChange={(e) => updateSetting('fontSize', parseFloat(parseFloat(e.target.value).toFixed(2)))} 
-                                    className="w-full h-1.5 bg-gray-300 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer" 
-                                    style={{ accentColor: currentTheme?.accent || 'var(--qr-accent)' }} 
-                                />
+                    {/* حجم الخط: صف كامل مستقل */}
+                    <div id="font-size-row" className={`${isLandscape ? 'col-span-2' : ''} p-3 rounded-2xl quran-raised-card border-0`} style={{ backgroundColor: isDarkTheme ? (currentTheme?.cardBg || 'rgba(255,255,255,0.05)') : '#ffffff' }}>
+                        <div id="font-size-section" className="w-full flex flex-col justify-center">
+                            <div className="flex items-center justify-between mb-2">
+                                <label className="text-xs font-bold opacity-80">{isEn ? "Font Size" : "حجم الخط"}</label>
+                                <span className="text-[11px] px-2.5 py-0.5 rounded-lg quran-raised-card font-bold" style={{ backgroundColor: isDarkTheme ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)', border: 'none' }}>{formatFontSize(settings.fontSize)}</span>
                             </div>
+                            <input 
+                                type="range" 
+                                min="0.5" 
+                                max="4.5" 
+                                step="0.05" 
+                                value={parseFloat(formatFontSize(settings.fontSize))} 
+                                onChange={(e) => updateSetting('fontSize', parseFloat(parseFloat(e.target.value).toFixed(2)))} 
+                                className="w-full h-2 bg-gray-300 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer" 
+                                style={{ accentColor: currentTheme?.accent || 'var(--qr-accent)' }} 
+                            />
+                        </div>
+                    </div>
 
-                            {/* سماكة الخط وتخصيص الخط: تأخذ النصف الثاني من الصف */}
-                            <div id="font-family-section" className="col-span-6 flex flex-col justify-center">
-                                <label className="text-xs font-bold block opacity-80 mb-1.5 text-right">
-                                    {readingMode === 'translation' ? (isEn ? "English Font" : "الخط الإنجليزي") : (isEn ? "Font" : "تخصيص الخط")}
-                                </label>
-                                <div className="grid grid-cols-5 gap-1.5">
-                                    <button 
-                                        id="font-weight-btn" 
-                                        onClick={() => updateSetting('isBold', !settings.isBold)} 
-                                        className={`col-span-2 p-1 text-[11px] h-8 rounded-xl flex justify-center items-center font-bold transition-all border-0 ${settings.isBold ? 'quran-raised-btn-selected text-white' : 'quran-raised-btn'}`} 
-                                        style={{ 
-                                            backgroundColor: settings.isBold ? (currentTheme?.accent || '#10b981') : (isDarkTheme ? (currentTheme?.btnBg || 'rgba(255,255,255,0.08)') : '#ffffff'),
-                                            border: 'none',
-                                        }}
-                                        title={isEn ? "Toggle bold font weight" : "تفعيل/إلغاء سماكة الخط (Bold)"}
-                                    >
-                                        <span className={`${settings.isBold ? 'font-black' : ''}`}>{isEn ? "Bold" : "سماكة"}</span>
-                                    </button>
-                                    <button 
-                                        id="font-family-btn" 
-                                        onClick={() => onOpenModal('font-modal')} 
-                                        className="col-span-3 p-1 text-[11px] h-8 rounded-xl quran-raised-btn flex justify-between items-center px-2.5 font-bold border-0"
-                                        style={{ 
-                                            backgroundColor: isDarkTheme ? (currentTheme?.btnBg || 'rgba(255,255,255,0.08)') : '#ffffff',
-                                            color: currentTheme?.text,
-                                            border: 'none',
-                                        }}
-                                    >
-                                        <span className="truncate">{getFontName(settings.fontFamily)}</span>
-                                        <i className="fa-solid fa-chevron-left opacity-50 shrink-0 text-[9px] quran-3d-icon"></i>
-                                    </button>
-                                </div>
+                    {/* تخصيص الخط: صف كامل مستقل أسفل حجم الخط */}
+                    <div id="font-family-row" className={`${isLandscape ? 'col-span-2' : ''} p-3 rounded-2xl quran-raised-card border-0`} style={{ backgroundColor: isDarkTheme ? (currentTheme?.cardBg || 'rgba(255,255,255,0.05)') : '#ffffff' }}>
+                        <div id="font-family-section" className="w-full flex flex-col justify-center">
+                            <label className="text-xs font-bold block opacity-80 mb-2">
+                                {readingMode === 'translation' ? (isEn ? "English Font" : "الخط الإنجليزي") : (isEn ? "Font Customization" : "تخصيص الخط")}
+                            </label>
+                            <div className="grid grid-cols-12 gap-2 items-center">
+                                <button 
+                                    id="font-weight-btn" 
+                                    onClick={() => updateSetting('isBold', !settings.isBold)} 
+                                    className={`col-span-4 p-1.5 text-xs h-9 rounded-xl flex justify-center items-center font-bold transition-all border-0 cursor-pointer ${settings.isBold ? 'quran-raised-btn-selected text-white' : 'quran-raised-btn'}`} 
+                                    style={{ 
+                                        backgroundColor: settings.isBold ? (currentTheme?.accent || '#10b981') : (isDarkTheme ? (currentTheme?.btnBg || 'rgba(255,255,255,0.08)') : '#ffffff'),
+                                        border: 'none',
+                                    }}
+                                    title={isEn ? "Toggle bold font weight" : "تفعيل/إلغاء سماكة الخط (Bold)"}
+                                >
+                                    <span className={`${settings.isBold ? 'font-black' : ''}`}>{isEn ? "Bold" : "سماكة"}</span>
+                                </button>
+                                <button 
+                                    id="font-family-btn" 
+                                    onClick={() => onOpenModal('font-modal')} 
+                                    className="col-span-8 p-1.5 text-xs h-9 rounded-xl quran-raised-btn flex justify-between items-center px-3 font-bold border-0 cursor-pointer"
+                                    style={{ 
+                                        backgroundColor: isDarkTheme ? (currentTheme?.btnBg || 'rgba(255,255,255,0.08)') : '#ffffff',
+                                        color: currentTheme?.text,
+                                        border: 'none',
+                                    }}
+                                >
+                                    <span className="truncate">{getFontName(settings.fontFamily)}</span>
+                                    <i className="fa-solid fa-chevron-left opacity-50 shrink-0 text-[10px] quran-3d-icon"></i>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -282,7 +286,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, sho
 
                     {/* أولاً: بطاقة القارئ وبطاقة التفسير في صف واحد */}
                     <div id="reciter-tafseer-row" className="grid grid-cols-2 gap-2.5 py-0.5">
-                        <div id="reciter-section" className="flex flex-col text-right">
+                        <div id="reciter-section" className={`flex flex-col ${isEn ? 'text-left' : 'text-right'}`}>
                             <label className="text-xs font-bold block opacity-80 mb-1.5">{isEn ? "Reciter" : "القارئ"}</label>
                             <button 
                                 onClick={() => onOpenModal('reciter-modal')} 
@@ -297,7 +301,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, sho
                                 <i className="fa-solid fa-chevron-left opacity-50 shrink-0 text-[10px] quran-3d-icon"></i>
                             </button>
                         </div>
-                        <div id="tafseer-section" className="flex flex-col text-right">
+                        <div id="tafseer-section" className={`flex flex-col ${isEn ? 'text-left' : 'text-right'}`}>
                             <label className="text-xs font-bold block opacity-80 mb-1.5">{isEn ? "Tafseer" : "التفسير"}</label>
                             <button 
                                 onClick={() => onOpenModal('tafseer-selection-modal')} 
@@ -332,7 +336,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, sho
                                         style={settings.ayahRepeatCount === num ? { backgroundColor: currentTheme?.accent || '#10b981', color: '#ffffff', border: 'none' } : { border: 'none' }}
                                         title={`${isEn ? "Repeat" : "تكرار"} ${num}`}
                                     >
-                                        {toArabic(num)}
+                                        {isEn ? num : toArabic(num)}
                                     </button>
                                 ))}
                             </div>

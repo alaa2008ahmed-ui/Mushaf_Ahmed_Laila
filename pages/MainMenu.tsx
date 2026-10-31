@@ -10,7 +10,7 @@ import { registerBackInterceptor } from '../hooks/useBackButton';
 import TitleSection from '../components/MainMenu/TitleSection';
 import GridSection from '../components/MainMenu/GridSection';
 import FloatingNeonTicker from '../components/FloatingNeonTicker';
-import { Palette, LayoutDashboard, LayoutGrid } from 'lucide-react';
+import { Palette, LayoutDashboard, LayoutGrid, Moon, Sun } from 'lucide-react';
 import ModernHomeView from '../components/MainMenu/ModernHomeView';
 import VoiceControlToggle from '../components/VoiceControlToggle';
 import { useVoiceControl } from '../context/VoiceControlContext';
@@ -210,7 +210,7 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
     translateGregorianMonth, 
     formatNumber 
   } = useLanguage();
-  const { theme, themeKey } = useTheme();
+  const { theme, themeKey, isNightMode, toggleNightMode } = useTheme();
   const isBlackTheme = themeKey === 'deep_black' || theme.bgColor === '#000000' || theme.name === 'اسود' || theme.name === 'black';
   const isDarkTheme = isBlackTheme || theme.isDark || theme.bgColor === '#000000' || (theme.textColor && theme.textColor.toLowerCase() === '#ffffff');
   // لون أيقونات الهيدر: يطابق الثيم الافتراضي (#2E7D5E)، ويتغير مع الثيمات الأخرى ومع الوضع الداكن/الأسود
@@ -249,6 +249,14 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
     const handleLayoutChange = (e: any) => {
       const mode = e?.detail;
       if (mode === 'classic' || mode === 'modern') {
+        if (scrollContainerRef.current) {
+          scrollContainerRef.current.scrollTop = 0;
+        }
+        const container = document.getElementById('main-menu-scroll-container');
+        if (container) {
+          container.scrollTop = 0;
+        }
+        window.scrollTo(0, 0);
         setHomeLayoutMode(mode);
       }
     };
@@ -258,6 +266,14 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
 
   const toggleHomeLayout = () => {
     const nextMode = homeLayoutMode === 'classic' ? 'modern' : 'classic';
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = 0;
+    }
+    const container = document.getElementById('main-menu-scroll-container');
+    if (container) {
+      container.scrollTop = 0;
+    }
+    window.scrollTo(0, 0);
     setHomeLayoutMode(nextMode);
     try {
       localStorage.setItem('home_layout_system', nextMode);
@@ -272,17 +288,54 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
     );
   };
 
-  // ضمان استقلالية تامة للتصميم الذكي الحديث عن ثيمات وفونتات وألوان التصميم الكلاسيكي
+  // الانتقال إلى بداية الصفحة دائماً عند التبديل بين التصميم الكلاسيكي والحديث أو العكس
+  useEffect(() => {
+    const scrollToBeginning = () => {
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTop = 0;
+      }
+      const container = document.getElementById('main-menu-scroll-container');
+      if (container) {
+        container.scrollTop = 0;
+      }
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    };
+
+    scrollToBeginning();
+    const raf = requestAnimationFrame(scrollToBeginning);
+    const timer = setTimeout(scrollToBeginning, 60);
+    return () => {
+      cancelAnimationFrame(raf);
+      clearTimeout(timer);
+    };
+  }, [homeLayoutMode]);
+
+  // ضمان استقلالية تامة للتصميم الذكي الحديث عن ثيمات وفونتات وألوان التصميم الكلاسيكي مع دعم الوضع الليلي
   useEffect(() => {
     if (homeLayoutMode === 'modern') {
-      document.documentElement.classList.remove('theme-black', 'dark');
-      document.body.classList.remove('theme-black', 'dark');
-      document.documentElement.classList.add('modern-home-active');
-      document.body.classList.add('modern-home-active');
-      document.body.style.backgroundColor = '#FFFFFF';
-      document.body.style.color = '#1C1917';
-      document.body.style.fontFamily = "'Cairo', sans-serif";
-      document.documentElement.style.setProperty('--theme-font', "'Cairo', sans-serif");
+      if (isNightMode) {
+        document.documentElement.classList.add('theme-black-gold', 'dark');
+        document.body.classList.add('theme-black-gold', 'dark');
+        document.documentElement.classList.remove('theme-black');
+        document.body.classList.remove('theme-black');
+        document.documentElement.classList.add('modern-home-active');
+        document.body.classList.add('modern-home-active');
+        document.body.style.backgroundColor = '#000000';
+        document.body.style.color = '#F59E0B';
+        document.body.style.fontFamily = "'Cairo', sans-serif";
+        document.documentElement.style.setProperty('--theme-font', "'Cairo', sans-serif");
+      } else {
+        document.documentElement.classList.remove('theme-black', 'dark', 'theme-black-gold');
+        document.body.classList.remove('theme-black', 'dark', 'theme-black-gold');
+        document.documentElement.classList.add('modern-home-active');
+        document.body.classList.add('modern-home-active');
+        document.body.style.backgroundColor = '#FFFFFF';
+        document.body.style.color = '#1C1917';
+        document.body.style.fontFamily = "'Cairo', sans-serif";
+        document.documentElement.style.setProperty('--theme-font', "'Cairo', sans-serif");
+      }
     } else {
       document.documentElement.classList.remove('modern-home-active');
       document.body.classList.remove('modern-home-active');
@@ -303,7 +356,7 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
       document.body.style.fontFamily = theme.font;
       document.documentElement.style.setProperty('--theme-font', theme.font);
     }
-  }, [homeLayoutMode, theme, isBlackTheme, themeKey]);
+  }, [homeLayoutMode, theme, isBlackTheme, themeKey, isNightMode]);
   const [visibleItems, setVisibleItems] = useState<string[]>(() => {
     const savedVersion = localStorage.getItem('menu_layout_version_v2');
     if (savedVersion !== CURRENT_LAYOUT_VERSION) {
@@ -370,6 +423,20 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
       scrollContainerRef.current.scrollTop = 0;
     }
     return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    const handleScrollToTop = () => {
+      if (scrollContainerRef.current) {
+        try {
+          scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+        } catch {
+          scrollContainerRef.current.scrollTop = 0;
+        }
+      }
+    };
+    window.addEventListener('scroll-to-top', handleScrollToTop);
+    return () => window.removeEventListener('scroll-to-top', handleScrollToTop);
   }, []);
 
   const { times, nextPrayer, countdown } = usePrayerTimes();
@@ -816,7 +883,7 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
       className={`relative min-h-screen ${homeLayoutMode === 'modern' ? 'modern-home-layout font-cairo' : ''}`}
       style={{ 
         backgroundColor: homeLayoutMode === 'modern'
-          ? '#FFFFFF' 
+          ? (isNightMode ? '#000000' : '#FFFFFF') 
           : (isBlackTheme ? '#000000' : (theme.bgColor || '#DFE5EC')),
         fontFamily: homeLayoutMode === 'modern' ? "'Cairo', sans-serif" : undefined
       }}
@@ -830,14 +897,14 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
           dir={dir}
           className={`shrink-0 z-40 relative select-none transition-colors duration-150 border-b ${
             homeLayoutMode === 'modern'
-              ? 'border-amber-200/80 shadow-[0_2px_12px_rgba(217,119,6,0.08)]'
+              ? (isNightMode ? 'border-amber-500/30 shadow-[0_2px_12px_rgba(0,0,0,0.8)]' : 'border-amber-200/80 shadow-[0_2px_12px_rgba(217,119,6,0.08)]')
               : (isBlackTheme 
                   ? 'border-white/10 shadow-[0_2px_10px_rgba(0,0,0,0.8)]' 
                   : 'border-black/[0.04] dark:border-white/[0.06] shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)]')
           }`}
           style={{
             backgroundColor: homeLayoutMode === 'modern'
-              ? '#FFFFFF'
+              ? (isNightMode ? '#000000' : '#FFFFFF')
               : (isBlackTheme ? '#000000' : (theme.bgColor || '#DFE5EC')),
             paddingTop: 'env(safe-area-inset-top, 0px)',
             fontFamily: homeLayoutMode === 'modern' ? "'Cairo', sans-serif" : theme.font
@@ -845,7 +912,7 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
         >
           <div className="w-full flex items-center justify-center px-3 pt-1 pb-1 relative min-h-[44px]" dir={dir}>
             <div className="inline-flex items-center justify-center gap-3 sm:gap-4 md:gap-5 max-w-full">
-              {/* الطرف الأيمن: أيقونة الثيمات (كلاسيكي) أو التبديل للتصميم الكلاسيكي (حديث) - مبعدة بمسافة متساوية عن اسم التطبيق */}
+              {/* الطرف الأيمن: أيقونة الثيمات (كلاسيكي) أو التبديل للتصميم الكلاسيكي وأيقونة الوضع الليلي (حديث) */}
               <div className="flex items-center gap-1.5 shrink-0 z-20">
                 {!isEditMode ? (
                   homeLayoutMode === 'classic' ? (
@@ -869,21 +936,42 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
                       />
                     </button>
                   ) : (
-                    <button
-                      id="modern-layout-toggle-btn"
-                      type="button"
-                      onClick={toggleHomeLayout}
-                      className="p-1 sm:p-1.5 flex items-center justify-center transition-all duration-150 active:scale-90 hover:scale-110 cursor-pointer select-none shrink-0 bg-transparent border-none outline-none"
-                      title={language === 'en' ? 'Switch to Classic Design' : 'التبديل إلى التصميم الكلاسيكي'}
-                      aria-label={language === 'en' ? 'Switch to Classic Design' : 'التبديل إلى التصميم الكلاسيكي'}
-                    >
-                      <LayoutGrid 
-                        className="w-[22px] h-[22px] sm:w-[24px] sm:h-[24px] pointer-events-none transition-transform text-amber-700 hover:text-amber-900"
-                        style={{
-                          filter: 'drop-shadow(0 1px 2px rgba(180,83,9,0.25))'
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        id="night-mode-toggle-btn"
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleNightMode();
                         }}
-                      />
-                    </button>
+                        className="p-1 sm:p-1.5 flex items-center justify-center transition-all duration-150 active:scale-90 hover:scale-110 cursor-pointer select-none shrink-0 bg-transparent border-none outline-none"
+                        title={isNightMode ? (language === 'en' ? 'Normal Mode' : 'الوضع العادي') : (language === 'en' ? 'Night Mode (Black & Gold)' : 'الوضع الليلي (الأسود والذهبي)')}
+                        aria-label="Toggle Night Mode"
+                      >
+                        {isNightMode ? (
+                          <Sun className="w-[21px] h-[21px] sm:w-[23px] sm:h-[23px] text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.8)] pointer-events-none" />
+                        ) : (
+                          <Moon className="w-[21px] h-[21px] sm:w-[23px] sm:h-[23px] text-amber-700 dark:text-amber-400 hover:text-amber-900 drop-shadow-[0_1px_2px_rgba(180,83,9,0.25)] pointer-events-none" />
+                        )}
+                      </button>
+
+                      <button
+                        id="modern-layout-toggle-btn"
+                        type="button"
+                        onClick={toggleHomeLayout}
+                        className="p-1 sm:p-1.5 flex items-center justify-center transition-all duration-150 active:scale-90 hover:scale-110 cursor-pointer select-none shrink-0 bg-transparent border-none outline-none"
+                        title={language === 'en' ? 'Switch to Classic Design' : 'التبديل إلى التصميم الكلاسيكي'}
+                        aria-label={language === 'en' ? 'Switch to Classic Design' : 'التبديل إلى التصميم الكلاسيكي'}
+                      >
+                        <LayoutGrid 
+                          className="w-[22px] h-[22px] sm:w-[24px] sm:h-[24px] pointer-events-none transition-transform text-amber-700 hover:text-amber-900"
+                          style={{
+                            color: isNightMode ? '#F59E0B' : undefined,
+                            filter: isNightMode ? 'drop-shadow(0 0 6px rgba(245,158,11,0.5))' : 'drop-shadow(0 1px 2px rgba(180,83,9,0.25))'
+                          }}
+                        />
+                      </button>
+                    </div>
                   )
                 ) : <div className="w-6 h-6 shrink-0" />}
               </div>
@@ -894,9 +982,11 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
                   id="app-title" 
                   className={`text-[19px] sm:text-[22px] md:text-[24px] font-black tracking-tight select-none text-center truncate transition-transform leading-tight ${homeLayoutMode === 'modern' ? 'font-cairo' : 'font-kufi'} ${isEditMode ? 'scale-105 text-yellow-400' : ''}`} 
                   style={homeLayoutMode === 'modern' ? {
-                    color: '#78350F',
+                    color: isNightMode ? '#F59E0B' : '#78350F',
                     fontFamily: "'Cairo', sans-serif",
-                    textShadow: '0 1px 1px rgba(255, 255, 255, 0.9), 0 2px 4px rgba(180, 83, 9, 0.18)',
+                    textShadow: isNightMode 
+                      ? '0 0 10px rgba(245,158,11,0.5), 0 2px 4px rgba(0,0,0,0.8)' 
+                      : '0 1px 1px rgba(255, 255, 255, 0.9), 0 2px 4px rgba(180, 83, 9, 0.18)',
                     textRendering: 'optimizeLegibility',
                     WebkitFontSmoothing: 'antialiased'
                   } : { 
@@ -951,10 +1041,10 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
                       className="text-[17px] sm:text-[18px] font-black font-cairo tracking-tight pointer-events-none leading-none"
                       style={{
                         color: homeLayoutMode === 'modern'
-                          ? '#78350F'
+                          ? (isNightMode ? '#F59E0B' : '#78350F')
                           : (isBlackTheme ? '#FFFFFF' : (theme.palette?.[0] || theme.accent || '#2E7D5E')),
                         textShadow: homeLayoutMode === 'modern'
-                          ? '0 1px 2px rgba(255, 255, 255, 0.9)'
+                          ? (isNightMode ? '0 0 8px rgba(245,158,11,0.4)' : '0 1px 2px rgba(255, 255, 255, 0.9)')
                           : (isBlackTheme 
                               ? '0 2px 3px rgba(255,255,255,0.4), 0 4px 6px rgba(0,0,0,0.9)' 
                               : '0 1px 0 rgba(255,255,255,0.9), 0 2px 0 rgba(0, 0, 0, 0.3), 0 4px 5px rgba(0, 0, 0, 0.2)')
@@ -972,7 +1062,12 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
         {/* الحاوية القابلة للتمرير لباقي محتوى الصفحة */}
         <div 
           ref={scrollContainerRef}
-          className="flex-1 overflow-y-auto pb-6 sm:pb-8 pb-[calc(env(safe-area-inset-bottom,0px)+1.5rem)] no-scrollbar"
+          id="main-menu-scroll-container"
+          onScroll={(e) => {
+            const st = e.currentTarget.scrollTop;
+            window.dispatchEvent(new CustomEvent('app-scroll', { detail: { scrollTop: st } }));
+          }}
+          className="flex-1 overflow-y-auto pb-3 sm:pb-4 pb-[calc(env(safe-area-inset-bottom,0px)+0.75rem)] no-scrollbar"
         >
           {/* نص الدعاء بأول الصفحة والشريط الإعلاني - في بداية الصفحة كما كان */}
           <div className={`w-full max-w-lg mx-auto text-center select-none pt-2 px-3 ${homeLayoutMode === 'modern' ? 'pb-0' : 'pb-1.5'}`}>
@@ -1138,7 +1233,7 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
                       />
 
                       {/* Dua - بارز وبدون بطاقة أو زر محيط */}
-                      <div className="flex items-center justify-center gap-2 min-h-11 mt-1.5 px-4" dir={dir}>
+                      <div className="flex items-center justify-center gap-2 mt-1 mb-0.5 px-4" dir={dir}>
                           <p 
                               className="text-sm font-black font-kufi leading-tight text-center relative z-10" 
                               style={{ 
@@ -1151,8 +1246,8 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
                               {t('app.dua_bottom', 'اللهم ارحمهما واغفر لهما واجعل مثواهما الجنة')}
                           </p>
                       </div>
-                      {/* Bottom Spacer for Mobile Phone Navigation Bar */}
-                      <div className="w-full h-2 sm:h-3 shrink-0 pointer-events-none" />
+                      {/* Bottom Spacer for Mobile Phone Navigation Bar (reduced 50%) */}
+                      <div className="w-full h-1 sm:h-1.5 shrink-0 pointer-events-none" />
                   </div>
               )}
             </div>
