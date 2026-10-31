@@ -578,23 +578,30 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
         }
         if (!p) {
              try {
-                // Check global last read ayah first so all modes and languages share the last opened ayah
                 let parsed: any = null;
-                const globalSaved = localStorage.getItem("last_read_ayah_global");
-                if (globalSaved) {
-                    parsed = JSON.parse(globalSaved);
+                const modePosKey = `last_read_pos_${readingMode}`;
+                const modeSaved = localStorage.getItem(modePosKey);
+                if (modeSaved) {
+                    parsed = JSON.parse(modeSaved);
                 }
                 if (!parsed || typeof parsed.s !== 'number') {
                     const orient = initialLandscape ? 'h' : 'v';
                     let key = '';
                     if (isWirdMode) key = `_wird_${orient}`;
                     else if (isMemorizationMode) key = `_memorization_${orient}`;
-                    else if (readingMode === 'mushaf') key = `_${orient}`;
                     else key = `_${readingMode}_${orient}`;
 
-                    const saved = localStorage.getItem(`last_pos${key}`) || localStorage.getItem('last_pos_v');
+                    const saved = localStorage.getItem(`last_pos${key}`);
                     if (saved) {
                         parsed = JSON.parse(saved);
+                    }
+                }
+                if (!parsed || typeof parsed.s !== 'number') {
+                    if (readingMode === 'mushaf') {
+                        const globalSaved = localStorage.getItem("last_read_ayah_global");
+                        if (globalSaved) {
+                            parsed = JSON.parse(globalSaved);
+                        }
                     }
                 }
                 if (parsed && typeof parsed.s === 'number') {
@@ -647,10 +654,10 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
             return { s: localMemorizationSettings.fromSurah, a: localMemorizationSettings.fromAyah };
         }
         try {
-            // Check global last read ayah first so all modes and languages sync with the last opened ayah
-            const globalSaved = localStorage.getItem("last_read_ayah_global");
-            if (globalSaved) {
-                const parsed = JSON.parse(globalSaved);
+            const modePosKey = `last_read_pos_${readingMode}`;
+            const modeSaved = localStorage.getItem(modePosKey);
+            if (modeSaved) {
+                const parsed = JSON.parse(modeSaved);
                 if (parsed && typeof parsed.s === 'number' && parsed.s >= 1 && parsed.s <= 114) {
                     return { s: parsed.s, a: parsed.a || 1 };
                 }
@@ -660,14 +667,23 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
             let key = '';
             if (isWirdMode) key = `_wird_${orient}`;
             else if (isMemorizationMode) key = `_memorization_${orient}`;
-            else if (readingMode === 'mushaf') key = `_${orient}`;
             else key = `_${readingMode}_${orient}`;
 
-            const saved = localStorage.getItem(`last_pos${key}`) || localStorage.getItem('last_pos_v');
+            const saved = localStorage.getItem(`last_pos${key}`);
             if (saved) {
                 const parsed = JSON.parse(saved);
                 if (parsed && typeof parsed.s === 'number' && parsed.s >= 1 && parsed.s <= 114) {
                     return { s: parsed.s, a: parsed.a || 1 };
+                }
+            }
+
+            if (readingMode === 'mushaf') {
+                const globalSaved = localStorage.getItem("last_read_ayah_global");
+                if (globalSaved) {
+                    const parsed = JSON.parse(globalSaved);
+                    if (parsed && typeof parsed.s === 'number' && parsed.s >= 1 && parsed.s <= 114) {
+                        return { s: parsed.s, a: parsed.a || 1 };
+                    }
                 }
             }
         } catch(e) {}
@@ -1190,25 +1206,16 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
             lastPos = JSON.parse(localStorage.getItem(posKey) || '{}');
         }
         if (!lastPos || typeof lastPos.s !== 'number') {
-            const globalSaved = localStorage.getItem('last_read_ayah_global');
-            if (globalSaved) {
-                try {
-                    const parsed = JSON.parse(globalSaved);
-                    if (parsed && typeof parsed.s === 'number') {
-                        lastPos = parsed;
-                    }
-                } catch {}
-            }
-        }
-        if (!lastPos || typeof lastPos.s !== 'number') {
-            const vSaved = localStorage.getItem('last_pos_v');
-            if (vSaved) {
-                try {
-                    const parsed = JSON.parse(vSaved);
-                    if (parsed && typeof parsed.s === 'number') {
-                        lastPos = parsed;
-                    }
-                } catch {}
+            if (readingMode === 'mushaf') {
+                const globalSaved = localStorage.getItem('last_read_ayah_global');
+                if (globalSaved) {
+                    try {
+                        const parsed = JSON.parse(globalSaved);
+                        if (parsed && typeof parsed.s === 'number') {
+                            lastPos = parsed;
+                        }
+                    } catch {}
+                }
             }
         }
         

@@ -226,7 +226,7 @@ export const ScrollToTopFAB: React.FC<ScrollToTopFABProps> = ({ currentPage: pro
 
   const buttonElement = (
     <div
-      className={`fixed bottom-6 start-5 sm:bottom-8 sm:start-8 z-[9999] transition-all duration-300 ease-out ${
+      className={`fixed bottom-20 start-5 sm:bottom-24 sm:start-8 z-[9999] transition-all duration-300 ease-out ${
         visible 
           ? 'opacity-100 scale-100 pointer-events-auto translate-y-0' 
           : 'opacity-0 scale-75 pointer-events-none translate-y-3'

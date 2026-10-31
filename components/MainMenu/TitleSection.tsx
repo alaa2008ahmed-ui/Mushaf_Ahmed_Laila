@@ -1,6 +1,7 @@
 import React from 'react';
 import FloatingNeonTicker from '../FloatingNeonTicker';
 import { useLanguage } from '../../context/LanguageContext';
+import { useTheme } from '../../context/ThemeContext';
 
 interface TitleSectionProps {
     isEditMode: boolean;
@@ -34,6 +35,7 @@ const TitleSection: React.FC<TitleSectionProps> = ({
     onCloseQuickMenu
 }) => {
     const isBlackTheme = theme.bgColor === '#000000';
+    const { isNightMode } = useTheme();
     const { t, dir } = useLanguage();
 
     const stickyBgColor = isSticky 
@@ -69,21 +71,28 @@ const TitleSection: React.FC<TitleSectionProps> = ({
                                 backgroundColor: stickyBgColor,
                             }}
                         />
-                        <div className="w-full flex items-center justify-center relative px-2">
-                            <div className="inline-flex items-center justify-center gap-3 sm:gap-4 md:gap-5 max-w-full">
+                        <div className="w-full flex items-center justify-between relative px-2 min-h-[40px]">
+                            {/* زر القائمة السريعة إن وجد على الطرف */}
+                            <div className="flex items-center shrink-0 z-20">
                                 {!isEditMode && quickMenuButton && (
-                                    <div className="flex items-center shrink-0 z-40 transition-all duration-300">
+                                    <div className="flex items-center shrink-0 transition-all duration-300">
                                         {quickMenuButton}
                                     </div>
                                 )}
+                            </div>
+
+                            {/* اسم التطبيق في منتصف الشريط تماماً */}
+                            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center text-center z-10 max-w-[calc(100%-120px)] pointer-events-none">
                                 <h1 
                                     id="app-title" 
-                                    className={`text-[21px] sm:text-[25px] md:text-[28px] font-black font-kufi tracking-tight select-none text-center truncate transition-transform leading-tight ${isEditMode ? 'scale-110 text-yellow-400' : ''}`} 
+                                    className={`pointer-events-auto text-[21px] sm:text-[25px] md:text-[28px] font-black font-kufi tracking-tight select-none text-center truncate transition-transform leading-tight ${isEditMode ? 'scale-110 text-yellow-400' : ''}`} 
                                     style={{ 
-                                        color: isEditMode ? undefined : (isBlackTheme ? '#FFFFFF' : (themeKey === 'default' ? '#4C1D95' : theme.textColor)),
-                                        textShadow: isBlackTheme 
-                                            ? '0 2px 4px rgba(255,255,255,0.3), 0 4px 8px rgba(0,0,0,0.8)' 
-                                            : '0 1px 0 rgba(255, 255, 255, 0.9), 0 2px 0 rgba(0, 0, 0, 0.15), 0 3px 2px rgba(0, 0, 0, 0.2), 0 4px 6px rgba(0, 0, 0, 0.25)',
+                                        color: isEditMode ? undefined : (isNightMode ? '#F59E0B' : (isBlackTheme ? '#FFFFFF' : (themeKey === 'default' ? '#4C1D95' : theme.textColor))),
+                                        textShadow: isNightMode
+                                            ? 'none'
+                                            : (isBlackTheme 
+                                                ? '0 2px 4px rgba(255,255,255,0.3), 0 4px 8px rgba(0,0,0,0.8)' 
+                                                : '0 1px 0 rgba(255, 255, 255, 0.9), 0 2px 0 rgba(0, 0, 0, 0.15), 0 3px 2px rgba(0, 0, 0, 0.2), 0 4px 6px rgba(0, 0, 0, 0.25)'),
                                         textRendering: 'optimizeLegibility',
                                         WebkitFontSmoothing: 'antialiased'
                                     }}
@@ -91,18 +100,22 @@ const TitleSection: React.FC<TitleSectionProps> = ({
                                     {t('app.name', 'مُصْحَفُ أَحْمَدَ وَلَيْلَى')}
                                 </h1>
                             </div>
+
+                            <div className="w-6 h-6 shrink-0 z-20" />
                         </div>
                     </div>
 
                     <div className="relative z-10 text-center select-none mb-2 px-3">
                         <div className="relative h-[27.5px] max-w-sm mx-auto flex items-center justify-center px-2">
                             <p 
-                                className="text-[12.5px] sm:text-[13.5px] font-bold font-kufi leading-tight tracking-normal drop-shadow-sm text-center"
+                                className={`text-[12.5px] sm:text-[13.5px] font-bold font-kufi leading-tight tracking-normal text-center ${isNightMode ? '' : 'drop-shadow-sm'}`}
                                 style={{ 
-                                    color: isBlackTheme ? '#FFFFFF' : (themeKey === 'default' ? '#7e22ce' : (themeKey === 'olive_grove' ? '#4D7C0F' : theme.textColor)),
-                                    textShadow: isBlackTheme 
-                                        ? '0 1px 2px rgba(255,255,255,0.25), 0 3px 6px rgba(0,0,0,0.8)' 
-                                        : '0 1px 0 rgba(255, 255, 255, 0.9), 0 2px 0 rgba(0, 0, 0, 0.12), 0 3px 2px rgba(0, 0, 0, 0.18), 0 4px 5px rgba(0, 0, 0, 0.2)',
+                                    color: isNightMode ? '#F59E0B' : (isBlackTheme ? '#FFFFFF' : (themeKey === 'default' ? '#7e22ce' : (themeKey === 'olive_grove' ? '#4D7C0F' : theme.textColor))),
+                                    textShadow: isNightMode
+                                        ? 'none'
+                                        : (isBlackTheme 
+                                            ? '0 1px 2px rgba(255,255,255,0.25), 0 3px 6px rgba(0,0,0,0.8)' 
+                                            : '0 1px 0 rgba(255, 255, 255, 0.9), 0 2px 0 rgba(0, 0, 0, 0.12), 0 3px 2px rgba(0, 0, 0, 0.18), 0 4px 5px rgba(0, 0, 0, 0.2)'),
                                     textRendering: 'optimizeLegibility',
                                     WebkitFontSmoothing: 'antialiased'
                                 }}

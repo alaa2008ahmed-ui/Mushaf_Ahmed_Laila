@@ -910,151 +910,149 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
             fontFamily: homeLayoutMode === 'modern' ? "'Cairo', sans-serif" : theme.font
           }}
         >
-          <div className="w-full flex items-center justify-center px-3 pt-1 pb-1 relative min-h-[44px]" dir={dir}>
-            <div className="inline-flex items-center justify-center gap-3 sm:gap-4 md:gap-5 max-w-full">
-              {/* الطرف الأيمن: أيقونة الثيمات (كلاسيكي) أو التبديل للتصميم الكلاسيكي وأيقونة الوضع الليلي (حديث) */}
-              <div className="flex items-center gap-1.5 shrink-0 z-20">
-                {!isEditMode ? (
-                  homeLayoutMode === 'classic' ? (
-                    <button
-                      id="themes-btn"
-                      data-id="themes-button"
-                      type="button"
-                      onClick={() => setIsThemesSidebarOpen(true)}
-                      className="p-1 sm:p-1.5 flex items-center justify-center transition-all duration-150 active:scale-90 hover:scale-110 cursor-pointer select-none shrink-0 bg-transparent border-none outline-none"
-                      title={language === 'en' ? 'Themes' : 'الثيمات والمظهر'}
-                      aria-label={language === 'en' ? 'Themes' : 'الثيمات والمظهر'}
-                    >
-                      <Palette 
-                        className="w-[22px] h-[22px] sm:w-[24px] sm:h-[24px] pointer-events-none transition-transform" 
-                        style={{
-                          color: isBlackTheme ? '#FFFFFF' : (theme.palette?.[0] || theme.accent || '#2E7D5E'),
-                          filter: isBlackTheme 
-                            ? 'drop-shadow(0 2px 3px rgba(255,255,255,0.4)) drop-shadow(0 4px 6px rgba(0,0,0,0.9))' 
-                            : 'drop-shadow(0 1px 0 rgba(255,255,255,0.9)) drop-shadow(0 2px 3px rgba(0,0,0,0.3)) drop-shadow(0 4px 5px rgba(0,0,0,0.2))'
-                        }}
-                      />
-                    </button>
-                  ) : (
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        id="night-mode-toggle-btn"
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleNightMode();
-                        }}
-                        className="p-1 sm:p-1.5 flex items-center justify-center transition-all duration-150 active:scale-90 hover:scale-110 cursor-pointer select-none shrink-0 bg-transparent border-none outline-none"
-                        title={isNightMode ? (language === 'en' ? 'Normal Mode' : 'الوضع العادي') : (language === 'en' ? 'Night Mode (Black & Gold)' : 'الوضع الليلي (الأسود والذهبي)')}
-                        aria-label="Toggle Night Mode"
-                      >
-                        {isNightMode ? (
-                          <Sun className="w-[21px] h-[21px] sm:w-[23px] sm:h-[23px] text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.8)] pointer-events-none" />
-                        ) : (
-                          <Moon className="w-[21px] h-[21px] sm:w-[23px] sm:h-[23px] text-amber-700 dark:text-amber-400 hover:text-amber-900 drop-shadow-[0_1px_2px_rgba(180,83,9,0.25)] pointer-events-none" />
-                        )}
-                      </button>
-
-                      <button
-                        id="modern-layout-toggle-btn"
-                        type="button"
-                        onClick={toggleHomeLayout}
-                        className="p-1 sm:p-1.5 flex items-center justify-center transition-all duration-150 active:scale-90 hover:scale-110 cursor-pointer select-none shrink-0 bg-transparent border-none outline-none"
-                        title={language === 'en' ? 'Switch to Classic Design' : 'التبديل إلى التصميم الكلاسيكي'}
-                        aria-label={language === 'en' ? 'Switch to Classic Design' : 'التبديل إلى التصميم الكلاسيكي'}
-                      >
-                        <LayoutGrid 
-                          className="w-[22px] h-[22px] sm:w-[24px] sm:h-[24px] pointer-events-none transition-transform text-amber-700 hover:text-amber-900"
-                          style={{
-                            color: isNightMode ? '#F59E0B' : undefined,
-                            filter: isNightMode ? 'drop-shadow(0 0 6px rgba(245,158,11,0.5))' : 'drop-shadow(0 1px 2px rgba(180,83,9,0.25))'
-                          }}
-                        />
-                      </button>
-                    </div>
-                  )
-                ) : <div className="w-6 h-6 shrink-0" />}
-              </div>
-
-              {/* اسم التطبيق في المنتصف بين الأيقونات بمسافات متساوية وبدون وضع الأيقونات على الأطراف */}
-              <div className="shrink-0 flex items-center justify-center text-center z-10 px-0.5">
-                <h1 
-                  id="app-title" 
-                  className={`text-[19px] sm:text-[22px] md:text-[24px] font-black tracking-tight select-none text-center truncate transition-transform leading-tight ${homeLayoutMode === 'modern' ? 'font-cairo' : 'font-kufi'} ${isEditMode ? 'scale-105 text-yellow-400' : ''}`} 
-                  style={homeLayoutMode === 'modern' ? {
-                    color: isNightMode ? '#F59E0B' : '#78350F',
-                    fontFamily: "'Cairo', sans-serif",
-                    textShadow: isNightMode 
-                      ? '0 0 10px rgba(245,158,11,0.5), 0 2px 4px rgba(0,0,0,0.8)' 
-                      : '0 1px 1px rgba(255, 255, 255, 0.9), 0 2px 4px rgba(180, 83, 9, 0.18)',
-                    textRendering: 'optimizeLegibility',
-                    WebkitFontSmoothing: 'antialiased'
-                  } : { 
-                    color: isEditMode 
-                      ? undefined 
-                      : (isBlackTheme ? '#FFFFFF' : (themeKey === 'default' ? '#4C1D95' : theme.textColor)),
-                    fontFamily: theme.font,
-                    textShadow: isBlackTheme 
-                      ? '0 2px 4px rgba(255,255,255,0.3), 0 4px 8px rgba(0,0,0,0.8)' 
-                      : '0 1px 0 rgba(255, 255, 255, 0.9), 0 2px 0 rgba(0, 0, 0, 0.15), 0 3px 2px rgba(0, 0, 0, 0.2), 0 4px 6px rgba(0, 0, 0, 0.25)',
-                    textRendering: 'optimizeLegibility',
-                    WebkitFontSmoothing: 'antialiased'
-                  }}
-                >
-                  {t('app.name', 'مُصْحَفُ أَحْمَدَ وَلَيْلَى')}
-                </h1>
-              </div>
-
-              {/* الطرف الأيسر: زر اللغة أو تبديل النمط - مبعدة بنفس المسافة المتساوية عن اسم التطبيق */}
-              <div className="flex items-center gap-1.5 shrink-0 z-20">
-                {!isEditMode && homeLayoutMode === 'classic' && (
+          <div className="w-full flex items-center justify-between px-3 sm:px-4 pt-1 pb-1 relative min-h-[44px]" dir={dir}>
+            {/* الطرف الأيمن: أيقونة الثيمات (كلاسيكي) أو التبديل للتصميم الكلاسيكي وأيقونة الوضع الليلي (حديث) */}
+            <div className="flex items-center gap-1.5 shrink-0 z-20">
+              {!isEditMode ? (
+                homeLayoutMode === 'classic' ? (
                   <button
-                    id="layout-toggle-btn"
+                    id="themes-btn"
+                    data-id="themes-button"
                     type="button"
-                    onClick={toggleHomeLayout}
+                    onClick={() => setIsThemesSidebarOpen(true)}
                     className="p-1 sm:p-1.5 flex items-center justify-center transition-all duration-150 active:scale-90 hover:scale-110 cursor-pointer select-none shrink-0 bg-transparent border-none outline-none"
-                    title={language === 'en' ? 'Switch to Modern Hub Design' : 'التبديل إلى التصميم الذكي الحديث'}
-                    aria-label="Switch to Modern Layout"
+                    title={language === 'en' ? 'Themes' : 'الثيمات والمظهر'}
+                    aria-label={language === 'en' ? 'Themes' : 'الثيمات والمظهر'}
                   >
-                    <LayoutDashboard 
-                      className="w-[21px] h-[21px] sm:w-[23px] sm:h-[23px] pointer-events-none transition-transform text-sky-600 dark:text-sky-400"
+                    <Palette 
+                      className="w-[22px] h-[22px] sm:w-[24px] sm:h-[24px] pointer-events-none transition-transform" 
                       style={{
+                        color: isBlackTheme ? '#FFFFFF' : (theme.palette?.[0] || theme.accent || '#2E7D5E'),
                         filter: isBlackTheme 
-                          ? 'drop-shadow(0 2px 3px rgba(255,255,255,0.4))' 
-                          : 'drop-shadow(0 1px 0 rgba(255,255,255,0.9)) drop-shadow(0 2px 3px rgba(0,0,0,0.25))'
+                          ? 'drop-shadow(0 2px 3px rgba(255,255,255,0.4)) drop-shadow(0 4px 6px rgba(0,0,0,0.9))' 
+                          : 'drop-shadow(0 1px 0 rgba(255,255,255,0.9)) drop-shadow(0 2px 3px rgba(0,0,0,0.3)) drop-shadow(0 4px 5px rgba(0,0,0,0.2))'
                       }}
                     />
                   </button>
-                )}
-
-                {!isEditMode ? (
-                  <button
-                    id="language-btn"
-                    data-id="language-button"
-                    type="button"
-                    onClick={toggleLanguage}
-                    className="p-1 sm:p-1.5 flex items-center justify-center transition-all duration-150 active:scale-90 hover:scale-110 cursor-pointer select-none shrink-0 bg-transparent border-none outline-none"
-                    title={language === 'ar' ? 'English' : 'اللغة العربية'}
-                    aria-label={language === 'ar' ? 'English' : 'اللغة العربية'}
-                  >
-                    <span 
-                      className="text-[17px] sm:text-[18px] font-black font-cairo tracking-tight pointer-events-none leading-none"
-                      style={{
-                        color: homeLayoutMode === 'modern'
-                          ? (isNightMode ? '#F59E0B' : '#78350F')
-                          : (isBlackTheme ? '#FFFFFF' : (theme.palette?.[0] || theme.accent || '#2E7D5E')),
-                        textShadow: homeLayoutMode === 'modern'
-                          ? (isNightMode ? '0 0 8px rgba(245,158,11,0.4)' : '0 1px 2px rgba(255, 255, 255, 0.9)')
-                          : (isBlackTheme 
-                              ? '0 2px 3px rgba(255,255,255,0.4), 0 4px 6px rgba(0,0,0,0.9)' 
-                              : '0 1px 0 rgba(255,255,255,0.9), 0 2px 0 rgba(0, 0, 0, 0.3), 0 4px 5px rgba(0, 0, 0, 0.2)')
+                ) : (
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      id="night-mode-toggle-btn"
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleNightMode();
                       }}
+                      className="p-1 sm:p-1.5 flex items-center justify-center transition-all duration-150 active:scale-90 hover:scale-110 cursor-pointer select-none shrink-0 bg-transparent border-none outline-none"
+                      title={isNightMode ? (language === 'en' ? 'Normal Mode' : 'الوضع العادي') : (language === 'en' ? 'Night Mode (Black & Gold)' : 'الوضع الليلي (الأسود والذهبي)')}
+                      aria-label="Toggle Night Mode"
                     >
-                      {language === 'ar' ? 'Ar' : 'En'}
-                    </span>
-                  </button>
-                ) : <div className="w-6 h-6 shrink-0" />}
-              </div>
+                      {isNightMode ? (
+                        <Sun className="w-[21px] h-[21px] sm:w-[23px] sm:h-[23px] text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.8)] pointer-events-none" />
+                      ) : (
+                        <Moon className="w-[21px] h-[21px] sm:w-[23px] sm:h-[23px] text-amber-700 dark:text-amber-400 hover:text-amber-900 drop-shadow-[0_1px_2px_rgba(180,83,9,0.25)] pointer-events-none" />
+                      )}
+                    </button>
+
+                    <button
+                      id="modern-layout-toggle-btn"
+                      type="button"
+                      onClick={toggleHomeLayout}
+                      className="p-1 sm:p-1.5 flex items-center justify-center transition-all duration-150 active:scale-90 hover:scale-110 cursor-pointer select-none shrink-0 bg-transparent border-none outline-none"
+                      title={language === 'en' ? 'Switch to Classic Design' : 'التبديل إلى التصميم الكلاسيكي'}
+                      aria-label={language === 'en' ? 'Switch to Classic Design' : 'التبديل إلى التصميم الكلاسيكي'}
+                    >
+                      <LayoutGrid 
+                        className="w-[22px] h-[22px] sm:w-[24px] sm:h-[24px] pointer-events-none transition-transform text-amber-700 hover:text-amber-900"
+                        style={{
+                          color: isNightMode ? '#F59E0B' : undefined,
+                          filter: isNightMode ? 'drop-shadow(0 0 6px rgba(245,158,11,0.5))' : 'drop-shadow(0 1px 2px rgba(180,83,9,0.25))'
+                        }}
+                      />
+                    </button>
+                  </div>
+                )
+              ) : <div className="w-6 h-6 shrink-0" />}
+            </div>
+
+            {/* اسم التطبيق في منتصف الشريط تماماً بصرف النظر عن عدد الأيقونات يميناً أو يساراً */}
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center text-center z-10 px-0.5 max-w-[calc(100%-160px)] pointer-events-none">
+              <h1 
+                id="app-title" 
+                className={`pointer-events-auto text-[19px] sm:text-[22px] md:text-[24px] font-black tracking-tight select-none text-center truncate transition-transform leading-tight ${homeLayoutMode === 'modern' ? 'font-cairo' : 'font-kufi'} ${isEditMode ? 'scale-105 text-yellow-400' : ''}`} 
+                style={homeLayoutMode === 'modern' ? {
+                  color: isNightMode ? '#F59E0B' : '#78350F',
+                  fontFamily: "'Cairo', sans-serif",
+                  textShadow: isNightMode 
+                    ? '0 0 10px rgba(245,158,11,0.5), 0 2px 4px rgba(0,0,0,0.8)' 
+                    : '0 1px 1px rgba(255, 255, 255, 0.9), 0 2px 4px rgba(180, 83, 9, 0.18)',
+                  textRendering: 'optimizeLegibility',
+                  WebkitFontSmoothing: 'antialiased'
+                } : { 
+                  color: isEditMode 
+                    ? undefined 
+                    : (isBlackTheme ? '#FFFFFF' : (themeKey === 'default' ? '#4C1D95' : theme.textColor)),
+                  fontFamily: theme.font,
+                  textShadow: isBlackTheme 
+                    ? '0 2px 4px rgba(255,255,255,0.3), 0 4px 8px rgba(0,0,0,0.8)' 
+                    : '0 1px 0 rgba(255, 255, 255, 0.9), 0 2px 0 rgba(0, 0, 0, 0.15), 0 3px 2px rgba(0, 0, 0, 0.2), 0 4px 6px rgba(0, 0, 0, 0.25)',
+                  textRendering: 'optimizeLegibility',
+                  WebkitFontSmoothing: 'antialiased'
+                }}
+              >
+                {t('app.name', 'مُصْحَفُ أَحْمَدَ وَلَيْلَى')}
+              </h1>
+            </div>
+
+            {/* الطرف الأيسر: زر اللغة أو تبديل النمط - مع إزاحة زر اللغة ليكون مقرباً من اسم التطبيق وبعيداً عن الحافة */}
+            <div className={`flex items-center gap-1.5 shrink-0 z-20 ${homeLayoutMode === 'modern' ? 'me-11 sm:me-14' : ''}`}>
+              {!isEditMode && homeLayoutMode === 'classic' && (
+                <button
+                  id="layout-toggle-btn"
+                  type="button"
+                  onClick={toggleHomeLayout}
+                  className="p-1 sm:p-1.5 flex items-center justify-center transition-all duration-150 active:scale-90 hover:scale-110 cursor-pointer select-none shrink-0 bg-transparent border-none outline-none"
+                  title={language === 'en' ? 'Switch to Modern Hub Design' : 'التبديل إلى التصميم الذكي الحديث'}
+                  aria-label="Switch to Modern Layout"
+                >
+                  <LayoutDashboard 
+                    className="w-[21px] h-[21px] sm:w-[23px] sm:h-[23px] pointer-events-none transition-transform text-sky-600 dark:text-sky-400"
+                    style={{
+                      filter: isBlackTheme 
+                        ? 'drop-shadow(0 2px 3px rgba(255,255,255,0.4))' 
+                        : 'drop-shadow(0 1px 0 rgba(255,255,255,0.9)) drop-shadow(0 2px 3px rgba(0,0,0,0.25))'
+                    }}
+                  />
+                </button>
+              )}
+
+              {!isEditMode ? (
+                <button
+                  id="language-btn"
+                  data-id="language-button"
+                  type="button"
+                  onClick={toggleLanguage}
+                  className="p-1 sm:p-1.5 flex items-center justify-center transition-all duration-150 active:scale-90 hover:scale-110 cursor-pointer select-none shrink-0 bg-transparent border-none outline-none"
+                  title={language === 'ar' ? 'English' : 'اللغة العربية'}
+                  aria-label={language === 'ar' ? 'English' : 'اللغة العربية'}
+                >
+                  <span 
+                    className="text-[17px] sm:text-[18px] font-black font-cairo tracking-tight pointer-events-none leading-none"
+                    style={{
+                      color: homeLayoutMode === 'modern'
+                        ? (isNightMode ? '#F59E0B' : '#78350F')
+                        : (isBlackTheme ? '#FFFFFF' : (theme.palette?.[0] || theme.accent || '#2E7D5E')),
+                      textShadow: homeLayoutMode === 'modern'
+                        ? (isNightMode ? '0 0 8px rgba(245,158,11,0.4)' : '0 1px 2px rgba(255, 255, 255, 0.9)')
+                        : (isBlackTheme 
+                            ? '0 2px 3px rgba(255,255,255,0.4), 0 4px 6px rgba(0,0,0,0.9)' 
+                            : '0 1px 0 rgba(255,255,255,0.9), 0 2px 0 rgba(0, 0, 0, 0.3), 0 4px 5px rgba(0, 0, 0, 0.2)')
+                    }}
+                  >
+                    {language === 'ar' ? 'Ar' : 'En'}
+                  </span>
+                </button>
+              ) : <div className="w-6 h-6 shrink-0" />}
             </div>
           </div>
         </header>
@@ -1073,20 +1071,20 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
           <div className={`w-full max-w-lg mx-auto text-center select-none pt-2 px-3 ${homeLayoutMode === 'modern' ? 'pb-0' : 'pb-1.5'}`}>
             <div className="relative h-[27.5px] max-w-sm mx-auto flex items-center justify-center px-2">
               <p 
-                className={`text-[12.5px] sm:text-[13.5px] font-bold leading-tight tracking-normal drop-shadow-sm text-center ${homeLayoutMode === 'modern' ? 'font-cairo' : 'font-kufi'}`}
+                className={`text-[12.5px] sm:text-[13.5px] font-bold leading-tight tracking-normal text-center ${homeLayoutMode === 'modern' ? 'font-cairo' : 'font-kufi'} ${isNightMode ? '' : 'drop-shadow-sm'}`}
                 style={{ 
                   color: isEditMode 
                     ? undefined 
                     : (homeLayoutMode === 'modern'
-                        ? '#854D0E'
-                        : (isBlackTheme 
+                        ? (isNightMode ? '#F59E0B' : '#854D0E')
+                        : (isBlackTheme || isNightMode
                             ? '#FFFFFF' 
                             : (themeKey === 'default' ? '#7e22ce' : (themeKey === 'olive_grove' ? '#4D7C0F' : theme.textColor)))),
                   fontFamily: homeLayoutMode === 'modern' ? "'Cairo', sans-serif" : theme.font,
                   textShadow: homeLayoutMode === 'modern'
-                    ? '0 1px 1px rgba(255, 255, 255, 0.8)'
-                    : (isBlackTheme 
-                        ? '0 1px 2px rgba(255,255,255,0.25), 0 3px 6px rgba(0,0,0,0.8)' 
+                    ? (isNightMode ? 'none' : '0 1px 1px rgba(255, 255, 255, 0.8)')
+                    : (isBlackTheme || isNightMode
+                        ? 'none' 
                         : '0 1px 0 rgba(255, 255, 255, 0.9), 0 2px 0 rgba(0, 0, 0, 0.12), 0 3px 2px rgba(0, 0, 0, 0.18), 0 4px 5px rgba(0, 0, 0, 0.2)'),
                   textRendering: 'optimizeLegibility',
                   WebkitFontSmoothing: 'antialiased'
