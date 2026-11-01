@@ -76,6 +76,7 @@ export const UnifiedEventZoomModal: React.FC<UnifiedEventZoomModalProps> = ({
     if (!isOpen) return;
     if (typeof document !== 'undefined') {
       document.body.classList.add('zoom-modal-active');
+      window.dispatchEvent(new CustomEvent('modal-state-changed', { detail: { isOpen: true } }));
     }
     const unregister = registerBackInterceptor(() => {
       onClose();
@@ -85,6 +86,7 @@ export const UnifiedEventZoomModal: React.FC<UnifiedEventZoomModalProps> = ({
       unregister();
       if (typeof document !== 'undefined') {
         document.body.classList.remove('zoom-modal-active');
+        window.dispatchEvent(new CustomEvent('modal-state-changed', { detail: { isOpen: false } }));
       }
     };
   }, [isOpen, onClose]);
@@ -178,6 +180,7 @@ export const UnifiedEventZoomModal: React.FC<UnifiedEventZoomModalProps> = ({
   return (
     <AnimatePresence>
       <div
+        id="unified-event-zoom-modal-backdrop"
         className="fixed inset-0 bg-black/65 z-[140] flex flex-col justify-end backdrop-blur-xs select-none"
         onClick={onClose}
         dir={dir}

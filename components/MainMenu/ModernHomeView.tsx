@@ -56,8 +56,9 @@ import { useHabitTracker } from '../../hooks/useHabitTracker';
 import { prayerNamesAr } from '../../data/prayerTimesData';
 import { PRAYER_NAMES_EN, getLocalizedLocationName } from '../../utils/prayerTimesTranslations';
 import { checkSupportsDST, applyOffset } from '../../utils/prayerTimesUtils';
-import { SURAH_NAMES_AR, toArabic, JUZ_MAP } from '../QuranReader/constants';
+import { SURAH_NAMES_AR, SURAH_NAMES_EN, toArabic, JUZ_MAP } from '../QuranReader/constants';
 import { quranData as quranJsonData } from '../../utils/quranData';
+import { loadQuranEnglishTranslation, getCachedQuranEnglishTranslation, QuranEnglishSurah } from '../../utils/quranTranslationHelper';
 import ShareAppQrModal from './ShareAppQrModal';
 import TawafCounterCard from './TawafCounterCard';
 import SmartSeasonalStrip from './SmartSeasonalStrip';
@@ -488,10 +489,23 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
     };
   }, [activeWird, nowDate.getFullYear(), nowDate.getMonth(), nowDate.getDate(), isEn, formatNumber]);
 
-  // Last read Quran info (مع رقم السورة والآية، ورقم الصفحة، ورقم الجزء)
+  // English Quran Translation Data State
+  const [enQuranData, setEnQuranData] = useState<QuranEnglishSurah[] | null>(() => getCachedQuranEnglishTranslation());
+
+  useEffect(() => {
+    if (isEn && !enQuranData) {
+      loadQuranEnglishTranslation().then(data => {
+        if (data && data.length > 0) {
+          setEnQuranData(data);
+        }
+      });
+    }
+  }, [isEn, enQuranData]);
+
+  // Last read Quran info (مع مراعاة الموضع المستقل لصفحة الترجمة بالإنجليزية)
   const [lastReadQuran, setLastReadQuran] = useState<{ surah: number; surahName: string; ayah: number; page: number; juz: number }>({
     surah: 1,
-    surahName: 'سورة الفاتحة',
+    surahName: isEn ? 'Surah Al-Fatihah' : 'سورة الفاتحة',
     ayah: 1,
     page: 1,
     juz: 1
@@ -500,13 +514,30 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
   useEffect(() => {
     const loadLastRead = () => {
       try {
-        const savedGlobal = localStorage.getItem('last_read_ayah_global') || localStorage.getItem('last_read_pos_mushaf');
+        let savedGlobal: string | null = null;
+        if (isEn) {
+          // Reading position from Translation mode
+          savedGlobal = localStorage.getItem('last_read_pos_translation') 
+                     || localStorage.getItem('last_pos_translation_v') 
+                     || localStorage.getItem('last_pos_translation_h')
+                     || localStorage.getItem('last_read_ayah_global') 
+                     || localStorage.getItem('last_read_pos_mushaf');
+        } else {
+          // Reading position from Arabic Mushaf mode
+          savedGlobal = localStorage.getItem('last_read_pos_mushaf') 
+                     || localStorage.getItem('last_read_ayah_global') 
+                     || localStorage.getItem('last_pos_mushaf_v') 
+                     || localStorage.getItem('last_pos_mushaf_h');
+        }
+
         if (savedGlobal) {
           const parsed = JSON.parse(savedGlobal);
           if (parsed && parsed.s && parsed.a) {
             const s = Number(parsed.s);
             const a = Number(parsed.a);
-            const sName = SURAH_NAMES_AR[s - 1] ? `سورة ${SURAH_NAMES_AR[s - 1]}` : 'سورة الفاتحة';
+            const sName = isEn 
+              ? (SURAH_NAMES_EN[s - 1] ? `Surah ${SURAH_NAMES_EN[s - 1]}` : `Surah ${s}`)
+              : (SURAH_NAMES_AR[s - 1] ? `سورة ${SURAH_NAMES_AR[s - 1]}` : 'سورة الفاتحة');
             
             let pageNum = parsed.page;
             let juzNum = parsed.juz;
@@ -530,6 +561,14 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
               juz: juzNum || 1
             });
           }
+        } else {
+          setLastReadQuran({
+            surah: 1,
+            surahName: isEn ? 'Surah Al-Fatihah' : 'سورة الفاتحة',
+            ayah: 1,
+            page: 1,
+            juz: 1
+          });
         }
       } catch {}
     };
@@ -541,15 +580,30 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
       window.removeEventListener('storage', loadLastRead);
       window.removeEventListener('last_read_update', loadLastRead);
     };
-  }, []);
+  }, [isEn]);
 
-  // Uthmanic Ayah Text for the ticker bar in Holy Quran card
+  // Ayah Text for the ticker bar in Holy Quran card (الترجمة الإنجليزية عند وضع اللغة الإنجليزية)
   const currentAyahText = useMemo(() => {
-    if (!lastReadQuran.surah || !lastReadQuran.ayah) return 'بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ';
+    if (!lastReadQuran.surah || !lastReadQuran.ayah) {
+      return isEn 
+        ? 'In the name of Allah, the Entirely Merciful, the Especially Merciful' 
+        : 'بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ';
+    }
+
+    if (isEn) {
+      if (enQuranData && enQuranData.length >= lastReadQuran.surah) {
+        const enSurah = enQuranData[lastReadQuran.surah - 1];
+        const enVerse = enSurah?.verses?.[lastReadQuran.ayah - 1];
+        if (enVerse?.translation) {
+          return enVerse.translation;
+        }
+      }
+    }
+
     const surahObj = quranJsonData?.surahs?.[lastReadQuran.surah - 1];
     const ayahObj = surahObj?.ayahs?.[lastReadQuran.ayah - 1];
-    return ayahObj?.text || 'بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ';
-  }, [lastReadQuran.surah, lastReadQuran.ayah]);
+    return ayahObj?.text || (isEn ? 'In the name of Allah, the Entirely Merciful, the Especially Merciful' : 'بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ');
+  }, [lastReadQuran.surah, lastReadQuran.ayah, isEn, enQuranData]);
 
   // Prayer Calculation logic
   const getPrayerDateTime = (key: string, baseDate: Date) => {
@@ -1121,155 +1175,152 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
 
   return (
     <div data-layout="modern" className="flex flex-col gap-3.5 w-full max-w-md mx-auto pt-0 pb-1.5 modern-home-layout font-cairo" style={{ fontFamily: "'Cairo', sans-serif" }} dir={dir}>
-      {/* 1. بطاقة الصلاة القادمة والختمة القرآنية (Prayer Times & Quran Card) */}
+      {/* 1. بطاقة القرآن الكريم ومتابعة التلاوة (Standalone Golden Quran Card) */}
+      <div 
+        className="w-full golden-3d-card p-4 sm:p-5 select-none transition-all flex flex-col gap-2.5"
+      >
+        <div className="flex items-center justify-between gap-2 sm:gap-3 w-full">
+          <div 
+            onClick={() => onNavigate('quran', { from: 'modern_home', surah: lastReadQuran.surah, ayah: lastReadQuran.ayah, page: lastReadQuran.page, ...(isEn ? { readingMode: 'translation' } : {}) })}
+            className="flex flex-col justify-center min-w-0 flex-1 text-start cursor-pointer group"
+          >
+            <div className="flex items-center">
+              <span className="card-header-title text-xs sm:text-sm font-black truncate group-hover:text-amber-900 transition-colors font-cairo" style={{ color: (isNightMode || isBlackTheme) ? '#F59E0B' : '#451A03' }}>
+                {isEn ? 'Continue Quran Recitation' : 'تابع تلاوة المصحف'}
+              </span>
+            </div>
+            <div className="flex items-center gap-1 sm:gap-1.5 flex-nowrap whitespace-nowrap text-[11px] sm:text-xs font-black mt-1 min-w-0 font-cairo">
+              <span className="truncate" style={{ color: (isNightMode || isBlackTheme) ? '#FFFFFF' : '#451A03' }}>
+                {lastReadQuran.surahName} :
+              </span>
+              <span className="shrink-0" style={{ color: (isNightMode || isBlackTheme) ? '#FDE68A' : '#5B2605' }}>
+                {isEn 
+                  ? `( Ayah ${lastReadQuran.ayah} Juz ${lastReadQuran.juz} Page ${lastReadQuran.page} )`
+                  : `( الآية ${formatNumber(lastReadQuran.ayah)} الجزء ${formatNumber(lastReadQuran.juz)} الصفحة ${formatNumber(lastReadQuran.page)} )`}
+              </span>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => onNavigate('quran-landscape', { from: 'modern_home', surah: lastReadQuran.surah, ayah: lastReadQuran.ayah, page: lastReadQuran.page, ...(isEn ? { readingMode: 'translation' } : {}) })}
+            className="px-6 py-1.5 rounded-full font-bold text-xs flex items-center justify-center shrink-0 active:scale-95 transition-all golden-3d-pill-btn cursor-pointer"
+            title={isEn ? 'Landscape Reading' : 'تلاوة عرضية للمصحف'}
+          >
+            <span>{isEn ? 'Landscape' : 'عرضي'}</span>
+          </button>
+        </div>
+
+        {/* الشريط المتحرك لعرض نص الآية الكريمة */}
+        <AyahTickerBar
+          text={currentAyahText}
+          ayahNum={lastReadQuran.ayah}
+          isEn={isEn}
+          isNightMode={isNightMode}
+          isBlackTheme={isBlackTheme}
+          formatNumber={formatNumber}
+          onNavigate={() => onNavigate('quran', { from: 'modern_home', surah: lastReadQuran.surah, ayah: lastReadQuran.ayah, page: lastReadQuran.page, ...(isEn ? { readingMode: 'translation' } : {}) })}
+        />
+      </div>
+
+      {/* 2. بطاقة مواقيت الصلاة والعد التنازلي والقبلة (Standalone Prayer Times Card) */}
       <div 
         className="w-full golden-3d-card p-4 sm:p-5 select-none transition-all"
       >
-        {/* قسم تابع تلاوة المصحف (في أعلى البطاقة تماماً تلبية لطلب المستخدم) */}
-        <div className="w-full mb-3.5">
-          <div className={`w-full rounded-2xl px-3.5 py-3.5 sm:px-4 sm:py-4 white-3d-container-card flex flex-col shadow-md transition-all hover:scale-[1.01] ${(isNightMode || isBlackTheme) ? '' : 'border border-amber-300/50'}`}>
-            <div className="flex items-center justify-between gap-2 sm:gap-3 w-full">
-              <div 
-                onClick={() => onNavigate('quran', { from: 'modern_home', surah: lastReadQuran.surah, ayah: lastReadQuran.ayah, page: lastReadQuran.page })}
-                className="flex flex-col justify-center min-w-0 flex-1 text-start cursor-pointer group"
-              >
-                <div className="flex items-center">
-                  <span className="card-header-title text-xs sm:text-sm font-black truncate group-hover:text-amber-900 transition-colors font-cairo" style={{ color: (isNightMode || isBlackTheme) ? '#F59E0B' : '#451A03' }}>
-                    {isEn ? 'Continue Quran Recitation' : 'تابع تلاوة المصحف'}
-                  </span>
-                </div>
-                <div className="flex items-center gap-1 sm:gap-1.5 flex-nowrap whitespace-nowrap text-[11px] sm:text-xs font-black mt-1.5 min-w-0 font-cairo">
-                  <span className="truncate" style={{ color: (isNightMode || isBlackTheme) ? '#FFFFFF' : '#451A03' }}>
-                    {lastReadQuran.surahName} :
-                  </span>
-                  <span className="shrink-0" style={{ color: (isNightMode || isBlackTheme) ? '#FDE68A' : '#5B2605' }}>
-                    {isEn 
-                      ? `( Ayah ${lastReadQuran.ayah} Juz ${lastReadQuran.juz} Page ${lastReadQuran.page} )`
-                      : `( الآية ${formatNumber(lastReadQuran.ayah)} الجزء ${formatNumber(lastReadQuran.juz)} الصفحة ${formatNumber(lastReadQuran.page)} )`}
-                  </span>
-                </div>
-              </div>
+        {/* صف الموقع والتاريخ الهجري وزر القبلة الذكي */}
+        <div className="flex items-center justify-between gap-2 w-full mb-3">
+          <div className="flex items-start gap-1.5 min-w-0 max-w-[85%] text-start">
+            <button
+              type="button"
+              onClick={handleRefreshLocation}
+              disabled={isRefreshingLocation}
+              className="gold-accent-icon inline-flex items-center justify-center shrink-0 mt-[1.5px] cursor-pointer bg-transparent border-none p-0 outline-none active:scale-95 transition-transform"
+              title={isEn ? 'Click to refresh location automatically' : 'انقر لتحديث الموقع تلقائياً'}
+              aria-label={isEn ? 'Refresh location' : 'تحديث الموقع'}
+            >
+              <MapPin className={`w-3.5 h-3.5 text-amber-800 shrink-0 ${isRefreshingLocation ? 'animate-bounce' : ''}`} />
+            </button>
 
-              <button
-                type="button"
-                onClick={() => onNavigate('quran-landscape', { from: 'modern_home', surah: lastReadQuran.surah, ayah: lastReadQuran.ayah, page: lastReadQuran.page })}
-                className="px-3.5 py-1.5 rounded-full font-bold text-xs flex items-center justify-center shrink-0 active:scale-95 transition-all golden-3d-pill-btn cursor-pointer"
-                title={isEn ? 'Landscape Reading' : 'تلاوة عرضية للمصحف'}
-              >
-                <span>{isEn ? 'Landscape' : 'عرضي'}</span>
-              </button>
-            </div>
-
-            {/* الشريط المتحرك لعرض نص الآية الكريمة */}
-            <AyahTickerBar
-              text={currentAyahText}
-              ayahNum={lastReadQuran.ayah}
-              isEn={isEn}
-              isNightMode={isNightMode}
-              isBlackTheme={isBlackTheme}
-              formatNumber={formatNumber}
-              onNavigate={() => onNavigate('quran', { from: 'modern_home', surah: lastReadQuran.surah, ayah: lastReadQuran.ayah, page: lastReadQuran.page })}
-            />
-          </div>
-        </div>
-
-        {/* فاصل وقسم مواقيت الصلاة والعد التنازلي */}
-        <div className="pt-3.5 border-t border-amber-300/60">
-          {/* صف الموقع والتاريخ الهجري وزر القبلة الذكي */}
-          <div className="flex items-center justify-between gap-2 w-full mb-3">
-            <div className="flex items-start gap-1.5 min-w-0 max-w-[85%] text-start">
+            <div className="flex flex-col items-start min-w-0">
               <button
                 type="button"
                 onClick={handleRefreshLocation}
                 disabled={isRefreshingLocation}
-                className="gold-accent-icon inline-flex items-center justify-center shrink-0 mt-[1.5px] cursor-pointer bg-transparent border-none p-0 outline-none active:scale-95 transition-transform"
+                className="inline-flex items-center text-xs font-bold text-amber-950 hover:text-amber-800 active:scale-95 transition-all cursor-pointer bg-transparent border-none p-0 outline-none max-w-full leading-snug text-start"
                 title={isEn ? 'Click to refresh location automatically' : 'انقر لتحديث الموقع تلقائياً'}
-                aria-label={isEn ? 'Refresh location' : 'تحديث الموقع'}
               >
-                <MapPin className={`w-3.5 h-3.5 text-amber-800 shrink-0 ${isRefreshingLocation ? 'animate-bounce' : ''}`} />
+                <span className="truncate">{prayerData.cityName}</span>
               </button>
 
-              <div className="flex flex-col items-start min-w-0">
-                <button
-                  type="button"
-                  onClick={handleRefreshLocation}
-                  disabled={isRefreshingLocation}
-                  className="inline-flex items-center text-xs font-bold text-amber-950 hover:text-amber-800 active:scale-95 transition-all cursor-pointer bg-transparent border-none p-0 outline-none max-w-full leading-snug text-start"
-                  title={isEn ? 'Click to refresh location automatically' : 'انقر لتحديث الموقع تلقائياً'}
-                >
-                  <span className="truncate">{prayerData.cityName}</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => onNavigate('calendar')}
-                  className="inline-flex items-center text-xs font-bold text-amber-900 hover:text-amber-950 active:scale-95 transition-all cursor-pointer bg-transparent border-none p-0 outline-none whitespace-nowrap leading-snug mt-0.5 gold-accent-text text-start"
-                  title={isEn ? 'Open Hijri Calendar' : 'فتح التقويم الهجري'}
-                >
-                  {todayHijriDisplay}
-                </button>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => onNavigate('qibla')}
-              className="w-8 h-8 rounded-full golden-3d-btn-light flex items-center justify-center shadow-2xs shrink-0 cursor-pointer hover:scale-105 active:scale-95 transition-all text-amber-800"
-              title={isEn ? 'Qibla Direction' : 'اتجاه القبلة'}
-              aria-label={isEn ? 'Qibla Direction' : 'اتجاه القبلة'}
-            >
-              <Compass className="w-4.5 h-4.5 text-amber-800 stroke-[2.2]" />
-            </button>
-          </div>
-
-          {/* العد التنازلي وموعد الأذان مع ذكر اسم الصلاة القادمة صراحةً */}
-          <div 
-            onClick={() => onNavigate('prayer-times')}
-            className="flex items-end justify-between cursor-pointer py-1"
-            title={isEn ? 'Click to open full Prayer Times' : 'انقر لعرض مواقيت الصلاة'}
-          >
-            <div className="flex flex-col text-start">
-              <span className="text-[11px] font-semibold text-amber-900/85">
-                {isEn ? (
-                  <>
-                    Time to <span className="gold-accent-text font-extrabold">{prayerData.nextName}</span> Adhan
-                  </>
-                ) : (
-                  <>
-                    الوقت المتبقي لأذان <span className="gold-accent-text font-extrabold">{prayerData.nextName}</span>
-                  </>
-                )}
-              </span>
-              <span className="text-3xl sm:text-4xl font-cairo font-black tracking-tight text-[#451A03] tabular-nums" style={{ textShadow: (isNightMode || isBlackTheme) ? 'none' : '0 1px 1px rgba(255,255,255,0.8)' }}>
-                {prayerData.countdownStr}
-              </span>
-            </div>
-            <div className="flex flex-col text-end">
-              <span className="text-[11px] font-semibold text-amber-900/85">
-                {isEn ? 'Adhan Time' : 'موعد الأذان'}
-              </span>
-              <span className="text-xl sm:text-2xl font-black text-[#5B2605] tabular-nums">
-                {prayerData.nextTimeStr}
-              </span>
+              <button
+                type="button"
+                onClick={() => onNavigate('calendar')}
+                className="inline-flex items-center text-xs font-bold text-amber-900 hover:text-amber-950 active:scale-95 transition-all cursor-pointer bg-transparent border-none p-0 outline-none whitespace-nowrap leading-snug mt-0.5 gold-accent-text text-start"
+                title={isEn ? 'Open Hijri Calendar' : 'فتح التقويم الهجري'}
+              >
+                {todayHijriDisplay}
+              </button>
             </div>
           </div>
 
-          {/* شريط التقدم */}
-          <div 
-            onClick={() => onNavigate('prayer-times')}
-            className="w-full mt-3 cursor-pointer"
+          <button
+            type="button"
+            onClick={() => onNavigate('qibla')}
+            className="p-1 sm:p-1.5 flex items-center justify-center shrink-0 cursor-pointer hover:scale-110 active:scale-90 transition-all bg-transparent border-none outline-none"
+            title={isEn ? 'Qibla Direction' : 'تحديد اتجاه القبلة'}
+            aria-label={isEn ? 'Qibla Direction' : 'تحديد اتجاه القبلة'}
           >
-            <div className={`w-full h-2.5 rounded-full p-0.5 overflow-hidden ${(isNightMode || isBlackTheme) ? 'bg-[#0e0e13] shadow-[inset_0_2px_4px_rgba(0,0,0,0.85),0_1px_0_rgba(255,255,255,0.08)]' : 'bg-black/[0.08] shadow-[inset_0_1px_2px_rgba(0,0,0,0.15)]'}`}>
-              <div 
-                className="h-full rounded-full bg-gradient-to-r from-amber-600 via-yellow-500 to-amber-500 shadow-sm transition-all duration-1000 ease-out" 
-                style={{ width: `${prayerData.progressPercent}%` }}
-              />
-            </div>
-            <div className="flex items-center justify-between text-xs sm:text-[13px] font-bold text-amber-900/95 mt-1.5 px-0.5 whitespace-nowrap">
-              <span className="tabular-nums">{prayerData.prevName} {prayerData.prevTimeStr}</span>
-              <span className="text-amber-950 font-extrabold tabular-nums gold-accent-text">{prayerData.progressPercent}%</span>
-              <span className="tabular-nums">{prayerData.nextName} {prayerData.nextTimeStr}</span>
-            </div>
+            <Compass className="w-6.5 h-6.5 sm:w-7.5 sm:h-7.5 text-amber-800 dark:text-amber-400 hover:text-amber-950 active:text-amber-700 transition-colors drop-shadow-[0_1px_2px_rgba(180,83,9,0.25)] stroke-[2.3]" />
+          </button>
+        </div>
+
+        {/* العد التنازلي وموعد الأذان مع ذكر اسم الصلاة القادمة صراحةً */}
+        <div 
+          onClick={() => onNavigate('prayer-times')}
+          className="flex items-end justify-between cursor-pointer py-1"
+          title={isEn ? 'Click to open full Prayer Times' : 'انقر لعرض مواقيت الصلاة'}
+        >
+          <div className="flex flex-col text-start">
+            <span className="text-[11px] font-semibold text-amber-900/85">
+              {isEn ? (
+                <>
+                  Time to <span className="gold-accent-text font-extrabold">{prayerData.nextName}</span> Adhan
+                </>
+              ) : (
+                <>
+                  الوقت المتبقي لأذان <span className="gold-accent-text font-extrabold">{prayerData.nextName}</span>
+                </>
+              )}
+            </span>
+            <span className="text-3xl sm:text-4xl font-cairo font-black tracking-tight text-[#451A03] tabular-nums" style={{ textShadow: (isNightMode || isBlackTheme) ? 'none' : '0 1px 1px rgba(255,255,255,0.8)' }}>
+              {prayerData.countdownStr}
+            </span>
+          </div>
+          <div className="flex flex-col text-end">
+            <span className="text-[11px] font-semibold text-amber-900/85">
+              {isEn ? 'Adhan Time' : 'موعد الأذان'}
+            </span>
+            <span className="text-xl sm:text-2xl font-black text-[#5B2605] tabular-nums">
+              {prayerData.nextTimeStr}
+            </span>
+          </div>
+        </div>
+
+        {/* شريط التقدم */}
+        <div 
+          onClick={() => onNavigate('prayer-times')}
+          className="w-full mt-3 cursor-pointer"
+        >
+          <div className={`w-full h-2.5 rounded-full p-0.5 overflow-hidden ${(isNightMode || isBlackTheme) ? 'bg-[#0e0e13] shadow-[inset_0_2px_4px_rgba(0,0,0,0.85),0_1px_0_rgba(255,255,255,0.08)]' : 'bg-black/[0.08] shadow-[inset_0_1px_2px_rgba(0,0,0,0.15)]'}`}>
+            <div 
+              className="h-full rounded-full bg-gradient-to-r from-amber-600 via-yellow-500 to-amber-500 shadow-sm transition-all duration-1000 ease-out" 
+              style={{ width: `${prayerData.progressPercent}%` }}
+            />
+          </div>
+          <div className="flex items-center justify-between text-xs sm:text-[13px] font-bold text-amber-900/95 mt-1.5 px-0.5 whitespace-nowrap">
+            <span className="tabular-nums">{prayerData.prevName} {prayerData.prevTimeStr}</span>
+            <span className="text-amber-950 font-extrabold tabular-nums gold-accent-text">{prayerData.progressPercent}%</span>
+            <span className="tabular-nums">{prayerData.nextName} {prayerData.nextTimeStr}</span>
           </div>
         </div>
       </div>
@@ -1435,7 +1486,7 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
             </div>
           </div>
 
-          {/* أيقونة التحكم الصوتي بجوار قسم البحث */}
+          {/* أيقونة التحكم الصوتي فقط باللون الذهبي بدون أي بطاقة خلفية */}
           <button
             id="modern-voice-control-btn"
             type="button"
@@ -1447,32 +1498,26 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
                 setToastMessage(isEn ? 'Voice control disabled' : 'تم تعطيل التحكم الصوتي');
               }
             }}
-            className={`shrink-0 w-12 sm:w-13 rounded-2xl sm:rounded-3xl flex items-center justify-center cursor-pointer select-none transition-all duration-200 active:scale-95 group golden-3d-pill-btn ${
-              isEnabled 
-                ? ((isNightMode || isBlackTheme) ? '' : 'ring-2 ring-white/90 shadow-md') 
-                : ''
-            }`}
+            className="shrink-0 p-2 sm:p-2.5 flex items-center justify-center cursor-pointer select-none transition-all duration-200 active:scale-90 hover:scale-110 bg-transparent border-none outline-none"
             title={
               isEnabled 
                 ? (isEn ? 'Voice control is active (Tap to disable)' : 'التحكم الصوتي مفعّل (انقر للتعطيل)') 
                 : (isEn ? 'Voice control is disabled (Tap to enable)' : 'التحكم الصوتي معطّل (انقر للتفعيل)')
             }
           >
-            <div className="w-8 h-8 rounded-lg relative flex items-center justify-center shrink-0 transition-all">
-              {isEnabled ? (
-                <div className="relative flex items-center justify-center">
-                  <Mic className={`w-4.5 h-4.5 ${(isNightMode || isBlackTheme) ? 'text-black' : 'text-white'}`} strokeWidth={2.4} />
-                  <span className="absolute -top-1 -right-1 flex h-2 w-2">
-                    <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${(isNightMode || isBlackTheme) ? 'bg-amber-500' : 'bg-white'}`}></span>
-                    <span className={`relative inline-flex rounded-full h-2 w-2 ${(isNightMode || isBlackTheme) ? 'bg-amber-500' : 'bg-white'}`}></span>
-                  </span>
-                </div>
-              ) : (
-                <div className="relative flex items-center justify-center">
-                  <MicOff className={`w-4.5 h-4.5 ${(isNightMode || isBlackTheme) ? 'text-black' : 'text-white/80'}`} strokeWidth={2.4} />
-                </div>
-              )}
-            </div>
+            {isEnabled ? (
+              <div className="relative flex items-center justify-center">
+                <Mic className="w-6 h-6 sm:w-7 sm:h-7 text-amber-500 dark:text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.7)]" strokeWidth={2.4} />
+                <span className="absolute -top-1 -right-1 flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                </span>
+              </div>
+            ) : (
+              <div className="relative flex items-center justify-center">
+                <MicOff className="w-6 h-6 sm:w-7 sm:h-7 text-amber-600 dark:text-amber-400 hover:text-amber-700 drop-shadow-[0_1px_3px_rgba(217,119,6,0.4)]" strokeWidth={2.4} />
+              </div>
+            )}
           </button>
         </div>
 
@@ -1512,7 +1557,7 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
                     onClick={() => {
                       markPageAsSeen(service.id);
                       recordAppVisit(service.id);
-                      onNavigate(service.id, (service.id === 'quran' || service.id === 'quran-landscape') ? { from: 'modern_home' } : undefined);
+                      onNavigate(service.id, (service.id === 'quran' || service.id === 'quran-landscape') ? { from: 'modern_home', ...(isEn ? { readingMode: 'translation' } : {}) } : undefined);
                     }}
                     className="snap-start shrink-0 flex flex-col items-center justify-start p-0.5 group cursor-pointer active:scale-90 hover:scale-105 transition-all duration-200 w-[66px] sm:w-[74px] min-h-[66px] sm:min-h-[74px] select-none focus:outline-none"
                   >
@@ -1567,11 +1612,6 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="gold-accent-text text-xs font-bold px-2.5 py-1 rounded-full golden-3d-inset text-[#451A03]">
-              {isEn 
-                ? `${displayedServices.length} Apps`
-                : `${formatNumber(displayedServices.length)} تطبيق`}
-            </span>
             <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 golden-3d-btn-light ${
               isAppsExpanded ? 'rotate-180' : ''
             }`}>
@@ -1667,7 +1707,7 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
                       onClick={() => {
                         markPageAsSeen(service.id);
                         recordAppVisit(service.id);
-                        onNavigate(service.id, (service.id === 'quran' || service.id === 'quran-landscape') ? { from: 'modern_home' } : undefined);
+                        onNavigate(service.id, (service.id === 'quran' || service.id === 'quran-landscape') ? { from: 'modern_home', ...(isEn ? { readingMode: 'translation' } : {}) } : undefined);
                       }}
                       className="flex flex-col items-center justify-between p-1.5 sm:p-2 group cursor-pointer active:scale-90 hover:scale-105 transition-all duration-200 w-full min-h-[92px] select-none focus:outline-none"
                     >

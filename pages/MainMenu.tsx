@@ -227,139 +227,41 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
   const cardButtonColor = isBlackTheme ? '#000000' : theme.palette[0];
   const cardButtonTextColor = isBlackTheme ? '#FFFFFF' : '#FFFFFF';
 
-  // نظام تصميم الصفحة الرئيسية: 'classic' أو 'modern' (الافتراضي عند تشغيل التطبيق لأول مرة هو التصميم الذكي الحديث 'modern')
-  const [homeLayoutMode, setHomeLayoutMode] = useState<'classic' | 'modern'>(() => {
-    try {
-      const saved = localStorage.getItem('home_layout_system');
-      if (saved === 'classic' || saved === 'modern') return saved;
-      return 'modern';
-    } catch {
-      return 'modern';
-    }
-  });
+  // نظام تصميم الصفحة الرئيسية: حصر كامل على التصميم الذكي الحديث 'modern' وتأمين إخفاء التصميم الكلاسيكي تماماً
+  const homeLayoutMode = 'modern' as const;
 
-  // مزامنة حالة وضع التصميم مع Capacitor Preferences لضمان الفتح على آخر تصميم تم الإغلاق منه
+  // التأكد من حفظ وضع التصميم الحديث دائماً في التخزين
   useEffect(() => {
-    Preferences.get({ key: 'home_layout_system' }).then(({ value }) => {
-      if (value === 'classic' || value === 'modern') {
-        setHomeLayoutMode(value);
-        try {
-          localStorage.setItem('home_layout_system', value);
-        } catch (e) {}
-      }
-    }).catch(() => {});
-
-    const handleLayoutChange = (e: any) => {
-      const mode = e?.detail;
-      if (mode === 'classic' || mode === 'modern') {
-        if (scrollContainerRef.current) {
-          scrollContainerRef.current.scrollTop = 0;
-        }
-        const container = document.getElementById('main-menu-scroll-container');
-        if (container) {
-          container.scrollTop = 0;
-        }
-        window.scrollTo(0, 0);
-        setHomeLayoutMode(mode);
-      }
-    };
-    window.addEventListener('home-layout-changed', handleLayoutChange);
-    return () => window.removeEventListener('home-layout-changed', handleLayoutChange);
+    try {
+      localStorage.setItem('home_layout_system', 'modern');
+    } catch {}
+    Preferences.set({ key: 'home_layout_system', value: 'modern' }).catch(() => {});
   }, []);
 
-  const toggleHomeLayout = () => {
-    const nextMode = homeLayoutMode === 'classic' ? 'modern' : 'classic';
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollTop = 0;
-    }
-    const container = document.getElementById('main-menu-scroll-container');
-    if (container) {
-      container.scrollTop = 0;
-    }
-    window.scrollTo(0, 0);
-    setHomeLayoutMode(nextMode);
-    try {
-      localStorage.setItem('home_layout_system', nextMode);
-    } catch {}
-    Preferences.set({ key: 'home_layout_system', value: nextMode }).catch(() => {});
-    window.dispatchEvent(new CustomEvent('home-layout-changed', { detail: nextMode }));
-    if (navigator.vibrate) navigator.vibrate(40);
-    setToastMessage(
-      nextMode === 'modern'
-        ? (language === 'en' ? 'Switched to Modern Hub Design ✨' : 'تم التبديل إلى التصميم الذكي الحديث ✨')
-        : (language === 'en' ? 'Switched to Classic Design 🏛️' : 'تم التبديل إلى التصميم الكلاسيكي 🏛️')
-    );
-  };
-
-  // الانتقال إلى بداية الصفحة دائماً عند التبديل بين التصميم الكلاسيكي والحديث أو العكس
+  // تطبيق تنسيقات التصميم الذكي الحديث مع دعم الوضع الليلي
   useEffect(() => {
-    const scrollToBeginning = () => {
-      if (scrollContainerRef.current) {
-        scrollContainerRef.current.scrollTop = 0;
-      }
-      const container = document.getElementById('main-menu-scroll-container');
-      if (container) {
-        container.scrollTop = 0;
-      }
-      window.scrollTo(0, 0);
-      document.documentElement.scrollTop = 0;
-      document.body.scrollTop = 0;
-    };
-
-    scrollToBeginning();
-    const raf = requestAnimationFrame(scrollToBeginning);
-    const timer = setTimeout(scrollToBeginning, 60);
-    return () => {
-      cancelAnimationFrame(raf);
-      clearTimeout(timer);
-    };
-  }, [homeLayoutMode]);
-
-  // ضمان استقلالية تامة للتصميم الذكي الحديث عن ثيمات وفونتات وألوان التصميم الكلاسيكي مع دعم الوضع الليلي
-  useEffect(() => {
-    if (homeLayoutMode === 'modern') {
-      if (isNightMode) {
-        document.documentElement.classList.add('theme-black-gold', 'dark');
-        document.body.classList.add('theme-black-gold', 'dark');
-        document.documentElement.classList.remove('theme-black');
-        document.body.classList.remove('theme-black');
-        document.documentElement.classList.add('modern-home-active');
-        document.body.classList.add('modern-home-active');
-        document.body.style.backgroundColor = '#000000';
-        document.body.style.color = '#F59E0B';
-        document.body.style.fontFamily = "'Cairo', sans-serif";
-        document.documentElement.style.setProperty('--theme-font', "'Cairo', sans-serif");
-      } else {
-        document.documentElement.classList.remove('theme-black', 'dark', 'theme-black-gold');
-        document.body.classList.remove('theme-black', 'dark', 'theme-black-gold');
-        document.documentElement.classList.add('modern-home-active');
-        document.body.classList.add('modern-home-active');
-        document.body.style.backgroundColor = '#FFFFFF';
-        document.body.style.color = '#1C1917';
-        document.body.style.fontFamily = "'Cairo', sans-serif";
-        document.documentElement.style.setProperty('--theme-font', "'Cairo', sans-serif");
-      }
+    if (isNightMode) {
+      document.documentElement.classList.add('theme-black-gold', 'dark');
+      document.body.classList.add('theme-black-gold', 'dark');
+      document.documentElement.classList.remove('theme-black');
+      document.body.classList.remove('theme-black');
+      document.documentElement.classList.add('modern-home-active');
+      document.body.classList.add('modern-home-active');
+      document.body.style.backgroundColor = '#000000';
+      document.body.style.color = '#F59E0B';
+      document.body.style.fontFamily = "'Cairo', sans-serif";
+      document.documentElement.style.setProperty('--theme-font', "'Cairo', sans-serif");
     } else {
-      document.documentElement.classList.remove('modern-home-active');
-      document.body.classList.remove('modern-home-active');
-      if (isBlackTheme) {
-        document.documentElement.classList.add('theme-black');
-        document.body.classList.add('theme-black');
-      } else {
-        document.documentElement.classList.remove('theme-black');
-        document.body.classList.remove('theme-black');
-      }
-      if (theme.isDark) {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
-      document.body.style.backgroundColor = isBlackTheme ? '#000000' : (theme.bgColor || '#DFE5EC');
-      document.body.style.color = isBlackTheme ? '#FFFFFF' : theme.textColor;
-      document.body.style.fontFamily = theme.font;
-      document.documentElement.style.setProperty('--theme-font', theme.font);
+      document.documentElement.classList.remove('theme-black', 'dark', 'theme-black-gold');
+      document.body.classList.remove('theme-black', 'dark', 'theme-black-gold');
+      document.documentElement.classList.add('modern-home-active');
+      document.body.classList.add('modern-home-active');
+      document.body.style.backgroundColor = '#FFFFFF';
+      document.body.style.color = '#1C1917';
+      document.body.style.fontFamily = "'Cairo', sans-serif";
+      document.documentElement.style.setProperty('--theme-font', "'Cairo', sans-serif");
     }
-  }, [homeLayoutMode, theme, isBlackTheme, themeKey, isNightMode]);
+  }, [isNightMode]);
   const [visibleItems, setVisibleItems] = useState<string[]>(() => {
     const savedVersion = localStorage.getItem('menu_layout_version_v2');
     if (savedVersion !== CURRENT_LAYOUT_VERSION) {
@@ -882,123 +784,62 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
 
   return (
     <div 
-      data-layout={homeLayoutMode}
-      className={`relative min-h-screen ${homeLayoutMode === 'modern' ? 'modern-home-layout font-cairo' : ''}`}
+      data-layout="modern"
+      className="relative min-h-screen modern-home-layout font-cairo"
       style={{ 
-        backgroundColor: homeLayoutMode === 'modern'
-          ? (isNightMode ? '#000000' : '#FFFFFF') 
-          : (isBlackTheme ? '#000000' : (theme.bgColor || '#DFE5EC')),
-        fontFamily: homeLayoutMode === 'modern' ? "'Cairo', sans-serif" : undefined
+        backgroundColor: isNightMode ? '#000000' : '#FFFFFF',
+        fontFamily: "'Cairo', sans-serif"
       }}
     >
-      {homeLayoutMode === 'classic' && <InteractiveBackground />}
-
       <div className="h-screen w-full flex flex-col overflow-hidden">
-        {/* صف اسم التطبيق وأيقونة الثيمات وأيقونة اللغة ونص الدعاء: مثبت بأول الصفحة ولا يتحرك مع التمرير في كلا التصميمين الكلاسيكي والذكي */}
+        {/* صف اسم التطبيق وأيقونة الوضع الليلي وأيقونة اللغة: مثبت بأول الصفحة ولا يتحرك مع التمرير */}
         <header 
           id="sticky-title-wrapper"
           dir={dir}
           className={`shrink-0 z-40 relative select-none transition-colors duration-150 border-b ${
-            homeLayoutMode === 'modern'
-              ? (isNightMode ? 'border-amber-500/30 shadow-[0_2px_12px_rgba(0,0,0,0.8)]' : 'border-amber-200/80 shadow-[0_2px_12px_rgba(217,119,6,0.08)]')
-              : (isBlackTheme 
-                  ? 'border-white/10 shadow-[0_2px_10px_rgba(0,0,0,0.8)]' 
-                  : 'border-black/[0.04] dark:border-white/[0.06] shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)]')
+            isNightMode ? 'border-amber-500/30 shadow-[0_2px_12px_rgba(0,0,0,0.8)]' : 'border-amber-200/80 shadow-[0_2px_12px_rgba(217,119,6,0.08)]'
           }`}
           style={{
-            backgroundColor: homeLayoutMode === 'modern'
-              ? (isNightMode ? '#000000' : '#FFFFFF')
-              : (isBlackTheme ? '#000000' : (theme.bgColor || '#DFE5EC')),
+            backgroundColor: isNightMode ? '#000000' : '#FFFFFF',
             paddingTop: 'env(safe-area-inset-top, 0px)',
-            fontFamily: homeLayoutMode === 'modern' ? "'Cairo', sans-serif" : theme.font
+            fontFamily: "'Cairo', sans-serif"
           }}
         >
           <div className="w-full flex items-center justify-between px-3 sm:px-4 pt-1 pb-1 relative min-h-[44px]" dir={dir}>
-            {/* الطرف الأيمن: أيقونة الثيمات (كلاسيكي) أو التبديل للتصميم الكلاسيكي وأيقونة الوضع الليلي (حديث) */}
+            {/* الطرف الأيمن: أيقونة الوضع الليلي (حديث) */}
             <div className="flex items-center gap-1.5 shrink-0 z-20">
               {!isEditMode ? (
-                homeLayoutMode === 'classic' ? (
-                  <button
-                    id="themes-btn"
-                    data-id="themes-button"
-                    type="button"
-                    onClick={() => setIsThemesSidebarOpen(true)}
-                    className="p-1 sm:p-1.5 flex items-center justify-center transition-all duration-150 active:scale-90 hover:scale-110 cursor-pointer select-none shrink-0 bg-transparent border-none outline-none"
-                    title={language === 'en' ? 'Themes' : 'الثيمات والمظهر'}
-                    aria-label={language === 'en' ? 'Themes' : 'الثيمات والمظهر'}
-                  >
-                    <Palette 
-                      className="w-[22px] h-[22px] sm:w-[24px] sm:h-[24px] pointer-events-none transition-transform" 
-                      style={{
-                        color: isBlackTheme ? '#FFFFFF' : (theme.palette?.[0] || theme.accent || '#2E7D5E'),
-                        filter: isBlackTheme 
-                          ? 'drop-shadow(0 2px 3px rgba(255,255,255,0.4)) drop-shadow(0 4px 6px rgba(0,0,0,0.9))' 
-                          : 'drop-shadow(0 1px 0 rgba(255,255,255,0.9)) drop-shadow(0 2px 3px rgba(0,0,0,0.3)) drop-shadow(0 4px 5px rgba(0,0,0,0.2))'
-                      }}
-                    />
-                  </button>
-                ) : (
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      id="night-mode-toggle-btn"
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleNightMode();
-                      }}
-                      className="p-1 sm:p-1.5 flex items-center justify-center transition-all duration-150 active:scale-90 hover:scale-110 cursor-pointer select-none shrink-0 bg-transparent border-none outline-none"
-                      title={isNightMode ? (language === 'en' ? 'Normal Mode' : 'الوضع العادي') : (language === 'en' ? 'Night Mode (Black & Gold)' : 'الوضع الليلي (الأسود والذهبي)')}
-                      aria-label="Toggle Night Mode"
-                    >
-                      {isNightMode ? (
-                        <Sun className="w-[21px] h-[21px] sm:w-[23px] sm:h-[23px] text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.8)] pointer-events-none" />
-                      ) : (
-                        <Moon className="w-[21px] h-[21px] sm:w-[23px] sm:h-[23px] text-amber-700 dark:text-amber-400 hover:text-amber-900 drop-shadow-[0_1px_2px_rgba(180,83,9,0.25)] pointer-events-none" />
-                      )}
-                    </button>
-
-                    <button
-                      id="modern-layout-toggle-btn"
-                      type="button"
-                      onClick={toggleHomeLayout}
-                      className="p-1 sm:p-1.5 flex items-center justify-center transition-all duration-150 active:scale-90 hover:scale-110 cursor-pointer select-none shrink-0 bg-transparent border-none outline-none"
-                      title={language === 'en' ? 'Switch to Classic Design' : 'التبديل إلى التصميم الكلاسيكي'}
-                      aria-label={language === 'en' ? 'Switch to Classic Design' : 'التبديل إلى التصميم الكلاسيكي'}
-                    >
-                      <LayoutGrid 
-                        className="w-[22px] h-[22px] sm:w-[24px] sm:h-[24px] pointer-events-none transition-transform text-amber-700 hover:text-amber-900"
-                        style={{
-                          color: isNightMode ? '#F59E0B' : undefined,
-                          filter: isNightMode ? 'drop-shadow(0 0 6px rgba(245,158,11,0.5))' : 'drop-shadow(0 1px 2px rgba(180,83,9,0.25))'
-                        }}
-                      />
-                    </button>
-                  </div>
-                )
+                <button
+                  id="night-mode-toggle-btn"
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleNightMode();
+                  }}
+                  className="p-1 sm:p-1.5 flex items-center justify-center transition-all duration-150 active:scale-90 hover:scale-110 cursor-pointer select-none shrink-0 bg-transparent border-none outline-none"
+                  title={isNightMode ? (language === 'en' ? 'Normal Mode' : 'الوضع العادي') : (language === 'en' ? 'Night Mode (Black & Gold)' : 'الوضع الليلي (الأسود والذهبي)')}
+                  aria-label="Toggle Night Mode"
+                >
+                  {isNightMode ? (
+                    <Sun className="w-[21px] h-[21px] sm:w-[23px] sm:h-[23px] text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.8)] pointer-events-none" />
+                  ) : (
+                    <Moon className="w-[21px] h-[21px] sm:w-[23px] sm:h-[23px] text-amber-700 dark:text-amber-400 hover:text-amber-900 drop-shadow-[0_1px_2px_rgba(180,83,9,0.25)] pointer-events-none" />
+                  )}
+                </button>
               ) : <div className="w-6 h-6 shrink-0" />}
             </div>
 
             {/* اسم التطبيق في منتصف الشريط تماماً بصرف النظر عن عدد الأيقونات يميناً أو يساراً */}
-            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center text-center z-10 px-0.5 max-w-[calc(100%-160px)] pointer-events-none">
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center text-center z-10 px-0.5 max-w-[calc(100%-120px)] pointer-events-none">
               <h1 
                 id="app-title" 
-                className={`pointer-events-auto text-[19px] sm:text-[22px] md:text-[24px] font-black tracking-tight select-none text-center truncate transition-transform leading-tight ${homeLayoutMode === 'modern' ? 'font-cairo' : 'font-kufi'} ${isEditMode ? 'scale-105 text-yellow-400' : ''}`} 
-                style={homeLayoutMode === 'modern' ? {
+                className={`pointer-events-auto text-[19px] sm:text-[22px] md:text-[24px] font-black tracking-tight select-none text-center truncate transition-transform leading-tight font-cairo ${isEditMode ? 'scale-105 text-yellow-400' : ''}`} 
+                style={{
                   color: isNightMode ? '#F59E0B' : '#78350F',
                   fontFamily: "'Cairo', sans-serif",
                   textShadow: isNightMode 
                     ? '0 0 10px rgba(245,158,11,0.5), 0 2px 4px rgba(0,0,0,0.8)' 
                     : '0 1px 1px rgba(255, 255, 255, 0.9), 0 2px 4px rgba(180, 83, 9, 0.18)',
-                  textRendering: 'optimizeLegibility',
-                  WebkitFontSmoothing: 'antialiased'
-                } : { 
-                  color: isEditMode 
-                    ? undefined 
-                    : (isBlackTheme ? '#FFFFFF' : (themeKey === 'default' ? '#4C1D95' : theme.textColor)),
-                  fontFamily: theme.font,
-                  textShadow: isBlackTheme 
-                    ? '0 2px 4px rgba(255,255,255,0.3), 0 4px 8px rgba(0,0,0,0.8)' 
-                    : '0 1px 0 rgba(255, 255, 255, 0.9), 0 2px 0 rgba(0, 0, 0, 0.15), 0 3px 2px rgba(0, 0, 0, 0.2), 0 4px 6px rgba(0, 0, 0, 0.25)',
                   textRendering: 'optimizeLegibility',
                   WebkitFontSmoothing: 'antialiased'
                 }}
@@ -1007,28 +848,8 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
               </h1>
             </div>
 
-            {/* الطرف الأيسر: زر اللغة أو تبديل النمط - مع إزاحة زر اللغة ليكون مقرباً من اسم التطبيق وبعيداً عن الحافة */}
-            <div className={`flex items-center gap-1.5 shrink-0 z-20 ${homeLayoutMode === 'modern' ? 'me-11 sm:me-14' : ''}`}>
-              {!isEditMode && homeLayoutMode === 'classic' && (
-                <button
-                  id="layout-toggle-btn"
-                  type="button"
-                  onClick={toggleHomeLayout}
-                  className="p-1 sm:p-1.5 flex items-center justify-center transition-all duration-150 active:scale-90 hover:scale-110 cursor-pointer select-none shrink-0 bg-transparent border-none outline-none"
-                  title={language === 'en' ? 'Switch to Modern Hub Design' : 'التبديل إلى التصميم الذكي الحديث'}
-                  aria-label="Switch to Modern Layout"
-                >
-                  <LayoutDashboard 
-                    className="w-[21px] h-[21px] sm:w-[23px] sm:h-[23px] pointer-events-none transition-transform text-sky-600 dark:text-sky-400"
-                    style={{
-                      filter: isBlackTheme 
-                        ? 'drop-shadow(0 2px 3px rgba(255,255,255,0.4))' 
-                        : 'drop-shadow(0 1px 0 rgba(255,255,255,0.9)) drop-shadow(0 2px 3px rgba(0,0,0,0.25))'
-                    }}
-                  />
-                </button>
-              )}
-
+            {/* الطرف الأيسر: زر اللغة */}
+            <div className="flex items-center gap-1.5 shrink-0 z-20">
               {!isEditMode ? (
                 <button
                   id="language-btn"
@@ -1042,14 +863,8 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
                   <span 
                     className="text-[17px] sm:text-[18px] font-black font-cairo tracking-tight pointer-events-none leading-none"
                     style={{
-                      color: homeLayoutMode === 'modern'
-                        ? (isNightMode ? '#F59E0B' : '#78350F')
-                        : (isBlackTheme ? '#FFFFFF' : (theme.palette?.[0] || theme.accent || '#2E7D5E')),
-                      textShadow: homeLayoutMode === 'modern'
-                        ? (isNightMode ? '0 0 8px rgba(245,158,11,0.4)' : '0 1px 2px rgba(255, 255, 255, 0.9)')
-                        : (isBlackTheme 
-                            ? '0 2px 3px rgba(255,255,255,0.4), 0 4px 6px rgba(0,0,0,0.9)' 
-                            : '0 1px 0 rgba(255,255,255,0.9), 0 2px 0 rgba(0, 0, 0, 0.3), 0 4px 5px rgba(0, 0, 0, 0.2)')
+                      color: isNightMode ? '#F59E0B' : '#78350F',
+                      textShadow: isNightMode ? '0 0 8px rgba(245,158,11,0.4)' : '0 1px 2px rgba(255, 255, 255, 0.9)'
                     }}
                   >
                     {language === 'ar' ? 'Ar' : 'En'}
@@ -1071,24 +886,16 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
           className="flex-1 overflow-y-auto pb-3 sm:pb-4 pb-[calc(env(safe-area-inset-bottom,0px)+0.75rem)] no-scrollbar"
         >
           {/* نص الدعاء بأول الصفحة والشريط الإعلاني - في بداية الصفحة كما كان */}
-          <div className={`w-full max-w-lg mx-auto text-center select-none pt-2 px-3 ${homeLayoutMode === 'modern' ? 'pb-0' : 'pb-1.5'}`}>
+          <div className="w-full max-w-lg mx-auto text-center select-none pt-2 px-3 pb-0">
             <div className="relative h-[27.5px] max-w-sm mx-auto flex items-center justify-center px-2">
               <p 
-                className={`text-[12.5px] sm:text-[13.5px] font-bold leading-tight tracking-normal text-center ${homeLayoutMode === 'modern' ? 'font-cairo' : 'font-kufi'} ${isNightMode ? '' : 'drop-shadow-sm'}`}
+                className={`text-[12.5px] sm:text-[13.5px] font-bold leading-tight tracking-normal text-center font-cairo ${isNightMode ? '' : 'drop-shadow-sm'}`}
                 style={{ 
                   color: isEditMode 
                     ? undefined 
-                    : (homeLayoutMode === 'modern'
-                        ? (isNightMode ? '#F59E0B' : '#854D0E')
-                        : (isBlackTheme || isNightMode
-                            ? '#FFFFFF' 
-                            : (themeKey === 'default' ? '#7e22ce' : (themeKey === 'olive_grove' ? '#4D7C0F' : theme.textColor)))),
-                  fontFamily: homeLayoutMode === 'modern' ? "'Cairo', sans-serif" : theme.font,
-                  textShadow: homeLayoutMode === 'modern'
-                    ? (isNightMode ? 'none' : '0 1px 1px rgba(255, 255, 255, 0.8)')
-                    : (isBlackTheme || isNightMode
-                        ? 'none' 
-                        : '0 1px 0 rgba(255, 255, 255, 0.9), 0 2px 0 rgba(0, 0, 0, 0.12), 0 3px 2px rgba(0, 0, 0, 0.18), 0 4px 5px rgba(0, 0, 0, 0.2)'),
+                    : (isNightMode ? '#F59E0B' : '#854D0E'),
+                  fontFamily: "'Cairo', sans-serif",
+                  textShadow: isNightMode ? 'none' : '0 1px 1px rgba(255, 255, 255, 0.8)',
                   textRendering: 'optimizeLegibility',
                   WebkitFontSmoothing: 'antialiased'
                 }}
@@ -1101,164 +908,34 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
             </div>
           </div>
 
-          {homeLayoutMode === 'modern' ? (
-            <div className="px-3 sm:px-4 pt-1">
-              <ModernHomeView
-                onNavigate={onNavigate}
-                theme={theme}
-                themeKey={themeKey}
-                isBlackTheme={false}
-                setToastMessage={setToastMessage}
-                onThisDayEvent={onThisDayEvent}
-                handleNextEvent={handleNextEvent}
-                handleShareHighlight={handleShareHighlight}
-                handleCopyHighlight={handleCopyHighlight}
-                setShowExpandedEventsModal={setShowExpandedEventsModal}
-                currentHistoryMemoryEvent={currentHistoryMemoryEvent}
-                handleNextHistoryMemoryEvent={handleNextHistoryMemoryEvent}
-                handleShareHistoryMemory={handleShareHistoryMemory}
-                handleCopyHistoryMemory={handleCopyHistoryMemory}
-                setShowExpandedHistoryMemoryModal={setShowExpandedHistoryMemoryModal}
-                upcomingEvents={upcomingEvents}
-                eventIndex={eventIndex}
-                setEventIndex={setEventIndex}
-                handleShareUpcomingEvent={handleShareUpcomingEvent}
-                handleCopyUpcomingEvent={handleCopyUpcomingEvent}
-                setShowExpandedUpcomingEventModal={setShowExpandedUpcomingEventModal}
-                shareTextAr={APP_SHARE_TEXT}
-                shareTextEn={APP_SHARE_TEXT_EN}
-              />
-              <div className="w-full h-2 sm:h-3 shrink-0 pointer-events-none" />
-            </div>
-          ) : (
-            <div className="main-layout px-4 flex flex-col pt-2" style={{ fontFamily: theme.font }}>
-              
-              <TitleSection 
-                  isEditMode={isEditMode}
-                  setIsEditMode={setIsEditMode}
-                  handleSaveLayout={handleSaveLayout}
-                  handleResetLayout={handleResetLayout}
-                  handleCancelEdit={handleCancelEdit}
-                  theme={theme}
-                  themeKey={themeKey}
-                  onOpenSideMenu={onOpenSideMenu}
-                  hideTitle={true}
-              />
-
-              <div id="grid-section">
-                <GridSection 
-                    menuItems={menuItems}
-                    setMenuItems={setMenuItems}
-                    visibleItems={visibleItems}
-                    isEditMode={isEditMode}
-                    onNavigate={(id) => {
-                        onNavigate(id, { from: 'classic_home' });
-                    }}
-                    theme={theme}
-                    themeKey={themeKey}
-                    DEFAULT_MENU_ITEMS={DEFAULT_MENU_ITEMS}
-                />
-              </div>
-
-              {/* Footer/Save Button */}
-              {!isEditMode && (
-                  <div className="flex flex-col gap-2 w-full max-w-sm mx-auto mt-1 mb-4">
-                      {/* شريط التذكير الذكي للمواسم والمناسبات والأوقات الشرعية في التصميم الكلاسيكي */}
-                      <SmartSeasonalStrip
-                          layoutMode="classic"
-                          onNavigate={onNavigate}
-                      />
-
-                      {/* Modern Prayer Status Card */}
-                      <HomePrayerCard 
-                          onNavigate={onNavigate}
-                          cardRef={prayerCardRef}
-                      />
-
-                      {/* بطاقة ذاكرة التاريخ الإسلامي - أسفل بطاقة الصلاة مباشرة */}
-                      {currentHistoryMemoryEvent && (
-                          <IslamicHistoryMemoryCard
-                              event={currentHistoryMemoryEvent}
-                              onNextEvent={handleNextHistoryMemoryEvent}
-                              onCopy={handleCopyHistoryMemory}
-                              onShare={handleShareHistoryMemory}
-                              onOpenModal={() => setShowExpandedHistoryMemoryModal(true)}
-                          />
-                      )}
-
-                      {/* بطاقة عداد الطواف والسعي - تظهر تحت بطاقة الصلاة مباشرة عند تفعيلها */}
-                      <TawafCounterCard 
-                          theme={theme}
-                          onNavigate={onNavigate}
-                      />
-
-
-                      {/* بطاقة مربي العبادات (إنجاز اليوم وملخص الأيام السابقة بالنسبة المئوية) */}
-                      <HabitTrackerCard
-                          theme={theme}
-                          onNavigate={onNavigate}
-                      />
-
-                      {/* On This Day Card */}
-                      {onThisDayEvent && (
-                          <OnThisDayCard 
-                              event={onThisDayEvent}
-                              onNextEvent={handleNextEvent}
-                              onCopy={handleCopyHighlight}
-                              onShare={handleShareHighlight}
-                              onOpenModal={() => setShowExpandedEventsModal(true)}
-                          />
-                      )}
-
-                      {/* Upcoming Islamic Event Card */}
-                      {upcomingEvents.length > 0 && (
-                          <IslamicEventsCard
-                              events={upcomingEvents}
-                              currentIndex={eventIndex}
-                              onPrevEvent={(e) => {
-                                  e.stopPropagation();
-                                  setEventIndex(prev => (prev - 1 + upcomingEvents.length) % upcomingEvents.length);
-                              }}
-                              onNextEvent={(e) => {
-                                  e.stopPropagation();
-                                  setEventIndex(prev => (prev + 1) % upcomingEvents.length);
-                              }}
-                              onCopy={handleCopyUpcomingEvent}
-                              onShare={handleShareUpcomingEvent}
-                              onOpenModal={() => setShowExpandedUpcomingEventModal(true)}
-                          />
-                      )}
-
-                      {/* Web App Link Card */}
-                      <WebAppCard setToastMessage={setToastMessage} />
-
-                      {/* App Share Card */}
-                      <ShareAppCard
-                          shareTextAr={APP_SHARE_TEXT}
-                          shareTextEn={APP_SHARE_TEXT_EN}
-                          setToastMessage={setToastMessage}
-                      />
-
-                      {/* Dua - بارز وبدون بطاقة أو زر محيط */}
-                      <div className="flex items-center justify-center gap-2 mt-1 mb-0.5 px-4" dir={dir}>
-                          <p 
-                              className="text-sm font-black font-kufi leading-tight text-center relative z-10" 
-                              style={{ 
-                                  color: isBlackTheme ? '#FFFFFF' : (themeKey === 'default' ? '#7e22ce' : (themeKey === 'olive_grove' ? '#65A30D' : theme.textColor)),
-                                  textShadow: isBlackTheme 
-                                      ? '0 2px 4px rgba(255,255,255,0.3), 0 4px 8px rgba(0,0,0,0.8)' 
-                                      : '0 1px 0 rgba(255, 255, 255, 0.9), 0 2px 0 rgba(0, 0, 0, 0.15), 0 3px 2px rgba(0, 0, 0, 0.2), 0 4px 6px rgba(0, 0, 0, 0.25)'
-                              }}
-                          >
-                              {t('app.dua_bottom', 'اللهم ارحمهما واغفر لهما واجعل مثواهما الجنة')}
-                          </p>
-                      </div>
-                      {/* Bottom Spacer for Mobile Phone Navigation Bar (reduced 50%) */}
-                      <div className="w-full h-1 sm:h-1.5 shrink-0 pointer-events-none" />
-                  </div>
-              )}
-            </div>
-          )}
+          <div className="px-3 sm:px-4 pt-1">
+            <ModernHomeView
+              onNavigate={onNavigate}
+              theme={theme}
+              themeKey={themeKey}
+              isBlackTheme={false}
+              setToastMessage={setToastMessage}
+              onThisDayEvent={onThisDayEvent}
+              handleNextEvent={handleNextEvent}
+              handleShareHighlight={handleShareHighlight}
+              handleCopyHighlight={handleCopyHighlight}
+              setShowExpandedEventsModal={setShowExpandedEventsModal}
+              currentHistoryMemoryEvent={currentHistoryMemoryEvent}
+              handleNextHistoryMemoryEvent={handleNextHistoryMemoryEvent}
+              handleShareHistoryMemory={handleShareHistoryMemory}
+              handleCopyHistoryMemory={handleCopyHistoryMemory}
+              setShowExpandedHistoryMemoryModal={setShowExpandedHistoryMemoryModal}
+              upcomingEvents={upcomingEvents}
+              eventIndex={eventIndex}
+              setEventIndex={setEventIndex}
+              handleShareUpcomingEvent={handleShareUpcomingEvent}
+              handleCopyUpcomingEvent={handleCopyUpcomingEvent}
+              setShowExpandedUpcomingEventModal={setShowExpandedUpcomingEventModal}
+              shareTextAr={APP_SHARE_TEXT}
+              shareTextEn={APP_SHARE_TEXT_EN}
+            />
+            <div className="w-full h-2 sm:h-3 shrink-0 pointer-events-none" />
+          </div>
         </div>
       </div>
 

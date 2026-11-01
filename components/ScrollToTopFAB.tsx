@@ -19,6 +19,7 @@ export const ScrollToTopFAB: React.FC<ScrollToTopFABProps> = ({ currentPage: pro
 
   const [visible, setVisible] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [isModalActive, setIsModalActive] = useState(false);
 
   // Active home layout mode: 'classic' or 'modern'
   const [activeLayout, setActiveLayout] = useState<'classic' | 'modern'>(() => {
@@ -30,6 +31,48 @@ export const ScrollToTopFAB: React.FC<ScrollToTopFABProps> = ({ currentPage: pro
       return 'modern';
     }
   });
+
+  useEffect(() => {
+    const checkModalState = () => {
+      if (typeof document === 'undefined') return;
+      const isOpen = Boolean(
+        document.body.classList.contains('qr-modal-active') ||
+        document.body.classList.contains('zoom-modal-active') ||
+        document.body.classList.contains('modal-open') ||
+        document.getElementById('share-app-qr-modal') ||
+        document.getElementById('unified-event-zoom-modal-backdrop') ||
+        document.querySelector('.fixed.inset-0.bg-black\\/65') ||
+        document.querySelector('.fixed.inset-0.bg-black\\/60') ||
+        document.querySelector('[class*="z-[140]"]') ||
+        document.querySelector('[class*="z-[150]"]') ||
+        document.querySelector('[class*="z-[200]"]')
+      );
+      setIsModalActive(isOpen);
+    };
+
+    checkModalState();
+
+    const handleModalEvent = () => checkModalState();
+    window.addEventListener('modal-state-changed', handleModalEvent);
+
+    const observer = new MutationObserver(() => {
+      checkModalState();
+    });
+
+    if (typeof document !== 'undefined') {
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['class', 'style', 'id']
+      });
+    }
+
+    return () => {
+      window.removeEventListener('modal-state-changed', handleModalEvent);
+      observer.disconnect();
+    };
+  }, []);
 
   useEffect(() => {
     if (ctxHomeLayout === 'classic' || ctxHomeLayout === 'modern') {
@@ -135,14 +178,20 @@ export const ScrollToTopFAB: React.FC<ScrollToTopFABProps> = ({ currentPage: pro
   if (!mounted || typeof document === 'undefined') return null;
 
   // 0. لا يظهر نهائياً إذا كانت إحدى النوافذ المنبثقة مفتوحة (الكيو ار أو قائمة التكبير)
-  const isModalOpen = typeof document !== 'undefined' && (
+  const isCurrentlyModalOpen = isModalActive || (typeof document !== 'undefined' && (
     document.body.classList.contains('qr-modal-active') ||
     document.body.classList.contains('zoom-modal-active') ||
+    document.body.classList.contains('modal-open') ||
     Boolean(document.getElementById('share-app-qr-modal')) ||
-    Boolean(document.querySelector('.fixed.inset-0.z-\\[140\\]'))
-  );
+    Boolean(document.getElementById('unified-event-zoom-modal-backdrop')) ||
+    Boolean(document.querySelector('.fixed.inset-0.bg-black\\/65')) ||
+    Boolean(document.querySelector('.fixed.inset-0.bg-black\\/60')) ||
+    Boolean(document.querySelector('[class*="z-[140]"]')) ||
+    Boolean(document.querySelector('[class*="z-[150]"]')) ||
+    Boolean(document.querySelector('[class*="z-[200]"]'))
+  ));
 
-  if (isModalOpen) {
+  if (isCurrentlyModalOpen) {
     return null;
   }
 

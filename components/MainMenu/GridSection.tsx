@@ -36,7 +36,7 @@ interface GridSectionProps {
     setMenuItems: React.Dispatch<React.SetStateAction<any[]>>;
     visibleItems: string[];
     isEditMode: boolean;
-    onNavigate: (id: string) => void;
+    onNavigate: (id: string, params?: any) => void;
     theme: any;
     themeKey: string;
     DEFAULT_MENU_ITEMS: any[];
@@ -339,7 +339,7 @@ const GridSection: React.FC<GridSectionProps> = ({
                     onClick={() => {
                         if (!isEditMode) {
                             markPageAsSeen('quran');
-                            onNavigate('quran');
+                            onNavigate('quran', isEn ? { readingMode: 'translation' } : undefined);
                         }
                     }}
                     className={`w-full rounded-2xl p-3 sm:p-3.5 relative flex items-center justify-between cursor-pointer select-none group transition-all overflow-hidden ${isEditMode ? 'cursor-move animate-pulse opacity-80' : ''}`}
@@ -398,12 +398,12 @@ const GridSection: React.FC<GridSectionProps> = ({
                             tabIndex={0}
                             onClick={(e) => {
                                 e.stopPropagation();
-                                onNavigate('quran-landscape');
+                                onNavigate('quran-landscape', isEn ? { readingMode: 'translation' } : undefined);
                             }}
                             onKeyDown={(e) => {
                                 if (e.key === 'Enter' || e.key === ' ') {
                                     e.stopPropagation();
-                                    onNavigate('quran-landscape');
+                                    onNavigate('quran-landscape', isEn ? { readingMode: 'translation' } : undefined);
                                 }
                             }}
                             className={`rounded-xl px-2.5 py-1.5 flex items-center gap-1.5 cursor-pointer transition-all hover:scale-105 active:scale-95 ${themeKey === 'shiny_gold' ? 'text-black' : 'text-white'} relative z-20 flex-shrink-0 ms-2 overflow-hidden select-none`}

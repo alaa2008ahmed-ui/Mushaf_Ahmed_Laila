@@ -3,7 +3,6 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Mic, MicOff } from 'lucide-react';
 import { useVoiceControl } from '../context/VoiceControlContext';
-import { useTheme } from '../context/ThemeContext';
 
 interface VoiceControlToggleProps {
     className?: string;
@@ -11,59 +10,34 @@ interface VoiceControlToggleProps {
 }
 
 const VoiceControlToggle: React.FC<VoiceControlToggleProps> = ({ className, style }) => {
-  const { isEnabled, toggleEnabled, isListening, showVoiceIcon } = useVoiceControl();
-  const { theme, themeKey } = useTheme();
+  const { isEnabled, toggleEnabled, showVoiceIcon } = useVoiceControl();
 
   if (!showVoiceIcon) return null;
-
-  // User explicitly requested: "ايقونه الواتساب وايقونه التحكم الصوتى باللون البنفسجى"
-  const isBlackTheme = theme.bgColor === '#000000';
-  const themePurpleColor = isBlackTheme 
-    ? '#000000' 
-    : (themeKey === 'default' 
-        ? '#8B5CF6' 
-        : (theme.palette[1] || '#8B5CF6'));
-
-  let bgColor = themePurpleColor;
-  
-  if (isEnabled) {
-    bgColor = '#ef4444'; // Red when enabled
-  }
-
-  const isBgWhite = !isEnabled && (bgColor.toLowerCase() === '#ffffff' || bgColor.toLowerCase() === 'white' || bgColor.toLowerCase() === 'rgb(255, 255, 255)');
-  const iconColor = isBgWhite ? '#000000' : '#ffffff';
-  const borderColor = isBgWhite ? '#cccccc' : '#ffffff';
 
   return (
     <motion.button
       id="voice-control-btn"
       initial={{ scale: 0, opacity: 1 }}
       animate={{ scale: 1, opacity: 1 }}
-      whileHover={{ scale: 1.05, y: -2 }}
-      whileTap={{ scale: 0.95, y: 2 }}
+      whileHover={{ scale: 1.1 }}
+      whileTap={{ scale: 0.9 }}
       onClick={toggleEnabled}
-      className={`w-9 h-9 rounded-full flex items-center justify-center transition-all relative overflow-hidden group ${isEnabled ? 'animate-pulse' : ''} ${className || ''}`}
-      style={{ 
-        ...style,
-        backgroundColor: bgColor,
-        border: '1px solid rgba(255, 255, 255, 0.85)',
-        boxShadow: isBlackTheme 
-          ? '0 5px 0 #111111, 0 8px 18px rgba(0,0,0,0.6), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.4)' 
-          : '0 5px 0 rgba(0, 0, 0, 0.25), 0 8px 20px -2px rgba(0, 0, 0, 0.2), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.75), inset 0 -2px 4px rgba(0, 0, 0, 0.15)'
-      }}
+      className={`p-1.5 flex items-center justify-center transition-all bg-transparent border-none outline-none cursor-pointer select-none shrink-0 ${className || ''}`}
+      style={style}
       title={isEnabled ? 'تعطيل التحكم الصوتي' : 'تفعيل التحكم الصوتي'}
     >
-      {/* 3D Glossy specular sheen */}
-      <div className="absolute inset-x-1 top-0.5 h-[48%] rounded-t-full bg-gradient-to-b from-white/45 via-white/15 to-transparent pointer-events-none"></div>
-
-      {isEnabled ? <Mic className="w-5 h-5 relative z-10 drop-shadow-md" style={{ color: iconColor }} /> : <MicOff className="w-5 h-5 relative z-10 drop-shadow-md" style={{ color: iconColor }} />}
-      
-      {isEnabled && (
-        <motion.div
-          animate={{ scale: [1, 1.4, 1], opacity: [0.5, 0, 0.5] }}
-          transition={{ duration: 2, repeat: Infinity }}
-          className="absolute inset-0 rounded-full bg-red-500 -z-10"
-        />
+      {isEnabled ? (
+        <div className="relative flex items-center justify-center">
+          <Mic className="w-6 h-6 text-amber-500 dark:text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.7)]" strokeWidth={2.4} />
+          <span className="absolute -top-1 -right-1 flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+          </span>
+        </div>
+      ) : (
+        <div className="relative flex items-center justify-center">
+          <MicOff className="w-6 h-6 text-amber-600 dark:text-amber-400 hover:text-amber-700 drop-shadow-[0_1px_3px_rgba(217,119,6,0.4)]" strokeWidth={2.4} />
+        </div>
       )}
     </motion.button>
   );
