@@ -105,6 +105,8 @@ const GridSection: React.FC<GridSectionProps> = ({
                 return <ScrollText className={iconClass} />;
             case 'ten-promised':
                 return <Award className={iconClass} />;
+            case 'divine-miracles':
+                return <Sparkles className={iconClass} />;
             case 'nawawi':
                 return <BookMarked className={iconClass} />;
             case 'asmaul-husna':

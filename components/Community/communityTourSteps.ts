@@ -1596,6 +1596,22 @@ export const TEN_PROMISED_PAGE_STEPS: SpotlightStep[] = [
   }
 ];
 
+export const DIVINE_MIRACLES_PAGE_STEPS: SpotlightStep[] = [
+  {
+    id: 'divine_miracles_intro',
+    titleAr: 'المعجزات الإلهية',
+    titleEn: 'Divine Miracles Guide',
+    descAr: 'موسوعة إيمانية وعلمية شاملة توضح براهين وجود الله، ودلائل ربانية القرآن، والإعجاز العلمي في الكون والطب، والنبوءات النبوية الصادقة، وأثر القرآن في حياتنا ونفوسنا.',
+    descEn: 'Comprehensive faith and scientific encyclopedia detailing proofs of God\'s existence, divinity of the Quran, cosmic & biological miracles, fulfilled prophetic prophecies, and daily life miracles.',
+    badgeAr: 'دليل الصفحة',
+    badgeEn: 'Page Guide',
+    iconName: 'block',
+    accentColor: '#d97706',
+    gradient: 'from-amber-500 to-yellow-600'
+  }
+];
+
+
 
 
 

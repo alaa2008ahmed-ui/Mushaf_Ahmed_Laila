@@ -16,12 +16,21 @@ const HisnHeader: React.FC<HisnHeaderProps> = ({ title, subtitle, showThemePageL
     const isEn = language === 'en';
     const localizedTitle = (title === 'حصن المسلم' || title === 'أذكار المسلم') ? t('page.hisn_muslim_title', title) : title;
 
+    // Dynamically adjust font size slightly for long titles so they fit comfortably without colliding with icons
+    const isLongTitle = localizedTitle.length > 24;
+    const isVeryLongTitle = localizedTitle.length > 36;
+    const titleSizeClass = isVeryLongTitle 
+        ? 'text-sm sm:text-base' 
+        : isLongTitle 
+            ? 'text-base sm:text-lg' 
+            : 'text-lg sm:text-xl';
+
     return (
         <header className="app-top-bar" dir={isEn ? 'ltr' : 'rtl'}>
             <div className="app-top-bar__inner">
-                <div className="relative flex items-center justify-between w-full min-h-[44px]">
+                <div className="flex items-center justify-between w-full min-h-[44px] gap-1 px-1">
                     {/* Navigation Back button */}
-                    <div className={`absolute ${isEn ? 'left-0' : 'right-0'} flex items-center`}>
+                    <div className="flex items-center shrink-0 min-w-[40px]">
                         {onBack && (
                             <button
                                 onClick={onBack}
@@ -34,15 +43,15 @@ const HisnHeader: React.FC<HisnHeaderProps> = ({ title, subtitle, showThemePageL
                         )}
                     </div>
 
-                    {/* Page Title in center */}
-                    <div className="text-center px-12 w-full min-w-0">
-                        <h1 className={`app-top-bar__title text-lg sm:text-xl ${isEn ? 'font-sans font-bold' : 'font-kufi'} truncate`}>
+                    {/* Page Title in center - takes the entire remaining space between left and right icons without overlapping */}
+                    <div className="flex-1 min-w-0 text-center px-1">
+                        <h1 className={`app-top-bar__title ${titleSizeClass} ${isEn ? 'font-sans font-bold' : 'font-kufi font-bold'} truncate leading-tight`}>
                             {localizedTitle}
                         </h1>
                     </div>
 
                     {/* Home, Guide, and Theme Lock */}
-                    <div className={`absolute ${isEn ? 'right-0' : 'left-0'} flex items-center gap-1`}>
+                    <div className="flex items-center gap-1 shrink-0 justify-end min-w-[40px]">
                         {onOpenGuide && (
                             <button
                                 type="button"

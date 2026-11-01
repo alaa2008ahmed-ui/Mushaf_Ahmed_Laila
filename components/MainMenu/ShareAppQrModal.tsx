@@ -118,6 +118,18 @@ export const ShareAppQrModal: React.FC<ShareAppQrModalProps> = ({ isOpen, onClos
     };
   }, [isBlackTheme]);
 
+  // Manage body class when modal is open to hide floating buttons
+  useEffect(() => {
+    if (isOpen) {
+      document.body.classList.add('qr-modal-active');
+    } else {
+      document.body.classList.remove('qr-modal-active');
+    }
+    return () => {
+      document.body.classList.remove('qr-modal-active');
+    };
+  }, [isOpen]);
+
   // Close on Escape key
   useEffect(() => {
     if (!isOpen) return;
@@ -133,6 +145,7 @@ export const ShareAppQrModal: React.FC<ShareAppQrModalProps> = ({ isOpen, onClos
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, showPrintModal, onClose]);
+
 
   const handlePrint = (size: 'A4' | 'A5') => {
     setShowPrintModal(false);
@@ -346,6 +359,7 @@ export const ShareAppQrModal: React.FC<ShareAppQrModalProps> = ({ isOpen, onClos
   return (
     <>
       <div
+        id="share-app-qr-modal"
         dir={dir}
         className={`fixed inset-0 z-[9999] flex flex-col justify-between w-full h-full overflow-hidden animate-in fade-in duration-200 select-none font-['Cairo'] ${
           isBlackTheme ? 'bg-[#09090b] text-white' : 'bg-[#fffdfa] text-slate-800'
@@ -427,39 +441,41 @@ export const ShareAppQrModal: React.FC<ShareAppQrModalProps> = ({ isOpen, onClos
         </div>
 
         {/* أزرار الطباعة والإغلاق في أسفل الصفحة بالتنسيق الذهبي الراقٍ */}
-        <div className="w-full p-4 sm:p-6 bg-transparent">
+        <div className="w-full p-3 sm:p-5 bg-transparent">
           <div className={`w-full max-w-md mx-auto ${!isNative ? 'grid grid-cols-2 gap-3' : 'flex justify-center'}`}>
             {/* زر الطباعة - يظهر فقط عندما يعمل التطبيق على المتصفح */}
             {!isNative && (
               <button
                 type="button"
                 onClick={() => setShowPrintModal(true)}
-                className="py-4 px-6 rounded-2xl font-bold text-base flex items-center justify-center gap-2 shadow-lg active:scale-98 transition-all cursor-pointer text-white font-['Cairo']"
+                className="py-2.5 px-5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-md active:scale-95 transition-all cursor-pointer text-white font-['Cairo']"
                 style={{
                   background: 'linear-gradient(180deg, #d97706 0%, #b45309 100%)',
-                  boxShadow: '0 4px 12px rgba(180, 83, 9, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.4)',
+                  boxShadow: '0 3px 8px rgba(180, 83, 9, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.4)',
                   color: '#ffffff',
                   fontFamily: "'Cairo', sans-serif",
                 }}
                 title={t('app_share.print', 'طباعة')}
               >
-                <Printer className="w-5 h-5" />
+                <Printer className="w-4 h-4" />
                 <span>{t('app_share.print', 'طباعة')}</span>
               </button>
             )}
 
-            {/* زر الإغلاق بالتصميم الذهبي الداكن الراقٍ */}
+            {/* زر الإغلاق - تفتيح اللون وتصغير الحجم بتطبيق APK */}
             <button
               type="button"
               onClick={onClose}
-              className={`py-4 px-6 rounded-2xl font-bold text-base flex items-center justify-center shadow-lg active:scale-98 transition-all cursor-pointer font-['Cairo'] ${
-                !isNative ? 'w-full' : 'w-full max-w-xs'
+              className={`font-bold flex items-center justify-center shadow-md active:scale-95 transition-all cursor-pointer font-['Cairo'] ${
+                isNative
+                  ? 'py-2 px-6 text-xs sm:text-sm rounded-xl max-w-[160px] w-full'
+                  : 'py-2.5 px-5 text-sm rounded-xl w-full'
               }`}
               style={{
-                background: isBlackTheme ? 'linear-gradient(180deg, #27272a 0%, #18181b 100%)' : 'linear-gradient(180deg, #78350f 0%, #451a03 100%)',
-                color: isBlackTheme ? '#fef3c7' : '#ffffff',
-                border: isBlackTheme ? '1px solid rgba(245, 158, 11, 0.3)' : '1px solid rgba(180, 83, 9, 0.4)',
-                boxShadow: isBlackTheme ? '0 4px 12px rgba(0, 0, 0, 0.5)' : '0 4px 12px rgba(69, 26, 3, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.2)',
+                background: 'linear-gradient(180deg, #d97706 0%, #b45309 100%)',
+                color: '#ffffff',
+                border: '1.5px solid rgba(251, 191, 36, 0.7)',
+                boxShadow: '0 3px 8px rgba(180, 83, 9, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.4)',
                 fontFamily: "'Cairo', sans-serif",
               }}
               title={t('common.close', 'إغلاق')}
@@ -469,6 +485,7 @@ export const ShareAppQrModal: React.FC<ShareAppQrModalProps> = ({ isOpen, onClos
           </div>
         </div>
       </div>
+
 
       {/* نافذة اختيار حجم الطباعة (A4 أو A5) */}
       {showPrintModal && (

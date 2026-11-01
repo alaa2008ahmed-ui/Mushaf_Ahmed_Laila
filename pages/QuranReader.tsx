@@ -564,6 +564,57 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
     const [loadingStatus, setLoadingStatus] = useState('');
     const [loadingProgress, setLoadingProgress] = useState(100);
 
+    const getSavedModePosition = useCallback((targetMode: ReadingMode): { s: number; a: number; isExplicit?: boolean } | null => {
+        try {
+            const modePosKey = `last_read_pos_${targetMode}`;
+            const modeSaved = localStorage.getItem(modePosKey);
+            if (modeSaved) {
+                const parsed = JSON.parse(modeSaved);
+                if (parsed && typeof parsed.s === 'number' && parsed.s >= 1 && parsed.s <= 114) {
+                    return { s: parsed.s, a: parsed.a || 1, isExplicit: parsed.isExplicit };
+                }
+            }
+            const orient = isLandscape ? 'h' : 'v';
+            const key = `last_pos_${targetMode}_${orient}`;
+            const saved = localStorage.getItem(key);
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                if (parsed && typeof parsed.s === 'number' && parsed.s >= 1 && parsed.s <= 114) {
+                    return { s: parsed.s, a: parsed.a || 1, isExplicit: parsed.isExplicit };
+                }
+            }
+            if (targetMode === 'mushaf') {
+                const legacyKey = `last_pos_${orient}`;
+                const legacySaved = localStorage.getItem(legacyKey) || localStorage.getItem('last_read_ayah_global');
+                if (legacySaved) {
+                    const parsed = JSON.parse(legacySaved);
+                    if (parsed && typeof parsed.s === 'number' && parsed.s >= 1 && parsed.s <= 114) {
+                        return { s: parsed.s, a: parsed.a || 1, isExplicit: parsed.isExplicit };
+                    }
+                }
+            }
+        } catch (e) {}
+        return null;
+    }, [isLandscape]);
+
+    const loadBookmarksForMode = useCallback((targetMode: string): any[] => {
+        try {
+            const bKey = `quran_bookmarks_list_${targetMode}`;
+            const saved = localStorage.getItem(bKey);
+            if (saved) return JSON.parse(saved);
+
+            const orient = isLandscape ? 'h' : 'v';
+            const suffixed = localStorage.getItem(`quran_bookmarks_list_${targetMode}_${orient}`);
+            if (suffixed) return JSON.parse(suffixed);
+
+            if (targetMode === 'mushaf') {
+                const legacy = localStorage.getItem('quran_bookmarks_list_v') || localStorage.getItem('quran_bookmarks_list_h') || localStorage.getItem('quran_bookmarks_list');
+                if (legacy) return JSON.parse(legacy);
+            }
+        } catch (e) {}
+        return [];
+    }, [isLandscape]);
+
     const [visiblePages, setVisiblePages] = useState<number[]>(() => {
         let p = initialPage;
         if (!p && initialSurah) {
@@ -577,31 +628,25 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
              if (ayah) p = ayah.page;
         }
         if (!p) {
-             try {
+            try {
                 let parsed: any = null;
-                const modePosKey = `last_read_pos_${readingMode}`;
-                const modeSaved = localStorage.getItem(modePosKey);
-                if (modeSaved) {
-                    parsed = JSON.parse(modeSaved);
-                }
-                if (!parsed || typeof parsed.s !== 'number') {
-                    const orient = initialLandscape ? 'h' : 'v';
-                    let key = '';
-                    if (isWirdMode) key = `_wird_${orient}`;
-                    else if (isMemorizationMode) key = `_memorization_${orient}`;
-                    else key = `_${readingMode}_${orient}`;
-
-                    const saved = localStorage.getItem(`last_pos${key}`);
-                    if (saved) {
-                        parsed = JSON.parse(saved);
+                const orient = initialLandscape ? 'h' : 'v';
+                if (isWirdMode) {
+                    const saved = localStorage.getItem(`last_pos_wird_${orient}`);
+                    if (saved) parsed = JSON.parse(saved);
+                } else if (isMemorizationMode) {
+                    const saved = localStorage.getItem(`last_pos_memorization_${orient}`);
+                    if (saved) parsed = JSON.parse(saved);
+                } else {
+                    const modeSaved = localStorage.getItem(`last_read_pos_${readingMode}`);
+                    if (modeSaved) parsed = JSON.parse(modeSaved);
+                    if (!parsed) {
+                        const saved = localStorage.getItem(`last_pos_${readingMode}_${orient}`);
+                        if (saved) parsed = JSON.parse(saved);
                     }
-                }
-                if (!parsed || typeof parsed.s !== 'number') {
-                    if (readingMode === 'mushaf') {
-                        const globalSaved = localStorage.getItem("last_read_ayah_global");
-                        if (globalSaved) {
-                            parsed = JSON.parse(globalSaved);
-                        }
+                    if (!parsed && readingMode === 'mushaf') {
+                        const globalSaved = localStorage.getItem('last_read_ayah_global') || localStorage.getItem(`last_pos_${orient}`);
+                        if (globalSaved) parsed = JSON.parse(globalSaved);
                     }
                 }
                 if (parsed && typeof parsed.s === 'number') {
@@ -654,35 +699,35 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
             return { s: localMemorizationSettings.fromSurah, a: localMemorizationSettings.fromAyah };
         }
         try {
-            const modePosKey = `last_read_pos_${readingMode}`;
-            const modeSaved = localStorage.getItem(modePosKey);
-            if (modeSaved) {
-                const parsed = JSON.parse(modeSaved);
-                if (parsed && typeof parsed.s === 'number' && parsed.s >= 1 && parsed.s <= 114) {
-                    return { s: parsed.s, a: parsed.a || 1 };
-                }
-            }
-
             const orient = initialLandscape ? 'h' : 'v';
-            let key = '';
-            if (isWirdMode) key = `_wird_${orient}`;
-            else if (isMemorizationMode) key = `_memorization_${orient}`;
-            else key = `_${readingMode}_${orient}`;
-
-            const saved = localStorage.getItem(`last_pos${key}`);
-            if (saved) {
-                const parsed = JSON.parse(saved);
-                if (parsed && typeof parsed.s === 'number' && parsed.s >= 1 && parsed.s <= 114) {
-                    return { s: parsed.s, a: parsed.a || 1 };
+            if (isWirdMode) {
+                const saved = localStorage.getItem(`last_pos_wird_${orient}`);
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    if (parsed?.s) return { s: parsed.s, a: parsed.a || 1 };
                 }
-            }
-
-            if (readingMode === 'mushaf') {
-                const globalSaved = localStorage.getItem("last_read_ayah_global");
-                if (globalSaved) {
-                    const parsed = JSON.parse(globalSaved);
-                    if (parsed && typeof parsed.s === 'number' && parsed.s >= 1 && parsed.s <= 114) {
-                        return { s: parsed.s, a: parsed.a || 1 };
+            } else if (isMemorizationMode) {
+                const saved = localStorage.getItem(`last_pos_memorization_${orient}`);
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    if (parsed?.s) return { s: parsed.s, a: parsed.a || 1 };
+                }
+            } else {
+                const modeSaved = localStorage.getItem(`last_read_pos_${readingMode}`);
+                if (modeSaved) {
+                    const parsed = JSON.parse(modeSaved);
+                    if (parsed?.s) return { s: parsed.s, a: parsed.a || 1 };
+                }
+                const saved = localStorage.getItem(`last_pos_${readingMode}_${orient}`);
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    if (parsed?.s) return { s: parsed.s, a: parsed.a || 1 };
+                }
+                if (readingMode === 'mushaf') {
+                    const globalSaved = localStorage.getItem("last_read_ayah_global") || localStorage.getItem(`last_pos_${orient}`);
+                    if (globalSaved) {
+                        const parsed = JSON.parse(globalSaved);
+                        if (parsed?.s) return { s: parsed.s, a: parsed.a || 1 };
                     }
                 }
             }
@@ -1169,7 +1214,7 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
         
         setCurrentTheme(newTheme);
         setToolbarColors(getToolbarColorsForTheme(newTheme));
-        syncQuranThemeToStorage(newTheme, mode);
+        syncQuranThemeToStorage(newTheme, mode, readingMode);
 
         setSettings(prev => ({
             ...prev,
@@ -1182,11 +1227,10 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
         const transSetting = localStorage.getItem('transparent_mode' + mode) === 'true';
         setIsTransparentMode(transSetting);
 
-        const savedBookmarks = localStorage.getItem('quran_bookmarks_list' + bookmarkSuffix);
-        const parsedBookmarks = savedBookmarks ? JSON.parse(savedBookmarks) : [];
+        const currentModeBookmarks = loadBookmarksForMode(readingMode);
         setBookmarks(prev => {
-            if (JSON.stringify(prev) === JSON.stringify(parsedBookmarks)) return prev;
-            return parsedBookmarks;
+            if (JSON.stringify(prev) === JSON.stringify(currentModeBookmarks)) return prev;
+            return currentModeBookmarks;
         });
 
         const savedSajdah = localStorage.getItem('show_sajdah_card' + mode);
@@ -1199,25 +1243,9 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
             if (!isHideToolbarsEnabledRef.current && isLandscapeUIHidden !== false) setIsLandscapeUIHidden(false);
         }
 
-        const modePosKey = `last_read_pos_${readingMode}`;
-        let lastPos = JSON.parse(localStorage.getItem(modePosKey) || '{}');
-        if (!lastPos || typeof lastPos.s !== 'number') {
-            const posKey = `last_pos${posSuffix}`;
-            lastPos = JSON.parse(localStorage.getItem(posKey) || '{}');
-        }
-        if (!lastPos || typeof lastPos.s !== 'number') {
-            if (readingMode === 'mushaf') {
-                const globalSaved = localStorage.getItem('last_read_ayah_global');
-                if (globalSaved) {
-                    try {
-                        const parsed = JSON.parse(globalSaved);
-                        if (parsed && typeof parsed.s === 'number') {
-                            lastPos = parsed;
-                        }
-                    } catch {}
-                }
-            }
-        }
+        const modePos = getSavedModePosition(readingMode);
+        const targetS = modePos?.s || 1;
+        const targetA = modePos?.a || 1;
         
         // Only stop activities if the reading mode actually changed, not just orientation
         if (prevReadingModeRef.current !== readingMode) {
@@ -1227,9 +1255,15 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
             setIsFloatingMenuOpen(false);
             prevReadingModeRef.current = readingMode;
 
-            // Immediately update currentAyah to the last position of the new mode
-            if (lastPos.s && lastPos.a) {
-                setCurrentAyah({ s: lastPos.s, a: lastPos.a });
+            // Immediately update currentAyah strictly to THIS mode's isolated position
+            setCurrentAyah({ s: targetS, a: targetA });
+            currentAyahRef.current = { s: targetS, a: targetA };
+
+            if (readingMode === 'mushaf') {
+                const sObj = quranJsonData.surahs[targetS - 1];
+                const aObj = sObj?.ayahs?.[targetA - 1];
+                const targetP = aObj?.page || 1;
+                setVisiblePages([...new Set([targetP, targetP + 1, targetP + 2, targetP - 1, targetP - 2])].filter(n => n > 0 && n <= 604).sort((a: number, b: number) => a - b));
             }
         }
 
@@ -1238,10 +1272,6 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
         } else {
             // Prevent scroll listener from overwriting position during transition
             isJumpingRef.current = true;
-            const targetS = lastPos.s || currentAyahRef.current?.s || 1;
-            const targetA = lastPos.a || currentAyahRef.current?.a || 1;
-            const isExp = !!lastPos?.isExplicit;
-            
             setTimeout(() => {
                 jumpToAyah(targetS, targetA, true, false);
             }, 100);
@@ -1682,7 +1712,7 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
         const mode = getScopedSuffix(readingMode, initialLandscape);
         sanitizeRemovedThemeInStorage(mode);
         const layout = getCurrentLayoutContext(navParams);
-        const targetThemeId = getQuranThemeForLayout(layout, mode);
+        const targetThemeId = getQuranThemeForLayout(layout, mode, readingMode);
         const defaultTheme = THEMES[targetThemeId as keyof typeof THEMES] || THEMES['gold'];
         const saved = localStorage.getItem('quran_settings' + mode);
         const base = saved ? JSON.parse(saved) : {};
@@ -1701,7 +1731,7 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
     const [currentTheme, setCurrentTheme] = useState(() => {
         const mode = getScopedSuffix(readingMode, initialLandscape);
         const layout = getCurrentLayoutContext(navParams);
-        const themeId = getQuranThemeForLayout(layout, mode);
+        const themeId = getQuranThemeForLayout(layout, mode, readingMode);
         return THEMES[themeId as keyof typeof THEMES] || THEMES['gold'];
     });
 
@@ -2553,18 +2583,24 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
             setCurrentAyah({ s, a });
             currentAyahRef.current = { s, a };
             const savedObj = { s, a, page: pageNum, juz: juzNum, isExplicit: isExplicitSelection, ts: Date.now() };
-            const modePosKey = `last_read_pos_${readingModeRef.current}`;
+            const currentMode = readingModeRef.current;
+            const orient = isLandscapeRef.current ? 'h' : 'v';
+            const modePosKey = `last_read_pos_${currentMode}`;
             localStorage.setItem(modePosKey, JSON.stringify(savedObj));
+            localStorage.setItem(`last_pos_${currentMode}_${orient}`, JSON.stringify(savedObj));
             
-            if (readingModeRef.current === 'mushaf') {
+            if (currentMode === 'mushaf' && !isWirdMode && !localIsMemorizationMode) {
                 localStorage.setItem('last_read_ayah_global', JSON.stringify(savedObj));
+                localStorage.setItem(`last_pos_${orient}`, JSON.stringify(savedObj));
+                const key = `last_pos${posSuffix}`;
+                localStorage.setItem(key, JSON.stringify(savedObj));
+                window.dispatchEvent(new Event('last_read_update'));
+            } else {
+                const key = `last_pos${posSuffix}`;
+                localStorage.setItem(key, JSON.stringify(savedObj));
             }
-
-            const key = `last_pos${posSuffix}`;
-            localStorage.setItem(key, JSON.stringify(savedObj));
-            window.dispatchEvent(new Event('last_read_update'));
         }, 0);
-    }, [posSuffix, quranData]);
+    }, [posSuffix, quranData, isWirdMode, localIsMemorizationMode]);
 
     const handleAyahTextClick = useCallback((s: number, a: number) => {
         if (isFloatingMenuOpenRef.current || Date.now() - lastFloatingMenuCloseTimeRef.current < 500) {
@@ -2853,7 +2889,7 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
         const handleThemeChange = () => {
             const modeSuffix = themeSuffix;
             const layout = getCurrentLayoutContext(navParams);
-            const themeId = localStorage.getItem('current_theme_id' + modeSuffix) || getQuranThemeForLayout(layout, modeSuffix);
+            const themeId = getQuranThemeForLayout(layout, modeSuffix, readingMode);
             const newTheme = THEMES[themeId as keyof typeof THEMES] || (layout === 'classic' ? THEMES['black'] : THEMES['gold']);
             
             setCurrentTheme(prev => {
@@ -2979,12 +3015,12 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
         const mode = themeSuffix;
         sanitizeRemovedThemeInStorage(mode);
         const layout = getCurrentLayoutContext(navParams);
-        const themeId = getQuranThemeForLayout(layout, mode);
+        const themeId = getQuranThemeForLayout(layout, mode, readingMode);
         const newTheme = THEMES[themeId as keyof typeof THEMES] || THEMES['gold'];
         
         setCurrentTheme(newTheme);
         setToolbarColors(getToolbarColorsForTheme(newTheme));
-        syncQuranThemeToStorage(newTheme, mode);
+        syncQuranThemeToStorage(newTheme, mode, readingMode);
         
         const saved = localStorage.getItem('quran_settings' + mode);
         if (saved) {
@@ -3102,9 +3138,9 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
     const isBookmarksModalOpen = activeModals.includes('bookmarks-modal');
     useEffect(() => {
         if (isBookmarksModalOpen) {
-            setBookmarks(JSON.parse(localStorage.getItem('quran_bookmarks_list' + bookmarkSuffix) || '[]'));
+            setBookmarks(loadBookmarksForMode(readingMode));
         }
-    }, [isBookmarksModalOpen, bookmarkSuffix]);
+    }, [isBookmarksModalOpen, bookmarkSuffix, readingMode, loadBookmarksForMode]);
 
     useEffect(() => {
         const contentEl = mushafContentRef.current;
@@ -3129,7 +3165,7 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
                             if (rapidScrollToastTimerRef.current) clearTimeout(rapidScrollToastTimerRef.current);
                             rapidScrollToastTimerRef.current = setTimeout(() => {
                                 setShowRapidScrollToast(false);
-                            }, 1000);
+                            }, 2000);
                         }
                         rapidScrollBurstCountRef.current = 0;
                     }
@@ -3197,9 +3233,16 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
                         
                         setCurrentAyah({ s, a });
                         currentAyahRef.current = { s, a };
-                        localStorage.setItem(`last_pos${posSuffix}`, JSON.stringify({ s, a })); 
-                        localStorage.setItem("last_read_ayah_global", JSON.stringify({ s, a, ts: Date.now() }));
-                        window.dispatchEvent(new Event('last_read_update'));
+                        const curMode = readingModeRef.current;
+                        const orient = isLandscapeRef.current ? 'h' : 'v';
+                        localStorage.setItem(`last_read_pos_${curMode}`, JSON.stringify({ s, a, ts: Date.now() }));
+                        localStorage.setItem(`last_pos_${curMode}_${orient}`, JSON.stringify({ s, a, ts: Date.now() }));
+                        localStorage.setItem(`last_pos${posSuffix}`, JSON.stringify({ s, a, ts: Date.now() })); 
+                        if (curMode === 'mushaf' && !isWirdMode && !localIsMemorizationMode) {
+                            localStorage.setItem("last_read_ayah_global", JSON.stringify({ s, a, ts: Date.now() }));
+                            localStorage.setItem(`last_pos_${orient}`, JSON.stringify({ s, a, ts: Date.now() }));
+                            window.dispatchEvent(new Event('last_read_update'));
+                        }
 
                         // Detect Surah change
                         /* 
@@ -3734,12 +3777,14 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
         }; 
         const newBookmarks = [newBookmark, ...(bookmarks || [])]; 
         localStorage.setItem('quran_bookmarks_list' + bookmarkSuffix, JSON.stringify(newBookmarks)); 
+        localStorage.setItem(`quran_bookmarks_list_${readingMode}`, JSON.stringify(newBookmarks)); 
         setBookmarks(newBookmarks); 
         showToast(`تم حفظ الإشارة المرجعية`); 
     };
     const deleteBookmark = (id:number) => { 
         const newBookmarks = bookmarks.filter((b:any) => b.id !== id); 
         localStorage.setItem('quran_bookmarks_list' + bookmarkSuffix, JSON.stringify(newBookmarks)); 
+        localStorage.setItem(`quran_bookmarks_list_${readingMode}`, JSON.stringify(newBookmarks)); 
         setBookmarks(newBookmarks); 
     };
 
@@ -4579,9 +4624,16 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
         setCurrentAyah({ s, a });
         setHighlightedAyahId(`ayah-${s}-${a}`);
         currentAyahRef.current = { s, a };
-        localStorage.setItem(`last_pos${posSuffix}`, JSON.stringify({ s, a })); 
-        localStorage.setItem("last_read_ayah_global", JSON.stringify({ s, a, ts: Date.now() }));
-        window.dispatchEvent(new Event('last_read_update'));
+        const curMode = readingModeRef.current;
+        const orient = isLandscapeRef.current ? 'h' : 'v';
+        localStorage.setItem(`last_read_pos_${curMode}`, JSON.stringify({ s, a, ts: Date.now() }));
+        localStorage.setItem(`last_pos_${curMode}_${orient}`, JSON.stringify({ s, a, ts: Date.now() }));
+        localStorage.setItem(`last_pos${posSuffix}`, JSON.stringify({ s, a, ts: Date.now() })); 
+        if (curMode === 'mushaf' && !isWirdMode && !localIsMemorizationMode) {
+            localStorage.setItem("last_read_ayah_global", JSON.stringify({ s, a, ts: Date.now() }));
+            localStorage.setItem(`last_pos_${orient}`, JSON.stringify({ s, a, ts: Date.now() }));
+            window.dispatchEvent(new Event('last_read_update'));
+        }
         
         setIsFloatingMenuOpen(false);
 
@@ -4737,9 +4789,17 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
                                     // as rangeChanged can be called during Virtuoso render
                                     setTimeout(() => {
                                         setCurrentAyah({ s, a });
-                                        localStorage.setItem(`last_pos${posSuffix}`, JSON.stringify({ s, a })); 
-                                        localStorage.setItem("last_read_ayah_global", JSON.stringify({ s, a, ts: Date.now() }));
-                                        window.dispatchEvent(new Event('last_read_update'));
+                                        currentAyahRef.current = { s, a };
+                                        const curMode = readingModeRef.current;
+                                        const orient = isLandscapeRef.current ? 'h' : 'v';
+                                        localStorage.setItem(`last_read_pos_${curMode}`, JSON.stringify({ s, a, ts: Date.now() }));
+                                        localStorage.setItem(`last_pos_${curMode}_${orient}`, JSON.stringify({ s, a, ts: Date.now() }));
+                                        localStorage.setItem(`last_pos${posSuffix}`, JSON.stringify({ s, a, ts: Date.now() })); 
+                                        if (curMode === 'mushaf' && !isWirdMode && !localIsMemorizationMode) {
+                                            localStorage.setItem("last_read_ayah_global", JSON.stringify({ s, a, ts: Date.now() }));
+                                            localStorage.setItem(`last_pos_${orient}`, JSON.stringify({ s, a, ts: Date.now() }));
+                                            window.dispatchEvent(new Event('last_read_update'));
+                                        }
                                     }, 0);
                                 }
                             }}
@@ -4747,7 +4807,7 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
                             showJuzNotification={showJuzNotification}
                             handleSajdahVisible={handleSajdahVisible}
                             onSettingsChange={setSettings}
-                            modeSuffix={modeSuffix}
+                            modeSuffix={themeSuffix}
                             hideVerses={isHideMode}
                             memorizationSettings={localMemorizationSettings}
                             onSurahHeaderLongPress={() => setIsSurahDesignPickerOpen(true)}
@@ -4833,8 +4893,8 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
                     </div>
                     <p className="text-base sm:text-lg font-bold leading-relaxed">
                         {isEn 
-                            ? "Rapid and random scrolling is not suitable for reading. Please slow down."
-                            : "التمرير السريع والعشوائي غير مناسب للقراءة والتدبر، يرجى التمهل."}
+                            ? "Please slow down while reading."
+                            : "يرجى التمهل أثناء القراءة والتدبر"}
                     </p>
                 </div>
             </div>

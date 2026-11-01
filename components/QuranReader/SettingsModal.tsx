@@ -66,7 +66,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, sho
         return saved !== null ? saved === 'true' : false;
     });
 
-    const activeThemeId = getQuranThemeIdForLayout(modeSuffix) || settings.theme || 'black';
+    const activeThemeId = getQuranThemeIdForLayout(modeSuffix, undefined, readingMode) || settings.theme || 'black';
     const modalTheme = THEMES[activeThemeId as keyof typeof THEMES] || THEMES.black;
     const currentDesign = Number(settings.surahHeaderDesign) || 1;
 

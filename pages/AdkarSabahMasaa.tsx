@@ -45,6 +45,9 @@ function AdkarSabahMasaa({ onBack, onNavigate, navParams }: AdkarSabahMasaaProps
     const btnTextColor = isBlackTheme ? '#000000' : '#FFFFFF';
 
     const [adhkarTab, setAdhkarTab] = useState<'morning' | 'evening' | 'favorites'>(() => {
+        if (navParams?.kind === 'morning' || navParams?.kind === 'evening') {
+            return navParams.kind;
+        }
         try {
             const pref = localStorage.getItem('adhkar_preferred_tab');
             if (pref === 'morning' || pref === 'evening') {
@@ -55,6 +58,25 @@ function AdkarSabahMasaa({ onBack, onNavigate, navParams }: AdkarSabahMasaaProps
         const hour = new Date().getHours();
         return (hour >= 3 && hour < 15) ? 'morning' : 'evening';
     });
+
+    useEffect(() => {
+        if (navParams?.kind === 'morning' || navParams?.kind === 'evening') {
+            setAdhkarTab(navParams.kind);
+        }
+        if (navParams?.id !== undefined || navParams?.highlightId !== undefined) {
+            const targetId = navParams.id ?? navParams.highlightId;
+            setTimeout(() => {
+                const el = document.getElementById(`dhikr-card-${targetId}`);
+                if (el) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    el.classList.add('ring-2', 'ring-amber-500', 'ring-offset-2');
+                    setTimeout(() => {
+                        el.classList.remove('ring-2', 'ring-amber-500', 'ring-offset-2');
+                    }, 2500);
+                }
+            }, 150);
+        }
+    }, [navParams]);
     const [activeTabMode, setActiveTabMode] = useState<'grid' | 'list'>('list');
     const [favorites, setFavorites] = useState<string[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
@@ -345,16 +367,17 @@ function AdkarSabahMasaa({ onBack, onNavigate, navParams }: AdkarSabahMasaaProps
                             const isFinished = currentCount === 0;
 
                             return (
-                                <DhikrCard
-                                    key={dhikr.globalIndex}
-                                    dhikr={dhikr}
-                                    currentCount={currentCount}
-                                    isFinished={isFinished}
-                                    onDecrement={() => !isFinished && handleDecrement(dhikr.globalIndex)}
-                                    onReset={() => handleReset(dhikr.globalIndex, dhikr.count)}
-                                    onZoom={() => openZoomModal(dhikr)}
-                                    setToastMessage={setToastMessage}
-                                />
+                                <div id={`dhikr-card-${dhikr.id ?? dhikr.globalIndex}`} key={dhikr.globalIndex} className="transition-all rounded-3xl">
+                                    <DhikrCard
+                                        dhikr={dhikr}
+                                        currentCount={currentCount}
+                                        isFinished={isFinished}
+                                        onDecrement={() => !isFinished && handleDecrement(dhikr.globalIndex)}
+                                        onReset={() => handleReset(dhikr.globalIndex, dhikr.count)}
+                                        onZoom={() => openZoomModal(dhikr)}
+                                        setToastMessage={setToastMessage}
+                                    />
+                                </div>
                             );
                         })
                     ) : (

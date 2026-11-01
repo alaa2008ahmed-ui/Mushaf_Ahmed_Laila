@@ -25,6 +25,7 @@ import OthersPage from '../pages/OthersPage';
 import IslamicSitesPage from '../pages/IslamicSitesPage';
 import PropheticSeerahPage from '../pages/PropheticSeerahPage';
 import TenPromisedPage from '../pages/TenPromisedPage';
+import DivineMiracles from '../pages/DivineMiracles';
 
 interface AppRouterProps {
     page: string;
@@ -103,6 +104,10 @@ const AppRouter: React.FC<AppRouterProps> = ({ page, onBack, onNavigate, onOpenT
         return <PropheticSeerahPage onBack={onBack} onNavigate={onNavigate} navParams={navParams} />;
       case 'ten-promised':
         return <TenPromisedPage onBack={onBack} onNavigate={onNavigate} onOpenThemes={onOpenThemes} navParams={navParams} />;
+      case 'divine-miracles':
+      case 'miracles':
+      case 'divine_miracles':
+        return <DivineMiracles onBack={onBack} onNavigate={onNavigate} onOpenThemes={onOpenThemes} navParams={navParams} />;
       case 'home':
       default:
         return <MainMenu onNavigate={onNavigate} onOpenThemes={onOpenThemes} onOpenSideMenu={onOpenSideMenu} />;

@@ -627,9 +627,11 @@ const UmrahScreen = ({ tokens, onSelectDetail, cardTextScale, onZoom }: { tokens
             className="rounded-[18px] overflow-hidden border-0" 
             style={{ backgroundColor: tokens.cardBgColor, boxShadow: tokens.cardShadow }}
         >
-            <button 
-                type="button"
+            <div 
+                role="button"
+                tabIndex={0}
                 onClick={() => setShowVirtues(!showVirtues)}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowVirtues(!showVirtues); } }}
                 className="w-full p-4.5 flex items-center justify-between transition-colors hover:bg-black/5 dark:hover:bg-white/5 text-start cursor-pointer border-0"
             >
                 <div>
@@ -659,12 +661,12 @@ const UmrahScreen = ({ tokens, onSelectDetail, cardTextScale, onZoom }: { tokens
                     </button>
                     {showVirtues ? <ChevronUp size={18} style={{ color: tokens.textColor }} /> : <ChevronDown size={18} style={{ color: tokens.textColor }} />}
                 </div>
-            </button>
+            </div>
 
             {showVirtues && (
                 <div className="p-4 border-t border-slate-100 dark:border-zinc-800 space-y-3 text-start">
                     {virtuesList.map((v, i) => (
-                        <div key={i} className="p-3.5 rounded-xl border-0 space-y-1.5" style={{ backgroundColor: tokens.isDark ? 'rgba(255, 255, 255, 0.04)' : '#F8F9FA' }}>
+                        <div id={`hajj-umrah-item-${(v as any).id || i+1}`} key={i} className="p-3.5 rounded-xl border-0 space-y-1.5 transition-all" style={{ backgroundColor: tokens.isDark ? 'rgba(255, 255, 255, 0.04)' : '#F8F9FA' }}>
                             <div className="flex justify-between items-center text-xs">
                                 <span className="font-bold" style={{ color: tokens.primaryColor, fontSize: `${13 * cardTextScale}px` }}>{v.title}</span>
                                 <span className="text-[10px] opacity-60 font-mono">{v.source}</span>
@@ -1098,6 +1100,21 @@ const HajjUmrah: FC<{ onBack: () => void, onNavigate: (page: string) => void, na
         const target = navParams?.screen || navParams?.tab || navParams?.initialScreen;
         if (target && ['home', 'umrah', 'hajj', 'duaa', 'checklist', 'counters'].includes(target)) {
             setScreen(target);
+        } else if (navParams?.id || navParams?.highlightId) {
+            setScreen('umrah');
+        }
+        if (navParams?.id || navParams?.highlightId) {
+            const targetId = navParams.id || navParams.highlightId;
+            setTimeout(() => {
+                const el = document.getElementById(`hajj-umrah-item-${targetId}`) || document.getElementById(`hajj-umrah-step-${targetId}`);
+                if (el) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    el.classList.add('ring-2', 'ring-amber-500', 'ring-offset-2');
+                    setTimeout(() => {
+                        el.classList.remove('ring-2', 'ring-amber-500', 'ring-offset-2');
+                    }, 2500);
+                }
+            }, 150);
         }
     }, [navParams]);
 
@@ -1378,16 +1395,18 @@ const HajjUmrah: FC<{ onBack: () => void, onNavigate: (page: string) => void, na
 
                         {/* Right Tools: Guide & Home Button */}
                         <div className={`absolute ${isRTL ? 'left-0' : 'right-0'} flex items-center gap-0.5 sm:gap-1 z-10`}>
-                            <button
-                                type="button"
-                                onClick={() => setShowGuide(true)}
-                                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center transition-all hover:bg-black/5 dark:hover:bg-white/5 active:scale-90 cursor-pointer shrink-0"
-                                style={{ color: 'var(--top-bar-text, inherit)' }}
-                                title={isEn ? "Hajj & Umrah Guide" : "دليل الحج والعمرة"}
-                                aria-label={isEn ? "Hajj & Umrah Guide" : "دليل الحج والعمرة"}
-                            >
-                                <i className="fa-solid fa-circle-question text-base sm:text-lg"></i>
-                            </button>
+                            {screen === 'home' && !selectedDetail && (
+                                <button
+                                    type="button"
+                                    onClick={() => setShowGuide(true)}
+                                    className="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center transition-all hover:bg-black/5 dark:hover:bg-white/5 active:scale-90 cursor-pointer shrink-0"
+                                    style={{ color: 'var(--top-bar-text, inherit)' }}
+                                    title={isEn ? "Hajj & Umrah Guide" : "دليل الحج والعمرة"}
+                                    aria-label={isEn ? "Hajj & Umrah Guide" : "دليل الحج والعمرة"}
+                                >
+                                    <i className="fa-solid fa-circle-question text-base sm:text-lg"></i>
+                                </button>
+                            )}
 
                             {screen === 'home' && <ThemePageLock />}
                             <button

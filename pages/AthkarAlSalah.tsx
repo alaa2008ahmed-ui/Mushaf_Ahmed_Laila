@@ -275,6 +275,27 @@ function AthkarAlSalah({ onBack, onNavigate, navParams }: AthkarAlSalahProps) {
     }, []);
 
     useEffect(() => {
+        if (navParams?.id !== undefined || navParams?.title || navParams?.highlightId !== undefined) {
+            if (!currentPrayer) {
+                openPrayer('fajr', isEn ? 'After Prayer Dhikr' : 'أذكار بعد الصلاة', 'After Prayer Dhikr');
+            }
+            const targetId = navParams.id ?? navParams.highlightId;
+            if (targetId) {
+                setTimeout(() => {
+                    const el = document.getElementById(`salah-athkar-${targetId}`);
+                    if (el) {
+                        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        el.classList.add('ring-2', 'ring-amber-500', 'ring-offset-2');
+                        setTimeout(() => {
+                            el.classList.remove('ring-2', 'ring-amber-500', 'ring-offset-2');
+                        }, 2500);
+                    }
+                }, 150);
+            }
+        }
+    }, [navParams, isEn]);
+
+    useEffect(() => {
         const interceptor = () => {
             if (zoomedZikr) {
                 setZoomedZikr(null);
@@ -424,6 +445,14 @@ function AthkarAlSalah({ onBack, onNavigate, navParams }: AthkarAlSalahProps) {
             ? (isEn ? "Favorite Adhkar" : "الأذكار المفضلة") 
             : (isEn ? "Prayer Adhkar" : "أذكار الصلوات"));
 
+    const isLongTitle = pageTitle.length > 24;
+    const isVeryLongTitle = pageTitle.length > 36;
+    const titleSizeClass = isVeryLongTitle 
+        ? 'text-sm sm:text-base' 
+        : isLongTitle 
+            ? 'text-base sm:text-lg' 
+            : 'text-lg sm:text-xl';
+
     return (
         <div 
             className="h-screen flex flex-col overflow-hidden transition-colors" 
@@ -432,9 +461,9 @@ function AthkarAlSalah({ onBack, onNavigate, navParams }: AthkarAlSalahProps) {
         >
             <header className="app-top-bar" dir={isEn ? 'ltr' : 'rtl'}>
                 <div className="app-top-bar__inner">
-                    <div className="relative flex items-center justify-center w-full min-h-[44px]">
+                    <div className="flex items-center justify-between w-full min-h-[44px] gap-1 px-1">
                         {/* زر الرجوع للخلف: على اليمين في العربي، وعلى اليسار في الإنجليزي مع سهم متوافق */}
-                        <div className={`absolute ${isEn ? 'left-0' : 'right-0'} flex items-center`}>
+                        <div className="flex items-center shrink-0 min-w-[40px]">
                             <button
                                 onClick={handleBack}
                                 className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
@@ -445,25 +474,27 @@ function AthkarAlSalah({ onBack, onNavigate, navParams }: AthkarAlSalahProps) {
                             </button>
                         </div>
 
-                        {/* عنوان الصفحة في الوسط */}
-                        <div className="text-center px-12 min-w-0">
-                            <h1 className="app-top-bar__title text-lg sm:text-xl font-kufi truncate">
+                        {/* عنوان الصفحة في الوسط - يشغل كامل المساحة بين الأيقونات دون تداخل */}
+                        <div className="flex-1 min-w-0 text-center px-1">
+                            <h1 className={`app-top-bar__title ${titleSizeClass} font-kufi font-bold truncate leading-tight`}>
                                 {pageTitle}
                             </h1>
                         </div>
 
-                        {/* زر الهوم: على اليسار في العربي، وعلى اليمين في الإنجليزي */}
-                        <div className={`absolute ${isEn ? 'right-0' : 'left-0'} flex items-center gap-1`}>
-                            <button
-                                type="button"
-                                onClick={() => setShowGuide(true)}
-                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
-                                style={{ color: 'var(--top-bar-text, inherit)' }}
-                                title={isEn ? "Athkar Guide" : "دليل أذكار الصلاة"}
-                                aria-label={isEn ? "Athkar Guide" : "دليل أذكار الصلاة"}
-                            >
-                                <i className="fa-solid fa-circle-question text-lg"></i>
-                            </button>
+                        {/* زر الهوم والدليل: يظهر الدليل فقط في الصفحة الأولى */}
+                        <div className="flex items-center gap-1 shrink-0 justify-end min-w-[40px]">
+                            {!currentPrayer && !isFavoritesView && (
+                                <button
+                                    type="button"
+                                    onClick={() => setShowGuide(true)}
+                                    className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                    style={{ color: 'var(--top-bar-text, inherit)' }}
+                                    title={isEn ? "Athkar Guide" : "دليل أذكار الصلاة"}
+                                    aria-label={isEn ? "Athkar Guide" : "دليل أذكار الصلاة"}
+                                >
+                                    <i className="fa-solid fa-circle-question text-lg"></i>
+                                </button>
+                            )}
                             <ThemePageLock />
                             <button
                                 onClick={handleGoHome}
@@ -625,17 +656,18 @@ function AthkarAlSalah({ onBack, onNavigate, navParams }: AthkarAlSalahProps) {
                 ) : (
                     <div id="athkarDetails" className={activeTab === 'grid' ? "grid grid-cols-1 sm:grid-cols-2 gap-4" : "space-y-4"}>
                         {filteredAthkarList.map(zikr => (
-                            <SalahZikrCard 
-                                key={zikr.id} 
-                                zikr={zikr} 
-                                theme={theme} 
-                                themeKey={themeKey}
-                                prayerTitle={currentPrayer?.title}
-                                prayerTitleEn={currentPrayer?.titleEn}
-                                onDecrement={() => handleDecrement(zikr.id)} 
-                                onZoom={() => setZoomedZikr(zikr)} 
-                                setToastMessage={setToastMessage}
-                            />
+                            <div id={`salah-athkar-${zikr.id}`} key={zikr.id} className="transition-all rounded-3xl">
+                                <SalahZikrCard 
+                                    zikr={zikr} 
+                                    theme={theme} 
+                                    themeKey={themeKey}
+                                    prayerTitle={currentPrayer?.title}
+                                    prayerTitleEn={currentPrayer?.titleEn}
+                                    onDecrement={() => handleDecrement(zikr.id)} 
+                                    onZoom={() => setZoomedZikr(zikr)} 
+                                    setToastMessage={setToastMessage}
+                                />
+                            </div>
                         ))}
                         <div className="col-span-full">
                             <BottomSalahGuides 

@@ -35,6 +35,7 @@ async function prepareAudio() {
                 console.log(`Copied: ${file} -> res/raw/${destFilename}`);
             }
         });
+
     } catch (e) {
         console.warn(`Warning: Could not copy to Android dir. This is normal if the Android platform is not added yet.`);
     }

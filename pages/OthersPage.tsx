@@ -66,12 +66,20 @@ const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, onOpenTheme
   }, []);
 
   useEffect(() => {
-    if (navParams?.highlightId || navParams?.itemId) {
-      const targetId = navParams.highlightId || navParams.itemId;
-      const found = RUQYAH_DATA.find(i => i.id === targetId);
-      if (found) {
-        setZoomedDuaa(found);
-      }
+    if (navParams?.highlightId || navParams?.itemId || navParams?.id) {
+      const targetId = navParams.highlightId || navParams.itemId || navParams.id;
+      setActiveTab('all');
+      setZoomedDuaa(null);
+      setTimeout(() => {
+        const el = document.getElementById(`ruqyah-card-${targetId}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          el.classList.add('ring-2', 'ring-amber-500', 'ring-offset-2');
+          setTimeout(() => {
+            el.classList.remove('ring-2', 'ring-amber-500', 'ring-offset-2');
+          }, 2500);
+        }
+      }, 150);
     }
   }, [navParams]);
 
@@ -380,6 +388,7 @@ const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, onOpenTheme
 
                     return (
                       <div 
+                        id={`ruqyah-card-${item.id}`}
                         key={item.id} 
                         data-card-item="true"
                         className="p-5 pb-3 rounded-[18px] relative transition-all duration-300 overflow-hidden group shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-none hover:shadow-[0_6px_25px_rgba(0,0,0,0.06)] border border-slate-100/80 dark:border-white/5 flex flex-col justify-between cursor-pointer" 

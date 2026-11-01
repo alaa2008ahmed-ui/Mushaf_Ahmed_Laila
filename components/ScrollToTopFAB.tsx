@@ -134,6 +134,18 @@ export const ScrollToTopFAB: React.FC<ScrollToTopFABProps> = ({ currentPage: pro
 
   if (!mounted || typeof document === 'undefined') return null;
 
+  // 0. لا يظهر نهائياً إذا كانت إحدى النوافذ المنبثقة مفتوحة (الكيو ار أو قائمة التكبير)
+  const isModalOpen = typeof document !== 'undefined' && (
+    document.body.classList.contains('qr-modal-active') ||
+    document.body.classList.contains('zoom-modal-active') ||
+    Boolean(document.getElementById('share-app-qr-modal')) ||
+    Boolean(document.querySelector('.fixed.inset-0.z-\\[140\\]'))
+  );
+
+  if (isModalOpen) {
+    return null;
+  }
+
   const effectivePage = propCurrentPage || ctxCurrentPage || 'home';
 
   // 1. لا يظهر نهائياً بصفحة القرآن الكريم
@@ -152,6 +164,7 @@ export const ScrollToTopFAB: React.FC<ScrollToTopFABProps> = ({ currentPage: pro
   if (effectivePage !== 'home') {
     return null;
   }
+
 
   // 3. تتغير ألوان وهيئة الزر بشكل منفصل بكل تصميم:
   // - فى التصميم الكلاسيكى: طبقاً للثيم المختار فى التصميم الكلاسيكى
@@ -226,6 +239,7 @@ export const ScrollToTopFAB: React.FC<ScrollToTopFABProps> = ({ currentPage: pro
 
   const buttonElement = (
     <div
+      id="scroll-to-top-fab"
       className={`fixed bottom-20 start-5 sm:bottom-24 sm:start-8 z-[9999] transition-all duration-300 ease-out ${
         visible 
           ? 'opacity-100 scale-100 pointer-events-auto translate-y-0' 

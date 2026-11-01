@@ -39,7 +39,8 @@ export const VALID_APP_IDS = [
   'calendar',
   'islamic-sites',
   'voice-control',
-  'quran-landscape'
+  'quran-landscape',
+  'divine-miracles'
 ];
 
 export function getAppUsageCounts(): Record<string, number> {
@@ -91,6 +92,9 @@ export function recordAppVisit(pageId: string) {
     'sebha': 'tasbeeh',
     'asma-allah': 'asmaul-husna',
     'asmaa-allah': 'asmaul-husna',
+    'miracles': 'divine-miracles',
+    'divine-miracle': 'divine-miracles',
+    'moajazat': 'divine-miracles',
   };
   const normalizedId = aliasMap[pageId] || pageId;
 

@@ -78,11 +78,8 @@ export const TawafCounterCard: React.FC<TawafCounterCardProps> = ({ theme, isGol
       >
         {/* 1. الترويسة مع العنوان وأزرار التبديل وزر إعادة الضبط */}
         <div className="flex items-center justify-between w-full relative gap-2">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-xl bg-amber-100/90 text-amber-900 border border-amber-300/80 flex items-center justify-center shrink-0 shadow-2xs">
-              <RotateCcw className="w-4 h-4 text-amber-800" />
-            </div>
-            <span className="text-sm sm:text-base font-bold text-[#451A03] font-cairo truncate">
+          <div className="flex items-center min-w-0">
+            <span className="card-header-title text-sm sm:text-base font-bold font-cairo truncate">
               {isEn ? 'Laps Counter' : 'عداد الأشواط'}
             </span>
           </div>
@@ -139,7 +136,7 @@ export const TawafCounterCard: React.FC<TawafCounterCardProps> = ({ theme, isGol
                     isPassed
                       ? 'bg-gradient-to-r from-amber-600 via-yellow-500 to-amber-500 shadow-2xs'
                       : isCurrent
-                      ? 'bg-white ring-2 ring-amber-500 ring-offset-1 animate-pulse shadow-2xs'
+                      ? 'bg-white shadow-[0_2px_8px_rgba(245,158,11,0.55),inset_0_1px_1px_#ffffff] animate-pulse'
                       : 'golden-3d-inset opacity-50'
                   }`}
                 />
@@ -336,8 +333,9 @@ export const TawafCounterCard: React.FC<TawafCounterCardProps> = ({ theme, isGol
               ? '#FFFFFF'
               : (isBlackTheme ? '#000000' : '#FFFFFF'),
             boxShadow: isBlackTheme
-              ? '0 4.5px 0 #222222, 0 8px 16px rgba(0, 0, 0, 0.6), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.3)'
+              ? 'none'
               : '0 4.5px 0 rgba(0, 0, 0, 0.22), 0 8px 16px rgba(0, 0, 0, 0.15), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.65)',
+
             border: 'none',
           }}
         >

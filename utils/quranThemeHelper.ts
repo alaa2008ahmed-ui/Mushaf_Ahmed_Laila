@@ -34,10 +34,8 @@ export function getQuranThemeIdForLayout(modeSuffix: string = '_v', navParams?: 
     const scopedNightKey = `current_theme_id_${layout}_${mKey}_night`;
     const savedNight = localStorage.getItem(scopedNightKey + modeSuffix) || 
                        localStorage.getItem(scopedNightKey) || 
-                       localStorage.getItem(`current_theme_id_${layout}_night` + modeSuffix) ||
-                       localStorage.getItem(`current_theme_id_${layout}_night`) ||
-                       localStorage.getItem('current_theme_id_night' + modeSuffix) ||
-                       localStorage.getItem('current_theme_id_night');
+                       localStorage.getItem(`current_theme_id_${mKey}_night${modeSuffix}`) ||
+                       localStorage.getItem(`current_theme_id_${mKey}_night`);
     if (savedNight && THEMES[savedNight as keyof typeof THEMES]) {
       return savedNight;
     }
@@ -45,14 +43,13 @@ export function getQuranThemeIdForLayout(modeSuffix: string = '_v', navParams?: 
   }
 
   const scopedModeKey = `current_theme_id_${layout}_${mKey}`;
-  const scopedKey = layout === 'classic' ? 'current_theme_id_classic' : 'current_theme_id_modern';
   const altKey = `quran_layout_${layout}__${mKey}_theme${modeSuffix}`;
 
   const saved = localStorage.getItem(scopedModeKey + modeSuffix) || 
                 localStorage.getItem(scopedModeKey) || 
                 localStorage.getItem(altKey) || 
-                localStorage.getItem(scopedKey + modeSuffix) || 
-                localStorage.getItem(scopedKey);
+                localStorage.getItem(`current_theme_id_${mKey}${modeSuffix}`) ||
+                localStorage.getItem(`current_theme_id_${mKey}`);
 
   if (saved && THEMES[saved as keyof typeof THEMES]) {
     return saved;

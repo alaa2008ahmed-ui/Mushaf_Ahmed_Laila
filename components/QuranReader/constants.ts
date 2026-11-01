@@ -23,7 +23,7 @@ export const THEMES = {
     lime: { id: "lime", name: "ليموني", bg: "#ffffff", text: "#000000", font: "var(--font-amiri)", barBg: "#ffffff", barText: "#84cc16", barBorder: "#84cc16", btnBg: "#ffffff", btnText: "#84cc16", accent: "#84cc16", accentText: "#ffffff", modalBg: "#ffffff", modalText: "#000000", headerBg: "#ffffff", headerText: "#84cc16", cardBg: "#ffffff", cardText: "#000000", cardBorder: "#84cc16", sajdah: "#d97706", highlightText: "#84cc16", verseBracket: "#831843" },
     
     // --- المجموعة الثانية (الثيمات الداكنة) ---
-    deep_black: { id: "deep_black", name: "اسود غامق", bg: "#000000", text: "#F59E0B", font: "var(--font-amiri)", barBg: "#000000", barText: "#F59E0B", barBorder: "1px solid #D97706", btnBg: "#111111", btnText: "#F59E0B", btnBorder: "1.5px solid #D97706", accent: "#ffffff", accentText: "#000000", modalBg: "#0A0A0A", modalText: "#F59E0B", headerBg: "#000000", headerText: "#F59E0B", cardBg: "#111111", cardText: "#F59E0B", cardBorder: "#D97706", sajdah: "#F59E0B", highlightText: "#ffffff", verseBracket: "#ffffff" },
+    deep_black: { id: "deep_black", name: "اسود غامق", bg: "#000000", text: "#F59E0B", font: "var(--font-amiri)", barBg: "#000000", barText: "#F59E0B", barBorder: "1px solid #D97706", btnBg: "#111111", btnText: "#F59E0B", btnBorder: "1.5px solid #D97706", accent: "#d97706", accentText: "#ffffff", modalBg: "#0A0A0A", modalText: "#F59E0B", headerBg: "#000000", headerText: "#F59E0B", cardBg: "#111111", cardText: "#F59E0B", cardBorder: "#D97706", sajdah: "#F59E0B", highlightText: "#f59e0b", verseBracket: "#f59e0b" },
     i_emerald: { id: "i_emerald", name: "زمرد", bg: "#022c22", text: "#ffffff", font: "var(--font-amiri)", barBg: "#022c22", barText: "#ffffff", barBorder: "#ffffff", btnBg: "#064e3b", btnText: "#ffffff", btnBorder: "#ffffff", accent: "#10b981", accentText: "#ffffff", modalBg: "#022c22", modalText: "#ffffff", headerBg: "#022c22", headerText: "#10b981", cardBg: "#064e3b", cardText: "#ffffff", cardBorder: "#ffffff", sajdah: "#d97706", highlightText: "#10b981", verseBracket: "#f87171" },
     i_ruby: { id: "i_ruby", name: "ياقوت", bg: "#450a0a", text: "#ffffff", font: "var(--font-amiri)", barBg: "#450a0a", barText: "#ffffff", barBorder: "#ffffff", btnBg: "#7f1d1d", btnText: "#ffffff", btnBorder: "#ffffff", accent: "#ef4444", accentText: "#ffffff", modalBg: "#450a0a", modalText: "#ffffff", headerBg: "#450a0a", headerText: "#ef4444", cardBg: "#7f1d1d", cardText: "#ffffff", cardBorder: "#ffffff", sajdah: "#d97706", highlightText: "#ef4444", verseBracket: "#60a5fa" },
     i_lapis: { id: "i_lapis", name: "لازورد", bg: "#1e3a8a", text: "#ffffff", font: "var(--font-amiri)", barBg: "#1e3a8a", barText: "#ffffff", barBorder: "#ffffff", btnBg: "#3b82f6", btnText: "#ffffff", btnBorder: "#ffffff", accent: "#60a5fa", accentText: "#ffffff", modalBg: "#1e3a8a", modalText: "#ffffff", headerBg: "#1e3a8a", headerText: "#60a5fa", cardBg: "#3b82f6", cardText: "#ffffff", cardBorder: "#ffffff", sajdah: "#d97706", highlightText: "#60a5fa", verseBracket: "#fbbf24" },
@@ -561,10 +561,8 @@ export const getQuranThemeForLayout = (
         try {
             const savedNight = localStorage.getItem(scopedNightKey + modeSuffix) || 
                                localStorage.getItem(scopedNightKey) || 
-                               localStorage.getItem(`current_theme_id_${layout}_night` + modeSuffix) ||
-                               localStorage.getItem(`current_theme_id_${layout}_night`) ||
-                               localStorage.getItem('current_theme_id_night' + modeSuffix) ||
-                               localStorage.getItem('current_theme_id_night');
+                               localStorage.getItem(`current_theme_id_${mKey}_night${modeSuffix}`) ||
+                               localStorage.getItem(`current_theme_id_${mKey}_night`);
             if (savedNight && (THEMES as any)[savedNight]) {
                 return savedNight;
             }
@@ -573,15 +571,14 @@ export const getQuranThemeForLayout = (
     }
 
     const scopedModeKey = `current_theme_id_${layout}_${mKey}`;
-    const scopedLayoutKey = isClassic ? 'current_theme_id_classic' : 'current_theme_id_modern';
     const altKey = `quran_layout_${layout}_${mKey}_theme${modeSuffix}`;
 
     try {
         const saved = localStorage.getItem(scopedModeKey + modeSuffix) || 
                       localStorage.getItem(scopedModeKey) || 
                       localStorage.getItem(altKey) ||
-                      localStorage.getItem(scopedLayoutKey + modeSuffix) || 
-                      localStorage.getItem(scopedLayoutKey);
+                      localStorage.getItem(`current_theme_id_${mKey}${modeSuffix}`) ||
+                      localStorage.getItem(`current_theme_id_${mKey}`);
         if (saved && (THEMES as any)[saved]) {
             return saved;
         }
@@ -607,16 +604,20 @@ export const saveQuranThemeForLayout = (
             const scopedNightKey = `current_theme_id_${layout}_${mKey}_night`;
             localStorage.setItem(scopedNightKey + modeSuffix, themeId);
             localStorage.setItem(scopedNightKey, themeId);
-            localStorage.setItem(`current_theme_id_${layout}_night` + modeSuffix, themeId);
-            localStorage.setItem(`current_theme_id_${layout}_night`, themeId);
+            localStorage.setItem(`current_theme_id_${mKey}_night${modeSuffix}`, themeId);
+            localStorage.setItem(`current_theme_id_${mKey}_night`, themeId);
         } else {
             localStorage.setItem(scopedModeKey + modeSuffix, themeId);
             localStorage.setItem(scopedModeKey, themeId);
             localStorage.setItem(`quran_layout_${layout}_${mKey}_theme${modeSuffix}`, themeId);
+            localStorage.setItem(`current_theme_id_${mKey}${modeSuffix}`, themeId);
+            localStorage.setItem(`current_theme_id_${mKey}`, themeId);
         }
         localStorage.setItem(`quran_user_chosen_theme_${layout}_${mKey}` + modeSuffix, themeId);
         localStorage.setItem(`quran_user_chosen_theme_${layout}_${mKey}`, themeId);
-        localStorage.setItem('current_theme_id' + modeSuffix, themeId);
+        if (mKey === 'mushaf') {
+            localStorage.setItem('current_theme_id' + modeSuffix, themeId);
+        }
         localStorage.setItem('quran_theme_changed', 'true');
     } catch {}
 };
@@ -639,9 +640,13 @@ export const getToolbarColorsForTheme = (theme: any) => ({
     'btn-share': { bg: theme.btnBg, text: theme.btnText, border: (theme as any).btnBorder || theme.barBorder }
 });
 
-export const syncQuranThemeToStorage = (theme: any, modeSuffix: string = '') => {
+export const syncQuranThemeToStorage = (theme: any, modeSuffix: string = '', readingMode: string = 'mushaf') => {
     try {
-        localStorage.setItem('current_theme_id' + modeSuffix, theme.id);
+        const mKey = readingMode || 'mushaf';
+        localStorage.setItem(`current_theme_id_${mKey}` + modeSuffix, theme.id);
+        if (mKey === 'mushaf') {
+            localStorage.setItem('current_theme_id' + modeSuffix, theme.id);
+        }
         const colors = getToolbarColorsForTheme(theme);
         localStorage.setItem('toolbar_colors_v2' + modeSuffix, JSON.stringify(colors));
         const saved = JSON.parse(localStorage.getItem('quran_settings' + modeSuffix) || '{}');

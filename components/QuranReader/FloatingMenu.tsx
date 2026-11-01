@@ -1105,8 +1105,8 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
 
     const modeSuffix = posSuffix;
     const layout = getCurrentLayoutContext();
-    saveQuranThemeForLayout(themeId, layout, modeSuffix);
-    syncQuranThemeToStorage(theme, modeSuffix);
+    saveQuranThemeForLayout(themeId, layout, modeSuffix, readingMode);
+    syncQuranThemeToStorage(theme, modeSuffix, readingMode);
 
     setThemeChangeTick((prev) => prev + 1);
     window.dispatchEvent(new Event("theme-change"));
@@ -3841,17 +3841,17 @@ const MenuItem: React.FC<{
       backgroundColor: isActive
         ? (currentTheme?.accent || "#10b981")
         : (currentTheme?.btnBg || (currentTheme?.text === "#ffffff" ? "rgba(255,255,255,0.07)" : "rgba(255,255,255,0.95)")),
-      color: isActive ? "#ffffff" : (currentTheme?.text || "#000000"),
+      color: isActive ? (currentTheme?.accentText || "#ffffff") : (currentTheme?.text || "#000000"),
       border: "none",
       outline: "none",
     }}
   >
-    <div style={{ color: isActive ? "#ffffff" : iconColor }} className="quran-3d-icon shrink-0 flex items-center justify-center">{icon}</div>
+    <div style={{ color: isActive ? (currentTheme?.accentText || "#ffffff") : iconColor }} className="quran-3d-icon shrink-0 flex items-center justify-center">{icon}</div>
     <span
       className={`${isSubItem ? "text-[11px]" : "text-[12px]"} font-bold whitespace-nowrap flex-1`}
       style={{
         color: isActive
-          ? "#ffffff"
+          ? (currentTheme?.accentText || "#ffffff")
           : currentTheme
             ? currentTheme.text
             : "#000000",

@@ -16,6 +16,8 @@ import { HISN_ALMUSLIM_PAGE_STEPS } from '../components/Community/communityTourS
 import { markPageAsSeen } from '../utils/badgeManager';
 import { getModernFlatTokens } from '../utils/flatDesignTokens';
 
+import { HISN_ALMUSLIM_CATEGORIES, HISN_ALMUSLIM_DATA } from '../data/hisnAlmuslimData';
+
 const HISN_STATUS_KEY = 'hisn_almuslim_counts_v1';
 
 interface HisnAlmuslimProps {
@@ -46,6 +48,31 @@ function HisnAlmuslim({ onBack, onNavigate, navParams }: HisnAlmuslimProps) {
             setShowGuide(true);
         }
     }, []);
+
+    useEffect(() => {
+        if (navParams?.categoryId || navParams?.itemId || navParams?.highlightId || navParams?.id || navParams?.text) {
+            const catId = navParams.categoryId || navParams.highlightId;
+            let found = HISN_ALMUSLIM_CATEGORIES.find(c => String(c.id) === String(catId));
+            if (!found) {
+                const targetText = navParams.text;
+                const targetId = navParams.itemId || navParams.id;
+                for (const [cId, items] of Object.entries(HISN_ALMUSLIM_DATA)) {
+                    const match = (items as any[]).find((it: any, idx: number) => 
+                        (targetId && (String(it.id) === String(targetId) || `${cId}_${idx}` === String(targetId))) ||
+                        (targetText && it.text && (it.text.includes(targetText) || targetText.includes(it.text)))
+                    );
+                    if (match) {
+                        found = HISN_ALMUSLIM_CATEGORIES.find(c => c.id === cId);
+                        break;
+                    }
+                }
+            }
+            if (found) {
+                setSelectedCategory(found);
+                setZoomedItem(null);
+            }
+        }
+    }, [navParams]);
     const fabContainerRef = useRef<HTMLDivElement>(null);
 
     const [hisnCounts, setHisnCounts] = useState<{ [key: string]: number }>(() => {
@@ -203,7 +230,7 @@ function HisnAlmuslim({ onBack, onNavigate, navParams }: HisnAlmuslimProps) {
                 showThemePageLock={!selectedCategory}
                 onBack={handleBack}
                 onHome={handleGoHome}
-                onOpenGuide={() => setShowGuide(true)}
+                onOpenGuide={!selectedCategory ? () => setShowGuide(true) : undefined}
             />
 
             <main className="flex-1 overflow-y-auto hide-scrollbar relative mx-auto w-full max-w-3xl px-4 pb-6 flex flex-col pt-3">
@@ -284,6 +311,9 @@ function HisnAlmuslim({ onBack, onNavigate, navParams }: HisnAlmuslimProps) {
                             counts={hisnCounts}
                             onDecrement={handleDecrementHisn}
                             onReset={handleResetHisn}
+                            highlightIndex={navParams?.itemIndex}
+                            highlightId={navParams?.id || navParams?.itemId}
+                            highlightText={navParams?.text}
                         />
                     ) : (
                         <CategoryList 

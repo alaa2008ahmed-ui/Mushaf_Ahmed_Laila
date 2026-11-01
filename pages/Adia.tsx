@@ -64,6 +64,26 @@ function Adia({ onBack, onNavigate, navParams }: AdiaProps) {
             setShowGuide(true);
         }
     }, []);
+
+    useEffect(() => {
+        if (navParams?.categoryId) {
+            setActiveCategory(navParams.categoryId);
+        }
+        if (navParams?.id || navParams?.highlightId) {
+            const targetId = navParams.id || navParams.highlightId;
+            setZoomedDuaa(null);
+            setTimeout(() => {
+                const el = document.getElementById(`adia-card-${targetId}`);
+                if (el) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    el.classList.add('ring-2', 'ring-amber-500', 'ring-offset-2');
+                    setTimeout(() => {
+                        el.classList.remove('ring-2', 'ring-amber-500', 'ring-offset-2');
+                    }, 2500);
+                }
+            }, 150);
+        }
+    }, [navParams]);
     const [menuOpenDirection, setMenuOpenDirection] = useState<'up' | 'down'>('up');
     const [playingText, setPlayingText] = useState<string | null>(null);
     const fabRef = useRef<HTMLButtonElement>(null);
@@ -420,6 +440,7 @@ function Adia({ onBack, onNavigate, navParams }: AdiaProps) {
 
                             return (
                                 <div 
+                                    id={`adia-card-${duaa.id}`}
                                     key={duaa.id} 
                                     data-card-item="true"
                                     className={`p-5 pb-3 rounded-[18px] relative transition-all duration-300 overflow-hidden group shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-none hover:shadow-[0_6px_25px_rgba(0,0,0,0.06)] border border-slate-100/80 dark:border-white/5 flex flex-col justify-between ${

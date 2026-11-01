@@ -59,6 +59,7 @@ function App() {
     if (clean.includes('prayer') || clean.includes('salah') || clean.includes('times')) return 'prayer-times';
     if (clean.includes('qibla')) return 'qibla';
     if (clean.includes('seerah')) return 'prophetic-seerah';
+    if (clean.includes('miracle')) return 'divine-miracles';
     if (clean.includes('hisn') || clean.includes('azkar') || clean.includes('athkar')) return 'hisn-muslim';
     if (clean.includes('tasbeeh')) return 'tasbeeh';
     if (clean.includes('calendar')) return 'calendar';
@@ -107,12 +108,25 @@ function App() {
     return 'video';
   });
 
+  const [hasChosenInitialLanguage, setHasChosenInitialLanguage] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('has_selected_initial_language') === 'true';
+    } catch (e) {
+      return false;
+    }
+  });
+
   // Track app launch count for "جديد" badge and sync first-time preferences
   useEffect(() => {
     recordAppLaunch();
     try {
+      // التأكد من أن التصميم الافتراضي المعتمد هو التصميم الذكي الحديث
+      if (!localStorage.getItem('home_layout_system')) {
+        localStorage.setItem('home_layout_system', 'modern');
+      }
       Preferences.get({ key: 'has_selected_initial_language' }).then(({ value }) => {
         if (value === 'true') {
+          setHasChosenInitialLanguage(true);
           try {
             localStorage.setItem('has_selected_initial_language', 'true');
           } catch (e) {}
@@ -248,6 +262,8 @@ function App() {
       'hadith': 'nawawi',
       'misbaha': 'tasbeeh',
       'sebha': 'tasbeeh',
+      'miracles': 'divine-miracles',
+      'divine_miracles': 'divine-miracles',
     };
     pageId = pageAliasMap[pageId] || pageId;
     if (rawPageId === 'quran-search') {
@@ -259,7 +275,7 @@ function App() {
       'hajj-umrah', 'hisn-muslim', 'prayer-times', 'monthly-prayer-times', 'qibla', 
       'sabah-masaa', 'adia', 'nawawi', 'calculators', 'voice-control', 'daily-wird', 'memorization',
       'phone-notifications', 'search', 'asmaul-husna', 'habit-tracker', 'others', 'islamic-sites',
-      'prophetic-seerah', 'ten-promised'
+      'prophetic-seerah', 'ten-promised', 'divine-miracles'
     ];
 
     if (pageId === 'phone-notifications') {
@@ -290,6 +306,11 @@ function App() {
         const current = prev[prev.length - 1];
         if (current === pageId) return prev;
 
+
+        // If navigating from Search, preserve Search in history stack so back button returns directly to Search with cached results
+        if (current === 'search') {
+          return [...prev, pageId];
+        }
 
         // 2. Monthly Prayer Times inside Prayer Times
         if (pageId === 'monthly-prayer-times') {
@@ -663,19 +684,26 @@ function App() {
 
   const page = history[history.length - 1];
 
-  const hasChosenInitialLanguage = (() => {
+  const handleVideoSplashEnded = useCallback(() => {
+    let hasChosen = false;
     try {
-      return localStorage.getItem('has_selected_initial_language') === 'true';
+      hasChosen = localStorage.getItem('has_selected_initial_language') === 'true';
     } catch (e) {
-      return false;
+      hasChosen = false;
     }
-  })();
+    if (hasChosen) {
+      setSplashStage('app');
+    } else {
+      setSplashStage('welcome');
+    }
+  }, []);
 
   return (
     <TutorialProvider>
       <PrayerTimesProvider>
         <VoiceControlProvider onAction={handleVoiceAction}>
-          {splashStage === 'welcome' ? (
+          {/* 1. صفحة اختيار اللغة: يتم تجهيزها وعرضها تحت الفيديو في التشغيل لأول مرة لتظهر لحظياً فور انتهاء الفيديو */}
+          {(!hasChosenInitialLanguage || splashStage === 'welcome') && (
             <WelcomeSplash
               onSelectLanguage={(lang) => {
                 try {
@@ -684,47 +712,35 @@ function App() {
                   Preferences.set({ key: 'has_selected_initial_language', value: 'true' }).catch(() => {});
                   Preferences.set({ key: 'home_layout_system', value: 'modern' }).catch(() => {});
                 } catch (e) {}
+                setHasChosenInitialLanguage(true);
                 setLanguage(lang);
                 setSplashStage('app');
               }}
             />
-          ) : (
-            <>
-              {(splashStage === 'app' || (splashStage === 'video' && hasChosenInitialLanguage)) && (
-                <AppContent 
-                  page={page} 
-                  history={history}
-                  navParams={navParams}
-                  isThemeSelectorOpen={isThemeSelectorOpen}
-                  showExitConfirm={showExitConfirm}
-                  isSideMenuOpen={isSideMenuOpen}
-                  setIsSideMenuOpen={setIsSideMenuOpen}
-                  handleNavigate={handleNavigate}
-                  navigateBack={navigateBack}
-                  setIsThemeSelectorOpen={setIsThemeSelectorOpen}
-                  setShowExitConfirm={setShowExitConfirm}
-                  updateInfo={updateInfo}
-                  setUpdateInfo={setUpdateInfo}
-                />
-              )}
-              {splashStage === 'video' && (
-                <VideoSplash
-                  onEnded={() => {
-                    let hasChosenLanguage = false;
-                    try {
-                      hasChosenLanguage = localStorage.getItem('has_selected_initial_language') === 'true';
-                    } catch (e) {
-                      hasChosenLanguage = false;
-                    }
-                    if (hasChosenLanguage) {
-                      setSplashStage('app');
-                    } else {
-                      setSplashStage('welcome');
-                    }
-                  }}
-                />
-              )}
-            </>
+          )}
+
+          {/* 2. محتوى التطبيق الرئيسي (التصميم الذكي الحديث): يتم تجهيزه تحت الفيديو في المرات اللاحقة ليظهر لحظياً فور انتهاء الفيديو */}
+          {hasChosenInitialLanguage && (splashStage === 'app' || splashStage === 'video') && (
+            <AppContent 
+              page={page} 
+              history={history}
+              navParams={navParams}
+              isThemeSelectorOpen={isThemeSelectorOpen}
+              showExitConfirm={showExitConfirm}
+              isSideMenuOpen={isSideMenuOpen}
+              setIsSideMenuOpen={setIsSideMenuOpen}
+              handleNavigate={handleNavigate}
+              navigateBack={navigateBack}
+              setIsThemeSelectorOpen={setIsThemeSelectorOpen}
+              setShowExitConfirm={setShowExitConfirm}
+              updateInfo={updateInfo}
+              setUpdateInfo={setUpdateInfo}
+            />
+          )}
+
+          {/* 3. فيديو بداية التشغيل: يغطي الشاشة بالكامل (z-[9999]) ويظهر دائماً عند فتح التطبيق */}
+          {splashStage === 'video' && (
+            <VideoSplash onEnded={handleVideoSplashEnded} />
           )}
         </VoiceControlProvider>
       </PrayerTimesProvider>

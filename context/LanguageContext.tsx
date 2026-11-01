@@ -125,6 +125,14 @@ export const ISLAMIC_TRANSLATIONS: Translations = {
     ar: 'العشرة المبشرون',
     en: 'The Ten Promised Paradise'
   },
+  'menu.divine_miracles': {
+    ar: 'المعجزات الإلهية',
+    en: 'Divine Miracles'
+  },
+  'sidemenu.divine_miracles_desc': {
+    ar: 'معجزات القرآن الكريم، النبوءات النبوية، الإعجاز العلمي، وأدلة وجود الله.',
+    en: 'Quranic miracles, prophetic predictions, scientific discoveries, and divine proofs.'
+  },
   'menu.tajweed': {
     ar: 'تعليم التجويد',
     en: 'Tajweed Rules'
@@ -1115,6 +1123,7 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
       'others': 'Ruqyah',
       'prophetic-seerah': 'Prophetic Seerah',
       'ten-promised': 'The Ten Promised Paradise',
+      'divine-miracles': 'Divine Miracles',
       'tajweed-education': 'Tajweed Rules',
       'quran-download-parent': 'Download Qur\'an',
       'tafseer-download': 'Download Tafseer',

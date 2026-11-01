@@ -590,12 +590,12 @@ body.theme-black-gold,
 html.theme-black-gold {
     background-color: #000000 !important;
     background-image: none !important;
-    color: #F59E0B !important;
+    color: #ffffff !important;
 }
 
 body.theme-black-gold #app-title {
-    color: #F59E0B !important;
-    text-shadow: 0 1px 2px rgba(245, 158, 11, 0.4) !important;
+    color: #ffffff !important;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.4) !important;
 }
 
 /* أزرار وأيقونات الشريط العلوي بالوضع الليلي */
@@ -619,8 +619,8 @@ html.theme-black-gold header:not(.quran-reader-header):not(.quran-context) butto
 html.theme-black-gold header:not(.quran-reader-header):not(.quran-context) button svg,
 html.theme-black-gold header:not(.quran-reader-header):not(.quran-context) i,
 html.theme-black-gold header:not(.quran-reader-header):not(.quran-context) svg {
-    color: #F59E0B !important;
-    stroke: #F59E0B !important;
+    color: #ffffff !important;
+    stroke: #ffffff !important;
 }
 
 body.theme-black-gold .app-top-bar:not(.quran-context) svg[fill="none"],
@@ -630,8 +630,11 @@ html.theme-black-gold header:not(.quran-reader-header):not(.quran-context) svg[f
     fill: none !important;
 }
 
-/* بطاقات التصميم الحديث والكلاسيكي بالأسود والذهبي */
-body.theme-black-gold .golden-3d-card,
+/* ==========================================================================
+   الوضع الليلي: ثيم الأسود والأبيض والذهبي المجسم ثلاثي الأبعاد بدون أي إطارات - التصميم الذكي
+   ========================================================================== */
+
+/* ١. البطاقات الكلاسيكية في الوضع الليلي */
 body.theme-black-gold .tactile-3d-card-light,
 body.theme-black-gold .tactile-3d-card-dark,
 body.theme-black-gold #main-prayer-status-card,
@@ -642,75 +645,395 @@ body.theme-black-gold #tawaf-counter-card,
 body.theme-black-gold #habit-tracker-card,
 body.theme-black-gold #share-app-card,
 body.theme-black-gold #web-app-card,
-html.theme-black-gold .golden-3d-card,
 html.theme-black-gold .tactile-3d-card-light,
-html.theme-black-gold .tactile-3d-card-dark {
-    background: linear-gradient(145deg, #18181b 0%, #111111 60%, #09090b 100%) !important;
-    border: 1.5px solid rgba(217, 119, 6, 0.75) !important;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8), inset 0 1px 1px rgba(245, 158, 11, 0.2) !important;
-    color: #F59E0B !important;
+html.theme-black-gold .tactile-3d-card-dark,
+body.theme-black .tactile-3d-card-light,
+body.theme-black .tactile-3d-card-dark,
+.dark .tactile-3d-card-dark,
+.dark .tactile-3d-card-light {
+    background: #141417 !important;
+    border: none !important;
+    box-shadow: 0 6px 0 #09090c, 0 14px 28px rgba(0, 0, 0, 0.85), inset 0 1.5px 1px rgba(255, 255, 255, 0.16), inset 0 -2.5px 5px rgba(0, 0, 0, 0.65) !important;
+    color: #ffffff !important;
 }
 
+/* ٢. البطاقات الكبيرة الرئيسية في التصميم الذكي بالوضع الليلي: بارزة ومجسمة 3D بدون أي إطار نهائياً */
+body.theme-black-gold .golden-3d-card,
+html.theme-black-gold .golden-3d-card,
+body.theme-black .golden-3d-card,
+.dark .golden-3d-card,
+.dark [data-layout="modern"] .golden-3d-card {
+    background: linear-gradient(168deg, #282832 0%, #1b1b23 48%, #131319 100%) !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow:
+        0 6.5px 0 #0b0b10,
+        0 7.5px 0 rgba(255, 255, 255, 0.05),
+        0 18px 34px -4px rgba(0, 0, 0, 0.92),
+        inset 0 2px 1.5px rgba(255, 255, 255, 0.22),
+        inset 0 -3px 6px rgba(0, 0, 0, 0.72) !important;
+    color: #ffffff !important;
+}
+
+body.theme-black-gold .golden-3d-card:hover,
+html.theme-black-gold .golden-3d-card:hover,
+body.theme-black .golden-3d-card:hover,
+.dark .golden-3d-card:hover {
+    transform: translateY(-2px);
+    box-shadow:
+        0 8.5px 0 #0b0b10,
+        0 9.5px 0 rgba(255, 255, 255, 0.06),
+        0 22px 38px -4px rgba(0, 0, 0, 0.95),
+        inset 0 2px 1.5px rgba(255, 255, 255, 0.25),
+        inset 0 -3px 6px rgba(0, 0, 0, 0.72) !important;
+}
+
+/* ٣. البطاقات والحاويات الداخلية الداكنة: بارزة ومجسمة 3D فوق البطاقة الأم وبدون أي إطار نهائياً */
 body.theme-black-gold .white-3d-container-card,
-body.theme-black-gold .white-3d-card-btn,
-body.theme-black-gold .golden-3d-inset,
-body.theme-black-gold .white-3d-pill-btn,
 html.theme-black-gold .white-3d-container-card,
-html.theme-black-gold .white-3d-card-btn,
-html.theme-black-gold .golden-3d-inset,
-html.theme-black-gold .white-3d-pill-btn {
-    background: linear-gradient(180deg, #1f1f23 0%, #121215 100%) !important;
-    border: 1px solid rgba(217, 119, 6, 0.4) !important;
+body.theme-black .white-3d-container-card,
+.dark .white-3d-container-card,
+body.theme-black-gold .golden-3d-inset.rounded-2xl,
+html.theme-black-gold .golden-3d-inset.rounded-2xl,
+body.theme-black .golden-3d-inset.rounded-2xl,
+.dark .golden-3d-inset.rounded-2xl {
+    background: linear-gradient(180deg, #363644 0%, #2a2a35 55%, #202029 100%) !important;
+    border: none !important;
+    outline: none !important;
+    color: #ffffff !important;
+    box-shadow:
+        0 5px 0 #0e0e14,
+        0 12px 22px -2px rgba(0, 0, 0, 0.72),
+        inset 0 2px 1px rgba(255, 255, 255, 0.22),
+        inset 0 -2.5px 4px rgba(0, 0, 0, 0.52) !important;
+}
+
+/* الشارات والكبسولات الداخلية الداكنة الصغيرة (التاريخ، عدد التطبيقات، مبدل الأشواط): مجسمة 3D بدون إطار */
+body.theme-black-gold .golden-3d-inset:not(.rounded-2xl),
+html.theme-black-gold .golden-3d-inset:not(.rounded-2xl),
+body.theme-black .golden-3d-inset:not(.rounded-2xl),
+.dark .golden-3d-inset:not(.rounded-2xl) {
+    background: linear-gradient(180deg, #363644 0%, #292934 60%, #202029 100%) !important;
+    border: none !important;
+    outline: none !important;
+    color: #ffffff !important;
+    box-shadow:
+        0 3.5px 0 #0e0e14,
+        0 7px 14px rgba(0, 0, 0, 0.6),
+        inset 0 1.5px 1px rgba(255, 255, 255, 0.2),
+        inset 0 -1.5px 3px rgba(0, 0, 0, 0.45) !important;
+}
+
+body.theme-black-gold .golden-3d-inset > svg,
+html.theme-black-gold .golden-3d-inset > svg,
+body.theme-black .golden-3d-inset > svg,
+.dark .golden-3d-inset > svg {
     color: #F59E0B !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6) !important;
+    stroke: #F59E0B !important;
 }
 
-body.theme-black-gold .golden-3d-btn,
-body.theme-black-gold .golden-3d-pill-btn,
-html.theme-black-gold .golden-3d-btn,
-html.theme-black-gold .golden-3d-pill-btn {
-    background: linear-gradient(180deg, #D97706 0%, #B45309 100%) !important;
-    color: #000000 !important;
-    border: 1px solid #F59E0B !important;
+/* الفواصل الأفقية الداخلية فقط (بدون أي إطار حول البطاقات) */
+body.theme-black-gold [data-layout="modern"] .border-t,
+html.theme-black-gold [data-layout="modern"] .border-t,
+body.theme-black [data-layout="modern"] .border-t,
+.dark [data-layout="modern"] .border-t {
+    border-top-color: rgba(255, 255, 255, 0.07) !important;
 }
 
-/* النصوص داخل البطاقات باللون الذهبي */
-body.theme-black-gold .golden-3d-card *,
-body.theme-black-gold .tactile-3d-card-light *,
-body.theme-black-gold .tactile-3d-card-dark *,
-body.theme-black-gold .white-3d-container-card *,
-body.theme-black-gold .white-3d-card-btn *,
-body.theme-black-gold #main-prayer-status-card *,
-body.theme-black-gold #islamic-events-card *,
-body.theme-black-gold #on-this-day-card *,
-body.theme-black-gold #history-memory-card *,
-html.theme-black-gold .golden-3d-card *,
-html.theme-black-gold .white-3d-container-card * {
-    color: #F59E0B !important;
+/* بروز إضافي للأيقونات ثلاثية الأبعاد داخل البطاقات بالوضع الليلي */
+body.theme-black-gold [data-layout="modern"] .white-3d-container-card img,
+html.theme-black-gold [data-layout="modern"] .white-3d-container-card img,
+body.theme-black [data-layout="modern"] .white-3d-container-card img,
+.dark [data-layout="modern"] .white-3d-container-card img {
+    filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.65)) !important;
 }
 
-body.theme-black-gold .golden-3d-btn *,
-body.theme-black-gold .golden-3d-pill-btn * {
-    color: #000000 !important;
+body.theme-black-gold [data-layout="modern"] .white-3d-card-btn img,
+html.theme-black-gold [data-layout="modern"] .white-3d-card-btn img,
+body.theme-black [data-layout="modern"] .white-3d-card-btn img,
+.dark [data-layout="modern"] .white-3d-card-btn img {
+    filter: drop-shadow(0 5px 6px rgba(0, 0, 0, 0.22)) !important;
 }
 
-/* في الوضع الليلي: أسماء التطبيقات والخدمات بلون أحادي ذهبي خالص وبدون أي ظلال بيضاء أو ألوان متداخلة */
+/* إلغاء الطبقات اللامعة (3D Gloss overlays) الزائدة داخل البطاقات والأزرار في الوضع الليلي */
+body.theme-black-gold .pointer-events-none.bg-gradient-to-b,
+body.theme-black-gold .pointer-events-none.bg-gradient-to-r,
+body.theme-black-gold .pointer-events-none.bg-black\/10,
+body.theme-black-gold .pointer-events-none.bg-black\/15,
+body.theme-black-gold .pointer-events-none.bg-black\/20,
+html.theme-black-gold .pointer-events-none.bg-gradient-to-b,
+html.theme-black-gold .pointer-events-none.bg-gradient-to-r,
+html.theme-black-gold .pointer-events-none.bg-black\/10,
+html.theme-black-gold .pointer-events-none.bg-black\/15,
+html.theme-black-gold .pointer-events-none.bg-black\/20,
+body.theme-black .pointer-events-none.bg-gradient-to-b,
+body.theme-black .pointer-events-none.bg-gradient-to-r,
+.dark [data-layout="modern"] .pointer-events-none.bg-gradient-to-b,
+.dark [data-layout="modern"] .pointer-events-none.bg-gradient-to-r,
+.dark [data-layout="modern"] .pointer-events-none[class*="bg-gradient"] {
+    display: none !important;
+}
+
+/* النصوص الافتراضية فوق الخلفيات السوداء/الداكنة باللون الأبيض الناصع (مع استثناء البطاقات والأزرار البيضاء والعناصر الذهبية) */
+body.theme-black-gold .golden-3d-card *:not(.card-header-title):not(.app-name-label):not(.gold-accent-text):not(.gold-accent-icon):not(.gold-accent-icon *):not(.golden-3d-btn):not(.golden-3d-btn *):not(.golden-3d-pill-btn):not(.golden-3d-pill-btn *):not(.golden-3d-btn-light):not(.golden-3d-btn-light *):not(.white-3d-pill-btn):not(.white-3d-pill-btn *):not(.white-3d-card-btn):not(.white-3d-card-btn *):not(.night-white-surface):not(.night-white-surface *):not(.prayer-name-label),
+body.theme-black-gold .white-3d-container-card *:not(.card-header-title):not(.app-name-label):not(.gold-accent-text):not(.gold-accent-icon):not(.gold-accent-icon *):not(.golden-3d-btn):not(.golden-3d-btn *):not(.golden-3d-pill-btn):not(.golden-3d-pill-btn *):not(.golden-3d-btn-light):not(.golden-3d-btn-light *):not(.white-3d-pill-btn):not(.white-3d-pill-btn *):not(.white-3d-card-btn):not(.white-3d-card-btn *):not(.night-white-surface):not(.night-white-surface *):not(.prayer-name-label),
+body.theme-black .golden-3d-card *:not(.card-header-title):not(.app-name-label):not(.gold-accent-text):not(.gold-accent-icon):not(.gold-accent-icon *):not(.golden-3d-btn):not(.golden-3d-btn *):not(.golden-3d-pill-btn):not(.golden-3d-pill-btn *):not(.golden-3d-btn-light):not(.golden-3d-btn-light *):not(.white-3d-pill-btn):not(.white-3d-pill-btn *):not(.white-3d-card-btn):not(.white-3d-card-btn *):not(.night-white-surface):not(.night-white-surface *):not(.prayer-name-label),
+.dark .golden-3d-card *:not(.card-header-title):not(.app-name-label):not(.gold-accent-text):not(.gold-accent-icon):not(.gold-accent-icon *):not(.golden-3d-btn):not(.golden-3d-btn *):not(.golden-3d-pill-btn):not(.golden-3d-pill-btn *):not(.golden-3d-btn-light):not(.golden-3d-btn-light *):not(.white-3d-pill-btn):not(.white-3d-pill-btn *):not(.white-3d-card-btn):not(.white-3d-card-btn *):not(.night-white-surface):not(.night-white-surface *):not(.prayer-name-label),
+.dark [data-layout="modern"] .golden-3d-card *:not(.card-header-title):not(.app-name-label):not(.gold-accent-text):not(.gold-accent-icon):not(.gold-accent-icon *):not(.golden-3d-btn):not(.golden-3d-btn *):not(.golden-3d-pill-btn):not(.golden-3d-pill-btn *):not(.golden-3d-btn-light):not(.golden-3d-btn-light *):not(.white-3d-pill-btn):not(.white-3d-pill-btn *):not(.white-3d-card-btn):not(.white-3d-card-btn *):not(.night-white-surface):not(.night-white-surface *):not(.prayer-name-label) {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+}
+
+/* العناوين الرئيسية، أسماء التطبيقات، والعناصر الذهبية المميزة باللون الذهبي الفاخر في الوضع الليلي */
+body.theme-black-gold .card-header-title,
+html.theme-black-gold .card-header-title,
+body.theme-black .card-header-title,
+.dark .card-header-title,
+.dark [data-layout="modern"] .card-header-title,
+body.theme-black-gold .gold-accent-text,
+html.theme-black-gold .gold-accent-text,
+body.theme-black .gold-accent-text,
+.dark .gold-accent-text,
+.dark [data-layout="modern"] .gold-accent-text,
+body.theme-black-gold .gold-accent-icon,
+body.theme-black-gold .gold-accent-icon svg,
+html.theme-black-gold .gold-accent-icon,
+html.theme-black-gold .gold-accent-icon svg,
+body.theme-black .gold-accent-icon,
+body.theme-black .gold-accent-icon svg,
+.dark .gold-accent-icon,
+.dark .gold-accent-icon svg,
 body.theme-black-gold .app-name-label,
 html.theme-black-gold .app-name-label,
 body.theme-black-gold .modern-home-layout .app-name-label,
 html.theme-black-gold .modern-home-layout .app-name-label,
 body.theme-black-gold [data-layout="modern"] .app-name-label,
 body.theme-black-gold [data-layout="classic"] .app-name-label,
-body.theme-black-gold [data-item-id] button,
-body.theme-black-gold [data-item-id] span,
-body.theme-black-gold .white-3d-container-card button span,
-body.theme-black-gold .white-3d-card-btn span,
-html.theme-black-gold .white-3d-container-card button span,
-html.theme-black-gold .white-3d-card-btn span {
+body.theme-black-gold [data-item-id] button:not(.golden-3d-pill-btn),
+body.theme-black-gold [data-item-id] span:not(.golden-3d-pill-btn *),
+body.theme-black .app-name-label,
+.dark .app-name-label,
+.dark [data-layout="modern"] .app-name-label {
     color: #F59E0B !important;
     -webkit-text-fill-color: #F59E0B !important;
     text-shadow: none !important;
 }
+
+/* مربعات الأيقونات الذهبية الداكنة فوق البطاقات: مجسمة 3D بدون إطار */
+body.theme-black-gold .modern-gold-icon-box,
+html.theme-black-gold .modern-gold-icon-box,
+body.theme-black .modern-gold-icon-box,
+.dark .modern-gold-icon-box,
+.dark [data-layout="modern"] .modern-gold-icon-box {
+    background: linear-gradient(180deg, #322a18 0%, #1e1910 100%) !important;
+    border: none !important;
+    outline: none !important;
+    color: #F59E0B !important;
+    box-shadow: 0 3px 0 #100d08, 0 6px 12px rgba(0, 0, 0, 0.55), inset 0 1.5px 1px rgba(245, 158, 11, 0.35) !important;
+}
+
+body.theme-black-gold .modern-gold-icon-box svg,
+html.theme-black-gold .modern-gold-icon-box svg,
+body.theme-black .modern-gold-icon-box svg,
+.dark .modern-gold-icon-box svg {
+    color: #F59E0B !important;
+    stroke: #F59E0B !important;
+}
+
+/* ==========================================================================
+   ٤. البطاقات الداخلية البيضاء والأزرار البيضاء في الوضع الليلي: مسطحة بالكامل (بدون تجسيم 3D) وبدون أي إطار + نص أسود ناصع
+   ========================================================================== */
+body.theme-black-gold .white-3d-card-btn,
+body.theme-black-gold .golden-3d-btn,
+body.theme-black-gold .golden-3d-pill-btn,
+body.theme-black-gold .golden-3d-btn-light,
+body.theme-black-gold .white-3d-pill-btn,
+body.theme-black-gold .night-white-surface,
+body.theme-black-gold .white-3d-card-btn.prayer-card-done,
+html.theme-black-gold .white-3d-card-btn,
+html.theme-black-gold .golden-3d-btn,
+html.theme-black-gold .golden-3d-pill-btn,
+html.theme-black-gold .golden-3d-btn-light,
+html.theme-black-gold .white-3d-pill-btn,
+html.theme-black-gold .night-white-surface,
+html.theme-black-gold .white-3d-card-btn.prayer-card-done,
+body.theme-black .white-3d-card-btn,
+body.theme-black .golden-3d-btn,
+body.theme-black .golden-3d-pill-btn,
+body.theme-black .golden-3d-btn-light,
+body.theme-black .white-3d-pill-btn,
+body.theme-black .night-white-surface,
+body.theme-black .white-3d-card-btn.prayer-card-done,
+.dark .white-3d-card-btn,
+.dark .golden-3d-btn,
+.dark .golden-3d-pill-btn,
+.dark .golden-3d-btn-light,
+.dark .white-3d-pill-btn,
+.dark .night-white-surface,
+.dark .white-3d-card-btn.prayer-card-done {
+    background: #ffffff !important;
+    background-image: none !important;
+    color: #000000 !important;
+    -webkit-text-fill-color: #000000 !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    filter: none !important;
+}
+
+body.theme-black-gold .white-3d-card-btn:hover,
+body.theme-black-gold .golden-3d-btn:hover,
+body.theme-black-gold .golden-3d-pill-btn:hover,
+body.theme-black-gold .golden-3d-btn-light:hover,
+body.theme-black-gold .white-3d-pill-btn:hover,
+body.theme-black-gold .night-white-surface:hover,
+html.theme-black-gold .white-3d-card-btn:hover,
+html.theme-black-gold .golden-3d-btn:hover,
+html.theme-black-gold .golden-3d-pill-btn:hover,
+html.theme-black-gold .golden-3d-btn-light:hover,
+html.theme-black-gold .white-3d-pill-btn:hover,
+html.theme-black-gold .night-white-surface:hover,
+body.theme-black .white-3d-card-btn:hover,
+body.theme-black .golden-3d-btn:hover,
+body.theme-black .golden-3d-pill-btn:hover,
+body.theme-black .golden-3d-btn-light:hover,
+body.theme-black .white-3d-pill-btn:hover,
+body.theme-black .night-white-surface:hover,
+.dark .white-3d-card-btn:hover,
+.dark .golden-3d-btn:hover,
+.dark .golden-3d-pill-btn:hover,
+.dark .golden-3d-btn-light:hover,
+.dark .white-3d-pill-btn:hover,
+.dark .night-white-surface:hover {
+    background: #ffffff !important;
+    background-image: none !important;
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+body.theme-black-gold .white-3d-card-btn:active,
+body.theme-black-gold .golden-3d-btn:active,
+body.theme-black-gold .golden-3d-pill-btn:active,
+body.theme-black-gold .golden-3d-btn-light:active,
+body.theme-black-gold .white-3d-pill-btn:active,
+body.theme-black-gold .night-white-surface:active,
+html.theme-black-gold .white-3d-card-btn:active,
+html.theme-black-gold .golden-3d-btn:active,
+html.theme-black-gold .golden-3d-pill-btn:active,
+html.theme-black-gold .golden-3d-btn-light:active,
+html.theme-black-gold .white-3d-pill-btn:active,
+html.theme-black-gold .night-white-surface:active,
+body.theme-black .white-3d-card-btn:active,
+body.theme-black .golden-3d-btn:active,
+body.theme-black .golden-3d-pill-btn:active,
+body.theme-black .golden-3d-btn-light:active,
+body.theme-black .white-3d-pill-btn:active,
+body.theme-black .night-white-surface:active,
+.dark .white-3d-card-btn:active,
+.dark .golden-3d-btn:active,
+.dark .golden-3d-pill-btn:active,
+.dark .golden-3d-btn-light:active,
+.dark .white-3d-pill-btn:active,
+.dark .night-white-surface:active {
+    background: #f4f4f5 !important;
+    background-image: none !important;
+    box-shadow: none !important;
+    transform: scale(0.97) !important;
+}
+
+/* ضمان ظهور جميع النصوص والأيقونات باللون الأسود الصريح داخل البطاقات والأزرار البيضاء بأعلى أولوية */
+body.theme-black-gold .golden-3d-card .golden-3d-btn *,
+body.theme-black-gold .golden-3d-card .golden-3d-pill-btn *,
+body.theme-black-gold .golden-3d-card .golden-3d-btn-light *,
+body.theme-black-gold .golden-3d-card .white-3d-pill-btn *,
+body.theme-black-gold .golden-3d-card .white-3d-card-btn *:not(.prayer-done-badge):not(.prayer-done-badge *):not(.search-icon-badge-inner):not(.search-icon-badge-inner *),
+body.theme-black-gold .golden-3d-card .night-white-surface *,
+body.theme-black-gold .golden-3d-card .prayer-name-label,
+html.theme-black-gold .golden-3d-card .golden-3d-btn *,
+html.theme-black-gold .golden-3d-card .golden-3d-pill-btn *,
+html.theme-black-gold .golden-3d-card .golden-3d-btn-light *,
+html.theme-black-gold .golden-3d-card .white-3d-pill-btn *,
+html.theme-black-gold .golden-3d-card .white-3d-card-btn *:not(.prayer-done-badge):not(.prayer-done-badge *):not(.search-icon-badge-inner):not(.search-icon-badge-inner *),
+html.theme-black-gold .golden-3d-card .night-white-surface *,
+html.theme-black-gold .golden-3d-card .prayer-name-label,
+body.theme-black .golden-3d-card .golden-3d-btn *,
+body.theme-black .golden-3d-card .golden-3d-pill-btn *,
+body.theme-black .golden-3d-card .golden-3d-btn-light *,
+body.theme-black .golden-3d-card .white-3d-pill-btn *,
+body.theme-black .golden-3d-card .white-3d-card-btn *:not(.prayer-done-badge):not(.prayer-done-badge *):not(.search-icon-badge-inner):not(.search-icon-badge-inner *),
+body.theme-black .golden-3d-card .night-white-surface *,
+body.theme-black .golden-3d-card .prayer-name-label,
+.dark .golden-3d-card .golden-3d-btn *,
+.dark .golden-3d-card .golden-3d-pill-btn *,
+.dark .golden-3d-card .golden-3d-btn-light *,
+.dark .golden-3d-card .white-3d-pill-btn *,
+.dark .golden-3d-card .white-3d-card-btn *:not(.prayer-done-badge):not(.prayer-done-badge *):not(.search-icon-badge-inner):not(.search-icon-badge-inner *),
+.dark .golden-3d-card .night-white-surface *,
+.dark .golden-3d-card .prayer-name-label {
+    color: #000000 !important;
+    -webkit-text-fill-color: #000000 !important;
+    text-shadow: none !important;
+}
+
+/* النص الفرعي داخل بطاقة البحث البيضاء بلون رمادي فحمي داكن واضح */
+body.theme-black-gold .golden-3d-card .white-3d-card-btn .white-card-subtext,
+html.theme-black-gold .golden-3d-card .white-3d-card-btn .white-card-subtext,
+body.theme-black .golden-3d-card .white-3d-card-btn .white-card-subtext,
+.dark .golden-3d-card .white-3d-card-btn .white-card-subtext {
+    color: #3f3f46 !important;
+    -webkit-text-fill-color: #3f3f46 !important;
+}
+
+/* مربع أيقونة البحث داخل البطاقة البيضاء: مجسم 3D بدون إطار مع أيقونة ذهبية */
+body.theme-black-gold .golden-3d-card .search-icon-badge-inner,
+html.theme-black-gold .golden-3d-card .search-icon-badge-inner,
+body.theme-black .golden-3d-card .search-icon-badge-inner,
+.dark .golden-3d-card .search-icon-badge-inner {
+    background: linear-gradient(180deg, #2b2b35 0%, #15151a 100%) !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: 0 3px 0 #09090d, 0 5px 10px rgba(0, 0, 0, 0.28), inset 0 1.5px 1px rgba(255, 255, 255, 0.22) !important;
+    color: #F59E0B !important;
+}
+
+body.theme-black-gold .golden-3d-card .search-icon-badge-inner svg,
+html.theme-black-gold .golden-3d-card .search-icon-badge-inner svg,
+body.theme-black .golden-3d-card .search-icon-badge-inner svg,
+.dark .golden-3d-card .search-icon-badge-inner svg {
+    color: #F59E0B !important;
+    stroke: #F59E0B !important;
+}
+
+/* شارة إتمام الصلاة (علامة الصح) فوق بطاقة الصلاة البيضاء: مجسمة بدون إطار */
+body.theme-black-gold .golden-3d-card .prayer-done-badge,
+html.theme-black-gold .golden-3d-card .prayer-done-badge,
+body.theme-black .golden-3d-card .prayer-done-badge,
+.dark .golden-3d-card .prayer-done-badge {
+    background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%) !important;
+    color: #ffffff !important;
+    border: none !important;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.45) !important;
+}
+
+body.theme-black-gold .golden-3d-card .prayer-done-badge svg,
+html.theme-black-gold .golden-3d-card .prayer-done-badge svg,
+body.theme-black .golden-3d-card .prayer-done-badge svg,
+.dark .golden-3d-card .prayer-done-badge svg {
+    color: #ffffff !important;
+    stroke: #ffffff !important;
+}
+
+
+/* Hide Floating Action Button when QR Modal is open */
+body.qr-modal-active #scroll-to-top-fab,
+body:has(#share-app-qr-modal) #scroll-to-top-fab,
+#share-app-qr-modal ~ #scroll-to-top-fab {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
 
 
 

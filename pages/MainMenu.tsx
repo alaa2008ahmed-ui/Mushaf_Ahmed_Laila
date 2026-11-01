@@ -27,6 +27,7 @@ import { Capacitor } from '@capacitor/core';
 import moment from 'moment-hijri';
 import HabitTrackerCard from '../components/MainMenu/HabitTrackerCard';
 import TawafCounterCard from '../components/MainMenu/TawafCounterCard';
+import SmartSeasonalStrip from '../components/MainMenu/SmartSeasonalStrip';
 import HomePrayerCard from '../components/MainMenu/HomePrayerCard';
 import OnThisDayCard from '../components/MainMenu/OnThisDayCard';
 import IslamicEventsCard from '../components/MainMenu/IslamicEventsCard';
@@ -125,7 +126,7 @@ export const APP_SHARE_TEXT = `🕋✨ التحديث الأكبر لتطبيق 
 🤍 شاركه مع أهلك وأحبابك..
 فالدال على الخير كفاعله، واجعله صدقة جارية لك ولوالديك. 🤲🌱`;
 
-const CURRENT_LAYOUT_VERSION = 'v2026_sections_layout_v10';
+const CURRENT_LAYOUT_VERSION = 'v2026_sections_layout_v11';
 
 const ALL_POSSIBLE_ITEMS = [
     // القسم الأول: القرآن الكريم (التركيز الرئيسي للتطبيق)
@@ -144,8 +145,9 @@ const ALL_POSSIBLE_ITEMS = [
     { id: 'others', label: "الرقية الشرعية", className: "col-span-2 h-11", colorIndex: 0 },
 
     // القسم الثالث: المكتبة الإسلامية
-    { id: 'prophetic-seerah', label: "السيرة النبوية", className: "col-span-3 h-11", colorIndex: 1 },
-    { id: 'ten-promised', label: "العشرة المبشرون", className: "col-span-3 h-11", colorIndex: 0 },
+    { id: 'prophetic-seerah', label: "السيرة النبوية", className: "col-span-2 h-11", colorIndex: 1 },
+    { id: 'ten-promised', label: "العشرة المبشرون", className: "col-span-2 h-11", colorIndex: 0 },
+    { id: 'divine-miracles', label: "المعجزات الإلهية", className: "col-span-2 h-11", colorIndex: 1 },
     { id: 'hisn-muslim', label: "حصن المسلم", className: "col-span-2 h-11", colorIndex: 0 },
     { id: 'hajj-umrah', label: "الحج والعمرة", className: "col-span-2 h-11", colorIndex: 1 },
     { id: 'asmaul-husna', label: "أسماء الله", className: "col-span-2 h-11", colorIndex: 0 },
@@ -178,8 +180,9 @@ const DEFAULT_MENU_ITEMS = [
     { id: 'others', label: "الرقية الشرعية", className: "col-span-2 h-11", colorIndex: 0 },
 
     // القسم الثالث: المكتبة الإسلامية
-    { id: 'prophetic-seerah', label: "السيرة النبوية", className: "col-span-3 h-11", colorIndex: 1 },
-    { id: 'ten-promised', label: "العشرة المبشرون", className: "col-span-3 h-11", colorIndex: 0 },
+    { id: 'prophetic-seerah', label: "السيرة النبوية", className: "col-span-2 h-11", colorIndex: 1 },
+    { id: 'ten-promised', label: "العشرة المبشرون", className: "col-span-2 h-11", colorIndex: 0 },
+    { id: 'divine-miracles', label: "المعجزات الإلهية", className: "col-span-2 h-11", colorIndex: 1 },
     { id: 'hisn-muslim', label: "حصن المسلم", className: "col-span-2 h-11", colorIndex: 0 },
     { id: 'hajj-umrah', label: "الحج والعمرة", className: "col-span-2 h-11", colorIndex: 1 },
     { id: 'asmaul-husna', label: "أسماء الله", className: "col-span-2 h-11", colorIndex: 0 },
@@ -1160,6 +1163,12 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
               {/* Footer/Save Button */}
               {!isEditMode && (
                   <div className="flex flex-col gap-2 w-full max-w-sm mx-auto mt-1 mb-4">
+                      {/* شريط التذكير الذكي للمواسم والمناسبات والأوقات الشرعية في التصميم الكلاسيكي */}
+                      <SmartSeasonalStrip
+                          layoutMode="classic"
+                          onNavigate={onNavigate}
+                      />
+
                       {/* Modern Prayer Status Card */}
                       <HomePrayerCard 
                           onNavigate={onNavigate}

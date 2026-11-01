@@ -15,6 +15,9 @@ interface CategoryDetailProps {
     counts: { [key: string]: number };
     onDecrement: (itemKey: string, current: number) => void;
     onReset: (itemKey: string, initCount: number) => void;
+    highlightIndex?: number;
+    highlightId?: string;
+    highlightText?: string;
 }
 
 interface HisnItemCardProps {
@@ -150,6 +153,9 @@ const HisnItemCard: React.FC<HisnItemCardProps> = ({
 
     return (
         <div 
+            id={`hisn-card-${categoryId}-${itemIndex}`}
+            data-hisn-index={itemIndex}
+            data-hisn-id={item.id || `${categoryId}_${itemIndex}`}
             data-card-item="true"
             className={`p-5 pb-3.5 rounded-[18px] relative overflow-hidden group mb-4 transition-all duration-300 border-0 ${isFinished ? 'opacity-65 cursor-pointer' : 'cursor-pointer active:scale-[0.99]'}`}
             onClick={(e) => {
@@ -300,10 +306,45 @@ const CategoryDetail: React.FC<CategoryDetailProps> = ({
     setToastMessage,
     counts,
     onDecrement,
-    onReset
+    onReset,
+    highlightIndex,
+    highlightId,
+    highlightText
 }) => {
     const { language } = useLanguage();
     const isEn = language === 'en';
+
+    useEffect(() => {
+        if (highlightIndex !== undefined || highlightId || highlightText) {
+            const timer = setTimeout(() => {
+                let targetEl: HTMLElement | null = null;
+                if (highlightIndex !== undefined) {
+                    targetEl = document.getElementById(`hisn-card-${selectedCategory.id}-${highlightIndex}`);
+                }
+                if (!targetEl && highlightId) {
+                    targetEl = document.querySelector(`[data-hisn-id="${highlightId}"]`) as HTMLElement;
+                }
+                if (!targetEl && highlightText) {
+                    const cards = document.querySelectorAll('[data-card-item="true"]');
+                    const cleanText = highlightText.trim().substring(0, 30);
+                    for (const card of Array.from(cards)) {
+                        if (card.textContent?.includes(cleanText)) {
+                            targetEl = card as HTMLElement;
+                            break;
+                        }
+                    }
+                }
+                if (targetEl) {
+                    targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    targetEl.classList.add('ring-2', 'ring-amber-500', 'ring-offset-2');
+                    setTimeout(() => {
+                        targetEl?.classList.remove('ring-2', 'ring-amber-500', 'ring-offset-2');
+                    }, 2500);
+                }
+            }, 200);
+            return () => clearTimeout(timer);
+        }
+    }, [selectedCategory.id, highlightIndex, highlightId, highlightText]);
 
     if (!selectedCategory) return null;
     const items = React.useMemo(() => {

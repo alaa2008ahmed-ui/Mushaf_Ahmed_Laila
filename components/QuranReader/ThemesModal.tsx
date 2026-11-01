@@ -72,7 +72,7 @@ const ThemesModal: React.FC<ThemesModalProps> = ({ onClose, showToast, isLandsca
 
         const currentLayout = getCurrentLayoutContext();
         saveQuranThemeForLayout(themeId, currentLayout, modeSuffix, readingMode);
-        syncQuranThemeToStorage(theme, modeSuffix);
+        syncQuranThemeToStorage(theme, modeSuffix, readingMode);
 
         // Dispatch a custom event to notify the main component to reload theme
         window.dispatchEvent(new Event('theme-change'));

@@ -751,16 +751,18 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
 
                         {/* End Side: Guide, ThemeLock & Home Button */}
                         <div className="flex items-center gap-0.5 shrink-0">
-                            <button
-                                type="button"
-                                onClick={() => setShowGuide(true)}
-                                className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
-                                style={{ color: 'var(--top-bar-text, inherit)' }}
-                                title={isEn ? "Seerah Guide" : "دليل السيرة النبوية"}
-                                aria-label={isEn ? "Seerah Guide" : "دليل السيرة النبوية"}
-                            >
-                                <i className="fa-solid fa-circle-question text-lg"></i>
-                            </button>
+                            {!selectedMilestone && !selectedStance && (
+                                <button
+                                    type="button"
+                                    onClick={() => setShowGuide(true)}
+                                    className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                    style={{ color: 'var(--top-bar-text, inherit)' }}
+                                    title={isEn ? "Seerah Guide" : "دليل السيرة النبوية"}
+                                    aria-label={isEn ? "Seerah Guide" : "دليل السيرة النبوية"}
+                                >
+                                    <i className="fa-solid fa-circle-question text-lg"></i>
+                                </button>
+                            )}
                             <ThemePageLock />
                             <button
                                 onClick={() => onNavigate('home')}

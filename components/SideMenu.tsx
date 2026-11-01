@@ -5,7 +5,7 @@ import {
     Home, BookOpen, Headphones, Clock, Calendar, Brain, 
     Mic, Settings, Palette, MessageCircle, X, ChevronLeft, ChevronRight,
     Menu, Info, HelpCircle, Star, Type, Bell, Compass, Search,
-    ScrollText, Award
+    ScrollText, Award, Sparkles
 } from 'lucide-react';
 import { THEMES } from './QuranReader/constants';
 import { getQuranThemeIdForLayout } from '../utils/quranThemeHelper';
@@ -54,6 +54,7 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onNavigate, onOpen
     };
 
     const menuItems = [
+        { id: 'divine-miracles', label: t('menu.divine_miracles', 'المعجزات الإلهية'), icon: Sparkles, color: '#f59e0b', description: t('sidemenu.divine_miracles_desc', 'معجزات القرآن الكريم، النبوءات النبوية، الإعجاز العلمي، وأدلة وجود الله.') },
         { id: 'ten-promised', label: t('menu.ten_promised', 'العشرة المبشرون'), icon: Award, color: '#10b981', description: t('sidemenu.ten_promised_desc', 'سير وأحوال وفضائل ومواقف العشرة المبشرين بالجنة.') },
         { id: 'prophetic-seerah', label: t('menu.prophetic_seerah', 'السيرة النبوية'), icon: ScrollText, color: '#f59e0b', description: t('sidemenu.prophetic_seerah_desc', 'خط زمني تفاعلي لمحطات السيرة العطرة والعبر المستفادة.') },
         { id: 'search', label: t('sidemenu.search', 'البحث المتقدم'), icon: Search, color: '#14b8a6', description: t('sidemenu.search_desc', 'البحث عن آية، أو دعاء، أو أذكار.') },
