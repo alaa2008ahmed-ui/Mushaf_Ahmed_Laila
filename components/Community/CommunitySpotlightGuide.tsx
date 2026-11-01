@@ -80,7 +80,8 @@ export const resetCommunityGuides = (): void => {
       'calc_tab_fitr-udhiyah_spotlight',
       'calculator_page_spotlight',
       'worship_mentor_page_spotlight',
-      'custom_habit_modal_spotlight'
+      'custom_habit_modal_spotlight',
+      'smart_home_page_spotlight'
     ];
     keys.forEach(k => localStorage.removeItem(`guide_seen_${k}`));
   } catch (e) {}
@@ -184,7 +185,7 @@ export const CommunitySpotlightGuide: React.FC<CommunitySpotlightGuideProps> = (
 
   // Helper to find scrollable parent container
   const findScrollParent = useCallback((el: HTMLElement): HTMLElement | null => {
-    const namedContainer = el.closest('#calc-scroll-container, #memorization-scroll-container, #wird-scroll-container, #chat-messages-container, #direct-chat-messages-container, #prayer-settings-scroll-container, #listen-scroll-container, main, #app-scroll-container') as HTMLElement | null;
+    const namedContainer = el.closest('#main-menu-scroll-container, #calc-scroll-container, #memorization-scroll-container, #wird-scroll-container, #chat-messages-container, #direct-chat-messages-container, #prayer-settings-scroll-container, #listen-scroll-container, main, #app-scroll-container') as HTMLElement | null;
     if (namedContainer) return namedContainer;
 
     let p = el.parentElement;

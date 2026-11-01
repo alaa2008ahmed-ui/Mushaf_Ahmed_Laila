@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import ThemesSidebar from '../components/MainMenu/ThemesSidebar';
 import { useTheme } from '../context/ThemeContext';
 import WhatsAppButton from '../components/WhatsAppButton';
@@ -10,8 +10,10 @@ import { registerBackInterceptor } from '../hooks/useBackButton';
 import TitleSection from '../components/MainMenu/TitleSection';
 import GridSection from '../components/MainMenu/GridSection';
 import FloatingNeonTicker from '../components/FloatingNeonTicker';
-import { Palette, LayoutDashboard, LayoutGrid, Moon, Sun } from 'lucide-react';
+import { Palette, LayoutDashboard, LayoutGrid, Moon, Sun, Check, HelpCircle } from 'lucide-react';
 import ModernHomeView from '../components/MainMenu/ModernHomeView';
+import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/CommunitySpotlightGuide';
+import { SMART_HOME_PAGE_STEPS } from '../components/Community/communityTourSteps';
 import VoiceControlToggle from '../components/VoiceControlToggle';
 import { useVoiceControl } from '../context/VoiceControlContext';
 import { usePrayerTimes } from '../context/PrayerTimesContext';
@@ -304,8 +306,72 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
   const [isPasscodeOpen, setIsPasscodeOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [isThemesSidebarOpen, setIsThemesSidebarOpen] = useState(false);
+  const [showSmartHomeGuide, setShowSmartHomeGuide] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const prayerCardRef = useRef<HTMLDivElement>(null);
+
+  // إظهار إرشاد الصفحة الرئيسية (التصميم الذكي) كجولة تفاعلية باللون الذهبي لمرة واحدة فقط عند تشغيل التطبيق لأول مرة
+  useEffect(() => {
+    try {
+      if (!getGuideSeen('smart_home_page_spotlight')) {
+        const timer = setTimeout(() => {
+          setShowSmartHomeGuide(true);
+        }, 600);
+        return () => clearTimeout(timer);
+      }
+    } catch {}
+  }, []);
+
+  const titleLongPressTimerRef = useRef<any>(null);
+  const titleStartCoordRef = useRef<{ x: number; y: number } | null>(null);
+
+  const handleToggleEditMode = useCallback(() => {
+    if (isEditMode) {
+      // إنهاء وضع التعديل وحفظ ترتيب البطاقات
+      window.dispatchEvent(new CustomEvent('save-home-cards-layout'));
+      setIsEditMode(false);
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        try { navigator.vibrate([40, 60, 40]); } catch {}
+      }
+      setToastMessage(language === 'en' ? 'Cards arrangement saved successfully ✓' : 'تم حفظ ترتيب البطاقات بنجاح ✓');
+    } else {
+      // تفعيل وضع التعديل لتبديل البطاقات
+      setIsEditMode(true);
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        try { navigator.vibrate(80); } catch {}
+      }
+      setToastMessage(language === 'en' ? 'Edit mode active: Reorder cards, then hold title to save' : 'تم تفعيل وضع التعديل: بدّل أماكن البطاقات ثم اضغط مطولاً على اسم التطبيق للحفظ');
+    }
+  }, [isEditMode, language]);
+
+  const startTitleLongPress = (e: React.PointerEvent) => {
+    if (e.button !== 0 && e.pointerType === 'mouse') return;
+    titleStartCoordRef.current = { x: e.clientX, y: e.clientY };
+    if (titleLongPressTimerRef.current) {
+      clearTimeout(titleLongPressTimerRef.current);
+    }
+    titleLongPressTimerRef.current = setTimeout(() => {
+      titleLongPressTimerRef.current = null;
+      handleToggleEditMode();
+    }, 600);
+  };
+
+  const cancelTitleLongPress = () => {
+    if (titleLongPressTimerRef.current) {
+      clearTimeout(titleLongPressTimerRef.current);
+      titleLongPressTimerRef.current = null;
+    }
+    titleStartCoordRef.current = null;
+  };
+
+  const handleTitlePointerMove = (e: React.PointerEvent) => {
+    if (!titleStartCoordRef.current) return;
+    const dx = Math.abs(e.clientX - titleStartCoordRef.current.x);
+    const dy = Math.abs(e.clientY - titleStartCoordRef.current.y);
+    if (dx > 10 || dy > 10) {
+      cancelTitleLongPress();
+    }
+  };
 
   const [isLandscape, setIsLandscape] = useState(window.innerWidth > window.innerHeight);
   const [toastMessage, setToastMessage] = useState('');
@@ -726,6 +792,10 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
 
   useEffect(() => {
       const interceptor = () => {
+          if (showSmartHomeGuide) {
+              setShowSmartHomeGuide(false);
+              return true;
+          }
           if (isThemesSidebarOpen) {
               setIsThemesSidebarOpen(false);
               return true;
@@ -758,7 +828,7 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
       };
       const unregister = registerBackInterceptor(interceptor);
       return unregister;
-  }, [isThemesSidebarOpen, isCustomizationOpen, isEditMode, showExpandedHistoryMemoryModal, showExpandedEventsModal, showExpandedUpcomingEventModal, isPasscodeOpen]);
+  }, [showSmartHomeGuide, isThemesSidebarOpen, isCustomizationOpen, isEditMode, showExpandedHistoryMemoryModal, showExpandedEventsModal, showExpandedUpcomingEventModal, isPasscodeOpen]);
 
   const handleSaveCustomization = (selectedIds: string[]) => {
       setVisibleItems(selectedIds);
@@ -806,34 +876,58 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
           }}
         >
           <div className="w-full flex items-center justify-between px-3 sm:px-4 pt-1 pb-1 relative min-h-[44px]" dir={dir}>
-            {/* الطرف الأيمن: أيقونة الوضع الليلي (حديث) */}
-            <div className="flex items-center gap-1.5 shrink-0 z-20">
-              {!isEditMode ? (
+            {/* الطرف الأيمن: أيقونة الوضع الليلي (حديث) وزر الإرشادات */}
+            <div className="flex items-center gap-1 shrink-0 z-20">
+              <button
+                id="night-mode-toggle-btn"
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleNightMode();
+                }}
+                className="p-1 sm:p-1.5 flex items-center justify-center transition-all duration-150 active:scale-90 hover:scale-110 cursor-pointer select-none shrink-0 bg-transparent border-none outline-none"
+                title={isNightMode ? (language === 'en' ? 'Normal Mode' : 'الوضع العادي') : (language === 'en' ? 'Night Mode (Black & Gold)' : 'الوضع الليلي (الأسود والذهبي)')}
+                aria-label="Toggle Night Mode"
+              >
+                {isNightMode ? (
+                  <Sun className="w-[21px] h-[21px] sm:w-[23px] sm:h-[23px] text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.8)] pointer-events-none" />
+                ) : (
+                  <Moon className="w-[21px] h-[21px] sm:w-[23px] sm:h-[23px] text-amber-700 dark:text-amber-400 hover:text-amber-900 drop-shadow-[0_1px_2px_rgba(180,83,9,0.25)] pointer-events-none" />
+                )}
+              </button>
+
+              {!isEditMode && (
                 <button
-                  id="night-mode-toggle-btn"
+                  id="smart-home-guide-btn"
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
-                    toggleNightMode();
+                    setShowSmartHomeGuide(true);
                   }}
-                  className="p-1 sm:p-1.5 flex items-center justify-center transition-all duration-150 active:scale-90 hover:scale-110 cursor-pointer select-none shrink-0 bg-transparent border-none outline-none"
-                  title={isNightMode ? (language === 'en' ? 'Normal Mode' : 'الوضع العادي') : (language === 'en' ? 'Night Mode (Black & Gold)' : 'الوضع الليلي (الأسود والذهبي)')}
-                  aria-label="Toggle Night Mode"
+                  className="p-1 sm:p-1.5 flex items-center justify-center transition-all duration-150 active:scale-90 hover:scale-110 cursor-pointer select-none shrink-0 bg-transparent border-none outline-none text-amber-700 dark:text-amber-400 hover:text-amber-900 dark:hover:text-amber-200"
+                  title={language === 'en' ? 'Home Guide (Night mode & Cards reordering)' : 'إرشادات الوضع الليلي وترتيب البطاقات'}
+                  aria-label="Home Guide"
                 >
-                  {isNightMode ? (
-                    <Sun className="w-[21px] h-[21px] sm:w-[23px] sm:h-[23px] text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.8)] pointer-events-none" />
-                  ) : (
-                    <Moon className="w-[21px] h-[21px] sm:w-[23px] sm:h-[23px] text-amber-700 dark:text-amber-400 hover:text-amber-900 drop-shadow-[0_1px_2px_rgba(180,83,9,0.25)] pointer-events-none" />
-                  )}
+                  <HelpCircle className="w-[19px] h-[19px] sm:w-[21px] sm:h-[21px] drop-shadow-[0_1px_2px_rgba(180,83,9,0.2)] pointer-events-none stroke-[2.3]" />
                 </button>
-              ) : <div className="w-6 h-6 shrink-0" />}
+              )}
             </div>
 
             {/* اسم التطبيق في منتصف الشريط تماماً بصرف النظر عن عدد الأيقونات يميناً أو يساراً */}
-            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center text-center z-10 px-0.5 max-w-[calc(100%-120px)] pointer-events-none">
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center text-center z-10 px-0.5 max-w-[calc(100%-120px)] pointer-events-none">
               <h1 
                 id="app-title" 
-                className={`pointer-events-auto text-[19px] sm:text-[22px] md:text-[24px] font-black tracking-tight select-none text-center truncate transition-transform leading-tight font-cairo ${isEditMode ? 'scale-105 text-yellow-400' : ''}`} 
+                onPointerDown={startTitleLongPress}
+                onPointerUp={cancelTitleLongPress}
+                onPointerLeave={cancelTitleLongPress}
+                onPointerCancel={cancelTitleLongPress}
+                onPointerMove={handleTitlePointerMove}
+                onContextMenu={(e) => e.preventDefault()}
+                className={`pointer-events-auto cursor-pointer select-none text-[19px] sm:text-[22px] md:text-[24px] font-black tracking-tight text-center truncate transition-all leading-tight font-cairo ${
+                  isEditMode 
+                    ? 'scale-105 text-amber-500 animate-pulse ring-1.5 ring-amber-500/60 rounded-xl px-2 py-0.5 bg-amber-500/10' 
+                    : 'active:opacity-85'
+                }`} 
                 style={{
                   color: isNightMode ? '#F59E0B' : '#78350F',
                   fontFamily: "'Cairo', sans-serif",
@@ -841,16 +935,36 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
                     ? '0 0 10px rgba(245,158,11,0.5), 0 2px 4px rgba(0,0,0,0.8)' 
                     : '0 1px 1px rgba(255, 255, 255, 0.9), 0 2px 4px rgba(180, 83, 9, 0.18)',
                   textRendering: 'optimizeLegibility',
-                  WebkitFontSmoothing: 'antialiased'
+                  WebkitFontSmoothing: 'antialiased',
+                  userSelect: 'none',
+                  WebkitUserSelect: 'none'
                 }}
+                title={isEditMode 
+                  ? (language === 'en' ? 'Long press to save cards layout' : 'اضغط مطولاً لحفظ ترتيب البطاقات') 
+                  : (language === 'en' ? 'Long press to edit & reorder cards' : 'اضغط مطولاً لتعديل وترتيب البطاقات')}
               >
                 {t('app.name', 'مُصْحَفُ أَحْمَدَ وَلَيْلَى')}
               </h1>
+              {isEditMode && (
+                <span className="pointer-events-none text-[9.5px] sm:text-[10px] font-bold text-amber-600 dark:text-amber-400 font-cairo tracking-tight block whitespace-nowrap leading-tight mt-0.5 animate-bounce">
+                  {language === 'en' ? '✎ Hold title to save' : '✎ اضغط مطولاً للحفظ'}
+                </span>
+              )}
             </div>
 
-            {/* الطرف الأيسر: زر اللغة */}
+            {/* الطرف الأيسر: زر الحفظ أثناء وضع التعديل، أو زر اللغة بالوضع العادي */}
             <div className="flex items-center gap-1.5 shrink-0 z-20">
-              {!isEditMode ? (
+              {isEditMode ? (
+                <button
+                  type="button"
+                  onClick={handleToggleEditMode}
+                  className="px-2.5 py-1 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs flex items-center gap-1 shadow-sm active:scale-95 transition-all cursor-pointer font-cairo"
+                  title={language === 'en' ? 'Save Cards Layout' : 'حفظ ترتيب البطاقات'}
+                >
+                  <Check className="w-3.5 h-3.5 stroke-[3]" />
+                  <span>{language === 'en' ? 'Save' : 'حفظ'}</span>
+                </button>
+              ) : (
                 <button
                   id="language-btn"
                   data-id="language-button"
@@ -870,7 +984,7 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
                     {language === 'ar' ? 'Ar' : 'En'}
                   </span>
                 </button>
-              ) : <div className="w-6 h-6 shrink-0" />}
+              )}
             </div>
           </div>
         </header>
@@ -900,7 +1014,7 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
                   WebkitFontSmoothing: 'antialiased'
                 }}
               >
-                {isEditMode ? t('common.drag_to_reorder', 'اسحب الأزرار لترتيبها') : t('app.subtitle', 'نرجوا الدعاء لهم بالرحمة والمغفرة')}
+                {isEditMode ? (language === 'en' ? 'Reorder cards and hold title to save' : 'رتّب البطاقات بالأسهم واضغط مطولاً على اسم التطبيق للحفظ') : t('app.subtitle', 'نرجوا الدعاء لهم بالرحمة والمغفرة')}
               </p>
 
               {/* الشريط الإعلاني المتحرك إذا تم تفعيله */}
@@ -910,6 +1024,8 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
 
           <div className="px-3 sm:px-4 pt-1">
             <ModernHomeView
+              isEditMode={isEditMode}
+              setIsEditMode={setIsEditMode}
               onNavigate={onNavigate}
               theme={theme}
               themeKey={themeKey}
@@ -933,6 +1049,8 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
               setShowExpandedUpcomingEventModal={setShowExpandedUpcomingEventModal}
               shareTextAr={APP_SHARE_TEXT}
               shareTextEn={APP_SHARE_TEXT_EN}
+              onOpenGuide={() => setShowSmartHomeGuide(true)}
+              onToggleNightMode={toggleNightMode}
             />
             <div className="w-full h-2 sm:h-3 shrink-0 pointer-events-none" />
           </div>
@@ -994,6 +1112,14 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
           isGolden={homeLayoutMode === 'modern'}
         />
       )}
+
+      <CommunitySpotlightGuide
+        guideKey="smart_home_page_spotlight"
+        steps={SMART_HOME_PAGE_STEPS}
+        isOpen={showSmartHomeGuide}
+        onClose={() => setShowSmartHomeGuide(false)}
+        isEn={language === 'en'}
+      />
 
       <ThemesSidebar 
         isOpen={isThemesSidebarOpen}

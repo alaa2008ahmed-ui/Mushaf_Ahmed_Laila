@@ -44,7 +44,13 @@ import {
   Star,
   CheckSquare,
   Calculator,
-  CalendarDays
+  CalendarDays,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown,
+  X,
+  HelpCircle,
+  Lightbulb
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useLanguage } from '../../context/LanguageContext';
@@ -70,6 +76,7 @@ import { getActiveWirdProfile, getWirdDayRange, getWirdTotalDays, WirdProfile } 
 import { getAccurateHijriDate, HIJRI_MONTHS_AR, HIJRI_MONTHS_EN } from '../../utils/islamicOccasionsEngine';
 import { Capacitor } from '@capacitor/core';
 import { Share as CapacitorShare } from '@capacitor/share';
+import { Preferences } from '@capacitor/preferences';
 import moment from 'moment-hijri';
 
 const getJuzForAyah = (s: number, a: number): number => {
@@ -80,6 +87,44 @@ const getJuzForAyah = (s: number, a: number): number => {
     }
   }
   return 1;
+};
+
+export type ModernCardId = 
+  | 'quran'
+  | 'prayer'
+  | 'seasonal'
+  | 'adhkar'
+  | 'search'
+  | 'apps'
+  | 'tracker'
+  | 'tawaf'
+  | 'reflections'
+  | 'share';
+
+export const DEFAULT_MODERN_CARD_ORDER: ModernCardId[] = [
+  'quran',
+  'prayer',
+  'seasonal',
+  'adhkar',
+  'search',
+  'apps',
+  'tracker',
+  'tawaf',
+  'reflections',
+  'share'
+];
+
+export const MODERN_CARD_TITLES: Record<ModernCardId, { ar: string; en: string }> = {
+  quran: { ar: 'متابعة تلاوة المصحف', en: 'Quran Recitation' },
+  prayer: { ar: 'مواقيت الصلاة والقبلة', en: 'Prayer Times & Qibla' },
+  seasonal: { ar: 'الشريط الموسمي الذكي', en: 'Seasonal Strip' },
+  adhkar: { ar: 'الأذكار اليومية والوصول السريع', en: 'Daily Adhkar & Quick Apps' },
+  search: { ar: 'البحث والتطبيقات المفضلة', en: 'Search & Favorite Apps' },
+  apps: { ar: 'التطبيقات والخدمات الإسلامية', en: 'Islamic Apps Drawer' },
+  tracker: { ar: 'مربي الصلوات الخمس والورد', en: 'Prayers & Wird Tracker' },
+  tawaf: { ar: 'عداد الطواف والسعي', en: 'Tawaf & Sa\'i Counter' },
+  reflections: { ar: 'إشراقات وذاكرة اليوم', en: 'Reflections & Daily Memory' },
+  share: { ar: 'مشاركة التطبيق والدعم الفني', en: 'Share & Tech Support' },
 };
 
 interface ModernHomeViewProps {
@@ -106,6 +151,10 @@ interface ModernHomeViewProps {
   setShowExpandedUpcomingEventModal: (show: boolean) => void;
   shareTextAr?: string;
   shareTextEn?: string;
+  isEditMode?: boolean;
+  setIsEditMode?: (mode: boolean) => void;
+  onOpenGuide?: () => void;
+  onToggleNightMode?: () => void;
 }
 
 const WEB_APP_URL = 'https://mushaf-ahmed-laila.vercel.app/';
@@ -306,11 +355,69 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
   handleCopyUpcomingEvent,
   setShowExpandedUpcomingEventModal,
   shareTextAr,
-  shareTextEn
+  shareTextEn,
+  isEditMode = false,
+  setIsEditMode,
+  onOpenGuide,
+  onToggleNightMode
 }) => {
   const { language, isRTL, dir, t, formatNumber } = useLanguage();
-  const { isNightMode } = useTheme();
+  const { isNightMode, toggleNightMode } = useTheme();
   const isEn = language === 'en';
+
+
+  const [cardsOrder, setCardsOrder] = useState<ModernCardId[]>(() => {
+    try {
+      const saved = localStorage.getItem('modern_home_cards_order_v1');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const valid = DEFAULT_MODERN_CARD_ORDER.filter(id => parsed.includes(id));
+          const missing = DEFAULT_MODERN_CARD_ORDER.filter(id => !parsed.includes(id));
+          return [...valid, ...missing];
+        }
+      }
+    } catch {}
+    return DEFAULT_MODERN_CARD_ORDER;
+  });
+
+  const saveCardsOrder = useCallback((orderToSave?: ModernCardId[]) => {
+    const target = orderToSave || cardsOrder;
+    try {
+      localStorage.setItem('modern_home_cards_order_v1', JSON.stringify(target));
+    } catch {}
+    Preferences.set({ key: 'modern_home_cards_order_v1', value: JSON.stringify(target) }).catch(() => {});
+  }, [cardsOrder]);
+
+  useEffect(() => {
+    const handleSaveLayoutEvent = () => {
+      saveCardsOrder();
+    };
+    window.addEventListener('save-home-cards-layout', handleSaveLayoutEvent);
+    return () => window.removeEventListener('save-home-cards-layout', handleSaveLayoutEvent);
+  }, [saveCardsOrder]);
+
+  const moveCard = (index: number, direction: 'up' | 'down') => {
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= cardsOrder.length) return;
+    const newOrder = [...cardsOrder];
+    const [moved] = newOrder.splice(index, 1);
+    newOrder.splice(targetIndex, 0, moved);
+    setCardsOrder(newOrder);
+    saveCardsOrder(newOrder);
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      try { navigator.vibrate(25); } catch {}
+    }
+  };
+
+  const handleResetCardsOrder = () => {
+    setCardsOrder(DEFAULT_MODERN_CARD_ORDER);
+    saveCardsOrder(DEFAULT_MODERN_CARD_ORDER);
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      try { navigator.vibrate(40); } catch {}
+    }
+    setToastMessage?.(isEn ? 'Restored default card order' : 'تمت استعادة الترتيب الافتراضي للبطاقات');
+  };
   const { times, config, refreshLocation } = usePrayerTimes();
   const [isRefreshingLocation, setIsRefreshingLocation] = useState(false);
 
@@ -1173,9 +1280,8 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
   // Current event display in "إشراقات وذاكرة اليوم"
   const currentOccasion = upcomingEvents?.[eventIndex] || null;
 
-  return (
-    <div data-layout="modern" className="flex flex-col gap-3.5 w-full max-w-md mx-auto pt-0 pb-1.5 modern-home-layout font-cairo" style={{ fontFamily: "'Cairo', sans-serif" }} dir={dir}>
-      {/* 1. بطاقة القرآن الكريم ومتابعة التلاوة (Standalone Golden Quran Card) */}
+  const renderQuranCard = () => (
+      /* 1. بطاقة القرآن الكريم ومتابعة التلاوة (Standalone Golden Quran Card) */
       <div 
         className="w-full golden-3d-card p-4 sm:p-5 select-none transition-all flex flex-col gap-2.5"
       >
@@ -1222,8 +1328,10 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
           onNavigate={() => onNavigate('quran', { from: 'modern_home', surah: lastReadQuran.surah, ayah: lastReadQuran.ayah, page: lastReadQuran.page, ...(isEn ? { readingMode: 'translation' } : {}) })}
         />
       </div>
+  );
 
-      {/* 2. بطاقة مواقيت الصلاة والعد التنازلي والقبلة (Standalone Prayer Times Card) */}
+  const renderPrayerCard = () => (
+      /* 2. بطاقة مواقيت الصلاة والعد التنازلي والقبلة (Standalone Prayer Times Card) */
       <div 
         className="w-full golden-3d-card p-4 sm:p-5 select-none transition-all"
       >
@@ -1324,14 +1432,17 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
           </div>
         </div>
       </div>
+  );
 
-      {/* شريط التذكير الذكي للمواسم والمناسبات والأوقات الشرعية (يظهر في أوقاته المحددة فقط ويختفي بقية اليوم) */}
+  const renderSeasonalCard = () => (
       <SmartSeasonalStrip
         layoutMode="modern"
         onNavigate={onNavigate}
       />
+  );
 
-      {/* 2. بطاقة الأذكار اليومية مع قسم التطبيقات السريعة */}
+  const renderAdhkarCard = () => (
+      /* 2. بطاقة الأذكار اليومية مع قسم التطبيقات السريعة */
       <div 
         className="w-full golden-3d-card p-3.5 sm:p-4 select-none transition-all duration-300"
       >
@@ -1462,8 +1573,10 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
           </div>
         </div>
       </div>
+  );
 
-      {/* 3. بطاقة البحث وقسم التطبيقات المفضلة وزر التحكم الصوتي */}
+  const renderSearchCard = () => (
+      /* 3. بطاقة البحث وقسم التطبيقات المفضلة وزر التحكم الصوتي */
       <div 
         className="w-full golden-3d-card p-3.5 sm:p-4 select-none transition-all duration-200"
       >
@@ -1586,8 +1699,10 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
           </div>
         </div>
       </div>
+  );
 
-      {/* 4. قسم التطبيقات والخدمات (Applications & Services) */}
+  const renderAppsCard = () => (
+      /* 4. قسم التطبيقات والخدمات (Applications & Services) */
       <div 
         id="modern-islamic-apps-card"
         className="w-full golden-3d-card select-none transition-all duration-300"
@@ -1747,8 +1862,10 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
           </div>
         )}
       </div>
+  );
 
-      {/* 5. بطاقة مربي الصلوات الخمس (Habit Tracker Card) */}
+  const renderTrackerCard = () => (
+      /* 5. بطاقة مربي الصلوات الخمس (Habit Tracker Card) */
       <div 
         className="w-full golden-3d-card p-4 sm:p-5 select-none transition-all"
       >
@@ -1858,14 +1975,18 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
           </button>
         </div>
       </div>
+  );
 
-      {/* بطاقة عداد الأشواط (طواف وسعي) في الحج والعمرة - تظهر تحت بطاقة التطبيقات الإسلامية عند تفعيلها */}
+  const renderTawafCard = () => (
       <TawafCounterCard 
         theme={theme}
         isGolden={true}
         onNavigate={onNavigate}
       />
+  );
 
+  const renderReflectionsCard = () => (
+    <>
       {/* 6. بطاقة إشراقات وذاكرة اليوم (Reflections & Today's Memory Card) */}
       <div 
         className="w-full golden-3d-card p-3.5 sm:p-5 select-none transition-all"
@@ -2133,8 +2254,11 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
           isGolden={true}
         />
       )}
+    </>
+  );
 
-      {/* 7 & 8. بطاقة مدمجة: شارك التطبيق | تصفح التطبيق | الدعم الفني */}
+  const renderShareCard = () => (
+      /* 7 & 8. بطاقة مدمجة: شارك التطبيق | تصفح التطبيق | الدعم الفني */
       <div className="w-full golden-3d-card p-4 sm:p-5 select-none transition-all">
         {/* شريط التبويبات الثلاثة السفلية */}
         <div className="grid grid-cols-3 gap-1.5 mb-4 pt-1 pb-2">
@@ -2311,6 +2435,136 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
           </div>
         )}
       </div>
+  );
+
+  const renderCardContent = (cardId: ModernCardId) => {
+    switch (cardId) {
+      case 'quran': return renderQuranCard();
+      case 'prayer': return renderPrayerCard();
+      case 'seasonal': return renderSeasonalCard();
+      case 'adhkar': return renderAdhkarCard();
+      case 'search': return renderSearchCard();
+      case 'apps': return renderAppsCard();
+      case 'tracker': return renderTrackerCard();
+      case 'tawaf': return renderTawafCard();
+      case 'reflections': return renderReflectionsCard();
+      case 'share': return renderShareCard();
+      default: return null;
+    }
+  };
+
+  return (
+    <div data-layout="modern" className="flex flex-col gap-3.5 w-full max-w-md mx-auto pt-0 pb-1.5 modern-home-layout font-cairo" style={{ fontFamily: "'Cairo', sans-serif" }} dir={dir}>
+      {/* شريط تنبيه وضع التعديل */}
+      {isEditMode && (
+        <div className="w-full p-3 rounded-2xl bg-amber-500/15 border-2 border-dashed border-amber-500/60 flex items-center justify-between gap-2 text-start animate-in fade-in duration-200 select-none">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-full bg-amber-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+              <ArrowUpDown className="w-4 h-4" />
+            </div>
+            <div className="flex flex-col min-w-0">
+              <span className="text-xs sm:text-sm font-black text-amber-950 dark:text-amber-300 font-cairo leading-tight">
+                {isEn ? 'Cards Reordering Mode' : 'وضع ترتيب البطاقات'}
+              </span>
+              <span className="text-[10.5px] font-semibold text-amber-900/85 dark:text-amber-200/80 font-cairo leading-tight">
+                {isEn ? 'Use arrows ⬆ ⬇ to change order, then hold app title to save' : 'بدّل أماكن البطاقات بالأسهم ⬆ ⬇ ثم اضغط مطولاً على اسم التطبيق للحفظ'}
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              type="button"
+              onClick={handleResetCardsOrder}
+              className="px-2.5 py-1 rounded-xl bg-amber-200/80 hover:bg-amber-200 dark:bg-amber-900/50 text-amber-950 dark:text-amber-300 font-bold text-[11px] font-cairo active:scale-95 transition-all cursor-pointer"
+            >
+              {isEn ? 'Reset' : 'استعادة'}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                saveCardsOrder();
+                setIsEditMode?.(false);
+                if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                  try { navigator.vibrate([40, 60, 40]); } catch {}
+                }
+                setToastMessage?.(isEn ? 'Cards arrangement saved successfully ✓' : 'تم حفظ ترتيب البطاقات بنجاح ✓');
+              }}
+              className="px-3 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs font-cairo flex items-center gap-1 active:scale-95 transition-all cursor-pointer shadow-xs"
+            >
+              <Check className="w-3.5 h-3.5 stroke-[3]" />
+              <span>{isEn ? 'Done' : 'تم'}</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+
+
+      {/* عرض البطاقات بحسب الترتيب المحدد */}
+      {cardsOrder.map((cardId, index) => {
+        const content = renderCardContent(cardId);
+        if (!content) return null;
+
+        return (
+          <div 
+            key={`modern-card-container-${cardId}`}
+            id={`modern-card-container-${cardId}`}
+            className={`w-full transition-all duration-200 ${
+              isEditMode 
+                ? 'p-2 rounded-3xl border-2 border-dashed border-amber-500/60 bg-amber-500/5 relative shadow-xs' 
+                : ''
+            }`}
+          >
+            {isEditMode && (
+              <div className="w-full flex items-center justify-between px-3 py-1.5 rounded-xl bg-amber-500/20 border border-amber-500/40 mb-2 backdrop-blur-xs select-none">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="w-5 h-5 rounded-full bg-amber-700 text-white text-[11px] font-black flex items-center justify-center shrink-0">
+                    {formatNumber(index + 1)}
+                  </span>
+                  <span className="text-xs font-black text-amber-950 dark:text-amber-300 font-cairo truncate">
+                    {isEn ? MODERN_CARD_TITLES[cardId].en : MODERN_CARD_TITLES[cardId].ar}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    type="button"
+                    disabled={index === 0}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      moveCard(index, 'up');
+                    }}
+                    className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all ${
+                      index === 0
+                        ? 'opacity-30 cursor-not-allowed text-stone-400 bg-stone-200/50 dark:bg-stone-800'
+                        : 'bg-amber-600 hover:bg-amber-700 active:scale-90 text-white cursor-pointer shadow-xs'
+                    }`}
+                    title={isEn ? 'Move up' : 'تحريك لأعلى'}
+                  >
+                    <ArrowUp className="w-4 h-4 stroke-[2.5]" />
+                  </button>
+                  <button
+                    type="button"
+                    disabled={index === cardsOrder.length - 1}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      moveCard(index, 'down');
+                    }}
+                    className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all ${
+                      index === cardsOrder.length - 1
+                        ? 'opacity-30 cursor-not-allowed text-stone-400 bg-stone-200/50 dark:bg-stone-800'
+                        : 'bg-amber-600 hover:bg-amber-700 active:scale-90 text-white cursor-pointer shadow-xs'
+                    }`}
+                    title={isEn ? 'Move down' : 'تحريك لأسفل'}
+                  >
+                    <ArrowDown className="w-4 h-4 stroke-[2.5]" />
+                  </button>
+                </div>
+              </div>
+            )}
+            {content}
+          </div>
+        );
+      })}
 
       {/* الدعاء في الأسفل */}
       <div className="flex items-center justify-center gap-2 mt-1 mb-0.5 px-4" dir={dir}>

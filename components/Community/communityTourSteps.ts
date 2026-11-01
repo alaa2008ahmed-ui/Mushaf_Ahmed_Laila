@@ -1611,6 +1611,65 @@ export const DIVINE_MIRACLES_PAGE_STEPS: SpotlightStep[] = [
   }
 ];
 
+export const SMART_HOME_PAGE_STEPS: SpotlightStep[] = [
+  {
+    id: 'smart_home_night_mode',
+    targetSelector: '#night-mode-toggle-btn',
+    titleAr: 'زر الوضع الليلي (الأسود والذهبي)',
+    titleEn: 'Night Mode Toggle (Black & Gold)',
+    descAr: 'اضغط هنا للتبديل الفوري بين الوضع النهاري المشرق والوضع الليلي الفاخر (الأسود العميق والذهبي الملكي)، لتجربة قراءة مريحة للعينين وحفظ بطارية هاتفك.',
+    descEn: 'Tap here to instantly switch between the bright daytime theme and the luxury OLED deep black & royal gold night mode for eye comfort and battery saving.',
+    badgeAr: 'الوضع الليلي',
+    badgeEn: 'Night Mode',
+    iconName: 'moon',
+    accentColor: '#d97706',
+    gradient: 'from-amber-500 to-amber-600',
+    preferredPlacement: 'bottom'
+  },
+  {
+    id: 'smart_home_edit_mode',
+    targetSelector: '#app-title',
+    titleAr: 'الضغط المطول على اسم التطبيق (ترتيب البطاقات)',
+    titleEn: 'Hold App Title (Reorder Cards)',
+    descAr: 'اضغط مطولاً (~ثانية واحدة) على اسم التطبيق لتفعيل وضع التعديل، حيث يمكنك إعادة ترتيب البطاقات وتغيير أماكنها بالأسهم (⬆️ و ⬇️)، وعند الانتهاء اضغط مطولاً مجدداً على اسم التطبيق لحفظ التعديل نهائياً.',
+    descEn: 'Long press (~1 second) the app title in the top header to activate edit mode and swap card positions using the arrows. Long press the app title again when finished to save your custom layout permanently.',
+    badgeAr: 'ترتيب البطاقات',
+    badgeEn: 'Reorder Cards',
+    iconName: 'slider',
+    accentColor: '#d97706',
+    gradient: 'from-amber-500 to-amber-600',
+    preferredPlacement: 'bottom'
+  },
+  {
+    id: 'smart_home_lang_toggle',
+    targetSelector: '#language-btn',
+    titleAr: 'تبديل لغة التطبيق (العربية / English)',
+    titleEn: 'Switch Language (Arabic / English)',
+    descAr: 'اضغط هنا للتبديل السريع بين الواجهتين العربية والإنجليزية لكافة صفحات وأقسام ومحتويات التطبيق.',
+    descEn: 'Tap here to quickly switch between Arabic and English across all app pages, tabs, and content.',
+    badgeAr: 'لغة التطبيق',
+    badgeEn: 'Language',
+    iconName: 'lang',
+    accentColor: '#d97706',
+    gradient: 'from-amber-500 to-amber-600',
+    preferredPlacement: 'bottom'
+  },
+  {
+    id: 'smart_home_quran_card',
+    targetSelector: '#modern-card-container-quran',
+    titleAr: 'بطاقة القرآن الكريم والوصول السريع',
+    titleEn: 'Holy Quran & Quick Reading',
+    descAr: 'تصفح القرآن الكريم بالقراءة الرأسية أو العرضية، واستكمل قراءتك من آخر موضع وصلت إليه بلمسة واحدة، مع إمكانية متابعة وردك اليومي وجدول التحفيظ.',
+    descEn: 'Browse the Holy Quran in portrait or landscape mode, resume your last read position in one tap, and track your daily wird and memorization.',
+    badgeAr: 'المصحف الشريف',
+    badgeEn: 'Holy Quran',
+    iconName: 'quran',
+    accentColor: '#d97706',
+    gradient: 'from-amber-500 to-amber-600',
+    preferredPlacement: 'bottom'
+  }
+];
+
 
 
 
