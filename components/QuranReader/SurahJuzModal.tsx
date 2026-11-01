@@ -384,7 +384,7 @@ const SurahJuzModal: React.FC<SurahJuzModalProps> = ({
                                 />
                                 <i className={`fas fa-search absolute ${isRTL ? 'right-3.5' : 'left-3.5'} top-1/2 -translate-y-1/2 text-sm opacity-60`}></i>
                             </div>
-                            {onOpenGuide && (
+                            {!isLandscape && onOpenGuide && (
                                 <button
                                     type="button"
                                     onClick={(e) => {

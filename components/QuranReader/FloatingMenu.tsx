@@ -556,6 +556,10 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
   const [isSidebarGuideOpen, setIsSidebarGuideOpen] = useState(false);
 
   useEffect(() => {
+    if (isLandscape) {
+      setIsSidebarGuideOpen(false);
+      return;
+    }
     if (isFloatingMenuOpen) {
       setCurrentView(initialView as MenuView);
       setIsAddModalOpen(false);
@@ -569,13 +573,13 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
     } else {
       setIsSidebarGuideOpen(false);
     }
-  }, [isFloatingMenuOpen, initialView]);
+  }, [isFloatingMenuOpen, initialView, isLandscape]);
 
   useEffect(() => {
-    if (currentView !== "main") {
+    if (currentView !== "main" || isLandscape) {
       setIsSidebarGuideOpen(false);
     }
-  }, [currentView]);
+  }, [currentView, isLandscape]);
 
   useEffect(() => {
     const saved = localStorage.getItem("quran_menu_shortcuts");
@@ -2994,47 +2998,49 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                   </React.Fragment>
                 ))}
               </MenuSection>
-              <div className="pt-2 pb-0.5 px-0.5 flex items-center gap-2">
-                {onOpenMainGuide && (
+              {!isLandscape && (
+                <div className="pt-2 pb-0.5 px-0.5 flex items-center gap-2">
+                  {onOpenMainGuide && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsFloatingMenuOpen(false);
+                        onOpenMainGuide();
+                      }}
+                      className="flex-1 py-2 px-2.5 rounded-2xl border-0 quran-raised-btn flex items-center justify-center transition-all cursor-pointer active:scale-95"
+                      style={{
+                        backgroundColor: currentTheme?.btnBg || (currentTheme?.text === "#ffffff" ? "rgba(255,255,255,0.07)" : "rgba(255,255,255,0.95)"),
+                        color: currentTheme?.text || '#000000',
+                        border: "none",
+                        outline: "none",
+                      }}
+                      title={isEn ? "Quran Guide" : "دليل المصحف"}
+                      aria-label={isEn ? "Quran Guide" : "دليل المصحف"}
+                    >
+                      <div style={{ color: sidebarIconColor }} className="quran-3d-icon shrink-0 flex items-center justify-center">
+                        <BookOpen size={18} />
+                      </div>
+                    </button>
+                  )}
                   <button
                     type="button"
-                    onClick={() => {
-                      setIsFloatingMenuOpen(false);
-                      onOpenMainGuide();
-                    }}
-                    className="flex-1 py-2 px-2.5 rounded-2xl border-0 quran-raised-btn flex items-center justify-center transition-all cursor-pointer active:scale-95"
+                    onClick={() => setIsSidebarGuideOpen(true)}
+                    className={`${onOpenMainGuide ? 'flex-1' : 'w-full'} py-2 px-2.5 rounded-2xl border-0 quran-raised-btn flex items-center justify-center transition-all cursor-pointer active:scale-95`}
                     style={{
                       backgroundColor: currentTheme?.btnBg || (currentTheme?.text === "#ffffff" ? "rgba(255,255,255,0.07)" : "rgba(255,255,255,0.95)"),
                       color: currentTheme?.text || '#000000',
                       border: "none",
                       outline: "none",
                     }}
-                    title={isEn ? "Quran Guide" : "دليل المصحف"}
-                    aria-label={isEn ? "Quran Guide" : "دليل المصحف"}
+                    title={isEn ? "Sidebar Guide" : "دليل القائمة"}
+                    aria-label={isEn ? "Sidebar Guide" : "دليل القائمة"}
                   >
                     <div style={{ color: sidebarIconColor }} className="quran-3d-icon shrink-0 flex items-center justify-center">
-                      <BookOpen size={18} />
+                      <Menu size={18} />
                     </div>
                   </button>
-                )}
-                <button
-                  type="button"
-                  onClick={() => setIsSidebarGuideOpen(true)}
-                  className={`${onOpenMainGuide ? 'flex-1' : 'w-full'} py-2 px-2.5 rounded-2xl border-0 quran-raised-btn flex items-center justify-center transition-all cursor-pointer active:scale-95`}
-                  style={{
-                    backgroundColor: currentTheme?.btnBg || (currentTheme?.text === "#ffffff" ? "rgba(255,255,255,0.07)" : "rgba(255,255,255,0.95)"),
-                    color: currentTheme?.text || '#000000',
-                    border: "none",
-                    outline: "none",
-                  }}
-                  title={isEn ? "Sidebar Guide" : "دليل القائمة"}
-                  aria-label={isEn ? "Sidebar Guide" : "دليل القائمة"}
-                >
-                  <div style={{ color: sidebarIconColor }} className="quran-3d-icon shrink-0 flex items-center justify-center">
-                    <Menu size={18} />
-                  </div>
-                </button>
-              </div>
+                </div>
+              )}
               {/* Bottom Spacer only active during sidebar guide */}
               {isSidebarGuideOpen && (
                 <div
@@ -3049,7 +3055,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
       <QuranSpotlightGuide
         guideKey="sidebar_menu_v2"
         steps={QURAN_SIDEBAR_STEPS}
-        isOpen={isSidebarGuideOpen}
+        isOpen={isSidebarGuideOpen && !isLandscape}
         onClose={() => setIsSidebarGuideOpen(false)}
         isEn={isEn}
       />

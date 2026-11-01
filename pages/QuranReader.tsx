@@ -1566,24 +1566,32 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
 
     // --- Contextual Guides for Quran Reader & Submenus ---
     const [isMainGuideOpen, setIsMainGuideOpen] = useState(() => {
-        if (isWirdMode || isMemorizationMode || navParams?.openModal) return false;
+        if (isWirdMode || isMemorizationMode || navParams?.openModal || initialLandscape || isLandscape) return false;
         return !getQuranGuideSeen('main_reader');
     });
     const [isSurahJuzGuideOpen, setIsSurahJuzGuideOpen] = useState(false);
 
-    // 1. Quran page main guide: triggers immediately when page is opened and no other menu/modal is open
+    // 1. Quran page main guide: triggers immediately when page is opened in portrait mode and no other menu/modal is open
     useEffect(() => {
+        if (isLandscape) {
+            setIsMainGuideOpen(false);
+            return;
+        }
         if (!isWirdMode && !isMemorizationMode && !navParams?.openModal && !getQuranGuideSeen('main_reader')) {
             const anyModalOpen = activeModals.length > 0 || isFloatingMenuOpen || tafseerInfo.isOpen || tafseerSelectionInfo.isOpen;
             if (!anyModalOpen) {
                 setIsMainGuideOpen(true);
             }
         }
-    }, [activeModals, isFloatingMenuOpen, tafseerInfo.isOpen, tafseerSelectionInfo.isOpen, isWirdMode, isMemorizationMode, navParams?.openModal]);
+    }, [activeModals, isFloatingMenuOpen, tafseerInfo.isOpen, tafseerSelectionInfo.isOpen, isWirdMode, isMemorizationMode, navParams?.openModal, isLandscape]);
 
 
-    // 5. Surah & Juz modal guide: triggers only when surah/juz modal is opened
+    // 5. Surah & Juz modal guide: triggers only when surah/juz modal is opened in portrait mode
     useEffect(() => {
+        if (isLandscape) {
+            setIsSurahJuzGuideOpen(false);
+            return;
+        }
         const isSurahModalOpen = activeModals.includes('surah-modal') || activeModals.includes('juz-modal');
         if (isSurahModalOpen && !getQuranGuideSeen('surah_juz_modal_v2')) {
             const timer = setTimeout(() => {
@@ -1593,7 +1601,7 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
         } else {
             setIsSurahJuzGuideOpen(false);
         }
-    }, [activeModals]);
+    }, [activeModals, isLandscape]);
 
 
     const handleAyahNumberLongPress = useCallback((s: number, a: number) => {
@@ -4736,7 +4744,7 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
                 deleteBookmark={deleteBookmark}
                 jumpToAyah={jumpToAyah}
                 initialView={floatingMenuInitialView}
-                onOpenMainGuide={() => setIsMainGuideOpen(true)}
+                onOpenMainGuide={!isLandscape ? () => setIsMainGuideOpen(true) : undefined}
             />
             <ReadingTimer isVisible={autoScrollState.isPaused || (!autoScrollState.isActive && autoScrollState.elapsedTime > 0)} elapsedTime={autoScrollState.elapsedTime} />
             <div id="mushaf-content" ref={mushafContentRef} onClick={handleScreenTap} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd} className="flex-grow overflow-y-auto w-full relative touch-pan-y">
@@ -4910,7 +4918,7 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
                 currentSelection={currentAyah.s} 
                 currentAyah={currentAyah} 
                 readingMode={readingMode} 
-                onOpenGuide={() => setIsSurahJuzGuideOpen(true)}
+                onOpenGuide={!isLandscape ? () => setIsSurahJuzGuideOpen(true) : undefined}
                 isGuideOpen={isSurahJuzGuideOpen}
             />
         )}
@@ -4924,7 +4932,7 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
                 isLandscape={isLandscape} 
                 currentSelection={juz} 
                 currentAyah={currentAyah} 
-                onOpenGuide={() => setIsSurahJuzGuideOpen(true)}
+                onOpenGuide={!isLandscape ? () => setIsSurahJuzGuideOpen(true) : undefined}
                 isGuideOpen={isSurahJuzGuideOpen}
             />
         )}
@@ -5246,11 +5254,11 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
                 />
             )}
 
-            {/* Contextual Guides for Quran Reader & Submenus (Only open when page or specific menu is opened) */}
+            {/* Contextual Guides for Quran Reader & Submenus (Only open in portrait reading mode) */}
             <QuranSpotlightGuide
                 guideKey="main_reader"
                 steps={QURAN_PAGE_STEPS}
-                isOpen={isMainGuideOpen}
+                isOpen={isMainGuideOpen && !isLandscape}
                 onClose={handleCloseMainGuide}
                 onStepChange={handleMainGuideStepChange}
                 isEn={isEn}
@@ -5259,7 +5267,7 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
             <QuranSpotlightGuide
                 guideKey="surah_juz_modal_v2"
                 steps={QURAN_SURAH_JUZ_STEPS}
-                isOpen={isSurahJuzGuideOpen}
+                isOpen={isSurahJuzGuideOpen && !isLandscape}
                 onClose={() => setIsSurahJuzGuideOpen(false)}
                 isEn={isEn}
             />

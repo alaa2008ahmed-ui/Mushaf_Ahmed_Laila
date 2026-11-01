@@ -1898,33 +1898,35 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
             >
                 
                 {/* Full Screen Modal Header */}
-                <div className="p-3.5 px-4 flex items-center justify-center relative shrink-0 border-0" style={{ backgroundColor: theme.bgColor, paddingTop: 'calc(0.75rem + env(safe-area-inset-top))' }}>
-                    <button 
-                        onClick={handleBack} 
-                        className={`absolute ${isEn ? 'left-4' : 'right-4'} top-1/2 transform -translate-y-1/2 p-2.5 rounded-2xl quran-raised-btn border-0 cursor-pointer flex items-center justify-center transition-all active:scale-95 shrink-0 z-10`}
-                        style={{ 
-                            backgroundColor: theme.isDark ? 'rgba(255,255,255,0.08)' : (theme.btnBg || '#ffffff'), 
-                            color: theme.textColor, 
-                            border: 'none',
-                            outline: 'none'
-                        }}
-                        title={isEn ? "Back" : "رجوع"}
-                        aria-label={isEn ? "Back" : "رجوع"}
-                    >
-                        {isEn ? <ChevronLeft className="w-5 h-5 quran-3d-icon" style={{ color: theme.accent || theme.palette[0] }} /> : <ArrowRight className="w-5 h-5 quran-3d-icon" style={{ color: theme.accent || theme.palette[0] }} />}
-                    </button>
+                <div className="px-4 pb-2 pt-3 flex items-center justify-center shrink-0 border-0" style={{ backgroundColor: theme.bgColor, paddingTop: 'calc(0.75rem + env(safe-area-inset-top))' }}>
+                    <div className="w-full flex items-center justify-center relative">
+                        <button 
+                            onClick={handleBack} 
+                            className={`absolute ${isEn ? 'left-0' : 'right-0'} top-1/2 transform -translate-y-1/2 p-2.5 rounded-2xl quran-raised-btn border-0 cursor-pointer flex items-center justify-center transition-all active:scale-95 shrink-0 z-10`}
+                            style={{ 
+                                backgroundColor: theme.isDark ? 'rgba(255,255,255,0.08)' : (theme.btnBg || '#ffffff'), 
+                                color: theme.textColor, 
+                                border: 'none',
+                                outline: 'none'
+                            }}
+                            title={isEn ? "Back" : "رجوع"}
+                            aria-label={isEn ? "Back" : "رجوع"}
+                        >
+                            {isEn ? <ChevronLeft className="w-5 h-5 quran-3d-icon" style={{ color: theme.accent || theme.palette[0] }} /> : <ArrowRight className="w-5 h-5 quran-3d-icon" style={{ color: theme.accent || theme.palette[0] }} />}
+                        </button>
 
-                    <h3 
-                        className="text-sm font-extrabold px-6 py-2 rounded-2xl quran-raised-card inline-flex items-center justify-center gap-2 tracking-wide border-0 shadow-sm" 
-                        style={{ 
-                            backgroundColor: theme.isDark ? 'rgba(255,255,255,0.06)' : (theme.btnBg || '#ffffff'), 
-                            color: theme.textColor, 
-                            border: 'none' 
-                        }}
-                    >
-                        <Search className="w-4 h-4 quran-3d-icon" style={{ color: theme.accent || theme.palette[0] }} />
-                        <span>{isEn ? "Advanced Global Search" : "البحث الشامل والمتقدم"}</span>
-                    </h3>
+                        <h3 
+                            className="text-sm font-extrabold px-6 py-2 rounded-2xl quran-raised-card inline-flex items-center justify-center gap-2 tracking-wide border-0 shadow-sm" 
+                            style={{ 
+                                backgroundColor: theme.isDark ? 'rgba(255,255,255,0.06)' : (theme.btnBg || '#ffffff'), 
+                                color: theme.textColor, 
+                                border: 'none' 
+                            }}
+                        >
+                            <Search className="w-4 h-4 quran-3d-icon" style={{ color: theme.accent || theme.palette[0] }} />
+                            <span>{isEn ? "Advanced Global Search" : "البحث الشامل والمتقدم"}</span>
+                        </h3>
+                    </div>
                 </div>
 
                 {/* Sub-header with Search Input */}

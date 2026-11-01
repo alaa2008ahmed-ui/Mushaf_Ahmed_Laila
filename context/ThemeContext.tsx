@@ -47,6 +47,34 @@ function hexToRgb(hex: string | null) {
     return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : null;
 }
 
+const convertQuranThemeToTheme = (quranThemeObj: any, themeId: string): Theme => {
+    const isDark = quranThemeObj.bg === '#000000' || themeId === 'deep_black' || themeId.startsWith('i_');
+    return {
+        name: quranThemeObj.name || themeId,
+        bgColor: quranThemeObj.bg || '#ffffff',
+        isDark,
+        textColor: quranThemeObj.text || (isDark ? '#ffffff' : '#000000'),
+        font: quranThemeObj.font || "'Cairo', sans-serif",
+        palette: [quranThemeObj.accent || '#10b981', quranThemeObj.sajdah || '#d97706', quranThemeObj.highlightText || '#10b981'],
+        barBg: quranThemeObj.barBg || quranThemeObj.bg || (isDark ? '#000000' : '#ffffff'),
+        barBorder: quranThemeObj.barBorder || (isDark ? '1px solid #333333' : 'none'),
+        topBarBg: quranThemeObj.headerBg || quranThemeObj.barBg || (isDark ? '#000000' : '#ffffff'),
+        topBarText: quranThemeObj.headerText || quranThemeObj.barText || (isDark ? '#ffffff' : '#000000'),
+        btnBg: quranThemeObj.btnBg || quranThemeObj.bg || (isDark ? '#111111' : '#ffffff'),
+        btnText: quranThemeObj.btnText || quranThemeObj.text || (isDark ? '#ffffff' : '#000000'),
+        btnBorder: quranThemeObj.btnBorder || 'none',
+        accent: quranThemeObj.accent || '#10b981',
+        accentText: quranThemeObj.accentText || '#ffffff',
+        highlightText: quranThemeObj.highlightText || quranThemeObj.accent || '#10b981',
+        cardBg: quranThemeObj.cardBg || (isDark ? '#111111' : '#ffffff'),
+        cardText: quranThemeObj.cardText || quranThemeObj.text || (isDark ? '#ffffff' : '#000000'),
+        cardBorder: quranThemeObj.cardBorder || (isDark ? '#333333' : 'none'),
+        modalBg: quranThemeObj.modalBg || (isDark ? '#0a0a0a' : '#ffffff'),
+        modalText: quranThemeObj.modalText || (isDark ? '#ffffff' : '#000000'),
+        sajdah: quranThemeObj.sajdah || '#d97706'
+    };
+};
+
 export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
     const [currentPage, setCurrentPage] = useState('home');
     const [settings, setSettings] = useState<ThemeSettings>(() => {
@@ -134,7 +162,7 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
             const layout = isModern ? 'modern' : 'classic';
             const modeSuffix = (currentPage && currentPage.includes('landscape')) ? '_h' : '_v';
             const quranThemeId = getQuranThemeForLayout(layout, modeSuffix);
-            if (presetThemes[quranThemeId]) {
+            if (presetThemes[quranThemeId] || (QURAN_THEMES as any)[quranThemeId]) {
                 return quranThemeId;
             }
             if (isNightMode) {
@@ -167,7 +195,14 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
     }, [settings, currentPage, homeLayout, isNightMode]);
 
     const theme = useMemo(() => {
-        const baseTheme = presetThemes[activeThemeKey] || presetThemes.default;
+        let baseTheme = presetThemes[activeThemeKey];
+        if (!baseTheme && (QURAN_THEMES as any)[activeThemeKey]) {
+            baseTheme = convertQuranThemeToTheme((QURAN_THEMES as any)[activeThemeKey], activeThemeKey);
+        }
+        if (!baseTheme) {
+            baseTheme = presetThemes.default;
+        }
+
         const bg = (baseTheme.bgColor || '').toUpperCase();
         const darkBgs = [
             '#191D3A', '#0C0A09', '#000000', '#4C1D95', '#7C2D12', '#1E40AF', '#1E1B4B', '#1C1917', 
@@ -331,7 +366,7 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
         const isPinned = settings.lockedPages?.includes(pageKey);
         const isHome = currentPage === 'home';
 
-        if ((isPinned || isHome) && !isReadingMode) {
+        if (isReadingMode || isPinned || isHome) {
             document.body.style.transition = 'none';
         } else {
             document.body.style.transition = 'background-color 0.5s ease-in-out, color 0.5s ease-in-out';
@@ -459,7 +494,7 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
             }
         }
 
-        root.style.setProperty('--bg-color', pageKey === 'quran' ? '#ffffff' : (theme.bgColor || '#0D1B2A'));
+        root.style.setProperty('--bg-color', theme.bgColor || '#0D1B2A');
         root.style.setProperty('--text-color', isBlackTheme ? '#FFFFFF' : theme.textColor);
         root.style.setProperty('--text-color-muted', isBlackTheme ? '#E2E8F0' : (isDark ? '#94a3b8' : '#64748b'));
 
