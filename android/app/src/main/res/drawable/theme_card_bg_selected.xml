@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 3D bottom bevel shadow in warm amber gold -->
+    <item>
+        <shape>
+            <solid android:color="#B45309" />
+            <corners android:radius="14dp" />
+        </shape>
+    </item>
+    <!-- Main selected card with rich golden border -->
+    <item android:bottom="2.5dp">
+        <shape>
+            <gradient
+                android:startColor="#FFFDF5"
+                android:endColor="#FEF3C7"
+                android:angle="270" />
+            <corners android:radius="14dp" />
+            <stroke android:width="2dp" android:color="#D97706" />
+        </shape>
+    </item>
+</layer-list>

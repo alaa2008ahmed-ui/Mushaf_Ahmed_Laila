@@ -1,4 +1,4 @@
-import { THEMES } from '../components/QuranReader/constants';
+import { THEMES, getLinkedQuranThemeForHomeVariant } from '../components/QuranReader/constants';
 
 export type QuranLayoutMode = 'classic' | 'modern';
 
@@ -54,7 +54,7 @@ export function getQuranThemeIdForLayout(modeSuffix: string = '_v', navParams?: 
   if (saved && THEMES[saved as keyof typeof THEMES]) {
     return saved;
   }
-  return layout === 'classic' ? 'black' : 'gold';
+  return layout === 'classic' ? 'black' : getLinkedQuranThemeForHomeVariant();
 }
 
 export function setQuranThemeIdForLayout(themeId: string, modeSuffix: string = '_v', navParams?: any, readingMode: string = 'mushaf'): void {

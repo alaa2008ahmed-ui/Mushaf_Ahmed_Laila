@@ -16,7 +16,7 @@ export interface SpotlightStep {
   descEn: string;
   badgeAr?: string;
   badgeEn?: string;
-  iconName?: 'lang' | 'tab' | 'user' | 'country' | 'lock' | 'action' | 'nav' | 'profile' | 'quran' | 'search' | 'group' | 'block' | 'chat' | 'verse' | 'attach' | 'emoji' | 'text' | 'voice' | 'clock' | 'bell' | 'calendar' | 'volume' | 'gear' | 'map' | 'moon' | 'file' | 'share' | 'slider' | 'compass' | 'widgets';
+  iconName?: 'lang' | 'tab' | 'user' | 'country' | 'lock' | 'action' | 'nav' | 'profile' | 'quran' | 'search' | 'group' | 'block' | 'chat' | 'verse' | 'attach' | 'emoji' | 'text' | 'voice' | 'clock' | 'bell' | 'calendar' | 'volume' | 'gear' | 'map' | 'moon' | 'file' | 'share' | 'slider' | 'compass' | 'widgets' | 'sparkles';
   accentColor: string; // e.g. '#0284c7', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'
   gradient: string; // e.g. 'from-sky-500 to-blue-600'
   preferredPlacement?: 'top' | 'bottom' | 'center';
@@ -457,71 +457,68 @@ export const CommunitySpotlightGuide: React.FC<CommunitySpotlightGuideProps> = (
     const computedLeft = Math.max(14, Math.min(screenWidth - cardWidth - 14, Math.round(targetCenterX - cardWidth / 2)));
     beakLeft = Math.max(20, Math.min(cardWidth - 28, Math.round(targetCenterX - computedLeft - 8)));
 
+    const minCardMaxHeight = Math.max(220, Math.min(420, screenHeight - 100));
+
     // Smart placement: center the card when target is very large, center is requested, or space is cramped
     if (step.preferredPlacement === 'center' || isTargetVeryLarge) {
       pointerPlacement = 'center';
       const centeredLeft = Math.max(14, Math.round((screenWidth - cardWidth) / 2));
-      const centeredTop = Math.max(14, Math.round((screenHeight - cardHeight) / 2));
+      const centeredTop = Math.max(24, Math.round((screenHeight - cardHeight) / 2));
       cardPositionStyle = {
         top: centeredTop,
         left: centeredLeft,
         width: cardWidth,
-        maxHeight: Math.max(260, screenHeight - 28)
+        maxHeight: minCardMaxHeight
       };
-    } else if (step.preferredPlacement === 'bottom' || step.id === 'group_chat_feed') {
-      pointerPlacement = 'top';
-      cardPositionStyle = {
-        bottom: 80,
-        left: computedLeft,
-        width: cardWidth,
-        maxHeight: Math.min(cardHeight + 40, screenHeight - 140)
-      };
-    } else if (step.preferredPlacement === 'top') {
+    } else if (step.preferredPlacement === 'top' && spaceAbove >= cardHeight + margin + 10 && targetRect.top >= 200) {
+      // Requested top and has ample room above
       pointerPlacement = 'bottom';
       cardPositionStyle = {
-        top: Math.max(14, targetRect.bottom + margin),
+        top: Math.max(24, targetRect.top - cardHeight - margin),
         left: computedLeft,
         width: cardWidth,
-        maxHeight: Math.min(cardHeight + 40, screenHeight - 140)
+        maxHeight: Math.max(200, targetRect.top - margin - 24)
       };
-    } else if (spaceBelow >= cardHeight + margin + 10) {
+    } else if (spaceBelow >= Math.min(200, cardHeight + margin) || targetRect.top <= 160) {
+      // Target is in top half of screen or has good room below: place below target
       pointerPlacement = 'top';
       cardPositionStyle = {
-        top: Math.min(targetRect.bottom + margin, screenHeight - cardHeight - 20),
+        top: Math.min(Math.max(24, targetRect.bottom + margin), screenHeight - 240),
         left: computedLeft,
         width: cardWidth,
-        maxHeight: Math.max(240, screenHeight - targetRect.bottom - margin - 18)
+        maxHeight: Math.max(200, screenHeight - targetRect.bottom - margin - 24)
       };
-    } else if (spaceAbove >= cardHeight + margin + 10) {
+    } else if (spaceAbove >= cardHeight + margin + 10 && targetRect.top >= 200) {
+      // Ample space above
       pointerPlacement = 'bottom';
       cardPositionStyle = {
-        top: Math.max(12, targetRect.top - cardHeight - margin),
+        top: Math.max(24, targetRect.top - cardHeight - margin),
         left: computedLeft,
         width: cardWidth,
-        maxHeight: Math.max(240, targetRect.top - margin - 18)
+        maxHeight: Math.max(200, targetRect.top - margin - 24)
       };
     } else {
-      // If neither spaceBelow nor spaceAbove can fit the card comfortably, center it in the middle of the screen!
+      // Safe fallback: center on screen
       pointerPlacement = 'center';
       const centeredLeft = Math.max(14, Math.round((screenWidth - cardWidth) / 2));
-      const centeredTop = Math.max(14, Math.round((screenHeight - cardHeight) / 2));
+      const centeredTop = Math.max(24, Math.round((screenHeight - cardHeight) / 2));
       cardPositionStyle = {
         top: centeredTop,
         left: centeredLeft,
         width: cardWidth,
-        maxHeight: Math.max(260, screenHeight - 28)
+        maxHeight: minCardMaxHeight
       };
     }
   } else {
     // Center of screen when no specific target is supplied
     pointerPlacement = 'center';
     const centeredLeft = Math.max(14, Math.round((screenWidth - cardWidth) / 2));
-    const centeredTop = Math.max(14, Math.round((screenHeight - cardHeight) / 2));
+    const centeredTop = Math.max(24, Math.round((screenHeight - cardHeight) / 2));
     cardPositionStyle = {
       top: centeredTop,
       left: centeredLeft,
       width: cardWidth,
-      maxHeight: Math.max(260, screenHeight - 28)
+      maxHeight: Math.max(240, screenHeight - 48)
     };
   }
 

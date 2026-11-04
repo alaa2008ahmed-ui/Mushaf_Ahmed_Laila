@@ -58,7 +58,6 @@ public class PrayerSilentReceiver extends BroadcastReceiver {
             ACTION_UPDATE_NOTIFICATION.equals(action)) {
             PersistentPrayerNotification.update(context);
             PrayerWidgetProvider.updateAllWidgets(context);
-            PrayerCompactWidgetProvider.updateAllWidgets(context);
             DailyWirdAlarmReceiver.scheduleNextAlarms(context);
             return;
         }

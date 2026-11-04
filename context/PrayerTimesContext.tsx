@@ -1474,6 +1474,7 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
         }
 
         const localizedNextName = isWidgetEn ? (PRAYER_NAMES_EN[currentNext.key] || currentNext.name) : currentNext.name;
+        const firstThirdLabel = isWidgetEn ? `First Third: ${to12h(nightTimes.firstThird)}` : `أول الليل : ${to12h(nightTimes.firstThird)}`;
         const midnightLabel = isWidgetEn ? `Midnight: ${to12h(nightTimes.midnight)}` : `منتصف الليل : ${to12h(nightTimes.midnight)}`;
         const lastThirdLabel = isWidgetEn ? `Last Third: ${to12h(nightTimes.lastThird)}` : `الثلث الأخير : ${to12h(nightTimes.lastThird)}`;
 
@@ -1496,6 +1497,7 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
             method_id: methodId,
             prayer_offsets: config.prayerOffsets,
             isSummerTime: config.isSummerTime,
+            first_third: firstThirdLabel,
             midnight: midnightLabel,
             last_third: lastThirdLabel,
             app_language: isWidgetEn ? 'en' : 'ar',

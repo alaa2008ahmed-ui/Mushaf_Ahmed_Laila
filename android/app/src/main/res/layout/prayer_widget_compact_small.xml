@@ -1,0 +1,255 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:layoutDirection="rtl"
+    android:background="@drawable/widget_compact_bg"
+    android:clipToOutline="true"
+    android:padding="2dp">
+
+    <!-- Row 1: Header Row (App Icon + Date + Refresh) -->
+    <LinearLayout
+        android:id="@+id/compact_header_row"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="4dp"
+        android:paddingEnd="4dp"
+        android:paddingBottom="1dp">
+
+        <ImageView
+            android:id="@+id/widget_app_icon"
+            android:layout_width="15dp"
+            android:layout_height="15dp"
+            android:src="@mipmap/ic_launcher"
+            android:contentDescription="App Icon" />
+
+        <LinearLayout
+            android:id="@+id/compact_date_container"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center">
+
+            <TextView
+                android:id="@+id/compact_hijri_date"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="-- رمضان 1445"
+                android:textColor="#059669"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:singleLine="true"
+                android:includeFontPadding="false" />
+
+            <TextView
+                android:id="@+id/compact_date_sep"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text=" • "
+                android:textColor="#94A3B8"
+                android:textSize="9sp"
+                android:layout_marginStart="3dp"
+                android:layout_marginEnd="3dp"
+                android:includeFontPadding="false" />
+
+            <TextView
+                android:id="@+id/compact_gregorian_date"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="-- -- --"
+                android:textColor="#64748B"
+                android:textSize="9.5sp"
+                android:textStyle="bold"
+                android:singleLine="true"
+                android:includeFontPadding="false" />
+        </LinearLayout>
+
+        <ImageView
+            android:id="@+id/widget_btn_refresh"
+            android:layout_width="15dp"
+            android:layout_height="15dp"
+            android:src="@drawable/ic_widget_refresh"
+            android:padding="1dp"
+            android:contentDescription="Refresh" />
+    </LinearLayout>
+
+    <!-- Row 2: Center Row with Previous Prayer Card & Next Prayer Card -->
+    <LinearLayout
+        android:id="@+id/compact_cards_row"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:baselineAligned="false"
+        android:paddingTop="1dp"
+        android:paddingBottom="1dp">
+
+        <!-- Previous Prayer Card -->
+        <LinearLayout
+            android:id="@+id/compact_prev_card"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:background="@drawable/widget_compact_prev_card"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp"
+            android:paddingTop="1dp"
+            android:paddingBottom="1dp"
+            android:layout_marginEnd="3dp">
+
+            <TextView
+                android:id="@+id/compact_prev_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="الصلاة السابقة"
+                android:textColor="#64748B"
+                android:textSize="9sp"
+                android:textStyle="bold"
+                android:singleLine="true"
+                android:includeFontPadding="false" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:layout_marginTop="1dp">
+
+                <TextView
+                    android:id="@+id/compact_prev_name"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="الظهر"
+                    android:textColor="#334155"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:singleLine="true"
+                    android:includeFontPadding="false"
+                    android:layout_marginEnd="4dp" />
+
+                <TextView
+                    android:id="@+id/compact_prev_time"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="11:45"
+                    android:textColor="#475569"
+                    android:textSize="11.5sp"
+                    android:textStyle="bold"
+                    android:singleLine="true"
+                    android:includeFontPadding="false" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Next Prayer Card (Elevated Highlight) -->
+        <LinearLayout
+            android:id="@+id/compact_next_card"
+            android:layout_width="0dp"
+            android:layout_weight="1.15"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:background="@drawable/widget_compact_next_card"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp"
+            android:paddingTop="1dp"
+            android:paddingBottom="1dp"
+            android:layout_marginStart="3dp">
+
+            <TextView
+                android:id="@+id/compact_next_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="الصلاة القادمة"
+                android:textColor="#059669"
+                android:textSize="9.5sp"
+                android:textStyle="bold"
+                android:singleLine="true"
+                android:includeFontPadding="false" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:layout_marginTop="1dp">
+
+                <TextView
+                    android:id="@+id/compact_next_name"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="العصر"
+                    android:textColor="#065F46"
+                    android:textSize="12.5sp"
+                    android:textStyle="bold"
+                    android:singleLine="true"
+                    android:includeFontPadding="false"
+                    android:layout_marginEnd="4dp" />
+
+                <TextView
+                    android:id="@+id/compact_next_time"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="03:14"
+                    android:textColor="#047857"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:singleLine="true"
+                    android:includeFontPadding="false" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Row 3: Bottom Ribbon: Remaining Countdown -->
+    <LinearLayout
+        android:id="@+id/compact_countdown_card"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:background="@drawable/widget_countdown_ribbon"
+        android:paddingTop="1.5dp"
+        android:paddingBottom="1.5dp"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp">
+
+        <TextView
+            android:id="@+id/compact_remaining_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="متبقي على الصلاة:"
+            android:textColor="#B45309"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:singleLine="true"
+            android:includeFontPadding="false"
+            android:layout_marginEnd="4dp" />
+
+        <Chronometer
+            android:id="@+id/compact_chronometer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#92400E"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:includeFontPadding="false"
+            android:countDown="true" />
+
+        <TextView
+            android:id="@+id/compact_remaining_en"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#92400E"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:includeFontPadding="false"
+            android:visibility="gone" />
+    </LinearLayout>
+</LinearLayout>

@@ -65,7 +65,7 @@ class ModalErrorBoundary extends React.Component<{ children: React.ReactNode; on
 
 // Main Component
 function PrayerTimes({ onBack, onNavigate }) {
-    const { theme, themeKey } = useTheme();
+    const { theme, themeKey, isNightMode, homeThemeVariant } = useTheme();
     const { language, isRTL, dir } = useLanguage();
     const { 
         times, dates, nextPrayer, countdown, config, refreshLocation, manualSearch, updateConfig,
@@ -75,11 +75,18 @@ function PrayerTimes({ onBack, onNavigate }) {
     const isDefaultTheme = themeKey === 'default' || !themeKey || theme.name?.includes('الافتراضي') || theme.name === 'Default';
     const isBlackAndWhite = themeKey === 'deep_black' || theme.name === 'اسود';
     const isBlackTheme = theme.bgColor === '#000000' || theme.name === 'أبيض وأسود' || theme.name === 'اسود' || themeKey === 'deep_black';
-    const isGoldenTheme = themeKey === 'shiny_gold' || theme.name === 'الذهبي اللامع' || theme.cardBg === '#FDE047';
+    const isGoldenTheme = !isNightMode && (
+        homeThemeVariant === 'gold' ||
+        themeKey === 'shiny_gold' ||
+        themeKey === 'gold' ||
+        theme.name === 'الذهبي اللامع' ||
+        theme.name === 'الذهبي' ||
+        theme.cardBg === '#FDE047'
+    );
     const primaryColor = isBlackTheme ? '#FFFFFF' : (theme.palette?.[0] || theme.accent || theme.btnBg || '#2E7D5E');
     const secondaryColor = isBlackTheme ? '#A1A1AA' : (theme.palette?.[1] || theme.palette?.[0] || '#4B5563');
     const pageBgColor = isBlackTheme ? '#000000' : (theme.bgColor || '#F8FAFC');
-    const topBarTextColor = isBlackTheme ? '#FFFFFF' : (theme.topBarText || theme.textColor || '#1E293B');
+    const topBarTextColor = isGoldenTheme ? '#000000' : '#FFFFFF';
 
     const cardBorderColor = isBlackTheme ? '#FFFFFF' : 'transparent';
     const nextPrayerCardBorderColor = primaryColor;
@@ -601,7 +608,7 @@ function PrayerTimes({ onBack, onNavigate }) {
             )}
 
             {toastMessage && (
-                <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg z-[100]">
+                <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-gray-900/95 text-white max-w-[85vw] px-4 py-2.5 rounded-2xl shadow-xl border border-white/10 z-[100] text-center text-xs sm:text-sm font-bold leading-normal break-words pointer-events-none">
                     {toastMessage}
                 </div>
             )}

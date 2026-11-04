@@ -30,6 +30,29 @@
             }
             // Prevent React DevTools instrumentation error in restricted environments
             window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = { isDisabled: true };
+            window.addEventListener('error', function(e) {
+                if (e && e.message && (
+                    e.message.indexOf('ResizeObserver') !== -1 ||
+                    e.message.indexOf('loop completed with undelivered notifications') !== -1 ||
+                    e.message.indexOf('loop limit exceeded') !== -1
+                )) {
+                    e.stopImmediatePropagation();
+                    e.preventDefault();
+                    return true;
+                }
+            }, true);
+            var _prevOnError = window.onerror;
+            window.onerror = function(msg) {
+                if (typeof msg === 'string' && (
+                    msg.indexOf('ResizeObserver') !== -1 ||
+                    msg.indexOf('loop completed with undelivered notifications') !== -1 ||
+                    msg.indexOf('loop limit exceeded') !== -1
+                )) {
+                    return true;
+                }
+                if (_prevOnError) return _prevOnError.apply(this, arguments);
+                return false;
+            };
             try {
                 var raw = (window.location.href + ' ' + window.location.hash + ' ' + window.location.search).toLowerCase();
                 if (raw.indexOf('quran') !== -1) window.__pendingShortcut = 'quran';
@@ -369,6 +392,20 @@
       }
       video::-webkit-media-controls-enclosure {
           display:none !important;
+      }
+
+      /* إخفاء الزر العائم للصعود لأعلى الصفحة لحظياً عند فتح قائمة التكبير لبطاقة إشراقات وذاكرة اليوم */
+      body.zoom-modal-active #scroll-to-top-fab,
+      body[data-zoom-modal="true"] #scroll-to-top-fab,
+      body.modal-open #scroll-to-top-fab,
+      body.qr-modal-active #scroll-to-top-fab,
+      body:has(#unified-event-zoom-modal-backdrop) #scroll-to-top-fab,
+      body:has(.zoom-modal-active) #scroll-to-top-fab,
+      #unified-event-zoom-modal-backdrop ~ #scroll-to-top-fab {
+          display: none !important;
+          opacity: 0 !important;
+          visibility: hidden !important;
+          pointer-events: none !important;
       }
     </style>
 <script>

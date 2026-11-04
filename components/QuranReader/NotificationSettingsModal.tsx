@@ -1,12 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Check, X, Smartphone, AppWindow, VolumeX, Shuffle, LayoutGrid, Palette, HelpCircle, BellRing, Bell, ShieldCheck, Zap } from 'lucide-react';
+import { Check, X, Smartphone, AppWindow, VolumeX, Shuffle, LayoutGrid, Palette, HelpCircle, BellRing, Bell, ShieldCheck, Zap, Sparkles } from 'lucide-react';
 import { toArabic } from './constants';
+import { IslamicTimePickerModal } from '../Common/IslamicTimePickerModal';
 import { usePrayerTimes } from '../../context/PrayerTimesContext';
 import { setupNotifications } from '../../utils/notifications';
 import { useNotificationSettings, PhoneNotificationSettings } from '../../hooks/useNotificationSettings';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTheme } from '../../context/ThemeContext';
 import { syncWidgetThemeColors } from '../../utils/widgetUtils';
+import { WidgetDesignPreview } from '../PrayerTimes/WidgetDesignPreview';
 import { Preferences } from '@capacitor/preferences';
 import { Capacitor } from '@capacitor/core';
 import {
@@ -41,6 +43,7 @@ interface ClickableTimeValueProps {
     isEn: boolean;
     className?: string;
     accentColor?: boolean;
+    title?: string;
 }
 
 const ClickableTimeValue: React.FC<ClickableTimeValueProps> = ({
@@ -48,9 +51,10 @@ const ClickableTimeValue: React.FC<ClickableTimeValueProps> = ({
     onChange,
     isEn,
     className = '',
-    accentColor = true
+    accentColor = true,
+    title
 }) => {
-    const inputRef = useRef<HTMLInputElement>(null);
+    const [isPickerOpen, setIsPickerOpen] = useState(false);
     const cleaned = toEnglishDigits(value || '07:00').trim();
     const parts = cleaned.split(':');
     const parsedH = parseInt(parts[0], 10);
@@ -63,70 +67,55 @@ const ClickableTimeValue: React.FC<ClickableTimeValueProps> = ({
     const mmStr = String(m).padStart(2, '0');
     const normalizedInputValue = `${String(h24).padStart(2, '0')}:${mmStr}`;
 
-    const triggerPicker = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        if (inputRef.current) {
-            try {
-                if (typeof (inputRef.current as any).showPicker === 'function') {
-                    (inputRef.current as any).showPicker();
-                } else {
-                    inputRef.current.focus();
-                    inputRef.current.click();
-                }
-            } catch {
-                // Native Android WebView opens the time picker directly on input touch
-            }
-        }
-    };
-
     return (
-        <div
-            onClick={triggerPicker}
-            className={`relative inline-flex items-center justify-center cursor-pointer select-none active:scale-95 transition-transform ${className}`}
-        >
-            {isEn ? (
-                <span
-                    dir="ltr"
-                    className="inline-flex items-center gap-1 font-bold tabular-nums pointer-events-none"
-                    style={{
-                        color: accentColor ? 'var(--qr-accent)' : undefined,
-                        fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, "Cairo", sans-serif'
-                    }}
-                >
-                    <span>{hhStr}:{mmStr}</span>
-                    <span>{isPM ? 'PM' : 'AM'}</span>
-                </span>
-            ) : (
-                <span
-                    dir="rtl"
-                    className="inline-flex items-center gap-1 font-bold tabular-nums pointer-events-none"
-                    style={{ color: accentColor ? 'var(--qr-accent)' : undefined }}
-                >
-                    <span dir="ltr">{toArabic(hhStr)}:{toArabic(mmStr)}</span>
-                    <span>{isPM ? 'م' : 'ص'}</span>
-                </span>
-            )}
-            <input
-                ref={inputRef}
-                type="time"
-                lang={isEn ? 'en-US' : 'ar'}
-                value={normalizedInputValue}
-                onChange={(e) => {
-                    if (e.target.value) {
-                        onChange(toEnglishDigits(e.target.value));
-                    }
-                }}
+        <>
+            <div
                 onClick={(e) => {
                     e.stopPropagation();
-                    try {
-                        (e.currentTarget as any).showPicker?.();
-                    } catch {
-                        // Handled natively by WebView / browser
-                    }
+                    setIsPickerOpen(true);
                 }}
-                className="no-time-picker-icon absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-            />
-        </div>
+                role="button"
+                tabIndex={0}
+                className={`relative inline-flex items-center justify-center cursor-pointer select-none active:scale-95 transition-transform ${className}`}
+                title={isEn ? 'Click to change time' : 'انقر لتعديل الوقت'}
+            >
+                {isEn ? (
+                    <span
+                        dir="ltr"
+                        className="inline-flex items-center gap-1 font-bold tabular-nums"
+                        style={{
+                            color: accentColor ? 'var(--qr-accent)' : undefined,
+                            fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, "Cairo", sans-serif'
+                        }}
+                    >
+                        <span>{hhStr}:{mmStr}</span>
+                        <span>{isPM ? 'PM' : 'AM'}</span>
+                    </span>
+                ) : (
+                    <span
+                        dir="rtl"
+                        className="inline-flex items-center gap-1 font-bold tabular-nums"
+                        style={{ color: accentColor ? 'var(--qr-accent)' : undefined }}
+                    >
+                        <span dir="ltr">{toArabic(hhStr)}:{toArabic(mmStr)}</span>
+                        <span>{isPM ? 'م' : 'ص'}</span>
+                    </span>
+                )}
+            </div>
+
+            {isPickerOpen && (
+                <IslamicTimePickerModal
+                    isOpen={isPickerOpen}
+                    onClose={() => setIsPickerOpen(false)}
+                    initialTime={normalizedInputValue}
+                    onSave={(newTime24) => {
+                        onChange(newTime24);
+                    }}
+                    title={title}
+                    accentColor={typeof document !== 'undefined' ? getComputedStyle(document.documentElement).getPropertyValue('--qr-accent').trim() : undefined}
+                />
+            )}
+        </>
     );
 };
 
@@ -221,6 +210,7 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
         return localStorage.getItem('widget_lock_theme') === 'true';
     });
     const [showWidgetsGuide, setShowWidgetsGuide] = useState<boolean>(false);
+    const [showWidgetDesignModal, setShowWidgetDesignModal] = useState<boolean>(false);
 
     const handleToggleWidgetArabic = async () => {
         const next = widgetLockLang === 'ar' ? null : 'ar';
@@ -582,41 +572,57 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
                                     </div>
                                 </div>
 
+
+
                                 {showWidgetsGuide && (
-                                    <div className={`p-3 rounded-xl text-[11px] sm:text-xs leading-relaxed space-y-2 border-0 ${
+                                    <div className={`p-3 rounded-xl text-[11px] sm:text-xs leading-relaxed space-y-2.5 border-0 ${
                                         isShinyGold ? 'bg-white text-gray-900 shadow-xs border border-amber-300/40' : 'quran-raised-card'
                                     }`} style={isShinyGold ? { backgroundColor: '#FFFFFF', color: '#1F2937' } : { border: 'none' }}>
                                         <p className="font-bold text-emerald-700 dark:text-emerald-400">
                                             {isEn
-                                                ? '3 Home Screen Widgets Available:'
-                                                : 'التطبيقات المصغرة الثلاثة لشاشة الهاتف:'}
+                                                 ? 'Available 3D Home Screen Widget Designs:'
+                                                 : 'التصاميم المجسمة المتاحة للودجت على الشاشة الرئيسية:'}
                                         </p>
-                                        <ul className="space-y-1 opacity-90 list-disc ps-4">
+                                        <ul className="space-y-1.5 opacity-90 list-disc ps-4">
                                             <li>
-                                                <strong>{isEn ? 'Full Comprehensive Widget:' : 'الودجت الشامل (الكبير):'}</strong>{' '}
+                                                <strong>{isEn ? '1. Compact Focus (Prev & Next Prayer Only):' : '١. الودجت المصغر المركز (السابقة والقادمة فقط):'}</strong>{' '}
                                                 {isEn
-                                                    ? 'Shows all 6 prayer times, next prayer live countdown, Hijri & Gregorian dates, Midnight, and Last Third.'
-                                                    : 'يعرض مواقيت الصلوات الست، الصلاة القادمة بالعد التنازلي الحي، التاريخ الهجري والميلادي، ومنتصف الليل والثلث الأخير.'}
+                                                    ? 'Strictly displays Date, Previous Prayer, Next Prayer, and remaining countdown in elevated 3D tactile cards. Perfect for minimalists.'
+                                                    : 'تصميم صغير مجسم وبارز يحتوي فقط على التاريخ، الصلاة السابقة، الصلاة القادمة والوقت المتبقي للصلاة القادمة.'}
                                             </li>
                                             <li>
-                                                <strong>{isEn ? 'Medium Card Widget:' : 'ودجت البطاقة المتوسطة:'}</strong>{' '}
+                                                <strong>{isEn ? '2. Modern 3D Floating Pods:' : '٢. الودجت العصري ثلاثي الأبعاد (كبسولات مجسمة):'}</strong>{' '}
                                                 {isEn
-                                                    ? 'Displays city, date, highlighted next prayer with countdown, and daily prayer strip.'
-                                                    : 'يعرض المدينة والتاريخ مع إبراز الصلاة القادمة والعد التنازلي وشريط مواقيت الصلوات.'}
+                                                    ? 'High-tech embossed prayer capsules with active illumination, tactile shadows, live countdown badge, and instant refresh button.'
+                                                    : 'كبسولات مجسمة ومحفورة لكل صلاة، مع إضاءة بارزة للصلاة القادمة وعد تنازلي وزر تحديث مباشر.'}
                                             </li>
                                             <li>
-                                                <strong>{isEn ? 'Compact Mini Widget:' : 'الودجت المدمج (الصغير):'}</strong>{' '}
+                                                <strong>{isEn ? '3. Imperial Islamic Mihrab Arch:' : '٣. ودجت المحراب والزخرفة الإسلامية الملكية:'}</strong>{' '}
                                                 {isEn
-                                                    ? 'Space-saving design showing city, next prayer, and its time.'
-                                                    : 'تصميم مختصر يعرض المدينة والصلاة القادمة وموعدها في مساحة صغيرة.'}
+                                                    ? 'Royal gold-rimmed Islamic arch medallion, Quranic decorative borders, and night timings ribbon.'
+                                                    : 'إطار إسلامي فاخر بنمط المحراب والأقواس المزخرفة مع شريط أوقات الليل بالأسفل.'}
+                                            </li>
+                                            <li>
+                                                <strong>{isEn ? '4. Classic Comprehensive Layout:' : '٤. الودجت الشامل الكلاسيكي:'}</strong>{' '}
+                                                {isEn
+                                                    ? 'Traditional layout displaying all prayers with date and night timings.'
+                                                    : 'النمط الشامل التقليدي لجميع الصلوات مع التواريخ وأوقات الليل.'}
                                             </li>
                                         </ul>
-                                        <p className="opacity-90">
-                                            <strong>{isEn ? 'Dynamic Theme & Locking:' : 'تغيير الثيم وتثبيت اللون أو اللغة:'}</strong>{' '}
-                                            {isEn
-                                                ? 'All 3 widgets automatically change colors to match your selected app theme. Use "Lock Widget Theme" below to freeze the current widget color so it stays unchanged when switching themes, or use "Lock Arabic / Lock English" to pin the widget language independently of the app language.'
-                                                : 'تتغير ألوان وتصاميم الودجت الثلاثة تلقائياً مع تغير ثيم التطبيق. يمكنك تفعيل «تثبيت ثيم الودجت» بالأسفل للاحتفاظ بلون الودجت الحالي ثابتاً دون تأثر بتغيير الثيم، أو تفعيل «تثبيت العربية / تثبيت الإنجليزية» لتثبيت لغة الودجت بشكل مستقل عن لغة التطبيق.'}
-                                        </p>
+                                        <div className="pt-1.5 border-t border-emerald-500/20 text-emerald-800 dark:text-emerald-300 font-medium space-y-1">
+                                            <div>
+                                                <strong>{isEn ? 'Customization & Themes:' : 'التحكم بالشفافية والألوان:'}</strong>{' '}
+                                                {isEn
+                                                    ? 'Long-press on any widget on your home screen and tap (Settings) to adjust background transparency (0% to 100%) and select your preferred color theme.'
+                                                    : 'اضغط مطولاً على أي تطبيق مصغر بشاشة هاتفك واختر (الضبط) للتحكم في الشفافية (من 0% إلى 100%) وتغيير ثيم الألوان بالكامل.'}
+                                            </div>
+                                            <div>
+                                                <strong>{isEn ? 'Automatic Responsive Scaling:' : 'التكبير والتصغير التلقائي للنصوص:'}</strong>{' '}
+                                                {isEn
+                                                    ? 'When you resize any widget on your home screen by dragging its borders, the fonts and layouts automatically scale up or down proportionally.'
+                                                    : 'عند تكبير أو تصغير أي تطبيق مصغر عبر سحب حوافه على الشاشة، تتكيف أحجام النصوص تلقائياً.'}
+                                            </div>
+                                        </div>
                                     </div>
                                 )}
 
@@ -754,6 +760,7 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
                                                     value={setting.time}
                                                     onChange={(newTime) => handleTimeChange(settingKey, newTime)}
                                                     isEn={isEn}
+                                                    title={item.label}
                                                     className="text-xs px-2 py-0.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/10"
                                                 />
                                             )}
@@ -823,6 +830,7 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
                                                     value={phoneSettings.randomAthkar.startTime}
                                                     onChange={(newTime) => handleRandomSettingChange({ startTime: newTime })}
                                                     isEn={isEn}
+                                                    title={isEn ? 'Start Time' : 'وقت البدء'}
                                                     accentColor={false}
                                                     className={`w-full text-xs text-inherit py-2 px-2.5 rounded-xl ${
                                                         isShinyGold ? 'bg-amber-50/60 border border-amber-200 text-gray-900' : 'quran-raised-btn'
@@ -835,6 +843,7 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
                                                     value={phoneSettings.randomAthkar.endTime}
                                                     onChange={(newTime) => handleRandomSettingChange({ endTime: newTime })}
                                                     isEn={isEn}
+                                                    title={isEn ? 'End Time' : 'وقت الانتهاء'}
                                                     accentColor={false}
                                                     className={`w-full text-xs text-inherit py-2 px-2.5 rounded-xl ${
                                                         isShinyGold ? 'bg-amber-50/60 border border-amber-200 text-gray-900' : 'quran-raised-btn'
@@ -909,6 +918,10 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
                     </button>
                 </div>
             </div>
+
+            {showWidgetDesignModal && (
+                <WidgetDesignPreview onClose={() => setShowWidgetDesignModal(false)} />
+            )}
         </div>
     );
 };

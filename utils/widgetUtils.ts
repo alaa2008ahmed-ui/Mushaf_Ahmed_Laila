@@ -22,6 +22,7 @@ export interface WidgetData {
   isSummerTime?: boolean;
   midnight: string;
   last_third: string;
+  first_third?: string;
   times: {
     fajr: string;
     sunrise: string;
@@ -102,10 +103,7 @@ function darkenColor(hex: string, factor: number = 0.35): string {
 
 /**
  * Returns a complete, beautifully harmonized widget color palette for any theme.
- * For "default", returns the exact original widget colors matching initial device boot.
- * For light themes, creates soft, bright, clear pastel tones derived from the theme colors
- * so the widgets look light, crisp, and matching the main screen rather than dark/gloomy.
- * For dark themes, provides sleek dark mode tones with high-contrast text.
+ * For "default", returns the Modern Smart Design in Gold ("التصميم الذكي الحديث باللون الذهبي").
  */
 export function getWidgetThemePalette(themeKey: string, theme?: any) {
   const matchedPreset = theme || (presetThemes as any)[themeKey] || (presetThemes as any).default;
@@ -116,44 +114,725 @@ export function getWidgetThemePalette(themeKey: string, theme?: any) {
     (typeof document !== 'undefined' && document.documentElement.classList.contains('dark'))
   );
 
-  // 1. Default Theme (Exact 1:1 match with initial device boot / fresh install widget)
-  if (themeKey === 'default') {
-    return {
-      themeKey: 'default',
+  // 1. Predefined Themes Map for Light / Dark modes
+  const themeDefinitionsMap: Record<string, any> = {
+    royal_gold_3d: {
+      isDark: true,
+      rootBg: '#2D1600',
+      cardBg: '#1C0D00',
+      textColor: '#FFFFFF',
+      section1Bg: '#5E2E00',
+      section1Text: '#FDE68A',
+      section2Bg: '#451A03',
+      section2Text: '#FEF08A',
+      heroBg: '#5E2E00',
+      heroPrayerName: '#FFFFFF',
+      heroPrayerTime: '#FBBF24',
+      heroCountdown: '#FFFFFF',
+      nextPrayerColor: '#FBBF24',
+      highlightPrayerColor: '#F59E0B',
+      cardCityColor: '#FDE68A',
+      cardDateColor: '#FDE68A'
+    },
+    emerald_prism_3d: {
+      isDark: true,
+      rootBg: '#022C22',
+      cardBg: '#011712',
+      textColor: '#FFFFFF',
+      section1Bg: '#064E3B',
+      section1Text: '#6EE7B7',
+      section2Bg: '#064E3B',
+      section2Text: '#A7F3D0',
+      heroBg: '#064E3B',
+      heroPrayerName: '#FFFFFF',
+      heroPrayerTime: '#34D399',
+      heroCountdown: '#FFFFFF',
+      nextPrayerColor: '#34D399',
+      highlightPrayerColor: '#34D399',
+      cardCityColor: '#6EE7B7',
+      cardDateColor: '#A7F3D0'
+    },
+    ruby_gem_3d: {
+      isDark: true,
+      rootBg: '#4C0519',
+      cardBg: '#2B000C',
+      textColor: '#FFFFFF',
+      section1Bg: '#881337',
+      section1Text: '#FECDD3',
+      section2Bg: '#70092B',
+      section2Text: '#FFE4E6',
+      heroBg: '#881337',
+      heroPrayerName: '#FFFFFF',
+      heroPrayerTime: '#FB7185',
+      heroCountdown: '#FFFFFF',
+      nextPrayerColor: '#FB7185',
+      highlightPrayerColor: '#FB7185',
+      cardCityColor: '#FECDD3',
+      cardDateColor: '#FECDD3'
+    },
+    antique_bronze_3d: {
+      isDark: true,
+      rootBg: '#261A12',
+      cardBg: '#180F0A',
+      textColor: '#FFFFFF',
+      section1Bg: '#4D3321',
+      section1Text: '#E5C39E',
+      section2Bg: '#3D2718',
+      section2Text: '#F5D77F',
+      heroBg: '#4D3321',
+      heroPrayerName: '#FFFFFF',
+      heroPrayerTime: '#D4AF37',
+      heroCountdown: '#FFFFFF',
+      nextPrayerColor: '#D4AF37',
+      highlightPrayerColor: '#F5D77F',
+      cardCityColor: '#E5C39E',
+      cardDateColor: '#D4BFA6'
+    },
+    royal_marble_3d: {
       isDark: false,
-      rootBg: '#FFFFFF',
-      middleBg: '#FFFFFF',
+      rootBg: '#F8FAFC',
       cardBg: '#FFFFFF',
       textColor: '#0F172A',
-      section1Bg: '#544670', // Purple date section
-      section1Text: '#FFFFFF',
-      section2Bg: '#A26743', // Terracotta midnight section
-      section2Text: '#FFFFFF',
-      heroBg: '#544670',
-      heroPrayerName: '#86EFAC',
+      section1Bg: '#FEF3C7',
+      section1Text: '#78350F',
+      section2Bg: '#FEF3C7',
+      section2Text: '#78350F',
+      heroBg: '#FEF3C7',
+      heroPrayerName: '#78350F',
+      heroPrayerTime: '#B45309',
+      heroCountdown: '#78350F',
+      nextPrayerColor: '#B45309',
+      highlightPrayerColor: '#B45309',
+      cardCityColor: '#78350F',
+      cardDateColor: '#475569'
+    },
+    default: {
+      isDark: true,
+      rootBg: '#064E3B',
+      cardBg: '#043628',
+      textColor: '#FFFFFF',
+      section1Bg: '#065F46',
+      section1Text: '#6EE7B7',
+      section2Bg: '#1A221E',
+      section2Text: '#FDE68A',
+      heroBg: '#065F46',
+      heroPrayerName: '#34D399',
       heroPrayerTime: '#FDE68A',
       heroCountdown: '#FFFFFF',
-      nextPrayerColor: '#2E7D5E',
-      highlightPrayerColor: '#3B7A82',
-      stripColor1: '#544670',
-      stripColor2: '#2E7D5E',
-      stripColor3: '#3B7A82',
-      stripColor4: '#A26743',
-      sepColor: '#E0E0E0',
-      cardCityColor: '#544670',
-      cardDateColor: '#3B7A82',
-      compactCityColor: '#544670',
-      compactTagColor: '#3B7A82',
-      compactNameColor: '#2E7D5E',
-      compactTimeColor: '#A26743',
-      // Backward compatibility keys
-      primaryColor: '#2E7D5E',
-      secondaryColor: '#544670',
-      bgColor: '#FFFFFF',
-      purpleColor: '#544670',
-      greenColor: '#2E7D5E',
-      tealColor: '#3B7A82',
-      terracottaColor: '#A26743'
+      nextPrayerColor: '#34D399',
+      highlightPrayerColor: '#FBBF24',
+      cardCityColor: '#34D399',
+      cardDateColor: '#FDE68A'
+    },
+    deep_black: {
+      isDark: true,
+      rootBg: '#000000',
+      cardBg: '#111111',
+      textColor: '#FFFFFF',
+      section1Bg: '#1F2937',
+      section1Text: '#F8FAFC',
+      section2Bg: '#18181B',
+      section2Text: '#FDE68A',
+      heroBg: '#18181B',
+      heroPrayerName: '#F59E0B',
+      heroPrayerTime: '#FDE68A',
+      heroCountdown: '#FFFFFF',
+      nextPrayerColor: '#F59E0B',
+      highlightPrayerColor: '#FBBF24',
+      cardCityColor: '#CBD5E1',
+      cardDateColor: '#FDE68A'
+    },
+    shiny_gold: {
+      isDark: false,
+      rootBg: '#FEF08A',
+      cardBg: '#FFFFFF',
+      textColor: '#78350F',
+      section1Bg: '#FDE047',
+      section1Text: '#78350F',
+      section2Bg: '#FEF3C7',
+      section2Text: '#92400E',
+      heroBg: '#FDE047',
+      heroPrayerName: '#B45309',
+      heroPrayerTime: '#78350F',
+      heroCountdown: '#451A03',
+      nextPrayerColor: '#B45309',
+      highlightPrayerColor: '#D97706',
+      cardCityColor: '#78350F',
+      cardDateColor: '#92400E'
+    },
+    emerald_night: {
+      isDark: true,
+      rootBg: '#043628',
+      cardBg: '#022C22',
+      textColor: '#FFFFFF',
+      section1Bg: '#065F46',
+      section1Text: '#34D399',
+      section2Bg: '#064E3B',
+      section2Text: '#6EE7B7',
+      heroBg: '#065F46',
+      heroPrayerName: '#34D399',
+      heroPrayerTime: '#A7F3D0',
+      heroCountdown: '#FFFFFF',
+      nextPrayerColor: '#34D399',
+      highlightPrayerColor: '#34D399',
+      cardCityColor: '#34D399',
+      cardDateColor: '#6EE7B7'
+    },
+    royal_navy: {
+      isDark: true,
+      rootBg: '#0F172A',
+      cardBg: '#1E293B',
+      textColor: '#FFFFFF',
+      section1Bg: '#1E3A8A',
+      section1Text: '#93C5FD',
+      section2Bg: '#1E1B4B',
+      section2Text: '#38BDF8',
+      heroBg: '#1E3A8A',
+      heroPrayerName: '#38BDF8',
+      heroPrayerTime: '#60A5FA',
+      heroCountdown: '#FFFFFF',
+      nextPrayerColor: '#38BDF8',
+      highlightPrayerColor: '#38BDF8',
+      cardCityColor: '#38BDF8',
+      cardDateColor: '#93C5FD'
+    },
+    royal_purple: {
+      isDark: true,
+      rootBg: '#2E1065',
+      cardBg: '#3B0764',
+      textColor: '#FFFFFF',
+      section1Bg: '#581C87',
+      section1Text: '#E9D5FF',
+      section2Bg: '#4C1D95',
+      section2Text: '#FDE68A',
+      heroBg: '#581C87',
+      heroPrayerName: '#C084FC',
+      heroPrayerTime: '#FDE68A',
+      heroCountdown: '#FFFFFF',
+      nextPrayerColor: '#C084FC',
+      highlightPrayerColor: '#FDE68A',
+      cardCityColor: '#C084FC',
+      cardDateColor: '#FDE68A'
+    },
+    deep_forest: {
+      isDark: true,
+      rootBg: '#022C22',
+      cardBg: '#064E3B',
+      textColor: '#FFFFFF',
+      section1Bg: '#065F46',
+      section1Text: '#6EE7B7',
+      section2Bg: '#022C22',
+      section2Text: '#A7F3D0',
+      heroBg: '#065F46',
+      heroPrayerName: '#6EE7B7',
+      heroPrayerTime: '#A7F3D0',
+      heroCountdown: '#FFFFFF',
+      nextPrayerColor: '#6EE7B7',
+      highlightPrayerColor: '#34D399',
+      cardCityColor: '#6EE7B7',
+      cardDateColor: '#A7F3D0'
+    },
+    golden_sand: {
+      isDark: true,
+      rootBg: '#451A03',
+      cardBg: '#78350F',
+      textColor: '#FFFFFF',
+      section1Bg: '#B45309',
+      section1Text: '#FDE68A',
+      section2Bg: '#92400E',
+      section2Text: '#FEF08A',
+      heroBg: '#B45309',
+      heroPrayerName: '#FDE68A',
+      heroPrayerTime: '#FEF08A',
+      heroCountdown: '#FFFFFF',
+      nextPrayerColor: '#FDE68A',
+      highlightPrayerColor: '#FBBF24',
+      cardCityColor: '#FDE68A',
+      cardDateColor: '#FEF08A'
+    },
+    fajr_light: {
+      isDark: false,
+      rootBg: '#F0F9FF',
+      cardBg: '#FFFFFF',
+      textColor: '#0C4A6E',
+      section1Bg: '#E0F2FE',
+      section1Text: '#0369A1',
+      section2Bg: '#BAE6FD',
+      section2Text: '#0284C7',
+      heroBg: '#E0F2FE',
+      heroPrayerName: '#0284C7',
+      heroPrayerTime: '#0369A1',
+      heroCountdown: '#0C4A6E',
+      nextPrayerColor: '#0284C7',
+      highlightPrayerColor: '#0284C7',
+      cardCityColor: '#0284C7',
+      cardDateColor: '#0369A1'
+    },
+    neon_cyber: {
+      isDark: true,
+      rootBg: '#090D16',
+      cardBg: '#0F172A',
+      textColor: '#FFFFFF',
+      section1Bg: '#1E293B',
+      section1Text: '#22D3EE',
+      section2Bg: '#0F172A',
+      section2Text: '#38BDF8',
+      heroBg: '#0F172A',
+      heroPrayerName: '#22D3EE',
+      heroPrayerTime: '#38BDF8',
+      heroCountdown: '#FFFFFF',
+      nextPrayerColor: '#22D3EE',
+      highlightPrayerColor: '#22D3EE',
+      cardCityColor: '#22D3EE',
+      cardDateColor: '#38BDF8'
+    },
+    sunset_amber: {
+      isDark: true,
+      rootBg: '#7C2D12',
+      cardBg: '#9A3412',
+      textColor: '#FFFFFF',
+      section1Bg: '#C2410C',
+      section1Text: '#FDBA74',
+      section2Bg: '#7C2D12',
+      section2Text: '#FFEDD5',
+      heroBg: '#C2410C',
+      heroPrayerName: '#FDBA74',
+      heroPrayerTime: '#FFEDD5',
+      heroCountdown: '#FFFFFF',
+      nextPrayerColor: '#FDBA74',
+      highlightPrayerColor: '#FDBA74',
+      cardCityColor: '#FDBA74',
+      cardDateColor: '#FFEDD5'
+    },
+    rose_velvet: {
+      isDark: true,
+      rootBg: '#881337',
+      cardBg: '#9F1239',
+      textColor: '#FFFFFF',
+      section1Bg: '#BE123C',
+      section1Text: '#FBCFE8',
+      section2Bg: '#881337',
+      section2Text: '#FFE4E6',
+      heroBg: '#BE123C',
+      heroPrayerName: '#FBCFE8',
+      heroPrayerTime: '#FFE4E6',
+      heroCountdown: '#FFFFFF',
+      nextPrayerColor: '#FBCFE8',
+      highlightPrayerColor: '#FBCFE8',
+      cardCityColor: '#FBCFE8',
+      cardDateColor: '#FFE4E6'
+    },
+    midnight_sapphire: {
+      isDark: true,
+      rootBg: '#1E1B4B',
+      cardBg: '#312E81',
+      textColor: '#FFFFFF',
+      section1Bg: '#3730A3',
+      section1Text: '#A5B4FC',
+      section2Bg: '#1E1B4B',
+      section2Text: '#C7D2FE',
+      heroBg: '#3730A3',
+      heroPrayerName: '#A5B4FC',
+      heroPrayerTime: '#C7D2FE',
+      heroCountdown: '#FFFFFF',
+      nextPrayerColor: '#A5B4FC',
+      highlightPrayerColor: '#A5B4FC',
+      cardCityColor: '#A5B4FC',
+      cardDateColor: '#C7D2FE'
+    },
+    mint_fresh: {
+      isDark: true,
+      rootBg: '#065F46',
+      cardBg: '#047857',
+      textColor: '#FFFFFF',
+      section1Bg: '#059669',
+      section1Text: '#A7F3D0',
+      section2Bg: '#064E3B',
+      section2Text: '#D1FAE5',
+      heroBg: '#059669',
+      heroPrayerName: '#A7F3D0',
+      heroPrayerTime: '#D1FAE5',
+      heroCountdown: '#FFFFFF',
+      nextPrayerColor: '#A7F3D0',
+      highlightPrayerColor: '#A7F3D0',
+      cardCityColor: '#A7F3D0',
+      cardDateColor: '#D1FAE5'
+    },
+    bronze_copper: {
+      isDark: true,
+      rootBg: '#78350F',
+      cardBg: '#92400E',
+      textColor: '#FFFFFF',
+      section1Bg: '#B45309',
+      section1Text: '#FED7AA',
+      section2Bg: '#78350F',
+      section2Text: '#FFEDD5',
+      heroBg: '#B45309',
+      heroPrayerName: '#FED7AA',
+      heroPrayerTime: '#FFEDD5',
+      heroCountdown: '#FFFFFF',
+      nextPrayerColor: '#FED7AA',
+      highlightPrayerColor: '#FED7AA',
+      cardCityColor: '#FED7AA',
+      cardDateColor: '#FFEDD5'
+    },
+    amethyst_purple: {
+      isDark: true,
+      rootBg: '#581C87',
+      cardBg: '#6B21A8',
+      textColor: '#FFFFFF',
+      section1Bg: '#7E22CE',
+      section1Text: '#E9D5FF',
+      section2Bg: '#581C87',
+      section2Text: '#F3E8FF',
+      heroBg: '#7E22CE',
+      heroPrayerName: '#E9D5FF',
+      heroPrayerTime: '#F3E8FF',
+      heroCountdown: '#FFFFFF',
+      nextPrayerColor: '#E9D5FF',
+      highlightPrayerColor: '#E9D5FF',
+      cardCityColor: '#E9D5FF',
+      cardDateColor: '#F3E8FF'
+    },
+    clean_paper: {
+      isDark: false,
+      rootBg: '#F8FAFC',
+      cardBg: '#FFFFFF',
+      textColor: '#0F172A',
+      section1Bg: '#E2E8F0',
+      section1Text: '#1E293B',
+      section2Bg: '#F1F5F9',
+      section2Text: '#334155',
+      heroBg: '#0F172A',
+      heroPrayerName: '#38BDF8',
+      heroPrayerTime: '#FDE68A',
+      heroCountdown: '#FFFFFF',
+      nextPrayerColor: '#0284C7',
+      highlightPrayerColor: '#D97706',
+      cardCityColor: '#0284C7',
+      cardDateColor: '#475569'
+    },
+    titanium_3d: {
+      isDark: true,
+      rootBg: '#181E24',
+      cardBg: '#222B35',
+      textColor: '#FFFFFF',
+      section1Bg: '#2C3847',
+      section1Text: '#94A3B8',
+      section2Bg: '#181E24',
+      section2Text: '#CBD5E1',
+      heroBg: '#242F3D',
+      heroPrayerName: '#38BDF8',
+      heroPrayerTime: '#F8FAFC',
+      heroCountdown: '#FFFFFF',
+      nextPrayerColor: '#38BDF8',
+      highlightPrayerColor: '#FBBF24',
+      cardCityColor: '#38BDF8',
+      cardDateColor: '#94A3B8'
+    },
+    emerald_3d: {
+      isDark: true,
+      rootBg: '#022C22',
+      cardBg: '#064E3B',
+      textColor: '#FFFFFF',
+      section1Bg: '#065F46',
+      section1Text: '#6EE7B7',
+      section2Bg: '#022C22',
+      section2Text: '#A7F3D0',
+      heroBg: '#044E3B',
+      heroPrayerName: '#34D399',
+      heroPrayerTime: '#FDE68A',
+      heroCountdown: '#FFFFFF',
+      nextPrayerColor: '#34D399',
+      highlightPrayerColor: '#FBBF24',
+      cardCityColor: '#34D399',
+      cardDateColor: '#FDE68A'
+    },
+    sapphire_3d: {
+      isDark: true,
+      rootBg: '#091528',
+      cardBg: '#0F274A',
+      textColor: '#FFFFFF',
+      section1Bg: '#1E3A8A',
+      section1Text: '#93C5FD',
+      section2Bg: '#091528',
+      section2Text: '#BAE6FD',
+      heroBg: '#12325E',
+      heroPrayerName: '#38BDF8',
+      heroPrayerTime: '#93C5FD',
+      heroCountdown: '#FFFFFF',
+      nextPrayerColor: '#38BDF8',
+      highlightPrayerColor: '#60A5FA',
+      cardCityColor: '#38BDF8',
+      cardDateColor: '#93C5FD'
+    },
+    gold_ingot_3d: {
+      isDark: true,
+      rootBg: '#140E03',
+      cardBg: '#231804',
+      textColor: '#FFFFFF',
+      section1Bg: '#3D2A07',
+      section1Text: '#FDE68A',
+      section2Bg: '#140E03',
+      section2Text: '#FEF08A',
+      heroBg: '#2D1F05',
+      heroPrayerName: '#FBBF24',
+      heroPrayerTime: '#FDE047',
+      heroCountdown: '#FFFFFF',
+      nextPrayerColor: '#FBBF24',
+      highlightPrayerColor: '#FDE047',
+      cardCityColor: '#FBBF24',
+      cardDateColor: '#FEF08A'
+    },
+    ruby_velvet_3d: {
+      isDark: true,
+      rootBg: '#33050E',
+      cardBg: '#4C0816',
+      textColor: '#FFFFFF',
+      section1Bg: '#700D22',
+      section1Text: '#FECDD3',
+      section2Bg: '#33050E',
+      section2Text: '#FFE4E6',
+      heroBg: '#5C0A1B',
+      heroPrayerName: '#FB7185',
+      heroPrayerTime: '#FECDD3',
+      heroCountdown: '#FFFFFF',
+      nextPrayerColor: '#FB7185',
+      highlightPrayerColor: '#F43F5E',
+      cardCityColor: '#FB7185',
+      cardDateColor: '#FECDD3'
+    },
+    cyber_neon_3d: {
+      isDark: true,
+      rootBg: '#04070A',
+      cardBg: '#0A121A',
+      textColor: '#FFFFFF',
+      section1Bg: '#0E1E2C',
+      section1Text: '#22D3EE',
+      section2Bg: '#04070A',
+      section2Text: '#4ADE80',
+      heroBg: '#0B1C2A',
+      heroPrayerName: '#22D3EE',
+      heroPrayerTime: '#4ADE80',
+      heroCountdown: '#FFFFFF',
+      nextPrayerColor: '#22D3EE',
+      highlightPrayerColor: '#4ADE80',
+      cardCityColor: '#22D3EE',
+      cardDateColor: '#4ADE80'
+    },
+    violet_amethyst_3d: {
+      isDark: true,
+      rootBg: '#200538',
+      cardBg: '#350A5C',
+      textColor: '#FFFFFF',
+      section1Bg: '#51118A',
+      section1Text: '#E9D5FF',
+      section2Bg: '#200538',
+      section2Text: '#FDE68A',
+      heroBg: '#430D75',
+      heroPrayerName: '#C084FC',
+      heroPrayerTime: '#FDE68A',
+      heroCountdown: '#FFFFFF',
+      nextPrayerColor: '#C084FC',
+      highlightPrayerColor: '#FDE68A',
+      cardCityColor: '#C084FC',
+      cardDateColor: '#E9D5FF'
+    },
+    copper_bronze_3d: {
+      isDark: true,
+      rootBg: '#260F04',
+      cardBg: '#3D1806',
+      textColor: '#FFFFFF',
+      section1Bg: '#5C250A',
+      section1Text: '#FED7AA',
+      section2Bg: '#260F04',
+      section2Text: '#FFEDD5',
+      heroBg: '#4A1D08',
+      heroPrayerName: '#FB923C',
+      heroPrayerTime: '#FED7AA',
+      heroCountdown: '#FFFFFF',
+      nextPrayerColor: '#FB923C',
+      highlightPrayerColor: '#FED7AA',
+      cardCityColor: '#FB923C',
+      cardDateColor: '#FED7AA'
+    },
+    azure_crystal_3d: {
+      isDark: true,
+      rootBg: '#052233',
+      cardBg: '#083754',
+      textColor: '#FFFFFF',
+      section1Bg: '#0C4E75',
+      section1Text: '#A5F3FC',
+      section2Bg: '#052233',
+      section2Text: '#E0F2FE',
+      heroBg: '#0A4366',
+      heroPrayerName: '#22D3EE',
+      heroPrayerTime: '#67E8F9',
+      heroCountdown: '#FFFFFF',
+      nextPrayerColor: '#22D3EE',
+      highlightPrayerColor: '#67E8F9',
+      cardCityColor: '#22D3EE',
+      cardDateColor: '#A5F3FC'
+    },
+    desert_amber_3d: {
+      isDark: true,
+      rootBg: '#331606',
+      cardBg: '#522309',
+      textColor: '#FFFFFF',
+      section1Bg: '#78350F',
+      section1Text: '#FEF08A',
+      section2Bg: '#331606',
+      section2Text: '#FFEDD5',
+      heroBg: '#612A0B',
+      heroPrayerName: '#F59E0B',
+      heroPrayerTime: '#FEF08A',
+      heroCountdown: '#FFFFFF',
+      nextPrayerColor: '#F59E0B',
+      highlightPrayerColor: '#FEF08A',
+      cardCityColor: '#F59E0B',
+      cardDateColor: '#FEF08A'
+    },
+    mint_frost_3d: {
+      isDark: true,
+      rootBg: '#03211B',
+      cardBg: '#05382E',
+      textColor: '#FFFFFF',
+      section1Bg: '#075243',
+      section1Text: '#99F6E4',
+      section2Bg: '#03211B',
+      section2Text: '#CCFBF1',
+      heroBg: '#064539',
+      heroPrayerName: '#2DD4BF',
+      heroPrayerTime: '#5EEAD4',
+      heroCountdown: '#FFFFFF',
+      nextPrayerColor: '#2DD4BF',
+      highlightPrayerColor: '#5EEAD4',
+      cardCityColor: '#2DD4BF',
+      cardDateColor: '#99F6E4'
+    },
+    pearl_white_3d: {
+      isDark: false,
+      rootBg: '#F1F5F9',
+      cardBg: '#FFFFFF',
+      textColor: '#0F172A',
+      section1Bg: '#E2E8F0',
+      section1Text: '#0F172A',
+      section2Bg: '#F8FAFC',
+      section2Text: '#334155',
+      heroBg: '#0F172A',
+      heroPrayerName: '#38BDF8',
+      heroPrayerTime: '#FDE68A',
+      heroCountdown: '#FFFFFF',
+      nextPrayerColor: '#0284C7',
+      highlightPrayerColor: '#D97706',
+      cardCityColor: '#0284C7',
+      cardDateColor: '#334155'
+    },
+    golden_trio: {
+      isDark: false,
+      rootBg: '#F8DE8A',
+      cardBg: '#FFFFFF',
+      textColor: '#000000',
+      section1Bg: '#C86400',
+      section1Text: '#FFFFFF',
+      section2Bg: '#FFFFFF',
+      section2Text: '#000000',
+      heroBg: '#C86400',
+      heroPrayerName: '#FFFFFF',
+      heroPrayerTime: '#FFFFFF',
+      heroCountdown: '#FFFFFF',
+      nextPrayerColor: '#C86400',
+      highlightPrayerColor: '#C86400',
+      cardCityColor: '#000000',
+      cardDateColor: '#000000'
+    },
+    violet_green_light: {
+      isDark: false,
+      rootBg: '#F3E8FF',
+      cardBg: '#FFFFFF',
+      textColor: '#1E1B4B',
+      section1Bg: '#D1FAE5',
+      section1Text: '#065F46',
+      section2Bg: '#EDE9FE',
+      section2Text: '#5B21B6',
+      heroBg: '#D1FAE5',
+      heroPrayerName: '#065F46',
+      heroPrayerTime: '#047857',
+      heroCountdown: '#1E1B4B',
+      nextPrayerColor: '#059669',
+      highlightPrayerColor: '#7C3AED',
+      cardCityColor: '#1E1B4B',
+      cardDateColor: '#065F46'
+    },
+    sky_blue_light: {
+      isDark: false,
+      rootBg: '#E0F2FE',
+      cardBg: '#FFFFFF',
+      textColor: '#0F172A',
+      section1Bg: '#BAE6FD',
+      section1Text: '#0369A1',
+      section2Bg: '#F0F9FF',
+      section2Text: '#0284C7',
+      heroBg: '#BAE6FD',
+      heroPrayerName: '#0369A1',
+      heroPrayerTime: '#075985',
+      heroCountdown: '#0F172A',
+      nextPrayerColor: '#0284C7',
+      highlightPrayerColor: '#0369A1',
+      cardCityColor: '#0F172A',
+      cardDateColor: '#0369A1'
+    },
+    rose_peach_light: {
+      isDark: false,
+      rootBg: '#FFF1F2',
+      cardBg: '#FFFFFF',
+      textColor: '#1F080C',
+      section1Bg: '#FFE4E6',
+      section1Text: '#BE123C',
+      section2Bg: '#FFFBEB',
+      section2Text: '#B45309',
+      heroBg: '#FFE4E6',
+      heroPrayerName: '#BE123C',
+      heroPrayerTime: '#9F1239',
+      heroCountdown: '#1F080C',
+      nextPrayerColor: '#E11D48',
+      highlightPrayerColor: '#D97706',
+      cardCityColor: '#1F080C',
+      cardDateColor: '#BE123C'
+    },
+    emerald_mint_light: {
+      isDark: false,
+      rootBg: '#ECFDF5',
+      cardBg: '#FFFFFF',
+      textColor: '#022C22',
+      section1Bg: '#D1FAE5',
+      section1Text: '#065F46',
+      section2Bg: '#F0FDFA',
+      section2Text: '#0F766E',
+      heroBg: '#D1FAE5',
+      heroPrayerName: '#047857',
+      heroPrayerTime: '#065F46',
+      heroCountdown: '#022C22',
+      nextPrayerColor: '#059669',
+      highlightPrayerColor: '#0D9488',
+      cardCityColor: '#022C22',
+      cardDateColor: '#047857'
+    }
+  };
+
+  if (themeDefinitionsMap[themeKey]) {
+    const def = themeDefinitionsMap[themeKey];
+    return {
+      themeKey,
+      ...def,
+      stripColor1: def.nextPrayerColor,
+      stripColor2: def.highlightPrayerColor,
+      stripColor3: def.section1Text,
+      stripColor4: def.section2Text,
+      sepColor: def.isDark ? '#334155' : '#CBD5E1',
+      primaryColor: def.nextPrayerColor,
+      secondaryColor: def.highlightPrayerColor,
+      bgColor: def.rootBg
     };
   }
 
@@ -902,3 +1581,113 @@ export const syncWidgetThemeColors = async (themeKey: string, theme: any) => {
   }
 };
 
+export type WidgetStyleType = 'classic' | 'compact';
+
+export interface SingleWidgetSettings {
+  opacity: number;
+  themeChoice: string;
+  textColor: string;
+  showDate: boolean;
+  showNight: boolean;
+  showCountdown: boolean;
+}
+
+export const DEFAULT_WIDGET_SETTINGS_BY_STYLE: Record<WidgetStyleType, SingleWidgetSettings> = {
+  classic: {
+    opacity: 0.95,
+    themeChoice: 'royal_gold_3d',
+    textColor: 'white',
+    showDate: true,
+    showNight: true,
+    showCountdown: true
+  },
+  compact: {
+    opacity: 0.85,
+    themeChoice: 'royal_gold_3d',
+    textColor: 'gold',
+    showDate: true,
+    showNight: false,
+    showCountdown: true
+  }
+};
+
+export const getWidgetStyle = async (): Promise<WidgetStyleType> => {
+  try {
+    const res = await Preferences.get({ key: 'widget_style' });
+    if (res.value && ['classic', 'compact'].includes(res.value)) {
+      return res.value as WidgetStyleType;
+    }
+    const local = typeof window !== 'undefined' ? localStorage.getItem('widget_style') : null;
+    if (local && ['classic', 'compact'].includes(local)) {
+      return local as WidgetStyleType;
+    }
+  } catch (e) {}
+  return 'classic';
+};
+
+export const setWidgetStyle = async (style: WidgetStyleType): Promise<void> => {
+  try {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('widget_style', style);
+    }
+    await Preferences.set({
+      key: 'widget_style',
+      value: style
+    });
+    if (AutoSilentMode && typeof AutoSilentMode.updateWidget === 'function') {
+      await AutoSilentMode.updateWidget();
+    }
+  } catch (e) {
+    console.warn('Failed to save widget style:', e);
+  }
+};
+
+export const getSingleWidgetSettings = (style: WidgetStyleType): SingleWidgetSettings => {
+  const fallback = DEFAULT_WIDGET_SETTINGS_BY_STYLE[style];
+  if (typeof window === 'undefined') return fallback;
+
+  try {
+    const opacityRaw = localStorage.getItem(`widget_${style}_opacity`);
+    const themeChoice = localStorage.getItem(`widget_${style}_theme_choice`) || fallback.themeChoice;
+    const textColor = localStorage.getItem(`widget_${style}_text_color`) || fallback.textColor;
+    const showDateRaw = localStorage.getItem(`widget_${style}_show_date`);
+    const showNightRaw = localStorage.getItem(`widget_${style}_show_night`);
+    const showCountdownRaw = localStorage.getItem(`widget_${style}_show_countdown`);
+
+    return {
+      opacity: opacityRaw !== null ? parseFloat(opacityRaw) : fallback.opacity,
+      themeChoice,
+      textColor,
+      showDate: showDateRaw !== null ? showDateRaw === 'true' : fallback.showDate,
+      showNight: showNightRaw !== null ? showNightRaw === 'true' : fallback.showNight,
+      showCountdown: showCountdownRaw !== null ? showCountdownRaw === 'true' : fallback.showCountdown
+    };
+  } catch (e) {
+    return fallback;
+  }
+};
+
+export const saveSingleWidgetSettings = async (style: WidgetStyleType, settings: SingleWidgetSettings): Promise<void> => {
+  try {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`widget_${style}_opacity`, String(settings.opacity));
+      localStorage.setItem(`widget_${style}_theme_choice`, settings.themeChoice);
+      localStorage.setItem(`widget_${style}_text_color`, settings.textColor);
+      localStorage.setItem(`widget_${style}_show_date`, String(settings.showDate));
+      localStorage.setItem(`widget_${style}_show_night`, String(settings.showNight));
+      localStorage.setItem(`widget_${style}_show_countdown`, String(settings.showCountdown));
+    }
+
+    const transInt = Math.round(settings.opacity * 100);
+    await Preferences.set({ key: `widget_${style}_opacity`, value: String(settings.opacity) });
+    await Preferences.set({ key: `widget_${style}_transparency`, value: String(transInt) });
+    await Preferences.set({ key: `widget_${style}_theme`, value: settings.themeChoice });
+    await Preferences.set({ key: `widget_${style}_theme_choice`, value: settings.themeChoice });
+    await Preferences.set({ key: `widget_${style}_text_color`, value: settings.textColor });
+    await Preferences.set({ key: `widget_${style}_show_date`, value: String(settings.showDate) });
+    await Preferences.set({ key: `widget_${style}_show_night`, value: String(settings.showNight) });
+    await Preferences.set({ key: `widget_${style}_show_countdown`, value: String(settings.showCountdown) });
+  } catch (e) {
+    console.warn(`Failed to save settings for widget style ${style}:`, e);
+  }
+};

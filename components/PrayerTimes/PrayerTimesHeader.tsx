@@ -4,6 +4,8 @@ import { useLanguage } from '../../context/LanguageContext';
 import { tPrayer, getLocalizedLocationName } from '../../utils/prayerTimesTranslations';
 import { HelpCircle } from 'lucide-react';
 
+import { useTheme } from '../../context/ThemeContext';
+
 interface PrayerTimesHeaderProps {
     handleRefreshLocation: () => void;
     onOpenNotifications: () => void;
@@ -69,11 +71,23 @@ const PrayerTimesHeader: React.FC<PrayerTimesHeaderProps> = ({
     onHome,
     onOpenGuide
 }) => {
+    const { theme, themeKey, isNightMode, homeThemeVariant } = useTheme();
     const { language, isRTL, dir } = useLanguage();
     const centerContainerRef = useRef<HTMLDivElement>(null);
     const titleRef = useRef<HTMLHeadingElement>(null);
     const subtitleRef = useRef<HTMLDivElement>(null);
     const lastWidthRef = useRef<number>(0);
+
+    const isGoldenTheme = !isNightMode && (
+        homeThemeVariant === 'gold' ||
+        themeKey === 'shiny_gold' ||
+        themeKey === 'gold' ||
+        theme.name === 'الذهبي اللامع' ||
+        theme.name === 'الذهبي' ||
+        theme.cardBg === '#FDE047'
+    );
+
+    const headerTextColor = isGoldenTheme ? '#000000' : '#FFFFFF';
 
     const rawCityGov = language === 'en'
         ? (location?.cityGovEn || cityGov)
@@ -189,12 +203,12 @@ const PrayerTimesHeader: React.FC<PrayerTimesHeaderProps> = ({
             <div className="app-top-bar__inner">
                 <div className="flex items-center justify-between w-full min-h-[44px] gap-0.5 sm:gap-1.5">
                     {/* زر الرجوع للخلف وزر تحديث الموقع - مدمجة بحجم مريح لإفساح أكبر مساحة للنص */}
-                    <div className="flex items-center gap-0.5 sm:gap-1 shrink-0 z-10" style={{ color: topBarTextColor || undefined }}>
+                    <div className="flex items-center gap-0.5 sm:gap-1 shrink-0 z-10" style={{ color: headerTextColor }}>
                         {onBack && (
                             <button
                                 onClick={onBack}
                                 className="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
-                                style={{ color: topBarTextColor || undefined }}
+                                style={{ color: headerTextColor }}
                                 title={tPrayer('back', language)}
                                 aria-label={tPrayer('back', language)}
                             >
@@ -205,7 +219,7 @@ const PrayerTimesHeader: React.FC<PrayerTimesHeaderProps> = ({
                             id="location-refresh-btn"
                             onClick={handleRefreshLocation}
                             className="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
-                            style={{ color: topBarTextColor || undefined }}
+                            style={{ color: headerTextColor }}
                             title={tPrayer('refreshLocation', language)}
                             aria-label={tPrayer('refreshLocation', language)}
                         >
@@ -224,7 +238,7 @@ const PrayerTimesHeader: React.FC<PrayerTimesHeaderProps> = ({
                             className={`app-top-bar__title ${language === 'en' ? 'font-sans font-bold' : 'font-kufi font-bold'} whitespace-nowrap overflow-hidden text-ellipsis max-w-full leading-tight`}
                             style={{ 
                                 fontSize: `${titleFontSize}px`,
-                                color: topBarTextColor || undefined 
+                                color: headerTextColor 
                             }}
                             title={displayCityGov}
                         >
@@ -238,22 +252,22 @@ const PrayerTimesHeader: React.FC<PrayerTimesHeaderProps> = ({
                             dir={dir}
                             style={{ 
                                 fontSize: `${subtitleFontSize}px`,
-                                color: topBarTextColor || undefined 
+                                color: headerTextColor 
                             }}
                             title={displayFullCountry}
                         >
-                            <span className="font-bold truncate max-w-full">{displayFullCountry}</span>
+                            <span className="font-bold truncate max-w-full" style={{ color: headerTextColor }}>{displayFullCountry}</span>
                         </div>
                     </div>
 
                     {/* أيقونات الدليل والإعدادات والصفحة الرئيسية - مدمجة بحجم متناسق */}
-                    <div className="flex items-center gap-0.5 sm:gap-1 shrink-0 z-10" style={{ color: topBarTextColor || undefined }}>
+                    <div className="flex items-center gap-0.5 sm:gap-1 shrink-0 z-10" style={{ color: headerTextColor }}>
                         {onOpenGuide && (
                             <button
                                 type="button"
                                 onClick={onOpenGuide}
                                 className="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
-                                style={{ color: topBarTextColor || undefined }}
+                                style={{ color: headerTextColor }}
                                 title={language === 'en' ? "Prayer Times Guide" : "دليل وشرح مواقيت الصلاة"}
                                 aria-label={language === 'en' ? "Prayer Times Guide" : "دليل وشرح مواقيت الصلاة"}
                             >
@@ -265,7 +279,7 @@ const PrayerTimesHeader: React.FC<PrayerTimesHeaderProps> = ({
                             id="prayer-top-bar-settings-btn"
                             onClick={onOpenNotifications}
                             className="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
-                            style={{ color: topBarTextColor || undefined }}
+                            style={{ color: headerTextColor }}
                             title={language === 'en' ? "Prayer Settings & Notifications" : "إعدادات الصلاة والإشعارات"}
                             aria-label={language === 'en' ? "Prayer Settings & Notifications" : "إعدادات الصلاة والإشعارات"}
                         >
@@ -275,7 +289,7 @@ const PrayerTimesHeader: React.FC<PrayerTimesHeaderProps> = ({
                             <button
                                 onClick={onHome}
                                 className="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
-                                style={{ color: topBarTextColor || undefined }}
+                                style={{ color: headerTextColor }}
                                 title={tPrayer('home', language)}
                                 aria-label={tPrayer('home', language)}
                             >

@@ -1,7 +1,7 @@
 import React, { createContext, useState, useContext, useEffect, useLayoutEffect, useMemo, ReactNode } from 'react';
 import { presetThemes, Theme } from './themes';
 import { syncWidgetThemeColors } from '../utils/widgetUtils';
-import { getQuranThemeForLayout, THEMES as QURAN_THEMES } from '../components/QuranReader/constants';
+import { getQuranThemeForLayout, THEMES as QURAN_THEMES, getLinkedQuranThemeForHomeVariant, applyQuranThemeForHomeVariant } from '../components/QuranReader/constants';
 
 // State to be saved to localStorage
 interface ThemeSettings {
@@ -24,7 +24,10 @@ interface ThemeContextType {
     currentPage: string;
     isNightMode: boolean;
     homeLayout: string;
+    homeThemeVariant: 'gold' | 'sky' | 'emerald' | 'burgundy';
+    setHomeThemeVariant: (variant: 'gold' | 'sky' | 'emerald' | 'burgundy') => void;
     toggleNightMode: () => void;
+    setNightModeActive: (active: boolean) => void;
     customBg?: {
         url: string;
         isVideo: boolean;
@@ -122,6 +125,57 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
     const currentLayoutKey = (homeLayout === 'classic' || homeLayout === 'modern') ? homeLayout : 'modern';
     const isNightMode = Boolean(layoutNightModes[currentLayoutKey]);
 
+    const [homeThemeVariant, setHomeThemeVariantState] = useState<'gold' | 'sky' | 'emerald' | 'burgundy'>(() => {
+        try {
+            const saved = localStorage.getItem('modern_home_theme_variant');
+            if (saved === 'sky' || saved === 'emerald' || saved === 'burgundy' || saved === 'gold') {
+                return saved;
+            }
+            return 'gold';
+        } catch {
+            return 'gold';
+        }
+    });
+
+    const setHomeThemeVariant = (variant: 'gold' | 'sky' | 'emerald' | 'burgundy') => {
+        setHomeThemeVariantState(variant);
+        try {
+            localStorage.setItem('modern_home_theme_variant', variant);
+            applyQuranThemeForHomeVariant(variant);
+        } catch {}
+        setTimeout(() => {
+            window.dispatchEvent(new Event('themeChanged'));
+            window.dispatchEvent(new Event('theme-change'));
+            window.dispatchEvent(new Event('settings-change'));
+        }, 0);
+    };
+
+    useEffect(() => {
+        try {
+            const syncedVariant = localStorage.getItem('quran_synced_home_theme_variant');
+            if (syncedVariant !== homeThemeVariant) {
+                applyQuranThemeForHomeVariant(homeThemeVariant);
+            }
+        } catch (e) {}
+    }, [homeThemeVariant]);
+
+    const setNightModeActive = (active: boolean) => {
+        const layout = (homeLayout === 'classic' || homeLayout === 'modern') ? homeLayout : 'modern';
+        setLayoutNightModes(prev => {
+            try {
+                localStorage.setItem(`night_mode_active_${layout}`, String(active));
+                localStorage.setItem('night_mode_active', String(active));
+            } catch (e) {}
+            return {
+                ...prev,
+                [layout]: active
+            };
+        });
+        setTimeout(() => {
+            window.dispatchEvent(new Event('themeChanged'));
+        }, 0);
+    };
+
     const toggleNightMode = () => {
         const layout = (homeLayout === 'classic' || homeLayout === 'modern') ? homeLayout : 'modern';
         
@@ -168,15 +222,18 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
             if (isNightMode) {
                 return 'deep_black';
             }
-            return isModern ? 'shiny_gold' : 'default';
+            return isModern ? getLinkedQuranThemeForHomeVariant(homeThemeVariant) : 'default';
         }
 
         if (isNightMode) {
             return 'black_gold';
         }
 
-        // فى التصميم الذكى الحديث: تفتح جميع الصفحات كلها ماعدا صفحة القرآن الكريم دائماً على الثيم الذهبى ولا تتأثر نهائياً بتغيير الثيمات من قائمة الصفحة الرئيسية
+        // في التصميم الذكي الحديث: يفتح بالثيم المختار (الذهبي الملكي، أو السماوي، أو الزمردي، أو العنابي)
         if (isModern) {
+            if (homeThemeVariant === 'sky') return 'sky_mode';
+            if (homeThemeVariant === 'emerald') return 'emerald_mode';
+            if (homeThemeVariant === 'burgundy') return 'burgundy_mode';
             return 'shiny_gold';
         }
 
@@ -192,7 +249,7 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
 
         const activeKey = settings.themeKey || 'default';
         return presetThemes[activeKey] ? activeKey : 'default';
-    }, [settings, currentPage, homeLayout, isNightMode]);
+    }, [settings, currentPage, homeLayout, isNightMode, homeThemeVariant]);
 
     const theme = useMemo(() => {
         let baseTheme = presetThemes[activeThemeKey];
@@ -278,6 +335,12 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
                     return { modern: nextModern, classic: nextClassic };
                 });
             } catch (e) {}
+            try {
+                const savedVariant = localStorage.getItem('modern_home_theme_variant');
+                if (savedVariant === 'sky' || savedVariant === 'emerald' || savedVariant === 'burgundy' || savedVariant === 'gold') {
+                    setHomeThemeVariantState(savedVariant);
+                }
+            } catch (e) {}
         };
         const handleLayoutChange = (e: any) => {
             const layout = (e && e.detail) || (typeof localStorage !== 'undefined' ? localStorage.getItem('home_layout_system') : 'modern') || 'modern';
@@ -294,6 +357,16 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
     }, []);
     
     const applyPresetTheme = (key: string) => {
+        if (key === 'sky_mode') {
+            setHomeThemeVariant('sky');
+        } else if (key === 'emerald_mode') {
+            setHomeThemeVariant('emerald');
+        } else if (key === 'burgundy_mode') {
+            setHomeThemeVariant('burgundy');
+        } else if (key === 'shiny_gold' || key === 'default' || key === 'black_gold') {
+            setHomeThemeVariant('gold');
+        }
+
         const pageKey = currentPage === 'quran' || currentPage === 'quran-landscape' || (currentPage && currentPage.startsWith('quran_')) || currentPage === 'quran-search' ? 'quran' : currentPage;
         const isLocked = settings.lockedPages?.includes(pageKey);
 
@@ -450,22 +523,46 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
         if (isBlackGold) {
             document.documentElement.classList.add('theme-black-gold', 'dark');
             document.body.classList.add('theme-black-gold', 'dark');
+            document.documentElement.classList.remove('theme-sky', 'theme-emerald', 'theme-shiny-gold');
+            document.body.classList.remove('theme-sky', 'theme-emerald', 'theme-shiny-gold');
         } else {
             document.documentElement.classList.remove('theme-black-gold');
             document.body.classList.remove('theme-black-gold');
         }
 
         if (isModernHome && !isBlackGold) {
-            document.body.style.color = '#FFFFFF';
+            document.body.style.color = '#000000';
             document.body.style.fontFamily = "'Cairo', sans-serif";
             root.style.setProperty('--theme-font', "'Cairo', sans-serif");
             document.documentElement.classList.remove('theme-black', 'dark');
             document.body.classList.remove('theme-black', 'dark');
             document.documentElement.classList.add('modern-home-active');
             document.body.classList.add('modern-home-active');
+
+            if (homeThemeVariant === 'sky') {
+                document.documentElement.classList.add('theme-sky');
+                document.body.classList.add('theme-sky');
+                document.documentElement.classList.remove('theme-emerald', 'theme-burgundy', 'theme-shiny-gold');
+                document.body.classList.remove('theme-emerald', 'theme-burgundy', 'theme-shiny-gold');
+            } else if (homeThemeVariant === 'emerald') {
+                document.documentElement.classList.add('theme-emerald');
+                document.body.classList.add('theme-emerald');
+                document.documentElement.classList.remove('theme-sky', 'theme-burgundy', 'theme-shiny-gold');
+                document.body.classList.remove('theme-sky', 'theme-burgundy', 'theme-shiny-gold');
+            } else if (homeThemeVariant === 'burgundy') {
+                document.documentElement.classList.add('theme-burgundy');
+                document.body.classList.add('theme-burgundy');
+                document.documentElement.classList.remove('theme-sky', 'theme-emerald', 'theme-shiny-gold');
+                document.body.classList.remove('theme-sky', 'theme-emerald', 'theme-shiny-gold');
+            } else {
+                document.documentElement.classList.add('theme-shiny-gold');
+                document.body.classList.add('theme-shiny-gold');
+                document.documentElement.classList.remove('theme-sky', 'theme-emerald', 'theme-burgundy');
+                document.body.classList.remove('theme-sky', 'theme-emerald', 'theme-burgundy');
+            }
         } else {
-            document.documentElement.classList.remove('modern-home-active');
-            document.body.classList.remove('modern-home-active');
+            document.documentElement.classList.remove('modern-home-active', 'theme-sky', 'theme-emerald', 'theme-burgundy');
+            document.body.classList.remove('modern-home-active', 'theme-sky', 'theme-emerald', 'theme-burgundy');
             document.body.style.color = theme.textColor;
             document.body.style.fontFamily = theme.font;
             root.style.setProperty('--theme-font', theme.font);
@@ -498,10 +595,28 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
         root.style.setProperty('--text-color', isBlackTheme ? '#FFFFFF' : theme.textColor);
         root.style.setProperty('--text-color-muted', isBlackTheme ? '#E2E8F0' : (isDark ? '#94a3b8' : '#64748b'));
 
-        const topBarBgColor = isBlackTheme ? '#000000' : (theme.topBarBg || theme.barBg || theme.palette[0]);
+        const isSkyActive = homeThemeVariant === 'sky' || activeThemeKey === 'sky_mode';
+        const isEmeraldActive = homeThemeVariant === 'emerald' || activeThemeKey === 'emerald_mode';
+        const isBurgundyActive = homeThemeVariant === 'burgundy' || activeThemeKey === 'burgundy_mode';
+
+        const topBarBgColor = isBlackTheme 
+            ? '#000000' 
+            : (isSkyActive
+                ? '#0284c7'
+                : (isEmeraldActive
+                    ? '#047857'
+                    : (isBurgundyActive
+                        ? '#881337'
+                        : (theme.topBarBg || theme.barBg || theme.palette[0]))));
+
         const topBarRgb = hexToRgb(topBarBgColor);
         root.style.setProperty('--top-bar-rgb', isBlackTheme ? '0, 0, 0' : (topBarRgb || '26, 35, 50'));
-        root.style.setProperty('--top-bar-text', isBlackTheme ? '#FFFFFF' : (theme.topBarText || theme.textColor));
+
+        const topBarTextColor = (isSkyActive || isEmeraldActive || isBurgundyActive) 
+            ? '#FFFFFF' 
+            : (isBlackTheme ? '#FFFFFF' : (theme.topBarText || theme.textColor));
+
+        root.style.setProperty('--top-bar-text', topBarTextColor);
         root.style.setProperty('--bottom-bar-bg', isBlackTheme ? '#000000' : (theme.barBg || (isDark ? '#1e293b' : '#ffffff')));
         const barBorderColor = isBlackTheme ? '#333333' : (theme.barBorder ? theme.barBorder.split(' ')[2] : (isDark ? '#334155' : '#e2e8f0'));
         root.style.setProperty('--bottom-bar-border', barBorderColor);
@@ -540,7 +655,7 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
         root.style.setProperty('--qr-modal-bg', isBlackTheme ? '#000000' : (theme.cardBg || (isDark ? '#1e293b' : '#ffffff')));
         root.style.setProperty('--qr-modal-text', isBlackTheme ? '#FFFFFF' : theme.textColor);
         root.style.setProperty('--qr-modal-border', isBlackTheme ? '#FFFFFF' : theme.palette[0]);
-    }, [settings.customBg, theme, currentPage, homeLayout]);
+    }, [settings.customBg, theme, currentPage, homeLayout, homeThemeVariant, isNightMode]);
 
     useEffect(() => {
         // Instantly synchronize home screen theme colors with all widgets
@@ -594,7 +709,10 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
         currentPage,
         isNightMode,
         homeLayout,
+        homeThemeVariant,
+        setHomeThemeVariant,
         toggleNightMode,
+        setNightModeActive,
         customBg: settings.customBg,
         togglePageLock,
         applyPresetTheme,
@@ -602,7 +720,7 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
         resetBackground,
         setIsGlobalTheme,
         setCurrentPage
-    }), [theme, settings, activeThemeKey, isPageLocked, currentPage, isNightMode, homeLayout]);
+    }), [theme, settings, activeThemeKey, isPageLocked, currentPage, isNightMode, homeLayout, homeThemeVariant]);
 
     return (
         <ThemeContext.Provider value={contextValue}>

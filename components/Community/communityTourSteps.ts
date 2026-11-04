@@ -977,35 +977,27 @@ export const PRAYER_TIMES_PAGE_STEPS: SpotlightStep[] = [
   {
     id: 'prayer_home_widgets_guide',
     targetSelector: '#prayer-top-bar-settings-btn',
-    preferredPlacement: 'top',
-    titleAr: 'التطبيقات المصغرة الثلاثة (ودجت الشاشة)',
-    titleEn: 'The 3 Home Screen Widgets & Settings',
-    descAr: `يوفر التطبيق 3 تطبيقات مصغرة (ودجت) يمكنك إضافتها على شاشة هاتفك الرئيسية لمتابعة مواقيت الصلاة لحظياً دون فتح التطبيق:
-• الودجت الشامل (الكبير): يعرض جدول الصلوات الست كاملاً، الصلاة القادمة بالعد التنازلي الحي، التاريخ الهجري والميلادي، وأوقات منتصف الليل والثلث الأخير.
-• ودجت البطاقة المتوسطة: بطاقة أنيقة تعرض المدينة والتاريخ مع إبراز الصلاة القادمة والعد التنازلي وشريط مواقيت الصلوات.
-• الودجت المدمج (الصغير): تصميم مختصر ومرتب يعرض اسم المدينة والصلاة القادمة وموعدها في مساحة مدمجة.
+    preferredPlacement: 'bottom',
+    titleAr: 'التطبيقات المصغرة (٤ تطبيقات للشاشة)',
+    titleEn: '4 Home Screen Widgets & Settings',
+    descAr: `يوفر التطبيق ٤ تطبيقات مصغرة (ودجت) يمكنك إضافتها لشاشة هاتفك لمتابعة مواقيت الصلاة:
+• كلاسيكي شامل (٤×١)
+• مصغر السابقة والقادمة (٣×١)
+• مجسم عصري ثلاثي الأبعاد (٤×٢)
+• المحراب والزخرفة الإسلامية (٤×٢)
 
-🎨 التغير التلقائي مع الثيم:
-تتلون التطبيقات المصغرة الثلاثة وتتغير تصاميمها تلقائياً وفورياً لتنسجم مع أي ثيم تختاره داخل التطبيق (فاتح، داكن، ذهبي، أو افتراضي).
+⚙️ ضبط الشفافية وثيم الألوان:
+اضغط مطولاً على أي تطبيق مصغر بشاشة هاتفك ثم اختر (الضبط) للتحكم في نسبة الشفافية (من 0% إلى 100%) وتغيير ثيم الألوان بالكامل بنقرة واحدة.`,
+    descEn: `The app provides 4 unique home screen widgets to track prayer times live:
+• Classic Comprehensive (4x1)
+• Compact Prev & Next (3x1)
+• Modern 3D Floating Pods (4x2)
+• Royal Islamic Mihrab Arch (4x2)
 
-⚙️ تثبيت اللون أو اللغة من الإعدادات:
-من زر الإعدادات (⚙️) بالأعلى ← قسم «التطبيقات المصغرة (الودجت)»، يمكنك:
-• تثبيت ثيم الودجت: للاحتفاظ بلون ومظهر الودجت الحالي ثابتاً على شاشة هاتفك دون أن يتأثر عند تغيير ثيم التطبيق لاحقاً.
-• تثبيت العربية أو الإنجليزية: لتثبيت لغة عرض الودجت بالعربية دائماً أو بالإنجليزية دائماً بشكل مستقل تماماً عن لغة التطبيق.`,
-    descEn: `The app provides 3 Home Screen Widgets you can add directly to your phone's home screen to track prayer times live without opening the app:
-• Full Comprehensive Widget: Displays all six daily prayer times, next prayer with live countdown, Hijri & Gregorian dates, plus Midnight and Last Third times.
-• Medium Card Widget: An elegant card showing your city and date while highlighting the upcoming prayer, countdown, and daily prayer strip.
-• Compact Mini Widget: A clean, space-saving layout showing your city, the next prayer, and its exact time.
-
-🎨 Automatic Theme Sync:
-All three widgets automatically and instantly adapt their colors and styling whenever you change the app theme (light, dark, golden, or default).
-
-⚙️ Lock Color or Language via Settings:
-Tap the Settings icon (⚙️) above → "Home Screen Widgets" section to:
-• Lock Widget Theme: Keep your widget's current color palette fixed on your phone screen even if you switch the app theme later.
-• Lock Arabic / Lock English: Pin the widget display language permanently to Arabic or English independently of the app language.`,
-    badgeAr: 'التطبيقات المصغرة • 3 أشكال',
-    badgeEn: '3 Home Widgets',
+⚙️ Transparency & Colors:
+Long-press any widget on your phone screen and tap Settings to adjust transparency (0% to 100%) and choose your favorite color theme.`,
+    badgeAr: '٤ تطبيقات مصغرة • تخصيص كامل',
+    badgeEn: '4 Widgets • Customization',
     iconName: 'widgets',
     accentColor: '#10b981',
     gradient: 'from-emerald-500 to-teal-600'
@@ -1629,12 +1621,12 @@ export const SMART_HOME_PAGE_STEPS: SpotlightStep[] = [
   {
     id: 'smart_home_edit_mode',
     targetSelector: '#app-title',
-    titleAr: 'الضغط المطول على اسم التطبيق (ترتيب البطاقات)',
-    titleEn: 'Hold App Title (Reorder Cards)',
-    descAr: 'اضغط مطولاً (~ثانية واحدة) على اسم التطبيق لتفعيل وضع التعديل، حيث يمكنك إعادة ترتيب البطاقات وتغيير أماكنها بالأسهم (⬆️ و ⬇️)، وعند الانتهاء اضغط مطولاً مجدداً على اسم التطبيق لحفظ التعديل نهائياً.',
-    descEn: 'Long press (~1 second) the app title in the top header to activate edit mode and swap card positions using the arrows. Long press the app title again when finished to save your custom layout permanently.',
-    badgeAr: 'ترتيب البطاقات',
-    badgeEn: 'Reorder Cards',
+    titleAr: 'الضغط المطول على اسم التطبيق (السحب والإفلات)',
+    titleEn: 'Hold App Title (Drag & Drop Reorder)',
+    descAr: 'اضغط مطولاً (~ثانية واحدة) على اسم التطبيق لتفعيل وضع التعديل الذكي؛ حيث يمكنك نقل البطاقات وتغيير أماكنها بسهولة وسلاسة عن طريق السحب والإفلات بلمس إصبعك مباشرة على الشاشة. وعند الانتهاء يظهر زرا (حفظ ✓) و(استعادة ↺) أعلى الشريط للحفظ أو الاستعادة.',
+    descEn: 'Long press (~1 second) the app title to activate edit mode. Reorder any card by dragging and dropping it directly with your finger on screen. Use the top (Save ✓) or (Reset ↺) buttons to apply or restore default layout.',
+    badgeAr: 'السحب والإفلات',
+    badgeEn: 'Drag & Drop',
     iconName: 'slider',
     accentColor: '#d97706',
     gradient: 'from-amber-500 to-amber-600',
@@ -1659,7 +1651,7 @@ export const SMART_HOME_PAGE_STEPS: SpotlightStep[] = [
     targetSelector: '#modern-card-container-quran',
     titleAr: 'بطاقة القرآن الكريم والوصول السريع',
     titleEn: 'Holy Quran & Quick Reading',
-    descAr: 'تصفح القرآن الكريم بالقراءة الرأسية أو العرضية، واستكمل قراءتك من آخر موضع وصلت إليه بلمسة واحدة، مع إمكانية متابعة وردك اليومي وجدول التحفيظ.',
+    descAr: 'تصفح القرآن الكريم بالقراءة الرأسية أو العرضية، واستكمل قراءتك من آخر موضع وصلت إليه بلمسة واحدة، مع متابعة الشريط التفاعلي المتحرك للآية وقراءة السورة بسهولة.',
     descEn: 'Browse the Holy Quran in portrait or landscape mode, resume your last read position in one tap, and track your daily wird and memorization.',
     badgeAr: 'المصحف الشريف',
     badgeEn: 'Holy Quran',
@@ -1667,6 +1659,118 @@ export const SMART_HOME_PAGE_STEPS: SpotlightStep[] = [
     accentColor: '#d97706',
     gradient: 'from-amber-500 to-amber-600',
     preferredPlacement: 'bottom'
+  },
+  {
+    id: 'smart_home_seasonal_card',
+    targetSelector: '#modern-card-container-seasonal',
+    titleAr: 'الشريط الموسمي الذكي',
+    titleEn: 'Smart Seasonal Strip',
+    descAr: 'شريط تفاعلي يتألق بالمناسبات الإسلامية، الأحداث التاريخية العظيمة في مثل هذا اليوم، وإشراقات الإيمان المتجددة.',
+    descEn: 'Interactive seasonal banner featuring Islamic occasions, monumental historical events on this day, and daily spiritual inspirations.',
+    badgeAr: 'الشريط الموسمي',
+    badgeEn: 'Seasonal Strip',
+    iconName: 'sparkles',
+    accentColor: '#d97706',
+    gradient: 'from-amber-500 to-amber-600',
+    preferredPlacement: 'bottom'
+  },
+  {
+    id: 'smart_home_prayer_card',
+    targetSelector: '#modern-card-container-prayer',
+    titleAr: 'بطاقة مواقيت الصلاة والقبلة وتحديث الموقع والتاريخ الهجري',
+    titleEn: 'Prayer Times, Qibla, Location & Hijri Calendar',
+    descAr: 'تستعرض العد التنازلي الحي لأذان الصلاة القادمة ومواقيت الصلوات بدقة. اضغط على زر القبلة (🧭) لتحديد الاتجاه بلمسة واحدة، أو اضغط على التاريخ الهجري للانتقال لصفحة التقويم الهجري الشامل، أو انقر على اسم مدينتك لتحديث الموقع الجغرافي (GPS) تلقائياً وحساب المواقيت بدقة متناهية.',
+    descEn: 'Shows live countdown to next prayer and exact prayer times. Tap the Qibla compass icon (🧭) to find direction, tap the Hijri date to open the Hijri Calendar page, or tap city name/location icon to auto-refresh GPS location and update calculation.',
+    badgeAr: 'مواقيت الصلاة والقبلة',
+    badgeEn: 'Prayer & Qibla',
+    iconName: 'compass',
+    accentColor: '#d97706',
+    gradient: 'from-amber-500 to-amber-600',
+    preferredPlacement: 'bottom'
+  },
+  {
+    id: 'smart_home_adhkar_card',
+    targetSelector: '#modern-card-container-adhkar',
+    titleAr: 'بطاقة أذكار الصباح والمساء (التبديل التلقائي)',
+    titleEn: 'Morning & Evening Adhkar (Auto-Switching)',
+    descAr: 'تتغير البطاقة تلقائياً بحسب الوقت الحالي من اليوم: تتألق بأذكار الصباح خلال فترة النهار، وتتحول تلقائياً لأذكار المساء بعد صلاة العصر وحتى الليل، لضمان وصولك السريع لأذكارك اليومية في وقتها المناسب.',
+    descEn: 'Automatically changes depending on the time of day: displays Morning Adhkar during daytime and switches to Evening Adhkar after Asr until night for instant access to your daily adhkar.',
+    badgeAr: 'أذكار الصباح والمساء',
+    badgeEn: 'Daily Adhkar',
+    iconName: 'clock',
+    accentColor: '#d97706',
+    gradient: 'from-amber-500 to-amber-600',
+    preferredPlacement: 'bottom'
+  },
+  {
+    id: 'smart_home_search_card',
+    targetSelector: '#modern-card-container-search',
+    titleAr: 'بطاقة البحث الشامل والذكي',
+    titleEn: 'Comprehensive Smart Search Bar',
+    descAr: 'مُحرّك بحث ذكي وفوري يُمكّنك من البحث بكلمة واحدة فقط في السور والآيات القرآنية الشريفة، والأحاديث النبوية، والأذكار، وكافة أقسام وخدمات التطبيق بدون عناء؛ مع ترتيب تلقائي لأيقونات الأقسام الأكثر استخداماً وزيارة حسب نمط استخدامك اليومي.',
+    descEn: 'Instant smart search engine allowing you to search across Quran surahs & ayahs, Hadith, Adhkar, and all app services in one place, with dynamic reordering of your most visited apps based on daily usage.',
+    badgeAr: 'البحث الذكي',
+    badgeEn: 'Smart Search',
+    iconName: 'search',
+    accentColor: '#d97706',
+    gradient: 'from-amber-500 to-amber-600',
+    preferredPlacement: 'bottom'
+  },
+  {
+    id: 'smart_home_daily_apps_card',
+    targetSelector: '#modern-card-container-apps',
+    titleAr: 'بطاقة التطبيقات الإسلامية وتطبيقاتك اليومية (بتبويباتها)',
+    titleEn: 'Islamic Apps Drawer & Daily Apps (With Tabs)',
+    descAr: 'درج ذكي وتفاعلي يضم كافة التطبيقات والخدمات الإسلامية مقسمة بتبويباتها الشاملة (المكتبة، العبادات، الأدوات).',
+    descEn: 'Interactive smart drawer featuring all Islamic apps categorized into comprehensive tabs (Library, Worship, Tools).',
+    badgeAr: 'التطبيقات الإسلامية',
+    badgeEn: 'Islamic Apps',
+    iconName: 'widgets',
+    accentColor: '#d97706',
+    gradient: 'from-amber-500 to-amber-600',
+    preferredPlacement: 'bottom'
+  },
+  {
+    id: 'smart_home_tracker_card',
+    targetSelector: '#modern-card-container-tracker',
+    titleAr: 'بطاقة مربي الصلوات الخمس والصدقات والورد',
+    titleEn: 'Prayers, Charity & Wird Tracker Card',
+    descAr: 'تتبع أداء الصلوات الخمس المفروضة، السنن، الصدقات، والورد القرآني اليومي مع نسبة إنجاز مئوية تفاعلية لتعزيز الالتزام والمداومة على الطاعات.',
+    descEn: 'Track obligatory prayers, sunnahs, charity, and daily Quran recitation with interactive progress percentages to boost spiritual consistency.',
+    badgeAr: 'مربي الصلوات والصدقات',
+    badgeEn: 'Worship Tracker',
+    iconName: 'action',
+    accentColor: '#d97706',
+    gradient: 'from-amber-500 to-amber-600',
+    preferredPlacement: 'bottom'
+  },
+  {
+    id: 'smart_home_reflections_card',
+    targetSelector: '#modern-card-container-reflections',
+    titleAr: 'بطاقة إشراقات وذاكرة اليوم والحكمة اليومية',
+    titleEn: 'Reflections, Daily Memory & Wisdom Card',
+    descAr: 'تستعرض الحكم الإسلامية الخالدة، أحداث ذاكرة التاريخ الإسلامي، وأبرز المحطات اليومية مع إمكانية التكبير والتصفح والمشاركة كبطاقات مصممة.',
+    descEn: 'Browse timeless Islamic wisdoms, key Islamic history milestones, and daily reflections with zoom, browsing, and card sharing.',
+    badgeAr: 'إشراقات وذاكرة اليوم',
+    badgeEn: 'Reflections & Memory',
+    iconName: 'sparkles',
+    accentColor: '#d97706',
+    gradient: 'from-amber-500 to-amber-600',
+    preferredPlacement: 'bottom'
+  },
+  {
+    id: 'smart_home_share_card',
+    targetSelector: '#modern-card-container-share',
+    titleAr: 'بطاقة شارك التطبيق والكيوار والدعم الفني',
+    titleEn: 'Share App, QR Code & Tech Support Card',
+    descAr: 'تمكنك من مشاركة التطبيق مع عائلتك وأصدقائك، عرض رمز الاستجابة السريعة (QR Code)، والتواصل المباشر مع الدعم الفني عبر الواتساب.',
+    descEn: 'Share the app with family and friends, generate QR codes, and contact technical support directly via WhatsApp.',
+    badgeAr: 'شارك التطبيق والدعم',
+    badgeEn: 'Share & Support',
+    iconName: 'share',
+    accentColor: '#d97706',
+    gradient: 'from-amber-500 to-amber-600',
+    preferredPlacement: 'top'
   }
 ];
 

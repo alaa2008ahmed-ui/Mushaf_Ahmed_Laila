@@ -13,7 +13,7 @@ interface ShareAppQrModalProps {
 
 export const ShareAppQrModal: React.FC<ShareAppQrModalProps> = ({ isOpen, onClose }) => {
   const { language, dir, t } = useLanguage();
-  const { theme, themeKey } = useTheme();
+  const { theme, themeKey, homeThemeVariant, isNightMode } = useTheme();
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
   const [showPrintModal, setShowPrintModal] = useState<boolean>(false);
@@ -26,7 +26,29 @@ export const ShareAppQrModal: React.FC<ShareAppQrModalProps> = ({ isOpen, onClos
     theme.name === 'اسود' ||
     theme.name === 'black';
 
-  const primaryColor = isBlackTheme ? '#f59e0b' : '#b45309';
+  const isSkyTheme = !isNightMode && homeThemeVariant === 'sky';
+  const isEmeraldTheme = !isNightMode && homeThemeVariant === 'emerald';
+  const isBurgundyTheme = !isNightMode && homeThemeVariant === 'burgundy';
+
+  const primaryColor = isBlackTheme 
+    ? '#f59e0b' 
+    : isSkyTheme 
+      ? '#0369a1' 
+      : isEmeraldTheme 
+        ? '#047857' 
+        : isBurgundyTheme
+          ? '#881337'
+          : '#b45309';
+
+  const logoStrokeColor = isBlackTheme
+    ? '#f59e0b'
+    : isSkyTheme
+      ? '#0284c7'
+      : isEmeraldTheme
+        ? '#059669'
+        : isBurgundyTheme
+          ? '#9f1239'
+          : '#d97706';
 
   // Generate QR Code with black color and center logo without damaging QR readability (ECC High)
   useEffect(() => {
@@ -82,7 +104,7 @@ export const ShareAppQrModal: React.FC<ShareAppQrModalProps> = ({ isOpen, onClos
         ctx.fillStyle = '#ffffff';
         ctx.fill();
         ctx.lineWidth = 4;
-        ctx.strokeStyle = isBlackTheme ? '#f59e0b' : '#d97706';
+        ctx.strokeStyle = logoStrokeColor;
         ctx.stroke();
         ctx.restore();
 
@@ -116,7 +138,7 @@ export const ShareAppQrModal: React.FC<ShareAppQrModalProps> = ({ isOpen, onClos
     return () => {
       isMounted = false;
     };
-  }, [isBlackTheme]);
+  }, [isBlackTheme, isSkyTheme, isEmeraldTheme, logoStrokeColor]);
 
   // Manage body class when modal is open to hide floating buttons
   useEffect(() => {
@@ -146,7 +168,6 @@ export const ShareAppQrModal: React.FC<ShareAppQrModalProps> = ({ isOpen, onClos
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, showPrintModal, onClose]);
 
-
   const handlePrint = (size: 'A4' | 'A5') => {
     setShowPrintModal(false);
 
@@ -158,6 +179,11 @@ export const ShareAppQrModal: React.FC<ShareAppQrModalProps> = ({ isOpen, onClos
 
     const widthCss = size === 'A4' ? '210mm' : '148mm';
     const heightCss = size === 'A4' ? '297mm' : '210mm';
+
+    const printBorderPrimary = isSkyTheme ? '#0369a1' : isEmeraldTheme ? '#047857' : isBurgundyTheme ? '#881337' : '#b45309';
+    const printBorderSecondary = isSkyTheme ? '#0284c7' : isEmeraldTheme ? '#059669' : isBurgundyTheme ? '#9f1239' : '#d97706';
+    const printTitleColor = isSkyTheme ? '#0369a1' : isEmeraldTheme ? '#047857' : isBurgundyTheme ? '#881337' : '#b45309';
+    const printSubtitleColor = isSkyTheme ? '#075985' : isEmeraldTheme ? '#064e3b' : isBurgundyTheme ? '#701a75' : '#78350f';
 
     const htmlContent = `
       <!DOCTYPE html>
@@ -205,7 +231,7 @@ export const ShareAppQrModal: React.FC<ShareAppQrModalProps> = ({ isOpen, onClos
               bottom: 6mm;
               left: 6mm;
               right: 6mm;
-              border: 2px solid #b45309;
+              border: 2px solid ${printBorderPrimary};
               pointer-events: none;
             }
             .inner-border {
@@ -214,7 +240,7 @@ export const ShareAppQrModal: React.FC<ShareAppQrModalProps> = ({ isOpen, onClos
               bottom: 8mm;
               left: 8mm;
               right: 8mm;
-              border: 1px solid #d97706;
+              border: 1px solid ${printBorderSecondary};
               pointer-events: none;
             }
             .header-section {
@@ -226,35 +252,35 @@ export const ShareAppQrModal: React.FC<ShareAppQrModalProps> = ({ isOpen, onClos
               font-family: 'Cairo', sans-serif !important;
               font-size: ${size === 'A4' ? '24pt' : '16pt'};
               font-weight: 700;
-              color: #78350f;
+              color: ${printSubtitleColor};
               margin-bottom: 2mm;
             }
             .hadith {
               font-family: 'Cairo', sans-serif !important;
               font-size: ${size === 'A4' ? '13pt' : '9.5pt'};
-              color: #92400e;
+              color: ${printSubtitleColor};
               margin-bottom: 4mm;
             }
             .app-title {
               font-family: 'Cairo', sans-serif !important;
               font-size: ${size === 'A4' ? '30pt' : '20pt'};
               font-weight: 900;
-              color: #b45309;
+              color: ${printTitleColor};
               margin-bottom: 2mm;
             }
             .app-subtitle {
               font-family: 'Cairo', sans-serif !important;
               font-size: ${size === 'A4' ? '14pt' : '10pt'};
-              color: #78350f;
+              color: ${printSubtitleColor};
               font-weight: 600;
             }
             .qr-container {
               z-index: 2;
-              border: 3px solid #b45309;
+              border: 3px solid ${printBorderPrimary};
               border-radius: 24px;
               padding: 10mm;
               background: #ffffff;
-              box-shadow: 0 10px 30px rgba(180, 83, 9, 0.1);
+              box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
               display: flex;
               flex-direction: column;
               align-items: center;
@@ -267,7 +293,7 @@ export const ShareAppQrModal: React.FC<ShareAppQrModalProps> = ({ isOpen, onClos
             }
             .scan-badge {
               margin-top: 5mm;
-              background-color: #b45309;
+              background-color: ${printBorderPrimary};
               color: #ffffff;
               padding: 3mm 8mm;
               border-radius: 50px;
@@ -284,33 +310,27 @@ export const ShareAppQrModal: React.FC<ShareAppQrModalProps> = ({ isOpen, onClos
               font-family: 'Cairo', sans-serif !important;
               font-size: ${size === 'A4' ? '15pt' : '10.5pt'};
               font-weight: bold;
-              color: #78350f;
+              color: ${printSubtitleColor};
               margin-bottom: 1mm;
             }
             .footer-id {
               font-family: 'Cairo', sans-serif !important;
               font-size: ${size === 'A4' ? '12pt' : '8.5pt'};
-              color: #b45309;
+              color: ${printTitleColor};
               font-weight: bold;
               margin-bottom: 1mm;
             }
             .footer-desc {
               font-family: 'Cairo', sans-serif !important;
               font-size: ${size === 'A4' ? '10.5pt' : '7.5pt'};
-              color: #92400e;
+              color: ${printSubtitleColor};
               margin-bottom: 1mm;
             }
             .footer-dua {
               font-family: 'Cairo', sans-serif !important;
               font-size: ${size === 'A4' ? '11.5pt' : '8pt'};
-              color: #b45309;
+              color: ${printTitleColor};
               font-weight: bold;
-            }
-            .url-bottom {
-              font-family: 'Cairo', sans-serif !important;
-              font-size: 7pt;
-              color: #b45309;
-              margin-top: 1mm;
             }
           </style>
         </head>
@@ -356,13 +376,53 @@ export const ShareAppQrModal: React.FC<ShareAppQrModalProps> = ({ isOpen, onClos
 
   if (!isOpen) return null;
 
+  const buttonStyle = {
+    background: isBlackTheme
+      ? 'linear-gradient(180deg, #d97706 0%, #b45309 100%)'
+      : isSkyTheme
+        ? 'linear-gradient(180deg, #0284c7 0%, #0369a1 100%)'
+        : isEmeraldTheme
+          ? 'linear-gradient(180deg, #059669 0%, #047857 100%)'
+          : isBurgundyTheme
+            ? 'linear-gradient(180deg, #9f1239 0%, #881337 100%)'
+            : 'linear-gradient(180deg, #d97706 0%, #b45309 100%)',
+    color: '#ffffff',
+    border: isBlackTheme
+      ? '1.5px solid rgba(251, 191, 36, 0.7)'
+      : isSkyTheme
+        ? '1.5px solid rgba(56, 189, 248, 0.7)'
+        : isEmeraldTheme
+          ? '1.5px solid rgba(52, 211, 153, 0.7)'
+          : isBurgundyTheme
+            ? '1.5px solid rgba(251, 113, 133, 0.7)'
+            : '1.5px solid rgba(251, 191, 36, 0.7)',
+    boxShadow: isBlackTheme
+      ? '0 3px 8px rgba(180, 83, 9, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.4)'
+      : isSkyTheme
+        ? '0 3px 8px rgba(3, 105, 161, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.4)'
+        : isEmeraldTheme
+          ? '0 3px 8px rgba(4, 120, 87, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.4)'
+          : isBurgundyTheme
+            ? '0 3px 8px rgba(136, 19, 55, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.4)'
+            : '0 3px 8px rgba(180, 83, 9, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.4)',
+    fontFamily: "'Cairo', sans-serif",
+  };
+
   return (
     <>
       <div
         id="share-app-qr-modal"
         dir={dir}
         className={`fixed inset-0 z-[9999] flex flex-col justify-between w-full h-full overflow-hidden animate-in fade-in duration-200 select-none font-['Cairo'] ${
-          isBlackTheme ? 'bg-[#09090b] text-white' : 'bg-[#fffdfa] text-slate-800'
+          isBlackTheme 
+            ? 'bg-[#09090b] text-white' 
+            : isSkyTheme 
+              ? 'bg-[#f0f9ff] text-slate-900' 
+              : isEmeraldTheme 
+                ? 'bg-[#f0fdf4] text-slate-900' 
+                : isBurgundyTheme
+                  ? 'bg-[#fff1f2] text-slate-900'
+                  : 'bg-[#fffdfa] text-slate-800'
         }`}
         style={{
           paddingTop: 'env(safe-area-inset-top, 0px)',
@@ -376,18 +436,38 @@ export const ShareAppQrModal: React.FC<ShareAppQrModalProps> = ({ isOpen, onClos
             className={`w-full h-full rounded-none sm:rounded-3xl p-6 sm:p-10 flex flex-col items-center justify-center transition-all ${
               isBlackTheme
                 ? 'bg-[#18181b] border-0 sm:border sm:border-amber-500/20'
-                : 'bg-white border-0 sm:border sm:border-amber-200/80 shadow-xl'
+                : isSkyTheme
+                  ? 'bg-white border-0 sm:border sm:border-sky-300/80 shadow-xl shadow-sky-900/10'
+                  : isEmeraldTheme
+                    ? 'bg-white border-0 sm:border sm:border-emerald-300/80 shadow-xl shadow-emerald-900/10'
+                    : isBurgundyTheme
+                      ? 'bg-white border-0 sm:border sm:border-rose-300/80 shadow-xl shadow-rose-900/10'
+                      : 'bg-white border-0 sm:border sm:border-amber-200/80 shadow-xl'
             }`}
           >
-            {/* اسم التطبيق قبل نص رمز الاستجابة السريعة - بالتنسيق الذهبي الفاخر */}
+            {/* اسم التطبيق قبل نص رمز الاستجابة السريعة */}
             <div className="mb-2 text-center">
               <h2
-                className={`text-xl sm:text-2xl font-black font-['Cairo'] tracking-wide ${
-                  isBlackTheme ? 'text-amber-400' : 'text-amber-900'
-                }`}
+                className="text-xl sm:text-2xl font-black font-['Cairo'] tracking-wide"
                 style={{
-                  color: isBlackTheme ? '#f59e0b' : '#78350f',
-                  textShadow: isBlackTheme ? '0 1px 4px rgba(245, 158, 11, 0.2)' : '0 1px 2px rgba(255, 255, 255, 0.9), 0 2px 4px rgba(180, 83, 9, 0.15)'
+                  color: isBlackTheme 
+                    ? '#f59e0b' 
+                    : isSkyTheme 
+                      ? '#0369a1' 
+                      : isEmeraldTheme 
+                        ? '#047857' 
+                        : isBurgundyTheme
+                          ? '#881337'
+                          : '#78350f',
+                  textShadow: isBlackTheme 
+                    ? '0 1px 4px rgba(245, 158, 11, 0.2)' 
+                    : isSkyTheme 
+                      ? '0 1px 2px rgba(255, 255, 255, 0.9), 0 2px 4px rgba(2, 132, 199, 0.15)' 
+                      : isEmeraldTheme 
+                        ? '0 1px 2px rgba(255, 255, 255, 0.9), 0 2px 4px rgba(5, 150, 105, 0.15)' 
+                        : isBurgundyTheme
+                          ? '0 1px 2px rgba(255, 255, 255, 0.9), 0 2px 4px rgba(136, 19, 55, 0.15)'
+                          : '0 1px 2px rgba(255, 255, 255, 0.9), 0 2px 4px rgba(180, 83, 9, 0.15)'
                 }}
               >
                 {language === 'en' ? 'Mushaf Ahmed & Laial' : 'مصحف أحمد وليلى'}
@@ -397,7 +477,15 @@ export const ShareAppQrModal: React.FC<ShareAppQrModalProps> = ({ isOpen, onClos
             {/* عنوان الكيو ار */}
             <h3
               className={`text-base sm:text-lg font-bold mb-2 font-['Cairo'] ${
-                isBlackTheme ? 'text-zinc-200' : 'text-amber-950'
+                isBlackTheme 
+                  ? 'text-zinc-200' 
+                  : isSkyTheme 
+                    ? 'text-sky-950' 
+                    : isEmeraldTheme 
+                      ? 'text-emerald-950' 
+                      : isBurgundyTheme
+                        ? 'text-rose-950'
+                        : 'text-amber-950'
               }`}
             >
               {t('app_share.qr_page_title', 'رمز الاستجابة السريعة (QR Code)')}
@@ -405,7 +493,15 @@ export const ShareAppQrModal: React.FC<ShareAppQrModalProps> = ({ isOpen, onClos
 
             <p
               className={`text-xs sm:text-sm font-semibold leading-relaxed mb-6 max-w-md px-2 font-['Cairo'] ${
-                isBlackTheme ? 'text-zinc-300' : 'text-amber-900/80'
+                isBlackTheme 
+                  ? 'text-zinc-300' 
+                  : isSkyTheme 
+                    ? 'text-sky-900/80' 
+                    : isEmeraldTheme 
+                      ? 'text-emerald-900/80' 
+                      : isBurgundyTheme
+                        ? 'text-rose-900/80'
+                        : 'text-amber-900/80'
               }`}
             >
               {t(
@@ -416,7 +512,15 @@ export const ShareAppQrModal: React.FC<ShareAppQrModalProps> = ({ isOpen, onClos
 
             {/* إطار رمز الكيو ار */}
             <div className={`relative p-4 sm:p-5 rounded-3xl bg-white shadow-xl flex items-center justify-center border-2 ${
-              isBlackTheme ? 'border-amber-500/30 shadow-amber-900/10' : 'border-amber-300/80 shadow-amber-900/10'
+              isBlackTheme 
+                ? 'border-amber-500/30 shadow-amber-900/10' 
+                : isSkyTheme 
+                  ? 'border-sky-400/80 shadow-sky-900/10' 
+                  : isEmeraldTheme 
+                    ? 'border-emerald-400/80 shadow-emerald-900/10' 
+                    : isBurgundyTheme
+                      ? 'border-rose-400/80 shadow-rose-900/10'
+                      : 'border-amber-300/80 shadow-amber-900/10'
             }`}>
               {loading ? (
                 <div className="w-64 h-64 sm:w-80 sm:h-80 flex items-center justify-center">
@@ -440,7 +544,7 @@ export const ShareAppQrModal: React.FC<ShareAppQrModalProps> = ({ isOpen, onClos
           </div>
         </div>
 
-        {/* أزرار الطباعة والإغلاق في أسفل الصفحة بالتنسيق الذهبي الراقٍ */}
+        {/* أزرار الطباعة والإغلاق في أسفل الصفحة بتنسيق يطابق الثيم */}
         <div className="w-full p-3 sm:p-5 bg-transparent">
           <div className={`w-full max-w-md mx-auto ${!isNative ? 'grid grid-cols-2 gap-3' : 'flex justify-center'}`}>
             {/* زر الطباعة - يظهر فقط عندما يعمل التطبيق على المتصفح */}
@@ -449,12 +553,7 @@ export const ShareAppQrModal: React.FC<ShareAppQrModalProps> = ({ isOpen, onClos
                 type="button"
                 onClick={() => setShowPrintModal(true)}
                 className="py-2.5 px-5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-md active:scale-95 transition-all cursor-pointer text-white font-['Cairo']"
-                style={{
-                  background: 'linear-gradient(180deg, #d97706 0%, #b45309 100%)',
-                  boxShadow: '0 3px 8px rgba(180, 83, 9, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.4)',
-                  color: '#ffffff',
-                  fontFamily: "'Cairo', sans-serif",
-                }}
+                style={buttonStyle}
                 title={t('app_share.print', 'طباعة')}
               >
                 <Printer className="w-4 h-4" />
@@ -462,7 +561,7 @@ export const ShareAppQrModal: React.FC<ShareAppQrModalProps> = ({ isOpen, onClos
               </button>
             )}
 
-            {/* زر الإغلاق - تفتيح اللون وتصغير الحجم بتطبيق APK */}
+            {/* زر الإغلاق */}
             <button
               type="button"
               onClick={onClose}
@@ -471,13 +570,7 @@ export const ShareAppQrModal: React.FC<ShareAppQrModalProps> = ({ isOpen, onClos
                   ? 'py-2 px-6 text-xs sm:text-sm rounded-xl max-w-[160px] w-full'
                   : 'py-2.5 px-5 text-sm rounded-xl w-full'
               }`}
-              style={{
-                background: 'linear-gradient(180deg, #d97706 0%, #b45309 100%)',
-                color: '#ffffff',
-                border: '1.5px solid rgba(251, 191, 36, 0.7)',
-                boxShadow: '0 3px 8px rgba(180, 83, 9, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.4)',
-                fontFamily: "'Cairo', sans-serif",
-              }}
+              style={buttonStyle}
               title={t('common.close', 'إغلاق')}
             >
               <span>{t('common.close', 'إغلاق')}</span>
@@ -485,7 +578,6 @@ export const ShareAppQrModal: React.FC<ShareAppQrModalProps> = ({ isOpen, onClos
           </div>
         </div>
       </div>
-
 
       {/* نافذة اختيار حجم الطباعة (A4 أو A5) */}
       {showPrintModal && (
@@ -496,14 +588,39 @@ export const ShareAppQrModal: React.FC<ShareAppQrModalProps> = ({ isOpen, onClos
         >
           <div
             className={`w-full max-w-sm rounded-3xl p-6 shadow-2xl flex flex-col gap-4 text-center font-['Cairo'] ${
-              isBlackTheme ? 'bg-[#18181b] text-white border border-amber-500/20' : 'bg-white text-slate-800 border border-amber-200'
+              isBlackTheme 
+                ? 'bg-[#18181b] text-white border border-amber-500/20' 
+                : isSkyTheme 
+                  ? 'bg-white text-slate-800 border border-sky-300' 
+                  : isEmeraldTheme 
+                    ? 'bg-white text-slate-800 border border-emerald-300' 
+                    : 'bg-white text-slate-800 border border-amber-200'
             }`}
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-lg font-bold font-['Cairo']" style={{ color: isBlackTheme ? '#f59e0b' : '#78350f' }}>
+            <h3 
+              className="text-lg font-bold font-['Cairo']" 
+              style={{ 
+                color: isBlackTheme 
+                  ? '#f59e0b' 
+                  : isSkyTheme 
+                    ? '#0369a1' 
+                    : isEmeraldTheme 
+                      ? '#047857' 
+                      : '#78350f' 
+              }}
+            >
               {language === 'en' ? 'Select Print Paper Size' : 'اختر حجم ورقة الطباعة'}
             </h3>
-            <p className={`text-xs font-['Cairo'] ${isBlackTheme ? 'text-zinc-300' : 'text-amber-900/80'}`}>
+            <p className={`text-xs font-['Cairo'] ${
+              isBlackTheme 
+                ? 'text-zinc-300' 
+                : isSkyTheme 
+                  ? 'text-sky-900/80' 
+                  : isEmeraldTheme 
+                    ? 'text-emerald-900/80' 
+                    : 'text-amber-900/80'
+            }`}>
               {language === 'en' ? 'Choose A4 or A5 format for the document' : 'يرجى تحديد حجم الورق المناسب للطباعة (A4 أو A5)'}
             </p>
 
@@ -512,9 +629,7 @@ export const ShareAppQrModal: React.FC<ShareAppQrModalProps> = ({ isOpen, onClos
                 type="button"
                 onClick={() => handlePrint('A4')}
                 className="py-3 px-4 rounded-xl font-bold text-white active:scale-95 transition-all shadow-md cursor-pointer font-['Cairo']"
-                style={{
-                  background: 'linear-gradient(180deg, #d97706 0%, #b45309 100%)',
-                }}
+                style={buttonStyle}
               >
                 {t('app_share.print_a4', 'طباعة A4')}
               </button>
@@ -522,9 +637,7 @@ export const ShareAppQrModal: React.FC<ShareAppQrModalProps> = ({ isOpen, onClos
                 type="button"
                 onClick={() => handlePrint('A5')}
                 className="py-3 px-4 rounded-xl font-bold text-white active:scale-95 transition-all shadow-md cursor-pointer font-['Cairo']"
-                style={{
-                  background: 'linear-gradient(180deg, #d97706 0%, #b45309 100%)',
-                }}
+                style={buttonStyle}
               >
                 {t('app_share.print_a5', 'طباعة A5')}
               </button>
@@ -534,7 +647,13 @@ export const ShareAppQrModal: React.FC<ShareAppQrModalProps> = ({ isOpen, onClos
               type="button"
               onClick={() => setShowPrintModal(false)}
               className={`mt-2 py-2 px-4 rounded-xl text-xs font-semibold font-['Cairo'] cursor-pointer ${
-                isBlackTheme ? 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700' : 'bg-amber-100/60 text-amber-900 hover:bg-amber-100'
+                isBlackTheme 
+                  ? 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700' 
+                  : isSkyTheme 
+                    ? 'bg-sky-100/60 text-sky-900 hover:bg-sky-100' 
+                    : isEmeraldTheme 
+                      ? 'bg-emerald-100/60 text-emerald-900 hover:bg-emerald-100' 
+                      : 'bg-amber-100/60 text-amber-900 hover:bg-amber-100'
               }`}
             >
               {t('common.cancel', 'إلغاء')}

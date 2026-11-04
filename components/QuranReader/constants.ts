@@ -547,6 +547,85 @@ export const isNightModeForLayout = (layout: 'classic' | 'modern'): boolean => {
     }
 };
 
+export const getLinkedQuranThemeForHomeVariant = (variant?: string | null): string => {
+    let v = variant;
+    if (!v && typeof localStorage !== 'undefined') {
+        try {
+            v = localStorage.getItem('modern_home_theme_variant');
+        } catch {}
+    }
+    if (v === 'burgundy') return 'maroon';
+    if (v === 'emerald') return 'green';
+    if (v === 'sky') return 'night_sky';
+    return 'gold';
+};
+
+export const applyQuranThemeForHomeVariant = (variant: 'gold' | 'sky' | 'emerald' | 'burgundy' | string) => {
+    const quranThemeId = getLinkedQuranThemeForHomeVariant(variant);
+    const theme = (THEMES as any)[quranThemeId] || THEMES['gold'];
+    const modes = ['mushaf', 'tafseer', 'meanings', 'bilingual', 'translation'] as const;
+    const orients = ['_v', '_h'] as const;
+    const colors = getToolbarColorsForTheme(theme);
+    const colorsJson = JSON.stringify(colors);
+
+    try {
+        localStorage.setItem('quran_synced_home_theme_variant', variant);
+        
+        // Root fallbacks
+        localStorage.setItem('current_theme_id', quranThemeId);
+        localStorage.setItem('current_theme_id_v', quranThemeId);
+        localStorage.setItem('current_theme_id_h', quranThemeId);
+
+        for (const m of modes) {
+            localStorage.setItem(`current_theme_id_${m}`, quranThemeId);
+            localStorage.setItem(`current_theme_id_modern_${m}`, quranThemeId);
+            localStorage.setItem(`quran_user_chosen_theme_modern_${m}`, quranThemeId);
+
+            for (const orient of orients) {
+                const scopedKey = `current_theme_id_modern_${m}${orient}`;
+                const mSuffixKey = `current_theme_id_${m}${orient}`;
+                const altKey = `quran_layout_modern_${m}_theme${orient}`;
+                const userChosenKey = `quran_user_chosen_theme_modern_${m}${orient}`;
+
+                localStorage.setItem(scopedKey, quranThemeId);
+                localStorage.setItem(mSuffixKey, quranThemeId);
+                localStorage.setItem(altKey, quranThemeId);
+                localStorage.setItem(userChosenKey, quranThemeId);
+
+                // Scoped suffix used by QuranReader
+                const scopedSuffix = m === 'mushaf' ? orient : `_${m}${orient}`;
+
+                // Toolbar colors
+                localStorage.setItem(`quran_layout_modern_${m}_toolbar_colors${orient}`, colorsJson);
+                localStorage.setItem(`toolbar_colors_v2${scopedSuffix}`, colorsJson);
+                localStorage.setItem(`toolbar_colors_v2${orient}`, colorsJson);
+
+                // Scoped settings
+                const scopedSettingsKey = `quran_settings_modern_${m}_${orient === '_h' ? 'h' : 'v'}`;
+                const generalSettingsKey = `quran_settings${scopedSuffix}`;
+                
+                const existingScoped = localStorage.getItem(scopedSettingsKey);
+                const baseScoped = existingScoped ? JSON.parse(existingScoped) : {};
+                const updatedScoped = {
+                    ...DEFAULT_SETTINGS,
+                    ...baseScoped,
+                    bgColor: theme.bg,
+                    textColor: theme.text,
+                    fontFamily: baseScoped.fontFamily || theme.font,
+                    ...(baseScoped.lockHighlightColor ? {} : { highlightTextColor: theme.highlightText || theme.accent }),
+                    theme: theme.id
+                };
+                localStorage.setItem(scopedSettingsKey, JSON.stringify(updatedScoped));
+                localStorage.setItem(generalSettingsKey, JSON.stringify(updatedScoped));
+            }
+        }
+        
+        localStorage.setItem('quran_theme_changed', 'true');
+    } catch (e) {
+        console.error('Failed to apply linked Quran theme', e);
+    }
+};
+
 export const getQuranThemeForLayout = (
     layout: 'classic' | 'modern', 
     modeSuffix: string = '', 
@@ -570,6 +649,19 @@ export const getQuranThemeForLayout = (
         return 'deep_black';
     }
 
+    if (!isClassic) {
+        try {
+            const synced = localStorage.getItem('quran_synced_home_theme_variant');
+            const currentHomeVariant = localStorage.getItem('modern_home_theme_variant') || 'gold';
+            if (synced !== currentHomeVariant) {
+                applyQuranThemeForHomeVariant(currentHomeVariant);
+                return getLinkedQuranThemeForHomeVariant(currentHomeVariant);
+            }
+        } catch {}
+    }
+
+    const defaultTheme = isClassic ? 'black' : getLinkedQuranThemeForHomeVariant();
+
     const scopedModeKey = `current_theme_id_${layout}_${mKey}`;
     const altKey = `quran_layout_${layout}_${mKey}_theme${modeSuffix}`;
 
@@ -584,7 +676,7 @@ export const getQuranThemeForLayout = (
         }
     } catch {}
 
-    return isClassic ? 'black' : 'gold';
+    return defaultTheme;
 };
 
 export const saveQuranThemeForLayout = (

@@ -287,7 +287,7 @@ function AdkarSabahMasaa({ onBack, onNavigate, navParams }: AdkarSabahMasaaProps
                 onOpenGuide={() => setShowGuide(true)}
             />
 
-            <main ref={mainRef} className="w-full flex-1 overflow-y-auto px-4 pt-3 pb-6">
+            <main ref={mainRef} className="w-full flex-1 overflow-y-auto px-4 pt-3 pb-3">
                 {/* Modern Borderless Search bar and View Mode Switch */}
                 <div className="mb-6 max-w-3xl mx-auto flex items-center gap-2.5 w-full" dir={isEn ? 'ltr' : 'rtl'}>
                     <div className="relative flex-1 rounded-2xl transition-all focus-within:ring-2 focus-within:ring-opacity-40 flex items-center overflow-hidden"
@@ -390,7 +390,7 @@ function AdkarSabahMasaa({ onBack, onNavigate, navParams }: AdkarSabahMasaaProps
                             </p>
                         </div>
                     )}
-                    <div className="shrink-0 w-full h-28 col-span-full"></div>
+                    <div className="shrink-0 w-full h-14 col-span-full"></div>
                 </div>
             </main>
             

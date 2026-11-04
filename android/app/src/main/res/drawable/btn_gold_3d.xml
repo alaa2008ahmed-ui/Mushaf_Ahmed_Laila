@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Pressed state -->
+    <item android:state_pressed="true">
+        <layer-list>
+            <item android:top="2dp">
+                <shape>
+                    <gradient
+                        android:startColor="#D97706"
+                        android:endColor="#B45309"
+                        android:angle="270" />
+                    <corners android:radius="14dp" />
+                    <stroke android:width="1.5dp" android:color="#92400E" />
+                </shape>
+            </item>
+        </layer-list>
+    </item>
+
+    <!-- Normal state with 3D bottom bevel -->
+    <item>
+        <layer-list>
+            <!-- Bottom bevel 3D shadow layer -->
+            <item>
+                <shape>
+                    <solid android:color="#92400E" />
+                    <corners android:radius="14dp" />
+                </shape>
+            </item>
+            <!-- Main elevated golden surface -->
+            <item android:bottom="3.5dp">
+                <shape>
+                    <gradient
+                        android:startColor="#F59E0B"
+                        android:centerColor="#D97706"
+                        android:endColor="#B45309"
+                        android:angle="270" />
+                    <corners android:radius="14dp" />
+                    <stroke android:width="1.5dp" android:color="#FCD34D" />
+                </shape>
+            </item>
+        </layer-list>
+    </item>
+</selector>

@@ -213,6 +213,7 @@ const VideoSplash: React.FC<VideoSplashProps> = ({ onEnded }) => {
 
   return (
     <div
+      id="app-video-splash"
       className={`fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden transition-opacity duration-300 pointer-events-none select-none ${
         isFading ? 'opacity-0' : 'opacity-100'
       }`}

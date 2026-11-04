@@ -28,7 +28,8 @@ import {
     getQuranThemeForLayout,
     saveQuranThemeForLayout,
     getToolbarColorsForTheme,
-    syncQuranThemeToStorage
+    syncQuranThemeToStorage,
+    getLinkedQuranThemeForHomeVariant
 } from '../components/QuranReader/constants';
 import SearchModal from '../components/QuranReader/SearchModal';
 import ThemesModal from '../components/QuranReader/ThemesModal';
@@ -277,7 +278,7 @@ const sanitizeRemovedThemeInStorage = (modeSuffix: string) => {
 };
 
 const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: string, params?: any) => void, onOpenThemes?: () => void, initialLandscape?: boolean, initialSurah?: number, initialAyah?: number, initialPage?: number, isWirdMode?: boolean, isMemorizationMode?: boolean, memorizationSettings?: any, navParams?: any }> = ({ page, onBack, onNavigate, onOpenThemes, initialLandscape = false, initialSurah, initialAyah, initialPage, isWirdMode = false, isMemorizationMode = false, memorizationSettings, navParams }) => {
-    const { setCurrentPage, isGlobalTheme, themeKey, isNightMode } = useTheme();
+    const { setCurrentPage, isGlobalTheme, themeKey, isNightMode, homeThemeVariant } = useTheme();
     const { language, isRTL, formatNumber } = useLanguage();
     const isEn = language === 'en';
 
@@ -1210,7 +1211,8 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
 
         const themeId = getQuranThemeForLayout(layout, mode, readingMode);
         
-        const newTheme = THEMES[themeId as keyof typeof THEMES] || THEMES['gold'];
+        const fallbackThemeId = getLinkedQuranThemeForHomeVariant(homeThemeVariant);
+        const newTheme = THEMES[themeId as keyof typeof THEMES] || THEMES[fallbackThemeId as keyof typeof THEMES] || THEMES['gold'];
         
         setCurrentTheme(newTheme);
         setToolbarColors(getToolbarColorsForTheme(newTheme));
@@ -1296,7 +1298,7 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
             const theme = THEMES['black'];
             setToolbarColors(getToolbarColorsForTheme(theme));
         }
-    }, [themeSuffix, posSuffix, initialSurah, initialPage, localIsMemorizationMode, isWirdMode, isGlobalTheme, isNightMode]);
+    }, [themeSuffix, posSuffix, initialSurah, initialPage, localIsMemorizationMode, isWirdMode, isGlobalTheme, isNightMode, homeThemeVariant]);
     
     useEffect(() => {
         if (!isLandscape) return;
@@ -1721,7 +1723,8 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
         sanitizeRemovedThemeInStorage(mode);
         const layout = getCurrentLayoutContext(navParams);
         const targetThemeId = getQuranThemeForLayout(layout, mode, readingMode);
-        const defaultTheme = THEMES[targetThemeId as keyof typeof THEMES] || THEMES['gold'];
+        const fallbackThemeId = getLinkedQuranThemeForHomeVariant(homeThemeVariant);
+        const defaultTheme = THEMES[targetThemeId as keyof typeof THEMES] || THEMES[fallbackThemeId as keyof typeof THEMES] || THEMES['gold'];
         const saved = localStorage.getItem('quran_settings' + mode);
         const base = saved ? JSON.parse(saved) : {};
         const validatedReader = getValidReaderForMode(readingMode, base.reader);
@@ -1740,7 +1743,8 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
         const mode = getScopedSuffix(readingMode, initialLandscape);
         const layout = getCurrentLayoutContext(navParams);
         const themeId = getQuranThemeForLayout(layout, mode, readingMode);
-        return THEMES[themeId as keyof typeof THEMES] || THEMES['gold'];
+        const fallbackThemeId = getLinkedQuranThemeForHomeVariant(homeThemeVariant);
+        return THEMES[themeId as keyof typeof THEMES] || THEMES[fallbackThemeId as keyof typeof THEMES] || THEMES['gold'];
     });
 
     // Keep screen awake logic
@@ -1789,7 +1793,8 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
         const mode = initialLandscape ? '_h' : '_v';
         const layout = getCurrentLayoutContext(navParams);
         const themeId = getQuranThemeForLayout(layout, mode, readingMode);
-        const theme = THEMES[themeId as keyof typeof THEMES] || THEMES['gold'];
+        const fallbackThemeId = getLinkedQuranThemeForHomeVariant(homeThemeVariant);
+        const theme = THEMES[themeId as keyof typeof THEMES] || THEMES[fallbackThemeId as keyof typeof THEMES] || THEMES['gold'];
         return getToolbarColorsForTheme(theme);
     });
 
@@ -2548,7 +2553,8 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
         const layout = getCurrentLayoutContext(navParams);
         const mode = themeSuffix;
         const targetThemeId = getQuranThemeForLayout(layout, mode, readingMode);
-        const theme = THEMES[targetThemeId as keyof typeof THEMES] || THEMES['gold'];
+        const fallbackThemeId = getLinkedQuranThemeForHomeVariant(homeThemeVariant);
+        const theme = THEMES[targetThemeId as keyof typeof THEMES] || THEMES[fallbackThemeId as keyof typeof THEMES] || THEMES['gold'];
         if (theme) {
             syncQuranThemeToStorage(theme, mode);
             setCurrentTheme(theme);

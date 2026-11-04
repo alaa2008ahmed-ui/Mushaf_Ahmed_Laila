@@ -131,11 +131,6 @@ const ALL_SHORTCUTS = [
     label: "تحميل التفسير",
     icon: <Download size={18} />,
   },
-  {
-    id: "interface-customization",
-    label: "تخصيص الواجهة",
-    icon: <Palette size={18} />,
-  },
   { id: "audio", label: "القراء", icon: <Headphones size={18} /> },
   { id: "font-type", label: "نوع الخط", icon: <Type size={18} /> },
   { id: "notification-settings", label: "الإشعارات", icon: <Bell size={18} /> },
@@ -145,7 +140,6 @@ const ALL_SHORTCUTS = [
 const DEFAULT_SHORTCUTS = [
   "quran-download-parent",
   "tafseer-download",
-  "interface-customization",
   "audio",
   "font-type",
   "notification-settings",

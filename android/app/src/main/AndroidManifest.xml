@@ -86,6 +86,21 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".WidgetConfigureActivity"
+            android:label="ضبط التطبيق المصغر"
+            android:theme="@style/AppTheme.NoActionBar"
+            android:taskAffinity="com.mushaf.ahmedandlayla.widget_config"
+            android:launchMode="singleInstance"
+            android:excludeFromRecents="true"
+            android:documentLaunchMode="always"
+            android:autoRemoveFromRecents="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+            </intent-filter>
+        </activity>
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -94,7 +109,11 @@
             <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" />
         </provider>
 
-        <receiver android:name=".PrayerWidgetProvider" android:exported="true">
+        <!-- Widget 1: Classic Full Matrix Widget -->
+        <receiver
+            android:name=".PrayerAClassicWidgetProvider"
+            android:label="@string/widget_name_classic"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
                 <action android:name="com.mushaf.ahmedandlayla.ACTION_REFRESH_WIDGET" />
@@ -108,10 +127,14 @@
                 android:resource="@xml/prayer_widget_info" />
         </receiver>
 
-        <receiver android:name=".PrayerCompactWidgetProvider" android:exported="true">
+        <!-- Widget 2: Compact Focus Widget (Previous, Next, Remaining) -->
+        <receiver
+            android:name=".PrayerCompactWidgetProvider"
+            android:label="@string/widget_name_compact"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="com.mushaf.ahmedandlayla.ACTION_REFRESH_COMPACT_WIDGET" />
+                <action android:name="com.mushaf.ahmedandlayla.ACTION_REFRESH_COMPACT" />
                 <action android:name="com.mushaf.ahmedandlayla.ACTION_REFRESH_WIDGET" />
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.TIME_SET" />
@@ -123,24 +146,9 @@
                 android:resource="@xml/prayer_compact_widget_info" />
         </receiver>
 
-        <receiver android:name=".PrayerCardWidgetProvider" android:exported="true">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="com.mushaf.ahmedandlayla.ACTION_REFRESH_WIDGET" />
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
-                <action android:name="android.intent.action.TIME_SET" />
-                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
-                <action android:name="android.intent.action.DATE_CHANGED" />
-            </intent-filter>
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/prayer_card_widget_info" />
-        </receiver>
-
-
-
         <receiver
             android:name=".PrayerSilentReceiver"
+
             android:exported="true">
             <intent-filter>
                 <action android:name="com.mushaf.ahmedandlayla.ACTION_START_SILENT" />

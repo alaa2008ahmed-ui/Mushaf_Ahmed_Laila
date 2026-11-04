@@ -12,4 +12,9 @@
     <string name="shortcut_seerah_long">السيرة النبوية الشريفة</string>
     <string name="shortcut_azkar_short">حصن المسلم</string>
     <string name="shortcut_azkar_long">الأذكار وحصن المسلم</string>
+
+    <!-- Widgets -->
+    <string name="widget_name_classic">١. مواقيت الصلاة - كلاسيكي شامل</string>
+    <string name="widget_name_compact">٢. مواقيت الصلاة - مصغر (السابقة والقادمة)</string>
 </resources>
+

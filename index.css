@@ -207,8 +207,8 @@ body.modern-home-active *:not(.quran-font):not(.font-quran),
 }
 
 .golden-3d-inset {
-  background: rgba(255, 255, 255, 0.82) !important;
-  border: 1px solid rgba(217, 119, 6, 0.35) !important;
+  background: rgba(254, 248, 235, 0.88) !important;
+  border: 1px solid rgba(217, 119, 6, 0.3) !important;
   box-shadow: 
     inset 0 2px 4px rgba(180, 115, 20, 0.08),
     0 2px 6px rgba(180, 115, 20, 0.06) !important;
@@ -236,7 +236,7 @@ body.modern-home-active *:not(.quran-font):not(.font-quran),
 }
 
 .golden-3d-btn-light {
-  background: rgba(255, 255, 255, 0.88) !important;
+  background: rgba(254, 248, 235, 0.92) !important;
   color: #451A03 !important;
   border: 1px solid rgba(217, 119, 6, 0.35) !important;
   box-shadow: 
@@ -246,7 +246,7 @@ body.modern-home-active *:not(.quran-font):not(.font-quran),
 }
 
 .golden-3d-btn-light:hover {
-  background: #FFFFFF !important;
+  background: #fef7e6 !important;
 }
 
 .golden-3d-btn-light:active {
@@ -280,70 +280,85 @@ body.modern-home-active *:not(.quran-font):not(.font-quran),
   box-shadow: none !important;
 }
 
-/* 3D Embossed White Pill Button (like in Screenshot 3: مربي العبادات >) */
-.white-3d-pill-btn {
-  background: linear-gradient(180deg, #FFFFFF 0%, #FFFDF9 60%, #FEF9EE 100%) !important;
+/* 3D Embossed Card Pill Button (الوضع الذهبي: لون عاجي ذهبي ناعم وخفيف جداً يكاد لا يُرى بحيث لا يكون أبيض ناصعاً) */
+.white-3d-pill-btn,
+body.theme-shiny-gold .white-3d-pill-btn,
+html.theme-shiny-gold .white-3d-pill-btn {
+  background: linear-gradient(180deg, #fffef9 0%, #fef8eb 60%, #fdf2db 100%) !important;
   color: #451A03 !important;
-  border: 1.5px solid rgba(217, 119, 6, 0.35) !important;
+  border: 1.5px solid rgba(217, 119, 6, 0.3) !important;
   border-radius: 9999px !important;
   box-shadow: 
     0 3.5px 8px rgba(180, 115, 20, 0.15),
     0 1px 2px rgba(0, 0, 0, 0.05),
-    inset 0 2px 1.5px rgba(255, 255, 255, 1),
+    inset 0 2px 1.5px rgba(255, 255, 255, 0.9),
     inset 0 -2px 3px rgba(217, 119, 6, 0.08) !important;
   transition: all 0.15s ease !important;
   display: inline-flex;
   align-items: center;
   justify-content: center;
 }
-.white-3d-pill-btn:hover {
-  background: #FFFFFF !important;
+.white-3d-pill-btn:hover,
+body.theme-shiny-gold .white-3d-pill-btn:hover,
+html.theme-shiny-gold .white-3d-pill-btn:hover {
+  background: linear-gradient(180deg, #fffefb 0%, #fef9ed 60%, #fdf4de 100%) !important;
   transform: translateY(-1px);
-  box-shadow: 0 5px 12px rgba(180, 115, 20, 0.2), inset 0 2px 1.5px rgba(255, 255, 255, 1) !important;
+  box-shadow: 0 5px 12px rgba(180, 115, 20, 0.2), inset 0 2px 1.5px rgba(255, 255, 255, 0.9) !important;
 }
-.white-3d-pill-btn:active {
+.white-3d-pill-btn:active,
+body.theme-shiny-gold .white-3d-pill-btn:active,
+html.theme-shiny-gold .white-3d-pill-btn:active {
   transform: scale(0.95) translateY(1px) !important;
   box-shadow: 0 1.5px 3px rgba(180, 115, 20, 0.15), inset 0 1.5px 3px rgba(180, 115, 20, 0.1) !important;
 }
 
-/* 3D Embossed White Card Container inside Big Golden Cards (البطاقات البيضاء البارزة والمجسمة داخل البطاقات الذهبية) */
-.white-3d-container-card {
-  background: linear-gradient(180deg, #FFFFFF 0%, #FFFFFF 70%, #FDFBF7 100%) !important;
+/* 3D Embossed Card Container inside Big Golden Cards (الوضع الذهبي: لون عاجي ذهبي ناعم وخفيف جداً يكاد لا يُرى بحيث لا يكون أبيض ناصعاً) */
+.white-3d-container-card,
+body.theme-shiny-gold .white-3d-container-card,
+html.theme-shiny-gold .white-3d-container-card {
+  background: linear-gradient(180deg, #fffef9 0%, #fef8eb 60%, #fdf2db 100%) !important;
   border-radius: 1.35rem !important;
-  border: 1px solid rgba(255, 255, 255, 0.95) !important;
+  border: 1px solid rgba(254, 240, 199, 0.9) !important;
   box-shadow: 
     0 5px 0 rgba(217, 119, 6, 0.22),
     0 12px 24px -2px rgba(180, 115, 20, 0.18),
     0 3px 6px rgba(0, 0, 0, 0.04),
-    inset 0 2.5px 2px rgba(255, 255, 255, 1),
+    inset 0 2.5px 2px rgba(255, 255, 255, 0.9),
     inset 0 -2px 3px rgba(217, 119, 6, 0.05) !important;
   position: relative;
 }
 
-/* 3D Raised White Cards & Buttons inside Big Golden Cards (بدون إطار أو تحديد ملون - بارز ومجسم) */
-.white-3d-card-btn {
-  background: linear-gradient(180deg, #FFFFFF 0%, #FFFFFF 65%, #FDFBF7 100%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.95) !important;
+/* 3D Raised Cards & Buttons inside Big Golden Cards (الوضع الذهبي: لون عاجي ذهبي ناعم وخفيف جداً يكاد لا يُرى بحيث لا يكون أبيض ناصعاً) */
+.white-3d-card-btn,
+body.theme-shiny-gold .white-3d-card-btn,
+html.theme-shiny-gold .white-3d-card-btn {
+  background: linear-gradient(180deg, #fffef9 0%, #fef9ed 65%, #fdf4df 100%) !important;
+  border: 1px solid rgba(254, 240, 199, 0.9) !important;
   border-radius: 1.15rem !important;
   box-shadow: 
     0 4.5px 0 rgba(217, 119, 6, 0.18),
     0 8px 18px -2px rgba(180, 115, 20, 0.16),
     0 2px 4px rgba(0, 0, 0, 0.04),
-    inset 0 2px 1px rgba(255, 255, 255, 1),
+    inset 0 2px 1px rgba(255, 255, 255, 0.9),
     inset 0 -2px 3px rgba(217, 119, 6, 0.04) !important;
   transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1) !important;
   position: relative;
 }
-.white-3d-card-btn:hover {
+.white-3d-card-btn:hover,
+body.theme-shiny-gold .white-3d-card-btn:hover,
+html.theme-shiny-gold .white-3d-card-btn:hover {
   transform: translateY(-2px);
+  background: linear-gradient(180deg, #fffefb 0%, #fefaf0 65%, #fdf5e4 100%) !important;
   box-shadow: 
     0 6.5px 0 rgba(217, 119, 6, 0.22),
     0 12px 24px -2px rgba(180, 115, 20, 0.22),
     0 3px 6px rgba(0, 0, 0, 0.06),
-    inset 0 2px 1px rgba(255, 255, 255, 1),
+    inset 0 2px 1px rgba(255, 255, 255, 0.9),
     inset 0 -2px 3px rgba(217, 119, 6, 0.04) !important;
 }
-.white-3d-card-btn:active {
+.white-3d-card-btn:active,
+body.theme-shiny-gold .white-3d-card-btn:active,
+html.theme-shiny-gold .white-3d-card-btn:active {
   transform: translateY(2px) scale(0.96) !important;
   box-shadow: 
     0 1.5px 0 rgba(217, 119, 6, 0.2),
@@ -581,6 +596,828 @@ html.theme-shiny-gold #monthly-table-container,
 html.theme-shiny-gold #monthly-table-container table {
     background-color: #FFFFFF !important;
     background: #FFFFFF !important;
+}
+
+/* ==========================================================================
+   الوضع السماوي (Sky / Azure Mode): خلفية بيضاء، بطاقات سماوية مع أبيض، نصوص وأرقام سوداء، أزرار زرقاء غامقة
+   ========================================================================== */
+body.theme-sky,
+html.theme-sky {
+    background-color: #FFFFFF !important;
+    background-image: none !important;
+    color: #000000 !important;
+}
+
+body.theme-sky #app-title {
+    color: #0369a1 !important;
+    text-shadow: 0 1px 1px rgba(255, 255, 255, 0.8) !important;
+}
+
+/* أشرطة الصفحات العلوية الفرعية في الوضع السماوي - باستثناء هيدر الرئيسية #sticky-title-wrapper */
+body.theme-sky .app-top-bar:not(.quran-context),
+body.theme-sky header:not(#sticky-title-wrapper):not(.quran-reader-header):not(.quran-context),
+html.theme-sky .app-top-bar:not(.quran-context),
+html.theme-sky header:not(#sticky-title-wrapper):not(.quran-reader-header):not(.quran-context) {
+    background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
+    color: #ffffff !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.18) !important;
+    box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25) !important;
+}
+
+body.theme-sky .app-top-bar:not(.quran-context) *,
+body.theme-sky header:not(#sticky-title-wrapper):not(.quran-reader-header):not(.quran-context) *:not(.theme-dropdown-menu):not(.theme-dropdown-menu *),
+html.theme-sky .app-top-bar:not(.quran-context) *,
+html.theme-sky header:not(#sticky-title-wrapper):not(.quran-reader-header):not(.quran-context) *:not(.theme-dropdown-menu):not(.theme-dropdown-menu *) {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+}
+
+body.theme-sky header .theme-dropdown-menu,
+body.theme-sky header .theme-dropdown-menu *,
+body.theme-sky header div[class*="z-50"],
+body.theme-sky header div[class*="z-50"] *,
+html.theme-sky header .theme-dropdown-menu,
+html.theme-sky header .theme-dropdown-menu * {
+    -webkit-text-fill-color: initial !important;
+    color: initial !important;
+}
+
+body.theme-sky .app-top-bar:not(.quran-context) svg,
+body.theme-sky header:not(#sticky-title-wrapper):not(.quran-reader-header):not(.quran-context) svg,
+html.theme-sky .app-top-bar:not(.quran-context) svg,
+html.theme-sky header:not(#sticky-title-wrapper):not(.quran-reader-header):not(.quran-context) svg {
+    stroke: #ffffff !important;
+}
+
+body.theme-sky .app-top-bar:not(.quran-context) svg[fill="none"],
+body.theme-sky header:not(#sticky-title-wrapper):not(.quran-reader-header):not(.quran-context) svg[fill="none"],
+html.theme-sky .app-top-bar:not(.quran-context) svg[fill="none"],
+html.theme-sky header:not(#sticky-title-wrapper):not(.quran-reader-header):not(.quran-context) svg[fill="none"] {
+    fill: none !important;
+}
+
+/* الشريط العلوي للصفحة الرئيسية فقط (#sticky-title-wrapper) باللون الأبيض الناصع الصافي (#FFFFFF) في جميع الثيمات النهارية (السماوي والزمردي والذهبي) */
+body.theme-sky #sticky-title-wrapper,
+html.theme-sky #sticky-title-wrapper,
+body.theme-emerald #sticky-title-wrapper,
+html.theme-emerald #sticky-title-wrapper,
+body.theme-shiny-gold #sticky-title-wrapper,
+html.theme-shiny-gold #sticky-title-wrapper {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    background-image: none !important;
+}
+
+body.theme-sky #sticky-title-wrapper #app-title,
+html.theme-sky #sticky-title-wrapper #app-title {
+    color: #0369a1 !important;
+    -webkit-text-fill-color: #0369a1 !important;
+}
+
+body.theme-sky #sticky-title-wrapper button svg,
+html.theme-sky #sticky-title-wrapper button svg {
+    stroke: #0369a1 !important;
+}
+
+body.theme-emerald #sticky-title-wrapper #app-title,
+html.theme-emerald #sticky-title-wrapper #app-title {
+    color: #047857 !important;
+    -webkit-text-fill-color: #047857 !important;
+}
+
+body.theme-emerald #sticky-title-wrapper button svg,
+html.theme-emerald #sticky-title-wrapper button svg {
+    stroke: #047857 !important;
+}
+
+/* البطاقات باللون السماوي مع الأبيض - مجسمة 3D ومطابقة لنمط الثيم الذهبي */
+body.theme-sky .golden-3d-card,
+html.theme-sky .golden-3d-card,
+body.theme-sky .tactile-3d-card-light,
+html.theme-sky .tactile-3d-card-light {
+    background: linear-gradient(140deg, #F0F9FF 0%, #E0F2FE 18%, #BAE6FD 50%, #7DD3FC 80%, #38BDF8 100%) !important;
+    border: 1.5px solid rgba(14, 165, 233, 0.45) !important;
+    border-radius: 1.5rem !important;
+    box-shadow: 
+        0 12px 28px -4px rgba(2, 132, 199, 0.28),
+        0 6px 12px -2px rgba(2, 132, 199, 0.18),
+        inset 0 2px 2px rgba(255, 255, 255, 0.95),
+        inset 0 -3px 6px rgba(3, 105, 161, 0.16),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.6) !important;
+    color: #000000 !important;
+}
+
+body.theme-sky .golden-3d-card:hover,
+html.theme-sky .golden-3d-card:hover {
+    box-shadow: 
+        0 16px 34px -4px rgba(2, 132, 199, 0.34),
+        0 8px 16px -2px rgba(2, 132, 199, 0.22),
+        inset 0 2px 2px rgba(255, 255, 255, 0.95),
+        inset 0 -3px 6px rgba(3, 105, 161, 0.16),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.7) !important;
+}
+
+/* الحاويات والبطاقات داخل البطاقات السماوية: لون سماوي ناعم وخفيف جداً يكاد لا يُرى بحيث لا يكون أبيض ناصعاً */
+body.theme-sky .white-3d-container-card,
+html.theme-sky .white-3d-container-card {
+    background: linear-gradient(180deg, #f5faff 0%, #ebf5fd 60%, #e1f1fb 100%) !important;
+    border: 1px solid rgba(186, 230, 253, 0.9) !important;
+    box-shadow: 
+        0 5px 0 rgba(14, 165, 233, 0.22),
+        0 12px 24px -2px rgba(2, 132, 199, 0.18),
+        0 3px 6px rgba(0, 0, 0, 0.04),
+        inset 0 2.5px 2px rgba(255, 255, 255, 0.9),
+        inset 0 -2px 3px rgba(14, 165, 233, 0.05) !important;
+}
+
+body.theme-sky .white-3d-card-btn,
+html.theme-sky .white-3d-card-btn {
+    background: linear-gradient(180deg, #f5faff 0%, #ebf5fd 65%, #e1f1fb 100%) !important;
+    border: 1px solid rgba(186, 230, 253, 0.9) !important;
+    box-shadow: 
+        0 4.5px 0 rgba(14, 165, 233, 0.2),
+        0 8px 18px -2px rgba(2, 132, 199, 0.16),
+        0 2px 4px rgba(0, 0, 0, 0.04),
+        inset 0 2px 1px rgba(255, 255, 255, 0.9),
+        inset 0 -2px 3px rgba(14, 165, 233, 0.04) !important;
+}
+
+body.theme-sky .white-3d-card-btn:hover,
+html.theme-sky .white-3d-card-btn:hover {
+    background: linear-gradient(180deg, #f8fcff 0%, #f0f7fe 65%, #e6f3fc 100%) !important;
+}
+
+body.theme-sky .white-3d-pill-btn,
+html.theme-sky .white-3d-pill-btn {
+    background: linear-gradient(180deg, #f5faff 0%, #ebf5fd 60%, #e1f1fb 100%) !important;
+    color: #000000 !important;
+    border: 1.5px solid rgba(14, 165, 233, 0.3) !important;
+    box-shadow: 
+        0 3.5px 8px rgba(2, 132, 199, 0.15),
+        0 1px 2px rgba(0, 0, 0, 0.05),
+        inset 0 2px 1.5px rgba(255, 255, 255, 0.9),
+        inset 0 -2px 3px rgba(14, 165, 233, 0.08) !important;
+}
+
+body.theme-sky .golden-3d-inset,
+html.theme-sky .golden-3d-inset {
+    background: rgba(235, 245, 253, 0.9) !important;
+    border: 1px solid rgba(14, 165, 233, 0.3) !important;
+    box-shadow: 
+        inset 0 2px 4px rgba(2, 132, 199, 0.08),
+        0 2px 6px rgba(2, 132, 199, 0.06) !important;
+    color: #000000 !important;
+}
+
+/* الأزرار بلون أزرق غامق مع نصوص بيضاء */
+body.theme-sky .golden-3d-btn,
+body.theme-sky .golden-3d-pill-btn,
+html.theme-sky .golden-3d-btn,
+html.theme-sky .golden-3d-pill-btn {
+    background: #0369a1 !important;
+    color: #FFFFFF !important;
+    border: none !important;
+    box-shadow: 0 4px 12px rgba(3, 105, 161, 0.35) !important;
+}
+
+body.theme-sky .golden-3d-btn *,
+body.theme-sky .golden-3d-pill-btn *,
+html.theme-sky .golden-3d-btn *,
+html.theme-sky .golden-3d-pill-btn * {
+    color: #FFFFFF !important;
+    -webkit-text-fill-color: #FFFFFF !important;
+}
+
+body.theme-sky .golden-3d-btn:hover,
+body.theme-sky .golden-3d-pill-btn:hover {
+    background: #0284c7 !important;
+}
+
+body.theme-sky .golden-3d-btn:active,
+body.theme-sky .golden-3d-pill-btn:active {
+    background: #075985 !important;
+    transform: scale(0.95) !important;
+}
+
+body.theme-sky .golden-3d-btn-light {
+    background: rgba(235, 245, 253, 0.92) !important;
+    color: #000000 !important;
+    border: 1px solid rgba(14, 165, 233, 0.3) !important;
+    box-shadow: 0 3px 8px rgba(2, 132, 199, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+}
+
+/* النصوص والأرقام باللون الأسود بالكامل في الوضع السماوي (باستثناء العناصر ذات النص والأيقونات الملونة) */
+body.theme-sky .golden-3d-card *:not(.golden-3d-btn):not(.golden-3d-btn *):not(.golden-3d-pill-btn):not(.golden-3d-pill-btn *):not(.prayer-done-badge):not(.prayer-done-badge *):not(button.text-white):not(button.text-white *):not(.badge-text-white):not(.new-app-badge):not(.new-app-badge *):not([class*="text-white"]):not([class*="text-white"] *):not([class*="bg-[#c25e00]"]):not([class*="bg-[#c25e00]"] *):not([class*="bg-sky-800"]):not([class*="bg-sky-800"] *):not([class*="bg-emerald-800"]):not([class*="bg-emerald-800"] *):not(#modern-voice-control-btn):not(#modern-voice-control-btn *):not(.voice-control-icon-svg):not(.voice-control-icon-svg *),
+html.theme-sky .golden-3d-card *:not(.golden-3d-btn):not(.golden-3d-btn *):not(.golden-3d-pill-btn):not(.golden-3d-pill-btn *):not(.prayer-done-badge):not(.prayer-done-badge *):not(button.text-white):not(button.text-white *):not(.badge-text-white):not(.new-app-badge):not(.new-app-badge *):not([class*="text-white"]):not([class*="text-white"] *):not([class*="bg-[#c25e00]"]):not([class*="bg-[#c25e00]"] *):not([class*="bg-sky-800"]):not([class*="bg-sky-800"] *):not([class*="bg-emerald-800"]):not([class*="bg-emerald-800"] *):not(#modern-voice-control-btn):not(#modern-voice-control-btn *):not(.voice-control-icon-svg):not(.voice-control-icon-svg *) {
+    color: #000000 !important;
+    -webkit-text-fill-color: #000000 !important;
+}
+
+body.theme-sky .card-header-title,
+html.theme-sky .card-header-title,
+body.theme-sky .gold-accent-text,
+html.theme-sky .gold-accent-text {
+    color: #000000 !important;
+    -webkit-text-fill-color: #000000 !important;
+}
+
+body.theme-sky .gold-accent-icon svg,
+html.theme-sky .gold-accent-icon svg {
+    color: #0369a1 !important;
+    stroke: #0369a1 !important;
+}
+
+/* أيقونة التحكم الصوتي باللون الأزرق الغامق في الوضع السماوي */
+body.theme-sky #modern-voice-control-btn,
+body.theme-sky #modern-voice-control-btn *,
+body.theme-sky .voice-control-icon-svg,
+body.theme-sky .voice-control-icon-svg *,
+html.theme-sky #modern-voice-control-btn,
+html.theme-sky #modern-voice-control-btn * {
+    color: #0369a1 !important;
+    stroke: #0369a1 !important;
+}
+
+/* شريط الآية المتحرك في الوضع السماوي */
+body.theme-sky .golden-3d-card div[dir="ltr"] {
+    background: linear-gradient(180deg, rgba(240, 249, 255, 0.95) 0%, rgba(224, 242, 254, 0.9) 100%) !important;
+    border: 1px solid rgba(14, 165, 233, 0.35) !important;
+    box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.9), 0 2px 4px rgba(2, 132, 199, 0.1) !important;
+}
+
+body.theme-sky .golden-3d-card div[dir="ltr"] span {
+    color: #000000 !important;
+    -webkit-text-fill-color: #000000 !important;
+    text-shadow: none !important;
+}
+
+/* ==========================================================================
+   الوضع الزمردي (Emerald Mode): خلفية بيضاء، بطاقات زمردية مع أبيض، نصوص وأرقام سوداء، أزرار خضراء غامقة
+   ========================================================================== */
+body.theme-emerald,
+html.theme-emerald {
+    background-color: #FFFFFF !important;
+    background-image: none !important;
+    color: #000000 !important;
+}
+
+body.theme-emerald #app-title {
+    color: #047857 !important;
+    text-shadow: 0 1px 1px rgba(255, 255, 255, 0.8) !important;
+}
+
+/* أشرطة الصفحات العلوية في الوضع الزمردي (للصفحات الفرعية) - باستثناء رئيسية التطبيق #sticky-title-wrapper */
+body.theme-emerald .app-top-bar:not(.quran-context),
+body.theme-emerald header:not(#sticky-title-wrapper):not(.quran-reader-header):not(.quran-context),
+html.theme-emerald .app-top-bar:not(.quran-context),
+html.theme-emerald header:not(#sticky-title-wrapper):not(.quran-reader-header):not(.quran-context) {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+    color: #ffffff !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.18) !important;
+    box-shadow: 0 4px 12px rgba(4, 120, 87, 0.25) !important;
+}
+
+body.theme-emerald .app-top-bar:not(.quran-context) *,
+body.theme-emerald header:not(#sticky-title-wrapper):not(.quran-reader-header):not(.quran-context) *:not(.theme-dropdown-menu):not(.theme-dropdown-menu *),
+html.theme-emerald .app-top-bar:not(.quran-context) *,
+html.theme-emerald header:not(#sticky-title-wrapper):not(.quran-reader-header):not(.quran-context) *:not(.theme-dropdown-menu):not(.theme-dropdown-menu *) {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+}
+
+body.theme-emerald header .theme-dropdown-menu,
+body.theme-emerald header .theme-dropdown-menu *,
+body.theme-emerald header div[class*="z-50"],
+body.theme-emerald header div[class*="z-50"] *,
+html.theme-emerald header .theme-dropdown-menu,
+html.theme-emerald header .theme-dropdown-menu * {
+    -webkit-text-fill-color: initial !important;
+    color: initial !important;
+}
+
+body.theme-emerald .app-top-bar:not(.quran-context) svg,
+body.theme-emerald header:not(#sticky-title-wrapper):not(.quran-reader-header):not(.quran-context) svg,
+html.theme-emerald .app-top-bar:not(.quran-context) svg,
+html.theme-emerald header:not(#sticky-title-wrapper):not(.quran-reader-header):not(.quran-context) svg {
+    stroke: #ffffff !important;
+}
+
+body.theme-emerald .app-top-bar:not(.quran-context) svg[fill="none"],
+body.theme-emerald header:not(#sticky-title-wrapper):not(.quran-reader-header):not(.quran-context) svg[fill="none"],
+html.theme-emerald .app-top-bar:not(.quran-context) svg[fill="none"],
+html.theme-emerald header:not(#sticky-title-wrapper):not(.quran-reader-header):not(.quran-context) svg[fill="none"] {
+    fill: none !important;
+}
+
+/* البطاقات باللون الزمردي مع الأبيض - مجسمة 3D ومطابقة لنمط الثيم الذهبي */
+body.theme-emerald .golden-3d-card,
+html.theme-emerald .golden-3d-card,
+body.theme-emerald .tactile-3d-card-light,
+html.theme-emerald .tactile-3d-card-light {
+    background: linear-gradient(140deg, #F0FDF4 0%, #DCFCE7 18%, #A7F3D0 50%, #6EE7B7 80%, #34D399 100%) !important;
+    border: 1.5px solid rgba(16, 185, 129, 0.45) !important;
+    border-radius: 1.5rem !important;
+    box-shadow: 
+        0 12px 28px -4px rgba(5, 150, 105, 0.28),
+        0 6px 12px -2px rgba(5, 150, 105, 0.18),
+        inset 0 2px 2px rgba(255, 255, 255, 0.95),
+        inset 0 -3px 6px rgba(4, 120, 87, 0.16),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.6) !important;
+    color: #000000 !important;
+}
+
+body.theme-emerald .golden-3d-card:hover,
+html.theme-emerald .golden-3d-card:hover {
+    box-shadow: 
+        0 16px 34px -4px rgba(5, 150, 105, 0.34),
+        0 8px 16px -2px rgba(5, 150, 105, 0.22),
+        inset 0 2px 2px rgba(255, 255, 255, 0.95),
+        inset 0 -3px 6px rgba(4, 120, 87, 0.16),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.7) !important;
+}
+
+/* الحاويات والبطاقات داخل البطاقات الزمردية: لون زمردي نعناعي ناعم وخفيف جداً يكاد لا يُرى بحيث لا يكون أبيض ناصعاً */
+body.theme-emerald .white-3d-container-card,
+html.theme-emerald .white-3d-container-card {
+    background: linear-gradient(180deg, #f4fbf7 0%, #e8f7ee 60%, #ddf3e6 100%) !important;
+    border: 1px solid rgba(167, 243, 208, 0.9) !important;
+    box-shadow: 
+        0 5px 0 rgba(16, 185, 129, 0.22),
+        0 12px 24px -2px rgba(5, 150, 105, 0.18),
+        0 3px 6px rgba(0, 0, 0, 0.04),
+        inset 0 2.5px 2px rgba(255, 255, 255, 0.9),
+        inset 0 -2px 3px rgba(16, 185, 129, 0.05) !important;
+}
+
+body.theme-emerald .white-3d-card-btn,
+html.theme-emerald .white-3d-card-btn {
+    background: linear-gradient(180deg, #f4fbf7 0%, #eaf8f0 65%, #e0f4e8 100%) !important;
+    border: 1px solid rgba(167, 243, 208, 0.9) !important;
+    box-shadow: 
+        0 4.5px 0 rgba(16, 185, 129, 0.2),
+        0 8px 18px -2px rgba(5, 150, 105, 0.16),
+        0 2px 4px rgba(0, 0, 0, 0.04),
+        inset 0 2px 1px rgba(255, 255, 255, 0.9),
+        inset 0 -2px 3px rgba(16, 185, 129, 0.04) !important;
+}
+
+body.theme-emerald .white-3d-card-btn:hover,
+html.theme-emerald .white-3d-card-btn:hover {
+    background: linear-gradient(180deg, #f7fcf9 0%, #eef9f3 65%, #e5f6ec 100%) !important;
+}
+
+body.theme-emerald .white-3d-pill-btn,
+html.theme-emerald .white-3d-pill-btn {
+    background: linear-gradient(180deg, #f4fbf7 0%, #e8f7ee 60%, #ddf3e6 100%) !important;
+    color: #000000 !important;
+    border: 1.5px solid rgba(16, 185, 129, 0.3) !important;
+    box-shadow: 
+        0 3.5px 8px rgba(5, 150, 105, 0.15),
+        0 1px 2px rgba(0, 0, 0, 0.05),
+        inset 0 2px 1.5px rgba(255, 255, 255, 0.9),
+        inset 0 -2px 3px rgba(16, 185, 129, 0.08) !important;
+}
+
+body.theme-emerald .golden-3d-inset,
+html.theme-emerald .golden-3d-inset {
+    background: rgba(232, 247, 238, 0.9) !important;
+    border: 1px solid rgba(16, 185, 129, 0.3) !important;
+    box-shadow: 
+        inset 0 2px 4px rgba(5, 150, 105, 0.08),
+        0 2px 6px rgba(5, 150, 105, 0.06) !important;
+    color: #000000 !important;
+}
+
+/* الأزرار خضراء غامقة مع نصوص بيضاء */
+body.theme-emerald .golden-3d-btn,
+body.theme-emerald .golden-3d-pill-btn,
+html.theme-emerald .golden-3d-btn,
+html.theme-emerald .golden-3d-pill-btn {
+    background: #047857 !important;
+    color: #FFFFFF !important;
+    border: none !important;
+    box-shadow: 0 4px 12px rgba(4, 120, 87, 0.35) !important;
+}
+
+body.theme-emerald .golden-3d-btn *,
+body.theme-emerald .golden-3d-pill-btn *,
+html.theme-emerald .golden-3d-btn *,
+html.theme-emerald .golden-3d-pill-btn * {
+    color: #FFFFFF !important;
+    -webkit-text-fill-color: #FFFFFF !important;
+}
+
+body.theme-emerald .golden-3d-btn:hover,
+body.theme-emerald .golden-3d-pill-btn:hover {
+    background: #059669 !important;
+}
+
+body.theme-emerald .golden-3d-btn:active,
+body.theme-emerald .golden-3d-pill-btn:active {
+    background: #064e3b !important;
+    transform: scale(0.95) !important;
+}
+
+body.theme-emerald .golden-3d-btn-light {
+    background: rgba(232, 247, 238, 0.92) !important;
+    color: #000000 !important;
+    border: 1px solid rgba(16, 185, 129, 0.3) !important;
+    box-shadow: 0 3px 8px rgba(5, 150, 105, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+}
+
+/* النصوص والأرقام باللون الأسود بالكامل في الوضع الزمردي (باستثناء العناصر ذات النص والأيقونات الملونة) */
+body.theme-emerald .golden-3d-card *:not(.golden-3d-btn):not(.golden-3d-btn *):not(.golden-3d-pill-btn):not(.golden-3d-pill-btn *):not(.prayer-done-badge):not(.prayer-done-badge *):not(button.text-white):not(button.text-white *):not(.badge-text-white):not(.new-app-badge):not(.new-app-badge *):not([class*="text-white"]):not([class*="text-white"] *):not([class*="bg-[#c25e00]"]):not([class*="bg-[#c25e00]"] *):not([class*="bg-sky-800"]):not([class*="bg-sky-800"] *):not([class*="bg-emerald-800"]):not([class*="bg-emerald-800"] *):not(#modern-voice-control-btn):not(#modern-voice-control-btn *):not(.voice-control-icon-svg):not(.voice-control-icon-svg *),
+html.theme-emerald .golden-3d-card *:not(.golden-3d-btn):not(.golden-3d-btn *):not(.golden-3d-pill-btn):not(.golden-3d-pill-btn *):not(.prayer-done-badge):not(.prayer-done-badge *):not(button.text-white):not(button.text-white *):not(.badge-text-white):not(.new-app-badge):not(.new-app-badge *):not([class*="text-white"]):not([class*="text-white"] *):not([class*="bg-[#c25e00]"]):not([class*="bg-[#c25e00]"] *):not([class*="bg-sky-800"]):not([class*="bg-sky-800"] *):not([class*="bg-emerald-800"]):not([class*="bg-emerald-800"] *):not(#modern-voice-control-btn):not(#modern-voice-control-btn *):not(.voice-control-icon-svg):not(.voice-control-icon-svg *) {
+    color: #000000 !important;
+    -webkit-text-fill-color: #000000 !important;
+}
+
+body.theme-emerald .card-header-title,
+html.theme-emerald .card-header-title,
+body.theme-emerald .gold-accent-text,
+html.theme-emerald .gold-accent-text {
+    color: #000000 !important;
+    -webkit-text-fill-color: #000000 !important;
+}
+
+body.theme-emerald .gold-accent-icon svg,
+html.theme-emerald .gold-accent-icon svg {
+    color: #047857 !important;
+    stroke: #047857 !important;
+}
+
+/* أيقونة التحكم الصوتي باللون الأخضر الغامق في الوضع الزمردي */
+body.theme-emerald #modern-voice-control-btn,
+body.theme-emerald #modern-voice-control-btn *,
+body.theme-emerald .voice-control-icon-svg,
+body.theme-emerald .voice-control-icon-svg *,
+html.theme-emerald #modern-voice-control-btn,
+html.theme-emerald #modern-voice-control-btn * {
+    color: #047857 !important;
+    stroke: #047857 !important;
+}
+
+/* شريط الآية المتحرك في الوضع الزمردي */
+body.theme-emerald .golden-3d-card div[dir="ltr"] {
+    background: linear-gradient(180deg, rgba(240, 253, 244, 0.95) 0%, rgba(220, 252, 231, 0.9) 100%) !important;
+    border: 1px solid rgba(16, 185, 129, 0.35) !important;
+    box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.9), 0 2px 4px rgba(5, 150, 105, 0.1) !important;
+}
+
+body.theme-emerald .golden-3d-card div[dir="ltr"] span {
+    color: #000000 !important;
+    -webkit-text-fill-color: #000000 !important;
+    text-shadow: none !important;
+}
+
+/* قواعد عامة للأصل والوضع السماوي والزمردي لمنع تغطية نصوص التبويبات المحددة وشارات جديد باللون الأسود */
+body.theme-sky [class*="bg-[#c25e00]"],
+html.theme-sky [class*="bg-[#c25e00]"],
+body.theme-sky [class*="bg-[#c25e00]"] *,
+html.theme-sky [class*="bg-[#c25e00]"] *,
+body.theme-sky .golden-3d-card [class*="bg-[#c25e00]"],
+body.theme-sky .golden-3d-card [class*="bg-[#c25e00]"] *,
+body.theme-sky .new-app-badge,
+html.theme-sky .new-app-badge,
+body.theme-sky .new-app-badge *,
+html.theme-sky .new-app-badge * {
+    background-color: #0369a1 !important;
+    color: #FFFFFF !important;
+    -webkit-text-fill-color: #FFFFFF !important;
+}
+
+body.theme-sky .golden-3d-card button[class*="text-[#78350F]"],
+html.theme-sky .golden-3d-card button[class*="text-[#78350F]"] {
+    color: #000000 !important;
+}
+
+/* شريط التقدم في البطاقات بالوضع السماوي: أزرق غامق */
+body.theme-sky .golden-3d-card [class*="from-sky-800"],
+html.theme-sky .golden-3d-card [class*="from-sky-800"],
+body.theme-sky .golden-3d-card [class*="from-amber-600"],
+html.theme-sky .golden-3d-card [class*="from-amber-600"] {
+    background: linear-gradient(90deg, #075985 0%, #0369a1 50%, #0284c7 100%) !important;
+}
+
+body.theme-emerald [class*="bg-[#c25e00]"],
+html.theme-emerald [class*="bg-[#c25e00]"],
+body.theme-emerald [class*="bg-[#c25e00]"] *,
+html.theme-emerald [class*="bg-[#c25e00]"] *,
+body.theme-emerald .golden-3d-card [class*="bg-[#c25e00]"],
+body.theme-emerald .golden-3d-card [class*="bg-[#c25e00]"] *,
+body.theme-emerald .new-app-badge,
+html.theme-emerald .new-app-badge,
+body.theme-emerald .new-app-badge *,
+html.theme-emerald .new-app-badge * {
+    background-color: #047857 !important;
+    color: #FFFFFF !important;
+    -webkit-text-fill-color: #FFFFFF !important;
+}
+
+body.theme-emerald .golden-3d-card button[class*="text-[#78350F]"],
+html.theme-emerald .golden-3d-card button[class*="text-[#78350F]"] {
+    color: #000000 !important;
+}
+
+/* شريط التقدم في البطاقات بالوضع الزمردي: أخضر غامق */
+body.theme-emerald .golden-3d-card [class*="from-emerald-800"],
+html.theme-emerald .golden-3d-card [class*="from-emerald-800"],
+body.theme-emerald .golden-3d-card [class*="from-amber-600"],
+html.theme-emerald .golden-3d-card [class*="from-amber-600"] {
+    background: linear-gradient(90deg, #064e3b 0%, #047857 50%, #059669 100%) !important;
+}
+
+/* ==========================================================================
+   الوضع العنابي (Burgundy Mode): خلفية بيضاء، بطاقات عنابية مع أبيض، نصوص وأرقام سوداء، أزرار عنابية غامقة
+   ========================================================================== */
+body.theme-burgundy,
+html.theme-burgundy {
+    background-color: #FFFFFF !important;
+    background-image: none !important;
+    color: #000000 !important;
+}
+
+body.theme-burgundy #app-title {
+    color: #881337 !important;
+    text-shadow: 0 1px 1px rgba(255, 255, 255, 0.8) !important;
+}
+
+/* أشرطة الصفحات العلوية في الوضع العنابي (للصفحات الفرعية) - باستثناء رئيسية التطبيق #sticky-title-wrapper */
+body.theme-burgundy .app-top-bar:not(.quran-context),
+body.theme-burgundy header:not(#sticky-title-wrapper):not(.quran-reader-header):not(.quran-context),
+html.theme-burgundy .app-top-bar:not(.quran-context),
+html.theme-burgundy header:not(#sticky-title-wrapper):not(.quran-reader-header):not(.quran-context) {
+    background: linear-gradient(135deg, #9f1239 0%, #881337 100%) !important;
+    color: #ffffff !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.18) !important;
+    box-shadow: 0 4px 12px rgba(136, 19, 55, 0.25) !important;
+}
+
+body.theme-burgundy .app-top-bar:not(.quran-context) *,
+body.theme-burgundy header:not(#sticky-title-wrapper):not(.quran-reader-header):not(.quran-context) *:not(.theme-dropdown-menu):not(.theme-dropdown-menu *),
+html.theme-burgundy .app-top-bar:not(.quran-context) *,
+html.theme-burgundy header:not(#sticky-title-wrapper):not(.quran-reader-header):not(.quran-context) *:not(.theme-dropdown-menu):not(.theme-dropdown-menu *) {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+}
+
+body.theme-burgundy header .theme-dropdown-menu,
+body.theme-burgundy header .theme-dropdown-menu *,
+body.theme-burgundy header div[class*="z-50"],
+body.theme-burgundy header div[class*="z-50"] *,
+html.theme-burgundy header .theme-dropdown-menu,
+html.theme-burgundy header .theme-dropdown-menu * {
+    -webkit-text-fill-color: initial !important;
+    color: initial !important;
+}
+
+body.theme-burgundy .app-top-bar:not(.quran-context) svg,
+body.theme-burgundy header:not(#sticky-title-wrapper):not(.quran-reader-header):not(.quran-context) svg,
+html.theme-burgundy .app-top-bar:not(.quran-context) svg,
+html.theme-burgundy header:not(#sticky-title-wrapper):not(.quran-reader-header):not(.quran-context) svg {
+    stroke: #ffffff !important;
+}
+
+body.theme-burgundy .app-top-bar:not(.quran-context) svg[fill="none"],
+body.theme-burgundy header:not(#sticky-title-wrapper):not(.quran-reader-header):not(.quran-context) svg[fill="none"],
+html.theme-burgundy .app-top-bar:not(.quran-context) svg[fill="none"],
+html.theme-burgundy header:not(#sticky-title-wrapper):not(.quran-reader-header):not(.quran-context) svg[fill="none"] {
+    fill: none !important;
+}
+
+/* الشريط العلوي للصفحة الرئيسية بالثيم العنابي */
+body.theme-burgundy #sticky-title-wrapper,
+html.theme-burgundy #sticky-title-wrapper {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    background-image: none !important;
+}
+
+body.theme-burgundy #sticky-title-wrapper #app-title,
+html.theme-burgundy #sticky-title-wrapper #app-title {
+    color: #881337 !important;
+    -webkit-text-fill-color: #881337 !important;
+}
+
+body.theme-burgundy #sticky-title-wrapper button svg,
+html.theme-burgundy #sticky-title-wrapper button svg {
+    stroke: #881337 !important;
+}
+
+/* البطاقات باللون العنابي مع الأبيض - مجسمة 3D ومطابقة لنمط الثيم الذهبي والسماوي والزمردي */
+body.theme-burgundy .golden-3d-card,
+html.theme-burgundy .golden-3d-card,
+body.theme-burgundy .tactile-3d-card-light,
+html.theme-burgundy .tactile-3d-card-light {
+    background: linear-gradient(140deg, #FFF1F2 0%, #FFE4E6 18%, #FECDD3 50%, #FDA4AF 80%, #FB7185 100%) !important;
+    border: 1.5px solid rgba(225, 29, 72, 0.45) !important;
+    border-radius: 1.5rem !important;
+    box-shadow: 
+        0 12px 28px -4px rgba(159, 18, 57, 0.28),
+        0 6px 12px -2px rgba(159, 18, 57, 0.18),
+        inset 0 2px 2px rgba(255, 255, 255, 0.95),
+        inset 0 -3px 6px rgba(136, 19, 55, 0.16),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.6) !important;
+    color: #000000 !important;
+}
+
+body.theme-burgundy .golden-3d-card:hover,
+html.theme-burgundy .golden-3d-card:hover {
+    box-shadow: 
+        0 16px 34px -4px rgba(159, 18, 57, 0.34),
+        0 8px 16px -2px rgba(159, 18, 57, 0.22),
+        inset 0 2px 2px rgba(255, 255, 255, 0.95),
+        inset 0 -3px 6px rgba(136, 19, 55, 0.16),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.7) !important;
+}
+
+/* الحاويات والبطاقات داخل البطاقات العنابية: لون عنابي وردي ناعم وخفيف جداً يكاد لا يُرى بحيث لا يكون أبيض ناصعاً */
+body.theme-burgundy .white-3d-container-card,
+html.theme-burgundy .white-3d-container-card {
+    background: linear-gradient(180deg, #fef4f6 0%, #fde8eb 60%, #fbdfe4 100%) !important;
+    border: 1px solid rgba(254, 205, 211, 0.9) !important;
+    box-shadow: 
+        0 5px 0 rgba(225, 29, 72, 0.22),
+        0 12px 24px -2px rgba(159, 18, 57, 0.18),
+        0 3px 6px rgba(0, 0, 0, 0.04),
+        inset 0 2.5px 2px rgba(255, 255, 255, 0.9),
+        inset 0 -2px 3px rgba(225, 29, 72, 0.05) !important;
+}
+
+body.theme-burgundy .white-3d-card-btn,
+html.theme-burgundy .white-3d-card-btn {
+    background: linear-gradient(180deg, #fef4f6 0%, #fde9ec 65%, #fce1e6 100%) !important;
+    border: 1px solid rgba(254, 205, 211, 0.9) !important;
+    box-shadow: 
+        0 4.5px 0 rgba(225, 29, 72, 0.2),
+        0 8px 18px -2px rgba(159, 18, 57, 0.16),
+        0 2px 4px rgba(0, 0, 0, 0.04),
+        inset 0 2px 1px rgba(255, 255, 255, 0.9),
+        inset 0 -2px 3px rgba(225, 29, 72, 0.04) !important;
+}
+
+body.theme-burgundy .white-3d-card-btn:hover,
+html.theme-burgundy .white-3d-card-btn:hover {
+    background: linear-gradient(180deg, #fff7f8 0%, #feeff1 65%, #fde5e9 100%) !important;
+}
+
+body.theme-burgundy .white-3d-pill-btn,
+html.theme-burgundy .white-3d-pill-btn {
+    background: linear-gradient(180deg, #fef4f6 0%, #fde8eb 60%, #fbdfe4 100%) !important;
+    color: #000000 !important;
+    border: 1.5px solid rgba(225, 29, 72, 0.3) !important;
+    box-shadow: 
+        0 3.5px 8px rgba(159, 18, 57, 0.15),
+        0 1px 2px rgba(0, 0, 0, 0.05),
+        inset 0 2px 1.5px rgba(255, 255, 255, 0.9),
+        inset 0 -2px 3px rgba(225, 29, 72, 0.08) !important;
+}
+
+body.theme-burgundy .golden-3d-inset,
+html.theme-burgundy .golden-3d-inset {
+    background: rgba(253, 232, 235, 0.9) !important;
+    border: 1px solid rgba(225, 29, 72, 0.3) !important;
+    box-shadow: 
+        inset 0 2px 4px rgba(159, 18, 57, 0.08),
+        0 2px 6px rgba(159, 18, 57, 0.06) !important;
+    color: #000000 !important;
+}
+
+/* الأزرار عنابية غامقة مع نصوص بيضاء */
+body.theme-burgundy .golden-3d-btn,
+body.theme-burgundy .golden-3d-pill-btn,
+html.theme-burgundy .golden-3d-btn,
+html.theme-burgundy .golden-3d-pill-btn {
+    background: #881337 !important;
+    color: #FFFFFF !important;
+    border: none !important;
+    box-shadow: 0 4px 12px rgba(136, 19, 55, 0.35) !important;
+}
+
+body.theme-burgundy .golden-3d-btn *,
+body.theme-burgundy .golden-3d-pill-btn *,
+html.theme-burgundy .golden-3d-btn *,
+html.theme-burgundy .golden-3d-pill-btn * {
+    color: #FFFFFF !important;
+    -webkit-text-fill-color: #FFFFFF !important;
+}
+
+body.theme-burgundy .golden-3d-btn:hover,
+body.theme-burgundy .golden-3d-pill-btn:hover {
+    background: #9f1239 !important;
+}
+
+body.theme-burgundy .golden-3d-btn:active,
+body.theme-burgundy .golden-3d-pill-btn:active {
+    background: #701a75 !important;
+    transform: scale(0.95) !important;
+}
+
+body.theme-burgundy .golden-3d-btn-light {
+    background: rgba(253, 232, 235, 0.92) !important;
+    color: #000000 !important;
+    border: 1px solid rgba(225, 29, 72, 0.3) !important;
+    box-shadow: 0 3px 8px rgba(159, 18, 57, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+}
+
+/* النصوص والأرقام باللون الأسود بالكامل في الوضع العنابي */
+body.theme-burgundy .golden-3d-card *:not(.golden-3d-btn):not(.golden-3d-btn *):not(.golden-3d-pill-btn):not(.golden-3d-pill-btn *):not(.prayer-done-badge):not(.prayer-done-badge *):not(button.text-white):not(button.text-white *):not(.badge-text-white):not(.new-app-badge):not(.new-app-badge *):not([class*="text-white"]):not([class*="text-white"] *):not([class*="bg-[#c25e00]"]):not([class*="bg-[#c25e00]"] *):not([class*="bg-sky-800"]):not([class*="bg-sky-800"] *):not([class*="bg-emerald-800"]):not([class*="bg-emerald-800"] *):not([class*="bg-rose-900"]):not([class*="bg-rose-900"] *):not(#modern-voice-control-btn):not(#modern-voice-control-btn *):not(.voice-control-icon-svg):not(.voice-control-icon-svg *),
+html.theme-burgundy .golden-3d-card *:not(.golden-3d-btn):not(.golden-3d-btn *):not(.golden-3d-pill-btn):not(.golden-3d-pill-btn *):not(.prayer-done-badge):not(.prayer-done-badge *):not(button.text-white):not(button.text-white *):not(.badge-text-white):not(.new-app-badge):not(.new-app-badge *):not([class*="text-white"]):not([class*="text-white"] *):not([class*="bg-[#c25e00]"]):not([class*="bg-[#c25e00]"] *):not([class*="bg-sky-800"]):not([class*="bg-sky-800"] *):not([class*="bg-emerald-800"]):not([class*="bg-emerald-800"] *):not([class*="bg-rose-900"]):not([class*="bg-rose-900"] *):not(#modern-voice-control-btn):not(#modern-voice-control-btn *):not(.voice-control-icon-svg):not(.voice-control-icon-svg *) {
+    color: #000000 !important;
+    -webkit-text-fill-color: #000000 !important;
+}
+
+body.theme-burgundy .card-header-title,
+html.theme-burgundy .card-header-title,
+body.theme-burgundy .gold-accent-text,
+html.theme-burgundy .gold-accent-text {
+    color: #000000 !important;
+    -webkit-text-fill-color: #000000 !important;
+}
+
+body.theme-burgundy .gold-accent-icon svg,
+html.theme-burgundy .gold-accent-icon svg {
+    color: #881337 !important;
+    stroke: #881337 !important;
+}
+
+/* أيقونة التحكم الصوتي باللون العنابي الغامق في الوضع العنابي */
+body.theme-burgundy #modern-voice-control-btn,
+body.theme-burgundy #modern-voice-control-btn *,
+body.theme-burgundy .voice-control-icon-svg,
+body.theme-burgundy .voice-control-icon-svg *,
+html.theme-burgundy #modern-voice-control-btn,
+html.theme-burgundy #modern-voice-control-btn * {
+    color: #9f1239 !important;
+    stroke: #9f1239 !important;
+}
+
+/* شريط الآية المتحرك في الوضع العنابي */
+body.theme-burgundy .golden-3d-card div[dir="ltr"] {
+    background: linear-gradient(180deg, rgba(255, 241, 242, 0.95) 0%, rgba(255, 228, 230, 0.9) 100%) !important;
+    border: 1px solid rgba(225, 29, 72, 0.35) !important;
+    box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.9), 0 2px 4px rgba(159, 18, 57, 0.1) !important;
+}
+
+body.theme-burgundy .golden-3d-card div[dir="ltr"] span {
+    color: #000000 !important;
+    -webkit-text-fill-color: #000000 !important;
+    text-shadow: none !important;
+}
+
+/* التبويبات المحددة وشارات جديد باللون العنابي مع نص أبيض */
+body.theme-burgundy [class*="bg-[#c25e00]"],
+html.theme-burgundy [class*="bg-[#c25e00]"],
+body.theme-burgundy [class*="bg-[#c25e00]"] *,
+html.theme-burgundy [class*="bg-[#c25e00]"] *,
+body.theme-burgundy .golden-3d-card [class*="bg-[#c25e00]"],
+body.theme-burgundy .golden-3d-card [class*="bg-[#c25e00]"] *,
+body.theme-burgundy .new-app-badge,
+html.theme-burgundy .new-app-badge,
+body.theme-burgundy .new-app-badge *,
+html.theme-burgundy .new-app-badge * {
+    background-color: #881337 !important;
+    color: #FFFFFF !important;
+    -webkit-text-fill-color: #FFFFFF !important;
+}
+
+body.theme-burgundy .golden-3d-card button[class*="text-[#78350F]"],
+html.theme-burgundy .golden-3d-card button[class*="text-[#78350F]"] {
+    color: #000000 !important;
+}
+
+/* شريط التقدم في البطاقات بالوضع العنابي: عنابي غامق */
+body.theme-burgundy .golden-3d-card [class*="from-rose-900"],
+html.theme-burgundy .golden-3d-card [class*="from-rose-900"],
+body.theme-burgundy .golden-3d-card [class*="from-amber-600"],
+html.theme-burgundy .golden-3d-card [class*="from-amber-600"] {
+    background: linear-gradient(90deg, #701a75 0%, #881337 50%, #9f1239 100%) !important;
+}
+
+/* ضمان وضوح النصوص في القوائم المنسدلة والنوافذ بالثيم العنابي */
+body.theme-burgundy #sticky-title-wrapper button span,
+body.theme-burgundy #sticky-title-wrapper div[class*="shadow-2xl"] span,
+body.theme-burgundy .theme-selector-container * {
+    font-weight: 800;
+}
+
+body.theme-burgundy #sticky-title-wrapper div[class*="shadow-2xl"] button:not(.bg-rose-50):not(.bg-rose-100) span {
+    color: #0f172a !important;
+}
+
+/* ضمان الشمولية للقوائم بالثيمات السماوي والزمردي والعنابي */
+body.theme-sky #sticky-title-wrapper button span,
+body.theme-emerald #sticky-title-wrapper button span,
+body.theme-sky #sticky-title-wrapper div[class*="shadow-2xl"] span,
+body.theme-emerald #sticky-title-wrapper div[class*="shadow-2xl"] span,
+body.theme-sky .theme-selector-container *,
+body.theme-emerald .theme-selector-container * {
+    font-weight: 800;
+}
+
+body.theme-sky #sticky-title-wrapper div[class*="shadow-2xl"] button:not(.bg-sky-50):not(.bg-sky-100) span,
+body.theme-emerald #sticky-title-wrapper div[class*="shadow-2xl"] button:not(.bg-emerald-50):not(.bg-emerald-100) span {
+    color: #0f172a !important;
 }
 
 /* ==========================================================================
@@ -871,7 +1708,7 @@ body.theme-black .white-3d-card-btn.prayer-card-done,
 .dark .white-3d-pill-btn,
 .dark .night-white-surface,
 .dark .white-3d-card-btn.prayer-card-done {
-    background: #ffffff !important;
+    background: #fbf8f0 !important;
     background-image: none !important;
     color: #000000 !important;
     -webkit-text-fill-color: #000000 !important;
@@ -906,7 +1743,7 @@ body.theme-black .night-white-surface:hover,
 .dark .golden-3d-btn-light:hover,
 .dark .white-3d-pill-btn:hover,
 .dark .night-white-surface:hover {
-    background: #ffffff !important;
+    background: #fdfaf2 !important;
     background-image: none !important;
     box-shadow: none !important;
     transform: none !important;
@@ -1033,6 +1870,167 @@ body:has(#share-app-qr-modal) #scroll-to-top-fab,
   opacity: 0 !important;
   pointer-events: none !important;
 }
+
+/* الزر العائم - الثيم الأسود / الليلي: إطار أبيض وسهم أبيض */
+body.theme-black #scroll-to-top-fab button,
+body.dark #scroll-to-top-fab button,
+html.dark #scroll-to-top-fab button {
+  border: 1.5px solid #FFFFFF !important;
+  border-color: #FFFFFF !important;
+}
+
+body.theme-black #scroll-to-top-fab button svg,
+body.dark #scroll-to-top-fab button svg,
+html.dark #scroll-to-top-fab button svg {
+  color: #FFFFFF !important;
+  stroke: #FFFFFF !important;
+}
+
+/* الزر العائم - الثيم العنابي: لون الزر عنابي غامق والسهم أبيض */
+body.theme-burgundy #scroll-to-top-fab button,
+html.theme-burgundy #scroll-to-top-fab button {
+  background: linear-gradient(135deg, #881337 0%, #701a75 100%) !important;
+  border: 1.5px solid #9f1239 !important;
+  border-color: #9f1239 !important;
+}
+
+body.theme-burgundy #scroll-to-top-fab button svg,
+html.theme-burgundy #scroll-to-top-fab button svg {
+  color: #FFFFFF !important;
+  stroke: #FFFFFF !important;
+}
+
+/* ==========================================================================
+   قائمة التكبير لبطاقة إشراقات وذاكرة اليوم (ثيمات السماوي، الزمردي، العنابي)
+   ========================================================================== */
+
+/* 1. الثيم السماوي */
+body.theme-sky #unified-event-zoom-modal-backdrop .zoom-modal-sheet,
+html.theme-sky #unified-event-zoom-modal-backdrop .zoom-modal-sheet {
+  background: linear-gradient(170deg, #F0F9FF 0%, #E0F2FE 20%, #BAE6FD 50%, #7DD3FC 80%, #38BDF8 100%) !important;
+  border-color: rgba(56, 189, 248, 0.85) !important;
+}
+
+body.theme-sky #unified-event-zoom-modal-backdrop .zoom-category-badge,
+html.theme-sky #unified-event-zoom-modal-backdrop .zoom-category-badge {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-color: rgba(2, 132, 199, 0.5) !important;
+  color: #0369a1 !important;
+  -webkit-text-fill-color: #0369a1 !important;
+}
+
+body.theme-sky #unified-event-zoom-modal-backdrop .zoom-subtitle-badge,
+html.theme-sky #unified-event-zoom-modal-backdrop .zoom-subtitle-badge {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border-color: rgba(2, 132, 199, 0.5) !important;
+  color: #0369a1 !important;
+  -webkit-text-fill-color: #0369a1 !important;
+}
+
+body.theme-sky #unified-event-zoom-modal-backdrop .zoom-modal-action-bar,
+html.theme-sky #unified-event-zoom-modal-backdrop .zoom-modal-action-bar {
+  background: linear-gradient(180deg, rgba(224, 242, 254, 0.55) 0%, rgba(186, 230, 253, 0.85) 100%) !important;
+  border-top-color: rgba(56, 189, 248, 0.7) !important;
+}
+
+body.theme-sky #unified-event-zoom-modal-backdrop .zoom-action-btn:not(.bg-red-500),
+html.theme-sky #unified-event-zoom-modal-backdrop .zoom-action-btn:not(.bg-red-500) {
+  background: linear-gradient(180deg, #FFFFFF 0%, #E0F2FE 60%, #BAE6FD 100%) !important;
+  border: 1px solid rgba(2, 132, 199, 0.45) !important;
+  box-shadow: 0 3px 6px rgba(2, 132, 199, 0.2), inset 0 1px 1px #FFFFFF !important;
+}
+
+body.theme-sky #unified-event-zoom-modal-backdrop .zoom-action-btn svg,
+html.theme-sky #unified-event-zoom-modal-backdrop .zoom-action-btn svg {
+  color: #0369a1 !important;
+  stroke: #0369a1 !important;
+}
+
+/* 2. الثيم الزمردي */
+body.theme-emerald #unified-event-zoom-modal-backdrop .zoom-modal-sheet,
+html.theme-emerald #unified-event-zoom-modal-backdrop .zoom-modal-sheet {
+  background: linear-gradient(170deg, #F0FDF4 0%, #DCFCE7 20%, #BBF7D0 50%, #86EFAC 80%, #34D399 100%) !important;
+  border-color: rgba(52, 211, 153, 0.85) !important;
+}
+
+body.theme-emerald #unified-event-zoom-modal-backdrop .zoom-category-badge,
+html.theme-emerald #unified-event-zoom-modal-backdrop .zoom-category-badge {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-color: rgba(5, 150, 105, 0.5) !important;
+  color: #047857 !important;
+  -webkit-text-fill-color: #047857 !important;
+}
+
+body.theme-emerald #unified-event-zoom-modal-backdrop .zoom-subtitle-badge,
+html.theme-emerald #unified-event-zoom-modal-backdrop .zoom-subtitle-badge {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border-color: rgba(5, 150, 105, 0.5) !important;
+  color: #047857 !important;
+  -webkit-text-fill-color: #047857 !important;
+}
+
+body.theme-emerald #unified-event-zoom-modal-backdrop .zoom-modal-action-bar,
+html.theme-emerald #unified-event-zoom-modal-backdrop .zoom-modal-action-bar {
+  background: linear-gradient(180deg, rgba(220, 252, 231, 0.55) 0%, rgba(187, 247, 208, 0.85) 100%) !important;
+  border-top-color: rgba(52, 211, 153, 0.7) !important;
+}
+
+body.theme-emerald #unified-event-zoom-modal-backdrop .zoom-action-btn:not(.bg-red-500),
+html.theme-emerald #unified-event-zoom-modal-backdrop .zoom-action-btn:not(.bg-red-500) {
+  background: linear-gradient(180deg, #FFFFFF 0%, #DCFCE7 60%, #BBF7D0 100%) !important;
+  border: 1px solid rgba(5, 150, 105, 0.45) !important;
+  box-shadow: 0 3px 6px rgba(5, 150, 105, 0.2), inset 0 1px 1px #FFFFFF !important;
+}
+
+body.theme-emerald #unified-event-zoom-modal-backdrop .zoom-action-btn svg,
+html.theme-emerald #unified-event-zoom-modal-backdrop .zoom-action-btn svg {
+  color: #047857 !important;
+  stroke: #047857 !important;
+}
+
+/* 3. الثيم العنابي */
+body.theme-burgundy #unified-event-zoom-modal-backdrop .zoom-modal-sheet,
+html.theme-burgundy #unified-event-zoom-modal-backdrop .zoom-modal-sheet {
+  background: linear-gradient(170deg, #FFF1F2 0%, #FFE4E6 20%, #FECDD3 50%, #FDA4AF 80%, #FB7185 100%) !important;
+  border-color: rgba(251, 113, 133, 0.85) !important;
+}
+
+body.theme-burgundy #unified-event-zoom-modal-backdrop .zoom-category-badge,
+html.theme-burgundy #unified-event-zoom-modal-backdrop .zoom-category-badge {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-color: rgba(225, 29, 72, 0.5) !important;
+  color: #881337 !important;
+  -webkit-text-fill-color: #881337 !important;
+}
+
+body.theme-burgundy #unified-event-zoom-modal-backdrop .zoom-subtitle-badge,
+html.theme-burgundy #unified-event-zoom-modal-backdrop .zoom-subtitle-badge {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border-color: rgba(225, 29, 72, 0.5) !important;
+  color: #881337 !important;
+  -webkit-text-fill-color: #881337 !important;
+}
+
+body.theme-burgundy #unified-event-zoom-modal-backdrop .zoom-modal-action-bar,
+html.theme-burgundy #unified-event-zoom-modal-backdrop .zoom-modal-action-bar {
+  background: linear-gradient(180deg, rgba(255, 228, 230, 0.55) 0%, rgba(254, 205, 211, 0.85) 100%) !important;
+  border-top-color: rgba(251, 113, 133, 0.7) !important;
+}
+
+body.theme-burgundy #unified-event-zoom-modal-backdrop .zoom-action-btn:not(.bg-red-500),
+html.theme-burgundy #unified-event-zoom-modal-backdrop .zoom-action-btn:not(.bg-red-500) {
+  background: linear-gradient(180deg, #FFFFFF 0%, #FFE4E6 60%, #FECDD3 100%) !important;
+  border: 1px solid rgba(225, 29, 72, 0.45) !important;
+  box-shadow: 0 3px 6px rgba(159, 18, 57, 0.2), inset 0 1px 1px #FFFFFF !important;
+}
+
+body.theme-burgundy #unified-event-zoom-modal-backdrop .zoom-action-btn svg,
+html.theme-burgundy #unified-event-zoom-modal-backdrop .zoom-action-btn svg {
+  color: #881337 !important;
+  stroke: #881337 !important;
+}
+
+
 
 
 

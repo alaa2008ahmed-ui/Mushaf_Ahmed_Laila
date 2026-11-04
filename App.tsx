@@ -735,6 +735,7 @@ function App() {
               setShowExitConfirm={setShowExitConfirm}
               updateInfo={updateInfo}
               setUpdateInfo={setUpdateInfo}
+              isSplashActive={splashStage !== 'app' || !hasChosenInitialLanguage}
             />
           )}
 
@@ -762,7 +763,8 @@ function AppContent({
   setIsThemeSelectorOpen, 
   setShowExitConfirm,
   updateInfo,
-  setUpdateInfo
+  setUpdateInfo,
+  isSplashActive = false
 }: any) {
   const { setCurrentPage: setVoicePage } = useVoiceControl();
   const { theme, themeKey, applyPresetTheme, setCurrentPage: setThemePage } = useTheme();
@@ -965,7 +967,10 @@ function AppContent({
         />
       )}
 
-      <ScrollToTopFAB currentPage={history[history.length - 1]} />
+      <ScrollToTopFAB 
+        currentPage={history[history.length - 1]} 
+        isSplashActive={isSplashActive}
+      />
     </div>
   );
 }

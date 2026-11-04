@@ -41,6 +41,32 @@ function HisnAlmuslim({ onBack, onNavigate, navParams }: HisnAlmuslimProps) {
     const [activeTab, setActiveTab] = useState<'grid' | 'list'>('grid');
     const [showGuide, setShowGuide] = useState(false);
     const fabRef = useRef<HTMLButtonElement>(null);
+    const fabContainerRef = useRef<HTMLDivElement>(null);
+    const mainRef = useRef<HTMLElement>(null);
+
+    useEffect(() => {
+        const scrollToTop = () => {
+            if (mainRef.current) {
+                try { mainRef.current.scrollTop = 0; } catch {}
+                try { mainRef.current.scrollTo({ top: 0, behavior: 'instant' }); } catch {}
+            }
+            try { window.scrollTo({ top: 0, behavior: 'instant' }); } catch {}
+            try { document.documentElement.scrollTop = 0; } catch {}
+            try { document.body.scrollTop = 0; } catch {}
+            const scrollables = document.querySelectorAll('.overflow-y-auto, [class*="overflow-y-auto"]');
+            scrollables.forEach(el => {
+                try { el.scrollTop = 0; } catch {}
+            });
+        };
+
+        scrollToTop();
+        const t1 = setTimeout(scrollToTop, 20);
+        const t2 = setTimeout(scrollToTop, 100);
+        return () => {
+            clearTimeout(t1);
+            clearTimeout(t2);
+        };
+    }, [selectedCategory]);
     
     useEffect(() => {
         markPageAsSeen('hisn_almuslim');
@@ -73,7 +99,6 @@ function HisnAlmuslim({ onBack, onNavigate, navParams }: HisnAlmuslimProps) {
             }
         }
     }, [navParams]);
-    const fabContainerRef = useRef<HTMLDivElement>(null);
 
     const [hisnCounts, setHisnCounts] = useState<{ [key: string]: number }>(() => {
         const today = new Date().toISOString().split('T')[0];
@@ -233,7 +258,7 @@ function HisnAlmuslim({ onBack, onNavigate, navParams }: HisnAlmuslimProps) {
                 onOpenGuide={!selectedCategory ? () => setShowGuide(true) : undefined}
             />
 
-            <main className="flex-1 overflow-y-auto hide-scrollbar relative mx-auto w-full max-w-3xl px-4 pb-6 flex flex-col pt-3">
+            <main ref={mainRef} className="flex-1 overflow-y-auto hide-scrollbar relative mx-auto w-full max-w-3xl px-4 pb-3 flex flex-col pt-3">
                 {!selectedCategory && (
                     <div className="mb-4 max-w-3xl mx-auto w-full flex items-center gap-2.5 z-10 shrink-0" dir={isEn ? 'ltr' : 'rtl'}>
                         {/* Search Input */}
@@ -326,7 +351,7 @@ function HisnAlmuslim({ onBack, onNavigate, navParams }: HisnAlmuslimProps) {
                         />
                     )}
                 </div>
-                <div className="shrink-0 w-full h-8"></div>
+                <div className="shrink-0 w-full h-4"></div>
             </main>
 
             {/* Backdrop to close floating menu when clicking anywhere, absorbing the click */}

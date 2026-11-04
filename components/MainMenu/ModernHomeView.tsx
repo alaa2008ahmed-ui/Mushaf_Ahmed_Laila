@@ -50,11 +50,14 @@ import {
   ArrowUpDown,
   X,
   HelpCircle,
-  Lightbulb
+  Lightbulb,
+  ChevronUp,
+  GripVertical
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, Reorder, useDragControls } from 'framer-motion';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTheme } from '../../context/ThemeContext';
+import { getThemeEditModeStyles } from '../../utils/themeEditStyles';
 import { useSeenPages, markPageAsSeen } from '../../utils/badgeManager';
 import { usePrayerTimes, computeTimesSync } from '../../context/PrayerTimesContext';
 import { useVoiceControl } from '../../context/VoiceControlContext';
@@ -67,6 +70,7 @@ import { quranData as quranJsonData } from '../../utils/quranData';
 import { loadQuranEnglishTranslation, getCachedQuranEnglishTranslation, QuranEnglishSurah } from '../../utils/quranTranslationHelper';
 import ShareAppQrModal from './ShareAppQrModal';
 import TawafCounterCard from './TawafCounterCard';
+import { getTawafCounterState, subscribeTawafCounter, TawafCounterState } from '../../utils/tawafCounterStorage';
 import SmartSeasonalStrip from './SmartSeasonalStrip';
 import UnifiedEventZoomModal from './UnifiedEventZoomModal';
 import { ISLAMIC_WISDOMS, getWisdomOfTheDay } from '../../data/wisdomData';
@@ -103,8 +107,8 @@ export type ModernCardId =
 
 export const DEFAULT_MODERN_CARD_ORDER: ModernCardId[] = [
   'quran',
-  'prayer',
   'seasonal',
+  'prayer',
   'adhkar',
   'search',
   'apps',
@@ -362,12 +366,50 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
   onToggleNightMode
 }) => {
   const { language, isRTL, dir, t, formatNumber } = useLanguage();
-  const { isNightMode, toggleNightMode } = useTheme();
+  const { isNightMode, toggleNightMode, homeThemeVariant } = useTheme();
   const isEn = language === 'en';
 
+  const isSkyTheme = !isNightMode && homeThemeVariant === 'sky';
+  const isEmeraldTheme = !isNightMode && homeThemeVariant === 'emerald';
+  const isBurgundyTheme = !isNightMode && homeThemeVariant === 'burgundy';
+
+  const voiceIconColor = isNightMode 
+    ? '#F59E0B' 
+    : (isBurgundyTheme
+        ? '#9f1239'
+        : (isSkyTheme 
+            ? '#0369a1' 
+            : (isEmeraldTheme 
+                ? '#047857' 
+                : '#C25E00')));
+
+  const voicePingColor = isNightMode 
+    ? '#FBBF24' 
+    : (isBurgundyTheme
+        ? '#fb7185'
+        : (isSkyTheme 
+            ? '#38BDF8' 
+            : (isEmeraldTheme 
+                ? '#34D399' 
+                : '#F59E0B')));
+
+  // حالة عداد الطواف والسعي للتأكد من ظهوره أو إخفائه بدقة في الصفحة والترتيب
+  const [tawafState, setTawafState] = useState<TawafCounterState>(() => getTawafCounterState());
+  useEffect(() => {
+    return subscribeTawafCounter((updated) => {
+      setTawafState(updated);
+    });
+  }, []);
 
   const [cardsOrder, setCardsOrder] = useState<ModernCardId[]>(() => {
     try {
+      const savedVersion = localStorage.getItem('modern_cards_order_version_v2');
+      if (savedVersion !== 'v2026_seasonal_after_quran') {
+        localStorage.setItem('modern_cards_order_version_v2', 'v2026_seasonal_after_quran');
+        localStorage.setItem('modern_home_cards_order_v1', JSON.stringify(DEFAULT_MODERN_CARD_ORDER));
+        Preferences.set({ key: 'modern_home_cards_order_v1', value: JSON.stringify(DEFAULT_MODERN_CARD_ORDER) }).catch(() => {});
+        return DEFAULT_MODERN_CARD_ORDER;
+      }
       const saved = localStorage.getItem('modern_home_cards_order_v1');
       if (saved) {
         const parsed = JSON.parse(saved);
@@ -389,35 +431,50 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
     Preferences.set({ key: 'modern_home_cards_order_v1', value: JSON.stringify(target) }).catch(() => {});
   }, [cardsOrder]);
 
-  useEffect(() => {
-    const handleSaveLayoutEvent = () => {
-      saveCardsOrder();
-    };
-    window.addEventListener('save-home-cards-layout', handleSaveLayoutEvent);
-    return () => window.removeEventListener('save-home-cards-layout', handleSaveLayoutEvent);
-  }, [saveCardsOrder]);
-
-  const moveCard = (index: number, direction: 'up' | 'down') => {
-    const targetIndex = direction === 'up' ? index - 1 : index + 1;
-    if (targetIndex < 0 || targetIndex >= cardsOrder.length) return;
-    const newOrder = [...cardsOrder];
-    const [moved] = newOrder.splice(index, 1);
-    newOrder.splice(targetIndex, 0, moved);
-    setCardsOrder(newOrder);
-    saveCardsOrder(newOrder);
-    if (typeof navigator !== 'undefined' && navigator.vibrate) {
-      try { navigator.vibrate(25); } catch {}
-    }
-  };
-
-  const handleResetCardsOrder = () => {
+  const handleResetCardsOrder = useCallback(() => {
     setCardsOrder(DEFAULT_MODERN_CARD_ORDER);
     saveCardsOrder(DEFAULT_MODERN_CARD_ORDER);
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
       try { navigator.vibrate(40); } catch {}
     }
-    setToastMessage?.(isEn ? 'Restored default card order' : 'تمت استعادة الترتيب الافتراضي للبطاقات');
-  };
+    setToastMessage?.(isEn ? 'Restored default card order ✓' : 'تمت استعادة الترتيب الافتراضي للبطاقات ✓');
+  }, [saveCardsOrder, isEn, setToastMessage]);
+
+  const handleMoveCard = useCallback((cardId: ModernCardId, direction: 'up' | 'down') => {
+    setCardsOrder(prevOrder => {
+      const index = prevOrder.indexOf(cardId);
+      if (index === -1) return prevOrder;
+      const targetIndex = direction === 'up' ? index - 1 : index + 1;
+      if (targetIndex < 0 || targetIndex >= prevOrder.length) return prevOrder;
+
+      const newOrder = [...prevOrder];
+      const [moved] = newOrder.splice(index, 1);
+      newOrder.splice(targetIndex, 0, moved);
+
+      saveCardsOrder(newOrder);
+
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        try { navigator.vibrate(25); } catch {}
+      }
+
+      return newOrder;
+    });
+  }, [saveCardsOrder]);
+
+  useEffect(() => {
+    const handleSaveLayoutEvent = () => {
+      saveCardsOrder();
+    };
+    const handleResetLayoutEvent = () => {
+      handleResetCardsOrder();
+    };
+    window.addEventListener('save-home-cards-layout', handleSaveLayoutEvent);
+    window.addEventListener('reset-home-cards-layout', handleResetLayoutEvent);
+    return () => {
+      window.removeEventListener('save-home-cards-layout', handleSaveLayoutEvent);
+      window.removeEventListener('reset-home-cards-layout', handleResetLayoutEvent);
+    };
+  }, [saveCardsOrder, handleResetCardsOrder]);
   const { times, config, refreshLocation } = usePrayerTimes();
   const [isRefreshingLocation, setIsRefreshingLocation] = useState(false);
 
@@ -442,14 +499,60 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
   const { isEnabled, toggleEnabled } = useVoiceControl();
   const { isPageSeen } = useSeenPages();
 
-  // Active category tab for "درج الخدمات الذكي" (الافتراضي هو 'library' تلبية لطلب المستخدم)
-  const [activeTab, setActiveTab] = useState<'all' | 'library' | 'worship' | 'tools'>('library');
-  // بطاقة التطبيقات مفتوحة افتراضياً على تبويب المكتبة
-  const [isAppsExpanded, setIsAppsExpanded] = useState(true);
+  // Active category tab for "درج الخدمات الذكي"
+  const [activeTab, setActiveTabState] = useState<'all' | 'library' | 'worship' | 'tools'>(() => {
+    try {
+      const saved = localStorage.getItem('modern_home_active_apps_tab');
+      if (saved && ['all', 'library', 'worship', 'tools'].includes(saved)) {
+        return saved as any;
+      }
+    } catch {}
+    return 'library';
+  });
+
+  const setActiveTab = useCallback((tab: 'all' | 'library' | 'worship' | 'tools') => {
+    setActiveTabState(tab);
+    try {
+      localStorage.setItem('modern_home_active_apps_tab', tab);
+    } catch {}
+  }, []);
+
+  const [isAppsExpanded, setIsAppsExpandedState] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('modern_home_apps_expanded');
+      if (saved !== null) return saved === 'true';
+    } catch {}
+    return true;
+  });
+
+  const setIsAppsExpanded = useCallback((expanded: boolean | ((prev: boolean) => boolean)) => {
+    setIsAppsExpandedState(prev => {
+      const nextVal = typeof expanded === 'function' ? expanded(prev) : expanded;
+      try {
+        localStorage.setItem('modern_home_apps_expanded', String(nextVal));
+      } catch {}
+      return nextVal;
+    });
+  }, []);
 
   // Active tab for "إشراقات وذاكرة اليوم"
   // 'event' | 'memory' | 'occasions' | 'wisdom'
-  const [activeEventTab, setActiveEventTab] = useState<'event' | 'memory' | 'occasions' | 'wisdom'>('occasions');
+  const [activeEventTab, setActiveEventTabState] = useState<'event' | 'memory' | 'occasions' | 'wisdom'>(() => {
+    try {
+      const saved = localStorage.getItem('modern_home_active_event_tab');
+      if (saved && ['event', 'memory', 'occasions', 'wisdom'].includes(saved)) {
+        return saved as any;
+      }
+    } catch {}
+    return 'occasions';
+  });
+
+  const setActiveEventTab = useCallback((tab: 'event' | 'memory' | 'occasions' | 'wisdom') => {
+    setActiveEventTabState(tab);
+    try {
+      localStorage.setItem('modern_home_active_event_tab', tab);
+    } catch {}
+  }, []);
 
   // Wisdom of the Day state
   const [wisdomIndex, setWisdomIndex] = useState<number>(() => {
@@ -464,7 +567,23 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
   const [showQrModal, setShowQrModal] = useState(false);
   const [copiedShare, setCopiedShare] = useState(false);
   const [copiedWebLink, setCopiedWebLink] = useState(false);
-  const [activeBottomCardTab, setActiveBottomCardTab] = useState<'share' | 'browse' | 'support'>('share');
+
+  const [activeBottomCardTab, setActiveBottomCardTabState] = useState<'share' | 'browse' | 'support'>(() => {
+    try {
+      const saved = localStorage.getItem('modern_home_active_bottom_card_tab');
+      if (saved && ['share', 'browse', 'support'].includes(saved)) {
+        return saved as any;
+      }
+    } catch {}
+    return 'share';
+  });
+
+  const setActiveBottomCardTab = useCallback((tab: 'share' | 'browse' | 'support') => {
+    setActiveBottomCardTabState(tab);
+    try {
+      localStorage.setItem('modern_home_active_bottom_card_tab', tab);
+    } catch {}
+  }, []);
 
   useEffect(() => {
     if (!showQrModal) return;
@@ -1363,7 +1482,7 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
               <button
                 type="button"
                 onClick={() => onNavigate('calendar')}
-                className="inline-flex items-center text-xs font-bold text-amber-900 hover:text-amber-950 active:scale-95 transition-all cursor-pointer bg-transparent border-none p-0 outline-none whitespace-nowrap leading-snug mt-0.5 gold-accent-text text-start"
+                className="inline-flex items-center text-xs font-bold text-amber-900 hover:text-amber-950 active:scale-95 transition-all cursor-pointer bg-transparent border-none p-0 outline-none whitespace-nowrap leading-snug mt-3.5 gold-accent-text text-start"
                 title={isEn ? 'Open Hijri Calendar' : 'فتح التقويم الهجري'}
               >
                 {todayHijriDisplay}
@@ -1421,7 +1540,15 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
         >
           <div className={`w-full h-2.5 rounded-full p-0.5 overflow-hidden ${(isNightMode || isBlackTheme) ? 'bg-[#0e0e13] shadow-[inset_0_2px_4px_rgba(0,0,0,0.85),0_1px_0_rgba(255,255,255,0.08)]' : 'bg-black/[0.08] shadow-[inset_0_1px_2px_rgba(0,0,0,0.15)]'}`}>
             <div 
-              className="h-full rounded-full bg-gradient-to-r from-amber-600 via-yellow-500 to-amber-500 shadow-sm transition-all duration-1000 ease-out" 
+              className={`h-full rounded-full shadow-sm transition-all duration-1000 ease-out ${
+                isBurgundyTheme
+                  ? 'bg-gradient-to-r from-rose-900 via-rose-800 to-rose-950'
+                  : isSkyTheme 
+                    ? 'bg-gradient-to-r from-sky-800 via-sky-700 to-sky-900' 
+                    : isEmeraldTheme 
+                      ? 'bg-gradient-to-r from-emerald-800 via-emerald-700 to-emerald-900' 
+                      : 'bg-gradient-to-r from-amber-600 via-yellow-500 to-amber-500'
+              }`}
               style={{ width: `${prayerData.progressPercent}%` }}
             />
           </div>
@@ -1620,15 +1747,15 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
           >
             {isEnabled ? (
               <div className="relative flex items-center justify-center">
-                <Mic className="w-6 h-6 sm:w-7 sm:h-7 text-amber-500 dark:text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.7)]" strokeWidth={2.4} />
+                <Mic className="w-6 h-6 sm:w-7 sm:h-7 drop-shadow-md voice-control-icon-svg" color={voiceIconColor} style={{ color: voiceIconColor, stroke: voiceIconColor }} strokeWidth={2.4} />
                 <span className="absolute -top-1 -right-1 flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ backgroundColor: voicePingColor }}></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2" style={{ backgroundColor: voiceIconColor }}></span>
                 </span>
               </div>
             ) : (
               <div className="relative flex items-center justify-center">
-                <MicOff className="w-6 h-6 sm:w-7 sm:h-7 text-amber-600 dark:text-amber-400 hover:text-amber-700 drop-shadow-[0_1px_3px_rgba(217,119,6,0.4)]" strokeWidth={2.4} />
+                <MicOff className="w-6 h-6 sm:w-7 sm:h-7 drop-shadow-md voice-control-icon-svg" color={voiceIconColor} style={{ color: voiceIconColor, stroke: voiceIconColor }} strokeWidth={2.4} />
               </div>
             )}
           </button>
@@ -1681,6 +1808,22 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
                         className="w-full h-full object-contain pointer-events-none transition-transform duration-200 group-hover:scale-110 drop-shadow-[0_3px_5px_rgba(0,0,0,0.12)]"
                         loading="lazy"
                       />
+                      {service.isNew && (
+                        <span 
+                          className={`new-app-badge absolute -top-1 -right-1 px-1.5 py-0.5 rounded-full text-white font-black text-[8px] shadow-sm leading-none z-10 ${
+                            isBurgundyTheme
+                              ? 'bg-rose-900'
+                              : isSkyTheme 
+                                ? 'bg-sky-800' 
+                                : isEmeraldTheme 
+                                  ? 'bg-emerald-800' 
+                                  : 'bg-amber-600'
+                          }`}
+                          style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff' }}
+                        >
+                          {isEn ? 'NEW' : 'جديد'}
+                        </span>
+                      )}
                     </div>
                     <span 
                       className="app-name-label text-[7.5px] min-[340px]:text-[8px] min-[370px]:text-[8.5px] min-[410px]:text-[9.5px] sm:text-[10.5px] font-black font-cairo text-center mt-1 leading-[1.15] tracking-tight select-none whitespace-normal break-words w-full px-0.5"
@@ -1748,11 +1891,13 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
               }}
               className={`px-2.5 min-[380px]:px-3 py-1 rounded-full transition-all cursor-pointer text-[11px] min-[380px]:text-xs flex items-center justify-center shrink-0 ${
                 activeTab === 'all' && isAppsExpanded
-                  ? (isNightMode || isBlackTheme ? 'night-white-surface bg-white text-black font-extrabold' : 'bg-[#c25e00] font-extrabold text-white shadow-none')
+                  ? (isNightMode || isBlackTheme ? 'night-white-surface bg-white text-black font-extrabold' : 'active-tab-pill-selected bg-[#c25e00] font-extrabold text-white shadow-none')
                   : 'bg-transparent text-[#78350F] hover:text-[#451A03] font-bold active:scale-95'
               }`}
             >
-              <span>{isEn ? 'All' : 'الكل'}</span>
+              <span style={activeTab === 'all' && isAppsExpanded && !isNightMode && !isBlackTheme ? { color: '#ffffff', WebkitTextFillColor: '#ffffff' } : undefined}>
+                {isEn ? 'All' : 'الكل'}
+              </span>
             </button>
 
             {/* 2. المكتبة */}
@@ -1765,11 +1910,13 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
               }}
               className={`px-2.5 min-[380px]:px-3 py-1 rounded-full transition-all cursor-pointer text-[11px] min-[380px]:text-xs flex items-center justify-center shrink-0 ${
                 activeTab === 'library' && isAppsExpanded
-                  ? (isNightMode || isBlackTheme ? 'night-white-surface bg-white text-black font-extrabold' : 'bg-[#c25e00] font-extrabold text-white shadow-none')
+                  ? (isNightMode || isBlackTheme ? 'night-white-surface bg-white text-black font-extrabold' : 'active-tab-pill-selected bg-[#c25e00] font-extrabold text-white shadow-none')
                   : 'bg-transparent text-[#78350F] hover:text-[#451A03] font-bold active:scale-95'
               }`}
             >
-              <span>{isEn ? 'Library' : 'المكتبة'}</span>
+              <span style={activeTab === 'library' && isAppsExpanded && !isNightMode && !isBlackTheme ? { color: '#ffffff', WebkitTextFillColor: '#ffffff' } : undefined}>
+                {isEn ? 'Library' : 'المكتبة'}
+              </span>
             </button>
 
             {/* 3. العبادات */}
@@ -1782,11 +1929,13 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
               }}
               className={`px-2.5 min-[380px]:px-3 py-1 rounded-full transition-all cursor-pointer text-[11px] min-[380px]:text-xs flex items-center justify-center shrink-0 ${
                 activeTab === 'worship' && isAppsExpanded
-                  ? (isNightMode || isBlackTheme ? 'night-white-surface bg-white text-black font-extrabold' : 'bg-[#c25e00] font-extrabold text-white shadow-none')
+                  ? (isNightMode || isBlackTheme ? 'night-white-surface bg-white text-black font-extrabold' : 'active-tab-pill-selected bg-[#c25e00] font-extrabold text-white shadow-none')
                   : 'bg-transparent text-[#78350F] hover:text-[#451A03] font-bold active:scale-95'
               }`}
             >
-              <span>{isEn ? 'Worship' : 'العبادات'}</span>
+              <span style={activeTab === 'worship' && isAppsExpanded && !isNightMode && !isBlackTheme ? { color: '#ffffff', WebkitTextFillColor: '#ffffff' } : undefined}>
+                {isEn ? 'Worship' : 'العبادات'}
+              </span>
             </button>
 
             {/* 4. أخرى */}
@@ -1799,11 +1948,13 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
               }}
               className={`px-2.5 min-[380px]:px-3 py-1 rounded-full transition-all cursor-pointer text-[11px] min-[380px]:text-xs flex items-center justify-center shrink-0 ${
                 activeTab === 'tools' && isAppsExpanded
-                  ? (isNightMode || isBlackTheme ? 'night-white-surface bg-white text-black font-extrabold' : 'bg-[#c25e00] font-extrabold text-white shadow-none')
+                  ? (isNightMode || isBlackTheme ? 'night-white-surface bg-white text-black font-extrabold' : 'active-tab-pill-selected bg-[#c25e00] font-extrabold text-white shadow-none')
                   : 'bg-transparent text-[#78350F] hover:text-[#451A03] font-bold active:scale-95'
               }`}
             >
-              <span>{isEn ? 'Other' : 'أخرى'}</span>
+              <span style={activeTab === 'tools' && isAppsExpanded && !isNightMode && !isBlackTheme ? { color: '#ffffff', WebkitTextFillColor: '#ffffff' } : undefined}>
+                {isEn ? 'Other' : 'أخرى'}
+              </span>
             </button>
           </div>
         </div>
@@ -1834,7 +1985,18 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
                           loading="lazy"
                         />
                         {service.isNew && (
-                          <span className="absolute -top-1 -right-1 px-1.5 py-0.5 rounded-full bg-amber-600 text-white font-black text-[9px] shadow-sm leading-none z-10">
+                          <span 
+                            className={`new-app-badge absolute -top-1 -right-1 px-1.5 py-0.5 rounded-full text-white font-black text-[9px] shadow-sm leading-none z-10 ${
+                              isBurgundyTheme
+                                ? 'bg-rose-900'
+                                : isSkyTheme 
+                                  ? 'bg-sky-800' 
+                                  : isEmeraldTheme 
+                                    ? 'bg-emerald-800' 
+                                    : 'bg-amber-600'
+                            }`}
+                            style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff' }}
+                          >
                             {isEn ? 'NEW' : 'جديد'}
                           </span>
                         )}
@@ -1977,13 +2139,16 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
       </div>
   );
 
-  const renderTawafCard = () => (
+  const renderTawafCard = () => {
+    if (!tawafState.showOnHome) return null;
+    return (
       <TawafCounterCard 
         theme={theme}
         isGolden={true}
         onNavigate={onNavigate}
       />
-  );
+    );
+  };
 
   const renderReflectionsCard = () => (
     <>
@@ -2005,44 +2170,52 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
               onClick={() => setActiveEventTab('occasions')}
               className={`px-2 min-[360px]:px-2.5 py-1 rounded-full transition-all cursor-pointer text-[10.5px] min-[360px]:text-[11px] min-[400px]:text-xs flex items-center justify-center shrink-0 ${
                 activeEventTab === 'occasions' 
-                  ? (isNightMode || isBlackTheme ? 'night-white-surface bg-white text-black font-extrabold' : 'bg-[#c25e00] font-extrabold text-white shadow-none') 
+                  ? (isNightMode || isBlackTheme ? 'night-white-surface bg-white text-black font-extrabold' : 'active-tab-pill-selected bg-[#c25e00] font-extrabold text-white shadow-none') 
                   : 'bg-transparent text-[#78350F] hover:text-[#451A03] font-bold active:scale-95'
               }`}
             >
-              <span>{isEn ? 'Occasions' : 'المناسبات'}</span>
+              <span style={activeEventTab === 'occasions' && !isNightMode && !isBlackTheme ? { color: '#ffffff', WebkitTextFillColor: '#ffffff' } : undefined}>
+                {isEn ? 'Occasions' : 'المناسبات'}
+              </span>
             </button>
             <button
               type="button"
               onClick={() => setActiveEventTab('wisdom')}
               className={`px-2 min-[360px]:px-2.5 py-1 rounded-full transition-all cursor-pointer text-[10.5px] min-[360px]:text-[11px] min-[400px]:text-xs flex items-center justify-center shrink-0 ${
                 activeEventTab === 'wisdom' 
-                  ? (isNightMode || isBlackTheme ? 'night-white-surface bg-white text-black font-extrabold' : 'bg-[#c25e00] font-extrabold text-white shadow-none') 
+                  ? (isNightMode || isBlackTheme ? 'night-white-surface bg-white text-black font-extrabold' : 'active-tab-pill-selected bg-[#c25e00] font-extrabold text-white shadow-none') 
                   : 'bg-transparent text-[#78350F] hover:text-[#451A03] font-bold active:scale-95'
               }`}
             >
-              <span>{isEn ? 'Wisdom' : 'حكمة اليوم'}</span>
+              <span style={activeEventTab === 'wisdom' && !isNightMode && !isBlackTheme ? { color: '#ffffff', WebkitTextFillColor: '#ffffff' } : undefined}>
+                {isEn ? 'Wisdom' : 'حكمة اليوم'}
+              </span>
             </button>
             <button
               type="button"
               onClick={() => setActiveEventTab('memory')}
               className={`px-2 min-[360px]:px-2.5 py-1 rounded-full transition-all cursor-pointer text-[10.5px] min-[360px]:text-[11px] min-[400px]:text-xs flex items-center justify-center shrink-0 ${
                 activeEventTab === 'memory' 
-                  ? (isNightMode || isBlackTheme ? 'night-white-surface bg-white text-black font-extrabold' : 'bg-[#c25e00] font-extrabold text-white shadow-none') 
+                  ? (isNightMode || isBlackTheme ? 'night-white-surface bg-white text-black font-extrabold' : 'active-tab-pill-selected bg-[#c25e00] font-extrabold text-white shadow-none') 
                   : 'bg-transparent text-[#78350F] hover:text-[#451A03] font-bold active:scale-95'
               }`}
             >
-              <span>{isEn ? 'Islamic Memory' : 'ذاكرة الإسلام'}</span>
+              <span style={activeEventTab === 'memory' && !isNightMode && !isBlackTheme ? { color: '#ffffff', WebkitTextFillColor: '#ffffff' } : undefined}>
+                {isEn ? 'Islamic Memory' : 'ذاكرة الإسلام'}
+              </span>
             </button>
             <button
               type="button"
               onClick={() => setActiveEventTab('event')}
               className={`px-2 min-[360px]:px-2.5 py-1 rounded-full transition-all cursor-pointer text-[10.5px] min-[360px]:text-[11px] min-[400px]:text-xs flex items-center justify-center shrink-0 ${
                 activeEventTab === 'event' 
-                  ? (isNightMode || isBlackTheme ? 'night-white-surface bg-white text-black font-extrabold' : 'bg-[#c25e00] font-extrabold text-white shadow-none') 
+                  ? (isNightMode || isBlackTheme ? 'night-white-surface bg-white text-black font-extrabold' : 'active-tab-pill-selected bg-[#c25e00] font-extrabold text-white shadow-none') 
                   : 'bg-transparent text-[#78350F] hover:text-[#451A03] font-bold active:scale-95'
               }`}
             >
-              <span>{isEn ? 'Event of the Day' : 'حدث اليوم'}</span>
+              <span style={activeEventTab === 'event' && !isNightMode && !isBlackTheme ? { color: '#ffffff', WebkitTextFillColor: '#ffffff' } : undefined}>
+                {isEn ? 'Event of the Day' : 'حدث اليوم'}
+              </span>
             </button>
           </div>
         </div>
@@ -2187,6 +2360,11 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
             <button
               type="button"
               onClick={() => {
+                if (typeof document !== 'undefined') {
+                  document.body.classList.add('zoom-modal-active');
+                  document.body.setAttribute('data-zoom-modal', 'true');
+                  window.dispatchEvent(new CustomEvent('modal-state-changed', { detail: { isOpen: true, type: 'zoom' } }));
+                }
                 if (activeEventTab === 'wisdom') setShowWisdomZoomModal(true);
                 else if (activeEventTab === 'event') setShowExpandedEventsModal(true);
                 else if (activeEventTab === 'memory') setShowExpandedHistoryMemoryModal(true);
@@ -2267,11 +2445,13 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
             onClick={() => setActiveBottomCardTab('share')}
             className={`py-1.5 px-1 rounded-full text-[11px] sm:text-xs font-bold font-cairo flex items-center justify-center transition-all cursor-pointer whitespace-nowrap ${
               activeBottomCardTab === 'share'
-                ? (isNightMode || isBlackTheme ? 'night-white-surface bg-white text-black font-extrabold' : 'bg-[#c25e00] text-white font-extrabold shadow-none')
+                ? (isNightMode || isBlackTheme ? 'night-white-surface bg-white text-black font-extrabold' : 'active-tab-pill-selected bg-[#c25e00] text-white font-extrabold shadow-none')
                 : 'bg-transparent text-[#78350F] hover:text-[#451A03] font-bold active:scale-95'
             }`}
           >
-            <span>{isEn ? 'Share App' : 'شارك التطبيق'}</span>
+            <span style={activeBottomCardTab === 'share' && !isNightMode && !isBlackTheme ? { color: '#ffffff', WebkitTextFillColor: '#ffffff' } : undefined}>
+              {isEn ? 'Share App' : 'شارك التطبيق'}
+            </span>
           </button>
 
           <button
@@ -2279,11 +2459,13 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
             onClick={() => setActiveBottomCardTab('browse')}
             className={`py-1.5 px-1 rounded-full text-[11px] sm:text-xs font-bold font-cairo flex items-center justify-center transition-all cursor-pointer whitespace-nowrap ${
               activeBottomCardTab === 'browse'
-                ? (isNightMode || isBlackTheme ? 'night-white-surface bg-white text-black font-extrabold' : 'bg-[#c25e00] text-white font-extrabold shadow-none')
+                ? (isNightMode || isBlackTheme ? 'night-white-surface bg-white text-black font-extrabold' : 'active-tab-pill-selected bg-[#c25e00] text-white font-extrabold shadow-none')
                 : 'bg-transparent text-[#78350F] hover:text-[#451A03] font-bold active:scale-95'
             }`}
           >
-            <span>{isEn ? 'Browse App' : 'تصفح التطبيق'}</span>
+            <span style={activeBottomCardTab === 'browse' && !isNightMode && !isBlackTheme ? { color: '#ffffff', WebkitTextFillColor: '#ffffff' } : undefined}>
+              {isEn ? 'Browse App' : 'تصفح التطبيق'}
+            </span>
           </button>
 
           <button
@@ -2291,11 +2473,13 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
             onClick={() => setActiveBottomCardTab('support')}
             className={`py-1.5 px-1 rounded-full text-[11px] sm:text-xs font-bold font-cairo flex items-center justify-center transition-all cursor-pointer whitespace-nowrap ${
               activeBottomCardTab === 'support'
-                ? (isNightMode || isBlackTheme ? 'night-white-surface bg-white text-black font-extrabold' : 'bg-[#c25e00] text-white font-extrabold shadow-none')
+                ? (isNightMode || isBlackTheme ? 'night-white-surface bg-white text-black font-extrabold' : 'active-tab-pill-selected bg-[#c25e00] text-white font-extrabold shadow-none')
                 : 'bg-transparent text-[#78350F] hover:text-[#451A03] font-bold active:scale-95'
             }`}
           >
-            <span>{isEn ? 'Tech Support' : 'الدعم الفني'}</span>
+            <span style={activeBottomCardTab === 'support' && !isNightMode && !isBlackTheme ? { color: '#ffffff', WebkitTextFillColor: '#ffffff' } : undefined}>
+              {isEn ? 'Tech Support' : 'الدعم الفني'}
+            </span>
           </button>
         </div>
 
@@ -2454,117 +2638,87 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
   };
 
   return (
-    <div data-layout="modern" className="flex flex-col gap-3.5 w-full max-w-md mx-auto pt-0 pb-1.5 modern-home-layout font-cairo" style={{ fontFamily: "'Cairo', sans-serif" }} dir={dir}>
-      {/* شريط تنبيه وضع التعديل */}
-      {isEditMode && (
-        <div className="w-full p-3 rounded-2xl bg-amber-500/15 border-2 border-dashed border-amber-500/60 flex items-center justify-between gap-2 text-start animate-in fade-in duration-200 select-none">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-full bg-amber-600 text-white flex items-center justify-center shrink-0 shadow-xs">
-              <ArrowUpDown className="w-4 h-4" />
-            </div>
-            <div className="flex flex-col min-w-0">
-              <span className="text-xs sm:text-sm font-black text-amber-950 dark:text-amber-300 font-cairo leading-tight">
-                {isEn ? 'Cards Reordering Mode' : 'وضع ترتيب البطاقات'}
-              </span>
-              <span className="text-[10.5px] font-semibold text-amber-900/85 dark:text-amber-200/80 font-cairo leading-tight">
-                {isEn ? 'Use arrows ⬆ ⬇ to change order, then hold app title to save' : 'بدّل أماكن البطاقات بالأسهم ⬆ ⬇ ثم اضغط مطولاً على اسم التطبيق للحفظ'}
-              </span>
-            </div>
-          </div>
-          <div className="flex items-center gap-1.5 shrink-0">
-            <button
-              type="button"
-              onClick={handleResetCardsOrder}
-              className="px-2.5 py-1 rounded-xl bg-amber-200/80 hover:bg-amber-200 dark:bg-amber-900/50 text-amber-950 dark:text-amber-300 font-bold text-[11px] font-cairo active:scale-95 transition-all cursor-pointer"
+    <div data-layout="modern" className="flex flex-col gap-3 w-full max-w-md mx-auto pt-0 pb-1.5 modern-home-layout font-cairo" style={{ fontFamily: "'Cairo', sans-serif" }} dir={dir}>
+      {/* عرض البطاقات بسحب وإفلات الأصبع أو عبر أزرار النقل السريع للأعلى والأسفل بسلاسة فائقة */}
+      {isEditMode ? (
+        <Reorder.Group 
+          axis="y" 
+          values={cardsOrder.filter(id => id !== 'seasonal' && (id !== 'tawaf' || tawafState.showOnHome))} 
+          onReorder={(newOrderActive) => {
+            // الحفاظ على موقع بطاقة المناسبات والأعياد (seasonal) وبطاقة الطواف غير المفعلة في الترتيب المحفوظ عند انتهاء السحب
+            const fullOrder: ModernCardId[] = [];
+            for (const id of newOrderActive) {
+              fullOrder.push(id);
+              if (id === 'quran') {
+                fullOrder.push('seasonal');
+              }
+              if (id === 'tracker' && !tawafState.showOnHome) {
+                fullOrder.push('tawaf');
+              }
+            }
+            if (!fullOrder.includes('seasonal')) {
+              fullOrder.unshift('seasonal');
+            }
+            if (!tawafState.showOnHome && !fullOrder.includes('tawaf')) {
+              fullOrder.push('tawaf');
+            }
+
+            setCardsOrder(fullOrder);
+            saveCardsOrder(fullOrder);
+            if (typeof navigator !== 'undefined' && navigator.vibrate) {
+              try { navigator.vibrate(20); } catch {}
+            }
+          }}
+          className="flex flex-col gap-3 w-full"
+        >
+          {cardsOrder
+            .filter(id => id !== 'seasonal' && (id !== 'tawaf' || tawafState.showOnHome))
+            .map((cardId) => {
+              const content = renderCardContent(cardId);
+              if (!content) return null;
+
+              return (
+                <ReorderableCardItem
+                  key={`modern-card-reorder-${cardId}`}
+                  cardId={cardId}
+                  isEn={isEn}
+                  isNightMode={isNightMode}
+                  isBlackTheme={isBlackTheme}
+                >
+                  {content}
+                </ReorderableCardItem>
+              );
+            })}
+        </Reorder.Group>
+      ) : (
+        /* العرض العادي للبطاقات بدون وضع التعديل */
+        cardsOrder.map((cardId) => {
+          if (cardId === 'seasonal') {
+            return (
+              <SmartSeasonalStrip
+                key={`modern-card-container-seasonal`}
+                layoutMode="modern"
+                onNavigate={onNavigate}
+              />
+            );
+          }
+          if (cardId === 'tawaf' && !tawafState.showOnHome) {
+            return null;
+          }
+          const content = renderCardContent(cardId);
+          if (!content) return null;
+
+          return (
+            <div 
+              key={`modern-card-container-${cardId}`}
+              id={`modern-card-container-${cardId}`}
+              className="w-full transition-all duration-200"
             >
-              {isEn ? 'Reset' : 'استعادة'}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                saveCardsOrder();
-                setIsEditMode?.(false);
-                if (typeof navigator !== 'undefined' && navigator.vibrate) {
-                  try { navigator.vibrate([40, 60, 40]); } catch {}
-                }
-                setToastMessage?.(isEn ? 'Cards arrangement saved successfully ✓' : 'تم حفظ ترتيب البطاقات بنجاح ✓');
-              }}
-              className="px-3 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs font-cairo flex items-center gap-1 active:scale-95 transition-all cursor-pointer shadow-xs"
-            >
-              <Check className="w-3.5 h-3.5 stroke-[3]" />
-              <span>{isEn ? 'Done' : 'تم'}</span>
-            </button>
-          </div>
-        </div>
+              {content}
+            </div>
+          );
+        })
       )}
-
-
-
-      {/* عرض البطاقات بحسب الترتيب المحدد */}
-      {cardsOrder.map((cardId, index) => {
-        const content = renderCardContent(cardId);
-        if (!content) return null;
-
-        return (
-          <div 
-            key={`modern-card-container-${cardId}`}
-            id={`modern-card-container-${cardId}`}
-            className={`w-full transition-all duration-200 ${
-              isEditMode 
-                ? 'p-2 rounded-3xl border-2 border-dashed border-amber-500/60 bg-amber-500/5 relative shadow-xs' 
-                : ''
-            }`}
-          >
-            {isEditMode && (
-              <div className="w-full flex items-center justify-between px-3 py-1.5 rounded-xl bg-amber-500/20 border border-amber-500/40 mb-2 backdrop-blur-xs select-none">
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="w-5 h-5 rounded-full bg-amber-700 text-white text-[11px] font-black flex items-center justify-center shrink-0">
-                    {formatNumber(index + 1)}
-                  </span>
-                  <span className="text-xs font-black text-amber-950 dark:text-amber-300 font-cairo truncate">
-                    {isEn ? MODERN_CARD_TITLES[cardId].en : MODERN_CARD_TITLES[cardId].ar}
-                  </span>
-                </div>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <button
-                    type="button"
-                    disabled={index === 0}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      moveCard(index, 'up');
-                    }}
-                    className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all ${
-                      index === 0
-                        ? 'opacity-30 cursor-not-allowed text-stone-400 bg-stone-200/50 dark:bg-stone-800'
-                        : 'bg-amber-600 hover:bg-amber-700 active:scale-90 text-white cursor-pointer shadow-xs'
-                    }`}
-                    title={isEn ? 'Move up' : 'تحريك لأعلى'}
-                  >
-                    <ArrowUp className="w-4 h-4 stroke-[2.5]" />
-                  </button>
-                  <button
-                    type="button"
-                    disabled={index === cardsOrder.length - 1}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      moveCard(index, 'down');
-                    }}
-                    className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all ${
-                      index === cardsOrder.length - 1
-                        ? 'opacity-30 cursor-not-allowed text-stone-400 bg-stone-200/50 dark:bg-stone-800'
-                        : 'bg-amber-600 hover:bg-amber-700 active:scale-90 text-white cursor-pointer shadow-xs'
-                    }`}
-                    title={isEn ? 'Move down' : 'تحريك لأسفل'}
-                  >
-                    <ArrowDown className="w-4 h-4 stroke-[2.5]" />
-                  </button>
-                </div>
-              </div>
-            )}
-            {content}
-          </div>
-        );
-      })}
 
       {/* الدعاء في الأسفل */}
       <div className="flex items-center justify-center gap-2 mt-1 mb-0.5 px-4" dir={dir}>
@@ -2599,5 +2753,72 @@ function TargetCircleIcon({ className }: { className?: string }) {
     </svg>
   );
 }
+
+interface ReorderableCardItemProps {
+  cardId: ModernCardId;
+  isEn: boolean;
+  isNightMode: boolean;
+  isBlackTheme: boolean;
+  children: React.ReactNode;
+}
+
+const ReorderableCardItem: React.FC<ReorderableCardItemProps> = ({
+  cardId,
+  isEn,
+  isNightMode,
+  isBlackTheme,
+  children
+}) => {
+  const dragControls = useDragControls();
+  const { homeThemeVariant } = useTheme();
+
+  const editStyles = useMemo(() => {
+    return getThemeEditModeStyles(isNightMode, homeThemeVariant, isBlackTheme);
+  }, [isNightMode, homeThemeVariant, isBlackTheme]);
+
+  if (!children) return null;
+
+  return (
+    <Reorder.Item
+      value={cardId}
+      dragListener={false}
+      dragControls={dragControls}
+      dragConstraints={{ left: 0, right: 0 }}
+      dragElastic={{ left: 0, right: 0, top: 0.1, bottom: 0.1 }}
+      layout
+      transition={{ type: 'spring', damping: 30, stiffness: 400 }}
+      whileDrag={{
+        scale: 1,
+        x: 0,
+        zIndex: 50,
+        boxShadow: isNightMode
+          ? '0 12px 32px rgba(0,0,0,0.85), 0 0 12px rgba(245,158,11,0.3)'
+          : '0 12px 32px rgba(180,83,9,0.25)',
+      }}
+      className="w-full relative select-none rounded-3xl"
+      style={{ x: 0 }}
+    >
+      {/* Floating Drag Button Overlay - Strictly "زر السحب" only, without arrows, without shrinking or modifying card layout */}
+      {cardId !== 'seasonal' && (
+        <div
+          onPointerDown={(e) => dragControls.start(e)}
+          className="absolute top-2.5 start-2.5 z-30 flex items-center gap-1.5 px-3 py-1.5 rounded-2xl shadow-lg cursor-grab active:cursor-grabbing touch-none select-none active:scale-95 transition-transform"
+          style={editStyles.dragBadge}
+          title={isEn ? 'Hold and drag to reorder' : 'اضغط واسحب لإعادة الترتيب'}
+        >
+          <GripVertical className="w-4 h-4" />
+          <span className="text-xs font-black font-cairo">
+            {isEn ? 'Drag' : 'اسحب'}
+          </span>
+        </div>
+      )}
+
+      {/* Card Content - 100% full original size, shape, width and height */}
+      <div className="w-full">
+        {children}
+      </div>
+    </Reorder.Item>
+  );
+};
 
 export default ModernHomeView;

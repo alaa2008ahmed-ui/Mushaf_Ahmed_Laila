@@ -628,7 +628,7 @@ const DivineMiracles: React.FC<DivineMiraclesProps> = ({ onBack, onNavigate, nav
             {/* Main Content Area */}
             <main 
                 ref={mainScrollRef} 
-                className="flex-1 overflow-y-auto hide-scrollbar relative max-w-3xl mx-auto w-full px-3.5 sm:px-4 pb-8 flex flex-col pt-1"
+                className="flex-1 overflow-y-auto hide-scrollbar relative max-w-3xl mx-auto w-full px-3.5 sm:px-4 pb-14 sm:pb-16 flex flex-col pt-1"
             >
                 {/* Search Bar - only shown in main list view */}
                 {!selectedItem && (

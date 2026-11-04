@@ -24,12 +24,44 @@ export const ShareAppCard: React.FC<ShareAppCardProps> = ({
   setToastMessage,
 }) => {
   const { language, dir, t } = useLanguage();
-  const { theme, themeKey } = useTheme();
+  const { theme, themeKey, homeThemeVariant, isNightMode } = useTheme();
   const [copied, setCopied] = useState(false);
   const [showQrModal, setShowQrModal] = useState(false);
 
+  const isSkyTheme = !isNightMode && homeThemeVariant === 'sky';
+  const isEmeraldTheme = !isNightMode && homeThemeVariant === 'emerald';
+  const isBurgundyTheme = !isNightMode && homeThemeVariant === 'burgundy';
+
   const isBlackTheme = themeKey === 'deep_black' || theme.bgColor === '#000000' || theme.name === 'اسود' || theme.name === 'black';
-  const primaryColor = isBlackTheme ? '#fbbf24' : (theme.palette?.[0] || '#b45309');
+  const primaryColor = isBlackTheme 
+    ? '#fbbf24' 
+    : isSkyTheme 
+      ? '#0369a1' 
+      : isEmeraldTheme 
+        ? '#047857' 
+        : isBurgundyTheme
+          ? '#881337'
+          : (theme.palette?.[0] || '#b45309');
+
+  const buttonBg = isBlackTheme 
+    ? '#d97706' 
+    : isSkyTheme 
+      ? '#0369a1' 
+      : isEmeraldTheme 
+        ? '#047857' 
+        : isBurgundyTheme
+          ? '#881337'
+          : primaryColor;
+
+  const buttonShadow = isBlackTheme
+    ? '0 4px 0 #b45309, 0 6px 14px rgba(0, 0, 0, 0.6), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.3)'
+    : isSkyTheme
+      ? '0 4px 0 #075985, 0 6px 14px rgba(3, 105, 161, 0.25), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.65)'
+      : isEmeraldTheme
+        ? '0 4px 0 #064e3b, 0 6px 14px rgba(4, 120, 87, 0.25), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.65)'
+        : isBurgundyTheme
+          ? '0 4px 0 #701a75, 0 6px 14px rgba(136, 19, 55, 0.25), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.65)'
+          : '0 4px 0 rgba(180, 83, 9, 0.4), 0 6px 14px rgba(180, 83, 9, 0.25), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.65)';
 
   const textToShare = language === 'en' ? shareTextEn : shareTextAr;
 
@@ -152,10 +184,8 @@ export const ShareAppCard: React.FC<ShareAppCardProps> = ({
             onClick={handleShareApp}
             className="py-2.5 px-2 sm:px-3 rounded-2xl font-bold font-kufi text-xs sm:text-sm text-white flex items-center justify-center gap-1.5 active:scale-95 active:translate-y-0.5 transition-all cursor-pointer relative overflow-hidden select-none"
             style={{
-              backgroundColor: isBlackTheme ? '#d97706' : primaryColor,
-              boxShadow: isBlackTheme
-                ? '0 4px 0 #b45309, 0 6px 14px rgba(0, 0, 0, 0.6), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.3)'
-                : '0 4px 0 rgba(180, 83, 9, 0.4), 0 6px 14px rgba(180, 83, 9, 0.25), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.65)',
+              backgroundColor: buttonBg,
+              boxShadow: buttonShadow,
               border: 'none',
               color: '#FFFFFF'
             }}
@@ -174,10 +204,8 @@ export const ShareAppCard: React.FC<ShareAppCardProps> = ({
             onClick={() => setShowQrModal(true)}
             className="py-2.5 px-2 sm:px-3 rounded-2xl font-bold font-kufi text-xs sm:text-sm text-white flex items-center justify-center gap-1.5 active:scale-95 active:translate-y-0.5 transition-all cursor-pointer relative overflow-hidden select-none"
             style={{
-              backgroundColor: isBlackTheme ? '#d97706' : primaryColor,
-              boxShadow: isBlackTheme
-                ? '0 4px 0 #b45309, 0 6px 14px rgba(0, 0, 0, 0.6), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.3)'
-                : '0 4px 0 rgba(180, 83, 9, 0.4), 0 6px 14px rgba(180, 83, 9, 0.25), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.65)',
+              backgroundColor: buttonBg,
+              boxShadow: buttonShadow,
               border: 'none',
               color: '#FFFFFF'
             }}
@@ -196,10 +224,8 @@ export const ShareAppCard: React.FC<ShareAppCardProps> = ({
             onClick={handleCopyText}
             className="py-2.5 px-2 sm:px-3 rounded-2xl font-bold font-kufi text-xs sm:text-sm text-white flex items-center justify-center gap-1.5 active:scale-95 active:translate-y-0.5 transition-all cursor-pointer relative overflow-hidden select-none"
             style={{
-              backgroundColor: isBlackTheme ? '#d97706' : primaryColor,
-              boxShadow: isBlackTheme
-                ? '0 4px 0 #b45309, 0 6px 14px rgba(0, 0, 0, 0.6), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.3)'
-                : '0 4px 0 rgba(180, 83, 9, 0.4), 0 6px 14px rgba(180, 83, 9, 0.25), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.65)',
+              backgroundColor: buttonBg,
+              boxShadow: buttonShadow,
               border: 'none',
               color: '#FFFFFF'
             }}

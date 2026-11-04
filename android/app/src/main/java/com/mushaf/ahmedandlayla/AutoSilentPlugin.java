@@ -232,8 +232,6 @@ public class AutoSilentPlugin extends Plugin {
         Context context = getContext();
         if (context != null) {
             PrayerWidgetProvider.updateAllWidgets(context);
-            PrayerCompactWidgetProvider.updateAllWidgets(context);
-            PrayerCardWidgetProvider.updateAllWidgets(context);
             PersistentPrayerNotification.update(context);
         }
         JSObject ret = new JSObject();
@@ -457,8 +455,6 @@ public class AutoSilentPlugin extends Plugin {
         // Update persistent notification and widgets immediately
         PersistentPrayerNotification.update(context);
         PrayerWidgetProvider.updateAllWidgets(context);
-        PrayerCompactWidgetProvider.updateAllWidgets(context);
-        PrayerCardWidgetProvider.updateAllWidgets(context);
 
         JSObject ret = new JSObject();
         ret.put("success", true);

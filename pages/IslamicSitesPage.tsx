@@ -190,7 +190,7 @@ const IslamicSitesPage: React.FC<IslamicSitesPageProps> = ({ onBack, onNavigate 
             </header>
 
             {/* Main Content Area */}
-            <main className="flex-1 overflow-y-auto hide-scrollbar px-4 pt-3 pb-16">
+            <main className="flex-1 overflow-y-auto hide-scrollbar px-4 pt-3 pb-8">
                 <AnimatePresence mode="wait">
                     {selectedSite ? (
                         /* Detail Page View for Selected Website - Modern Flat Surface */
@@ -512,7 +512,7 @@ const IslamicSitesPage: React.FC<IslamicSitesPageProps> = ({ onBack, onNavigate 
                                 </div>
                             )}
 
-                            <div className="h-6 w-full pointer-events-none" aria-hidden="true" />
+                            <div className="h-3 w-full pointer-events-none" aria-hidden="true" />
                         </motion.div>
                     )}
                 </AnimatePresence>

@@ -883,7 +883,7 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
             )}
 
             {/* Main Content Body */}
-            <main ref={mainScrollRef} className="flex-1 overflow-y-auto hide-scrollbar px-4 pt-2 pb-7 sm:pb-8 pb-[calc(env(safe-area-inset-bottom,0px)+1.75rem)]">
+            <main ref={mainScrollRef} className="flex-1 overflow-y-auto hide-scrollbar px-4 pt-2 pb-3.5 sm:pb-4 pb-[calc(env(safe-area-inset-bottom,0px)+0.875rem)]">
                 {/* 1. Milestone Detail View */}
                 {selectedMilestone && activeMilestone ? (
                     <div
@@ -2504,7 +2504,7 @@ const PropheticSeerahPage: React.FC<PropheticSeerahPageProps> = ({ onBack, onNav
                         </div>
                     )}
                 {/* Bottom Spacer for Mobile Phone Navigation Bar */}
-                <div className="w-full h-10 sm:h-14 shrink-0 pointer-events-none" />
+                <div className="w-full h-5 sm:h-7 shrink-0 pointer-events-none" />
             </main>
 
             {/* Zoom Modal - Matches identical style & behavior of Adia & Adkar */}

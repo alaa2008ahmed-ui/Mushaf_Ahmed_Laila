@@ -427,8 +427,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, sho
 
                     <div className="space-y-1">
                         <div id="toggles-section">
-                            {/* بطاقتي إظهار بطاقة السجدة وإظهار الإطار الخارجي في صف واحد */}
-                            <div id="sajdah-and-page-border-row" className="grid grid-cols-2 gap-2.5 py-0.5">
+                            <div id="sajdah-row" className="py-0.5">
                                 {/* بطاقة السجدة */}
                                 <div id="sajdah-section" className="flex flex-col text-right">
                                     <label className="text-xs font-bold opacity-80 mb-1.5 truncate">{isEn ? "Show Sajdah Card" : "إظهار بطاقة السجدة"}</label>
@@ -450,44 +449,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, sho
                                         </div>
                                     </div>
                                 </div>
-
-                                {/* الإطار الخارجي */}
-                                <div id="page-border-section" className="flex flex-col text-right">
-                                    <label className="text-xs font-bold opacity-80 mb-1.5 truncate">{isEn ? "Show Page Border" : "إظهار الإطار الخارجي"}</label>
-                                    <div className="h-9 flex items-center justify-between px-3 rounded-xl quran-raised-card border-0" style={{ backgroundColor: isDarkTheme ? (currentTheme?.btnBg || 'rgba(255,255,255,0.06)') : '#ffffff', border: 'none' }}>
-                                        <span className="text-[11px] opacity-70 font-bold">{settings.showPageBorder !== false ? (isEn ? "Enabled" : "مفعّل") : (isEn ? "Disabled" : "معطّل")}</span>
-                                        <div className="relative inline-block w-8 align-middle select-none">
-                                            <input 
-                                                type="checkbox" 
-                                                id="show-page-border" 
-                                                checked={settings.showPageBorder !== false} 
-                                                onChange={(e) => {
-                                                    updateSetting('showPageBorder', e.target.checked);
-                                                    showToast(e.target.checked ? (isEn ? 'Page border enabled' : 'تم تفعيل الإطار الخارجي') : (isEn ? 'Page border hidden' : 'تم إخفاء الإطار الخارجي'));
-                                                }} 
-                                                className="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-2 appearance-none cursor-pointer"
-                                            />
-                                            <label 
-                                                htmlFor="show-page-border" 
-                                                className="toggle-label block overflow-hidden h-4 rounded-full cursor-pointer" 
-                                                style={{ backgroundColor: settings.showPageBorder !== false ? (currentTheme?.accent || 'var(--qr-accent)') : '#d1d5db' }}
-                                            ></label>
-                                        </div>
-                                    </div>
-                                </div>
                             </div>
                         </div>
                     </div>
 
                     <div id="downloads-section" className="space-y-2 py-0.5">
-                        <div>
-                            <button id="interface-customization-btn" onClick={() => onOpenModal('toolbar-color-picker-modal')} className="text-xs h-9 w-full text-right px-3 flex items-center justify-between rounded-xl quran-raised-btn font-bold border-0" style={{ backgroundColor: isDarkTheme ? (currentTheme?.btnBg || 'rgba(255,255,255,0.06)') : '#ffffff', color: currentTheme?.text, border: 'none' }}>
-                                <span>{isEn ? "Customize Interface" : "تخصيص الواجهة"}</span>
-                                <i className="fa-solid fa-chevron-left opacity-50 text-xs quran-3d-icon"></i>
-                            </button>
-                        </div>
-                        
-                        {/* ثالثا: وضع بطاقة تحميل القرآن الكريم وبطاقة تحميل التفسير في صف واحد */}
+                        {/* وضع بطاقة تحميل القرآن الكريم وبطاقة تحميل التفسير في صف واحد */}
                         <div id="downloads-only-section">
                             <div className="grid grid-cols-2 gap-2.5">
                                 <button 

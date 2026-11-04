@@ -615,7 +615,7 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
             {/* Main Content Area */}
             <main 
                 ref={mainScrollRef} 
-                className="flex-1 overflow-y-auto px-3 sm:px-4 pt-3 sm:pt-4 pb-7 sm:pb-8 pb-[calc(env(safe-area-inset-bottom,0px)+1.75rem)] hide-scrollbar relative promised-scalable-content"
+                className="flex-1 overflow-y-auto px-3 sm:px-4 pt-3 sm:pt-4 pb-3.5 sm:pb-4 pb-[calc(env(safe-area-inset-bottom,0px)+0.875rem)] hide-scrollbar relative promised-scalable-content"
             >
                 {/* 1. LIST VIEW OF THE 10 COMPANIONS */}
                 {!selectedCompanion ? (
@@ -776,7 +776,7 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                             </div>
                         )}
                         {/* Bottom Spacer for Mobile Phone Navigation Bar */}
-                        <div className="w-full h-10 sm:h-14 shrink-0 pointer-events-none" />
+                        <div className="w-full h-5 sm:h-7 shrink-0 pointer-events-none" />
                     </div>
                 ) : (
                     /* 2. COMPANION DETAILED PROFILE VIEW */
@@ -2323,7 +2323,7 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                             ) : <div className="flex-1" />}
                         </div>
                         {/* Bottom Spacer for Mobile Phone Navigation Bar */}
-                        <div className="w-full h-10 sm:h-14 shrink-0 pointer-events-none" />
+                        <div className="w-full h-5 sm:h-7 shrink-0 pointer-events-none" />
                     </div>
                 </div>
             )}

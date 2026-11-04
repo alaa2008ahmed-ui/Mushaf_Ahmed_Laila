@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Glow / Shadow -->
+    <item android:top="2dp" android:left="1dp" android:right="1dp" android:bottom="3dp">
+        <shape>
+            <solid android:color="#33059669" />
+            <corners android:radius="14dp" />
+        </shape>
+    </item>
+    <!-- Card Face -->
+    <item android:bottom="2dp">
+        <shape>
+            <gradient
+                android:angle="135"
+                android:startColor="#ECFDF5"
+                android:endColor="#D1FAE5" />
+            <corners android:radius="14dp" />
+            <stroke android:width="2dp" android:color="#059669" />
+        </shape>
+    </item>
+</layer-list>

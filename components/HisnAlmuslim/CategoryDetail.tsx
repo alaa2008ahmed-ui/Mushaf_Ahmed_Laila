@@ -319,7 +319,7 @@ const CategoryDetail: React.FC<CategoryDetailProps> = ({
             const timer = setTimeout(() => {
                 let targetEl: HTMLElement | null = null;
                 if (highlightIndex !== undefined) {
-                    targetEl = document.getElementById(`hisn-card-${selectedCategory.id}-${highlightIndex}`);
+                    targetEl = document.getElementById(`hisn-card-${selectedCategory?.id}-${highlightIndex}`);
                 }
                 if (!targetEl && highlightId) {
                     targetEl = document.querySelector(`[data-hisn-id="${highlightId}"]`) as HTMLElement;
@@ -343,8 +343,30 @@ const CategoryDetail: React.FC<CategoryDetailProps> = ({
                 }
             }, 200);
             return () => clearTimeout(timer);
+        } else {
+            const resetScroll = () => {
+                try { window.scrollTo({ top: 0, behavior: 'instant' }); } catch {}
+                try { document.documentElement.scrollTop = 0; } catch {}
+                try { document.body.scrollTop = 0; } catch {}
+                const mainEl = document.querySelector('main');
+                if (mainEl) {
+                    try { mainEl.scrollTop = 0; } catch {}
+                    try { mainEl.scrollTo({ top: 0, behavior: 'instant' }); } catch {}
+                }
+                const scrollables = document.querySelectorAll('.overflow-y-auto, [class*="overflow-y-auto"]');
+                scrollables.forEach(el => {
+                    try { el.scrollTop = 0; } catch {}
+                });
+            };
+            resetScroll();
+            const t1 = setTimeout(resetScroll, 20);
+            const t2 = setTimeout(resetScroll, 100);
+            return () => {
+                clearTimeout(t1);
+                clearTimeout(t2);
+            };
         }
-    }, [selectedCategory.id, highlightIndex, highlightId, highlightText]);
+    }, [selectedCategory?.id, highlightIndex, highlightId, highlightText]);
 
     if (!selectedCategory) return null;
     const items = React.useMemo(() => {

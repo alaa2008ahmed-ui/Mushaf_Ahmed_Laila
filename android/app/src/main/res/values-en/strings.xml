@@ -12,4 +12,9 @@
     <string name="shortcut_seerah_long">Prophetic Biography</string>
     <string name="shortcut_azkar_short">Hisn Al-Muslim</string>
     <string name="shortcut_azkar_long">Daily Athkar &amp; Duas</string>
+
+    <!-- Widgets -->
+    <string name="widget_name_classic">1. Prayer Times - Classic Full</string>
+    <string name="widget_name_compact">2. Prayer Times - Compact (Prev &amp; Next)</string>
 </resources>
+

@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:layoutDirection="ltr"
+    android:background="@drawable/widget_compact_bg"
+    android:clipToOutline="true"
+    android:padding="8dp">
+
+    <!-- Top Row: App Icon + Date Header + Refresh Button -->
+    <LinearLayout
+        android:id="@+id/compact_header_row"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="4dp"
+        android:paddingEnd="4dp"
+        android:paddingBottom="4dp">
+
+        <ImageView
+            android:id="@+id/widget_app_icon"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:src="@mipmap/ic_launcher"
+            android:contentDescription="App Icon" />
+
+        <LinearLayout
+            android:id="@+id/compact_date_container"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginStart="6dp"
+            android:layout_marginEnd="6dp">
+
+            <TextView
+                android:id="@+id/compact_hijri_date"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Ramadan 1445"
+                android:textColor="#059669"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:singleLine="true" />
+
+            <TextView
+                android:id="@+id/compact_date_sep"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text=" • "
+                android:textColor="#94A3B8"
+                android:textSize="11sp"
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp" />
+
+            <TextView
+                android:id="@+id/compact_gregorian_date"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Nov 2, 2026"
+                android:textColor="#64748B"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:singleLine="true" />
+        </LinearLayout>
+
+        <ImageView
+            android:id="@+id/widget_btn_refresh"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:src="@drawable/ic_widget_refresh"
+            android:padding="2dp"
+            android:contentDescription="Refresh" />
+    </LinearLayout>
+
+    <!-- Center Row: Previous Prayer Card (Inset) & Next Prayer Card (Elevated 3D) -->
+    <LinearLayout
+        android:id="@+id/compact_cards_row"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:baselineAligned="false"
+        android:paddingTop="2dp"
+        android:paddingBottom="4dp">
+
+        <!-- Previous Prayer Card -->
+        <LinearLayout
+            android:id="@+id/compact_prev_card"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:background="@drawable/widget_compact_prev_card"
+            android:padding="6dp"
+            android:layout_marginEnd="4dp">
+
+            <TextView
+                android:id="@+id/compact_prev_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Previous"
+                android:textColor="#64748B"
+                android:textSize="11sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/compact_prev_name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Dhuhr"
+                android:textColor="#334155"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:layout_marginTop="2dp" />
+
+            <TextView
+                android:id="@+id/compact_prev_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="11:45"
+                android:textColor="#475569"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:layout_marginTop="1dp" />
+        </LinearLayout>
+
+        <!-- Next Prayer Card (Elevated Highlight) -->
+        <LinearLayout
+            android:id="@+id/compact_next_card"
+            android:layout_width="0dp"
+            android:layout_weight="1.15"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:background="@drawable/widget_compact_next_card"
+            android:padding="6dp"
+            android:layout_marginStart="4dp">
+
+            <TextView
+                android:id="@+id/compact_next_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Next Prayer"
+                android:textColor="#059669"
+                android:textSize="11.5sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/compact_next_name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Asr"
+                android:textColor="#065F46"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:layout_marginTop="2dp" />
+
+            <TextView
+                android:id="@+id/compact_next_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="03:14"
+                android:textColor="#047857"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:layout_marginTop="1dp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Bottom Ribbon: Remaining Countdown -->
+    <LinearLayout
+        android:id="@+id/compact_countdown_card"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:background="@drawable/widget_countdown_ribbon"
+        android:paddingTop="4dp"
+        android:paddingBottom="4dp"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp">
+
+        <TextView
+            android:id="@+id/compact_remaining_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Remaining:"
+            android:textColor="#B45309"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:layout_marginEnd="6dp" />
+
+        <Chronometer
+            android:id="@+id/compact_chronometer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#92400E"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:countDown="true"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/compact_remaining_en"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#92400E"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+</LinearLayout>

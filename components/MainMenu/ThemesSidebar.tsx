@@ -13,6 +13,7 @@ interface ThemesSidebarProps {
 const getThemeCircleColor = (key: string, t: any) => {
   if (key === 'deep_black') return '#000000';
   if (key === 'shiny_gold') return '#EAB308';
+  if (key === 'burgundy_mode') return '#881337';
   if (key === 'default') return '#059669';
   if (key === 'fajr_light') return '#0284C7';
   if (key === 'golden_sand') return '#B45309';
@@ -58,9 +59,22 @@ const getLuminance = (hexColor: string): number => {
 };
 
 export const ThemesSidebar: React.FC<ThemesSidebarProps> = ({ isOpen, onClose }) => {
-  const { theme, themeKey, applyPresetTheme } = useTheme();
+  const { theme, themeKey, applyPresetTheme, setHomeThemeVariant } = useTheme();
   const { isRTL } = useLanguage();
   const asideRef = useRef<HTMLElement>(null);
+
+  const handleThemeClick = (key: string) => {
+    applyPresetTheme(key);
+    if (key === 'sky_mode') {
+      setHomeThemeVariant('sky');
+    } else if (key === 'emerald_mode') {
+      setHomeThemeVariant('emerald');
+    } else if (key === 'burgundy_mode') {
+      setHomeThemeVariant('burgundy');
+    } else if (key === 'shiny_gold' || key === 'default' || key === 'black_gold') {
+      setHomeThemeVariant('gold');
+    }
+  };
 
   const isBlackTheme = themeKey === 'deep_black' || theme.bgColor === '#000000' || theme.name === 'اسود' || theme.name === 'black';
   const sidebarBg = isBlackTheme ? '#000000' : (theme.bgColor || '#DFE5EC');
@@ -160,7 +174,7 @@ export const ThemesSidebar: React.FC<ThemesSidebarProps> = ({ isOpen, onClose })
                     <button
                       key={key}
                       type="button"
-                      onClick={() => applyPresetTheme(key)}
+                      onClick={() => handleThemeClick(key)}
                       className="flex items-center justify-center p-1 group transition-transform active:scale-90 cursor-pointer rounded-full"
                       title={t.name}
                       aria-label={t.name}

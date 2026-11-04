@@ -9,6 +9,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { tPrayer, getPrayerDisplayName } from '../../utils/prayerTimesTranslations';
 import { CommunitySpotlightGuide, getGuideSeen } from '../Community/CommunitySpotlightGuide';
 import { PRAYER_SETTINGS_MODAL_STEPS } from '../Community/communityTourSteps';
+import { IslamicTimePickerModal } from '../Common/IslamicTimePickerModal';
 
 interface PrayerTimesSettingsModalProps {
     isOpen: boolean;
@@ -95,6 +96,7 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
     const [showGuide, setShowGuide] = useState(false);
     // Local string state to handle manual typing seamlessly across Android APK and web
     const [offsetInputValue, setOffsetInputValue] = useState<string>(() => String(tempOffset));
+    const [isDirectTimePickerOpen, setIsDirectTimePickerOpen] = useState(false);
 
     useEffect(() => {
         if (isOpen && Capacitor.getPlatform() === 'android') {
@@ -306,13 +308,8 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
                                     <div className="relative flex items-center">
                                         <button 
                                             type="button" 
-                                            onClick={() => {
-                                                const newTime = prompt(tPrayer('directTimePrompt', language), formatTime12_EN(applyOffset(times[currentEditingKey], totalPreviewOffset)));
-                                                if (newTime) {
-                                                    handleDirectTimeChange(newTime);
-                                                }
-                                            }}
-                                            className="w-5 h-5 rounded-md bg-black/5 dark:bg-white/10 flex items-center justify-center text-[11px] opacity-70 hover:opacity-100 cursor-pointer"
+                                            onClick={() => setIsDirectTimePickerOpen(true)}
+                                            className="w-5 h-5 rounded-md bg-black/5 dark:bg-white/10 flex items-center justify-center text-[11px] opacity-70 hover:opacity-100 cursor-pointer active:scale-95 transition-transform"
                                             style={{ color: primaryColor }}
                                             title={tPrayer('directTimeEditTooltip', language)}
                                         >
@@ -705,6 +702,16 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
                 onClose={() => setShowGuide(false)}
                 isEn={language === 'en'}
             />
+
+            {isDirectTimePickerOpen && currentEditingKey && (
+                <IslamicTimePickerModal
+                    isOpen={isDirectTimePickerOpen}
+                    onClose={() => setIsDirectTimePickerOpen(false)}
+                    initialTime={applyOffset(times[currentEditingKey], totalPreviewOffset)}
+                    onSave={(newTime24) => handleDirectTimeChange(newTime24)}
+                    title={tPrayer('prayerSettingsTitle', language, { p: getPrayerDisplayName(currentEditingKey, language) })}
+                />
+            )}
         </div>
     );
 };

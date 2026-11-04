@@ -509,7 +509,7 @@ function AthkarAlSalah({ onBack, onNavigate, navParams }: AthkarAlSalahProps) {
                 </div>
             </header>
 
-            <main className="flex-1 overflow-y-auto hide-scrollbar relative max-w-3xl mx-auto w-full px-4 pt-2 pb-7 sm:pb-8 pb-[calc(env(safe-area-inset-bottom,0px)+1.75rem)] flex flex-col">
+            <main className="flex-1 overflow-y-auto hide-scrollbar relative max-w-3xl mx-auto w-full px-4 pt-2 pb-3.5 sm:pb-4 pb-[calc(env(safe-area-inset-bottom,0px)+0.875rem)] flex flex-col">
                 {/* Controls Bar: Search and View Mode Switch - Matches Adia/OthersPage */}
                 <div className="mb-6 max-w-3xl mx-auto w-full flex items-center gap-2 z-10 shrink-0" dir={isEn ? 'ltr' : 'rtl'}>
                     {/* Search Input */}
@@ -669,20 +669,9 @@ function AthkarAlSalah({ onBack, onNavigate, navParams }: AthkarAlSalahProps) {
                                 />
                             </div>
                         ))}
-                        <div className="col-span-full">
-                            <BottomSalahGuides 
-                                theme={theme}
-                                themeKey={themeKey}
-                                cardBorderColor={cardBorderColor}
-                                isBlackTheme={isBlackTheme}
-                                isEn={isEn}
-                                onZoom={setZoomedZikr}
-                                setToastMessage={setToastMessage}
-                            />
-                        </div>
                     </div>
                 )}
-                <div className="shrink-0 w-full h-8"></div>
+                <div className="shrink-0 w-full h-4"></div>
             </main>
 
             {/* Backdrop to close floating menu when clicking anywhere, absorbing the click */}
