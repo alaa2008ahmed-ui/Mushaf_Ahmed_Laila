@@ -689,6 +689,9 @@ export const QuranDownloadModal: React.FC<DownloadModalProps> = ({
     const isDark = !theme.bgColor || 
         ['#191D3A', '#0C0A09', '#000000', '#4C1D95', '#7C2D12', '#1E40AF', '#1E1B4B', '#1C1917', '#0B0F19', '#3E2723', '#450A0A', '#064E3B', '#0F766E', '#155E75', '#581C87', '#0F172A', '#2E1065', '#0B0F19', '#022C22'].includes(theme.bgColor.toUpperCase());
 
+    const isDeepBlack = (theme.bg || theme.bgColor || '').toLowerCase() === '#000000';
+    const fgAccent = isDeepBlack ? '#ffffff' : 'var(--qr-accent)';
+
     const modalStyle = {
         '--qr-bg': theme.bg || theme.bgColor || '#ffffff',
         '--qr-text': theme.text || theme.textColor || '#000000',
@@ -712,7 +715,7 @@ export const QuranDownloadModal: React.FC<DownloadModalProps> = ({
                                     {language === 'en' ? 'Select Reciter' : 'اختر القارئ'}
                                 </label>
                                 {selectedReaderObj && (
-                                    <span className="text-[10px] font-bold" style={{ color: 'var(--qr-accent)' }}>
+                                    <span className="text-[10px] font-bold" style={{ color: fgAccent }}>
                                         {availableSurahsList.length < 114 
                                             ? (language === 'en' ? `(Available: ${formatListenNumber(availableSurahsList.length, language)} Surahs)` : `(متوفر: ${formatListenNumber(availableSurahsList.length, language)} سورة)`) 
                                             : (language === 'en' ? '(Complete Qur\'an)' : '(المصحف كامل)')}
@@ -765,8 +768,8 @@ export const QuranDownloadModal: React.FC<DownloadModalProps> = ({
 
                             {/* Informational banner when reciter has incomplete mushaf */}
                             {selectedReaderObj && availableSurahsList.length < 114 && (
-                                <div className={`flex items-start gap-2 p-3 rounded-2xl quran-raised-card text-amber-700 dark:text-amber-300 text-[11px] ${isRTL ? 'text-right' : 'text-left'} mt-2 animate-fadeIn border-0`} style={{ border: 'none' }} dir={dir}>
-                                    <i className="fa-solid fa-triangle-exclamation shrink-0 text-amber-500 text-xs mt-0.5 quran-3d-icon"></i>
+                                <div className={`flex items-start gap-2 p-3 rounded-2xl quran-raised-card ${isDeepBlack ? 'text-white' : 'text-amber-700 dark:text-amber-300'} text-[11px] ${isRTL ? 'text-right' : 'text-left'} mt-2 animate-fadeIn border-0`} style={{ border: 'none' }} dir={dir}>
+                                    <i className={`fa-solid fa-triangle-exclamation shrink-0 ${isDeepBlack ? 'text-white' : 'text-amber-500'} text-xs mt-0.5 quran-3d-icon`}></i>
                                     <div>
                                         <span className="font-bold">
                                             {language === 'en' 
@@ -802,7 +805,7 @@ export const QuranDownloadModal: React.FC<DownloadModalProps> = ({
                                     className={`text-[10px] sm:text-xs p-2.5 rounded-xl transition-all font-bold flex items-center justify-center gap-1 cursor-pointer ${selectedSurahs.includes('all') ? 'quran-raised-btn-selected shadow-md' : 'quran-raised-btn'}`}
                                     style={{
                                         backgroundColor: selectedSurahs.includes('all') ? 'var(--qr-accent)' : (isAllSurahsDownloaded ? 'color-mix(in srgb, var(--qr-accent) 20%, transparent)' : undefined),
-                                        color: selectedSurahs.includes('all') ? 'var(--qr-accent-text, #fff)' : (isAllSurahsDownloaded ? 'var(--qr-accent)' : theme.textColor),
+                                        color: selectedSurahs.includes('all') ? 'var(--qr-accent-text, #fff)' : (isAllSurahsDownloaded ? fgAccent : theme.textColor),
                                         border: 'none'
                                     }}
                                 >
@@ -824,7 +827,7 @@ export const QuranDownloadModal: React.FC<DownloadModalProps> = ({
                                             className={`text-[10px] sm:text-xs p-2.5 rounded-xl transition-all font-bold flex items-center justify-center gap-1 cursor-pointer truncate ${isSelected ? 'quran-raised-btn-selected shadow-md' : 'quran-raised-btn'}`}
                                             style={{
                                                 backgroundColor: isSelected ? 'var(--qr-accent)' : (isDownloaded ? 'color-mix(in srgb, var(--qr-accent) 20%, transparent)' : undefined),
-                                                color: isSelected ? 'var(--qr-accent-text, #fff)' : (isDownloaded ? 'var(--qr-accent)' : theme.textColor),
+                                                color: isSelected ? 'var(--qr-accent-text, #fff)' : (isDownloaded ? fgAccent : theme.textColor),
                                                 border: 'none'
                                             }}
                                             title={surahNameDisplay}
@@ -875,7 +878,7 @@ export const QuranDownloadModal: React.FC<DownloadModalProps> = ({
                                             className={`text-[10px] sm:text-xs p-2.5 rounded-xl transition-all font-bold flex flex-col items-center justify-center gap-0.5 cursor-pointer ${isSelected ? 'quran-raised-btn-selected shadow-md' : (isUnavailable ? 'opacity-40 cursor-not-allowed quran-raised-card' : 'quran-raised-btn')}`}
                                             style={{
                                                 backgroundColor: isSelected ? 'var(--qr-accent)' : (isDownloaded ? 'color-mix(in srgb, var(--qr-accent) 20%, transparent)' : undefined),
-                                                color: isSelected ? 'var(--qr-accent-text, #fff)' : (isDownloaded ? 'var(--qr-accent)' : theme.textColor),
+                                                color: isSelected ? 'var(--qr-accent-text, #fff)' : (isDownloaded ? fgAccent : theme.textColor),
                                                 border: 'none'
                                             }}
                                         >
@@ -888,7 +891,7 @@ export const QuranDownloadModal: React.FC<DownloadModalProps> = ({
                                                     {language === 'en' ? 'Unavailable' : 'غير متوفر'}
                                                 </span>
                                             ) : isPartialJuz ? (
-                                                <span className="text-[9px] text-amber-500 dark:text-amber-400 font-normal">
+                                                <span className={`text-[9px] ${isDeepBlack ? 'text-white/80' : 'text-amber-500 dark:text-amber-400'} font-normal`}>
                                                     {language === 'en' ? `(${formatListenNumber(availableInThisJuz.length, language)} available)` : `(${formatListenNumber(availableInThisJuz.length, language)} سورة متوفرة)`}
                                                 </span>
                                             ) : null}
@@ -1193,6 +1196,9 @@ export const TafsirDownloadModal: React.FC<DownloadModalProps> = ({ onClose, qur
     const isDark = !theme.bgColor || 
         ['#191D3A', '#0C0A09', '#000000', '#4C1D95', '#7C2D12', '#1E40AF', '#1E1B4B', '#1C1917', '#0B0F19', '#3E2723', '#450A0A', '#064E3B', '#0F766E', '#155E75', '#581C87', '#0F172A', '#2E1065', '#0B0F19', '#022C22'].includes(theme.bgColor.toUpperCase());
 
+    const isDeepBlack = (theme.bg || theme.bgColor || '').toLowerCase() === '#000000';
+    const fgAccent = isDeepBlack ? '#ffffff' : 'var(--qr-accent)';
+
     const modalStyle = {
         '--qr-bg': theme.bg || theme.bgColor || '#ffffff',
         '--qr-text': theme.text || theme.textColor || '#000000',
@@ -1243,7 +1249,7 @@ export const TafsirDownloadModal: React.FC<DownloadModalProps> = ({ onClose, qur
                                     className={`text-[10px] sm:text-xs p-2.5 rounded-xl transition-all font-bold flex items-center justify-center gap-1 cursor-pointer ${selectedSurahs.includes('all') ? 'quran-raised-btn-selected shadow-md' : 'quran-raised-btn'}`}
                                     style={{
                                         backgroundColor: selectedSurahs.includes('all') ? 'var(--qr-accent)' : (downloadedSurahs.length === 114 ? 'color-mix(in srgb, var(--qr-accent) 20%, transparent)' : undefined),
-                                        color: selectedSurahs.includes('all') ? 'var(--qr-accent-text, #fff)' : (downloadedSurahs.length === 114 ? 'var(--qr-accent)' : theme.textColor),
+                                        color: selectedSurahs.includes('all') ? 'var(--qr-accent-text, #fff)' : (downloadedSurahs.length === 114 ? fgAccent : theme.textColor),
                                         border: 'none'
                                     }}
                                 >
@@ -1261,7 +1267,7 @@ export const TafsirDownloadModal: React.FC<DownloadModalProps> = ({ onClose, qur
                                             className={`text-[10px] sm:text-xs p-2.5 rounded-xl transition-all font-bold flex items-center justify-center gap-1 cursor-pointer truncate ${isSelected ? 'quran-raised-btn-selected shadow-md' : 'quran-raised-btn'}`}
                                             style={{
                                                 backgroundColor: isSelected ? 'var(--qr-accent)' : (isDownloaded ? 'color-mix(in srgb, var(--qr-accent) 20%, transparent)' : undefined),
-                                                color: isSelected ? 'var(--qr-accent-text, #fff)' : (isDownloaded ? 'var(--qr-accent)' : theme.textColor),
+                                                color: isSelected ? 'var(--qr-accent-text, #fff)' : (isDownloaded ? fgAccent : theme.textColor),
                                                 border: 'none'
                                             }}
                                             title={surahNameDisplay}
@@ -1287,7 +1293,7 @@ export const TafsirDownloadModal: React.FC<DownloadModalProps> = ({ onClose, qur
                                             className={`text-[10px] sm:text-xs p-2.5 rounded-xl transition-all font-bold flex items-center justify-center gap-1 cursor-pointer ${isSelected ? 'quran-raised-btn-selected shadow-md' : 'quran-raised-btn'}`}
                                             style={{
                                                 backgroundColor: isSelected ? 'var(--qr-accent)' : (isDownloaded ? 'color-mix(in srgb, var(--qr-accent) 20%, transparent)' : undefined),
-                                                color: isSelected ? 'var(--qr-accent-text, #fff)' : (isDownloaded ? 'var(--qr-accent)' : theme.textColor),
+                                                color: isSelected ? 'var(--qr-accent-text, #fff)' : (isDownloaded ? fgAccent : theme.textColor),
                                                 border: 'none'
                                             }}
                                         >

@@ -8,6 +8,40 @@
     <meta name="description" content="تطبيق إسلامي شامل يعمل بدون انترنت، يحتوي على القرآن الكريم، أذكار، تسبيح، مواقيت الصلاة، وقائمة تطبيقات متنوعة. مصمم ليكون رفيقك اليومي." />
     <meta property="og:title" content="مصحف أحمد و ليلى" />
     <meta property="og:description" content="تطبيق إسلامي شامل يعمل بدون انترنت، يحتوي على القرآن الكريم، أذكار، تسبيح، مواقيت الصلاة، وقائمة تطبيقات متنوعة. مصمم ليكون رفيقك اليومي." />
+    <link rel="icon" type="image/png" href="/app_icon.png" />
+    <link rel="apple-touch-icon" href="/app_icon.png" />
+    <script>
+        window.__SPLASH_START_TS__ = Date.now();
+        (function() {
+            var splashSrc = '/splash.jpg';
+            try {
+                var direct = localStorage.getItem('current_splash_image');
+                if (direct) {
+                    splashSrc = direct;
+                } else {
+                    var isNight = localStorage.getItem('night_mode_active_modern') === 'true' || localStorage.getItem('night_mode_active') === 'true';
+                    var variant = localStorage.getItem('modern_home_theme_variant');
+                    if (isNight) {
+                        splashSrc = '/assets/splash/splash_night.jpg';
+                    } else if (variant === 'sky') {
+                        splashSrc = '/assets/splash/splash_sky.jpg';
+                    } else if (variant === 'emerald') {
+                        splashSrc = '/assets/splash/splash_emerald.jpg';
+                    } else if (variant === 'burgundy') {
+                        splashSrc = '/assets/splash/splash_burgundy.jpg';
+                    }
+                }
+            } catch (e) {}
+            window.__CURRENT_SPLASH_SRC__ = splashSrc;
+            var link = document.createElement('link');
+            link.rel = 'preload';
+            link.as = 'image';
+            link.href = splashSrc;
+            link.setAttribute('fetchpriority', 'high');
+            document.head.appendChild(link);
+        })();
+    </script>
+    <link rel="preload" as="image" href="/app_icon.png" fetchpriority="high" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -28,6 +62,29 @@
             }
             // Prevent React DevTools instrumentation error in restricted environments
             window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = { isDisabled: true };
+            window.addEventListener('error', function(e) {
+                if (e && e.message && (
+                    e.message.indexOf('ResizeObserver') !== -1 ||
+                    e.message.indexOf('loop completed with undelivered notifications') !== -1 ||
+                    e.message.indexOf('loop limit exceeded') !== -1
+                )) {
+                    e.stopImmediatePropagation();
+                    e.preventDefault();
+                    return true;
+                }
+            }, true);
+            var _prevOnError = window.onerror;
+            window.onerror = function(msg) {
+                if (typeof msg === 'string' && (
+                    msg.indexOf('ResizeObserver') !== -1 ||
+                    msg.indexOf('loop completed with undelivered notifications') !== -1 ||
+                    msg.indexOf('loop limit exceeded') !== -1
+                )) {
+                    return true;
+                }
+                if (_prevOnError) return _prevOnError.apply(this, arguments);
+                return false;
+            };
             try {
                 var raw = (window.location.href + ' ' + window.location.hash + ' ' + window.location.search).toLowerCase();
                 if (raw.indexOf('quran') !== -1) window.__pendingShortcut = 'quran';
@@ -41,7 +98,52 @@
     </script>
     
 <style>
-      body { background: black; }
+      html, body { background-color: #000000; margin: 0; padding: 0; }
+      .app-splash-overlay {
+          position: fixed;
+          inset: 0;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          width: 100vw;
+          height: 100vh;
+          height: 100dvh;
+          z-index: 99999;
+          overflow: hidden;
+          background: #000000;
+          user-select: none;
+          -webkit-user-select: none;
+          pointer-events: auto;
+          transform: translateZ(0);
+          -webkit-backface-visibility: hidden;
+          backface-visibility: hidden;
+          margin: 0;
+          padding: 0;
+      }
+      .app-splash-fullscreen-img {
+          position: absolute;
+          inset: 0;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          width: 100vw;
+          height: 100vh;
+          height: 100dvh;
+          max-width: none;
+          max-height: none;
+          object-fit: cover;
+          object-position: center center;
+          display: block;
+          margin: 0;
+          padding: 0;
+          border: none;
+          outline: none;
+          user-select: none;
+          -webkit-user-drag: none;
+          pointer-events: none;
+      }
       :root {
           --font-amiri: 'Amiri', serif;
           --font-amiri-quran: 'Amiri Quran', serif;
@@ -368,6 +470,20 @@
       video::-webkit-media-controls-enclosure {
           display:none !important;
       }
+
+      /* إخفاء الزر العائم للصعود لأعلى الصفحة لحظياً عند فتح قائمة التكبير لبطاقة إشراقات وذاكرة اليوم */
+      body.zoom-modal-active #scroll-to-top-fab,
+      body[data-zoom-modal="true"] #scroll-to-top-fab,
+      body.modal-open #scroll-to-top-fab,
+      body.qr-modal-active #scroll-to-top-fab,
+      body:has(#unified-event-zoom-modal-backdrop) #scroll-to-top-fab,
+      body:has(.zoom-modal-active) #scroll-to-top-fab,
+      #unified-event-zoom-modal-backdrop ~ #scroll-to-top-fab {
+          display: none !important;
+          opacity: 0 !important;
+          visibility: hidden !important;
+          pointer-events: none !important;
+      }
     </style>
 <script>
     (function() {
@@ -385,10 +501,32 @@
         });
     })();
 </script>
-  <script type="module" crossorigin src="/assets/index-Dyw9g24g.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-DOFP8sN8.css">
+  <script type="module" crossorigin src="/assets/index-tsK4QZY2.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-D8Lr_dpJ.css">
 </head>
 <body>
+    <div id="initial-boot-splash" class="app-splash-overlay" aria-hidden="true">
+        <script>
+            (function() {
+                var src = window.__CURRENT_SPLASH_SRC__ || '/splash.jpg';
+                document.write('<img class="app-splash-fullscreen-img" src="' + src + '" alt="مصحف أحمد وليلى - Mushaf Ahmed &amp; Laila" decoding="sync" fetchpriority="high" draggable="false" onload="window.__SPLASH_START_TS__ = window.__SPLASH_START_TS__ || Date.now();" />');
+            })();
+        </script>
+        <noscript>
+            <img class="app-splash-fullscreen-img" src="/splash.jpg" alt="مصحف أحمد وليلى - Mushaf Ahmed &amp; Laila" decoding="sync" fetchpriority="high" draggable="false" />
+        </noscript>
+    </div>
+    <script>
+        (function() {
+            try {
+                if (window.__pendingShortcut || localStorage.getItem('pending_shortcut_target')) {
+                    var s = document.getElementById('initial-boot-splash');
+                    if (s) s.remove();
+                    document.body.style.backgroundColor = '#FFFFFF';
+                }
+            } catch (e) {}
+        })();
+    </script>
     <video id="video-background" autoplay muted loop playsinline preload="auto" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: -1; display: none;"></video>
     <div id="root"></div>
     <div id="theme-modal-root"></div>

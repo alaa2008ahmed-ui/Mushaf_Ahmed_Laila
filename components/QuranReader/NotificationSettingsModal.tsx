@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Check, X, Smartphone, AppWindow, VolumeX, Shuffle, LayoutGrid, Palette, HelpCircle, BellRing, Bell, ShieldCheck, Zap, Sparkles } from 'lucide-react';
+import { Check, X, Smartphone, AppWindow, VolumeX, Shuffle, LayoutGrid, BellRing, Bell, ShieldCheck, Zap, Sparkles } from 'lucide-react';
 import { toArabic } from './constants';
 import { IslamicTimePickerModal } from '../Common/IslamicTimePickerModal';
 import { usePrayerTimes } from '../../context/PrayerTimesContext';
@@ -11,6 +11,8 @@ import { syncWidgetThemeColors } from '../../utils/widgetUtils';
 import { WidgetDesignPreview } from '../PrayerTimes/WidgetDesignPreview';
 import { Preferences } from '@capacitor/preferences';
 import { Capacitor } from '@capacitor/core';
+import NotificationToneSelector, { NotificationToneState } from '../PrayerTimes/NotificationToneSelector';
+import { getActiveNotificationTone, setActiveNotificationTone } from '../../utils/prayerTimesUtils';
 import {
     setNativePersistentNotificationEnabled,
     checkNativeBatteryOptimization,
@@ -164,8 +166,75 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
         };
     });
 
-    const { theme, themeKey } = useTheme();
-    const isShinyGold = themeKey === 'shiny_gold';
+    const { theme, themeKey, homeThemeVariant } = useTheme();
+    const isBlackTheme = themeKey === 'deep_black' || theme?.bgColor === '#000000';
+
+    const themeStyles = (() => {
+        if (isBlackTheme || themeKey === 'deep_black') {
+            return {
+                modalBg: '#18181b',
+                modalText: '#ffffff',
+                cardBg: '#27272a',
+                cardBorder: 'rgba(255, 255, 255, 0.15)',
+                text: '#ffffff',
+                subtext: '#a1a1aa',
+                accent: '#38bdf8',
+                btnBg: '#38bdf8',
+                btnText: '#000000'
+            };
+        }
+        if (themeKey === 'shiny_gold' || themeKey === 'gold' || homeThemeVariant === 'gold') {
+            return {
+                modalBg: '#ffffff',
+                modalText: '#1f2937',
+                cardBg: '#fef08a', // vibrant golden yellow card
+                cardBorder: '#eab308',
+                text: '#713f12', // deep golden text
+                subtext: '#854d0e',
+                accent: '#ca8a04',
+                btnBg: '#ca8a04',
+                btnText: '#ffffff'
+            };
+        }
+        if (themeKey === 'sky_mode' || homeThemeVariant === 'sky') {
+            return {
+                modalBg: '#ffffff',
+                modalText: '#1f2937',
+                cardBg: '#e0f2fe', // sky blue card
+                cardBorder: '#7dd3fc',
+                text: '#0c4a6e', // deep sky blue text
+                subtext: '#0369a1',
+                accent: '#0284c7',
+                btnBg: '#0284c7',
+                btnText: '#ffffff'
+            };
+        }
+        if (themeKey === 'burgundy_mode' || homeThemeVariant === 'burgundy') {
+            return {
+                modalBg: '#ffffff',
+                modalText: '#1f2937',
+                cardBg: '#ffe4e6', // burgundy card
+                cardBorder: '#fda4af',
+                text: '#4c0519', // deep burgundy text
+                subtext: '#881337',
+                accent: '#be123c',
+                btnBg: '#be123c',
+                btnText: '#ffffff'
+            };
+        }
+        // Emerald / Default Green
+        return {
+            modalBg: '#ffffff',
+            modalText: '#1f2937',
+            cardBg: '#dcfce7', // emerald green card
+            cardBorder: '#86efac',
+            text: '#064e3b', // deep emerald text
+            subtext: '#047857',
+            accent: '#059669',
+            btnBg: '#059669',
+            btnText: '#ffffff'
+        };
+    })();
 
     // Persistent Prayer Times Notification State
     const [isPersistentNotificationEnabled, setIsPersistentNotificationEnabled] = useState<boolean>(() => {
@@ -179,6 +248,18 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
             checkNativeBatteryOptimization().then(setIsBatteryIgnored).catch(() => {});
         }
     }, []);
+
+    // Notification Tone state for general reminders & athkar
+    const [activeNotificationTone, setActiveNotificationToneState] = useState<NotificationToneState>(() => getActiveNotificationTone());
+
+    const handleNotificationToneChange = (tone: NotificationToneState) => {
+        setActiveNotificationToneState(tone);
+        setActiveNotificationTone(tone);
+        setTimeout(() => {
+            setupNotifications(phoneSettings, isEn ? 'en' : 'ar');
+        }, 50);
+        showToast(isEn ? `Notification tone updated: ${tone.name}` : `تم تحديث نغمة الإشعارات: ${tone.name}`);
+    };
 
     const togglePersistentNotification = async () => {
         const nextState = !isPersistentNotificationEnabled;
@@ -402,32 +483,35 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
 
     return (
         <div dir={dir} lang={isEn ? 'en' : 'ar'} className={`fixed inset-0 bg-black/40 backdrop-blur-sm z-[1200] flex items-center justify-center ${isLandscape ? 'p-0' : 'p-4'} animate-fadeIn`} onClick={onClose}>
-            <div className={`modal-skinned w-full ${isLandscape ? 'max-w-4xl h-full rounded-none max-h-screen' : 'max-w-md rounded-2xl max-h-[85vh]'} shadow-2xl overflow-hidden flex flex-col animate-modal-enter border-0`} style={{ border: 'none', outline: 'none' }} onClick={e => e.stopPropagation()}>
+            <div 
+                className={`modal-skinned w-full ${isLandscape ? 'max-w-4xl h-full rounded-none max-h-screen' : 'max-w-md rounded-2xl max-h-[85vh]'} shadow-2xl overflow-hidden flex flex-col animate-modal-enter border-0`} 
+                style={{ backgroundColor: themeStyles.modalBg, color: themeStyles.modalText, border: 'none', outline: 'none' }} 
+                onClick={e => e.stopPropagation()}
+            >
 
                 {hideAppTab ? (
-                    <div className="flex items-center justify-between p-3.5 sm:p-4">
-                        <div className="flex items-center gap-2 font-black text-sm sm:text-base" style={{ color: 'var(--qr-accent)' }}>
+                    <div className="flex items-center justify-between p-3.5 sm:p-4 border-b" style={{ borderColor: `${themeStyles.accent}20` }}>
+                        <div className="flex items-center gap-2 font-black text-sm sm:text-base" style={{ color: themeStyles.accent }}>
                             <Smartphone className="w-5 h-5 shrink-0 quran-3d-icon" />
                             <span>{phoneTabTitle || (isEn ? 'Prayer Settings & Notifications' : 'إعدادات الصلاة والإشعارات')}</span>
                         </div>
                         <button 
                             type="button"
                             onClick={onClose}
-                            className="w-8 h-8 rounded-xl flex items-center justify-center quran-raised-btn active:scale-95 transition-all cursor-pointer"
+                            className="w-8 h-8 rounded-xl flex items-center justify-center active:scale-95 transition-all cursor-pointer"
+                            style={{ backgroundColor: `${themeStyles.accent}18`, color: themeStyles.accent }}
                             title={isEn ? "Close" : "إغلاق"}
                         >
                             <X className="w-5 h-5 quran-3d-icon" />
                         </button>
                     </div>
                 ) : (
-                    <div className="flex gap-2 p-3">
+                    <div className="flex gap-2 p-3 border-b" style={{ borderColor: `${themeStyles.accent}20` }}>
                         <button 
-                            className={`flex-1 py-2.5 px-3 text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer rounded-xl border-0 ${
-                                activeTab === 'app' ? 'quran-raised-btn-selected shadow-md' : 'quran-raised-btn'
-                            }`}
+                            className="flex-1 py-2.5 px-3 text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer rounded-xl border-0 shadow-xs"
                             style={{ 
-                                backgroundColor: activeTab === 'app' ? 'var(--qr-accent)' : undefined,
-                                color: activeTab === 'app' ? 'var(--qr-accent-text, #fff)' : 'inherit',
+                                backgroundColor: activeTab === 'app' ? themeStyles.accent : themeStyles.cardBg,
+                                color: activeTab === 'app' ? themeStyles.btnText : themeStyles.text,
                                 border: 'none'
                             }}
                             onClick={() => setActiveTab('app')}
@@ -436,12 +520,10 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
                             {isEn ? 'App Notifications' : 'إشعارات التطبيق'}
                         </button>
                         <button 
-                            className={`flex-1 py-2.5 px-3 text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer rounded-xl border-0 ${
-                                activeTab === 'phone' ? 'quran-raised-btn-selected shadow-md' : 'quran-raised-btn'
-                            }`}
+                            className="flex-1 py-2.5 px-3 text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer rounded-xl border-0 shadow-xs"
                             style={{ 
-                                backgroundColor: activeTab === 'phone' ? 'var(--qr-accent)' : undefined,
-                                color: activeTab === 'phone' ? 'var(--qr-accent-text, #fff)' : 'inherit',
+                                backgroundColor: activeTab === 'phone' ? themeStyles.accent : themeStyles.cardBg,
+                                color: activeTab === 'phone' ? themeStyles.btnText : themeStyles.text,
                                 border: 'none'
                             }}
                             onClick={() => setActiveTab('phone')}
@@ -467,16 +549,16 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
                                 <div 
                                     key={item.id}
                                     onClick={() => toggleAppSetting(item.id)}
-                                    className={`flex items-center justify-between py-2.5 px-3.5 rounded-xl transition-all cursor-pointer border-0 ${
-                                        isShinyGold
-                                            ? 'bg-white text-gray-900 shadow-xs border border-amber-300/40 hover:bg-amber-50/40'
-                                            : (appSettings[item.id] ? 'quran-raised-btn-selected shadow-md' : 'quran-raised-btn opacity-80')
-                                    }`}
-                                    style={isShinyGold ? { backgroundColor: '#FFFFFF', color: '#1F2937' } : { border: 'none' }}
+                                    className="flex items-center justify-between py-2.5 px-3.5 rounded-xl transition-all cursor-pointer border-0 shadow-2xs"
+                                    style={{ 
+                                        backgroundColor: themeStyles.cardBg, 
+                                        color: themeStyles.text,
+                                        border: `1px solid ${themeStyles.cardBorder}`
+                                    }}
                                 >
                                     <span className="font-bold text-sm">{item.label}</span>
-                                    <div className="w-4 h-4 rounded-full flex items-center justify-center transition-colors shadow-inner shrink-0" style={{ backgroundColor: appSettings[item.id] ? 'var(--qr-accent)' : (isShinyGold ? 'rgba(0,0,0,0.12)' : 'rgba(0,0,0,0.1)'), color: appSettings[item.id] ? 'var(--qr-accent-text, #fff)' : 'transparent' }}>
-                                        {appSettings[item.id] && <Check className="w-2.5 h-2.5 quran-3d-icon" />}
+                                    <div className="w-5 h-5 rounded-full flex items-center justify-center transition-colors shadow-inner shrink-0" style={{ backgroundColor: appSettings[item.id] ? themeStyles.accent : 'rgba(0,0,0,0.1)', color: appSettings[item.id] ? '#ffffff' : 'transparent' }}>
+                                        {appSettings[item.id] && <Check className="w-3 h-3 stroke-[3] quran-3d-icon" />}
                                     </div>
                                 </div>
                             ))}
@@ -485,43 +567,44 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
                         <div className="space-y-3 animate-fadeIn pb-4">
                             {/* Persistent Prayer Times Notification Card */}
                             <div className="space-y-2">
-                                <h4 className="font-bold text-xs sm:text-sm opacity-90 flex items-center gap-2">
-                                    <BellRing className="w-4 h-4 text-emerald-500 quran-3d-icon shrink-0" />
+                                <h4 className="font-bold text-xs sm:text-sm opacity-90 flex items-center gap-2" style={{ color: themeStyles.accent }}>
+                                    <BellRing className="w-4 h-4 quran-3d-icon shrink-0" />
                                     <span>{isEn ? 'Ongoing Prayer Notification' : 'الإشعار المستمر لمواقيت الصلاة'}</span>
                                 </h4>
 
                                 <div 
                                     onClick={togglePersistentNotification}
-                                    className={`flex items-center justify-between gap-2 py-2.5 px-3.5 rounded-xl transition-all cursor-pointer border-0 ${
-                                        isShinyGold
-                                            ? 'bg-white text-gray-900 shadow-xs border border-amber-300/40 hover:bg-amber-50/40'
-                                            : (isPersistentNotificationEnabled ? 'quran-raised-btn-selected shadow-md' : 'quran-raised-btn opacity-80')
-                                    }`}
-                                    style={isShinyGold ? { backgroundColor: '#FFFFFF', color: '#1F2937' } : { border: 'none' }}
+                                    className="flex items-center justify-between gap-2 py-2.5 px-3.5 rounded-xl transition-all cursor-pointer border-0 shadow-2xs"
+                                    style={{ 
+                                        backgroundColor: themeStyles.cardBg, 
+                                        color: themeStyles.text,
+                                        border: `1px solid ${themeStyles.cardBorder}`
+                                    }}
                                 >
                                     <span className="font-bold text-xs sm:text-sm">
                                         {isEn ? 'Persistent Prayer Notification (Status Bar)' : 'إشعار الصلاة المستمر (الشريط العلوي بجوار الساعة)'}
                                     </span>
                                     <div 
-                                        className="w-4 h-4 rounded-full flex items-center justify-center transition-colors flex-shrink-0 shadow-inner" 
+                                        className="w-5 h-5 rounded-full flex items-center justify-center transition-colors flex-shrink-0 shadow-inner" 
                                         style={{ 
-                                            backgroundColor: isPersistentNotificationEnabled ? 'var(--qr-accent)' : (isShinyGold ? 'rgba(0,0,0,0.12)' : 'rgba(0,0,0,0.1)'), 
-                                            color: isPersistentNotificationEnabled ? 'var(--qr-accent-text, #fff)' : 'transparent' 
+                                            backgroundColor: isPersistentNotificationEnabled ? themeStyles.accent : 'rgba(0,0,0,0.12)', 
+                                            color: isPersistentNotificationEnabled ? '#ffffff' : 'transparent' 
                                         }}
                                     >
-                                        {isPersistentNotificationEnabled && <Check className="w-2.5 h-2.5 stroke-[3] quran-3d-icon" />}
+                                        {isPersistentNotificationEnabled && <Check className="w-3 h-3 stroke-[3] quran-3d-icon" />}
                                     </div>
                                 </div>
 
                                  {/* Battery Optimization Status (Android only) */}
                                 {Capacitor.getPlatform() === 'android' && isPersistentNotificationEnabled && (
-                                    <div className={`py-2.5 px-3.5 rounded-xl flex items-center justify-between gap-2 text-xs border-0 ${
-                                        isShinyGold
-                                            ? 'bg-white text-gray-900 shadow-xs border border-amber-300/40'
-                                            : (isBatteryIgnored 
-                                                ? 'quran-raised-card text-emerald-800 dark:text-emerald-300' 
-                                                : 'quran-raised-card text-amber-800 dark:text-amber-300')
-                                    }`} style={isShinyGold ? { backgroundColor: '#FFFFFF', color: '#1F2937' } : { border: 'none' }}>
+                                    <div 
+                                        className="py-2.5 px-3.5 rounded-xl flex items-center justify-between gap-2 text-xs border-0 shadow-2xs" 
+                                        style={{ 
+                                            backgroundColor: themeStyles.cardBg, 
+                                            color: themeStyles.text,
+                                            border: `1px solid ${themeStyles.cardBorder}`
+                                        }}
+                                    >
                                         <div className="flex items-center gap-2 min-w-0">
                                             {isBatteryIgnored ? (
                                                 <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0 quran-3d-icon" />
@@ -541,8 +624,8 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
                                                     e.stopPropagation();
                                                     handleRequestBatteryOptimization();
                                                 }}
-                                                className="px-2.5 py-1 rounded-lg font-bold text-[11px] bg-amber-600 hover:bg-amber-700 text-white shadow-md flex-shrink-0 transition-all quran-raised-btn border-0 cursor-pointer"
-                                                style={{ border: 'none' }}
+                                                className="px-2.5 py-1 rounded-lg font-bold text-[11px] shadow-md flex-shrink-0 transition-all border-0 cursor-pointer"
+                                                style={{ backgroundColor: themeStyles.accent, color: themeStyles.btnText }}
                                             >
                                                 {isEn ? 'Allow' : 'استثناء'}
                                             </button>
@@ -553,151 +636,59 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
 
                             {/* Home Screen Widgets Section */}
                             <div className="space-y-2 pt-1">
-                                <div className="flex items-center justify-between gap-2">
-                                    <h4 className="font-bold text-xs sm:text-sm opacity-90 flex items-center gap-2">
-                                        <LayoutGrid className="w-4 h-4 text-emerald-500 quran-3d-icon shrink-0" />
-                                        <span>{isEn ? 'Home Screen Widgets' : 'التطبيقات المصغرة (الودجت)'}</span>
-                                    </h4>
-                                    <div className="flex items-center gap-1.5">
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowWidgetsGuide(prev => !prev)}
-                                            className="w-6 h-6 rounded-full quran-raised-btn flex items-center justify-center text-emerald-600 dark:text-emerald-400 active:scale-90 transition-all cursor-pointer border-0"
-                                            style={{ border: 'none' }}
-                                            title={isEn ? 'Widgets Guide & Details' : 'شرح وإرشاد التطبيقات المصغرة'}
-                                            aria-label={isEn ? 'Widgets Guide & Details' : 'شرح وإرشاد التطبيقات المصغرة'}
-                                        >
-                                            <HelpCircle className="w-3.5 h-3.5" />
-                                        </button>
-                                    </div>
-                                </div>
-
-
-
-                                {showWidgetsGuide && (
-                                    <div className={`p-3 rounded-xl text-[11px] sm:text-xs leading-relaxed space-y-2.5 border-0 ${
-                                        isShinyGold ? 'bg-white text-gray-900 shadow-xs border border-amber-300/40' : 'quran-raised-card'
-                                    }`} style={isShinyGold ? { backgroundColor: '#FFFFFF', color: '#1F2937' } : { border: 'none' }}>
-                                        <p className="font-bold text-emerald-700 dark:text-emerald-400">
-                                            {isEn
-                                                 ? 'Available 3D Home Screen Widget Designs:'
-                                                 : 'التصاميم المجسمة المتاحة للودجت على الشاشة الرئيسية:'}
-                                        </p>
-                                        <ul className="space-y-1.5 opacity-90 list-disc ps-4">
-                                            <li>
-                                                <strong>{isEn ? '1. Compact Focus (Prev & Next Prayer Only):' : '١. الودجت المصغر المركز (السابقة والقادمة فقط):'}</strong>{' '}
-                                                {isEn
-                                                    ? 'Strictly displays Date, Previous Prayer, Next Prayer, and remaining countdown in elevated 3D tactile cards. Perfect for minimalists.'
-                                                    : 'تصميم صغير مجسم وبارز يحتوي فقط على التاريخ، الصلاة السابقة، الصلاة القادمة والوقت المتبقي للصلاة القادمة.'}
-                                            </li>
-                                            <li>
-                                                <strong>{isEn ? '2. Modern 3D Floating Pods:' : '٢. الودجت العصري ثلاثي الأبعاد (كبسولات مجسمة):'}</strong>{' '}
-                                                {isEn
-                                                    ? 'High-tech embossed prayer capsules with active illumination, tactile shadows, live countdown badge, and instant refresh button.'
-                                                    : 'كبسولات مجسمة ومحفورة لكل صلاة، مع إضاءة بارزة للصلاة القادمة وعد تنازلي وزر تحديث مباشر.'}
-                                            </li>
-                                            <li>
-                                                <strong>{isEn ? '3. Imperial Islamic Mihrab Arch:' : '٣. ودجت المحراب والزخرفة الإسلامية الملكية:'}</strong>{' '}
-                                                {isEn
-                                                    ? 'Royal gold-rimmed Islamic arch medallion, Quranic decorative borders, and night timings ribbon.'
-                                                    : 'إطار إسلامي فاخر بنمط المحراب والأقواس المزخرفة مع شريط أوقات الليل بالأسفل.'}
-                                            </li>
-                                            <li>
-                                                <strong>{isEn ? '4. Classic Comprehensive Layout:' : '٤. الودجت الشامل الكلاسيكي:'}</strong>{' '}
-                                                {isEn
-                                                    ? 'Traditional layout displaying all prayers with date and night timings.'
-                                                    : 'النمط الشامل التقليدي لجميع الصلوات مع التواريخ وأوقات الليل.'}
-                                            </li>
-                                        </ul>
-                                        <div className="pt-1.5 border-t border-emerald-500/20 text-emerald-800 dark:text-emerald-300 font-medium space-y-1">
-                                            <div>
-                                                <strong>{isEn ? 'Customization & Themes:' : 'التحكم بالشفافية والألوان:'}</strong>{' '}
-                                                {isEn
-                                                    ? 'Long-press on any widget on your home screen and tap (Settings) to adjust background transparency (0% to 100%) and select your preferred color theme.'
-                                                    : 'اضغط مطولاً على أي تطبيق مصغر بشاشة هاتفك واختر (الضبط) للتحكم في الشفافية (من 0% إلى 100%) وتغيير ثيم الألوان بالكامل.'}
-                                            </div>
-                                            <div>
-                                                <strong>{isEn ? 'Automatic Responsive Scaling:' : 'التكبير والتصغير التلقائي للنصوص:'}</strong>{' '}
-                                                {isEn
-                                                    ? 'When you resize any widget on your home screen by dragging its borders, the fonts and layouts automatically scale up or down proportionally.'
-                                                    : 'عند تكبير أو تصغير أي تطبيق مصغر عبر سحب حوافه على الشاشة، تتكيف أحجام النصوص تلقائياً.'}
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
+                                <h4 className="font-bold text-xs sm:text-sm opacity-90 flex items-center gap-2" style={{ color: themeStyles.accent }}>
+                                    <LayoutGrid className="w-4 h-4 quran-3d-icon shrink-0" />
+                                    <span>{isEn ? 'Home Screen Widgets' : 'التطبيقات المصغرة (الودجت)'}</span>
+                                </h4>
 
                                 <div className="grid grid-cols-2 gap-2">
                                     <div
                                         onClick={handleToggleWidgetArabic}
-                                        className={`py-2.5 px-3 rounded-xl transition-all cursor-pointer flex items-center justify-between gap-2 border-0 ${
-                                            isShinyGold
-                                                ? 'bg-white text-gray-900 shadow-xs border border-amber-300/40 hover:bg-amber-50/40'
-                                                : (widgetLockLang === 'ar' ? 'quran-raised-btn-selected shadow-md' : 'quran-raised-btn opacity-80')
-                                        }`}
-                                        style={isShinyGold ? { backgroundColor: '#FFFFFF', color: '#1F2937' } : { border: 'none' }}
+                                        className="py-2.5 px-3 rounded-xl transition-all cursor-pointer flex items-center justify-between gap-2 border-0 shadow-2xs"
+                                        style={{ 
+                                            backgroundColor: themeStyles.cardBg, 
+                                            color: themeStyles.text,
+                                            border: `1px solid ${themeStyles.cardBorder}`
+                                        }}
                                     >
                                         <span className="font-bold text-xs">{isEn ? 'Lock Arabic' : 'تثبيت العربية'}</span>
                                         <div 
-                                            className="w-4 h-4 rounded-full flex items-center justify-center transition-colors shrink-0 shadow-inner"
+                                            className="w-5 h-5 rounded-full flex items-center justify-center transition-colors shrink-0 shadow-inner"
                                             style={{
-                                                backgroundColor: widgetLockLang === 'ar' ? 'var(--qr-accent)' : (isShinyGold ? 'rgba(0,0,0,0.12)' : 'rgba(0,0,0,0.1)'),
-                                                color: widgetLockLang === 'ar' ? 'var(--qr-accent-text, #fff)' : 'transparent'
+                                                backgroundColor: widgetLockLang === 'ar' ? themeStyles.accent : 'rgba(0,0,0,0.12)',
+                                                color: widgetLockLang === 'ar' ? '#ffffff' : 'transparent'
                                             }}
                                         >
-                                            {widgetLockLang === 'ar' && <Check className="w-2.5 h-2.5 stroke-[3] quran-3d-icon" />}
+                                            {widgetLockLang === 'ar' && <Check className="w-3 h-3 stroke-[3] quran-3d-icon" />}
                                         </div>
                                     </div>
 
                                     <div
                                         onClick={handleToggleWidgetEnglish}
-                                        className={`py-2.5 px-3 rounded-xl transition-all cursor-pointer flex items-center justify-between gap-2 border-0 ${
-                                            isShinyGold
-                                                ? 'bg-white text-gray-900 shadow-xs border border-amber-300/40 hover:bg-amber-50/40'
-                                                : (widgetLockLang === 'en' ? 'quran-raised-btn-selected shadow-md' : 'quran-raised-btn opacity-80')
-                                        }`}
-                                        style={isShinyGold ? { backgroundColor: '#FFFFFF', color: '#1F2937' } : { border: 'none' }}
+                                        className="py-2.5 px-3 rounded-xl transition-all cursor-pointer flex items-center justify-between gap-2 border-0 shadow-2xs"
+                                        style={{ 
+                                            backgroundColor: themeStyles.cardBg, 
+                                            color: themeStyles.text,
+                                            border: `1px solid ${themeStyles.cardBorder}`
+                                        }}
                                     >
                                         <span className="font-bold text-xs">{isEn ? 'Lock English' : 'تثبيت الإنجليزية'}</span>
                                         <div 
-                                            className="w-4 h-4 rounded-full flex items-center justify-center transition-colors shrink-0 shadow-inner"
+                                            className="w-5 h-5 rounded-full flex items-center justify-center transition-colors shrink-0 shadow-inner"
                                             style={{
-                                                backgroundColor: widgetLockLang === 'en' ? 'var(--qr-accent)' : (isShinyGold ? 'rgba(0,0,0,0.12)' : 'rgba(0,0,0,0.1)'),
-                                                color: widgetLockLang === 'en' ? 'var(--qr-accent-text, #fff)' : 'transparent'
+                                                backgroundColor: widgetLockLang === 'en' ? themeStyles.accent : 'rgba(0,0,0,0.12)',
+                                                color: widgetLockLang === 'en' ? '#ffffff' : 'transparent'
                                             }}
                                         >
-                                            {widgetLockLang === 'en' && <Check className="w-2.5 h-2.5 stroke-[3] quran-3d-icon" />}
+                                            {widgetLockLang === 'en' && <Check className="w-3 h-3 stroke-[3] quran-3d-icon" />}
                                         </div>
-                                    </div>
-                                </div>
-
-                                <div
-                                    onClick={handleToggleWidgetTheme}
-                                    className={`flex items-center justify-between py-2.5 px-3.5 rounded-xl transition-all cursor-pointer border-0 ${
-                                        isShinyGold
-                                            ? 'bg-white text-gray-900 shadow-xs border border-amber-300/40 hover:bg-amber-50/40'
-                                            : (widgetLockTheme ? 'quran-raised-btn-selected shadow-md' : 'quran-raised-btn opacity-80')
-                                    }`}
-                                    style={isShinyGold ? { backgroundColor: '#FFFFFF', color: '#1F2937' } : { border: 'none' }}
-                                >
-                                    <span className="font-bold text-xs sm:text-sm flex items-center gap-1.5">
-                                        <Palette className="w-3.5 h-3.5 opacity-80 quran-3d-icon shrink-0" />
-                                        <span>{isEn ? 'Lock Widget Theme' : 'تثبيت ثيم الودجت'}</span>
-                                    </span>
-                                    <div 
-                                        className="w-4 h-4 rounded-full flex items-center justify-center transition-colors shrink-0 shadow-inner"
-                                        style={{
-                                            backgroundColor: widgetLockTheme ? 'var(--qr-accent)' : (isShinyGold ? 'rgba(0,0,0,0.12)' : 'rgba(0,0,0,0.1)'),
-                                            color: widgetLockTheme ? 'var(--qr-accent-text, #fff)' : 'transparent'
-                                        }}
-                                    >
-                                        {widgetLockTheme && <Check className="w-2.5 h-2.5 stroke-[3] quran-3d-icon" />}
                                     </div>
                                 </div>
                             </div>
 
                             {/* Night Times Section */}
                             <div className="space-y-2 pt-1">
-                                <h4 className="font-bold text-xs sm:text-sm opacity-90">{isEn ? 'Night Times' : 'أوقات الليل'}</h4>
+                                <h4 className="font-bold text-xs sm:text-sm opacity-90" style={{ color: themeStyles.accent }}>{isEn ? 'Night Times' : 'أوقات الليل'}</h4>
                                 {[
                                     { id: 'firstThird', label: isEn ? 'First Third of Night' : 'أول الليل' },
                                     { id: 'midnight', label: isEn ? 'Midnight' : 'منتصف الليل' },
@@ -708,25 +699,59 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
                                         <div 
                                             key={item.id}
                                             onClick={() => toggleNightNotification(item.id as 'firstThird' | 'midnight' | 'lastThird')}
-                                            className={`flex items-center justify-between py-2.5 px-3.5 rounded-xl transition-all cursor-pointer border-0 ${
-                                                isShinyGold
-                                                    ? 'bg-white text-gray-900 shadow-xs border border-amber-300/40 hover:bg-amber-50/40'
-                                                    : (isEnabled ? 'quran-raised-btn-selected shadow-md' : 'quran-raised-btn opacity-80')
-                                            }`}
-                                            style={isShinyGold ? { backgroundColor: '#FFFFFF', color: '#1F2937' } : { border: 'none' }}
+                                            className="flex items-center justify-between py-2.5 px-3.5 rounded-xl transition-all cursor-pointer border-0 shadow-2xs"
+                                            style={{ 
+                                                backgroundColor: themeStyles.cardBg, 
+                                                color: themeStyles.text,
+                                                border: `1px solid ${themeStyles.cardBorder}`
+                                            }}
                                         >
                                             <span className="font-bold text-xs sm:text-sm">{item.label}</span>
-                                            <div className="w-4 h-4 rounded-full flex items-center justify-center transition-colors shadow-inner shrink-0" style={{ backgroundColor: isEnabled ? 'var(--qr-accent)' : (isShinyGold ? 'rgba(0,0,0,0.12)' : 'rgba(0,0,0,0.1)'), color: isEnabled ? 'var(--qr-accent-text, #fff)' : 'transparent' }}>
-                                                {isEnabled && <Check className="w-2.5 h-2.5 quran-3d-icon" />}
+                                            <div className="w-5 h-5 rounded-full flex items-center justify-center transition-colors shadow-inner shrink-0" style={{ backgroundColor: isEnabled ? themeStyles.accent : 'rgba(0,0,0,0.12)', color: isEnabled ? '#ffffff' : 'transparent' }}>
+                                                {isEnabled && <Check className="w-3 h-3 stroke-[3] quran-3d-icon" />}
                                             </div>
                                         </div>
                                     );
                                 })}
                             </div>
 
+                            {/* نغمة إشعارات الأذكار والتنبيهات */}
+                            <div className="space-y-2 pt-1" id="settings-notification-tone-section">
+                                <div className="flex flex-col text-right">
+                                    <h4 className="font-bold text-xs sm:text-sm opacity-90 flex items-center gap-2" style={{ color: themeStyles.accent }}>
+                                        <Bell className="w-4 h-4 quran-3d-icon shrink-0" />
+                                        <span>{isEn ? 'Notification Tone (Athkar & Reminders)' : 'نغمة إشعارات الأذكار والتنبيهات'}</span>
+                                    </h4>
+                                    <p className="text-[11px] opacity-70 mt-0.5 leading-relaxed">
+                                        {isEn 
+                                            ? 'Tone for athkar, supplications, and general reminders only. Does not affect Adhan prayer alerts.' 
+                                            : 'خاصة بنغمة الأذكار والأدعية والتنبيهات العامة فقط، ولا تؤثر نهائياً على أصوات وتنبيهات الأذان.'}
+                                    </p>
+                                </div>
+                                <div 
+                                    className="p-2.5 rounded-2xl border-0 shadow-2xs"
+                                    style={{ 
+                                        backgroundColor: themeStyles.cardBg, 
+                                        color: themeStyles.text,
+                                        border: `1px solid ${themeStyles.cardBorder}`
+                                    }}
+                                >
+                                    <NotificationToneSelector 
+                                        currentTone={activeNotificationTone}
+                                        onToneChange={handleNotificationToneChange}
+                                        secondaryColor={themeStyles.subtext}
+                                        primaryColor={themeStyles.accent}
+                                        cardBorderColor={themeStyles.cardBorder}
+                                        isDefaultTheme={true}
+                                        isBlackTheme={isBlackTheme}
+                                        hideLabel={true}
+                                    />
+                                </div>
+                            </div>
+
                             {/* Athkar & Tasbeeh Section */}
                             <div className="space-y-2 pt-1">
-                                <h4 className="font-bold text-xs sm:text-sm opacity-90">{isEn ? 'Athkar & Tasbeeh' : 'الأذكار والتسبيح'}</h4>
+                                <h4 className="font-bold text-xs sm:text-sm opacity-90" style={{ color: themeStyles.accent }}>{isEn ? 'Athkar & Tasbeeh' : 'الأذكار والتسبيح'}</h4>
                                 {[
                                     { id: 'sabah', label: isEn ? 'Morning Athkar' : 'أذكار الصباح' },
                                     { id: 'masaa', label: isEn ? 'Evening Athkar' : 'أذكار المساء' },
@@ -741,16 +766,16 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
                                         <div 
                                             key={item.id}
                                             onClick={() => togglePhoneSetting(settingKey)}
-                                            className={`flex items-center justify-between py-2.5 px-3.5 rounded-xl transition-all cursor-pointer border-0 ${
-                                                isShinyGold
-                                                    ? 'bg-white text-gray-900 shadow-xs border border-amber-300/40 hover:bg-amber-50/40'
-                                                    : (setting.enabled ? 'quran-raised-btn-selected shadow-md' : 'quran-raised-btn opacity-80')
-                                            }`}
-                                            style={isShinyGold ? { backgroundColor: '#FFFFFF', color: '#1F2937' } : { border: 'none' }}
+                                            className="flex items-center justify-between py-2.5 px-3.5 rounded-xl transition-all cursor-pointer border-0 shadow-2xs"
+                                            style={{ 
+                                                backgroundColor: themeStyles.cardBg, 
+                                                color: themeStyles.text,
+                                                border: `1px solid ${themeStyles.cardBorder}`
+                                            }}
                                         >
                                             <div className="flex items-center gap-2 min-w-0">
-                                                <div className="w-4 h-4 rounded-full flex items-center justify-center transition-colors shadow-inner shrink-0" style={{ backgroundColor: setting.enabled ? 'var(--qr-accent)' : (isShinyGold ? 'rgba(0,0,0,0.12)' : 'rgba(0,0,0,0.1)'), color: setting.enabled ? 'var(--qr-accent-text, #fff)' : 'transparent' }}>
-                                                    {setting.enabled && <Check className="w-2.5 h-2.5 quran-3d-icon" />}
+                                                <div className="w-5 h-5 rounded-full flex items-center justify-center transition-colors shadow-inner shrink-0" style={{ backgroundColor: setting.enabled ? themeStyles.accent : 'rgba(0,0,0,0.12)', color: setting.enabled ? '#ffffff' : 'transparent' }}>
+                                                    {setting.enabled && <Check className="w-3 h-3 stroke-[3] quran-3d-icon" />}
                                                 </div>
                                                 <span className="font-bold text-xs sm:text-sm truncate">{item.label}</span>
                                             </div>
@@ -772,13 +797,14 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
                             {/* Random Athkar Section */}
                             <div className="space-y-2 pt-1">
                                 <div className="flex items-center justify-between">
-                                    <h4 className="font-bold text-xs sm:text-sm opacity-90 flex items-center gap-2">
+                                    <h4 className="font-bold text-xs sm:text-sm opacity-90 flex items-center gap-2" style={{ color: themeStyles.accent }}>
                                         <Shuffle className="w-4 h-4 quran-3d-icon shrink-0" />
                                         {isEn ? 'Random Athkar' : 'أذكار عشوائية'}
                                     </h4>
                                     <div 
                                         onClick={toggleRandomAthkar}
-                                        className={`w-[35px] h-[19px] rounded-full relative transition-all cursor-pointer shadow-inner shrink-0 ${phoneSettings.randomAthkar.enabled ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-600'}`}
+                                        className="w-[35px] h-[19px] rounded-full relative transition-all cursor-pointer shadow-inner shrink-0"
+                                        style={{ backgroundColor: phoneSettings.randomAthkar.enabled ? themeStyles.accent : 'rgba(0,0,0,0.2)' }}
                                     >
                                         <div className={`absolute top-[2.5px] w-[14px] h-[14px] rounded-full bg-white shadow-md transition-all ${
                                             phoneSettings.randomAthkar.enabled 
@@ -789,34 +815,35 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
                                 </div>
 
                                 {phoneSettings.randomAthkar.enabled && (
-                                    <div className={`p-3 rounded-2xl space-y-2.5 animate-fadeIn border-0 ${
-                                        isShinyGold ? 'bg-white text-gray-900 shadow-xs border border-amber-300/40' : 'quran-raised-card'
-                                    }`} style={isShinyGold ? { backgroundColor: '#FFFFFF', color: '#1F2937' } : { border: 'none' }}>
+                                    <div 
+                                        className="p-3 rounded-2xl space-y-2.5 animate-fadeIn border-0 shadow-2xs"
+                                        style={{ 
+                                            backgroundColor: themeStyles.cardBg, 
+                                            color: themeStyles.text,
+                                            border: `1px solid ${themeStyles.cardBorder}`
+                                        }}
+                                    >
                                         <div className="flex items-center justify-between">
                                             <span className="text-xs font-bold">{isEn ? 'Daily Frequency:' : 'عدد المرات يومياً:'}</span>
                                             <div className="flex items-center gap-3">
                                                 <button 
                                                     onClick={() => handleRandomSettingChange({ frequency: Math.max(1, phoneSettings.randomAthkar.frequency - 1) })}
-                                                    className={`w-7 h-7 rounded-xl flex items-center justify-center font-bold cursor-pointer border-0 ${
-                                                        isShinyGold ? 'bg-amber-50 hover:bg-amber-100 text-gray-900 shadow-xs border border-amber-200' : 'quran-raised-btn'
-                                                    }`}
-                                                    style={isShinyGold ? { backgroundColor: '#FFFBEB', color: '#1F2937' } : { border: 'none' }}
+                                                    className="w-7 h-7 rounded-xl flex items-center justify-center font-bold cursor-pointer border-0 shadow-xs"
+                                                    style={{ backgroundColor: `${themeStyles.accent}20`, color: themeStyles.accent }}
                                                 >
                                                     -
                                                 </button>
                                                 <span
                                                     dir="ltr"
-                                                    className="text-sm font-bold text-emerald-600 tabular-nums"
-                                                    style={isEn ? { fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, "Cairo", sans-serif' } : undefined}
+                                                    className="text-sm font-bold tabular-nums"
+                                                    style={{ color: themeStyles.accent }}
                                                 >
                                                     {isEn ? toEnglishDigits(phoneSettings.randomAthkar.frequency) : toArabic(phoneSettings.randomAthkar.frequency)}
                                                 </span>
                                                 <button 
                                                     onClick={() => handleRandomSettingChange({ frequency: Math.min(20, phoneSettings.randomAthkar.frequency + 1) })}
-                                                    className={`w-7 h-7 rounded-xl flex items-center justify-center font-bold cursor-pointer border-0 ${
-                                                        isShinyGold ? 'bg-amber-50 hover:bg-amber-100 text-gray-900 shadow-xs border border-amber-200' : 'quran-raised-btn'
-                                                    }`}
-                                                    style={isShinyGold ? { backgroundColor: '#FFFBEB', color: '#1F2937' } : { border: 'none' }}
+                                                    className="w-7 h-7 rounded-xl flex items-center justify-center font-bold cursor-pointer border-0 shadow-xs"
+                                                    style={{ backgroundColor: `${themeStyles.accent}20`, color: themeStyles.accent }}
                                                 >
                                                     +
                                                 </button>
@@ -832,9 +859,7 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
                                                     isEn={isEn}
                                                     title={isEn ? 'Start Time' : 'وقت البدء'}
                                                     accentColor={false}
-                                                    className={`w-full text-xs text-inherit py-2 px-2.5 rounded-xl ${
-                                                        isShinyGold ? 'bg-amber-50/60 border border-amber-200 text-gray-900' : 'quran-raised-btn'
-                                                    }`}
+                                                    className="w-full text-xs text-inherit py-2 px-2.5 rounded-xl border border-black/10 dark:border-white/10"
                                                 />
                                             </div>
                                             <div className="space-y-1">
@@ -845,9 +870,7 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
                                                     isEn={isEn}
                                                     title={isEn ? 'End Time' : 'وقت الانتهاء'}
                                                     accentColor={false}
-                                                    className={`w-full text-xs text-inherit py-2 px-2.5 rounded-xl ${
-                                                        isShinyGold ? 'bg-amber-50/60 border border-amber-200 text-gray-900' : 'quran-raised-btn'
-                                                    }`}
+                                                    className="w-full text-xs text-inherit py-2 px-2.5 rounded-xl border border-black/10 dark:border-white/10"
                                                 />
                                             </div>
                                         </div>
@@ -858,12 +881,12 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
                             {/* Pause Prayer Audio Alerts Section */}
                             <div className="space-y-2 pt-1">
                                 <div className="flex items-center justify-between">
-                                    <h4 className="font-bold text-xs sm:text-sm opacity-90 flex items-center gap-2">
+                                    <h4 className="font-bold text-xs sm:text-sm opacity-90 flex items-center gap-2" style={{ color: themeStyles.accent }}>
                                         <VolumeX className="w-4 h-4 quran-3d-icon shrink-0" />
                                         {isEn ? 'Pause Prayer Audio Alerts' : 'إيقاف التنبيهات الصوتية للصلاة'}
                                     </h4>
                                     {isAudioMuted && (
-                                        <button onClick={unmuteAudio} className="text-xs bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 px-2.5 py-1 rounded-xl font-bold cursor-pointer quran-raised-btn border-0">
+                                        <button onClick={unmuteAudio} className="text-xs bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 px-2.5 py-1 rounded-xl font-bold cursor-pointer border-0">
                                             {isEn ? 'Unmute Audio' : 'تفعيل الصوت'}
                                         </button>
                                     )}
@@ -889,12 +912,12 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
                                         <button
                                             key={opt.labelEn}
                                             onClick={() => muteAudioForDuration(opt.days)}
-                                            className={`py-2 px-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer border-0 ${
-                                                isShinyGold
-                                                    ? 'bg-white text-gray-900 shadow-xs border border-amber-300/40 hover:bg-amber-50/50'
-                                                    : 'quran-raised-btn'
-                                            }`}
-                                            style={isShinyGold ? { backgroundColor: '#FFFFFF', color: '#1F2937' } : (isEn ? { border: 'none', fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, "Cairo", sans-serif' } : { border: 'none' })}
+                                            className="py-2 px-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer border-0 shadow-2xs hover:scale-105 active:scale-95"
+                                            style={{ 
+                                                backgroundColor: themeStyles.cardBg, 
+                                                color: themeStyles.text,
+                                                border: `1px solid ${themeStyles.cardBorder}`
+                                            }}
                                         >
                                             {isEn ? opt.labelEn : opt.labelAr}
                                         </button>
@@ -905,14 +928,14 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
                     )}
                 </div>
 
-                <div className="p-3.5 flex justify-center">
+                <div className="p-3.5 flex justify-center border-t" style={{ borderColor: `${themeStyles.accent}20` }}>
                     <button 
                         onClick={() => {
                             setupNotifications();
                             onClose();
                         }}
-                        className="quran-raised-btn-selected w-full font-bold py-3 rounded-xl shadow-lg transition-transform active:scale-95 cursor-pointer border-0"
-                        style={{ backgroundColor: 'var(--qr-accent)', color: 'var(--qr-accent-text, #fff)', border: 'none' }}
+                        className="w-full font-bold py-3 sm:py-3.5 rounded-xl shadow-lg transition-transform active:scale-95 cursor-pointer border-0 text-sm"
+                        style={{ backgroundColor: themeStyles.btnBg, color: themeStyles.btnText, border: 'none' }}
                     >
                         {isEn ? 'Save & Close' : 'حفظ وإغلاق'}
                     </button>

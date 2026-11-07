@@ -41,10 +41,12 @@ const AyahContextMenu: React.FC<AyahContextMenuProps> = ({
     if (!isOpen) return null;
 
     // Dynamically derive the frame and border color from the active theme
-    const themeBorderColor = extractColor(
-        currentTheme?.barBorder || currentTheme?.cardBorder || currentTheme?.accent,
-        '#000000'
-    );
+    const themeBorderColor = currentTheme?.id === 'deep_black'
+        ? '#ffffff'
+        : extractColor(
+            currentTheme?.barBorder || currentTheme?.cardBorder || currentTheme?.accent,
+            '#000000'
+        );
 
     return (
         <div className={`fixed inset-0 z-[1200] bg-black/25 backdrop-blur-[2px] flex items-center justify-center ${isLandscape ? 'p-2' : 'p-4'} animate-fadeIn`} onClick={() => {
@@ -108,6 +110,16 @@ const AyahContextMenu: React.FC<AyahContextMenuProps> = ({
                                             backgroundColor: isFieldActive ? `${themeBorderColor}18` : undefined
                                         }}
                                     >
+                                        <span 
+                                            className="text-[10px] font-bold text-center transition-colors select-none"
+                                            style={{ 
+                                                color: isFieldActive 
+                                                    ? themeBorderColor 
+                                                    : (currentTheme?.modalText ? `${currentTheme.modalText}90` : '#4b5563') 
+                                            }}
+                                        >
+                                            {field.label}
+                                        </span>
                                         <button 
                                             onClick={() => setAyahContextColorField(isFieldActive ? null : field.id as any)}
                                             className="h-12 w-full rounded-xl transition-all relative overflow-hidden flex items-center justify-center active:scale-95 cursor-pointer quran-raised-btn border-0"
@@ -125,7 +137,7 @@ const AyahContextMenu: React.FC<AyahContextMenuProps> = ({
                                                         className="w-6 h-6 rounded-full flex items-center justify-center shadow-md transition-transform scale-100"
                                                         style={{ 
                                                             backgroundColor: themeBorderColor, 
-                                                            color: currentTheme?.accentText || '#ffffff' 
+                                                            color: themeBorderColor.toLowerCase() === '#ffffff' ? '#000000' : (currentTheme?.accentText || '#ffffff') 
                                                         }}
                                                     >
                                                         <Check size={14} className="stroke-[3]" />
@@ -133,16 +145,6 @@ const AyahContextMenu: React.FC<AyahContextMenuProps> = ({
                                                 </div>
                                             )}
                                         </button>
-                                        <span 
-                                            className="text-[10px] font-bold text-center transition-colors select-none"
-                                            style={{ 
-                                                color: isFieldActive 
-                                                    ? themeBorderColor 
-                                                    : (currentTheme?.modalText ? `${currentTheme.modalText}90` : '#4b5563') 
-                                            }}
-                                        >
-                                            {field.label}
-                                        </span>
                                     </div>
                                 );
                             })}

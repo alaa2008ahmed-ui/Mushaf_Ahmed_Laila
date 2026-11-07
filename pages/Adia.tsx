@@ -443,7 +443,7 @@ function Adia({ onBack, onNavigate, navParams }: AdiaProps) {
                                     id={`adia-card-${duaa.id}`}
                                     key={duaa.id} 
                                     data-card-item="true"
-                                    className={`p-5 pb-3 rounded-[18px] relative transition-all duration-300 overflow-hidden group shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-none hover:shadow-[0_6px_25px_rgba(0,0,0,0.06)] border border-slate-100/80 dark:border-white/5 flex flex-col justify-between ${
+                                    className={`app-page-card border-0 p-5 pb-3 rounded-[18px] relative transition-all duration-300 overflow-hidden group flex flex-col justify-between ${
                                         isFinished ? 'opacity-65 cursor-pointer' : 'cursor-pointer'
                                     }`} 
                                     onClick={(e) => {
@@ -456,7 +456,8 @@ function Adia({ onBack, onNavigate, navParams }: AdiaProps) {
                                     style={{ 
                                         fontFamily: isEn ? 'sans-serif' : theme.font,
                                         backgroundColor: isBlackTheme ? '#18181b' : (theme.isDark ? (theme.cardBg || '#18181B') : '#FFFFFF'),
-                                        color: 'var(--text-color)'
+                                        color: 'var(--text-color)',
+                                        border: 'none'
                                     }}
                                 >
                                     {/* Top Bar with repetition badge and count badge */}

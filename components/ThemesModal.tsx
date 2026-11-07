@@ -1,10 +1,48 @@
 
 import React, { useRef, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { presetThemes } from '../context/themes';
+
+const englishThemeNames: { [key: string]: string } = {
+    black_gold: 'Black & Gold',
+    default: 'Default',
+    deep_black: 'Deep Black',
+    shiny_gold: 'Shiny Gold',
+    sky_mode: 'Sky Mode',
+    emerald_mode: 'Emerald Mode',
+    burgundy_mode: 'Burgundy Mode',
+    fajr_light: 'Fajr Light',
+    golden_sand: 'Golden Sand',
+    olive_grove: 'Olive Grove',
+    kaaba_kiswa: 'Kaaba Kiswa',
+    evening_tranquility: 'Evening Peace',
+    morning_dew: 'Morning Dew',
+    madinah_rose: 'Madinah Rose',
+    andalusian_garden: 'Andalusian Garden',
+    blue_mosque: 'Blue Mosque',
+    clay_earth: 'Clay Earth',
+    slate_stone: 'Slate Stone',
+    sunset_glow: 'Sunset Glow',
+    electric_violet: 'Electric Violet',
+    sakura_breeze: 'Sakura Breeze',
+    midnight_neon: 'Midnight Neon',
+    royal_purple: 'Royal Purple',
+    desert_night: 'Desert Night',
+    ocean_peace: 'Ocean Peace',
+    vintage_paper: 'Vintage Paper',
+    turquoise_gem: 'Turquoise Gem',
+    deep_forest: 'Deep Forest',
+    lavender_mist: 'Lavender Mist',
+    crystal_glass: 'Crystal Glass',
+    frosted_emerald: 'Frosted Emerald',
+    midnight_glass: 'Midnight Glass',
+};
 
 function ThemeSelector({ onClose, isLandscape }: { onClose: () => void, isLandscape?: boolean }) {
     const { theme, themeKey, applyPresetTheme, setCustomBackground, resetBackground, setHomeThemeVariant } = useTheme();
+    const { language } = useLanguage();
+    const isEn = language === 'en';
     const fileInputRef = useRef<HTMLInputElement>(null);
     const wrapperRef = useRef<HTMLDivElement>(null);
 
@@ -70,6 +108,7 @@ function ThemeSelector({ onClose, isLandscape }: { onClose: () => void, isLandsc
         <div 
             ref={wrapperRef} 
             className={`theme-selector-container fixed ${isLandscape ? 'inset-0 flex items-center justify-center p-0' : 'bottom-[calc(85px+env(safe-area-inset-bottom,0px))] inset-x-0 mx-auto w-[95%] max-w-md p-0'} z-[100]`}
+            dir={isEn ? 'ltr' : 'rtl'}
         >
             <div 
                 className={`themed-card p-4 ${isLandscape ? 'w-full max-w-4xl h-full rounded-none' : 'rounded-3xl'} shadow-2xl backdrop-blur-md flex flex-col justify-center border-2`} 
@@ -91,10 +130,12 @@ function ThemeSelector({ onClose, isLandscape }: { onClose: () => void, isLandsc
                                 color: '#78350f',
                                 borderColor: themeKey === 'shiny_gold' ? '#b45309' : '#eab308'
                             }} 
-                            title="الذهبي الملكي"
+                            title={isEn ? 'Royal Gold' : 'الذهبي الملكي'}
                         >
                             <span className="text-lg">👑</span>
-                            <span className="text-[9.5px] font-black mt-0.5 text-[#78350f] truncate w-full text-center">الذهبي</span>
+                            <span className="text-[9.5px] font-black mt-0.5 text-[#78350f] truncate w-full text-center">
+                                {isEn ? 'Gold' : 'الذهبي'}
+                            </span>
                         </button>
 
                         <button 
@@ -106,10 +147,12 @@ function ThemeSelector({ onClose, isLandscape }: { onClose: () => void, isLandsc
                                 color: '#0369a1',
                                 borderColor: themeKey === 'sky_mode' ? '#0284c7' : '#7dd3fc'
                             }} 
-                            title="الوضع السماوي"
+                            title={isEn ? 'Sky Mode' : 'الوضع السماوي'}
                         >
                             <span className="text-lg">☁️</span>
-                            <span className="text-[9.5px] font-black mt-0.5 text-[#0369a1] truncate w-full text-center">السماوي</span>
+                            <span className="text-[9.5px] font-black mt-0.5 text-[#0369a1] truncate w-full text-center">
+                                {isEn ? 'Sky' : 'السماوي'}
+                            </span>
                         </button>
 
                         <button 
@@ -121,10 +164,12 @@ function ThemeSelector({ onClose, isLandscape }: { onClose: () => void, isLandsc
                                 color: '#047857',
                                 borderColor: themeKey === 'emerald_mode' ? '#047857' : '#6ee7b7'
                             }} 
-                            title="الوضع الزمردي"
+                            title={isEn ? 'Emerald Mode' : 'الوضع الزمردي'}
                         >
                             <span className="text-lg">🌿</span>
-                            <span className="text-[9.5px] font-black mt-0.5 text-[#047857] truncate w-full text-center">الزمردي</span>
+                            <span className="text-[9.5px] font-black mt-0.5 text-[#047857] truncate w-full text-center">
+                                {isEn ? 'Emerald' : 'الزمردي'}
+                            </span>
                         </button>
 
                         <button 
@@ -136,10 +181,12 @@ function ThemeSelector({ onClose, isLandscape }: { onClose: () => void, isLandsc
                                 color: '#881337',
                                 borderColor: themeKey === 'burgundy_mode' ? '#881337' : '#fda4af'
                             }} 
-                            title="الوضع العنابي"
+                            title={isEn ? 'Burgundy Mode' : 'الوضع العنابي'}
                         >
                             <span className="text-lg">🍇</span>
-                            <span className="text-[9.5px] font-black mt-0.5 text-[#881337] truncate w-full text-center">العنابي</span>
+                            <span className="text-[9.5px] font-black mt-0.5 text-[#881337] truncate w-full text-center">
+                                {isEn ? 'Burgundy' : 'العنابي'}
+                            </span>
                         </button>
                     </div>
 
@@ -153,10 +200,12 @@ function ThemeSelector({ onClose, isLandscape }: { onClose: () => void, isLandsc
                                 color: isBlackTheme ? '#ffffff' : '#0f172a',
                                 borderColor: isBlackTheme ? 'rgba(255,255,255,0.2)' : '#cbd5e1'
                             }} 
-                            title="خلفية خاصة"
+                            title={isEn ? 'Custom Background' : 'خلفية خاصة'}
                         >
                             <span className="text-base">🖼️</span>
-                            <span className="text-[11px] font-bold">خلفية خاصة</span>
+                            <span className="text-[11px] font-bold">
+                                {isEn ? 'Custom BG' : 'خلفية خاصة'}
+                            </span>
                         </button>
 
                         <button 
@@ -167,10 +216,12 @@ function ThemeSelector({ onClose, isLandscape }: { onClose: () => void, isLandsc
                                 color: isBlackTheme ? '#ffffff' : '#0f172a',
                                 borderColor: isBlackTheme ? 'rgba(255,255,255,0.2)' : '#cbd5e1'
                             }} 
-                            title="استعادة الافتراضي"
+                            title={isEn ? 'Reset Default' : 'استعادة الافتراضي'}
                         >
                             <span className="text-base">🔄</span>
-                            <span className="text-[11px] font-bold">استعادة الافتراضي</span>
+                            <span className="text-[11px] font-bold">
+                                {isEn ? 'Reset BG' : 'استعادة الافتراضي'}
+                            </span>
                         </button>
                     </div>
 
@@ -203,6 +254,8 @@ function ThemeSelector({ onClose, isLandscape }: { onClose: () => void, isLandsc
                                 buttonBorderColor = isSelected ? '#b45309' : '#fde047';
                             }
 
+                            const displayName = isEn ? (englishThemeNames[key] || themeOption.name) : themeOption.name;
+
                             return (
                                 <button
                                     key={key}
@@ -218,7 +271,7 @@ function ThemeSelector({ onClose, isLandscape }: { onClose: () => void, isLandsc
                                         fontWeight: 900
                                     }}
                                 >
-                                    {themeOption.name}
+                                    {displayName}
                                 </button>
                             );
                         })}

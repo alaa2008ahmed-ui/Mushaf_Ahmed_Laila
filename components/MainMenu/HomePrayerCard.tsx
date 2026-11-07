@@ -15,6 +15,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { prayerNamesAr } from '../../data/prayerTimesData';
 import { checkSupportsDST, applyOffset } from '../../utils/prayerTimesUtils';
 import { PRAYER_NAMES_EN } from '../../utils/prayerTimesTranslations';
+import { OutdoorWeatherBadge } from './OutdoorWeatherBadge';
 
 interface HomePrayerCardProps {
   onNavigate: (pageId: string, params?: any) => void;
@@ -22,7 +23,7 @@ interface HomePrayerCardProps {
 }
 
 export const HomePrayerCard: React.FC<HomePrayerCardProps> = ({ onNavigate, cardRef }) => {
-  const { language, isRTL, dir, t, translatePrayerName } = useLanguage();
+  const { language, isRTL, dir, t, translatePrayerName, formatNumber } = useLanguage();
   const { times, config, nextPrayer } = usePrayerTimes();
   const { theme, themeKey } = useTheme();
 
@@ -78,7 +79,7 @@ export const HomePrayerCard: React.FC<HomePrayerCardProps> = ({ onNavigate, card
 
   // Format Date into 12-hour string (e.g. "04:52 ص" or "4:52 AM")
   const formatTime12 = (date: Date | null) => {
-    if (!date) return '--:--';
+    if (!date) return language === 'en' ? '--:--' : formatNumber('--:--');
     let h = date.getHours();
     const m = date.getMinutes().toString().padStart(2, '0');
     const isPM = h >= 12;
@@ -88,7 +89,8 @@ export const HomePrayerCard: React.FC<HomePrayerCardProps> = ({ onNavigate, card
     if (language === 'en') {
       return `${hStr}:${m} ${isPM ? 'PM' : 'AM'}`;
     }
-    return `${hStr}:${m} ${isPM ? 'م' : 'ص'}`;
+    const formattedDigits = formatNumber(`${hStr}:${m}`);
+    return `${formattedDigits} ${isPM ? 'م' : 'ص'}`;
   };
 
   // Select suitable icon for each prayer
@@ -313,17 +315,26 @@ export const HomePrayerCard: React.FC<HomePrayerCardProps> = ({ onNavigate, card
         </div>
       </div>
 
-      {/* الصف الأوسط: في المنتصف تماماً العد التنازلي مع كلمة متبقي في الأعلى */}
+      {/* الصف الأوسط: في المنتصف تماماً العد التنازلي مع كلمة متبقي و شارة الطقس اللطيفة */}
       <div className="flex flex-col items-center justify-center my-3 sm:my-3.5">
-        <span className={`text-[11px] font-semibold tracking-wider mb-0.5 select-none ${isBlackTheme ? 'text-zinc-400' : 'text-slate-400'}`}>
-          {language === 'en' ? 'Remaining' : 'متبقي'}
-        </span>
+        <div className="flex items-center gap-2 mb-0.5">
+          <span className={`text-[11px] font-semibold tracking-wider select-none ${isBlackTheme ? 'text-zinc-400' : 'text-slate-400'}`}>
+            {language === 'en' ? 'Remaining' : 'متبقي'}
+          </span>
+          <OutdoorWeatherBadge 
+            lat={config.location?.lat} 
+            lng={config.location?.lng} 
+            fajrTimeStr={times?.Fajr} 
+            ishaTimeStr={times?.Isha} 
+            compact={true} 
+          />
+        </div>
         <div className="flex items-center justify-center gap-1.5">
           <span
             className={`text-3xl sm:text-4xl font-black font-mono tracking-tight tabular-nums select-all ${isBlackTheme ? 'text-white' : 'text-slate-800'}`}
             dir="ltr"
           >
-            {countdownStr}
+            {language === 'en' ? countdownStr : formatNumber(countdownStr)}
           </span>
         </div>
       </div>
@@ -346,7 +357,7 @@ export const HomePrayerCard: React.FC<HomePrayerCardProps> = ({ onNavigate, card
         <div className={`flex items-center justify-between text-[10px] mt-1.5 font-medium px-0.5 ${isBlackTheme ? 'text-zinc-400' : 'text-slate-400'}`}>
           <span className="tabular-nums">{formatTime12(prevDate)}</span>
           <span className="tabular-nums font-bold" style={{ color: primaryColor }}>
-            {Math.round(progressPercent)}%
+            {language === 'en' ? Math.round(progressPercent) : formatNumber(Math.round(progressPercent))}%
           </span>
           <span className="tabular-nums">{formatTime12(nextDate)}</span>
         </div>

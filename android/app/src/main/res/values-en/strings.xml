@@ -14,7 +14,8 @@
     <string name="shortcut_azkar_long">Daily Athkar &amp; Duas</string>
 
     <!-- Widgets -->
-    <string name="widget_name_classic">1. Prayer Times - Classic Full</string>
-    <string name="widget_name_compact">2. Prayer Times - Compact (Prev &amp; Next)</string>
+    <string name="widget_name_classic">1. Prayer Times - Classic Full (4x1)</string>
+    <string name="widget_name_compact">2. Prayer Times - Compact (Prev &amp; Next) (4x1)</string>
+    <string name="widget_name_single">3. Prayer Times - Next Prayer Only (2x1)</string>
 </resources>
 

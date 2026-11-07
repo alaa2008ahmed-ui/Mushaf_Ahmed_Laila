@@ -391,7 +391,7 @@ const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, onOpenTheme
                         id={`ruqyah-card-${item.id}`}
                         key={item.id} 
                         data-card-item="true"
-                        className="p-5 pb-3 rounded-[18px] relative transition-all duration-300 overflow-hidden group shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-none hover:shadow-[0_6px_25px_rgba(0,0,0,0.06)] border border-slate-100/80 dark:border-white/5 flex flex-col justify-between cursor-pointer" 
+                        className="app-page-card border-0 p-5 pb-3 rounded-[18px] relative transition-all duration-300 overflow-hidden group flex flex-col justify-between cursor-pointer" 
                         onClick={(e) => {
                           const cardEl = e.currentTarget as HTMLElement;
                           setTimeout(() => scrollToNextCard(cardEl), 60);
@@ -399,7 +399,8 @@ const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, onOpenTheme
                         style={{ 
                           fontFamily: isEn ? 'inherit' : theme.font,
                           backgroundColor: isBlackTheme ? '#18181b' : (theme.isDark ? (theme.cardBg || '#18181B') : '#FFFFFF'),
-                          color: 'var(--text-color)'
+                          color: 'var(--text-color)',
+                          border: 'none'
                         }}
                       >
                         {/* Text: generous line-height to prevent tashkeel overlap */}
@@ -504,10 +505,11 @@ const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, onOpenTheme
             {activeTab === 'guide' && (
               <div className="space-y-4 col-span-full" dir={isEn ? 'ltr' : 'rtl'}>
                 <div 
-                  className="p-6 rounded-[18px] border border-slate-100/80 dark:border-white/5 space-y-4 shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-none"
+                  className="app-page-card border-0 p-6 rounded-[18px] space-y-4"
                   style={{
                     backgroundColor: isBlackTheme ? '#18181b' : (theme.isDark ? (theme.cardBg || '#18181B') : '#FFFFFF'),
-                    color: 'var(--text-color)'
+                    color: 'var(--text-color)',
+                    border: 'none'
                   }}
                 >
                   <div className="flex items-center gap-2 border-b border-slate-100 dark:border-white/5 pb-3">

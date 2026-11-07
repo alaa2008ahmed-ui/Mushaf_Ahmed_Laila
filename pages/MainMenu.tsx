@@ -299,53 +299,6 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
     } catch {}
     Preferences.set({ key: 'home_layout_system', value: 'modern' }).catch(() => {});
   }, []);
-
-  // تطبيق تنسيقات التصميم الذكي الحديث مع دعم الوضع الليلي والثيمات الجديدة
-  useEffect(() => {
-    if (isNightMode) {
-      document.documentElement.classList.add('theme-black-gold', 'dark');
-      document.body.classList.add('theme-black-gold', 'dark');
-      document.documentElement.classList.remove('theme-black', 'theme-sky', 'theme-emerald', 'theme-shiny-gold');
-      document.body.classList.remove('theme-black', 'theme-sky', 'theme-emerald', 'theme-shiny-gold');
-      document.documentElement.classList.add('modern-home-active');
-      document.body.classList.add('modern-home-active');
-      document.body.style.backgroundColor = '#000000';
-      document.body.style.color = '#F59E0B';
-      document.body.style.fontFamily = "'Cairo', sans-serif";
-      document.documentElement.style.setProperty('--theme-font', "'Cairo', sans-serif");
-    } else {
-      document.documentElement.classList.remove('theme-black', 'dark', 'theme-black-gold');
-      document.body.classList.remove('theme-black', 'dark', 'theme-black-gold');
-      document.documentElement.classList.add('modern-home-active');
-      document.body.classList.add('modern-home-active');
-      document.body.style.backgroundColor = '#FFFFFF';
-      document.body.style.color = '#000000';
-      document.body.style.fontFamily = "'Cairo', sans-serif";
-      document.documentElement.style.setProperty('--theme-font', "'Cairo', sans-serif");
-
-      if (homeThemeVariant === 'sky') {
-        document.documentElement.classList.add('theme-sky');
-        document.body.classList.add('theme-sky');
-        document.documentElement.classList.remove('theme-emerald', 'theme-shiny-gold', 'theme-burgundy');
-        document.body.classList.remove('theme-emerald', 'theme-shiny-gold', 'theme-burgundy');
-      } else if (homeThemeVariant === 'emerald') {
-        document.documentElement.classList.add('theme-emerald');
-        document.body.classList.add('theme-emerald');
-        document.documentElement.classList.remove('theme-sky', 'theme-shiny-gold', 'theme-burgundy');
-        document.body.classList.remove('theme-sky', 'theme-shiny-gold', 'theme-burgundy');
-      } else if (homeThemeVariant === 'burgundy') {
-        document.documentElement.classList.add('theme-burgundy');
-        document.body.classList.add('theme-burgundy');
-        document.documentElement.classList.remove('theme-sky', 'theme-emerald', 'theme-shiny-gold');
-        document.body.classList.remove('theme-sky', 'theme-emerald', 'theme-shiny-gold');
-      } else {
-        document.documentElement.classList.add('theme-shiny-gold');
-        document.body.classList.add('theme-shiny-gold');
-        document.documentElement.classList.remove('theme-sky', 'theme-emerald', 'theme-burgundy');
-        document.body.classList.remove('theme-sky', 'theme-emerald', 'theme-burgundy');
-      }
-    }
-  }, [isNightMode, homeThemeVariant]);
   const [visibleItems, setVisibleItems] = useState<string[]>(() => {
     const savedVersion = localStorage.getItem('menu_layout_version_v2');
     if (savedVersion !== CURRENT_LAYOUT_VERSION) {
@@ -967,8 +920,8 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
         {/* صف اسم التطبيق وأيقونة الوضع الليلي وأيقونة اللغة: مثبت بأول الصفحة ولا يتحرك مع التمرير */}
         <header 
           id="sticky-title-wrapper"
-          dir={dir}
-          className={`shrink-0 ${showThemeMenu ? 'z-[99991]' : 'z-40'} relative select-none transition-colors duration-150 border-b ${
+          dir="rtl"
+          className={`shrink-0 ${showThemeMenu ? 'z-[99991]' : 'z-40'} relative select-none border-b ${
             isNightMode 
               ? 'border-amber-500/30 shadow-[0_2px_12px_rgba(0,0,0,0.8)]' 
               : isSkyTheme 
@@ -985,7 +938,7 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
             fontFamily: "'Cairo', sans-serif"
           }}
         >
-          <div className="w-full flex items-center justify-between px-3 sm:px-4 pt-1 pb-1 relative min-h-[44px]" dir={dir}>
+          <div className="w-full flex items-center justify-between px-3 sm:px-4 pt-1 pb-1 relative min-h-[44px]" dir="rtl">
             {/* الطرف الأيمن: زر قائمة أوضاع الصفحة الرئيسية وزر الإرشادات */}
             <div className="flex items-center gap-1 shrink-0 z-20">
               <div className="relative" ref={themeMenuRef}>
@@ -995,27 +948,31 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
                   onClick={handleToggleThemeMenu}
                   onPointerDown={(e) => e.stopPropagation()}
                   className="p-1 sm:p-1.5 flex items-center justify-center transition-all duration-150 active:scale-90 hover:scale-110 cursor-pointer select-none shrink-0 bg-transparent border-none outline-none relative z-30"
-                  title={isNightMode ? 'الوضع الليلى' : (isSkyTheme ? 'الوضع السماوى' : (isEmeraldTheme ? 'الوضع الزمردى' : (isBurgundyTheme ? 'الوضع العنابي' : 'الوضع الذهبي')))}
-                  aria-label="قائمة أوضاع الصفحة الرئيسية"
+                  title={
+                    language === 'en'
+                      ? (isNightMode ? 'Night Mode' : (isSkyTheme ? 'Sky Mode' : (isEmeraldTheme ? 'Emerald Mode' : (isBurgundyTheme ? 'Burgundy Mode' : 'Gold Mode'))))
+                      : (isNightMode ? 'الوضع الليلى' : (isSkyTheme ? 'الوضع السماوى' : (isEmeraldTheme ? 'الوضع الزمردى' : (isBurgundyTheme ? 'الوضع العنابي' : 'الوضع الذهبي'))))
+                  }
+                  aria-label={language === 'en' ? 'Home page themes menu' : 'قائمة أوضاع الصفحة الرئيسية'}
                   aria-expanded={showThemeMenu}
                 >
                   {isNightMode ? (
-                    <Sun className="w-[21px] h-[21px] sm:w-[23px] sm:h-[23px] text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.8)] pointer-events-none" />
+                    <Palette className="w-[21px] h-[21px] sm:w-[23px] sm:h-[23px] text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.8)] pointer-events-none" />
                   ) : isSkyTheme ? (
-                    <Moon className="w-[21px] h-[21px] sm:w-[23px] sm:h-[23px] text-sky-600 drop-shadow-[0_1px_2px_rgba(2,132,199,0.25)] pointer-events-none" />
+                    <Palette className="w-[21px] h-[21px] sm:w-[23px] sm:h-[23px] text-sky-600 drop-shadow-[0_1px_2px_rgba(2,132,199,0.25)] pointer-events-none" />
                   ) : isEmeraldTheme ? (
-                    <Moon className="w-[21px] h-[21px] sm:w-[23px] sm:h-[23px] text-emerald-700 drop-shadow-[0_1px_2px_rgba(5,150,105,0.25)] pointer-events-none" />
+                    <Palette className="w-[21px] h-[21px] sm:w-[23px] sm:h-[23px] text-emerald-700 drop-shadow-[0_1px_2px_rgba(5,150,105,0.25)] pointer-events-none" />
                   ) : isBurgundyTheme ? (
-                    <Moon className="w-[21px] h-[21px] sm:w-[23px] sm:h-[23px] text-rose-800 drop-shadow-[0_1px_2px_rgba(159,18,57,0.25)] pointer-events-none" />
+                    <Palette className="w-[21px] h-[21px] sm:w-[23px] sm:h-[23px] text-rose-800 drop-shadow-[0_1px_2px_rgba(159,18,57,0.25)] pointer-events-none" />
                   ) : (
-                    <Moon className="w-[21px] h-[21px] sm:w-[23px] sm:h-[23px] text-amber-700 dark:text-amber-400 hover:text-amber-900 drop-shadow-[0_1px_2px_rgba(180,83,9,0.25)] pointer-events-none" />
+                    <Palette className="w-[21px] h-[21px] sm:w-[23px] sm:h-[23px] text-amber-700 hover:text-amber-900 drop-shadow-[0_1px_2px_rgba(180,83,9,0.25)] pointer-events-none" />
                   )}
                 </button>
               </div>
 
               {/* بورتال موحد على مستوى document.body يحتوي على خلفية الإغلاق وقائمة الخيارات لحرية النقر التامة دون تداخل CSS */}
               {showThemeMenu && typeof document !== 'undefined' && createPortal(
-                <div className="fixed inset-0 z-[999990] pointer-events-auto select-none" dir={dir}>
+                <div className="fixed inset-0 z-[999990] pointer-events-auto select-none" dir={language === 'en' ? 'ltr' : 'rtl'}>
                   {/* 1. خلفية عازلة شفافة لامتصاص النقر خارج القائمة واغلاقها (z-[999991]) */}
                   <div
                     id="theme-menu-backdrop-shield"
@@ -1043,11 +1000,9 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
                     }`}
                     style={{
                       top: menuPos ? `${menuPos.top}px` : '48px',
-                      ...(dir === 'rtl'
-                        ? { right: menuPos ? `${menuPos.right}px` : '12px' }
-                        : { left: menuPos ? `${menuPos.left}px` : '12px' }
-                      ),
-                      direction: dir
+                      right: menuPos ? `${menuPos.right}px` : '12px',
+                      left: 'auto',
+                      direction: language === 'en' ? 'ltr' : 'rtl'
                     }}
                   >
                     {/* 1. الوضع الذهبي */}
@@ -1070,7 +1025,9 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
                         }`}
                       >
                         <span className="w-2.5 h-2.5 rounded-full shrink-0 bg-amber-500 ring-2 ring-amber-400/30" />
-                        <span className={isNightMode ? 'text-zinc-100 font-black' : 'text-slate-900 font-black'}>الوضع الذهبي</span>
+                        <span className={isNightMode ? 'text-zinc-100 font-black' : 'text-slate-900 font-black'}>
+                          {language === 'en' ? 'Gold Mode' : 'الوضع الذهبي'}
+                        </span>
                       </button>
                     )}
 
@@ -1087,7 +1044,9 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
                         className="w-full px-3 py-2 rounded-xl text-xs font-black flex items-center gap-2.5 whitespace-nowrap transition-all cursor-pointer border mt-0.5 bg-transparent text-slate-900 hover:bg-slate-100 active:bg-slate-200 border-transparent"
                       >
                         <span className="w-2.5 h-2.5 rounded-full shrink-0 bg-slate-500 ring-2 ring-slate-400/30" />
-                        <span className="text-slate-900 font-black">الوضع الليلى</span>
+                        <span className="text-slate-900 font-black">
+                          {language === 'en' ? 'Night Mode' : 'الوضع الليلى'}
+                        </span>
                       </button>
                     )}
 
@@ -1111,7 +1070,9 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
                         }`}
                       >
                         <span className="w-2.5 h-2.5 rounded-full shrink-0 bg-sky-500 ring-2 ring-sky-400/30" />
-                        <span className={isNightMode ? 'text-zinc-100 font-black' : 'text-slate-900 font-black'}>الوضع السماوى</span>
+                        <span className={isNightMode ? 'text-zinc-100 font-black' : 'text-slate-900 font-black'}>
+                          {language === 'en' ? 'Sky Mode' : 'الوضع السماوى'}
+                        </span>
                       </button>
                     )}
 
@@ -1135,7 +1096,9 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
                         }`}
                       >
                         <span className="w-2.5 h-2.5 rounded-full shrink-0 bg-emerald-500 ring-2 ring-emerald-400/30" />
-                        <span className={isNightMode ? 'text-zinc-100 font-black' : 'text-slate-900 font-black'}>الوضع الزمردى</span>
+                        <span className={isNightMode ? 'text-zinc-100 font-black' : 'text-slate-900 font-black'}>
+                          {language === 'en' ? 'Emerald Mode' : 'الوضع الزمردى'}
+                        </span>
                       </button>
                     )}
 
@@ -1159,7 +1122,9 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
                         }`}
                       >
                         <span className="w-2.5 h-2.5 rounded-full shrink-0 bg-rose-800 ring-2 ring-rose-700/30" />
-                        <span className={isNightMode ? 'text-zinc-100 font-black' : 'text-slate-900 font-black'}>الوضع العنابي</span>
+                        <span className={isNightMode ? 'text-zinc-100 font-black' : 'text-slate-900 font-black'}>
+                          {language === 'en' ? 'Burgundy Mode' : 'الوضع العنابي'}
+                        </span>
                       </button>
                     )}
                   </div>
@@ -1283,7 +1248,7 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
                     className="text-[17px] sm:text-[18px] font-black font-cairo tracking-tight pointer-events-none leading-none"
                     style={{
                       color: isNightMode 
-                        ? '#F59E0B' 
+                        ? '#FFFFFF' 
                         : isSkyTheme 
                           ? '#0369a1' 
                           : isEmeraldTheme 
@@ -1291,7 +1256,7 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
                             : isBurgundyTheme
                               ? '#881337'
                               : '#78350F',
-                      textShadow: isNightMode ? '0 0 8px rgba(245,158,11,0.4)' : '0 1px 2px rgba(255, 255, 255, 0.9)'
+                      textShadow: isNightMode ? '0 0 8px rgba(255,255,255,0.4)' : '0 1px 2px rgba(255, 255, 255, 0.9)'
                     }}
                   >
                     {language === 'ar' ? 'Ar' : 'En'}
@@ -1321,7 +1286,15 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
               <p 
                 className={`text-[12.5px] sm:text-[13.5px] font-bold leading-tight tracking-normal text-center font-cairo ${isNightMode ? '' : 'drop-shadow-sm'}`}
                 style={{ 
-                  color: isNightMode ? '#F59E0B' : '#854D0E',
+                  color: isNightMode 
+                    ? '#FFFFFF' 
+                    : isSkyTheme 
+                      ? '#0284C7' 
+                      : isEmeraldTheme 
+                        ? '#059669' 
+                        : isBurgundyTheme 
+                          ? '#9F1239' 
+                          : (theme.palette?.[0] || '#854D0E'),
                   fontFamily: "'Cairo', sans-serif",
                   textShadow: isNightMode ? 'none' : '0 1px 1px rgba(255, 255, 255, 0.8)',
                   textRendering: 'optimizeLegibility',
@@ -1411,7 +1384,7 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
           isOpen={showExpandedUpcomingEventModal}
           onClose={() => setShowExpandedUpcomingEventModal(false)}
           categoryTitle={t('islamic_events.title', 'المناسبات الإسلامية')}
-          text={upcomingEvents[eventIndex]?.name || ''}
+          text={translateEventName(upcomingEvents[eventIndex]?.name || '')}
           subtitle={(() => {
             const ev = upcomingEvents[eventIndex];
             if (!ev) return '';

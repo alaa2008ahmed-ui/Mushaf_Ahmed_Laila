@@ -264,31 +264,101 @@
     letter-spacing: 0;
     text-rendering: optimizeLegibility;
 }
+/* تحديد الآية لونياً بدون خلفية إطلاقاً */
 .ayah-text-block.highlighted { 
     background-color: transparent !important;
     color: var(--qr-highlight-text, #d97706) !important;
     text-shadow: 0 0 1px currentColor;
+    border-radius: 0;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+    padding: 0 !important;
+    transition: color 0.2s ease;
 }
 .dark .ayah-text-block.highlighted { 
     background-color: transparent !important; 
     color: var(--qr-highlight-text, #fbbf24) !important;
 }
 
-/* ثيم اسود غامق: الآية المحددة باللون الأبيض ورقم الآية والأقواس باللون الأبيض */
-.quran-reader-container[data-quran-theme="deep_black"] .ayah-text-block.highlighted,
-.quran-reader-container[data-quran-theme="deep_black"] .ayah-text-block.highlighted *,
-.dark .quran-reader-container[data-quran-theme="deep_black"] .ayah-text-block.highlighted,
-.dark .quran-reader-container[data-quran-theme="deep_black"] .ayah-text-block.highlighted * { 
+/* ثيم اسود غامق: الآية المحددة بالكامل بلون النص الذهبي بدون خلفية */
+.quran-reader-container[data-quran-theme="deep_black"] .ayah-text-block.highlighted { 
     background-color: transparent !important; 
-    color: #ffffff !important;
-    text-shadow: 0 0 2px rgba(255, 255, 255, 0.8) !important;
+    color: var(--qr-highlight-text, #f59e0b) !important;
+    text-shadow: 0 0 1px rgba(245, 158, 11, 0.45) !important;
 }
 
-.quran-reader-container[data-quran-theme="deep_black"] .verse-bracket,
-.quran-reader-container[data-quran-theme="deep_black"] .verse-num-inner,
-.dark .quran-reader-container[data-quran-theme="deep_black"] .verse-bracket,
-.dark .quran-reader-container[data-quran-theme="deep_black"] .verse-num-inner {
-    color: #ffffff !important;
+.quran-reader-container[data-quran-theme="deep_black"] .ayah-text-block.highlighted *:not(.active-word-highlight),
+.dark .quran-reader-container[data-quran-theme="deep_black"] .ayah-text-block.highlighted *:not(.active-word-highlight) { 
+    color: var(--qr-highlight-text, #f59e0b) !important;
+    text-shadow: 0 0 1px rgba(245, 158, 11, 0.45) !important;
+}
+
+/* تحديد الكلمة المنطوقة لونياً بنص مميز بدون أي تغيير في المقاسات أو الأوزان أو الهوامش لمنع تحرك الكلمات نهائياً */
+.quran-word-span {
+    display: contents !important;
+    font-weight: inherit !important;
+    letter-spacing: inherit !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    -webkit-text-stroke: 0 !important;
+}
+
+.quran-word-span.ayah-highlight-word {
+    color: inherit;
+    transition: color 0.15s ease;
+}
+
+.quran-word-span.active-word-highlight,
+.ayah-text-block.highlighted .quran-word-span.active-word-highlight,
+.dark .ayah-text-block.highlighted .quran-word-span.active-word-highlight,
+.quran-reader-container[data-quran-theme="deep_black"] .ayah-text-block.highlighted .quran-word-span.active-word-highlight {
+    background-color: transparent !important;
+    color: var(--qr-word-highlight-bg, #dc2626) !important;
+    font-weight: inherit !important;
+    -webkit-text-stroke: 0 !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    display: contents !important;
+    line-height: inherit !important;
+    transition: color 0.1s ease !important;
+}
+
+/* ثيم الوضع الليلي (اسود غامق): ألوان مميزة ومتباينة للأقواس الذهبية وأرقام الآيات */
+.quran-reader-container[data-quran-theme="deep_black"] .ayah-text-block:not(.highlighted) .verse-bracket,
+.quran-reader-container[data-quran-theme="deep_black"] .verse-container:not(.highlighted) .verse-bracket,
+.dark .quran-reader-container[data-quran-theme="deep_black"] .ayah-text-block:not(.highlighted) .verse-bracket,
+.dark .quran-reader-container[data-quran-theme="deep_black"] .verse-container:not(.highlighted) .verse-bracket {
+    color: #fbbf24 !important;
+}
+
+.quran-reader-container[data-quran-theme="deep_black"] .ayah-text-block:not(.highlighted) .verse-num-inner,
+.quran-reader-container[data-quran-theme="deep_black"] .verse-container:not(.highlighted) .verse-num-inner,
+.dark .quran-reader-container[data-quran-theme="deep_black"] .ayah-text-block:not(.highlighted) .verse-num-inner,
+.dark .quran-reader-container[data-quran-theme="deep_black"] .verse-container:not(.highlighted) .verse-num-inner {
+    color: #38bdf8 !important;
+}
+
+.quran-reader-container[data-quran-theme="deep_black"] .ayah-text-block:not(.highlighted) .hizb-quarter-marker,
+.quran-reader-container[data-quran-theme="deep_black"] .ayah-text-block:not(.highlighted) .sajdah-icon-inline,
+.dark .quran-reader-container[data-quran-theme="deep_black"] .ayah-text-block:not(.highlighted) .hizb-quarter-marker,
+.dark .quran-reader-container[data-quran-theme="deep_black"] .ayah-text-block:not(.highlighted) .sajdah-icon-inline {
+    color: #fbbf24 !important;
+}
+
+/* ثيم الوضع الذهبي: ألوان مميزة ومتباينة للأقواس الذهبية وأرقام الآيات الياقوتية */
+.quran-reader-container[data-quran-theme="gold"] .ayah-text-block:not(.highlighted) .verse-bracket,
+.quran-reader-container[data-quran-theme="gold"] .verse-container:not(.highlighted) .verse-bracket {
+    color: #d4af37 !important;
+}
+
+.quran-reader-container[data-quran-theme="gold"] .ayah-text-block:not(.highlighted) .verse-num-inner,
+.quran-reader-container[data-quran-theme="gold"] .verse-container:not(.highlighted) .verse-num-inner {
+    color: #b91c1c !important;
 }
 
 .ayah-text-block.hide-text {
@@ -317,11 +387,82 @@
     font-family: var(--font-hafs);
 }
 
-.verse-container { cursor: pointer; display: inline; }
-.verse-bracket { color: #059669; font-weight: bold; font-family: var(--font-hafs); font-size: 0.8em; }
-.verse-num-inner { color: #b91c1c; font-weight: bold; font-family: var(--font-hafs); padding: 0 1px; transition: color 0.2s; font-size: 0.8em; }
+.verse-container { 
+    cursor: pointer; 
+    display: inline-flex; 
+    align-items: center; 
+    justify-content: center; 
+    width: 1.45em; 
+    min-width: 1.45em; 
+    max-width: 1.45em; 
+    height: 1.25em; 
+    vertical-align: middle; 
+    margin: 0 2px; 
+    padding: 0; 
+    white-space: nowrap; 
+    text-align: center; 
+    box-sizing: border-box; 
+    user-select: none;
+    line-height: 1;
+    position: relative;
+    transform: translateY(-0.28em);
+}
+
+.verse-bracket { 
+    color: #059669; 
+    font-weight: bold; 
+    font-family: var(--font-hafs) !important; 
+    line-height: 1; 
+    display: inline-block; 
+    transition: color 0.2s, font-size 0.2s; 
+    flex-shrink: 0;
+}
+
+.verse-num-inner { 
+    color: #b91c1c; 
+    font-weight: bold; 
+    font-family: var(--font-hafs) !important; 
+    line-height: 1; 
+    display: inline-block; 
+    transition: color 0.2s, font-size 0.2s; 
+    text-align: center; 
+    flex-shrink: 0;
+}
+
 .dark .verse-bracket { color: #34d399; }
 .dark .verse-num-inner { color: #f87171; }
+
+/* Fixed sizing per digit count so verse 1 takes exact same area as verse 255 or 280 */
+.verse-digits-1 .verse-bracket { font-size: 0.82em; }
+.verse-digits-1 .verse-num-inner { font-size: 0.82em; padding: 0 0.5px; }
+
+.verse-digits-2 .verse-bracket { font-size: 0.70em; }
+.verse-digits-2 .verse-num-inner { font-size: 0.68em; letter-spacing: -0.5px; padding: 0 0.2px; }
+
+.verse-digits-3 .verse-bracket { font-size: 0.58em; }
+.verse-digits-3 .verse-num-inner { font-size: 0.52em; letter-spacing: -0.8px; padding: 0; }
+
+/* Illuminating verse container and digits together with ayah text */
+.ayah-text-block.highlighted .verse-container,
+.ayah-text-block.highlighted .verse-bracket,
+.ayah-text-block.highlighted .verse-num-inner,
+.verse-container.highlighted,
+.verse-container.highlighted .verse-bracket,
+.verse-container.highlighted .verse-num-inner {
+    color: var(--qr-highlight-text, #d97706) !important;
+    text-shadow: 0 0 2px currentColor !important;
+}
+
+.quran-reader-container[data-quran-theme="deep_black"] .ayah-text-block.highlighted .verse-container,
+.quran-reader-container[data-quran-theme="deep_black"] .ayah-text-block.highlighted .verse-bracket,
+.quran-reader-container[data-quran-theme="deep_black"] .ayah-text-block.highlighted .verse-num-inner,
+.quran-reader-container[data-quran-theme="deep_black"] .verse-container.highlighted,
+.quran-reader-container[data-quran-theme="deep_black"] .verse-container.highlighted .verse-bracket,
+.quran-reader-container[data-quran-theme="deep_black"] .verse-container.highlighted .verse-num-inner {
+    color: var(--qr-highlight-text, #f59e0b) !important;
+    text-shadow: 0 0 2px rgba(245, 158, 11, 0.6) !important;
+}
+
 
 /* Surah Header Styles - Managed by SurahHeader component */
 .surah-header-container-wrapper {
@@ -591,12 +732,21 @@
 .color-preview-dot { width: 20px; height: 20px; border-radius: 50%; border: 1px solid #d1d5db; box-shadow: 0 1px 2px rgba(0,0,0,0.1); flex-shrink: 0; background-color: #fff; }
 
 .toggle-checkbox:checked + .toggle-label { background-color: var(--qr-accent, #10B981) !important; }
+.quran-reader-container[data-quran-theme="deep_black"] .toggle-checkbox:checked + .toggle-label { background-color: #52525b !important; }
 .toggle-checkbox { appearance: none; }
 
 .downloaded-item {
     background-color: var(--qr-accent-bg, rgba(16, 185, 129, 0.1)) !important;
     border-color: var(--qr-accent, #10B981) !important;
     color: var(--qr-accent, #10B981) !important;
+}
+.quran-reader-container[data-quran-theme="deep_black"] .downloaded-item {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    border-color: rgba(255, 255, 255, 0.3) !important;
+    color: #ffffff !important;
+}
+.quran-reader-container[data-quran-theme="deep_black"] .theme-accent-text {
+    color: #ffffff !important;
 }
 
 .toggle-label { transition: background-color 0.2s ease; }
@@ -787,21 +937,21 @@
     font-size: 1.1rem;
     margin-bottom: 0;
 }
-.quran-reader-container.landscape-mode.landscape-ui-hidden #header,
+.quran-reader-container.landscape-ui-hidden #header,
 .quran-reader-container.hide-toolbars-autoscroll #header {
     transform: translateY(-100%) !important;
     margin-top: calc(-3.5rem - var(--logical-safe-top) - 8px) !important;
     opacity: 0 !important;
     pointer-events: none !important;
 }
-.quran-reader-container.landscape-mode.landscape-ui-hidden #bottom-bar,
+.quran-reader-container.landscape-ui-hidden #bottom-bar,
 .quran-reader-container.hide-toolbars-autoscroll #bottom-bar {
     transform: translateY(100%) !important;
     margin-bottom: calc(-3.5rem - var(--logical-safe-bottom) - 12px) !important;
     opacity: 0 !important;
     pointer-events: none !important;
 }
-.quran-reader-container.landscape-mode.landscape-ui-hidden #floating-menu,
+.quran-reader-container.landscape-ui-hidden #floating-menu,
 .quran-reader-container.hide-toolbars-autoscroll #floating-menu {
     opacity: 0 !important;
     visibility: hidden !important;

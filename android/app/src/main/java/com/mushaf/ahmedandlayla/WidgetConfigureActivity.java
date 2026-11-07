@@ -26,6 +26,9 @@ public class WidgetConfigureActivity extends Activity {
     // Preview Layouts
     private LinearLayout previewClassicCard;
     private LinearLayout previewCompactCard;
+    private LinearLayout previewSingleCard;
+    private TextView tvSinglePreviewPrayerName;
+    private TextView tvSinglePreviewCountdown;
 
     // Classic Preview Details
     private RelativeLayout previewTopRightBox;
@@ -138,7 +141,7 @@ public class WidgetConfigureActivity extends Activity {
     private TextView tvThemeHeader;
 
     private int selectedTransparency = 100;
-    private String selectedTheme = "royal_gold_3d";
+    private String selectedTheme = "golden_trio";
     private boolean isArabic = true;
 
     @Override
@@ -195,7 +198,9 @@ public class WidgetConfigureActivity extends Activity {
         AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(this);
         AppWidgetProviderInfo info = appWidgetManager.getAppWidgetInfo(mAppWidgetId);
         String providerName = (info != null && info.provider != null) ? info.provider.getClassName() : "";
-        if (providerName.contains("Compact")) {
+        if (providerName.contains("Single") || providerName.contains("NextPrayer")) {
+            mWidgetType = "single";
+        } else if (providerName.contains("Compact")) {
             mWidgetType = "compact";
         } else {
             mWidgetType = "classic";
@@ -204,7 +209,7 @@ public class WidgetConfigureActivity extends Activity {
         // Load saved preferences: first check this widget ID, then check this widget's type, then default
         SharedPreferences prefs = getSharedPreferences("CapacitorStorage", Context.MODE_PRIVATE);
         selectedTransparency = prefs.getInt("widget_transparency_" + mAppWidgetId, prefs.getInt("widget_" + mWidgetType + "_transparency", 95));
-        selectedTheme = prefs.getString("widget_theme_" + mAppWidgetId, prefs.getString("widget_" + mWidgetType + "_theme", "royal_gold_3d"));
+        selectedTheme = prefs.getString("widget_theme_" + mAppWidgetId, prefs.getString("widget_" + mWidgetType + "_theme", "golden_trio"));
 
         String appLang = prefs.getString("app_language", "ar");
         isArabic = !"en".equalsIgnoreCase(appLang);
@@ -233,13 +238,13 @@ public class WidgetConfigureActivity extends Activity {
     }
 
     private View getCardForTheme(String theme) {
-        if (theme == null) return cardThemeRoyalGold3d;
+        if (theme == null) return cardThemeGoldenTrio;
         switch (theme.toLowerCase()) {
+            case "golden_trio": return cardThemeGoldenTrio;
             case "royal_gold_3d": return cardThemeRoyalGold3d;
             case "antique_bronze_3d": return cardThemeAntiqueBronze3d;
             case "royal_marble_3d": return cardThemeRoyalMarble3d;
             case "pearl_white_3d": return cardThemePearlWhite3d;
-            case "golden_trio": return cardThemeGoldenTrio;
             case "violet_green_light": return cardThemeVioletGreenLight;
             case "sky_blue_light": return cardThemeSkyBlueLight;
             case "rose_peach_light": return cardThemeRosePeachLight;
@@ -251,7 +256,7 @@ public class WidgetConfigureActivity extends Activity {
             case "emerald": return cardThemeEmerald;
             case "navy": return cardThemeNavy;
             case "black": return cardThemeBlack;
-            default: return cardThemeRoyalGold3d;
+            default: return cardThemeGoldenTrio;
         }
     }
 
@@ -260,6 +265,9 @@ public class WidgetConfigureActivity extends Activity {
 
         previewClassicCard = findViewById(R.id.preview_classic_card);
         previewCompactCard = findViewById(R.id.preview_compact_card);
+        previewSingleCard = findViewById(R.id.preview_single_card);
+        tvSinglePreviewPrayerName = findViewById(R.id.tv_single_preview_prayer_name);
+        tvSinglePreviewCountdown = findViewById(R.id.tv_single_preview_countdown);
 
 
         // Classic preview views
@@ -436,6 +444,8 @@ public class WidgetConfigureActivity extends Activity {
             if (tvCompactNextLabel != null) tvCompactNextLabel.setText("Next Prayer");
             if (tvCompactNextName != null) tvCompactNextName.setText("Asr");
             if (tvCompactPreviewCountdown != null) tvCompactPreviewCountdown.setText("Next Adhan in: 01:15:30");
+            if (tvSinglePreviewPrayerName != null) tvSinglePreviewPrayerName.setText("Fajr in");
+            if (tvSinglePreviewCountdown != null) tvSinglePreviewCountdown.setText("00:24:15");
 
         } else {
             tvMainTitle.setText("ضبط إعدادات التطبيق المصغر");
@@ -482,14 +492,20 @@ public class WidgetConfigureActivity extends Activity {
             if (tvCompactNextName != null) tvCompactNextName.setText("العصر");
             if (tvCompactPreviewCountdown != null) tvCompactPreviewCountdown.setText("متبقي على الأذان: 01:15:30");
 
+            if (tvSinglePreviewPrayerName != null) tvSinglePreviewPrayerName.setText("صلاة الفجر بعد");
+            if (tvSinglePreviewCountdown != null) tvSinglePreviewCountdown.setText("00:24:15");
+
         }
     }
 
     private void setupPreviewVisibility() {
         if (previewClassicCard != null) previewClassicCard.setVisibility(View.GONE);
         if (previewCompactCard != null) previewCompactCard.setVisibility(View.GONE);
+        if (previewSingleCard != null) previewSingleCard.setVisibility(View.GONE);
 
-        if ("compact".equals(mWidgetType) && previewCompactCard != null) {
+        if ("single".equals(mWidgetType) && previewSingleCard != null) {
+            previewSingleCard.setVisibility(View.VISIBLE);
+        } else if ("compact".equals(mWidgetType) && previewCompactCard != null) {
             previewCompactCard.setVisibility(View.VISIBLE);
         } else if (previewClassicCard != null) {
             previewClassicCard.setVisibility(View.VISIBLE);
@@ -1018,7 +1034,7 @@ public class WidgetConfigureActivity extends Activity {
             gridNameColor = Color.parseColor("#334155");
             gridTimeColor = Color.parseColor("#000000");
             gridHighlightColor = Color.parseColor("#C86400");
-            sepColor = Color.parseColor("#F1F5F9");
+            sepColor = Color.parseColor("#E5D07B");
             nightBg = Color.parseColor("#F8DE8A");
             nightText = Color.parseColor("#000000");
 
@@ -1315,7 +1331,7 @@ public class WidgetConfigureActivity extends Activity {
             previewCompactCard.setBackgroundColor(alphaRootBg);
         }
         if (tvCompactPreviewDate != null) {
-            tvCompactPreviewDate.setTextColor(dateText);
+            tvCompactPreviewDate.setTextColor(isGoldenTrio ? Color.parseColor("#000000") : dateText);
         }
         if (previewCompactPrevBox != null) {
             previewCompactPrevBox.setBackgroundColor(alphaGridBg);
@@ -1327,7 +1343,7 @@ public class WidgetConfigureActivity extends Activity {
         if (previewCompactNextBox != null) {
             previewCompactNextBox.setBackgroundColor(alphaTopBoxBg);
         }
-        if (tvCompactNextLabel != null) tvCompactNextLabel.setTextColor(nextPrayerColor);
+        if (tvCompactNextLabel != null) tvCompactNextLabel.setTextColor(isGoldenTrio ? Color.parseColor("#FEF08A") : nextPrayerColor);
         if (tvCompactNextName != null) tvCompactNextName.setTextColor(countdownColor);
         if (tvCompactNextTime != null) tvCompactNextTime.setTextColor(nextPrayerColor);
 
@@ -1336,6 +1352,17 @@ public class WidgetConfigureActivity extends Activity {
         }
         if (tvCompactPreviewCountdown != null) {
             tvCompactPreviewCountdown.setTextColor(nightText);
+        }
+
+        // 3. Single Prayer (1x1) Preview Updates
+        if (previewSingleCard != null) {
+            previewSingleCard.setBackgroundColor(alphaRootBg);
+        }
+        if (tvSinglePreviewPrayerName != null) {
+            tvSinglePreviewPrayerName.setTextColor(isGoldenTrio ? Color.parseColor("#C86400") : nextPrayerColor);
+        }
+        if (tvSinglePreviewCountdown != null) {
+            tvSinglePreviewCountdown.setTextColor(isGoldenTrio ? Color.parseColor("#000000") : countdownColor);
         }
 
 

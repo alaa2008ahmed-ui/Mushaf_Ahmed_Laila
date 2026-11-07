@@ -182,7 +182,7 @@ const ReciterSelectModal: React.FC<ReciterSelectModalProps> = ({
                                     <span className="text-sm font-bold truncate" style={{ color: 'var(--qr-card-text)' }}>
                                         {modalTitle}
                                     </span>
-                                    <span className="text-[11px] px-2 py-0.5 rounded-full font-bold opacity-75" style={{ backgroundColor: 'var(--qr-accent-10, rgba(16, 185, 129, 0.12))', color: 'var(--qr-accent, #10b981)' }}>
+                                    <span className="text-[11px] px-2 py-0.5 rounded-full font-bold opacity-75" style={{ backgroundColor: isBlackTheme ? 'rgba(255, 255, 255, 0.12)' : 'var(--qr-accent-10, rgba(16, 185, 129, 0.12))', color: isBlackTheme ? '#ffffff' : 'var(--qr-accent, #10b981)' }}>
                                         {filteredReaders.length}
                                     </span>
                                 </div>
@@ -286,7 +286,7 @@ const ReciterSelectModal: React.FC<ReciterSelectModalProps> = ({
                                                 )}
                                             </div>
                                             {!isEnReader && subTitle && (
-                                                <span className={`text-[10px] mt-0.5 line-clamp-1 opacity-80 ${isSelected ? 'text-indigo-100' : 'text-indigo-600 dark:text-indigo-300'}`}>
+                                                <span className={`text-[10px] mt-0.5 line-clamp-1 opacity-80 ${isSelected || isBlackTheme ? 'text-white/80' : 'text-indigo-600 dark:text-indigo-300'}`}>
                                                     {subTitle}
                                                 </span>
                                             )}

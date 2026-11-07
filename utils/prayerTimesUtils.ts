@@ -357,3 +357,50 @@ export const calculateNightTimes = (maghribTimeStr: string, fajrTimeStr: string)
         lastThird: formatTime(lastThirdDate)
     };
 };
+
+export interface ActiveNotificationTone {
+    id: string;
+    name: string;
+    data: string;
+    fileName?: string;
+}
+
+export const getActiveNotificationTone = (): ActiveNotificationTone => {
+    try {
+        const raw = localStorage.getItem('app_notification_tone');
+        if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed && typeof parsed === 'object' && parsed.id) return parsed;
+        }
+        const cfgRaw = localStorage.getItem('prayerFinal_v34');
+        if (cfgRaw) {
+            const cfg = JSON.parse(cfgRaw);
+            if (cfg && cfg.notificationTone && cfg.notificationTone.id) return cfg.notificationTone;
+        }
+    } catch (e) {}
+    return {
+        id: 'chime',
+        name: 'رنين هادئ',
+        data: '/assets/audio/chime.mp3',
+        fileName: 'chime.mp3'
+    };
+};
+
+export const setActiveNotificationTone = (tone: ActiveNotificationTone) => {
+    try {
+        localStorage.setItem('app_notification_tone', JSON.stringify(tone));
+    } catch (e) {}
+};
+
+export const getActiveNotificationSoundPath = (): string => {
+    const tone = getActiveNotificationTone();
+    if (tone.id === 'none' || tone.data === 'none') return 'none';
+    return tone.data || '/assets/audio/chime.mp3';
+};
+
+export const getActiveNotificationSoundFileName = (): string | undefined => {
+    const tone = getActiveNotificationTone();
+    if (tone.id === 'none' || tone.data === 'none') return undefined;
+    return tone.fileName || 'chime.mp3';
+};
+

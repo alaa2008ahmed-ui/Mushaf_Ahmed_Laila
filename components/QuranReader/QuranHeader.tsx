@@ -181,17 +181,11 @@ const QuranHeader: React.FC<QuranHeaderProps> = React.memo(({
                 style={getToolbarStyle('surah', currentTheme.barBg, currentTheme.barText, currentTheme.btnBorder || currentTheme.barBorder)}
             >
                 <AutoFitText>
-                    {readingMode === 'bilingual' || readingMode === 'translation' ? (
+                    {isEn ? (
                         isMemorizationMode && memorizationSettings ? (
-                            <>{currentAyah.s} - Surah {enSurahName} - Ayahs {memorizationSettings.fromAyah}-{memorizationSettings.toAyah} - Juz {juz}</>
+                            <>{currentAyah.s} - Surah {enSurahName.replace(/^Surah\s+/i, '')} - Ayahs {memorizationSettings.fromAyah}-{memorizationSettings.toAyah} - Juz {juz}</>
                         ) : (
-                            <>{currentAyah.s} - Surah {enSurahName} - Ayah {currentAyah.a} - Juz {juz}</>
-                        )
-                    ) : isEn ? (
-                        isMemorizationMode && memorizationSettings ? (
-                            <>{currentAyah.s} - Surah {enSurahName} - Ayahs {memorizationSettings.fromAyah}-{memorizationSettings.toAyah} - Juz {juz}</>
-                        ) : (
-                            <>{currentAyah.s} - Surah {enSurahName} - Ayah {currentAyah.a} - Juz {juz}</>
+                            <>{currentAyah.s} - Surah {enSurahName.replace(/^Surah\s+/i, '')} - Ayah {currentAyah.a} - Juz {juz}</>
                         )
                     ) : (
                         isMemorizationMode && memorizationSettings ? (

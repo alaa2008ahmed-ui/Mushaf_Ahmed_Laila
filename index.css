@@ -171,14 +171,41 @@ body:not(.quran-context):not(.modern-home-active) .font-gulzar:not(.modern-home-
     font-family: var(--theme-font) !important;
 }
 
-/* Strict Cairo font enforcement for Modern Home Layout: completely immune to any theme font */
+/* Cairo font enforcement for Modern Home Layout: excludes Quran reader, font preview elements, verse brackets, and FontAwesome icons */
 .modern-home-layout,
-.modern-home-layout *,
-body.modern-home-active,
-body.modern-home-active *:not(.quran-font):not(.font-quran),
-[data-layout="modern"],
-[data-layout="modern"] *:not(.quran-font):not(.font-quran) {
+.modern-home-layout *:not(.font-preview):not(.font-preview *):not(.quran-font):not(.font-quran):not(.quran-reader-container):not(.quran-reader-container *):not(.verse-bracket):not(.verse-num-inner):not(.page-content):not(.page-content *):not(i):not([class*="fa-"]):not(.fa-solid):not(.fa-regular):not(.fa-brands):not(.fa):not(.fas):not(.far):not(.fab),
+body.modern-home-active *:not(.font-preview):not(.font-preview *):not(.quran-font):not(.font-quran):not(.quran-reader-container):not(.quran-reader-container *):not(.verse-bracket):not(.verse-num-inner):not(.page-content):not(.page-content *):not(i):not([class*="fa-"]):not(.fa-solid):not(.fa-regular):not(.fa-brands):not(.fa):not(.fas):not(.far):not(.fab),
+[data-layout="modern"] *:not(.font-preview):not(.font-preview *):not(.quran-font):not(.font-quran):not(.quran-reader-container):not(.quran-reader-container *):not(.verse-bracket):not(.verse-num-inner):not(.page-content):not(.page-content *):not(i):not([class*="fa-"]):not(.fa-solid):not(.fa-regular):not(.fa-brands):not(.fa):not(.fas):not(.far):not(.fab) {
     font-family: 'Cairo', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+}
+
+/* Ensure FontAwesome font family is preserved for all FontAwesome icon classes */
+i.fa-solid,
+i.fa-regular,
+i.fa-brands,
+i.fa,
+i.fas,
+i.far,
+i.fab,
+.fa-solid,
+.fa-regular,
+.fa-brands,
+.fa,
+.fas,
+.far,
+.fab,
+i[class*="fa-"],
+[class*="fa-"] {
+    font-family: "Font Awesome 6 Free", "Font Awesome 6 Pro", "Font Awesome 5 Free", "FontAwesome", sans-serif !important;
+}
+
+/* Zero-transition enforcement on Modern Home screen to prevent any color morphing or flash on navigation */
+.modern-home-layout,
+.modern-home-layout header,
+.modern-home-layout .golden-3d-card,
+.modern-home-layout .white-3d-container-card,
+.modern-home-layout .white-3d-card-btn {
+  transition-property: transform, opacity, box-shadow !important;
 }
 
 /* 3D Gleaming Gold Card for Modern Smart Design */
@@ -368,7 +395,8 @@ html.theme-shiny-gold .white-3d-card-btn:active {
 
 .tactile-3d-card-light {
   border-radius: 20px !important;
-  border: 1px solid rgba(255, 255, 255, 0.95) !important;
+  border: none !important;
+  outline: none !important;
   box-shadow: 0 6.5px 0 rgba(0, 0, 0, 0.13), 0 12px 24px -2px rgba(0, 0, 0, 0.11), inset 0 2px 2px rgba(255, 255, 255, 0.95), inset 0 -2.5px 4px rgba(0, 0, 0, 0.05) !important;
   transform: translateY(0);
   transition: transform 0.16s cubic-bezier(0.2, 0.8, 0.4, 1), box-shadow 0.16s cubic-bezier(0.2, 0.8, 0.4, 1);
@@ -387,8 +415,9 @@ html.theme-shiny-gold .white-3d-card-btn:active {
 
 .tactile-3d-card-dark {
   border-radius: 20px !important;
-  border: 1px solid rgba(255, 255, 255, 0.18) !important;
-  box-shadow: 0 6.5px 0 #0d0d10, 0 12px 24px -2px rgba(0, 0, 0, 0.7), inset 0 2px 2px rgba(255, 255, 255, 0.25), inset 0 -2.5px 5px rgba(0, 0, 0, 0.5) !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: 0 6.5px 0 #0d0d10, 0 14px 28px rgba(0, 0, 0, 0.85), inset 0 2px 2px rgba(255, 255, 255, 0.22), inset 0 -2.5px 5px rgba(0, 0, 0, 0.65) !important;
   transform: translateY(0);
   transition: transform 0.16s cubic-bezier(0.2, 0.8, 0.4, 1), box-shadow 0.16s cubic-bezier(0.2, 0.8, 0.4, 1);
   will-change: transform, box-shadow;
@@ -403,6 +432,198 @@ html.theme-shiny-gold .white-3d-card-btn:active {
   transform: translateY(4px) scale(0.99) !important;
   box-shadow: 0 2px 0 #0d0d10, 0 4px 10px rgba(0, 0, 0, 0.4), inset 0 2px 2px rgba(255, 255, 255, 0.25), inset 0 -1.5px 3px rgba(0, 0, 0, 0.4) !important;
 }
+
+/* ==========================================================================
+   تجسيم وإبراز بطاقات جميع الصفحات بدون إطارات إطلاقاً وبنفس بروز بطاقات الصفحة الرئيسية
+   مع استثناء صفحة القرآن الكريم نهائياً وعدم تجسيم الأزرار
+   ========================================================================== */
+body:not(.quran-context) .app-page-card,
+body:not(.quran-context) [data-card-item="true"]:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context) .seerah-card:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context) .prayer-card:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context) #next-prayer-card:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context) .qibla-info-card:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context) .hijri-calendar-card:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context) .audio-player-card:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context) div[id^="adia-card-"]:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context) div[id^="dhikr-card-"]:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context) div[id^="hisn-card-"]:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context) div[id^="duaa-section-"]:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context) div[id^="wird-progress-"]:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context) div[id^="wird-today-"]:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context) #wird-today-card:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context) #daily-achievement-card:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context) div[id^="habit-card-"]:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context) div[id^="fitr-card-"]:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context) div[id^="zakat-card-"]:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context) div[id^="kaffarat-card-"]:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context) div[id^="mawarith-card-"]:not(button):not(input):not(select):not(.btn) {
+  border: none !important;
+  outline: none !important;
+  box-shadow: 0 6.5px 0 rgba(0, 0, 0, 0.13), 0 12px 24px -2px rgba(0, 0, 0, 0.11), inset 0 2px 2px rgba(255, 255, 255, 0.95), inset 0 -2.5px 4px rgba(0, 0, 0, 0.05) !important;
+  transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.4, 1), box-shadow 0.18s cubic-bezier(0.2, 0.8, 0.4, 1) !important;
+  will-change: transform, box-shadow;
+}
+
+body:not(.quran-context) .app-page-card:hover,
+body:not(.quran-context) [data-card-item="true"]:not(button):not(input):not(select):not(.btn):hover,
+body:not(.quran-context) .seerah-card:not(button):not(input):not(select):not(.btn):hover,
+body:not(.quran-context) .prayer-card:not(button):not(input):not(select):not(.btn):hover,
+body:not(.quran-context) #next-prayer-card:not(button):not(input):not(select):not(.btn):hover,
+body:not(.quran-context) .qibla-info-card:not(button):not(input):not(select):not(.btn):hover,
+body:not(.quran-context) .hijri-calendar-card:not(button):not(input):not(select):not(.btn):hover,
+body:not(.quran-context) .audio-player-card:not(button):not(input):not(select):not(.btn):hover,
+body:not(.quran-context) div[id^="adia-card-"]:not(button):not(input):not(select):not(.btn):hover,
+body:not(.quran-context) div[id^="dhikr-card-"]:not(button):not(input):not(select):not(.btn):hover,
+body:not(.quran-context) div[id^="hisn-card-"]:not(button):not(input):not(select):not(.btn):hover,
+body:not(.quran-context) div[id^="duaa-section-"]:not(button):not(input):not(select):not(.btn):hover,
+body:not(.quran-context) div[id^="wird-progress-"]:not(button):not(input):not(select):not(.btn):hover,
+body:not(.quran-context) div[id^="wird-today-"]:not(button):not(input):not(select):not(.btn):hover,
+body:not(.quran-context) #wird-today-card:not(button):not(input):not(select):not(.btn):hover,
+body:not(.quran-context) #daily-achievement-card:not(button):not(input):not(select):not(.btn):hover,
+body:not(.quran-context) div[id^="habit-card-"]:not(button):not(input):not(select):not(.btn):hover,
+body:not(.quran-context) div[id^="fitr-card-"]:not(button):not(input):not(select):not(.btn):hover,
+body:not(.quran-context) div[id^="zakat-card-"]:not(button):not(input):not(select):not(.btn):hover,
+body:not(.quran-context) div[id^="kaffarat-card-"]:not(button):not(input):not(select):not(.btn):hover,
+body:not(.quran-context) div[id^="mawarith-card-"]:not(button):not(input):not(select):not(.btn):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8.5px 0 rgba(0, 0, 0, 0.14), 0 16px 30px -3px rgba(0, 0, 0, 0.14), inset 0 2px 2px rgba(255, 255, 255, 0.95), inset 0 -2.5px 4px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* في الوضع الليلي والداكن: تجسيم بارز بدون إطارات نهائياً ومطابق للصفحة الرئيسية */
+body:not(.quran-context).dark .app-page-card,
+body:not(.quran-context).dark [data-card-item="true"]:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context).dark .seerah-card:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context).dark .prayer-card:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context).dark #next-prayer-card:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context).dark .qibla-info-card:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context).dark .hijri-calendar-card:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context).dark .audio-player-card:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context).dark div[id^="adia-card-"]:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context).dark div[id^="dhikr-card-"]:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context).dark div[id^="hisn-card-"]:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context).dark div[id^="duaa-section-"]:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context).dark div[id^="wird-progress-"]:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context).dark div[id^="wird-today-"]:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context).dark #wird-today-card:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context).dark #daily-achievement-card:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context).dark div[id^="habit-card-"]:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context).dark div[id^="fitr-card-"]:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context).dark div[id^="zakat-card-"]:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context).dark div[id^="kaffarat-card-"]:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context).dark div[id^="mawarith-card-"]:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context).theme-black-gold .app-page-card,
+body:not(.quran-context).theme-black-gold [data-card-item="true"]:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context).theme-black-gold .seerah-card:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context).theme-black-gold .prayer-card:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context).theme-black-gold #next-prayer-card:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context).theme-black-gold .qibla-info-card:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context).theme-black-gold .hijri-calendar-card:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context).theme-black-gold .audio-player-card:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context).theme-black-gold div[id^="adia-card-"]:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context).theme-black-gold div[id^="dhikr-card-"]:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context).theme-black-gold div[id^="hisn-card-"]:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context).theme-black-gold div[id^="duaa-section-"]:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context).theme-black-gold div[id^="wird-progress-"]:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context).theme-black-gold div[id^="wird-today-"]:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context).theme-black-gold #wird-today-card:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context).theme-black-gold #daily-achievement-card:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context).theme-black-gold div[id^="habit-card-"]:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context).theme-black-gold div[id^="fitr-card-"]:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context).theme-black-gold div[id^="zakat-card-"]:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context).theme-black-gold div[id^="kaffarat-card-"]:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context).theme-black-gold div[id^="mawarith-card-"]:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context).theme-black .app-page-card,
+body:not(.quran-context).theme-black [data-card-item="true"]:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context).theme-black .seerah-card:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context).theme-black .prayer-card:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context).theme-black #next-prayer-card:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context).theme-black .qibla-info-card:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context).theme-black .hijri-calendar-card:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context).theme-black .audio-player-card:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context).theme-black div[id^="adia-card-"]:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context).theme-black div[id^="dhikr-card-"]:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context).theme-black div[id^="hisn-card-"]:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context).theme-black div[id^="duaa-section-"]:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context).theme-black div[id^="wird-progress-"]:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context).theme-black div[id^="wird-today-"]:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context).theme-black #wird-today-card:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context).theme-black #daily-achievement-card:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context).theme-black div[id^="habit-card-"]:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context).theme-black div[id^="fitr-card-"]:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context).theme-black div[id^="zakat-card-"]:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context).theme-black div[id^="kaffarat-card-"]:not(button):not(input):not(select):not(.btn),
+body:not(.quran-context).theme-black div[id^="mawarith-card-"]:not(button):not(input):not(select):not(.btn) {
+  border: none !important;
+  outline: none !important;
+  box-shadow: 0 6.5px 0 #0d0d10, 0 14px 28px rgba(0, 0, 0, 0.85), inset 0 2px 2px rgba(255, 255, 255, 0.22), inset 0 -2.5px 5px rgba(0, 0, 0, 0.65) !important;
+}
+
+body:not(.quran-context).dark .app-page-card:hover,
+body:not(.quran-context).dark [data-card-item="true"]:not(button):not(input):not(select):not(.btn):hover,
+body:not(.quran-context).dark .seerah-card:not(button):not(input):not(select):not(.btn):hover,
+body:not(.quran-context).dark .prayer-card:not(button):not(input):not(select):not(.btn):hover,
+body:not(.quran-context).dark #next-prayer-card:not(button):not(input):not(select):not(.btn):hover,
+body:not(.quran-context).dark .qibla-info-card:not(button):not(input):not(select):not(.btn):hover,
+body:not(.quran-context).dark .hijri-calendar-card:not(button):not(input):not(select):not(.btn):hover,
+body:not(.quran-context).dark .audio-player-card:not(button):not(input):not(select):not(.btn):hover,
+body:not(.quran-context).dark div[id^="adia-card-"]:not(button):not(input):not(select):not(.btn):hover,
+body:not(.quran-context).dark div[id^="dhikr-card-"]:not(button):not(input):not(select):not(.btn):hover,
+body:not(.quran-context).dark div[id^="hisn-card-"]:not(button):not(input):not(select):not(.btn):hover,
+body:not(.quran-context).dark div[id^="duaa-section-"]:not(button):not(input):not(select):not(.btn):hover,
+body:not(.quran-context).dark div[id^="wird-progress-"]:not(button):not(input):not(select):not(.btn):hover,
+body:not(.quran-context).dark div[id^="wird-today-"]:not(button):not(input):not(select):not(.btn):hover,
+body:not(.quran-context).dark #wird-today-card:not(button):not(input):not(select):not(.btn):hover,
+body:not(.quran-context).dark #daily-achievement-card:not(button):not(input):not(select):not(.btn):hover,
+body:not(.quran-context).dark div[id^="habit-card-"]:not(button):not(input):not(select):not(.btn):hover,
+body:not(.quran-context).dark div[id^="fitr-card-"]:not(button):not(input):not(select):not(.btn):hover,
+body:not(.quran-context).dark div[id^="zakat-card-"]:not(button):not(input):not(select):not(.btn):hover,
+body:not(.quran-context).dark div[id^="kaffarat-card-"]:not(button):not(input):not(select):not(.btn):hover,
+body:not(.quran-context).dark div[id^="mawarith-card-"]:not(button):not(input):not(select):not(.btn):hover,
+body:not(.quran-context).theme-black-gold .app-page-card:hover,
+body:not(.quran-context).theme-black-gold [data-card-item="true"]:not(button):not(input):not(select):not(.btn):hover,
+body:not(.quran-context).theme-black-gold .seerah-card:not(button):not(input):not(select):not(.btn):hover,
+body:not(.quran-context).theme-black-gold .prayer-card:not(button):not(input):not(select):not(.btn):hover,
+body:not(.quran-context).theme-black-gold #next-prayer-card:not(button):not(input):not(select):not(.btn):hover,
+body:not(.quran-context).theme-black-gold .qibla-info-card:not(button):not(input):not(select):not(.btn):hover,
+body:not(.quran-context).theme-black-gold .hijri-calendar-card:not(button):not(input):not(select):not(.btn):hover,
+body:not(.quran-context).theme-black-gold .audio-player-card:not(button):not(input):not(select):not(.btn):hover,
+body:not(.quran-context).theme-black-gold div[id^="adia-card-"]:not(button):not(input):not(select):not(.btn):hover,
+body:not(.quran-context).theme-black-gold div[id^="dhikr-card-"]:not(button):not(input):not(select):not(.btn):hover,
+body:not(.quran-context).theme-black-gold div[id^="hisn-card-"]:not(button):not(input):not(select):not(.btn):hover,
+body:not(.quran-context).theme-black-gold div[id^="duaa-section-"]:not(button):not(input):not(select):not(.btn):hover,
+body:not(.quran-context).theme-black-gold div[id^="wird-progress-"]:not(button):not(input):not(select):not(.btn):hover,
+body:not(.quran-context).theme-black-gold div[id^="wird-today-"]:not(button):not(input):not(select):not(.btn):hover,
+body:not(.quran-context).theme-black-gold #wird-today-card:not(button):not(input):not(select):not(.btn):hover,
+body:not(.quran-context).theme-black-gold #daily-achievement-card:not(button):not(input):not(select):not(.btn):hover,
+body:not(.quran-context).theme-black-gold div[id^="habit-card-"]:not(button):not(input):not(select):not(.btn):hover,
+body:not(.quran-context).theme-black-gold div[id^="fitr-card-"]:not(button):not(input):not(select):not(.btn):hover,
+body:not(.quran-context).theme-black-gold div[id^="zakat-card-"]:not(button):not(input):not(select):not(.btn):hover,
+body:not(.quran-context).theme-black-gold div[id^="kaffarat-card-"]:not(button):not(input):not(select):not(.btn):hover,
+body:not(.quran-context).theme-black-gold div[id^="mawarith-card-"]:not(button):not(input):not(select):not(.btn):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8.5px 0 #0d0d10, 0 16px 30px -3px rgba(0, 0, 0, 0.8), inset 0 2px 2px rgba(255, 255, 255, 0.28), inset 0 -2.5px 5px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* قاعدة حازمة: استثناء الأزرار تماماً من تجسيم وبروز البطاقات */
+body:not(.quran-context) button,
+body:not(.quran-context) input[type="button"],
+body:not(.quran-context) input[type="submit"],
+body:not(.quran-context) input[type="reset"],
+body:not(.quran-context) .btn,
+body:not(.quran-context) .chip-btn,
+body:not(.quran-context) .action-btn {
+  /* تمنع توارث ظل وتجسيم البطاقات على الأزرار */
+}
+
+/* قاعدة حازمة: استثناء صفحة القرآن الكريم نهائياً من أي تجسيم */
+body.quran-context *,
+.quran-context *,
+#quran-reader-container,
+#quran-reader-container * {
+  /* لا تجسيم إطلاقاً داخل صفحة القرآن الكريم */
+}
+
 
 /* Top bar buttons & icons */
 .app-top-bar button,
@@ -474,6 +695,22 @@ html.theme-black header:not(.quran-reader-header):not(.quran-context) svg[fill="
 body.theme-shiny-gold {
     background-color: #FEF9C3 !important;
     color: #000000 !important;
+}
+
+/* خلفية بيضاء ناصعة لصفحة القرآن الكريم في الوضع الذهبي */
+body.theme-shiny-gold.quran-page-active,
+body.theme-shiny-gold:has(.quran-reader-container),
+body.theme-shiny-gold:has(#app-container[data-quran-theme]),
+body.theme-shiny-gold .quran-reader-container,
+html.theme-shiny-gold .quran-reader-container,
+body.theme-shiny-gold #quran-reader-wrapper,
+html.theme-shiny-gold #quran-reader-wrapper,
+body.theme-shiny-gold .mushaf-page,
+html.theme-shiny-gold .mushaf-page,
+body.theme-shiny-gold .vertical-reading-view,
+html.theme-shiny-gold .vertical-reading-view {
+    background-color: #ffffff !important;
+    background: #ffffff !important;
 }
 
 body.theme-shiny-gold #app-title {
@@ -1621,12 +1858,38 @@ body.theme-black .golden-3d-card *:not(.card-header-title):not(.app-name-label):
     -webkit-text-fill-color: #ffffff !important;
 }
 
-/* العناوين الرئيسية، أسماء التطبيقات، والعناصر الذهبية المميزة باللون الذهبي الفاخر في الوضع الليلي */
+/* النص الرئيسي للبطاقة باللون الذهبي في الوضع الليلي */
 body.theme-black-gold .card-header-title,
 html.theme-black-gold .card-header-title,
 body.theme-black .card-header-title,
 .dark .card-header-title,
 .dark [data-layout="modern"] .card-header-title,
+body.theme-black-gold .golden-3d-card .card-header-title,
+html.theme-black-gold .golden-3d-card .card-header-title,
+body.theme-black .golden-3d-card .card-header-title,
+.dark .golden-3d-card .card-header-title {
+    color: #FBBF24 !important;
+    -webkit-text-fill-color: #FBBF24 !important;
+    text-shadow: none !important;
+}
+
+/* أسماء الصفحات والتطبيقات باللون الأبيض الناصع في الوضع الليلي */
+body.theme-black-gold .app-name-label,
+html.theme-black-gold .app-name-label,
+body.theme-black-gold .modern-home-layout .app-name-label,
+html.theme-black-gold .modern-home-layout .app-name-label,
+body.theme-black-gold [data-layout="modern"] .app-name-label,
+body.theme-black-gold [data-layout="classic"] .app-name-label,
+body.theme-black-gold [data-item-id] button:not(.golden-3d-pill-btn),
+body.theme-black-gold [data-item-id] span:not(.golden-3d-pill-btn *),
+body.theme-black .app-name-label,
+.dark .app-name-label,
+.dark [data-layout="modern"] .app-name-label {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+    text-shadow: none !important;
+}
+
 body.theme-black-gold .gold-accent-text,
 html.theme-black-gold .gold-accent-text,
 body.theme-black .gold-accent-text,
@@ -1639,18 +1902,7 @@ html.theme-black-gold .gold-accent-icon svg,
 body.theme-black .gold-accent-icon,
 body.theme-black .gold-accent-icon svg,
 .dark .gold-accent-icon,
-.dark .gold-accent-icon svg,
-body.theme-black-gold .app-name-label,
-html.theme-black-gold .app-name-label,
-body.theme-black-gold .modern-home-layout .app-name-label,
-html.theme-black-gold .modern-home-layout .app-name-label,
-body.theme-black-gold [data-layout="modern"] .app-name-label,
-body.theme-black-gold [data-layout="classic"] .app-name-label,
-body.theme-black-gold [data-item-id] button:not(.golden-3d-pill-btn),
-body.theme-black-gold [data-item-id] span:not(.golden-3d-pill-btn *),
-body.theme-black .app-name-label,
-.dark .app-name-label,
-.dark [data-layout="modern"] .app-name-label {
+.dark .gold-accent-icon svg {
     color: #F59E0B !important;
     -webkit-text-fill-color: #F59E0B !important;
     text-shadow: none !important;
@@ -2030,10 +2282,14 @@ html.theme-burgundy #unified-event-zoom-modal-backdrop .zoom-action-btn svg {
   stroke: #881337 !important;
 }
 
-
-
-
-
-
-
-
+/* ==========================================================================
+   أيقونات القائمة الجانبية في المصحف - أيقونات حادة وواضحة بدون أي تظليل
+   ========================================================================== */
+#floating-menu .quran-3d-icon,
+#floating-menu svg,
+#floating-menu i {
+    filter: none !important;
+    drop-shadow: none !important;
+    text-shadow: none !important;
+    -webkit-filter: none !important;
+}

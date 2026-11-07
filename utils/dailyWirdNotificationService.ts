@@ -1,7 +1,7 @@
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import { Preferences } from '@capacitor/preferences';
-import { playNotificationSound } from './prayerTimesUtils';
+import { playNotificationSound, getActiveNotificationSoundFileName, getActiveNotificationSoundPath } from './prayerTimesUtils';
 import { updateNativeAlertsGroupSummary } from './silentMode';
 
 // Plugin interface for native bridge
@@ -157,9 +157,15 @@ export const calculateWirdStatus = (profile: WirdProfile, targetDate = new Date(
   
   // Check if today was already completed
   const targetDateStr = targetDate.toISOString().split('T')[0];
+  const targetDayRange = getWirdDayRange(targetDayNumber, profile);
+  const lastPageRead = profile.lastPage || 0;
+  const isTodayPagesFinished = lastPageRead >= targetDayRange.end && targetDayRange.end > 0;
+  const isPartiallyReadToday = lastPageRead >= targetDayRange.start && lastPageRead < targetDayRange.end;
+  const remainingPagesToday = Math.max(0, targetDayRange.end - Math.max(lastPageRead, targetDayRange.start - 1));
+
   const isTodayDayCompleted = Boolean(
     profile.lastCompletedDate && profile.lastCompletedDate.startsWith(targetDateStr)
-  ) || profile.completedDays.includes(targetDayNumber);
+  ) || isTodayPagesFinished;
 
   return {
     totalDays,
@@ -168,6 +174,9 @@ export const calculateWirdStatus = (profile: WirdProfile, targetDate = new Date(
     missedDaysCount,
     targetDayNumber,
     isTodayDayCompleted,
+    isPartiallyReadToday,
+    remainingPagesToday,
+    lastPageRead,
     isKhatmaFinished
   };
 };
@@ -190,6 +199,11 @@ export const buildWirdNotificationContent = (
     ? (isEn ? `(p. ${range.start} - ${range.end})` : `(ص ${range.start} - ${range.end})`) 
     : '';
 
+  // Calculate if partially read
+  const lastPage = profile.lastPage || 0;
+  const isPartiallyRead = lastPage >= range.start && lastPage < range.end;
+  const remainingPages = Math.max(1, range.end - lastPage);
+
   // Calculate yesterday's range if missed
   let yesterdayRangeStr = '';
   if (missedCount >= 1 && dayNumber > 1) {
@@ -200,7 +214,12 @@ export const buildWirdNotificationContent = (
   if (isEn) {
     const prefix = `Dear ${userName}: `;
     if (isEvening) {
-      if (missedCount === 0) {
+      if (isPartiallyRead) {
+        return {
+          title: `${prefix}Complete Today's Portion Tonight`,
+          body: `You read up to page ${lastPage} today. Only ${remainingPages} page(s) left to complete your portion (up to p. ${range.end}).. Conclude your day by finishing it now!`
+        };
+      } else if (missedCount === 0) {
         return {
           title: `${prefix}Evening Qur'an Reminder`,
           body: `The day is coming to a close and today's assigned portion (Day ${dayNumber}) ${pageRangeStr} awaits you.. Conclude your night with the light of the Qur'an before sleep.`
@@ -240,10 +259,15 @@ export const buildWirdNotificationContent = (
   // Arabic
   const prefix = `يا ${userName}: `;
   if (isEvening) {
-    if (missedCount === 0) {
+    if (isPartiallyRead) {
+      return {
+        title: `${prefix}أكمل ورد اليوم قبل النوم`,
+        body: `لقد قرأت حتى صفحة ${lastPage} اليوم، وبقي لك ${remainingPages} صفحة فقط لإكمال وردك (حتى ص ${range.end}).. اختم يومك بإكماله الآن لنيل الأجر كاملاً.`
+      };
+    } else if (missedCount === 0) {
       return {
         title: `${prefix}تذكير المساء بورد القرآن الكريم`,
-        body: `أوشك اليوم على الانقضاء ولم تقرأ وردك المقرر (اليوم ${dayNumber}) ${pageRangeStr}.. اختم يومك بنور كتاب الله واقرأ وردك قبل النوم لتنعم بليل مبارك.`
+        body: `أوشك اليوم على الانقضاء ولم تكمل وردك المقرر (اليوم ${dayNumber}) ${pageRangeStr}.. اختم يومك بنور كتاب الله واقرأ وردك قبل النوم لتنعم بليل مبارك.`
       };
     } else if (missedCount === 1) {
       return {
@@ -284,13 +308,15 @@ export const ensureWirdNotificationChannel = async (lang: 'ar' | 'en' = getCurre
   if (!Capacitor.isNativePlatform()) return;
   try {
     const isEn = lang === 'en';
+    const notifSoundFile = getActiveNotificationSoundFileName();
+    const soundForCapacitor = notifSoundFile && notifSoundFile !== 'none' ? notifSoundFile : undefined;
     const channelConfig = {
       name: isEn ? 'Daily Wird & Khatma Reminders' : 'تنبيهات الورد اليومي والختمات',
       description: isEn 
-        ? "Gentle reminders for daily Qur'an reading and Khatma progress with chime sound and vibration"
+        ? "Reminders for daily Qur'an reading and Khatma progress"
         : 'قناة تنبيهات الورد القرآني والتذكير بالقراءة اليومية بنغمة هادئة واهتزاز',
       importance: 5 as any, // High importance (shows heads-up notification and status bar icon)
-      sound: 'chime.mp3',
+      sound: soundForCapacitor,
       vibration: true,
       visibility: 1
     };
@@ -408,6 +434,10 @@ export const syncDailyWirdNotifications = async (langOverride?: 'ar' | 'en') => 
     const baselineDayNumber = Math.min(profile.completedDays.length + 1, totalDays);
     const morningBaseContent = buildWirdNotificationContent(profile, baselineDayNumber, 0, false, lang);
     const eveningBaseContent = buildWirdNotificationContent(profile, baselineDayNumber, 0, true, lang);
+    const wirdSoundFile = getActiveNotificationSoundFileName();
+    const wirdSoundPath = getActiveNotificationSoundPath();
+    const wirdCapacitorSound = wirdSoundFile && wirdSoundFile !== 'none' ? wirdSoundFile : undefined;
+    const hasWirdSound = wirdCapacitorSound !== undefined;
 
     notificationsToSchedule.push({
       id: RECURRING_MORNING_ID,
@@ -415,14 +445,14 @@ export const syncDailyWirdNotifications = async (langOverride?: 'ar' | 'en') => 
       body: morningBaseContent.body,
       schedule: { on: { hour: 9, minute: 0 }, allowWhileIdle: true, repeats: true },
       channelId: WIRD_CHANNEL_ID,
-      sound: 'chime.mp3',
+      sound: wirdCapacitorSound,
       extra: {
         page: 'daily-wird',
         type: 'daily-wird',
         period: 'morning',
         profileId: profile.id,
-        playSound: true,
-        soundFile: '/assets/audio/chime.mp3'
+        playSound: hasWirdSound,
+        soundFile: wirdSoundPath
       },
       smallIcon: 'ic_stat_name',
       iconColor: '#2E7D5E',
@@ -438,14 +468,14 @@ export const syncDailyWirdNotifications = async (langOverride?: 'ar' | 'en') => 
       body: eveningBaseContent.body,
       schedule: { on: { hour: 22, minute: 0 }, allowWhileIdle: true, repeats: true },
       channelId: WIRD_CHANNEL_ID,
-      sound: 'chime.mp3',
+      sound: wirdCapacitorSound,
       extra: {
         page: 'daily-wird',
         type: 'daily-wird',
         period: 'evening',
         profileId: profile.id,
-        playSound: true,
-        soundFile: '/assets/audio/chime.mp3'
+        playSound: hasWirdSound,
+        soundFile: wirdSoundPath
       },
       smallIcon: 'ic_stat_name',
       iconColor: '#2E7D5E',
@@ -495,7 +525,7 @@ export const syncDailyWirdNotifications = async (langOverride?: 'ar' | 'en') => 
           body: morningContent.body,
           schedule: { at: morningTarget, allowWhileIdle: true },
           channelId: WIRD_CHANNEL_ID,
-          sound: 'chime.mp3',
+          sound: wirdCapacitorSound,
           extra: {
             page: 'daily-wird',
             type: 'daily-wird',
@@ -504,8 +534,8 @@ export const syncDailyWirdNotifications = async (langOverride?: 'ar' | 'en') => 
             profileName: profile.name,
             dayNumber: targetDayNumber,
             missedCount: missedOnTargetDate,
-            playSound: true,
-            soundFile: '/assets/audio/chime.mp3'
+            playSound: hasWirdSound,
+            soundFile: wirdSoundPath
           },
           smallIcon: 'ic_stat_name',
           iconColor: '#2E7D5E',
@@ -529,7 +559,7 @@ export const syncDailyWirdNotifications = async (langOverride?: 'ar' | 'en') => 
           body: eveningContent.body,
           schedule: { at: eveningTarget, allowWhileIdle: true },
           channelId: WIRD_CHANNEL_ID,
-          sound: 'chime.mp3',
+          sound: wirdCapacitorSound,
           extra: {
             page: 'daily-wird',
             type: 'daily-wird',
@@ -538,8 +568,8 @@ export const syncDailyWirdNotifications = async (langOverride?: 'ar' | 'en') => 
             profileName: profile.name,
             dayNumber: targetDayNumber,
             missedCount: missedOnTargetDate,
-            playSound: true,
-            soundFile: '/assets/audio/chime.mp3'
+            playSound: hasWirdSound,
+            soundFile: wirdSoundPath
           },
           smallIcon: 'ic_stat_name',
           iconColor: '#2E7D5E',
@@ -581,12 +611,17 @@ export const triggerTestWirdNotification = async (langOverride?: 'ar' | 'en') =>
         body: `تذكير بوردك القرآني لليوم (اليوم 1) (ص 1 - 20).. هنيئاً لمن جعل للقرآن نصيباً من يومه، افتح مصحفك واقرأ وردك الآن.`
       });
 
-  // Play gentle sound
-  playNotificationSound('/assets/audio/chime.mp3', true);
+  // Play chosen notification sound
+  const testSound = getActiveNotificationSoundPath();
+  if (testSound && testSound !== 'none') {
+    playNotificationSound(testSound, true);
+  }
 
   if (Capacitor.isNativePlatform()) {
     try {
       await ensureWirdNotificationChannel(lang);
+      const testSoundFile = getActiveNotificationSoundFileName();
+      const testSoundForCap = testSoundFile && testSoundFile !== 'none' ? testSoundFile : undefined;
       await LocalNotifications.schedule({
         notifications: [
           {
@@ -595,15 +630,15 @@ export const triggerTestWirdNotification = async (langOverride?: 'ar' | 'en') =>
             body: content.body,
             schedule: { at: new Date(Date.now() + 500), allowWhileIdle: true },
             channelId: WIRD_CHANNEL_ID,
-            sound: 'chime.mp3',
+            sound: testSoundForCap,
             extra: {
               page: 'daily-wird',
               type: 'daily-wird',
               profileId: profile?.id || 'demo',
               dayNumber,
               missedCount: 0,
-              playSound: true,
-              soundFile: '/assets/audio/chime.mp3'
+              playSound: testSoundForCap !== undefined,
+              soundFile: testSound
             },
             smallIcon: 'ic_stat_name',
             iconColor: '#2E7D5E',
@@ -665,7 +700,7 @@ export const checkWirdAlertOnAppResume = (): WirdAlertData | null => {
       missedDaysCount: status.missedDaysCount,
       title: content.title,
       message: content.body,
-      soundFileName: 'chime.mp3'
+      soundFileName: getActiveNotificationSoundFileName() || 'chime.mp3'
     };
   } catch (e) {
     console.error('Error checking wird alert on resume:', e);

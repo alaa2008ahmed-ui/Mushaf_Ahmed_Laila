@@ -115,8 +115,8 @@ const VoiceControlPage: React.FC<{ onBack: () => void, onNavigate: (pageId: stri
                 <div className="w-full max-w-lg flex-1 overflow-y-auto hide-scrollbar pb-6 space-y-6">
                     {/* Merged Status & Settings Section */}
                     <div 
-                        className="themed-card p-4 rounded-2xl space-y-4 relative border"
-                        style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                        className="themed-card app-page-card p-4 rounded-2xl space-y-4 relative border-0"
+                        style={{ border: 'none' }}
                     >
                         {toastMessage && (
                             <motion.div 
@@ -186,8 +186,8 @@ const VoiceControlPage: React.FC<{ onBack: () => void, onNavigate: (pageId: stri
                     {/* Instructions Section */}
                     <div 
                         id="commands-list-container" 
-                        className="themed-card p-6 rounded-2xl space-y-6 border"
-                        style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+                        className="themed-card app-page-card p-6 rounded-2xl space-y-6 border-0"
+                        style={{ border: 'none' }}
                     >
                         <h3 className={`font-bold text-lg flex items-center gap-2 border-b pb-2 ${isEn ? 'flex-row' : 'flex-row'}`} style={{ borderColor: cardBorderColor }}>
                             {isEn ? <ArrowRight className="w-5 h-5 text-primary shrink-0" /> : <ChevronRight className="w-5 h-5 text-primary shrink-0" />}

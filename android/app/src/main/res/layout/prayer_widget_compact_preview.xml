@@ -34,7 +34,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="١٢ رمضان ١٤٤٥ هـ"
-                android:textColor="#FDE68A"
+                android:textColor="#000000"
                 android:textSize="11sp"
                 android:textStyle="bold"
                 android:singleLine="true"
@@ -45,7 +45,7 @@
             android:layout_width="16dp"
             android:layout_height="16dp"
             android:src="@drawable/ic_widget_refresh"
-            android:tint="#FDE68A"
+            android:tint="#C86400"
             android:contentDescription="Refresh" />
     </LinearLayout>
 
@@ -73,7 +73,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="الصلاة السابقة"
-                android:textColor="#FDE68A"
+                android:textColor="#334155"
                 android:textSize="9.5sp"
                 android:textStyle="bold"
                 android:includeFontPadding="false" />
@@ -82,7 +82,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="الظهر  11:45"
-                android:textColor="#FFFFFF"
+                android:textColor="#000000"
                 android:textSize="11.5sp"
                 android:textStyle="bold"
                 android:includeFontPadding="false" />
@@ -103,7 +103,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="الصلاة القادمة"
-                android:textColor="#FBBF24"
+                android:textColor="#FEF08A"
                 android:textSize="10sp"
                 android:textStyle="bold"
                 android:includeFontPadding="false" />
@@ -133,7 +133,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="متبقي على الأذان:  00:24:15"
-            android:textColor="#FEF08A"
+            android:textColor="#000000"
             android:textSize="10.5sp"
             android:textStyle="bold"
             android:includeFontPadding="false" />

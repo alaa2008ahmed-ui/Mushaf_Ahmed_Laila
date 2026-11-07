@@ -43,7 +43,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="الصلاة بعد "
-                    android:textColor="#FBBF24"
+                    android:textColor="#FFFFFF"
                     android:textSize="11sp"
                     android:textStyle="bold"
                     android:singleLine="true"
@@ -64,6 +64,7 @@
                 android:layout_width="15dp"
                 android:layout_height="15dp"
                 android:src="@drawable/ic_widget_refresh"
+                android:tint="#FFFFFF"
                 android:contentDescription="Refresh" />
         </LinearLayout>
 
@@ -81,7 +82,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="١٢ رمضان ١٤٤٥ هـ"
-                android:textColor="#FDE68A"
+                android:textColor="#FFFFFF"
                 android:textSize="10.5sp"
                 android:textStyle="bold"
                 android:gravity="center"
@@ -100,17 +101,17 @@
             android:layout_width="0dp"
             android:layout_weight="1"
             android:layout_height="match_parent"
-            android:background="#F59E0B" />
+            android:background="#C86400" />
+        <FrameLayout
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="match_parent"
+            android:background="#F8DE8A" />
         <FrameLayout
             android:layout_width="0dp"
             android:layout_weight="1"
             android:layout_height="match_parent"
             android:background="#D97706" />
-        <FrameLayout
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_height="match_parent"
-            android:background="#FBBF24" />
         <FrameLayout
             android:layout_width="0dp"
             android:layout_weight="1"
@@ -123,7 +124,7 @@
         android:layout_width="match_parent"
         android:layout_height="41dp"
         android:orientation="horizontal"
-        android:background="#1C0D00"
+        android:background="#FFFFFF"
         android:gravity="center_vertical">
 
         <!-- Fajr -->
@@ -139,7 +140,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="الفجر"
-                android:textColor="#FDE68A"
+                android:textColor="#334155"
                 android:textSize="10sp"
                 android:textStyle="bold"
                 android:singleLine="true"
@@ -148,13 +149,13 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="04:14"
-                android:textColor="#FFFFFF"
+                android:textColor="#000000"
                 android:textSize="11.5sp"
                 android:textStyle="bold"
                 android:singleLine="true"
                 android:includeFontPadding="false" />
         </LinearLayout>
-        <FrameLayout android:layout_width="1dp" android:layout_height="match_parent" android:background="#78350F" android:layout_marginTop="3dp" android:layout_marginBottom="3dp"/>
+        <FrameLayout android:layout_width="1dp" android:layout_height="match_parent" android:background="#E5D07B" android:layout_marginTop="3dp" android:layout_marginBottom="3dp"/>
 
         <!-- Sunrise -->
         <LinearLayout
@@ -169,7 +170,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="الشروق"
-                android:textColor="#FDE68A"
+                android:textColor="#334155"
                 android:textSize="10sp"
                 android:textStyle="bold"
                 android:singleLine="true"
@@ -178,13 +179,13 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="05:34"
-                android:textColor="#FFFFFF"
+                android:textColor="#000000"
                 android:textSize="11.5sp"
                 android:textStyle="bold"
                 android:singleLine="true"
                 android:includeFontPadding="false" />
         </LinearLayout>
-        <FrameLayout android:layout_width="1dp" android:layout_height="match_parent" android:background="#78350F" android:layout_marginTop="3dp" android:layout_marginBottom="3dp"/>
+        <FrameLayout android:layout_width="1dp" android:layout_height="match_parent" android:background="#E5D07B" android:layout_marginTop="3dp" android:layout_marginBottom="3dp"/>
 
         <!-- Dhuhr -->
         <LinearLayout
@@ -199,7 +200,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="الظهر"
-                android:textColor="#FDE68A"
+                android:textColor="#334155"
                 android:textSize="10sp"
                 android:textStyle="bold"
                 android:singleLine="true"
@@ -208,13 +209,13 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="11:45"
-                android:textColor="#FFFFFF"
+                android:textColor="#000000"
                 android:textSize="11.5sp"
                 android:textStyle="bold"
                 android:singleLine="true"
                 android:includeFontPadding="false" />
         </LinearLayout>
-        <FrameLayout android:layout_width="1dp" android:layout_height="match_parent" android:background="#78350F" android:layout_marginTop="3dp" android:layout_marginBottom="3dp"/>
+        <FrameLayout android:layout_width="1dp" android:layout_height="match_parent" android:background="#E5D07B" android:layout_marginTop="3dp" android:layout_marginBottom="3dp"/>
 
         <!-- Asr -->
         <LinearLayout
@@ -229,7 +230,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="العصر"
-                android:textColor="#FDE68A"
+                android:textColor="#334155"
                 android:textSize="10sp"
                 android:textStyle="bold"
                 android:singleLine="true"
@@ -238,13 +239,13 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="03:14"
-                android:textColor="#FFFFFF"
+                android:textColor="#000000"
                 android:textSize="11.5sp"
                 android:textStyle="bold"
                 android:singleLine="true"
                 android:includeFontPadding="false" />
         </LinearLayout>
-        <FrameLayout android:layout_width="1dp" android:layout_height="match_parent" android:background="#78350F" android:layout_marginTop="3dp" android:layout_marginBottom="3dp"/>
+        <FrameLayout android:layout_width="1dp" android:layout_height="match_parent" android:background="#E5D07B" android:layout_marginTop="3dp" android:layout_marginBottom="3dp"/>
 
         <!-- Maghrib (Highlighted Next Prayer) -->
         <LinearLayout
@@ -259,7 +260,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="المغرب"
-                android:textColor="#FBBF24"
+                android:textColor="#C86400"
                 android:textSize="10sp"
                 android:textStyle="bold"
                 android:singleLine="true"
@@ -268,13 +269,13 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="05:56"
-                android:textColor="#FBBF24"
+                android:textColor="#C86400"
                 android:textSize="11.5sp"
                 android:textStyle="bold"
                 android:singleLine="true"
                 android:includeFontPadding="false" />
         </LinearLayout>
-        <FrameLayout android:layout_width="1dp" android:layout_height="match_parent" android:background="#78350F" android:layout_marginTop="3dp" android:layout_marginBottom="3dp"/>
+        <FrameLayout android:layout_width="1dp" android:layout_height="match_parent" android:background="#E5D07B" android:layout_marginTop="3dp" android:layout_marginBottom="3dp"/>
 
         <!-- Isha -->
         <LinearLayout
@@ -289,7 +290,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="العشاء"
-                android:textColor="#FDE68A"
+                android:textColor="#334155"
                 android:textSize="10sp"
                 android:textStyle="bold"
                 android:singleLine="true"
@@ -298,7 +299,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="07:26"
-                android:textColor="#FFFFFF"
+                android:textColor="#000000"
                 android:textSize="11.5sp"
                 android:textStyle="bold"
                 android:singleLine="true"
@@ -319,7 +320,7 @@
             android:layout_weight="1"
             android:layout_height="wrap_content"
             android:text="أول الليل: 08:30"
-            android:textColor="#FEF08A"
+            android:textColor="#000000"
             android:textSize="9sp"
             android:textStyle="bold"
             android:gravity="center"
@@ -331,7 +332,7 @@
             android:layout_weight="1"
             android:layout_height="wrap_content"
             android:text="منتصف الليل: 11:45"
-            android:textColor="#FEF08A"
+            android:textColor="#000000"
             android:textSize="9sp"
             android:textStyle="bold"
             android:gravity="center"
@@ -343,7 +344,7 @@
             android:layout_weight="1"
             android:layout_height="wrap_content"
             android:text="الثلث الأخير: 02:15"
-            android:textColor="#FEF08A"
+            android:textColor="#000000"
             android:textSize="9sp"
             android:textStyle="bold"
             android:gravity="center"

@@ -100,7 +100,7 @@ export const IslamicHistoryMemoryCard: React.FC<IslamicHistoryMemoryCardProps> =
             <ScrollText className="w-4 h-4 sm:w-4.5 sm:h-4.5" strokeWidth={2.2} />
           </div>
           <span
-            className={`text-xs sm:text-sm font-bold tracking-tight font-kufi truncate ${
+            className={`card-header-title text-xs sm:text-sm font-bold tracking-tight font-kufi truncate ${
               isBlackTheme ? 'text-white' : 'text-slate-800'
             }`}
           >
@@ -186,7 +186,7 @@ export const IslamicHistoryMemoryCard: React.FC<IslamicHistoryMemoryCardProps> =
       <div className="flex flex-col gap-2 w-full">
         <h4
           className="text-base sm:text-lg font-black leading-snug font-kufi"
-          style={{ color: primaryColor }}
+          style={{ color: isBlackTheme ? '#ffffff' : primaryColor }}
         >
           {eventTitle}
         </h4>

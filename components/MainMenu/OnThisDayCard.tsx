@@ -97,7 +97,7 @@ export const OnThisDayCard: React.FC<OnThisDayCardProps> = ({
             <CalendarDays className="w-4 h-4 sm:w-4.5 sm:h-4.5" strokeWidth={2.2} />
           </div>
           <span 
-            className={`text-xs sm:text-sm font-bold tracking-tight font-kufi ${isBlackTheme ? 'text-white' : 'text-slate-800'}`}
+            className={`card-header-title text-xs sm:text-sm font-bold tracking-tight font-kufi ${isBlackTheme ? 'text-white' : 'text-slate-800'}`}
           >
             {t('on_this_day.title', 'حدث في مثل هذا اليوم')}
           </span>

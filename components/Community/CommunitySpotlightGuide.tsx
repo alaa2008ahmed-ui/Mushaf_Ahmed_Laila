@@ -6,6 +6,7 @@ import {
   Clock, Bell, Calendar, Volume2, Settings, MapPin, Moon, FileText, Share2, Sliders, Compass, LayoutGrid
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
+import { useTheme } from '../../context/ThemeContext';
 
 export interface SpotlightStep {
   id: string;
@@ -31,12 +32,8 @@ interface CommunitySpotlightGuideProps {
   onStepChange?: (index: number) => void;
 }
 
-export const getGuideSeen = (key: string): boolean => {
-  try {
-    return localStorage.getItem(`guide_seen_${key}`) === 'true';
-  } catch (e) {
-    return false;
-  }
+export const getGuideSeen = (_key: string): boolean => {
+  return true; // Guides never open automatically on first launch; they only work when pressing the guide button
 };
 
 export const setGuideSeen = (key: string): void => {
@@ -161,6 +158,7 @@ export const CommunitySpotlightGuide: React.FC<CommunitySpotlightGuideProps> = (
   onStepChange
 }) => {
   const { language, formatNumber } = useLanguage();
+  const { isNightMode, homeThemeVariant } = useTheme();
   const effectiveIsEn = isEn || language === 'en';
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
@@ -522,7 +520,21 @@ export const CommunitySpotlightGuide: React.FC<CommunitySpotlightGuideProps> = (
     };
   }
 
-  const currentAccent = step.accentColor || '#10b981';
+  // Dynamic theme accent color adaptation according to active theme
+  let themeAccent = step?.accentColor;
+  if (isNightMode) {
+    themeAccent = '#F59E0B'; // Amber Gold for Night Mode
+  } else if (homeThemeVariant === 'sky') {
+    themeAccent = '#0284C7'; // Sky Blue
+  } else if (homeThemeVariant === 'emerald') {
+    themeAccent = '#059669'; // Emerald Green
+  } else if (homeThemeVariant === 'burgundy') {
+    themeAccent = '#E11D48'; // Burgundy Rose
+  } else if (homeThemeVariant === 'gold') {
+    themeAccent = '#D97706'; // Golden Amber
+  }
+
+  const currentAccent = themeAccent || step?.accentColor || '#10b981';
 
   return (
     <div 
@@ -613,7 +625,7 @@ export const CommunitySpotlightGuide: React.FC<CommunitySpotlightGuideProps> = (
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.93 }}
         transition={{ type: 'spring', damping: 25, stiffness: 350 }}
-        className="fixed z-[100003] pointer-events-auto rounded-3xl p-4 sm:p-5 shadow-2xl border-2 flex flex-col bg-slate-900/98 text-white backdrop-blur-xl overflow-y-auto hide-scrollbar"
+        className="fixed z-[100003] pointer-events-auto rounded-3xl p-4 sm:p-5 shadow-2xl border-2 flex flex-col bg-slate-900/98 text-white backdrop-blur-xl overflow-hidden box-border max-w-[calc(100vw-28px)]"
         style={{
           ...cardPositionStyle,
           borderColor: currentAccent,
@@ -647,80 +659,116 @@ export const CommunitySpotlightGuide: React.FC<CommunitySpotlightGuideProps> = (
           }}
         />
 
-        {/* Top Header: Badge, Step counter, Close / Skip */}
-        <div className="flex items-center justify-between gap-2 mb-2.5">
-          <div className="flex items-center gap-2">
-            {/* Step Icon inside colorful circular badge */}
-            <div 
-              className="w-8 h-8 rounded-2xl flex items-center justify-center font-bold shadow-md flex-shrink-0"
-              style={{
-                backgroundColor: currentAccent,
-                color: '#ffffff'
-              }}
-            >
-              {renderStepIcon(step.iconName, currentAccent)}
+        {/* Scrollable Content Container */}
+        <div className="flex-1 min-h-0 overflow-y-auto hide-scrollbar mb-2 pe-0.5">
+          {/* Top Header: Badge, Step counter, Close / Skip */}
+          <div className="flex items-center justify-between gap-2 mb-2.5">
+            <div className="flex items-center gap-2 min-w-0">
+              {/* Step Icon inside colorful circular badge */}
+              <div 
+                className="w-8 h-8 rounded-2xl flex items-center justify-center font-bold shadow-md flex-shrink-0"
+                style={{
+                  backgroundColor: currentAccent,
+                  color: '#ffffff'
+                }}
+              >
+                {renderStepIcon(step.iconName, currentAccent)}
+              </div>
+
+              {/* Step Tag */}
+              <span 
+                className="text-[11px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-xs truncate max-w-[180px]"
+                style={{
+                  backgroundColor: `${currentAccent}25`,
+                  color: currentAccent,
+                  border: `1px solid ${currentAccent}50`
+                }}
+              >
+                {effectiveIsEn 
+                  ? (step.badgeEn || `Step ${currentStepIndex + 1} of ${steps.length}`)
+                  : (step.badgeAr || `خطوة ${formatNumber(currentStepIndex + 1)} من ${formatNumber(steps.length)}`)}
+              </span>
             </div>
 
-            {/* Step Tag */}
-            <span 
-              className="text-[11px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-xs"
-              style={{
-                backgroundColor: `${currentAccent}25`,
-                color: currentAccent,
-                border: `1px solid ${currentAccent}50`
-              }}
+            <button
+              type="button"
+              onClick={handleSkip}
+              className="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 active:scale-90 transition-all cursor-pointer shrink-0"
+              title={effectiveIsEn ? "Skip Tour" : "تخطي الإرشاد"}
             >
-              {effectiveIsEn 
-                ? (step.badgeEn || `Step ${currentStepIndex + 1} of ${steps.length}`)
-                : (step.badgeAr || `خطوة ${formatNumber(currentStepIndex + 1)} من ${formatNumber(steps.length)}`)}
-            </span>
+              <X size={15} />
+            </button>
           </div>
 
-          <button
-            type="button"
-            onClick={handleSkip}
-            className="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 active:scale-90 transition-all cursor-pointer"
-            title={effectiveIsEn ? "Skip Tour" : "تخطي الإرشاد"}
-          >
-            <X size={15} />
-          </button>
+          {/* Title */}
+          <h3 className="text-base sm:text-lg font-black font-kufi mb-1.5 flex items-center gap-1.5 leading-snug">
+            <span style={{ color: currentAccent }}>
+              {effectiveIsEn ? (step.titleEn || step.titleAr) : step.titleAr}
+            </span>
+          </h3>
+
+          {/* Detailed Explanation */}
+          <p className="text-xs sm:text-sm text-slate-200 leading-relaxed font-medium whitespace-pre-line">
+            {effectiveIsEn ? (step.descEn || formatNumber(step.descAr)) : step.descAr}
+          </p>
         </div>
 
-        {/* Title */}
-        <h3 className="text-base sm:text-lg font-black font-kufi mb-1.5 flex items-center gap-1.5">
-          <span style={{ color: currentAccent }}>
-            {effectiveIsEn ? (step.titleEn || step.titleAr) : step.titleAr}
-          </span>
-        </h3>
-
-        {/* Detailed Explanation */}
-        <p className="text-xs sm:text-sm text-slate-200 leading-relaxed font-medium mb-4 whitespace-pre-line">
-          {effectiveIsEn ? (step.descEn || formatNumber(step.descAr)) : step.descAr}
-        </p>
-
         {/* Bottom Bar: Dots Progress & Action Controls */}
-        <div className="flex items-center justify-between gap-2 pt-2 border-t border-white/10 shrink-0 mt-auto">
-          {/* Progress Dots */}
-          <div className="flex items-center gap-1.5">
-            {steps.map((_, idx) => (
-              <span
-                key={idx}
-                className="h-1.5 rounded-full transition-all duration-300"
-                style={{
-                  width: idx === currentStepIndex ? '18px' : '6px',
-                  backgroundColor: idx === currentStepIndex ? currentAccent : 'rgba(255,255,255,0.25)'
-                }}
-              />
-            ))}
-          </div>
+        <div className="flex items-center justify-between gap-2 pt-2.5 border-t border-white/10 shrink-0 mt-auto w-full min-w-0 overflow-hidden">
+          {/* Progress Dots or Compact Step Indicator */}
+          {steps.length <= 6 ? (
+            <div className="flex items-center gap-1.5 shrink-0 overflow-hidden">
+              {steps.map((_, idx) => (
+                <span
+                  key={idx}
+                  className="h-1.5 rounded-full transition-all duration-300 shrink-0"
+                  style={{
+                    width: idx === currentStepIndex ? '16px' : '5px',
+                    backgroundColor: idx === currentStepIndex ? currentAccent : 'rgba(255,255,255,0.25)'
+                  }}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5 shrink min-w-0 overflow-hidden">
+              <span className="text-[11px] font-black px-2 py-0.5 rounded-lg bg-white/10 text-slate-200 whitespace-nowrap shrink-0">
+                <span style={{ color: currentAccent }}>{formatNumber(currentStepIndex + 1)}</span>
+                <span className="opacity-40 mx-0.5">/</span>
+                <span>{formatNumber(steps.length)}</span>
+              </span>
+              <div className="flex items-center gap-1 shrink-0 overflow-hidden">
+                {(() => {
+                  const total = steps.length;
+                  let startIdx = Math.max(0, currentStepIndex - 2);
+                  let endIdx = Math.min(total, startIdx + 5);
+                  if (endIdx - startIdx < 5) {
+                    startIdx = Math.max(0, endIdx - 5);
+                  }
+                  return steps.slice(startIdx, endIdx).map((_, i) => {
+                    const actualIdx = startIdx + i;
+                    return (
+                      <span
+                        key={actualIdx}
+                        className="h-1.5 rounded-full transition-all duration-300 shrink-0"
+                        style={{
+                          width: actualIdx === currentStepIndex ? '14px' : '4px',
+                          backgroundColor: actualIdx === currentStepIndex ? currentAccent : 'rgba(255,255,255,0.25)'
+                        }}
+                      />
+                    );
+                  });
+                })()}
+              </div>
+            </div>
+          )}
 
           {/* Buttons: Prev & Next */}
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 shrink-0 ms-auto">
             {!isFirstStep && (
               <button
                 type="button"
                 onClick={handlePrev}
-                className="px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white hover:bg-white/10 active:scale-95 transition-all flex items-center gap-1 cursor-pointer"
+                className="px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white hover:bg-white/10 active:scale-95 transition-all flex items-center gap-1 cursor-pointer shrink-0"
               >
                 {effectiveIsEn ? <ChevronLeft size={14} /> : <ChevronRight size={14} />}
                 <span>{effectiveIsEn ? 'Back' : 'السابق'}</span>
@@ -730,7 +778,7 @@ export const CommunitySpotlightGuide: React.FC<CommunitySpotlightGuideProps> = (
             <button
               type="button"
               onClick={handleNext}
-              className="px-3.5 py-1.5 rounded-xl text-xs font-black shadow-lg flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer"
+              className="px-3.5 py-1.5 rounded-xl text-xs font-black shadow-lg flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer shrink-0 relative z-10 whitespace-nowrap"
               style={{
                 backgroundColor: currentAccent,
                 color: '#ffffff',

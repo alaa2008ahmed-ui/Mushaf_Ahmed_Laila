@@ -4,8 +4,8 @@ import moment from 'moment-hijri';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Capacitor } from '@capacitor/core';
 import { Geolocation } from '@capacitor/geolocation';
-import { prayerNamesAr, ADHAN_CHANNELS_CONFIG } from '../data/prayerTimesData';
-import { checkSupportsDST, calculateNightTimes, playNotificationSound, stopNotificationSound } from '../utils/prayerTimesUtils';
+import { prayerNamesAr, ADHAN_CHANNELS_CONFIG, DEFAULT_NOTIFICATION_TONE } from '../data/prayerTimesData';
+import { checkSupportsDST, calculateNightTimes, playNotificationSound, stopNotificationSound, getActiveNotificationTone, setActiveNotificationTone, getActiveNotificationSoundPath } from '../utils/prayerTimesUtils';
 import { updateAndroidWidget } from '../utils/widgetUtils';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { scheduleDeviceSilentWindows, cancelAllDeviceSilentWindows, setDeviceSilentNow, updateNativeAlertsGroupSummary } from '../utils/silentMode';
@@ -53,6 +53,7 @@ interface PrayerConfig {
         minutes?: number;
     };
     prayerIqamaReminders?: Record<string, { enabled: boolean; minutes?: number }>;
+    notificationTone?: { id: string; name: string; data: string; fileName?: string };
 }
 
 interface PrayerTimesContextType {
@@ -96,7 +97,13 @@ const DEFAULT_CONFIG: PrayerConfig = {
     preAthanReminder: { enabled: false, minutes: 15 },
     autoSilent: false,
     autoSilentDuration: 15,
-    iqamaReminder: { enabled: true, minutes: 15 }
+    iqamaReminder: { enabled: true, minutes: 15 },
+    notificationTone: {
+        id: 'chime',
+        name: 'رنين هادئ',
+        data: '/assets/audio/chime.mp3',
+        fileName: 'chime.mp3'
+    }
 };
 
 
@@ -304,7 +311,8 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                     iqamaReminder: {
                         enabled: parsed.iqamaReminder?.enabled !== undefined ? parsed.iqamaReminder.enabled : true,
                         minutes: parsed.iqamaReminder?.minutes || 15
-                    }
+                    },
+                    notificationTone: parsed.notificationTone || getActiveNotificationTone()
                 };
             }
             // Migrate from v33 ensuring iqamaReminder defaults to enabled
@@ -650,7 +658,7 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                     const data = await res.json();
                     if (data && data.address) {
                         const addr = data.address;
-                        const city = addr.village || addr.town || addr.city || (isEn ? "Current Location" : "موقعي");
+                        const city = addr.city || addr.town || addr.municipality || addr.village || addr.suburb || (isEn ? "Current Location" : "موقعي");
                         const countryInfo = getCountryInfo(addr.country_code, addr.country, city);
                         const rawCityGov = `${city}${addr.state ? ` - ${addr.state}` : ''}`;
                         const cityGovAr = getLocalizedLocationName(rawCityGov, 'ar');
@@ -772,6 +780,9 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                     setActiveIqamaAlert(prev => (prev?.prayerKey === key ? null : prev));
                 }
             }
+        }
+        if (newConfig.notificationTone) {
+            setActiveNotificationTone(newConfig.notificationTone as any);
         }
         setConfig(prev => {
             const updated = { ...prev, ...newConfig };
@@ -1100,7 +1111,7 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                             channelId: 'pre_adhan_v3_chime_channel',
                             sound: 'chime.mp3',
                             smallIcon: 'ic_stat_name',
-                            extra: { type: 'pre_adhan', prayer: key, playSound: true, soundFile: 'chime.mp3' }
+                            extra: { type: 'pre_adhan', prayer: key, playSound: true, soundFile: '/assets/audio/chime.mp3' }
                         });
                     }
                 }
@@ -1133,7 +1144,7 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                             channelId: 'iqama_v4_chime_channel',
                             sound: 'chime.mp3',
                             smallIcon: 'ic_stat_name',
-                            extra: { type: 'iqama', prayer: key, playSound: true, soundFile: 'chime.mp3' }
+                            extra: { type: 'iqama', prayer: key, playSound: true, soundFile: '/assets/audio/chime.mp3' }
                         });
                     }
                 }
@@ -1177,7 +1188,7 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                             channelId: shouldPlaySilentChime ? 'prayer_silent_v4_chime_channel' : 'adhan_v5_silent',
                             sound: shouldPlaySilentChime ? 'chime.mp3' : undefined,
                             smallIcon: 'ic_stat_name',
-                            extra: { type: 'auto_silent_start', prayer: key, playSound: shouldPlaySilentChime, soundFile: shouldPlaySilentChime ? 'chime.mp3' : undefined }
+                            extra: { type: 'auto_silent_start', prayer: key, playSound: shouldPlaySilentChime, soundFile: shouldPlaySilentChime ? '/assets/audio/chime.mp3' : undefined }
                         });
                     }
 
@@ -1196,7 +1207,7 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                             channelId: 'prayer_silent_v4_chime_channel',
                             sound: 'chime.mp3',
                             smallIcon: 'ic_stat_name',
-                            extra: { type: 'auto_silent_end', prayer: key, playSound: true, soundFile: 'chime.mp3' }
+                            extra: { type: 'auto_silent_end', prayer: key, playSound: true, soundFile: '/assets/audio/chime.mp3' }
                         });
                     }
 
@@ -1237,6 +1248,13 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
             const midnightDate = new Date(maghribDate.getTime() + diffMs / 2);
             const lastThirdDate = new Date(maghribDate.getTime() + (diffMs * 2) / 3);
 
+            const activeTone = getActiveNotificationTone();
+            const isSoundMuted = activeTone.id === 'none' || activeTone.data === 'none';
+            const notifSoundPath = getActiveNotificationSoundPath();
+            const cleanToneId = (activeTone.id || 'chime').replace(/[^a-zA-Z0-9_]/g, '');
+            const nightChannelId = isSoundMuted ? 'athkar_channel_v4_silent' : `athkar_channel_v4_${cleanToneId}`;
+            const nightSoundFile = isSoundMuted ? undefined : (activeTone.fileName || (cleanToneId.startsWith('notif_') ? `${cleanToneId}.wav` : `${cleanToneId}.mp3`));
+
             if (nightNotifs.firstThird && firstThirdDate > new Date()) {
                 notificationsToSchedule.push({
                     id: 2000 + (day * 10) + 1,
@@ -1245,10 +1263,10 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                         ? 'The Prophet ﷺ said: "The best prayer after the obligatory prayers is the night prayer."'
                         : 'قال رسول الله ﷺ: "أفضل الصلاة بعد الفريضة صلاة الليل"',
                     schedule: { at: firstThirdDate, allowWhileIdle: true },
-                    channelId: 'night_times_v3_chime_channel',
-                    sound: 'chime.mp3',
+                    channelId: nightChannelId,
+                    sound: nightSoundFile,
                     smallIcon: 'ic_stat_name',
-                    extra: { type: 'night', period: 'firstThird', playSound: true, soundFile: 'chime.mp3' }
+                    extra: { type: 'night', period: 'firstThird', playSound: !isSoundMuted, soundFile: nightSoundFile ? `/assets/audio/${nightSoundFile}` : undefined, soundPath: notifSoundPath }
                 });
             }
 
@@ -1260,10 +1278,10 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                         ? 'The Prophet ﷺ said: "Observe the night prayer, for it was the habit of the righteous before you."'
                         : 'قال رسول الله ﷺ: "عليكم بقيام الليل فإنه دأب الصالحين قبلكم، وقربة إلى الله تعالى"',
                     schedule: { at: midnightDate, allowWhileIdle: true },
-                    channelId: 'night_times_v3_chime_channel',
-                    sound: 'chime.mp3',
+                    channelId: nightChannelId,
+                    sound: nightSoundFile,
                     smallIcon: 'ic_stat_name',
-                    extra: { type: 'night', period: 'midnight', playSound: true, soundFile: 'chime.mp3' }
+                    extra: { type: 'night', period: 'midnight', playSound: !isSoundMuted, soundFile: nightSoundFile ? `/assets/audio/${nightSoundFile}` : undefined, soundPath: notifSoundPath }
                 });
             }
 
@@ -1275,10 +1293,10 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                         ? 'The Prophet ﷺ said: "Our Lord descends every night to the lowest heaven during the last third of the night, asking: Who is calling upon Me, that I may answer him?"'
                         : 'قال ﷺ: "ينزل ربنا تبارك وتعالى كل ليلة إلى السماء الدنيا حين يبقى ثلث الليل الآخر، فيقول: من يدعوني فأستجيب له..."',
                     schedule: { at: lastThirdDate, allowWhileIdle: true },
-                    channelId: 'night_times_v3_chime_channel',
-                    sound: 'chime.mp3',
+                    channelId: nightChannelId,
+                    sound: nightSoundFile,
                     smallIcon: 'ic_stat_name',
-                    extra: { type: 'night', period: 'lastThird', playSound: true, soundFile: 'chime.mp3' }
+                    extra: { type: 'night', period: 'lastThird', playSound: !isSoundMuted, soundFile: nightSoundFile ? `/assets/audio/${nightSoundFile}` : undefined, soundPath: notifSoundPath }
                 });
             }
         }
@@ -1746,7 +1764,9 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                         continue;
                     }
 
-                    // 2. Live Pre-Adhan Preparation Reminder (chime.mp3)
+                    const prayerChimeSound = '/assets/audio/chime.mp3';
+
+                    // 2. Live Pre-Adhan Preparation Reminder
                     let isPreReminderEnabled = false;
                     let reminderMinutes = 15;
                     if (config.prayerPreReminders?.[key] !== undefined) {
@@ -1764,13 +1784,13 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                         if (preDiffMs >= 0 && preDiffMs <= 45000 && !triggeredAlertsRef.current.has(preAlertKey)) {
                             triggeredAlertsRef.current.add(preAlertKey);
                             if (!isNative) {
-                                console.log(`[Foreground Alert] Playing gentle chime for pre-adhan ${key}`);
-                                playNotificationSound('/assets/audio/chime.mp3');
+                                console.log(`[Foreground Alert] Playing prayer chime for pre-adhan ${key}`);
+                                playNotificationSound(prayerChimeSound);
                             }
                         }
                     }
 
-                    // 3. Live Iqama Reminder (chime.mp3)
+                    // 3. Live Iqama Reminder
                     let isIqamaEnabled = true;
                     let iqamaMinutes = config.iqamaOffsets?.[key] || 15;
                     if (config.prayerIqamaReminders?.[key] !== undefined) {
@@ -1788,8 +1808,8 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                         if (iqamaDiffMs >= 0 && iqamaDiffMs <= 45000 && !triggeredAlertsRef.current.has(iqamaAlertKey)) {
                             triggeredAlertsRef.current.add(iqamaAlertKey);
                             if (!isNative) {
-                                console.log(`[Iqama Alert] Playing gentle chime and showing visual alert for ${key}`);
-                                playNotificationSound('/assets/audio/chime.mp3', true);
+                                console.log(`[Iqama Alert] Playing prayer chime and showing visual alert for ${key}`);
+                                playNotificationSound(prayerChimeSound, true);
                                 
                                 const prayerNameLocal = isEn ? (PRAYER_NAMES_EN[key] || key) : (prayerNamesAr[key] || key);
                                 // Trigger in-app visual alert (web/browser only; APK uses status bar notifications only)
@@ -1804,7 +1824,7 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                         }
                     }
 
-                    // 4. Live Auto-Silent Mode (chime.mp3)
+                    // 4. Live Auto-Silent Mode
                     let isSilentEnabled = false;
                     let silentDuration = 15;
                     if (config.prayerAutoSilent?.[key] !== undefined) {
@@ -1827,8 +1847,8 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                             if (!isNative) {
                                 const isIqamaAlsoAlerting = isIqamaEnabled && Math.abs(silentStartObj.getTime() - (prayerTimeObj.getTime() + iqamaMinutes * 60000)) < 60000;
                                 if (!isIqamaAlsoAlerting) {
-                                    console.log(`[Foreground Alert] Playing gentle chime for auto-silent ${key}`);
-                                    playNotificationSound('/assets/audio/chime.mp3');
+                                    console.log(`[Foreground Alert] Playing prayer chime for auto-silent ${key}`);
+                                    playNotificationSound(prayerChimeSound);
                                 }
                             }
                             const prayerNameLocal = isEn ? (PRAYER_NAMES_EN[key] || key) : (prayerNamesAr[key] || key);

@@ -37,37 +37,235 @@ interface ShareAyahModalProps {
 }
 
 const BACKGROUNDS = [
-    { id: 'bg_white', type: 'solid', value: '#ffffff', border: '#e2e8f0', accent: '#0f172a' },
-    { id: 'bg_black', type: 'solid', value: '#0f172a', border: '#334155', accent: '#fbbf24' },
-    { id: 'bg_emerald_gold', type: 'gradient', value: 'linear-gradient(to bottom right, #064e3b, #0f766e)', border: '#34d399', accent: '#fbbf24' },
-    { id: 'bg_midnight_gold', type: 'gradient', value: 'linear-gradient(to bottom, #1e1b4b, #312e81)', border: '#818cf8', accent: '#fbbf24' },
-    { id: 'bg_royal', type: 'gradient', value: 'linear-gradient(135deg, #4c1d95 0%, #7e22ce 100%)', border: '#c084fc', accent: '#fde047' },
-    { id: 'bg_maroon', type: 'gradient', value: 'linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%)', border: '#fca5a5', accent: '#fef08a' },
-    { id: 'bg_ocean', type: 'gradient', value: 'linear-gradient(135deg, #0c4a6e 0%, #0369a1 100%)', border: '#38bdf8', accent: '#f0f9ff' },
-    { id: 'bg_forest', type: 'gradient', value: 'radial-gradient(circle at top right, #14532d, #064e3b)', border: '#6ee7b7', accent: '#fde047' },
-    { id: 'bg_sand', type: 'gradient', value: 'linear-gradient(to right, #fef3c7, #fde68a)', border: '#d97706', accent: '#78350f' },
-    { id: 'bg_sage', type: 'gradient', value: 'linear-gradient(to bottom right, #ecfdf5, #d1fae5)', border: '#059669', accent: '#064e3b' },
-    { id: 'bg_mesh_1', type: 'gradient', value: 'radial-gradient(at 0% 0%, #064e3b 0px, transparent 50%), radial-gradient(at 100% 100%, #1e1b4b 0px, transparent 50%), linear-gradient(to right, #0f766e, #312e81)', border: '#10b981', accent: '#fbbf24' },
-    { id: 'bg_mesh_2', type: 'gradient', value: 'radial-gradient(at 100% 0%, #7c2d12 0px, transparent 50%), radial-gradient(at 0% 100%, #4c1d95 0px, transparent 50%), linear-gradient(to right, #9a3412, #6b21a8)', border: '#fb923c', accent: '#fde047' },
-    { id: 'bg_mesh_3', type: 'gradient', value: 'radial-gradient(at 0% 100%, #831843 0px, transparent 50%), radial-gradient(at 100% 0%, #1e1b4b 0px, transparent 50%), linear-gradient(to right, #be185d, #4c1d95)', border: '#f472b6', accent: '#fbcfe8' },
-    { id: 'bg_pattern_1', type: 'pattern', value: 'repeating-linear-gradient(45deg, #0f172a, #0f172a 10px, #1e293b 10px, #1e293b 20px)', border: '#64748b', accent: '#fbbf24' },
-    { id: 'bg_pattern_2', type: 'pattern', value: 'repeating-radial-gradient(circle at 0 0, transparent 0, #064e3b 15px), repeating-linear-gradient(#022c22, #022c22)', border: '#10b981', accent: '#fef08a' }
+    // --- 1. Authentic Borderless Islamic Architectural Backgrounds (خلفيات معمارية إسلامية واقعية بدون أي براويز) ---
+    { 
+        id: 'img_mihrab_mosque', 
+        name: 'محراب وأنوار المسجد', 
+        type: 'image', 
+        value: "url('/assets/islamic_bg/islamic_bg_mihrab_mosque.jpg')", 
+        border: 'transparent', 
+        accent: '#fde047', 
+        category: 'islamic_images' 
+    },
+    { 
+        id: 'img_andalusian_arch', 
+        name: 'قصر وقناديل أندلسية', 
+        type: 'image', 
+        value: "url('/assets/islamic_bg/islamic_bg_andalusian_arch.jpg')", 
+        border: 'transparent', 
+        accent: '#fde047', 
+        category: 'islamic_images' 
+    },
+    { 
+        id: 'img_colonnade_sunset', 
+        name: 'أروقة وأقواس رخامية', 
+        type: 'image', 
+        value: "url('/assets/islamic_bg/islamic_bg_colonnade_sunset.jpg')", 
+        border: 'transparent', 
+        accent: '#fbbf24', 
+        category: 'islamic_images' 
+    },
+    { 
+        id: 'img_dome_interior', 
+        name: 'قبة إسلامية مذهبة', 
+        type: 'image', 
+        value: "url('/assets/islamic_bg/islamic_bg_dome_interior.jpg')", 
+        border: 'transparent', 
+        accent: '#fde047', 
+        category: 'islamic_images' 
+    },
+    { 
+        id: 'img_courtyard_fountain', 
+        name: 'بهو ونافورة أندلسية', 
+        type: 'image', 
+        value: "url('/assets/islamic_bg/islamic_bg_courtyard_fountain.jpg')", 
+        border: 'transparent', 
+        accent: '#fef08a', 
+        category: 'islamic_images' 
+    },
+    { 
+        id: 'img_night_minarets', 
+        name: 'مآذن وقباب المسجد ليلاً', 
+        type: 'image', 
+        value: "url('/assets/islamic_bg/islamic_bg_night_minarets.jpg')", 
+        border: 'transparent', 
+        accent: '#fbbf24', 
+        category: 'islamic_images' 
+    },
+    { 
+        id: 'img_mihrab_sanctuary', 
+        name: 'محراب وقناديل روحانية', 
+        type: 'image', 
+        value: "url('/assets/islamic_bg/islamic_bg_mihrab_sanctuary.jpg')", 
+        border: 'transparent', 
+        accent: '#fde047', 
+        category: 'islamic_images' 
+    },
+    { 
+        id: 'img_marble_sanctuary', 
+        name: 'صرح ومحراب رخامي أبيض', 
+        type: 'image', 
+        value: "url('/assets/islamic_bg/islamic_bg_marble_sanctuary.jpg')", 
+        border: 'transparent', 
+        accent: '#d97706', 
+        category: 'islamic_images' 
+    },
+    { 
+        id: 'img_blue_vault', 
+        name: 'أقواس وقباب فيروزية', 
+        type: 'image', 
+        value: "url('/assets/islamic_bg/islamic_bg_blue_vault.jpg')", 
+        border: 'transparent', 
+        accent: '#fef08a', 
+        category: 'islamic_images' 
+    },
+    { 
+        id: 'img_arched_gardens', 
+        name: 'إطلالة أندلسية على البستان', 
+        type: 'image', 
+        value: "url('/assets/islamic_bg/islamic_bg_arched_gardens.jpg')", 
+        border: 'transparent', 
+        accent: '#fef08a', 
+        category: 'islamic_images' 
+    },
+
+    // --- 2. High-End Color Gradients (تدرجات لونية زاهية وفخمة) ---
+    { 
+        id: 'bg_pure_gold_foil', 
+        name: 'رقائق الذهب الملكية', 
+        type: 'gradient', 
+        value: 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 35%, #d97706 70%, #92400e 100%)', 
+        border: '#fef08a', 
+        accent: '#451a03', 
+        category: 'gradients' 
+    },
+    { 
+        id: 'bg_turquoise_teal', 
+        name: 'فيروزي إسلامي زاهي', 
+        type: 'gradient', 
+        value: 'linear-gradient(135deg, #042f2e 0%, #0d9488 50%, #14b8a6 100%)', 
+        border: '#5eead4', 
+        accent: '#fde047', 
+        category: 'gradients' 
+    },
+    { 
+        id: 'bg_ruby_crimson', 
+        name: 'ياقوت أندلسي فاخر', 
+        type: 'gradient', 
+        value: 'linear-gradient(135deg, #4c0519 0%, #881337 50%, #e11d48 100%)', 
+        border: '#fda4af', 
+        accent: '#fef08a', 
+        category: 'gradients' 
+    },
+    { 
+        id: 'bg_deep_purple_gold', 
+        name: 'بنفسج ملكي مذهب', 
+        type: 'gradient', 
+        value: 'linear-gradient(135deg, #2e1065 0%, #581c87 50%, #9333ea 100%)', 
+        border: '#d8b4fe', 
+        accent: '#fde047', 
+        category: 'gradients' 
+    },
+    { 
+        id: 'bg_deep_sapphire', 
+        name: 'أزرق سماوي عميق', 
+        type: 'gradient', 
+        value: 'linear-gradient(135deg, #082f49 0%, #0369a1 50%, #0284c7 100%)', 
+        border: '#7dd3fc', 
+        accent: '#fef08a', 
+        category: 'gradients' 
+    },
+    { 
+        id: 'bg_royal', 
+        name: 'أرجواني ذهبي', 
+        type: 'gradient', 
+        value: 'linear-gradient(135deg, #4c1d95 0%, #7e22ce 100%)', 
+        border: '#c084fc', 
+        accent: '#fde047', 
+        category: 'gradients' 
+    },
+    { 
+        id: 'bg_sand', 
+        name: 'رمال ذهبية', 
+        type: 'gradient', 
+        value: 'linear-gradient(to right, #fef3c7, #fde68a)', 
+        border: '#d97706', 
+        accent: '#78350f', 
+        category: 'gradients',
+        isLight: true
+    },
+    { 
+        id: 'bg_sage', 
+        name: 'أخضر ناعم', 
+        type: 'gradient', 
+        value: 'linear-gradient(to bottom right, #ecfdf5, #d1fae5)', 
+        border: '#059669', 
+        accent: '#064e3b', 
+        category: 'gradients',
+        isLight: true
+    },
+    { 
+        id: 'bg_mesh_1', 
+        name: 'طيف زمردي ونيلي', 
+        type: 'gradient', 
+        value: 'radial-gradient(at 0% 0%, #064e3b 0px, transparent 50%), radial-gradient(at 100% 100%, #1e1b4b 0px, transparent 50%), linear-gradient(to right, #0f766e, #312e81)', 
+        border: '#10b981', 
+        accent: '#fbbf24', 
+        category: 'gradients' 
+    },
+    { 
+        id: 'bg_mesh_2', 
+        name: 'طيف كهرماني وأرجوان', 
+        type: 'gradient', 
+        value: 'radial-gradient(at 100% 0%, #7c2d12 0px, transparent 50%), radial-gradient(at 0% 100%, #4c1d95 0px, transparent 50%), linear-gradient(to right, #9a3412, #6b21a8)', 
+        border: '#fb923c', 
+        accent: '#fde047', 
+        category: 'gradients' 
+    },
+
+    // --- 3. Solid Colors & Light Patterns (ألوان ونقوش فاتحة) ---
+    { id: 'bg_white', name: 'أبيض ناصع', type: 'solid', value: '#ffffff', border: '#e2e8f0', accent: '#0f172a', category: 'solids', isLight: true },
+    { id: 'bg_light_cream', name: 'كريمي عاجي ناعم', type: 'solid', value: '#faf8f5', border: '#d97706', accent: '#78350f', category: 'solids', isLight: true },
+    { id: 'bg_light_parchment', name: 'رق قرآني مذهب', type: 'gradient', value: 'linear-gradient(135deg, #fffdfa 0%, #fef3c7 60%, #fde68a 100%)', border: '#f59e0b', accent: '#451a03', category: 'solids', isLight: true },
+    { id: 'bg_light_mint', name: 'نعناعي لؤلؤي', type: 'gradient', value: 'linear-gradient(135deg, #f0fdf4 0%, #e6f4ea 50%, #d1fae5 100%)', border: '#10b981', accent: '#064e3b', category: 'solids', isLight: true },
+    { id: 'bg_light_sky', name: 'سماوي ناصع', type: 'gradient', value: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #bae6fd 100%)', border: '#0284c7', accent: '#0369a1', category: 'solids', isLight: true },
+    { id: 'bg_light_rose', name: 'وردي حريري', type: 'gradient', value: 'linear-gradient(135deg, #fff1f2 0%, #ffe4e6 50%, #fecdd3 100%)', border: '#f43f5e', accent: '#881337', category: 'solids', isLight: true },
+    { id: 'bg_light_gold', name: 'رقائق لؤلؤية ذهبية', type: 'gradient', value: 'linear-gradient(135deg, #fffbeb 0%, #fef9c3 50%, #fef08a 100%)', border: '#eab308', accent: '#713f12', category: 'solids', isLight: true },
+    { id: 'bg_light_lavender', name: 'لافندر عاجي', type: 'gradient', value: 'linear-gradient(135deg, #faf5ff 0%, #f3e8ff 50%, #e9d5ff 100%)', border: '#a855f7', accent: '#581c87', category: 'solids', isLight: true },
+    { id: 'bg_light_turquoise', name: 'فيروزي ناعم', type: 'gradient', value: 'linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 50%, #99f6e4 100%)', border: '#14b8a6', accent: '#042f2e', category: 'solids', isLight: true },
+    { id: 'bg_light_pattern_dots', name: 'نقاط إسلامية فاتحة', type: 'pattern', value: 'radial-gradient(#cbd5e1 1px, transparent 1px), linear-gradient(to right, #f8fafc, #f1f5f9)', border: '#94a3b8', accent: '#0f172a', category: 'solids', isLight: true },
+    { id: 'bg_light_marble', name: 'رخام ملكي ناصع', type: 'gradient', value: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 50%, #f1f5f9 100%)', border: '#cbd5e1', accent: '#1e293b', category: 'solids', isLight: true },
+    { id: 'bg_black', name: 'أسود كربوني', type: 'solid', value: '#0f172a', border: '#334155', accent: '#fbbf24', category: 'solids' },
+    { id: 'bg_pattern_1', name: 'خطوط هندسية', type: 'pattern', value: 'repeating-linear-gradient(45deg, #0f172a, #0f172a 10px, #1e293b 10px, #1e293b 20px)', border: '#64748b', accent: '#fbbf24', category: 'solids' },
+    { id: 'bg_pattern_2', name: 'دوائر هندسية', type: 'pattern', value: 'repeating-radial-gradient(circle at 0 0, transparent 0, #064e3b 15px), repeating-linear-gradient(#022c22, #022c22)', border: '#10b981', accent: '#fef08a', category: 'solids' }
 ];
 
 const FRAMES = [
-    { id: 'none', name: 'بدون إطار', type: 'none', color: 'transparent' },
-    { id: 'f1', name: 'مزدوج ذهبي', type: 'double', color: '#FFD700' },
-    { id: 'f2', name: 'مزدوج أبيض', type: 'double', color: '#ffffff' },
-    { id: 'f_ornate_1', name: 'أنيق ذهبي', type: 'elegant', color: '#FFD700' },
-    { id: 'f_ornate_2', name: 'أنيق أبيض', type: 'elegant', color: '#ffffff' },
-    { id: 'f3', name: 'زوايا ذهبي', type: 'corner-diamonds', color: '#FFD700' },
-    { id: 'f4', name: 'زوايا أبيض', type: 'corner-diamonds', color: '#ffffff' },
-    { id: 'f5', name: 'محراب ذهبي', type: 'mihrab', color: '#FFD700' },
-    { id: 'f6', name: 'محراب أبيض', type: 'mihrab', color: '#ffffff' },
-    { id: 'f7', name: 'محراب دبل ذهبي', type: 'mihrab-double', color: '#FFD700' },
-    { id: 'f8', name: 'محراب دبل أبيض', type: 'mihrab-double', color: '#ffffff' },
-    { id: 'f9', name: 'كلاسيكي ذهبي', type: 'classic-islamic', color: '#FFD700' },
-    { id: 'f10', name: 'كلاسيكي أبيض', type: 'classic-islamic', color: '#ffffff' },
+    { id: 'none', name: 'بدون إطار', type: 'none', color: 'transparent', category: 'all' },
+    // براويز إسلامية مميزة
+    { id: 'f_mamluk_gold', name: 'مملوكي ذهبي', type: 'mamluk-star', color: '#FFD700', category: 'islamic' },
+    { id: 'f_mamluk_white', name: 'مملوكي أبيض', type: 'mamluk-star', color: '#ffffff', category: 'islamic' },
+    { id: 'f_trefoil_gold', name: 'تاج المحراب ذهبي', type: 'trefoil-arch', color: '#FFD700', category: 'islamic' },
+    { id: 'f_trefoil_white', name: 'تاج المحراب أبيض', type: 'trefoil-arch', color: '#ffffff', category: 'islamic' },
+    { id: 'f_andalusian_gold', name: 'زخرفة أندلسية ذهبي', type: 'andalusian-lace', color: '#FFD700', category: 'islamic' },
+    { id: 'f_andalusian_white', name: 'زخرفة أندلسية أبيض', type: 'andalusian-lace', color: '#ffffff', category: 'islamic' },
+    { id: 'f_quranic_gold', name: 'مصحف مذهب فاخر', type: 'quranic-royal', color: '#FFD700', category: 'islamic' },
+    { id: 'f_quranic_white', name: 'مصحف قرآني أبيض', type: 'quranic-royal', color: '#ffffff', category: 'islamic' },
+    { id: 'f_ottoman_gold', name: 'عثماني ملكي ذهبي', type: 'ottoman-crest', color: '#FFD700', category: 'islamic' },
+    { id: 'f_ottoman_white', name: 'عثماني ملكي أبيض', type: 'ottoman-crest', color: '#ffffff', category: 'islamic' },
+    { id: 'f5', name: 'محراب ذهبي', type: 'mihrab', color: '#FFD700', category: 'islamic' },
+    { id: 'f6', name: 'محراب أبيض', type: 'mihrab', color: '#ffffff', category: 'islamic' },
+    { id: 'f7', name: 'محراب دبل ذهبي', type: 'mihrab-double', color: '#FFD700', category: 'islamic' },
+    { id: 'f8', name: 'محراب دبل أبيض', type: 'mihrab-double', color: '#ffffff', category: 'islamic' },
+    { id: 'f9', name: 'كلاسيكي إسلامي ذهبي', type: 'classic-islamic', color: '#FFD700', category: 'islamic' },
+    { id: 'f10', name: 'كلاسيكي إسلامي أبيض', type: 'classic-islamic', color: '#ffffff', category: 'islamic' },
+    // البراويز الكلاسيكية
+    { id: 'f1', name: 'مزدوج ذهبي', type: 'double', color: '#FFD700', category: 'classic' },
+    { id: 'f2', name: 'مزدوج أبيض', type: 'double', color: '#ffffff', category: 'classic' },
+    { id: 'f_ornate_1', name: 'أنيق ذهبي', type: 'elegant', color: '#FFD700', category: 'classic' },
+    { id: 'f_ornate_2', name: 'أنيق أبيض', type: 'elegant', color: '#ffffff', category: 'classic' },
+    { id: 'f3', name: 'زوايا ذهبي', type: 'corner-diamonds', color: '#FFD700', category: 'classic' },
+    { id: 'f4', name: 'زوايا أبيض', type: 'corner-diamonds', color: '#ffffff', category: 'classic' },
 ];
 
 const FrameOverlay = ({ frame, scale = 1 }: { frame: typeof FRAMES[0], scale?: number }) => {
@@ -124,6 +322,118 @@ const FrameOverlay = ({ frame, scale = 1 }: { frame: typeof FRAMES[0], scale?: n
             </div>
         );
     }
+    if (frame.type === 'mamluk-star') {
+        const starSize = 22 * scale;
+        const starOffset = -11 * scale;
+        return (
+            <div style={{ position: 'absolute', top: `${padding + 6 * scale}px`, left: `${padding + 6 * scale}px`, right: `${padding + 6 * scale}px`, bottom: `${padding + 6 * scale}px`, border: `${2 * scale}px solid ${color}`, pointerEvents: 'none', zIndex: 5 }}>
+                <div style={{ position: 'absolute', top: `${4 * scale}px`, left: `${4 * scale}px`, right: `${4 * scale}px`, bottom: `${4 * scale}px`, border: `${1 * scale}px solid ${color}`, opacity: 0.6 }} />
+                {/* 4 Islamic 8-Point Rub-el-Hizb Stars at corners */}
+                <div style={{ position: 'absolute', top: `${starOffset}px`, left: `${starOffset}px`, width: `${starSize}px`, height: `${starSize}px` }}>
+                    <svg width={starSize} height={starSize} viewBox="0 0 24 24">
+                        <rect x="4" y="4" width="16" height="16" fill={color} />
+                        <rect x="4" y="4" width="16" height="16" fill={color} transform="rotate(45 12 12)" />
+                        <circle cx="12" cy="12" r="3" fill="#ffffff" opacity="0.85" />
+                    </svg>
+                </div>
+                <div style={{ position: 'absolute', top: `${starOffset}px`, right: `${starOffset}px`, width: `${starSize}px`, height: `${starSize}px` }}>
+                    <svg width={starSize} height={starSize} viewBox="0 0 24 24">
+                        <rect x="4" y="4" width="16" height="16" fill={color} />
+                        <rect x="4" y="4" width="16" height="16" fill={color} transform="rotate(45 12 12)" />
+                        <circle cx="12" cy="12" r="3" fill="#ffffff" opacity="0.85" />
+                    </svg>
+                </div>
+                <div style={{ position: 'absolute', bottom: `${starOffset}px`, left: `${starOffset}px`, width: `${starSize}px`, height: `${starSize}px` }}>
+                    <svg width={starSize} height={starSize} viewBox="0 0 24 24">
+                        <rect x="4" y="4" width="16" height="16" fill={color} />
+                        <rect x="4" y="4" width="16" height="16" fill={color} transform="rotate(45 12 12)" />
+                        <circle cx="12" cy="12" r="3" fill="#ffffff" opacity="0.85" />
+                    </svg>
+                </div>
+                <div style={{ position: 'absolute', bottom: `${starOffset}px`, right: `${starOffset}px`, width: `${starSize}px`, height: `${starSize}px` }}>
+                    <svg width={starSize} height={starSize} viewBox="0 0 24 24">
+                        <rect x="4" y="4" width="16" height="16" fill={color} />
+                        <rect x="4" y="4" width="16" height="16" fill={color} transform="rotate(45 12 12)" />
+                        <circle cx="12" cy="12" r="3" fill="#ffffff" opacity="0.85" />
+                    </svg>
+                </div>
+            </div>
+        );
+    }
+    if (frame.type === 'trefoil-arch') {
+        return (
+            <div style={{ position: 'absolute', top: `${padding}px`, left: `${padding}px`, right: `${padding}px`, bottom: `${padding}px`, border: `${2.5 * scale}px solid ${color}`, borderTopLeftRadius: `${70 * scale}px`, borderTopRightRadius: `${70 * scale}px`, borderBottomLeftRadius: `${16 * scale}px`, borderBottomRightRadius: `${16 * scale}px`, pointerEvents: 'none', zIndex: 5 }}>
+                <div style={{ position: 'absolute', top: `${5 * scale}px`, left: `${5 * scale}px`, right: `${5 * scale}px`, bottom: `${5 * scale}px`, border: `${1 * scale}px solid ${color}`, borderTopLeftRadius: `${65 * scale}px`, borderTopRightRadius: `${65 * scale}px`, borderBottomLeftRadius: `${12 * scale}px`, borderBottomRightRadius: `${12 * scale}px`, opacity: 0.65 }} />
+                <div style={{ position: 'absolute', top: `${-12 * scale}px`, left: '50%', transform: 'translateX(-50%)', width: `${30 * scale}px`, height: `${24 * scale}px` }}>
+                    <svg width={30 * scale} height={24 * scale} viewBox="0 0 30 24" fill="none">
+                        <path d="M15 0 L18 8 L24 9 L19 14 L20 20 L15 16 L10 20 L11 14 L6 9 L12 8 Z" fill={color} />
+                        <circle cx="15" cy="10" r="2.5" fill="#ffffff" />
+                    </svg>
+                </div>
+            </div>
+        );
+    }
+    if (frame.type === 'andalusian-lace') {
+        const cLen = 35 * scale;
+        return (
+            <div style={{ position: 'absolute', top: `${padding}px`, left: `${padding}px`, right: `${padding}px`, bottom: `${padding}px`, border: `${1.5 * scale}px solid ${color}`, borderRadius: `${12 * scale}px`, pointerEvents: 'none', zIndex: 5 }}>
+                <div style={{ position: 'absolute', top: `${6 * scale}px`, left: `${6 * scale}px`, right: `${6 * scale}px`, bottom: `${6 * scale}px`, border: `${1 * scale}px dashed ${color}`, borderRadius: `${8 * scale}px`, opacity: 0.7 }} />
+                <svg style={{ position: 'absolute', top: 0, left: 0 }} width={cLen} height={cLen} viewBox="0 0 35 35" fill="none">
+                    <path d="M2 33 V12 C2 6 6 2 12 2 H33" stroke={color} strokeWidth={2.5 * scale} strokeLinecap="round" />
+                    <circle cx="12" cy="12" r="3" fill={color} />
+                    <path d="M12 2 C12 8 8 12 2 12" stroke={color} strokeWidth={1.5 * scale} />
+                </svg>
+                <svg style={{ position: 'absolute', top: 0, right: 0 }} width={cLen} height={cLen} viewBox="0 0 35 35" fill="none">
+                    <path d="M33 33 V12 C33 6 29 2 23 2 H2" stroke={color} strokeWidth={2.5 * scale} strokeLinecap="round" />
+                    <circle cx="23" cy="12" r="3" fill={color} />
+                    <path d="M23 2 C23 8 27 12 33 12" stroke={color} strokeWidth={1.5 * scale} />
+                </svg>
+                <svg style={{ position: 'absolute', bottom: 0, left: 0 }} width={cLen} height={cLen} viewBox="0 0 35 35" fill="none">
+                    <path d="M2 2 V23 C2 29 6 33 12 33 H33" stroke={color} strokeWidth={2.5 * scale} strokeLinecap="round" />
+                    <circle cx="12" cy="23" r="3" fill={color} />
+                    <path d="M12 33 C12 27 8 23 2 23" stroke={color} strokeWidth={1.5 * scale} />
+                </svg>
+                <svg style={{ position: 'absolute', bottom: 0, right: 0 }} width={cLen} height={cLen} viewBox="0 0 35 35" fill="none">
+                    <path d="M33 2 V23 C33 29 29 33 23 33 H2" stroke={color} strokeWidth={2.5 * scale} strokeLinecap="round" />
+                    <circle cx="23" cy="23" r="3" fill={color} />
+                    <path d="M23 33 C23 27 27 23 33 23" stroke={color} strokeWidth={1.5 * scale} />
+                </svg>
+            </div>
+        );
+    }
+    if (frame.type === 'quranic-royal') {
+        const cSize = 28 * scale;
+        return (
+            <div style={{ position: 'absolute', top: `${padding}px`, left: `${padding}px`, right: `${padding}px`, bottom: `${padding}px`, border: `${3 * scale}px solid ${color}`, pointerEvents: 'none', zIndex: 5 }}>
+                <div style={{ position: 'absolute', top: `${5 * scale}px`, left: `${5 * scale}px`, right: `${5 * scale}px`, bottom: `${5 * scale}px`, border: `${1 * scale}px solid ${color}` }}>
+                    <div style={{ position: 'absolute', top: `${4 * scale}px`, left: `${4 * scale}px`, right: `${4 * scale}px`, bottom: `${4 * scale}px`, border: `${1 * scale}px solid ${color}`, opacity: 0.6 }} />
+                    <div style={{ position: 'absolute', top: 0, left: 0, width: `${cSize}px`, height: `${cSize}px`, borderRight: `${1.5 * scale}px solid ${color}`, borderBottom: `${1.5 * scale}px solid ${color}`, borderBottomRightRadius: '100%' }} />
+                    <div style={{ position: 'absolute', top: 0, right: 0, width: `${cSize}px`, height: `${cSize}px`, borderLeft: `${1.5 * scale}px solid ${color}`, borderBottom: `${1.5 * scale}px solid ${color}`, borderBottomLeftRadius: '100%' }} />
+                    <div style={{ position: 'absolute', bottom: 0, left: 0, width: `${cSize}px`, height: `${cSize}px`, borderRight: `${1.5 * scale}px solid ${color}`, borderTop: `${1.5 * scale}px solid ${color}`, borderTopRightRadius: '100%' }} />
+                    <div style={{ position: 'absolute', bottom: 0, right: 0, width: `${cSize}px`, height: `${cSize}px`, borderLeft: `${1.5 * scale}px solid ${color}`, borderTop: `${1.5 * scale}px solid ${color}`, borderTopLeftRadius: '100%' }} />
+                </div>
+            </div>
+        );
+    }
+    if (frame.type === 'ottoman-crest') {
+        return (
+            <div style={{ position: 'absolute', top: `${padding + 4 * scale}px`, left: `${padding + 4 * scale}px`, right: `${padding + 4 * scale}px`, bottom: `${padding + 4 * scale}px`, border: `${2 * scale}px solid ${color}`, borderRadius: `${18 * scale}px`, pointerEvents: 'none', zIndex: 5 }}>
+                <div style={{ position: 'absolute', top: `${6 * scale}px`, left: `${6 * scale}px`, right: `${6 * scale}px`, bottom: `${6 * scale}px`, border: `${1 * scale}px solid ${color}`, borderRadius: `${12 * scale}px`, opacity: 0.7 }} />
+                <div style={{ position: 'absolute', top: `${-8 * scale}px`, left: '50%', transform: 'translateX(-50%)', backgroundColor: 'rgba(0,0,0,0.4)', padding: `0 ${8 * scale}px`, borderRadius: '9999px' }}>
+                    <svg width={36 * scale} height={16 * scale} viewBox="0 0 36 16" fill="none">
+                        <circle cx="18" cy="8" r="4" fill={color} />
+                        <path d="M2 8h10m12 0h10" stroke={color} strokeWidth={1.5 * scale} strokeLinecap="round" />
+                    </svg>
+                </div>
+                <div style={{ position: 'absolute', bottom: `${-8 * scale}px`, left: '50%', transform: 'translateX(-50%)', backgroundColor: 'rgba(0,0,0,0.4)', padding: `0 ${8 * scale}px`, borderRadius: '9999px' }}>
+                    <svg width={36 * scale} height={16 * scale} viewBox="0 0 36 16" fill="none">
+                        <circle cx="18" cy="8" r="4" fill={color} />
+                        <path d="M2 8h10m12 0h10" stroke={color} strokeWidth={1.5 * scale} strokeLinecap="round" />
+                    </svg>
+                </div>
+            </div>
+        );
+    }
     return null;
 };
 
@@ -151,11 +461,22 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
     const [selectedAyahs, setSelectedAyahs] = useState<{ s: number; a: number }[]>([currentAyah]);
     
     const [selectedBg, setSelectedBg] = useState(BACKGROUNDS[0]);
+    const [bgCategory, setBgCategory] = useState<'all' | 'islamic_images' | 'gradients' | 'solids'>('all');
     const [selectedFrame, setSelectedFrame] = useState(FRAMES[0]);
+    const [frameCategory, setFrameCategory] = useState<'all' | 'islamic' | 'classic'>('all');
     const [fontSize, setFontSize] = useState(20);
-    const [textColor, setTextColor] = useState(TEXT_COLORS[1]);
+    const [textColor, setTextColor] = useState(TEXT_COLORS[0]);
     const [selectedFont, setSelectedFont] = useState(FONTS[0].id);
     const [activeDesignTab, setActiveDesignTab] = useState<'bg' | 'frame' | 'text' | 'font' | null>(null);
+
+    const handleSelectBg = (bg: typeof BACKGROUNDS[0]) => {
+        setSelectedBg(bg);
+        if (bg.id === 'bg_white' || bg.isLight) {
+            if (textColor === '#ffffff') setTextColor('#000000');
+        } else {
+            if (textColor === '#000000') setTextColor('#ffffff');
+        }
+    };
     const [rangeSelectorOpen, setRangeSelectorOpen] = useState<'from' | 'to' | null>(null);
     const [customText, setCustomText] = useState('');
     const [isSharing, setIsSharing] = useState(false);
@@ -219,7 +540,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
             setSelectedBg(BACKGROUNDS[0]);
             setSelectedFrame(FRAMES[0]);
             setFontSize(20);
-            setTextColor(TEXT_COLORS[1]);
+            setTextColor(BACKGROUNDS[0].id === 'bg_white' ? TEXT_COLORS[1] : TEXT_COLORS[0]);
             setSelectedFont(FONTS[0].id);
             setCustomText('');
             setShareType('image');
@@ -1189,21 +1510,21 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                 flexDirection: 'column',
                                 alignItems: 'center',
                                 justifyContent: 'space-between',
-                                padding: '52px 64px 38px 64px',
+                                padding: selectedFrame.id !== 'none' ? '80px 110px 110px 110px' : '52px 64px 38px 64px',
                                 textAlign: 'center',
                                 backgroundColor: selectedBg.type === 'solid' ? selectedBg.value : undefined,
                                 backgroundImage: selectedBg.type !== 'solid' ? selectedBg.value : undefined,
                                 backgroundSize: 'cover',
                                 backgroundPosition: 'center',
-                                border: `12px solid ${selectedBg.border}`,
+                                border: selectedBg.type === 'image' ? 'none' : `12px solid ${selectedBg.border}`,
                                 direction: isEn ? 'ltr' : 'rtl'
                             }}
                         >
-                            {selectedBg.id !== 'bg_white' && (
-                                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 0.22)' }}></div>
+                            {selectedBg.id !== 'bg_white' && !selectedBg.isLight && (
+                                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: (selectedBg as any).overlay || (selectedBg.type === 'image' ? 'rgba(0, 0, 0, 0.28)' : 'rgba(0, 0, 0, 0.22)') }}></div>
                             )}
                             <FrameOverlay frame={selectedFrame} scale={4} />
-                            <div style={{ position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', width: '100%', height: '100%', flex: 1 }}>
+                            <div style={{ position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', width: '100%', height: '100%', flex: 1, boxSizing: 'border-box' }}>
                                 {/* Top Bismillah Header */}
                                 <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '10px' }}>
                                     {readingMode === 'mushaf' && (
@@ -1213,7 +1534,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                                 fontSize: `${chunkTypo.bismillahSize}px`, 
                                                 color: selectedBg.accent, 
                                                 margin: 0,
-                                                textShadow: selectedBg.id === 'bg_white' ? 'none' : '0 6px 12px rgba(0,0,0,0.5)',
+                                                textShadow: (selectedBg.id === 'bg_white' || selectedBg.isLight) ? 'none' : '0 6px 12px rgba(0,0,0,0.5)',
                                                 fontWeight: 'bold'
                                             }}
                                         >
@@ -1224,7 +1545,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                 </div>
 
                                 {/* Middle Verse & Explanation auto-centered & adaptively sized to fill full page */}
-                                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', width: '100%', padding: '12px 0', minHeight: 0 }}>
+                                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', width: '100%', padding: selectedFrame.id !== 'none' ? '12px 28px' : '12px 0', minHeight: 0, boxSizing: 'border-box' }}>
                                     <p 
                                         className="share-preview-text"
                                         style={{ 
@@ -1232,7 +1553,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                             fontFamily: selectedFont,
                                             fontSize: `${chunkTypo.ayahFontSize}px`, 
                                             color: textColor,
-                                            textShadow: selectedBg.id === 'bg_white' ? 'none' : '0 6px 14px rgba(0,0,0,0.55)',
+                                            textShadow: (selectedBg.id === 'bg_white' || selectedBg.isLight) ? 'none' : '0 6px 14px rgba(0,0,0,0.55)',
                                             margin: 0,
                                             fontWeight: 'bold',
                                             whiteSpace: 'normal',
@@ -1241,7 +1562,9 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                             fontFeatureSettings: '"kern", "liga", "clig", "calt", "ccmp"',
                                             textRendering: 'optimizeLegibility',
                                             textAlign: 'center',
-                                            width: '100%'
+                                            width: '100%',
+                                            padding: selectedFrame.id !== 'none' ? '0 20px' : '0',
+                                            boxSizing: 'border-box'
                                         }}
                                     >
                                         {chunk.ayahs.map((ay, idx) => (
@@ -1260,7 +1583,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                             marginTop: '28px',
                                             textAlign: 'center',
                                             lineHeight: '1.65',
-                                            textShadow: selectedBg.id === 'bg_white' ? 'none' : '0 4px 8px rgba(0,0,0,0.5)',
+                                            textShadow: (selectedBg.id === 'bg_white' || selectedBg.isLight) ? 'none' : '0 4px 8px rgba(0,0,0,0.5)',
                                             maxWidth: '94%'
                                         }}>
                                             {chunkExplanation}
@@ -1270,7 +1593,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                 </div>
 
                                 {/* Bottom Metadata & Footer */}
-                                <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', paddingBottom: '16px', gap: '14px' }}>
+                                <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', paddingBottom: selectedFrame.id !== 'none' ? '24px' : '12px', gap: '14px', boxSizing: 'border-box' }}>
                                     <p style={{ fontFamily: selectedFont, color: textColor, textShadow: '0 3px 6px rgba(0,0,0,0.5)', fontSize: '32px', fontWeight: 'bold', opacity: 0.95, textAlign: 'center', margin: 0 }}>
                                         {chunk.surahInfoText}
                                     </p>
@@ -1510,7 +1833,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                     <ChevronRight size={16} className="quran-3d-icon" />
                                     <span>السابق</span>
                                 </button>
-                                <div className="flex items-center gap-1.5 text-xs font-bold" style={{ color: currentTheme.accent || '#3b82f6' }}>
+                                <div className="flex items-center gap-1.5 text-xs font-bold" style={{ color: currentTheme?.id === 'deep_black' ? '#ffffff' : (currentTheme.accent || '#3b82f6') }}>
                                     <Images size={15} className="quran-3d-icon" />
                                     <span>صورة {toArabic(safePageIndex + 1)} من {toArabic(pageChunks.length)}</span>
                                     <span className="text-[10px] opacity-80 font-normal">
@@ -1545,17 +1868,17 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                     flexDirection: 'column',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    padding: '16px',
+                                    padding: selectedFrame.id !== 'none' ? '24px 28px 36px 28px' : '16px 16px 16px 16px',
                                     textAlign: 'center',
                                     backgroundColor: selectedBg.type === 'solid' ? selectedBg.value : undefined,
                                     backgroundImage: selectedBg.type !== 'solid' ? selectedBg.value : undefined,
                                     backgroundSize: 'cover',
                                     backgroundPosition: 'center',
-                                    border: `3px solid ${selectedBg.border}`
+                                    border: selectedBg.type === 'image' ? 'none' : `3px solid ${selectedBg.border}`
                                 }}
                             >
-                                {selectedBg.id !== 'bg_white' && (
-                                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 0.2)' }}></div>
+                                {selectedBg.id !== 'bg_white' && !selectedBg.isLight && (
+                                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: (selectedBg as any).overlay || (selectedBg.type === 'image' ? 'rgba(0, 0, 0, 0.28)' : 'rgba(0, 0, 0, 0.2)') }}></div>
                                 )}
                                 
                                 {shareType === 'page' && (
@@ -1581,7 +1904,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                 )}
 
                                 <FrameOverlay frame={selectedFrame} />
-                                <div style={{ position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', width: '100%', flex: 1 }}>
+                                <div style={{ position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', width: '100%', flex: 1, boxSizing: 'border-box' }}>
                                     {shareType === 'image' ? (() => {
                                         const currentChunkTypo = getChunkTypography(currentPageChunk.totalChars, userRatio);
                                         const previewAyahFontSize = Math.max(14, Math.round(currentChunkTypo.ayahFontSize * 0.30));
@@ -1590,7 +1913,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                         const previewExplanation = currentPageChunk.ayahs.map(ay => getExplanationText(ay.s, ay.a)).filter(t => t).join('\n');
 
                                         return (
-                                            <div style={{ padding: '8px 0', width: '100%', flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-evenly' }}>
+                                            <div style={{ padding: selectedFrame.id !== 'none' ? '8px 12px' : '8px 0', width: '100%', flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-evenly', boxSizing: 'border-box' }}>
                                                 {readingMode === 'mushaf' && (
                                                     <p 
                                                         style={{ 
@@ -1598,7 +1921,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                                             fontSize: `${previewBismillahFontSize}px`, 
                                                             color: selectedBg.accent, 
                                                             marginBottom: '12px',
-                                                            textShadow: selectedBg.id === 'bg_white' ? 'none' : '0 2px 4px rgba(0,0,0,0.5)',
+                                                            textShadow: (selectedBg.id === 'bg_white' || selectedBg.isLight) ? 'none' : '0 2px 4px rgba(0,0,0,0.5)',
                                                             opacity: 1,
                                                             marginTop: '4px',
                                                             fontWeight: 'bold'
@@ -1615,7 +1938,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                                         fontFamily: selectedFont,
                                                         fontSize: `${previewAyahFontSize}px`, 
                                                         color: textColor,
-                                                        textShadow: selectedBg.id === 'bg_white' ? 'none' : '0 2px 4px rgba(0,0,0,0.5)',
+                                                        textShadow: (selectedBg.id === 'bg_white' || selectedBg.isLight) ? 'none' : '0 2px 4px rgba(0,0,0,0.5)',
                                                         margin: 0,
                                                         marginTop: '6px',
                                                         fontWeight: 'bold',
@@ -1624,7 +1947,10 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                                         wordBreak: 'keep-all',
                                                         fontFeatureSettings: '"kern", "liga", "clig", "calt", "ccmp"',
                                                         textRendering: 'optimizeLegibility',
-                                                        textAlign: 'center'
+                                                        textAlign: 'center',
+                                                        padding: selectedFrame.id !== 'none' ? '0 10px' : '0 2px',
+                                                        boxSizing: 'border-box',
+                                                        maxWidth: '100%'
                                                     }}
                                                 >
                                                     {currentPageChunk.ayahs.map((ay, idx) => (
@@ -1643,7 +1969,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                                         marginTop: '10px',
                                                         textAlign: 'center',
                                                         lineHeight: '1.5',
-                                                        textShadow: selectedBg.id === 'bg_white' ? 'none' : '0 1px 2px rgba(0,0,0,0.5)',
+                                                        textShadow: (selectedBg.id === 'bg_white' || selectedBg.isLight) ? 'none' : '0 1px 2px rgba(0,0,0,0.5)',
                                                         maxWidth: '90%'
                                                     }}>
                                                         {previewExplanation}
@@ -1659,7 +1985,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                                 fontSize: `${fontSize * 2.2}px`, 
                                                 color: selectedBg.accent,
                                                 fontWeight: 'bold',
-                                                textShadow: selectedBg.id === 'bg_white' ? 'none' : '0 2px 4px rgba(0,0,0,0.5)',
+                                                textShadow: (selectedBg.id === 'bg_white' || selectedBg.isLight) ? 'none' : '0 2px 4px rgba(0,0,0,0.5)',
                                                 marginBottom: '10px'
                                             }}>
                                                 سورة {getSurahName(currentAyah.s)}
@@ -1669,33 +1995,33 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                                                 fontSize: `${fontSize * 1.5}px`, 
                                                 color: textColor,
                                                 fontWeight: '500',
-                                                textShadow: selectedBg.id === 'bg_white' ? 'none' : '0 2px 4px rgba(0,0,0,0.5)'
+                                                textShadow: (selectedBg.id === 'bg_white' || selectedBg.isLight) ? 'none' : '0 2px 4px rgba(0,0,0,0.5)'
                                             }}>
                                                 {fromAyah === toAyah ? `الآية ${toArabic(fromAyah)}` : `الآية ${toArabic(fromAyah)} إلى الآية ${toArabic(toAyah)}`}
                                             </div>
                                         </div>
                                     )}
 
-                                    <div style={{ marginTop: shareType === 'image' ? '14px' : '10px', width: '100%', paddingLeft: '4px', paddingRight: '4px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                                    <div style={{ marginTop: shareType === 'image' ? '8px' : '4px', width: '100%', paddingLeft: '4px', paddingRight: '4px', paddingBottom: selectedFrame.id !== 'none' ? '12px' : '0px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', boxSizing: 'border-box' }}>
                                         {shareType === 'image' && (
-                                            <p style={{ fontFamily: selectedFont, color: textColor, textShadow: '0 1px 2px rgba(0,0,0,0.5)', fontSize: '11px', fontWeight: 'bold', opacity: 0.95, textAlign: 'center', margin: '0 0 4px 0' }}>
+                                            <p style={{ fontFamily: selectedFont, color: textColor, textShadow: '0 1px 2px rgba(0,0,0,0.5)', fontSize: '11px', fontWeight: 'bold', opacity: 0.95, textAlign: 'center', margin: '0 0 2px 0' }}>
                                                 {currentPageChunk.surahInfoText}
                                             </p>
                                         )}
-                                        <div style={{ width: '60%', borderTop: '2px solid rgba(255, 255, 255, 0.4)', margin: '4px 0' }}></div>
-                                        <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                                        <div style={{ width: '60%', borderTop: '2px solid rgba(255, 255, 255, 0.4)', margin: '2px 0' }}></div>
+                                        <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
                                             <a 
                                                 href="https://play.google.com/store/apps/details?id=com.mushaf.ahmedandlayla"
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                style={{ fontFamily: 'var(--font-scheherazade), serif', color: selectedBg.accent, textShadow: '0 1px 4px rgba(0,0,0,0.8)', fontSize: '16px', fontWeight: 800, textAlign: 'center', textDecoration: 'none' }} 
+                                                style={{ fontFamily: 'var(--font-scheherazade), serif', color: selectedBg.accent, textShadow: '0 1px 4px rgba(0,0,0,0.8)', fontSize: '15px', fontWeight: 800, textAlign: 'center', textDecoration: 'none' }} 
                                                 dir="rtl"
                                             >
                                                 {isEn ? 'Mushaf Ahmed & Laila' : 'مصحف أحمد و ليلى'}
                                             </a>
                                             {customText ? (
                                                 <span 
-                                                    style={{ fontFamily: 'var(--font-scheherazade), serif', color: textColor, textShadow: '0 1px 2px rgba(0,0,0,0.5)', fontSize: '12px', fontWeight: 600, maxWidth: '90%', textAlign: 'center', lineHeight: 1.2, opacity: 0.9 }} 
+                                                    style={{ fontFamily: 'var(--font-scheherazade), serif', color: textColor, textShadow: '0 1px 2px rgba(0,0,0,0.5)', fontSize: '11px', fontWeight: 600, maxWidth: '85%', textAlign: 'center', lineHeight: 1.2, opacity: 0.9 }} 
                                                 >
                                                     {customText}
                                                 </span>
@@ -1759,46 +2085,165 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                             </div>
 
                             {/* Active Tab Content */}
-                            <div className="transition-all duration-300 overflow-hidden" style={{ maxHeight: activeDesignTab ? '200px' : '0', opacity: activeDesignTab ? 1 : 0, marginTop: activeDesignTab ? '8px' : '0' }}>
+                            <div className="transition-all duration-300 overflow-hidden" style={{ maxHeight: activeDesignTab ? '260px' : '0', opacity: activeDesignTab ? 1 : 0, marginTop: activeDesignTab ? '8px' : '0' }}>
                                 <div className="p-3 rounded-2xl border-none shadow-md" style={{ backgroundColor: currentTheme.bg }}>
                                     {/* Background Selection */}
                                     {activeDesignTab === 'bg' && (
-                                        <div className="space-y-2 animate-fadeIn">
-                                            <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar p-1">
-                                                {BACKGROUNDS.map(bg => (
-                                                    <button
-                                                        key={bg.id}
-                                                        onClick={() => setSelectedBg(bg)}
-                                                        className={`w-10 h-10 rounded-xl shrink-0 border-none transition-all quran-raised-btn ${selectedBg.id === bg.id ? 'quran-raised-btn-selected scale-110' : ''}`}
-                                                        style={{
-                                                            backgroundColor: bg.type === 'solid' ? bg.value : undefined,
-                                                            backgroundImage: bg.type !== 'solid' ? bg.value : undefined,
-                                                            backgroundSize: 'cover',
-                                                            backgroundPosition: 'center'
-                                                        }}
-                                                    />
-                                                ))}
+                                        <div className="space-y-2.5 animate-fadeIn">
+                                            {/* Category Filter Chips */}
+                                            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 hide-scrollbar">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setBgCategory('all')}
+                                                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold shrink-0 transition-all ${bgCategory === 'all' ? 'bg-amber-500 text-white shadow-sm' : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'}`}
+                                                >
+                                                    {isEn ? 'All' : 'الكل'} ({BACKGROUNDS.length})
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setBgCategory('islamic_images')}
+                                                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold shrink-0 transition-all flex items-center gap-1 ${bgCategory === 'islamic_images' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'}`}
+                                                >
+                                                    <span>🖼️</span>
+                                                    <span>{isEn ? 'Islamic Backgrounds' : 'صور وخلفيات إسلامية'}</span>
+                                                    <span className="text-[10px] opacity-80">({BACKGROUNDS.filter(b => b.category === 'islamic_images').length})</span>
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setBgCategory('gradients')}
+                                                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold shrink-0 transition-all flex items-center gap-1 ${bgCategory === 'gradients' ? 'bg-purple-600 text-white shadow-sm' : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'}`}
+                                                >
+                                                    <span>✨</span>
+                                                    <span>{isEn ? 'Royal Gradients' : 'تدرجات ملكية'}</span>
+                                                    <span className="text-[10px] opacity-80">({BACKGROUNDS.filter(b => b.category === 'gradients').length})</span>
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setBgCategory('solids')}
+                                                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold shrink-0 transition-all flex items-center gap-1 ${bgCategory === 'solids' ? 'bg-blue-600 text-white shadow-sm' : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'}`}
+                                                >
+                                                    <span>🎨</span>
+                                                    <span>{isEn ? 'Colors & Patterns' : 'ألوان ونقوش'}</span>
+                                                    <span className="text-[10px] opacity-80">({BACKGROUNDS.filter(b => b.category === 'solids').length})</span>
+                                                </button>
+                                            </div>
+
+                                            {/* Selected Background Label */}
+                                            <div className="flex items-center justify-between text-[11px] px-1 text-gray-600 dark:text-gray-300">
+                                                <div className="flex items-center gap-1.5 truncate">
+                                                    <span className="opacity-70">{isEn ? 'Selected:' : 'الخلفية المختارة:'}</span>
+                                                    <span className="font-bold text-amber-600 dark:text-amber-400 truncate">{selectedBg.name}</span>
+                                                </div>
+                                                {selectedBg.type === 'image' && (
+                                                    <span className="shrink-0 text-[10px] bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.5 rounded-md font-semibold">
+                                                        {isEn ? 'Islamic Art' : 'خلفية إسلامية'}
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            {/* Background Thumbnails Grid / Horizontal Scroll */}
+                                            <div className="flex gap-2.5 overflow-x-auto pb-1.5 hide-scrollbar p-1">
+                                                {BACKGROUNDS.filter(bg => bgCategory === 'all' || bg.category === bgCategory).map(bg => {
+                                                    const isSelected = selectedBg.id === bg.id;
+                                                    return (
+                                                        <button
+                                                            key={bg.id}
+                                                            type="button"
+                                                            onClick={() => handleSelectBg(bg)}
+                                                            title={bg.name}
+                                                            className={`w-12 h-12 rounded-xl shrink-0 transition-all cursor-pointer relative quran-raised-btn ${
+                                                                isSelected 
+                                                                    ? 'ring-2 ring-amber-400 ring-offset-2 scale-105 shadow-md z-10' 
+                                                                    : 'hover:scale-105 opacity-90 hover:opacity-100'
+                                                            }`}
+                                                            style={{
+                                                                backgroundColor: bg.type === 'solid' ? bg.value : undefined,
+                                                                backgroundImage: bg.type !== 'solid' ? bg.value : undefined,
+                                                                backgroundSize: 'cover',
+                                                                backgroundPosition: 'center',
+                                                                border: isSelected ? `2px solid ${bg.border || '#fbbf24'}` : '1px solid rgba(255,255,255,0.2)'
+                                                            }}
+                                                        >
+                                                            {bg.type === 'image' && (
+                                                                <span className="absolute bottom-0.5 right-0.5 text-[9px] bg-black/60 text-amber-300 rounded px-1 leading-tight font-sans">
+                                                                    🖼️
+                                                                </span>
+                                                            )}
+                                                            {isSelected && (
+                                                                <span className="absolute inset-0 flex items-center justify-center bg-black/25 rounded-xl">
+                                                                    <Check size={16} className="text-white drop-shadow" />
+                                                                </span>
+                                                            )}
+                                                        </button>
+                                                    );
+                                                })}
                                             </div>
                                         </div>
                                     )}
 
                                     {/* Frame Selection */}
                                     {activeDesignTab === 'frame' && (
-                                        <div className="space-y-2 animate-fadeIn">
-                                            <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar p-1">
-                                                {FRAMES.map(frame => (
-                                                    <button
-                                                        key={frame.id}
-                                                        onClick={() => setSelectedFrame(frame)}
-                                                        className={`shrink-0 px-3.5 py-2.5 rounded-xl border-none transition-all text-xs font-bold flex items-center justify-center min-w-[70px] quran-raised-btn ${selectedFrame.id === frame.id ? 'quran-raised-btn-selected text-white' : ''}`}
-                                                        style={{ 
-                                                            color: selectedFrame.id === frame.id ? '#ffffff' : currentTheme.text,
-                                                            backgroundColor: selectedFrame.id === frame.id ? (currentTheme.accent || '#1d4ed8') : currentTheme.bg
-                                                        }}
-                                                    >
-                                                        {frame.name}
-                                                    </button>
-                                                ))}
+                                        <div className="space-y-2.5 animate-fadeIn">
+                                            {/* Category Filter Chips */}
+                                            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 hide-scrollbar">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setFrameCategory('all')}
+                                                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold shrink-0 transition-all ${frameCategory === 'all' ? 'bg-amber-500 text-white shadow-sm' : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'}`}
+                                                >
+                                                    {isEn ? 'All' : 'الكل'} ({FRAMES.length})
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setFrameCategory('islamic')}
+                                                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold shrink-0 transition-all flex items-center gap-1 ${frameCategory === 'islamic' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'}`}
+                                                >
+                                                    <span>🕌</span>
+                                                    <span>{isEn ? 'Islamic Borders' : 'براويز إسلامية'}</span>
+                                                    <span className="text-[10px] opacity-80">({FRAMES.filter(f => f.category === 'islamic').length})</span>
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setFrameCategory('classic')}
+                                                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold shrink-0 transition-all flex items-center gap-1 ${frameCategory === 'classic' ? 'bg-blue-600 text-white shadow-sm' : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'}`}
+                                                >
+                                                    <span>✨</span>
+                                                    <span>{isEn ? 'Classic Frames' : 'براويز كلاسيكية'}</span>
+                                                    <span className="text-[10px] opacity-80">({FRAMES.filter(f => f.category === 'classic').length})</span>
+                                                </button>
+                                            </div>
+
+                                            {/* Selected Frame Label */}
+                                            <div className="flex items-center justify-between text-[11px] px-1 text-gray-600 dark:text-gray-300">
+                                                <div className="flex items-center gap-1.5 truncate">
+                                                    <span className="opacity-70">{isEn ? 'Selected:' : 'الإطار المختار:'}</span>
+                                                    <span className="font-bold text-amber-600 dark:text-amber-400 truncate">{selectedFrame.name}</span>
+                                                </div>
+                                            </div>
+
+                                            {/* Frame Buttons */}
+                                            <div className="flex gap-2 overflow-x-auto pb-1.5 hide-scrollbar p-1">
+                                                {FRAMES.filter(frame => frameCategory === 'all' || frame.category === frameCategory || frame.id === 'none').map(frame => {
+                                                    const isSelected = selectedFrame.id === frame.id;
+                                                    return (
+                                                        <button
+                                                            key={frame.id}
+                                                            type="button"
+                                                            onClick={() => setSelectedFrame(frame)}
+                                                            className={`shrink-0 px-3.5 py-2.5 rounded-xl border-none transition-all text-xs font-bold flex items-center gap-1.5 min-w-[70px] quran-raised-btn ${
+                                                                isSelected ? 'quran-raised-btn-selected text-white ring-2 ring-amber-400' : ''
+                                                            }`}
+                                                            style={{ 
+                                                                color: isSelected ? '#ffffff' : currentTheme.text,
+                                                                backgroundColor: isSelected ? (currentTheme.accent || '#1d4ed8') : currentTheme.bg
+                                                            }}
+                                                        >
+                                                            {frame.color === '#FFD700' && <span className="text-amber-300 text-[10px]">●</span>}
+                                                            {frame.color === '#ffffff' && <span className="text-white text-[10px]">○</span>}
+                                                            <span>{frame.name}</span>
+                                                        </button>
+                                                    );
+                                                })}
                                             </div>
                                         </div>
                                     )}

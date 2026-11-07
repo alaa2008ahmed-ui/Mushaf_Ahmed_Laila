@@ -4,7 +4,7 @@ import ThemeSelector from './components/ThemesModal';
 import ExitConfirmModal from './components/ExitConfirmModal';
 import AppRouter from './router/AppRouter';
 import WelcomeSplash from './components/WelcomeSplash';
-import VideoSplash from './components/VideoSplash';
+import ImageSplash, { purgeBootSplashMemory } from './components/ImageSplash';
 import { useLanguage } from './context/LanguageContext';
 import RateUs from './components/RateUs';
 import { useWakeLock } from './hooks/useWakeLock';
@@ -17,7 +17,7 @@ import SideMenu from './components/SideMenu';
 import MawlidNotification from './components/MawlidNotification';
 import { Mic, MicOff } from 'lucide-react';
 import { motion } from 'motion/react';
-import { useTheme } from './context/ThemeContext';
+import { useTheme, restoreHomeThemeDOMInstantly } from './context/ThemeContext';
 import { normalizeArabic } from './utils/voiceParser';
 import { usePrayerTimes } from './context/PrayerTimesContext';
 import { setupNotifications } from './utils/notifications';
@@ -103,9 +103,12 @@ function App() {
   const launchUrlHandledRef = React.useRef<boolean>(Boolean(initialShortcut));
   const currentOrientationRef = React.useRef<'portrait' | 'landscape'>('portrait');
 
-  const [splashStage, setSplashStage] = useState<'video' | 'welcome' | 'app'>(() => {
-    if (initialShortcut) return 'app';
-    return 'video';
+  const [splashStage, setSplashStage] = useState<'splash' | 'welcome' | 'app'>(() => {
+    if (initialShortcut) {
+      purgeBootSplashMemory();
+      return 'app';
+    }
+    return 'splash';
   });
 
   const [hasChosenInitialLanguage, setHasChosenInitialLanguage] = useState<boolean>(() => {
@@ -201,11 +204,12 @@ function App() {
     return () => clearTimeout(timeout);
   }, []);
 
-  useEffect(() => {
-    const currentPage = history[history.length - 1];
+  // Compute active page ID synchronously for 0ms delay theme synchronization
+  const activePageId = React.useMemo(() => {
+    const pageInHistory = history[history.length - 1];
     const prevInHistory = history.length >= 2 ? history[history.length - 2] : undefined;
     if (
-      currentPage === 'search' &&
+      pageInHistory === 'search' &&
       (prevInHistory === 'quran' ||
         prevInHistory === 'quran-landscape' ||
         navParams?.from === 'quran' ||
@@ -213,14 +217,21 @@ function App() {
         navParams?.fromSidebar)
     ) {
       const isLandscapeOrigin = prevInHistory === 'quran-landscape' || navParams?.from === 'quran-landscape';
-      setCurrentPage(isLandscapeOrigin ? 'quran_search_landscape' : 'quran_search');
-    } else {
-      setCurrentPage(currentPage);
+      return isLandscapeOrigin ? 'quran_search_landscape' : 'quran_search';
     }
-    if (currentPage && currentPage !== 'home') {
-      markPageAsSeen(currentPage);
+    return pageInHistory || 'home';
+  }, [history, navParams]);
+
+  // Synchronize current page ID in ThemeContext safely in useEffect
+  React.useEffect(() => {
+    if (activePageId === 'home') {
+      restoreHomeThemeDOMInstantly();
     }
-  }, [history, navParams, setCurrentPage]);
+    setCurrentPage(activePageId);
+    if (activePageId && activePageId !== 'home') {
+      markPageAsSeen(activePageId);
+    }
+  }, [activePageId, setCurrentPage]);
 
   useEffect(() => {
     if (!history.includes('search')) {
@@ -291,6 +302,7 @@ function App() {
     }
 
     if (pageId === 'home') {
+      restoreHomeThemeDOMInstantly();
       setHistory(['home']);
       setNavParams(null);
       return;
@@ -453,6 +465,7 @@ function App() {
   const navigateBack = useCallback(() => {
     setHistory(prev => {
       const current = prev[prev.length - 1];
+      let nextHistory: string[];
       if (current === 'search') {
         const fromTarget = navParams?.from;
         const returnSidebar = navParams?.fromSidebar;
@@ -462,12 +475,15 @@ function App() {
           setNavParams(null);
         }
         if ((fromTarget === 'quran' || fromTarget === 'quran-landscape') && !prev.includes(fromTarget)) {
-          return ['home', fromTarget];
+          nextHistory = ['home', fromTarget];
+        } else {
+          nextHistory = prev.length > 1 ? prev.slice(0, -1) : prev;
         }
       } else {
         setNavParams(null);
+        nextHistory = prev.length > 1 ? prev.slice(0, -1) : prev;
       }
-      return (prev.length > 1 ? prev.slice(0, -1) : prev);
+      return nextHistory;
     });
   }, [navParams]);
 
@@ -505,6 +521,7 @@ function App() {
       setIsThemeSelectorOpen(false);
       setShowExitConfirm(false);
       setIsSideMenuOpen(false);
+      purgeBootSplashMemory();
       setSplashStage('app');
       handleNavigate(cleanTarget);
     };
@@ -628,7 +645,10 @@ function App() {
     }
 
     // 3. Global Navigation Actions
-    if (action === 'go_home') setHistory(['home']);
+    if (action === 'go_home') {
+      restoreHomeThemeDOMInstantly();
+      setHistory(['home']);
+    }
     else if (action === 'open_athkar' || (action === 'ui_click' && params?.label?.includes('اذكار'))) handleNavigate('sabah-masaa');
     else if (action === 'open_prayer' || (action === 'ui_click' && params?.label?.includes('صلاه'))) handleNavigate('prayer-times');
     else if (action === 'open_qibla' || (action === 'ui_click' && params?.label?.includes('قبله'))) handleNavigate('qibla');
@@ -667,7 +687,7 @@ function App() {
     else if (action === 'go_back') navigateBack();
     
     // 4. Quran Specific Actions (Forwarded to QuranReader via Event)
-    else if (['next_page', 'prev_page', 'play_audio', 'stop_audio', 'quran_navigation', 'increase_font', 'decrease_font', 'change_theme', 'download_quran', 'download_tafsir', 'show_tafsir', 'open_bookmarks', 'go_to_page', 'go_to_juz', 'go_to_surah', 'go_to_ayah', 'set_font_size', 'contextual_number', 'download', 'cancel', 'ui_discovery', 'toggle_auto_scroll', 'pause_auto_scroll', 'stop_auto_scroll', 'close_modal', 'save_bookmark'].includes(action)) {
+    else if (['next_page', 'prev_page', 'play_audio', 'stop_audio', 'quran_navigation', 'increase_font', 'decrease_font', 'change_theme', 'download_quran', 'download_tafsir', 'show_tafsir', 'open_multi_tafseer', 'open_bookmarks', 'go_to_page', 'go_to_juz', 'go_to_surah', 'go_to_ayah', 'set_font_size', 'contextual_number', 'download', 'cancel', 'ui_discovery', 'toggle_auto_scroll', 'pause_auto_scroll', 'stop_auto_scroll', 'close_modal', 'save_bookmark'].includes(action)) {
       setHistory(prev => {
         if (prev[prev.length - 1] === 'quran') {
           window.dispatchEvent(new CustomEvent('voice-command', { detail: { action, text, params } }));
@@ -684,26 +704,45 @@ function App() {
 
   const page = history[history.length - 1];
 
-  const handleVideoSplashEnded = useCallback(() => {
+  const handleSplashEnded = useCallback(() => {
     let hasChosen = false;
     try {
       hasChosen = localStorage.getItem('has_selected_initial_language') === 'true';
-    } catch (e) {
-      hasChosen = false;
-    }
-    if (hasChosen) {
+    } catch (e) {}
+
+    if (hasChosen || hasChosenInitialLanguage) {
       setSplashStage('app');
     } else {
       setSplashStage('welcome');
     }
-  }, []);
+  }, [hasChosenInitialLanguage]);
 
   return (
     <TutorialProvider>
       <PrayerTimesProvider>
         <VoiceControlProvider onAction={handleVoiceAction}>
-          {/* 1. صفحة اختيار اللغة: يتم تجهيزها وعرضها تحت الفيديو في التشغيل لأول مرة لتظهر لحظياً فور انتهاء الفيديو */}
-          {(!hasChosenInitialLanguage || splashStage === 'welcome') && (
+          {/* 1. محتوى التطبيق الرئيسي (التصميم الذكي الحديث): جاهز في الخلفية لانتقال فوري */}
+          {splashStage === 'app' && (
+            <AppContent 
+              page={page} 
+              history={history}
+              navParams={navParams}
+              isThemeSelectorOpen={isThemeSelectorOpen}
+              showExitConfirm={showExitConfirm}
+              isSideMenuOpen={isSideMenuOpen}
+              setIsSideMenuOpen={setIsSideMenuOpen}
+              handleNavigate={handleNavigate}
+              navigateBack={navigateBack}
+              setIsThemeSelectorOpen={setIsThemeSelectorOpen}
+              setShowExitConfirm={setShowExitConfirm}
+              updateInfo={updateInfo}
+              setUpdateInfo={setUpdateInfo}
+              isSplashActive={false}
+            />
+          )}
+
+          {/* 2. صفحة اختيار اللغة: تظهر للمرة الأولى فقط عند تشغيل التطبيق لأول مرة ولا تظهر لاحقاً */}
+          {!hasChosenInitialLanguage && splashStage === 'welcome' && (
             <WelcomeSplash
               onSelectLanguage={(lang) => {
                 try {
@@ -719,29 +758,9 @@ function App() {
             />
           )}
 
-          {/* 2. محتوى التطبيق الرئيسي (التصميم الذكي الحديث): يتم تجهيزه تحت الفيديو في المرات اللاحقة ليظهر لحظياً فور انتهاء الفيديو */}
-          {hasChosenInitialLanguage && (splashStage === 'app' || splashStage === 'video') && (
-            <AppContent 
-              page={page} 
-              history={history}
-              navParams={navParams}
-              isThemeSelectorOpen={isThemeSelectorOpen}
-              showExitConfirm={showExitConfirm}
-              isSideMenuOpen={isSideMenuOpen}
-              setIsSideMenuOpen={setIsSideMenuOpen}
-              handleNavigate={handleNavigate}
-              navigateBack={navigateBack}
-              setIsThemeSelectorOpen={setIsThemeSelectorOpen}
-              setShowExitConfirm={setShowExitConfirm}
-              updateInfo={updateInfo}
-              setUpdateInfo={setUpdateInfo}
-              isSplashActive={splashStage !== 'app' || !hasChosenInitialLanguage}
-            />
-          )}
-
-          {/* 3. فيديو بداية التشغيل: يغطي الشاشة بالكامل (z-[9999]) ويظهر دائماً عند فتح التطبيق */}
-          {splashStage === 'video' && (
-            <VideoSplash onEnded={handleVideoSplashEnded} />
+          {/* 3. الشاشة الافتتاحية (الصورة المصممة): تظهر لحظياً عند التشغيل لمدة 3 ثوانٍ */}
+          {splashStage === 'splash' && (
+            <ImageSplash onEnded={handleSplashEnded} />
           )}
         </VoiceControlProvider>
       </PrayerTimesProvider>
@@ -767,7 +786,7 @@ function AppContent({
   isSplashActive = false
 }: any) {
   const { setCurrentPage: setVoicePage } = useVoiceControl();
-  const { theme, themeKey, applyPresetTheme, setCurrentPage: setThemePage } = useTheme();
+  const { theme, themeKey, applyPresetTheme } = useTheme();
   const { activeIqamaAlert, dismissIqamaAlert, activeAdhanAlert, dismissAdhanAlert } = usePrayerTimes();
   const [activeWirdAlert, setActiveWirdAlert] = useState<WirdAlertData | null>(null);
 
@@ -824,8 +843,7 @@ function AppContent({
 
   useEffect(() => {
     setVoicePage(page);
-    setThemePage(page);
-  }, [page, setVoicePage, setThemePage]);
+  }, [page, setVoicePage]);
 
   useWakeLock();
 

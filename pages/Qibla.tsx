@@ -16,13 +16,26 @@ const toRad = (deg: number) => deg * Math.PI / 180;
 const toDeg = (rad: number) => rad * 180 / Math.PI;
 
 function Qibla({ onBack, onNavigate }: { onBack: () => void, onNavigate: (page: string) => void }) {
-    const { theme, themeKey } = useTheme();
+    const { theme, themeKey, isNightMode, homeThemeVariant } = useTheme();
     const { t, language } = useLanguage();
     const isEn = language === 'en';
     
-    // Dynamic theme tokens
-    const isBlackTheme = themeKey === 'deep_black' || theme.bgColor === '#000000' || theme.name === 'أبيض وأسود' || theme.name === 'اسود';
-    const primaryColor = isBlackTheme ? '#FFFFFF' : (theme.palette?.[0] || theme.accent || theme.btnBg || '#2E7D5E');
+    // Dynamic theme tokens matching active theme variant & night mode
+    const isBlackTheme = isNightMode || themeKey === 'black_gold' || themeKey === 'deep_black' || theme.bgColor === '#000000' || theme.name === 'أبيض وأسود' || theme.name === 'اسود';
+    
+    let primaryColor = '#b45309';
+    if (isBlackTheme) {
+        primaryColor = '#fbbf24';
+    } else if (homeThemeVariant === 'sky' || themeKey === 'sky_mode') {
+        primaryColor = '#0284c7';
+    } else if (homeThemeVariant === 'emerald' || themeKey === 'emerald_mode') {
+        primaryColor = '#059669';
+    } else if (homeThemeVariant === 'burgundy' || themeKey === 'burgundy_mode') {
+        primaryColor = '#9f1239';
+    } else {
+        primaryColor = theme.palette?.[0] || theme.accent || theme.btnBg || '#b45309';
+    }
+
     const pageBgColor = isBlackTheme ? '#000000' : (theme.bgColor || '#F8FAFC');
 
     const { config, refreshLocation } = usePrayerTimes();
@@ -44,23 +57,59 @@ function Qibla({ onBack, onNavigate }: { onBack: () => void, onNavigate: (page: 
     const compassCircleRef = useRef<HTMLDivElement>(null);
     const qiblaPointerRef = useRef<HTMLDivElement>(null);
     const hasVibratedRef = useRef(false);
-    const [, setPermissionStatus] = useState('granted');
+    const [permissionStatus, setPermissionStatus] = useState<string>('unknown');
+    const [isSensorActive, setIsSensorActive] = useState(false);
+
+    // Continuous unwrapped heading tracking to eliminate 0°/360° spinning glitches
+    const lastRawAngleRef = useRef<number | null>(null);
+    const unwrappedHeadingRef = useRef<number>(0);
+    const isDraggingRef = useRef(false);
+    const dragStartAngleRef = useRef<number>(0);
+    const dragStartHeadingRef = useRef<number>(0);
+
+    const updateHeadingValue = (rawAngle: number) => {
+        // Account for screen orientation angle (e.g. landscape mode)
+        let screenAngle = 0;
+        if (typeof window !== 'undefined') {
+            if (window.orientation !== undefined) {
+                screenAngle = Number(window.orientation) || 0;
+            } else if (window.screen && window.screen.orientation && window.screen.orientation.angle !== undefined) {
+                screenAngle = window.screen.orientation.angle || 0;
+            }
+        }
+
+        const normalizedAngle = (rawAngle + screenAngle + 360) % 360;
+
+        if (lastRawAngleRef.current === null) {
+            lastRawAngleRef.current = normalizedAngle;
+            unwrappedHeadingRef.current = normalizedAngle;
+        } else {
+            // Shortest angle delta (-180 to +180)
+            let delta = (normalizedAngle - (unwrappedHeadingRef.current % 360) + 540) % 360 - 180;
+            unwrappedHeadingRef.current += delta;
+            lastRawAngleRef.current = normalizedAngle;
+        }
+
+        setIsSensorActive(true);
+        const finalNormalized = (unwrappedHeadingRef.current % 360 + 360) % 360;
+        setHeading(finalNormalized);
+    };
 
     const handleOrientation = (event: DeviceOrientationEvent) => {
         let angle: number | undefined;
-        if ((event as any).webkitCompassHeading) {
-            // iOS
+        if ((event as any).webkitCompassHeading !== undefined && (event as any).webkitCompassHeading !== null) {
+            // iOS Magnetic North Heading
             angle = (event as any).webkitCompassHeading;
-        } else if (event.absolute && event.alpha !== null) {
-            // Android absolute
+        } else if (event.absolute !== false && event.alpha !== null) {
+            // Android Absolute North
             angle = (360 - event.alpha) % 360;
         } else if (event.alpha !== null) {
-            // Android relative
+            // Android Relative North
             angle = (360 - event.alpha) % 360;
         }
         
-        if (typeof angle !== 'undefined') {
-            setHeading(angle);
+        if (typeof angle === 'number' && !isNaN(angle)) {
+            updateHeadingValue(angle);
         }
     };
 
@@ -76,9 +125,30 @@ function Qibla({ onBack, onNavigate }: { onBack: () => void, onNavigate: (page: 
         }
     };
 
+    const requestSensorPermission = async () => {
+        if (typeof (window.DeviceOrientationEvent as any)?.requestPermission === 'function') {
+            try {
+                const permission = await (window.DeviceOrientationEvent as any).requestPermission();
+                if (permission === 'granted') {
+                    setPermissionStatus('granted');
+                    window.addEventListener('deviceorientation', handleOrientation, true);
+                    return true;
+                } else {
+                    setPermissionStatus('denied');
+                    return false;
+                }
+            } catch (e) {
+                setPermissionStatus('denied');
+                return false;
+            }
+        }
+        return true;
+    };
+
     useEffect(() => {
         // Use location from PrayerTimesContext
-        if (config && config.location) {
+        if (config?.location && typeof config.location.lat === 'number' && typeof config.location.lng === 'number') {
+            setError('');
             calculateQiblaDirection(config.location.lat, config.location.lng);
         } else {
             setError(isEn ? 'Unable to determine location from Prayer Times settings.' : 'تعذر تحديد الموقع من إعدادات مواقيت الصلاة.');
@@ -91,26 +161,29 @@ function Qibla({ onBack, onNavigate }: { onBack: () => void, onNavigate: (page: 
                     const permission = await (window.DeviceOrientationEvent as any).requestPermission();
                     if (permission === 'granted') {
                         setPermissionStatus('granted');
-                        window.addEventListener('deviceorientation', handleOrientation);
+                        window.addEventListener('deviceorientation', handleOrientation, true);
                         return;
+                    } else {
+                        setPermissionStatus('prompt');
                     }
                 } catch (e) {
-                    // Fallback to standard listeners
+                    setPermissionStatus('prompt');
                 }
+            } else {
+                setPermissionStatus('granted');
             }
 
-            setPermissionStatus('granted');
             if ('ondeviceorientationabsolute' in window) {
-                (window as any).addEventListener('deviceorientationabsolute', handleOrientation);
+                (window as any).addEventListener('deviceorientationabsolute', handleOrientation, true);
             }
-            (window as any).addEventListener('deviceorientation', handleOrientation);
+            (window as any).addEventListener('deviceorientation', handleOrientation, true);
         };
 
         startCompass();
 
         return () => {
-            (window as any).removeEventListener('deviceorientation', handleOrientation);
-            (window as any).removeEventListener('deviceorientationabsolute', handleOrientation);
+            (window as any).removeEventListener('deviceorientation', handleOrientation, true);
+            (window as any).removeEventListener('deviceorientationabsolute', handleOrientation, true);
         };
     }, [config?.location, isEn]);
 
@@ -133,17 +206,21 @@ function Qibla({ onBack, onNavigate }: { onBack: () => void, onNavigate: (page: 
 
     useEffect(() => {
         if (qiblaDirection !== null) {
-            const finalRotation = qiblaDirection - heading;
+            const currentUnwrapped = unwrappedHeadingRef.current;
+            const pointerRotation = qiblaDirection - currentUnwrapped;
+            const dialRotation = -currentUnwrapped;
+
             if (qiblaPointerRef.current) {
-                qiblaPointerRef.current.style.transform = `rotate(${finalRotation}deg)`;
+                qiblaPointerRef.current.style.transform = `rotate(${pointerRotation}deg)`;
             }
 
             if (compassCircleRef.current) {
-                compassCircleRef.current.style.transform = `rotate(${-heading}deg)`;
+                compassCircleRef.current.style.transform = `rotate(${dialRotation}deg)`;
             }
 
-            const diff = Math.abs(heading - qiblaDirection);
-            const isFacingQibla = diff < 3 || diff > 357;
+            // Circular angle difference (exact)
+            const circularDiff = Math.abs((heading - qiblaDirection + 540) % 360 - 180);
+            const isFacingQibla = circularDiff <= 4;
 
             setIsAligned(isFacingQibla);
 
@@ -161,6 +238,41 @@ function Qibla({ onBack, onNavigate }: { onBack: () => void, onNavigate: (page: 
             }
         }
     }, [heading, qiblaDirection]);
+
+    // Manual Touch/Mouse Rotation Fallback for Desktop or Devices without compass hardware
+    const handleTouchOrMouseDown = (e: React.MouseEvent | React.TouchEvent) => {
+        if (isSensorActive) return; // Ignore drag if hardware compass sensor is active
+        const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+        const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+        const target = e.currentTarget as HTMLElement;
+        const rect = target.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+
+        isDraggingRef.current = true;
+        dragStartAngleRef.current = Math.atan2(clientY - centerY, clientX - centerX) * (180 / Math.PI);
+        dragStartHeadingRef.current = heading;
+    };
+
+    const handleTouchOrMouseMove = (e: React.MouseEvent | React.TouchEvent) => {
+        if (!isDraggingRef.current || isSensorActive) return;
+        const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+        const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+        const target = e.currentTarget as HTMLElement;
+        const rect = target.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+
+        const currentTouchAngle = Math.atan2(clientY - centerY, clientX - centerX) * (180 / Math.PI);
+        const delta = currentTouchAngle - dragStartAngleRef.current;
+        const newHeading = (dragStartHeadingRef.current - delta + 360) % 360;
+        
+        updateHeadingValue(newHeading);
+    };
+
+    const handleTouchOrMouseUp = () => {
+        isDraggingRef.current = false;
+    };
 
     const handleGoHome = () => {
         onNavigate('home');
@@ -293,7 +405,14 @@ function Qibla({ onBack, onNavigate }: { onBack: () => void, onNavigate: (page: 
                     <div className="flex-1 flex flex-col items-center justify-start w-full pt-8 sm:pt-10">
                         {/* واجهة البوصلة: دائرة بتظليل ناعم Neumorphic / مسطح بدون حلقة سوداء صلبة */}
                         <div 
-                            className={`relative w-64 h-64 md:w-80 md:h-80 rounded-full flex items-center justify-center transition-all duration-300 ${
+                            onMouseDown={handleTouchOrMouseDown}
+                            onMouseMove={handleTouchOrMouseMove}
+                            onMouseUp={handleTouchOrMouseUp}
+                            onMouseLeave={handleTouchOrMouseUp}
+                            onTouchStart={handleTouchOrMouseDown}
+                            onTouchMove={handleTouchOrMouseMove}
+                            onTouchEnd={handleTouchOrMouseUp}
+                            className={`relative w-64 h-64 md:w-80 md:h-80 rounded-full flex items-center justify-center transition-all duration-300 cursor-grab active:cursor-grabbing ${
                                 isBlackTheme 
                                     ? 'bg-[#18181b] border border-white/10' 
                                     : 'bg-white'
@@ -309,7 +428,7 @@ function Qibla({ onBack, onNavigate }: { onBack: () => void, onNavigate: (page: 
                             }}
                         >
                             
-                            <div ref={compassCircleRef} className="absolute w-full h-full transition-transform duration-500 ease-out">
+                            <div ref={compassCircleRef} className="absolute w-full h-full transition-transform duration-300 ease-out pointer-events-none">
                                  {/* Direction letters outside/inside the circle: North (N / ش), South (S / ج), West (W / غ), East (E / ق) */}
                                  <div 
                                      className="absolute -top-9 left-1/2 -translate-x-1/2 text-2xl font-black select-none tracking-tight" 
@@ -349,7 +468,7 @@ function Qibla({ onBack, onNavigate }: { onBack: () => void, onNavigate: (page: 
                             
                             {/* سهم اتجاه القبلة: ملون بلون الثيم الأساسي للتطبيق */}
                             {qiblaDirection !== null && (
-                                 <div ref={qiblaPointerRef} className="absolute w-full h-full transition-transform duration-500 ease-out pointer-events-none">
+                                 <div ref={qiblaPointerRef} className="absolute w-full h-full transition-transform duration-300 ease-out pointer-events-none">
                                      <svg viewBox="0 0 100 100" className="w-full h-full" style={{ filter: `drop-shadow(0 3px 6px ${primaryColor}40)` }}>
                                         <path d="M50 0 L60 20 L50 15 L40 20 Z" fill={primaryColor} />
                                     </svg>
@@ -357,12 +476,12 @@ function Qibla({ onBack, onNavigate }: { onBack: () => void, onNavigate: (page: 
                             )}
                             
                             {/* أيقونة الكعبة المشرفة عند المحاذاة التامة */}
-                            <div className="transition-all duration-500" style={{ opacity: isAligned ? 1 : 0, transform: isAligned ? 'scale(1)' : 'scale(0)' }}>
+                            <div className="transition-all duration-500 pointer-events-none" style={{ opacity: isAligned ? 1 : 0, transform: isAligned ? 'scale(1)' : 'scale(0)' }}>
                                  <i 
                                     className="fa-solid fa-kaaba text-6xl" 
                                     style={{ 
                                         color: primaryColor, 
-                                        transform: `rotate(${heading}deg)` 
+                                        transform: `rotate(${unwrappedHeadingRef.current}deg)` 
                                     }}
                                  ></i>
                             </div>
@@ -370,7 +489,7 @@ function Qibla({ onBack, onNavigate }: { onBack: () => void, onNavigate: (page: 
                             {/* النقطة المركزية: ملونة بلون الثيم الأساسي للتطبيق بدلاً من البنفسجي */}
                             {!isAligned && (
                                 <div 
-                                    className="absolute w-3.5 h-3.5 rounded-full border-2 border-white shadow-md transition-all duration-300" 
+                                    className="absolute w-3.5 h-3.5 rounded-full border-2 border-white shadow-md transition-all duration-300 pointer-events-none" 
                                     style={{ 
                                         backgroundColor: primaryColor,
                                         boxShadow: `0 0 10px ${primaryColor}80` 
@@ -378,16 +497,26 @@ function Qibla({ onBack, onNavigate }: { onBack: () => void, onNavigate: (page: 
                                 ></div>
                             )}
                         </div>
+
+                        {permissionStatus === 'prompt' && (
+                            <button
+                                onClick={requestSensorPermission}
+                                className="mt-4 px-4 py-2 rounded-xl text-xs font-bold text-white shadow-md active:scale-95 transition-all cursor-pointer"
+                                style={{ backgroundColor: primaryColor }}
+                            >
+                                {isEn ? 'Enable Motion Sensors' : 'تفعيل حساس البوصلة والحركة'}
+                            </button>
+                        )}
                         
                         {/* بطاقة المعلومات السفلية: بطاقة بيضاء نقية بظلال ناعمة وزوايا دائرية وبدون حدود سوداء */}
                         {qiblaDirection !== null && (
                             <div 
-                                className={`p-4 sm:p-5 rounded-2xl transition-all duration-300 w-72 mt-9 mb-4 shrink-0 text-center ${
+                                className={`app-page-card border-0 p-4 sm:p-5 rounded-2xl transition-all duration-300 w-72 mt-9 mb-4 shrink-0 text-center ${
                                     isBlackTheme 
-                                        ? 'bg-[#18181b] border border-white/10 text-white shadow-[0_8px_30px_-4px_rgba(0,0,0,0.7)]' 
-                                        : 'bg-white text-slate-800 shadow-[0_8px_30px_-4px_rgba(0,0,0,0.06),0_4px_12px_-2px_rgba(0,0,0,0.03)]'
+                                        ? 'bg-[#18181b] text-white' 
+                                        : 'bg-white text-slate-800'
                                 }`}
-                                style={{ borderRadius: '16px' }}
+                                style={{ borderRadius: '16px', border: 'none' }}
                             >
                                 {/* زاوية القبلة ملونة بلون الثيم الأساسي للتطبيق */}
                                 <div className="flex items-center justify-center gap-1.5 mb-0.5">

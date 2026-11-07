@@ -93,7 +93,7 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
     const [toast, setToast] = useState<{ show: boolean; message: string }>({ show: false, message: '' });
 
     // Interactive Spotlight Guides - independent for each tab
-    const [showSetupTour, setShowSetupTour] = useState(() => !getGuideSeen('memorization_setup_tour'));
+    const [showSetupTour, setShowSetupTour] = useState(false);
     const [showReviewTour, setShowReviewTour] = useState(false);
 
     useEffect(() => {
@@ -452,7 +452,7 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                                 </div>
                                 <div 
                                     onClick={() => setActivePicker('reader')}
-                                    className="w-full p-4 rounded-2xl cursor-pointer font-medium text-sm shadow-[0_2px_10px_rgba(0,0,0,0.03)] hover:shadow-md flex items-center justify-between transition-all bg-white dark:bg-zinc-900 border-0"
+                                    className="app-page-card border-0 w-full p-4 rounded-2xl cursor-pointer font-medium text-sm flex items-center justify-between transition-all bg-white dark:bg-zinc-900"
                                 >
                                     <div className="flex items-center gap-3">
                                         <div 
@@ -483,7 +483,7 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                                 
                                 <div className="grid grid-cols-2 gap-3">
                                     {/* From */}
-                                    <div className="p-3.5 rounded-2xl bg-white dark:bg-zinc-900 shadow-[0_2px_10px_rgba(0,0,0,0.03)] space-y-2 border-0">
+                                    <div className="app-page-card border-0 p-3.5 rounded-2xl bg-white dark:bg-zinc-900 space-y-2">
                                         <div className="flex items-center justify-center gap-1.5 text-xs font-bold" style={{ color: primaryColor }}>
                                             <span>{isEn ? 'From Verse' : 'من الآية'}</span>
                                         </div>
@@ -506,7 +506,7 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                                     </div>
 
                                     {/* To */}
-                                    <div className="p-3.5 rounded-2xl bg-white dark:bg-zinc-900 shadow-[0_2px_10px_rgba(0,0,0,0.03)] space-y-2 border-0">
+                                    <div className="app-page-card border-0 p-3.5 rounded-2xl bg-white dark:bg-zinc-900 space-y-2">
                                         <div className="flex items-center justify-center gap-1.5 text-xs font-bold" style={{ color: primaryColor }}>
                                             <span>{isEn ? 'To Verse' : 'إلى الآية'}</span>
                                         </div>
@@ -537,7 +537,7 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                                     <span>{isEn ? 'Repetition Settings' : 'إعدادات التكرار'}</span>
                                 </div>
 
-                                <div className="p-3.5 rounded-2xl bg-white dark:bg-zinc-900 shadow-[0_2px_10px_rgba(0,0,0,0.03)] border-0">
+                                <div className="app-page-card border-0 p-3.5 rounded-2xl bg-white dark:bg-zinc-900">
                                     <div className="grid grid-cols-2 gap-3">
                                         {/* Range Repeat */}
                                         <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50 dark:bg-zinc-800/50">
@@ -600,7 +600,7 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                             {/* Test After Session Toggle Card */}
                             <div 
                                 id="test-after-session-container" 
-                                className="flex items-center justify-between p-4 rounded-2xl bg-white dark:bg-zinc-900 shadow-[0_2px_10px_rgba(0,0,0,0.03)] border-0"
+                                className="app-page-card border-0 flex items-center justify-between p-4 rounded-2xl bg-white dark:bg-zinc-900"
                             >
                                 <div className="flex items-center gap-2.5 font-bold text-sm" style={{ color: 'var(--text-color)' }}>
                                     <div 
@@ -672,7 +672,7 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                         <div className="space-y-4 animate-fadeIn">
                             {/* Review Stats */}
                             <div id="memorization-review-stats" className="grid grid-cols-2 gap-3">
-                                <div className="p-4 rounded-2xl text-center shadow-[0_2px_10px_rgba(0,0,0,0.03)] bg-white dark:bg-zinc-900 border-0">
+                                <div className="app-page-card border-0 p-4 rounded-2xl text-center bg-white dark:bg-zinc-900">
                                     <div 
                                         className="w-11 h-11 rounded-2xl flex items-center justify-center mx-auto mb-2"
                                         style={{ backgroundColor: hexToRgba(primaryColor, 0.12), color: primaryColor }}
@@ -687,7 +687,7 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                                     </div>
                                 </div>
 
-                                <div className="p-4 rounded-2xl text-center shadow-[0_2px_10px_rgba(0,0,0,0.03)] bg-white dark:bg-zinc-900 border-0">
+                                <div className="app-page-card border-0 p-4 rounded-2xl text-center bg-white dark:bg-zinc-900">
                                     <div 
                                         className="w-11 h-11 rounded-2xl flex items-center justify-center mx-auto mb-2"
                                         style={{ backgroundColor: hexToRgba(secondaryColor, 0.12), color: secondaryColor }}
@@ -751,7 +751,7 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                                             <div 
                                                 key={range.id} 
                                                 id={idx === 0 ? "first-review-card" : undefined}
-                                                className="p-4 rounded-2xl space-y-3 relative overflow-hidden shadow-[0_2px_10px_rgba(0,0,0,0.03)] bg-white dark:bg-zinc-900 border-0 transition-all"
+                                                className="app-page-card border-0 p-4 rounded-2xl space-y-3 relative overflow-hidden bg-white dark:bg-zinc-900 transition-all"
                                             >
                                                 {isDue && (
                                                     <div 

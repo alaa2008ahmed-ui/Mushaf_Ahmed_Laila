@@ -18,8 +18,9 @@
     <string name="shortcut_azkar_long">الأذكار وحصن المسلم</string>
 
     <!-- Widgets -->
-    <string name="widget_name_classic">١. مواقيت الصلاة - كلاسيكي شامل</string>
-    <string name="widget_name_compact">٢. مواقيت الصلاة - مصغر (السابقة والقادمة)</string>
+    <string name="widget_name_classic">١. مواقيت الصلاة - كلاسيكي شامل (٤×١)</string>
+    <string name="widget_name_compact">٢. مواقيت الصلاة - مصغر (السابقة والقادمة) (٤×١)</string>
+    <string name="widget_name_single">٣. مواقيت الصلاة - الصلاة القادمة فقط (٢×١)</string>
 </resources>
 
 

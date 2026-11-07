@@ -297,7 +297,7 @@ const SearchModal: React.FC<SearchModalProps> = ({ quranData, onSelect, onClose,
                     {/* Full Screen Modal Header without top back button */}
                     <div className="p-3 flex items-center justify-center shrink-0 relative" style={{ backgroundColor: currentTheme?.bg || '#ffffff', paddingTop: 'calc(0.75rem + env(safe-area-inset-top))' }}>
                         <h3 className="text-sm font-extrabold px-6 py-2 rounded-xl quran-raised-card inline-flex items-center justify-center gap-2 tracking-wide" style={{ backgroundColor: isDarkTheme ? (currentTheme?.btnBg || 'rgba(255,255,255,0.06)') : '#ffffff', color: currentTheme?.text }}>
-                            <svg className="w-4 h-4 quran-3d-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: currentTheme?.accent || '#10b981' }}><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                            <svg className="w-4 h-4 quran-3d-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: currentTheme?.id === 'deep_black' ? '#ffffff' : (currentTheme?.accent || '#10b981') }}><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                             <span>{isEn ? "Advanced Search in Quran" : "البحث المتقدم"}</span>
                         </h3>
                     </div>
@@ -385,7 +385,7 @@ const SearchModal: React.FC<SearchModalProps> = ({ quranData, onSelect, onClose,
                                         border: 'none',
                                     }}
                                 >
-                                    <h4 className="font-amiri-quran text-xl font-bold" style={{ color: currentTheme?.accent || '#10b981' }}>
+                                    <h4 className="font-amiri-quran text-xl font-bold" style={{ color: currentTheme?.id === 'deep_black' ? '#ffffff' : (currentTheme?.accent || '#10b981') }}>
                                         {surahDisplayName}
                                     </h4>
                                     <div className="flex items-center gap-2">

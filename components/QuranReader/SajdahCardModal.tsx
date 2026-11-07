@@ -9,7 +9,7 @@ const SajdahCardModal: FC<{
 }> = ({ info, onClose, isLandscape, currentTheme }) => {
     if (!info.show) return null;
 
-    const accentColor = currentTheme?.accent || '#38bdf8';
+    const accentColor = currentTheme?.id === 'deep_black' ? '#ffffff' : (currentTheme?.accent || '#38bdf8');
     const btnBg = currentTheme?.btnBg || accentColor;
     const btnText = currentTheme?.btnText || '#ffffff';
     const btnBorder = currentTheme?.btnBorder || 'transparent';

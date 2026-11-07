@@ -107,8 +107,8 @@ const FontSelectModal: FC<{
                                     {isSelected && <i className="fa-solid fa-circle-check text-xs quran-3d-icon"></i>}
                                 </div>
                                 <span 
-                                    className={`w-full truncate px-1 opacity-80 ${isTranslationMode ? 'text-sm text-left font-normal italic tracking-wide' : 'text-xs text-center'}`}
-                                    style={{ fontFamily: f.id }}
+                                    className={`w-full truncate px-1 opacity-95 font-preview font-quran ${isTranslationMode ? 'text-sm text-left font-normal italic tracking-wide' : 'text-base sm:text-lg text-center font-normal'}`}
+                                    style={{ fontFamily: f.id, fontStyle: 'normal' }}
                                 >
                                     {previewText}
                                 </span>

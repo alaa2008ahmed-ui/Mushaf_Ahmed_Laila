@@ -50,6 +50,10 @@ public class MainActivity extends BridgeActivity {
             coldSeq = nextShortcutSeq();
             pendingShortcut = coldTarget;
             savePendingShortcutPrefs(coldTarget, coldSeq);
+        } else {
+            try {
+                getWindow().setBackgroundDrawableResource(R.drawable.splash_screen);
+            } catch (Exception ignored) {}
         }
 
         // Pass genuine incomingIntent to super.onCreate so Capacitor's bridge captures getLaunchUrl and deep links
@@ -418,6 +422,16 @@ public class MainActivity extends BridgeActivity {
                 {"habit_tracker_channel", isArabic ? "تذكير العادات والسنن" : "Habit Tracker Reminders", "chime"},
                 {"athkar_reminders_chime_channel", isArabic ? "تذكير العادات ومربي العبادات" : "Habit Tracker Reminders", "chime"},
 
+                // Dedicated Adhkar & Reminders tone channels (v4)
+                {"athkar_channel_v4_chime", isArabic ? "تنبيهات وأذكار (رنين هادئ)" : "Reminders (Chime)", "chime"},
+                {"athkar_channel_v4_notif_bell", isArabic ? "تنبيهات وأذكار (جرس لطيف)" : "Reminders (Bell)", "notif_bell"},
+                {"athkar_channel_v4_notif_crystal", isArabic ? "تنبيهات وأذكار (بلورات نقية)" : "Reminders (Crystal)", "notif_crystal"},
+                {"athkar_channel_v4_notif_droplet", isArabic ? "تنبيهات وأذكار (قطرة ماء)" : "Reminders (Droplet)", "notif_droplet"},
+                {"athkar_channel_v4_notif_harpeggio", isArabic ? "تنبيهات وأذكار (وتر هادئ)" : "Reminders (Harpeggio)", "notif_harpeggio"},
+                {"athkar_channel_v4_notif_subtle", isArabic ? "تنبيهات وأذكار (تنبيه خفيف)" : "Reminders (Subtle)", "notif_subtle"},
+                {"athkar_channel_v4_notif_marimba", isArabic ? "تنبيهات وأذكار (نغمة خشبية)" : "Reminders (Marimba)", "notif_marimba"},
+                {"athkar_channel_v4_silent", isArabic ? "تنبيهات وأذكار (بدون صوت)" : "Reminders (Silent)", "none"},
+
                 // Islamic Occasions
                 {"islamic_eid_channel", isArabic ? "تكبيرات وأعياد المسلمين" : "Eid Takbeers", "takbeer1"},
                 {"islamic_mawlid_channel", isArabic ? "المولد النبوي الشريف" : "Prophet Birthday Remembrance", "salah"},
@@ -435,14 +449,18 @@ public class MainActivity extends BridgeActivity {
                     channel.setDescription(isArabic ? "تنبيه مع أيقونة بالشريط العلوي وصوت مخصص" : "High priority alert with status bar icon");
                     channel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
                     channel.setBypassDnd(true);
-                    channel.enableVibration(true);
+                    channel.enableVibration(!"none".equals(rawSound));
                     channel.enableLights(true);
                     channel.setShowBadge(false); // Disabling badge prevents continuous "1" on launcher icon
 
-                    int resId = getResources().getIdentifier(rawSound, "raw", getPackageName());
-                    if (resId != 0) {
-                        Uri soundUri = Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + getPackageName() + "/" + resId);
-                        channel.setSound(soundUri, alarmAudioAttributes);
+                    if (rawSound != null && !"none".equals(rawSound)) {
+                        int resId = getResources().getIdentifier(rawSound, "raw", getPackageName());
+                        if (resId != 0) {
+                            Uri soundUri = Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + getPackageName() + "/" + resId);
+                            channel.setSound(soundUri, alarmAudioAttributes);
+                        }
+                    } else {
+                        channel.setSound(null, null);
                     }
 
                     nm.createNotificationChannel(channel);

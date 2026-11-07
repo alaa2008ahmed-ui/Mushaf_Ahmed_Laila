@@ -81,6 +81,15 @@ public class PrayerAClassicWidgetProvider extends AppWidgetProvider {
                     PrayerCompactWidgetProvider.updateAppWidget(context, appWidgetManager, id);
                 }
             }
+
+            // 3. Single Prayer (1x1) Widget Provider
+            ComponentName compSingle = new ComponentName(context, PrayerSinglePrayerWidgetProvider.class);
+            int[] idsSingle = appWidgetManager.getAppWidgetIds(compSingle);
+            if (idsSingle != null && idsSingle.length > 0) {
+                for (int id : idsSingle) {
+                    PrayerSinglePrayerWidgetProvider.updateAppWidget(context, appWidgetManager, id);
+                }
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -418,30 +427,38 @@ public class PrayerAClassicWidgetProvider extends AppWidgetProvider {
             views.setViewVisibility(R.id.widget_app_icon_large, View.GONE);
         }
 
-        // Dynamic Font Scaling on Widget Resize: Standard reference matching compact widget height (85dp)
+        // On 1-row height (< 75dp), hide night strip so top header and 6 prayer times fit cleanly without clipping
+        if (minHeight > 0 && minHeight < 75) {
+            views.setViewVisibility(R.id.widget_bottom_section, View.GONE);
+        } else {
+            views.setViewVisibility(R.id.widget_bottom_section, View.VISIBLE);
+        }
+
+        // Dynamic Font Scaling on Widget Resize: Reference height for 1-row mode is ~45dp, 2-row is ~85dp
+        float hRef = (minHeight > 0 && minHeight < 75) ? 45f : 85f;
         float wRatio = (minWidth > 0) ? (minWidth / 220f) : 1.0f;
-        float hRatio = (minHeight > 0) ? (minHeight / 85f) : 1.0f;
+        float hRatio = (minHeight > 0) ? (minHeight / hRef) : 1.0f;
 
         float fontScale;
         if (isLarge) {
             // Large/tall widget mode: scale based on available dimension growth
             float sizeFactor = Math.min(Math.max(1.0f, wRatio), Math.max(1.0f, hRatio));
-            fontScale = Math.max(1.0f, Math.min(1.20f, sizeFactor));
+            fontScale = Math.max(1.0f, Math.min(1.25f, sizeFactor));
         } else {
             fontScale = Math.min(wRatio, hRatio);
-            fontScale = Math.max(0.70f, Math.min(1.0f, fontScale));
+            fontScale = Math.max(0.92f, Math.min(1.15f, fontScale));
         }
 
         boolean isVerticallyCompressed = !isLarge && (minHeight > 0 && minHeight < 60);
 
-        views.setTextViewTextSize(R.id.widget_hijri_date, TypedValue.COMPLEX_UNIT_SP, Math.round(10.5f * fontScale));
-        views.setTextViewTextSize(R.id.widget_gregorian_date, TypedValue.COMPLEX_UNIT_SP, Math.round(9.5f * fontScale));
-        views.setTextViewTextSize(R.id.widget_next_prayer_name, TypedValue.COMPLEX_UNIT_SP, Math.round(11.5f * fontScale));
-        views.setTextViewTextSize(R.id.widget_next_prayer_time, TypedValue.COMPLEX_UNIT_SP, Math.round(13.5f * fontScale));
-        views.setTextViewTextSize(R.id.widget_next_prayer_time_en, TypedValue.COMPLEX_UNIT_SP, Math.round(13.5f * fontScale));
+        views.setTextViewTextSize(R.id.widget_hijri_date, TypedValue.COMPLEX_UNIT_SP, Math.round(12.0f * fontScale));
+        views.setTextViewTextSize(R.id.widget_gregorian_date, TypedValue.COMPLEX_UNIT_SP, Math.round(10.5f * fontScale));
+        views.setTextViewTextSize(R.id.widget_next_prayer_name, TypedValue.COMPLEX_UNIT_SP, Math.round(13.0f * fontScale));
+        views.setTextViewTextSize(R.id.widget_next_prayer_time, TypedValue.COMPLEX_UNIT_SP, Math.round(15.0f * fontScale));
+        views.setTextViewTextSize(R.id.widget_next_prayer_time_en, TypedValue.COMPLEX_UNIT_SP, Math.round(15.0f * fontScale));
 
-        int prayerNameSize = Math.round(10.5f * fontScale);
-        int prayerTimeSize = Math.round(12.5f * fontScale);
+        int prayerNameSize = Math.round(12.0f * fontScale);
+        int prayerTimeSize = Math.round(14.0f * fontScale);
         views.setTextViewTextSize(R.id.name_fajr, TypedValue.COMPLEX_UNIT_SP, prayerNameSize);
         views.setTextViewTextSize(R.id.time_fajr, TypedValue.COMPLEX_UNIT_SP, prayerTimeSize);
         views.setTextViewTextSize(R.id.name_sunrise, TypedValue.COMPLEX_UNIT_SP, prayerNameSize);
@@ -455,21 +472,27 @@ public class PrayerAClassicWidgetProvider extends AppWidgetProvider {
         views.setTextViewTextSize(R.id.name_isha, TypedValue.COMPLEX_UNIT_SP, prayerNameSize);
         views.setTextViewTextSize(R.id.time_isha, TypedValue.COMPLEX_UNIT_SP, prayerTimeSize);
 
-        int nightSize = Math.round(9.5f * fontScale);
+        int nightSize = Math.round(10.5f * fontScale);
         views.setTextViewTextSize(R.id.widget_first_third, TypedValue.COMPLEX_UNIT_SP, nightSize);
         views.setTextViewTextSize(R.id.widget_midnight, TypedValue.COMPLEX_UNIT_SP, nightSize);
         views.setTextViewTextSize(R.id.widget_last_third, TypedValue.COMPLEX_UNIT_SP, nightSize);
 
 
+        String nextPrayerId = "fajr";
+        JSONObject cachedThemeObj = null;
+
         if (prayerJson != null && !prayerJson.trim().isEmpty()) {
 
             try {
                 JSONObject data = new JSONObject(prayerJson);
+                if (data.has("theme") && !data.isNull("theme")) {
+                    cachedThemeObj = data.getJSONObject("theme");
+                }
                 String city = data.optString("city", "");
                 // Note: city text removed from over icon as requested
 
                 JSONObject times = data.optJSONObject("times");
-                String nextPrayerId = data.optString("next_prayer_id", "");
+                nextPrayerId = data.optString("next_prayer_id", "fajr");
                 String nextPrayerName = data.optString("next_prayer_name", "");
                 long targetTimeMillis = data.optLong("target_time_millis", 0);
                 long now = System.currentTimeMillis();
@@ -691,33 +714,37 @@ public class PrayerAClassicWidgetProvider extends AppWidgetProvider {
                         PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
                 );
                 scheduleSafeAlarm(context, midCal.getTimeInMillis(), midPending);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
 
+        try {
                 // Theming & Color Palette for Smart Modern Home Design (التصميم الذكي الحديث)
-                boolean isDark = true;
-                if (data.has("theme") && !data.isNull("theme")) {
-                    JSONObject themeObj = data.getJSONObject("theme");
-                    isDark = themeObj.optBoolean("isDark", true);
+                boolean isDark = false;
+                if (cachedThemeObj != null) {
+                    isDark = cachedThemeObj.optBoolean("isDark", false);
                 }
 
-                // Smart Modern Home Layout Color Defaults (Night & Day Modes)
-                int rootBgColor = isDark ? Color.parseColor("#18181B") : Color.parseColor("#F8FAFC");
+                // Smart Modern Home Layout Color Defaults (Amber / عنبري Default)
+                int rootBgColor = isDark ? Color.parseColor("#18181B") : Color.parseColor("#F8DE8A");
                 int middleBgColor = isDark ? Color.parseColor("#18181B") : Color.parseColor("#FFFFFF");
-                int section1Bg = isDark ? Color.parseColor("#064E3B") : Color.parseColor("#E6F4EA");
-                int section1Text = isDark ? Color.parseColor("#34D399") : Color.parseColor("#059669");
-                int section2Bg = isDark ? Color.parseColor("#261C12") : Color.parseColor("#FEF3C7");
-                int section2Text = isDark ? Color.parseColor("#FDE68A") : Color.parseColor("#B45309");
-                int nextPrayerColor = isDark ? Color.parseColor("#34D399") : Color.parseColor("#059669");
-                int highlightPrayerColor = isDark ? Color.parseColor("#F59E0B") : Color.parseColor("#059669");
-                int sepColor = isDark ? Color.parseColor("#27272A") : Color.parseColor("#E2E8F0");
-                int textColor = isDark ? Color.parseColor("#FFFFFF") : Color.parseColor("#1E293B");
+                int section1Bg = isDark ? Color.parseColor("#064E3B") : Color.parseColor("#C86400");
+                int section1Text = isDark ? Color.parseColor("#34D399") : Color.parseColor("#FFFFFF");
+                int section2Bg = isDark ? Color.parseColor("#261C12") : Color.parseColor("#F8DE8A");
+                int section2Text = isDark ? Color.parseColor("#FDE68A") : Color.parseColor("#000000");
+                int nextPrayerColor = isDark ? Color.parseColor("#34D399") : Color.parseColor("#FFFFFF");
+                int highlightPrayerColor = isDark ? Color.parseColor("#F59E0B") : Color.parseColor("#C86400");
+                int sepColor = isDark ? Color.parseColor("#27272A") : Color.parseColor("#E5D07B");
+                int textColor = isDark ? Color.parseColor("#FFFFFF") : Color.parseColor("#000000");
 
-                int stripColor1 = isDark ? Color.parseColor("#34D399") : Color.parseColor("#059669");
-                int stripColor2 = isDark ? Color.parseColor("#F59E0B") : Color.parseColor("#D97706");
-                int stripColor3 = isDark ? Color.parseColor("#10B981") : Color.parseColor("#10B981");
+                int stripColor1 = isDark ? Color.parseColor("#34D399") : Color.parseColor("#C86400");
+                int stripColor2 = isDark ? Color.parseColor("#F59E0B") : Color.parseColor("#F8DE8A");
+                int stripColor3 = isDark ? Color.parseColor("#10B981") : Color.parseColor("#D97706");
                 int stripColor4 = isDark ? Color.parseColor("#D97706") : Color.parseColor("#B45309");
 
-                if (data.has("theme") && !data.isNull("theme")) {
-                    JSONObject themeObj = data.getJSONObject("theme");
+                if (cachedThemeObj != null) {
+                    JSONObject themeObj = cachedThemeObj;
 
                     if (themeObj.has("rootBg")) {
                         try { rootBgColor = Color.parseColor(themeObj.getString("rootBg")); } catch (Exception ignored) {}
@@ -810,7 +837,7 @@ public class PrayerAClassicWidgetProvider extends AppWidgetProvider {
                 String overrideTheme = prefs.getString("widget_theme_" + appWidgetId, null);
                 if (overrideTheme == null || overrideTheme.trim().isEmpty()) {
                     overrideTheme = prefs.getString("widget_classic_theme",
-                            prefs.getString("widget_theme", "royal_gold_3d"));
+                            prefs.getString("widget_theme", "golden_trio"));
                 }
 
                 if ("royal_gold_3d".equalsIgnoreCase(overrideTheme)) {
@@ -1108,7 +1135,7 @@ public class PrayerAClassicWidgetProvider extends AppWidgetProvider {
                     sepColor = Color.parseColor("#E5D07B");
                     stripColor1 = Color.parseColor("#C86400");
                     stripColor2 = Color.parseColor("#F8DE8A");
-                    stripColor3 = Color.parseColor("#78350F");
+                    stripColor3 = Color.parseColor("#D97706");
                     stripColor4 = Color.parseColor("#B45309");
                     section2Bg = Color.parseColor("#F8DE8A");
                     section2Text = Color.parseColor("#000000");
@@ -1194,9 +1221,13 @@ public class PrayerAClassicWidgetProvider extends AppWidgetProvider {
                 section1Bg = Color.argb(alphaVal, Color.red(section1Bg), Color.green(section1Bg), Color.blue(section1Bg));
                 section2Bg = Color.argb(alphaVal, Color.red(section2Bg), Color.green(section2Bg), Color.blue(section2Bg));
 
+                boolean isGoldenTrioTheme = "golden_trio".equalsIgnoreCase(overrideTheme);
+                int topRightBg = isGoldenTrioTheme ? section1Bg : rootBgColor;
+                int countdownTextColor = isGoldenTrioTheme ? Color.parseColor("#FFFFFF") : textColor;
+
                 // Apply section and container background colors unconditionally
                 views.setInt(R.id.widget_root, "setBackgroundColor", rootBgColor);
-                views.setInt(R.id.widget_top_right_section, "setBackgroundColor", rootBgColor);
+                views.setInt(R.id.widget_top_right_section, "setBackgroundColor", topRightBg);
                 views.setInt(R.id.widget_middle_section, "setBackgroundColor", middleBgColor);
                 views.setInt(R.id.widget_left_section, "setBackgroundColor", section1Bg);
                 views.setInt(R.id.widget_bottom_section, "setBackgroundColor", section2Bg);
@@ -1225,8 +1256,8 @@ public class PrayerAClassicWidgetProvider extends AppWidgetProvider {
 
                 // Top-right countdown and next prayer label
                 views.setTextColor(R.id.widget_next_prayer_name, nextPrayerColor);
-                views.setTextColor(R.id.widget_next_prayer_time, textColor);
-                views.setTextColor(R.id.widget_next_prayer_time_en, textColor);
+                views.setTextColor(R.id.widget_next_prayer_time, countdownTextColor);
+                views.setTextColor(R.id.widget_next_prayer_time_en, countdownTextColor);
 
                 // Default prayer text colors in the row
                 views.setTextColor(R.id.name_fajr, textColor);
@@ -1263,9 +1294,8 @@ public class PrayerAClassicWidgetProvider extends AppWidgetProvider {
                     views.setTextColor(R.id.time_isha, highlightPrayerColor);
                 }
 
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
 
         appWidgetManager.updateAppWidget(appWidgetId, views);

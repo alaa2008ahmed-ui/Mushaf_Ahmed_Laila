@@ -13,6 +13,8 @@ import {
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 
+import { getClusterForLanguage, syncClusterTheme, syncClusterSettings } from '../../utils/quranClusterSync';
+
 interface ThemesModalProps {
     onClose: () => void;
     showToast: (msg: string) => void;
@@ -25,6 +27,7 @@ const ThemesModal: React.FC<ThemesModalProps> = ({ onClose, showToast, isLandsca
     const { applyPresetTheme: _unused } = useTheme();
     const { language, isRTL, t: langT } = useLanguage();
     const isEn = language === 'en';
+    const cluster = getClusterForLanguage(language);
     const layout = getCurrentLayoutContext();
     const currentThemeId = getQuranThemeForLayout(layout, modeSuffix, readingMode);
     const activeTheme = THEMES[currentThemeId as keyof typeof THEMES] || (layout === 'classic' ? THEMES['black'] : THEMES['gold']);
@@ -52,6 +55,22 @@ const ThemesModal: React.FC<ThemesModalProps> = ({ onClose, showToast, isLandsca
         const newValue = !isTransparent;
         setIsTransparent(newValue);
         localStorage.setItem('transparent_mode' + modeSuffix, String(newValue));
+        // Also sync transparency across cluster
+        if (cluster === 'ar') {
+            ['mushaf', 'tafseer', 'meanings', 'bilingual'].forEach(m => {
+                ['_v', '_h'].forEach(o => {
+                    const sfx = m === 'mushaf' ? o : `_${m}${o}`;
+                    localStorage.setItem('transparent_mode' + sfx, String(newValue));
+                });
+            });
+        } else {
+            ['translation', 'bilingual'].forEach(m => {
+                ['_v', '_h'].forEach(o => {
+                    const sfx = `_${m}${o}`;
+                    localStorage.setItem('transparent_mode' + sfx, String(newValue));
+                });
+            });
+        }
         window.dispatchEvent(new Event('theme-change'));
         showToast(newValue ? (isEn ? 'Toolbar transparency enabled' : 'تم تفعيل الشفافية') : (isEn ? 'Toolbar transparency disabled' : 'تم تعطيل الشفافية'));
     };
@@ -63,6 +82,7 @@ const ThemesModal: React.FC<ThemesModalProps> = ({ onClose, showToast, isLandsca
         const saved = JSON.parse(localStorage.getItem('quran_settings' + modeSuffix) || '{}');
         const updated = { ...saved, lockHighlightColor: newValue };
         localStorage.setItem('quran_settings' + modeSuffix, JSON.stringify(updated));
+        syncClusterSettings(cluster, { lockHighlightColor: newValue }, isLandscape);
         showToast(newValue ? (isEn ? 'Highlight color locked' : 'تم قفل لون التحديد') : (isEn ? 'Highlight color unlocked' : 'تم إلغاء قفل لون التحديد'));
     };
 
@@ -73,6 +93,9 @@ const ThemesModal: React.FC<ThemesModalProps> = ({ onClose, showToast, isLandsca
         const currentLayout = getCurrentLayoutContext();
         saveQuranThemeForLayout(themeId, currentLayout, modeSuffix, readingMode);
         syncQuranThemeToStorage(theme, modeSuffix, readingMode);
+
+        // Sync theme across all pages in the active language cluster (all 4 in Arabic, both in English)
+        syncClusterTheme(cluster, themeId, currentLayout, isLandscape);
 
         // Dispatch a custom event to notify the main component to reload theme
         window.dispatchEvent(new Event('theme-change'));
@@ -187,7 +210,7 @@ const ThemesModal: React.FC<ThemesModalProps> = ({ onClose, showToast, isLandsca
                                     <p className="text-xs truncate font-bold" style={{ color: t.text, fontFamily: t.font }}>بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>
                                     <div className="flex items-center justify-end gap-1.5 mt-1">
                                         <div className="w-[11px] h-[11px] rounded-full shadow-sm" style={{ backgroundColor: t.btnBg }}></div>
-                                        <div className="w-[11px] h-[11px] rounded-full shadow-sm" style={{ backgroundColor: key === 'black' ? '#10b981' : t.accent }}></div>
+                                        <div className="w-[11px] h-[11px] rounded-full shadow-sm" style={{ backgroundColor: key === 'black' ? '#10b981' : (key === 'deep_black' ? t.highlightText : t.accent) }}></div>
                                     </div>
                                 </div>
                             </button>

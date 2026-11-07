@@ -149,7 +149,7 @@ const DhikrCard: React.FC<DhikrCardProps> = ({
     return (
         <div 
             data-card-item="true"
-            className={`p-5 pb-3.5 rounded-[18px] relative overflow-hidden group transition-all duration-300 flex flex-col justify-between border-0 ${
+            className={`app-page-card p-5 pb-3.5 rounded-[18px] relative overflow-hidden group transition-all duration-300 flex flex-col justify-between border-0 ${
                 isFinished ? 'opacity-65 cursor-pointer' : 'cursor-pointer'
             }`} 
             onClick={(e) => {
@@ -162,7 +162,7 @@ const DhikrCard: React.FC<DhikrCardProps> = ({
             dir={isEn ? 'ltr' : 'rtl'}
             style={{ 
                 backgroundColor: isBlackTheme ? '#18181b' : (theme.isDark ? (theme.cardBg || '#18181B') : '#FFFFFF'),
-                boxShadow: theme.isDark ? '0 4px 20px -2px rgba(0, 0, 0, 0.35)' : '0 4px 14px rgba(0, 0, 0, 0.04)',
+                border: 'none',
                 color: 'var(--text-color)',
                 fontFamily: isEn ? 'sans-serif' : theme.font
             }}

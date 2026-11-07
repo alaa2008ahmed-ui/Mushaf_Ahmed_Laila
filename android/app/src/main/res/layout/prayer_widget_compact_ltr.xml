@@ -42,7 +42,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Ramadan 1445"
-                android:textColor="#059669"
+                android:textColor="#000000"
                 android:textSize="12sp"
                 android:textStyle="bold"
                 android:singleLine="true" />
@@ -52,7 +52,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text=" • "
-                android:textColor="#94A3B8"
+                android:textColor="#C86400"
                 android:textSize="11sp"
                 android:layout_marginStart="4dp"
                 android:layout_marginEnd="4dp" />
@@ -62,7 +62,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Nov 2, 2026"
-                android:textColor="#64748B"
+                android:textColor="#334155"
                 android:textSize="11sp"
                 android:textStyle="bold"
                 android:singleLine="true" />
@@ -73,6 +73,7 @@
             android:layout_width="20dp"
             android:layout_height="20dp"
             android:src="@drawable/ic_widget_refresh"
+            android:tint="#C86400"
             android:padding="2dp"
             android:contentDescription="Refresh" />
     </LinearLayout>
@@ -106,7 +107,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Previous"
-                android:textColor="#64748B"
+                android:textColor="#334155"
                 android:textSize="11sp"
                 android:textStyle="bold" />
 
@@ -115,7 +116,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Dhuhr"
-                android:textColor="#334155"
+                android:textColor="#000000"
                 android:textSize="14sp"
                 android:textStyle="bold"
                 android:layout_marginTop="2dp" />
@@ -125,7 +126,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="11:45"
-                android:textColor="#475569"
+                android:textColor="#000000"
                 android:textSize="13sp"
                 android:textStyle="bold"
                 android:layout_marginTop="1dp" />
@@ -148,7 +149,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Next Prayer"
-                android:textColor="#059669"
+                android:textColor="#FEF08A"
                 android:textSize="11.5sp"
                 android:textStyle="bold" />
 
@@ -157,7 +158,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Asr"
-                android:textColor="#065F46"
+                android:textColor="#FFFFFF"
                 android:textSize="16sp"
                 android:textStyle="bold"
                 android:layout_marginTop="2dp" />
@@ -167,7 +168,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="03:14"
-                android:textColor="#047857"
+                android:textColor="#FFFFFF"
                 android:textSize="14sp"
                 android:textStyle="bold"
                 android:layout_marginTop="1dp" />
@@ -192,7 +193,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Remaining:"
-            android:textColor="#B45309"
+            android:textColor="#000000"
             android:textSize="12sp"
             android:textStyle="bold"
             android:layout_marginEnd="6dp" />
@@ -201,7 +202,7 @@
             android:id="@+id/compact_chronometer"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textColor="#92400E"
+            android:textColor="#000000"
             android:textSize="15sp"
             android:textStyle="bold"
             android:countDown="true"
@@ -211,7 +212,7 @@
             android:id="@+id/compact_remaining_en"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textColor="#92400E"
+            android:textColor="#000000"
             android:textSize="15sp"
             android:textStyle="bold" />
     </LinearLayout>

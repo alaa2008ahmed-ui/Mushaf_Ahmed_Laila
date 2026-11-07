@@ -98,6 +98,36 @@ export function Tasbeeh({ onBack, onNavigate }: TasbeehProps) {
     const [message, setMessage] = useState({ text: '', type: 'green', visible: false });
     const [showGuide, setShowGuide] = useState(false);
 
+    const [showQuickTasbeehOnHome, setShowQuickTasbeehOnHome] = useState<boolean>(() => {
+        try {
+            return localStorage.getItem('show_quick_tasbeeh_home') === 'true';
+        } catch {
+            return false;
+        }
+    });
+
+    const handleToggleQuickTasbeehOnHome = useCallback(() => {
+        setShowQuickTasbeehOnHome(prev => {
+            const nextVal = !prev;
+            try {
+                localStorage.setItem('show_quick_tasbeeh_home', String(nextVal));
+            } catch {}
+            window.dispatchEvent(new CustomEvent('quick-tasbeeh-visibility-changed', { detail: { enabled: nextVal } }));
+            if (navigator.vibrate) {
+                try { navigator.vibrate(nextVal ? [30, 40, 30] : 30); } catch {}
+            }
+            setMessage({
+                text: nextVal
+                    ? (language === 'en' ? 'Enabled on Home ✓' : 'مفعّل بالرئيسية ✓')
+                    : (language === 'en' ? 'Disabled on Home' : 'معطّل بالرئيسية'),
+                type: 'theme',
+                visible: true
+            });
+            setTimeout(() => setMessage(m => ({ ...m, visible: false })), 1800);
+            return nextVal;
+        });
+    }, [language]);
+
     useEffect(() => {
         markPageAsSeen('tasbeeh');
         if (!getGuideSeen('tasbeeh_page_spotlight')) {
@@ -368,6 +398,8 @@ export function Tasbeeh({ onBack, onNavigate }: TasbeehProps) {
                 onBack={handleBack}
                 onHome={handleGoHome}
                 onOpenGuide={() => setShowGuide(true)}
+                showQuickTasbeehOnHome={showQuickTasbeehOnHome}
+                onToggleQuickTasbeehOnHome={handleToggleQuickTasbeehOnHome}
             />
             
             <main 
@@ -418,8 +450,8 @@ export function Tasbeeh({ onBack, onNavigate }: TasbeehProps) {
                     {/* Quick Chart Trigger Card */}
                     <motion.button
                         whileTap={{ scale: 0.98 }}
-                        onClick={() => setModals(p => ({...p, stats: true}))}
-                        className="w-full mt-3 p-3 px-4 rounded-2xl bg-white dark:bg-[#1E293B] shadow-[0_4px_16px_-2px_rgba(0,0,0,0.05)] border border-slate-100/80 dark:border-white/5 flex items-center justify-between text-xs transition-all hover:shadow-md active:scale-98 group cursor-pointer"
+                        className="w-full mt-3 p-3 px-4 rounded-2xl bg-white dark:bg-[#1E293B] shadow-[0_4px_16px_-2px_rgba(0,0,0,0.05)] border-0 flex items-center justify-between text-xs transition-all hover:shadow-md active:scale-98 group cursor-pointer"
+                        style={{ border: 'none' }}
                     >
                         <div className="flex items-center gap-2.5 font-bold">
                             <span 
@@ -481,7 +513,17 @@ export function Tasbeeh({ onBack, onNavigate }: TasbeehProps) {
                         initial={{ opacity: 0, y: 20, x: '-50%' }}
                         animate={{ opacity: 1, y: 0, x: '-50%' }}
                         exit={{ opacity: 0, y: 10, x: '-50%' }}
-                        className={`fixed bottom-8 left-1/2 p-3 text-white rounded-lg shadow-xl z-[200] font-bold ${message.type === 'green' ? (isBlackTheme ? 'bg-white text-black' : 'bg-emerald-500') : 'bg-red-500'}`}
+                        className="fixed bottom-8 left-1/2 px-4 py-2 rounded-full shadow-2xl z-[200] font-bold text-xs sm:text-sm font-cairo flex items-center justify-center gap-1.5 border backdrop-blur-md select-none"
+                        style={{
+                            backgroundColor: isBlackTheme 
+                                ? '#18181b' 
+                                : (message.type === 'red' ? '#ef4444' : (theme.bgColor === '#FFFFFF' || !theme.palette?.[0] ? '#1e293b' : theme.palette[0])),
+                            color: '#ffffff',
+                            borderColor: isBlackTheme 
+                                ? 'rgba(255, 255, 255, 0.25)' 
+                                : 'rgba(255, 255, 255, 0.4)',
+                            boxShadow: '0 8px 24px rgba(0,0,0,0.3)'
+                        }}
                     >
                         {message.text}
                     </motion.div>

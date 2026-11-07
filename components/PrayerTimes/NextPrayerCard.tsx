@@ -54,12 +54,12 @@ const NextPrayerCard: React.FC<NextPrayerCardProps> = ({
         <div 
             id="next-prayer-card" 
             dir={dir}
-            className={`w-full shrink-0 rounded-2xl mb-2 relative overflow-hidden flex flex-col transition-all duration-300 ${
+            className={`app-page-card border-0 w-full shrink-0 rounded-2xl mb-2 relative overflow-hidden flex flex-col transition-all duration-300 ${
                 isBlackTheme 
-                    ? 'bg-[#18181b] border border-white/10 text-white shadow-[0_8px_30px_-4px_rgba(0,0,0,0.7)]' 
-                    : 'bg-white text-slate-800 shadow-[0_8px_30px_-4px_rgba(0,0,0,0.06),0_4px_12px_-2px_rgba(0,0,0,0.03)]'
+                    ? 'bg-[#18181b] text-white' 
+                    : 'bg-white text-slate-800'
             }`}
-            style={{ borderRadius: '16px' }}
+            style={{ borderRadius: '16px', border: 'none' }}
         >
             <div className="px-2.5 sm:px-4 py-3 sm:py-4 flex justify-between items-center gap-1.5 sm:gap-3 relative z-10">
                 {/* عداد 'المتبقي على الصلاة' داخل حاوية نظيفة بدون حدود، واستخدام لون الثيم لإبراز الأرقام */}

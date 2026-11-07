@@ -37,7 +37,8 @@ import {
     Plus, 
     Minus, 
     Trash2, 
-    Repeat
+    Repeat,
+    Check
 } from 'lucide-react';
 import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/CommunitySpotlightGuide';
 import { LISTEN_QURAN_PAGE_STEPS } from '../components/Community/communityTourSteps';
@@ -109,6 +110,33 @@ function ListenQuran({ onBack, onNavigate }: ListenQuranProps) {
             setShowGuide(true);
         }
     }, []);
+
+    const [showListenOnHome, setShowListenOnHome] = useState<boolean>(() => {
+        try {
+            return localStorage.getItem('show_listen_quran_home') === 'true';
+        } catch {
+            return false;
+        }
+    });
+
+    const handleToggleListenOnHome = useCallback(() => {
+        setShowListenOnHome(prev => {
+            const nextVal = !prev;
+            try {
+                localStorage.setItem('show_listen_quran_home', String(nextVal));
+            } catch {}
+            window.dispatchEvent(new CustomEvent('listen-card-visibility-changed', { detail: { enabled: nextVal } }));
+            if (navigator.vibrate) {
+                try { navigator.vibrate(nextVal ? [30, 40, 30] : 30); } catch {}
+            }
+            showToast(
+                nextVal
+                    ? (language === 'en' ? 'Audio Quran Card enabled on Home ✓' : 'مفعّل بطاقة الاستماع بالرئيسية ✓')
+                    : (language === 'en' ? 'Audio Quran Card disabled on Home' : 'معطّل بطاقة الاستماع بالرئيسية')
+            );
+            return nextVal;
+        });
+    }, [language]);
 
     // --- Dynamic Theme Tokens (Matching MainMenu Design System) ---
     const isBlackTheme = themeKey === 'deep_black' || theme.bgColor === '#000000' || theme.name === 'اسود' || theme.name === 'black';
@@ -772,21 +800,21 @@ function ListenQuran({ onBack, onNavigate }: ListenQuranProps) {
                 `}</style>
                 <div className="app-top-bar__inner">
                     <div className="relative flex items-center justify-between w-full min-h-[44px]">
-                        {/* زر الرجوع للخلف وأيقونة المفضلة */}
-                        <div className="flex items-center gap-1.5 z-10">
+                        {/* زر الرجوع للخلف وأيقونة المفضلة وزر التفعيل ملاصقة بدون فجوات فارغة */}
+                        <div className="flex items-center gap-0 z-10 shrink-0">
                             <button
                                 onClick={handleBack}
-                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/5 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                className="w-8 h-9 rounded-full flex items-center justify-center transition-all hover:bg-black/5 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
                                 title={tListen('back', language)}
                                 aria-label={tListen('back', language)}
                             >
-                                <i className={`fa-solid ${isRTL ? 'fa-arrow-right' : 'fa-arrow-left'} text-xl`}></i>
+                                <i className={`fa-solid ${isRTL ? 'fa-arrow-right' : 'fa-arrow-left'} text-lg`}></i>
                             </button>
                             <button
                                 id="btn-listen-toggle-fav"
                                 type="button"
                                 onClick={handleToggleFavorite}
-                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/5 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                className="w-8 h-9 rounded-full flex items-center justify-center transition-all hover:bg-black/5 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
                                 title={isCurrentFavorite ? tListen('removeFromFavorites', language) : tListen('addToFavorites', language)}
                                 aria-label={tListen('favorites', language)}
                             >
@@ -795,35 +823,53 @@ function ListenQuran({ onBack, onNavigate }: ListenQuranProps) {
                                     strokeWidth={isCurrentFavorite ? 0 : 2}
                                 />
                             </button>
+
+                            {/* زر تفعيل وتعطيل ظهور بطاقة الاستماع في الصفحة الرئيسية (مطابق لزر السبحة) */}
+                            <button
+                                type="button"
+                                onClick={handleToggleListenOnHome}
+                                className="w-8 h-9 rounded-full flex items-center justify-center transition-all hover:bg-black/5 dark:hover:bg-white/5 active:scale-90 cursor-pointer shrink-0"
+                                title={
+                                    isEn 
+                                        ? (showListenOnHome ? 'Audio Quran Card on Home: Enabled (Click to disable)' : 'Audio Quran Card on Home: Disabled (Click to enable)') 
+                                        : (showListenOnHome ? 'ظهور بطاقة الاستماع في الرئيسية: مفعّل (اضغط للتعطيل)' : 'ظهور بطاقة الاستماع في الرئيسية: معطّل (اضغط للتفعيل)')
+                                }
+                            >
+                                <div className={`w-[18px] h-[18px] sm:w-[20px] sm:h-[20px] rounded-full border-[1.5px] border-white/90 shadow-xs transition-all flex items-center justify-center ${
+                                    showListenOnHome ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'
+                                }`}>
+                                    {showListenOnHome ? <Check className="w-2.5 h-2.5 sm:w-3 sm:h-3 stroke-[3]" /> : <span className="w-1.5 h-0.5 bg-white rounded-full" />}
+                                </div>
+                            </button>
                         </div>
 
-                        {/* عنوان الصفحة في الوسط */}
+                        {/* عنوان الصفحة في الوسط مع تباعُد آمن عن الأزرار الجانبية */}
                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                            <h1 className="app-top-bar__title text-lg sm:text-xl font-kufi font-bold truncate px-24">
+                            <h1 className="app-top-bar__title text-base sm:text-lg font-kufi font-bold truncate px-24 text-center">
                                 {tListen('pageTitle', language)}
                             </h1>
                         </div>
 
                         {/* قفل الثيم وأيقونة المنزل ودليل الاستخدام */}
-                        <div className="flex items-center gap-1.5 z-10">
+                        <div className="flex items-center gap-0 z-10 shrink-0">
                             <button
                                 type="button"
                                 onClick={() => setShowGuide(true)}
-                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/5 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                className="w-8 h-9 rounded-full flex items-center justify-center transition-all hover:bg-black/5 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
                                 style={{ color: 'var(--top-bar-text, inherit)' }}
                                 title={tListen('guide', language)}
                                 aria-label={tListen('guide', language)}
                             >
-                                <i className="fa-solid fa-circle-question text-lg"></i>
+                                <i className="fa-solid fa-circle-question text-base"></i>
                             </button>
                             <ThemePageLock />
                             <button
                                 onClick={handleGoHome}
-                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/5 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                className="w-8 h-9 rounded-full flex items-center justify-center transition-all hover:bg-black/5 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
                                 title={tListen('home', language)}
                                 aria-label={tListen('home', language)}
                             >
-                                <i className="fa-solid fa-house text-lg"></i>
+                                <i className="fa-solid fa-house text-base"></i>
                             </button>
                         </div>
                     </div>
@@ -847,27 +893,16 @@ function ListenQuran({ onBack, onNavigate }: ListenQuranProps) {
                         }`}
                         style={{ borderRadius: '16px' }}
                     >
-                        <div className="flex items-center gap-3 min-w-0 flex-1">
-                            <div 
-                                className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-colors"
-                                style={{ 
-                                    backgroundColor: isBlackTheme ? 'rgba(255,255,255,0.1)' : `${primaryColor}14`, 
-                                    color: primaryColor 
-                                }}
-                            >
-                                <User className="w-5 h-5" strokeWidth={2.2} />
-                            </div>
-                            <div className="flex flex-col min-w-0">
-                                <span className={`text-[11px] font-medium leading-tight ${isBlackTheme ? 'text-zinc-400' : 'text-slate-400'}`}>
-                                    {language === 'en' ? 'Reciter' : 'القارئ'}
-                                </span>
-                                <span className="text-sm sm:text-base font-bold truncate mt-0.5">
-                                    {getReciterDisplayName(reciterId, reciterName, language)}
-                                </span>
-                            </div>
+                        <div className="flex flex-col min-w-0 flex-1">
+                            <span className={`text-[11px] font-medium leading-tight ${isBlackTheme ? 'text-zinc-400' : 'text-slate-400'}`}>
+                                {language === 'en' ? 'Reciter' : 'القارئ'}
+                            </span>
+                            <span className="text-sm sm:text-base font-bold truncate mt-0.5">
+                                {getReciterDisplayName(reciterId, reciterName, language)}
+                            </span>
                         </div>
                         <div 
-                            className="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
+                            className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 ms-2"
                             style={{ 
                                 backgroundColor: isBlackTheme ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)', 
                                 color: isBlackTheme ? '#FFFFFF' : '#64748B' 
@@ -888,27 +923,16 @@ function ListenQuran({ onBack, onNavigate }: ListenQuranProps) {
                         }`}
                         style={{ borderRadius: '16px' }}
                     >
-                        <div className="flex items-center gap-3 min-w-0 flex-1">
-                            <div 
-                                className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-colors"
-                                style={{ 
-                                    backgroundColor: isBlackTheme ? 'rgba(255,255,255,0.1)' : `${primaryColor}14`, 
-                                    color: primaryColor 
-                                }}
-                            >
-                                <BookOpen className="w-5 h-5" strokeWidth={2.2} />
-                            </div>
-                            <div className="flex flex-col min-w-0">
-                                <span className={`text-[11px] font-medium leading-tight ${isBlackTheme ? 'text-zinc-400' : 'text-slate-400'}`}>
-                                    {language === 'en' ? 'Surah' : 'السورة'}
-                                </span>
-                                <span className="text-sm sm:text-base font-bold truncate mt-0.5">
-                                    {formatListenNumber(surahNumber, language)} - {getSurahDisplayName(surahNumber, surahName, language)}
-                                </span>
-                            </div>
+                        <div className="flex flex-col min-w-0 flex-1">
+                            <span className={`text-[11px] font-medium leading-tight ${isBlackTheme ? 'text-zinc-400' : 'text-slate-400'}`}>
+                                {language === 'en' ? 'Surah' : 'السورة'}
+                            </span>
+                            <span className="text-sm sm:text-base font-bold truncate mt-0.5">
+                                {formatListenNumber(surahNumber, language)} - {getSurahDisplayName(surahNumber, surahName, language)}
+                            </span>
                         </div>
                         <div 
-                            className="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
+                            className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 ms-2"
                             style={{ 
                                 backgroundColor: isBlackTheme ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)', 
                                 color: isBlackTheme ? '#FFFFFF' : '#64748B' 
@@ -922,12 +946,12 @@ function ListenQuran({ onBack, onNavigate }: ListenQuranProps) {
                 {/* 2. بطاقة مشغل الصوت الرئيسية (Audio Player Card) بتصميم نقي ودعم كامل للألوان الديناميكية */}
                 <div 
                     id="listen-player-card"
-                    className={`w-full rounded-3xl p-5 sm:p-7 space-y-6 flex-shrink-0 transition-all duration-300 ${
+                    className={`app-page-card border-0 w-full rounded-3xl p-5 sm:p-7 space-y-6 flex-shrink-0 transition-all duration-300 ${
                         isBlackTheme 
-                            ? 'bg-[#18181b] border border-white/10 text-white shadow-[0_8px_30px_-4px_rgba(0,0,0,0.7)]' 
-                            : 'bg-white text-slate-800 shadow-[0_8px_30px_-4px_rgba(0,0,0,0.08),0_4px_12px_-2px_rgba(0,0,0,0.04)]'
+                            ? 'bg-[#18181b] text-white' 
+                            : 'bg-white text-slate-800'
                     }`}
-                    style={{ borderRadius: '20px' }}
+                    style={{ borderRadius: '20px', border: 'none' }}
                 >
                     {/* معلومات التلاوة الحالية في أعلى بطاقة المشغل */}
                     <div className="text-center space-y-1">
@@ -1038,12 +1062,12 @@ function ListenQuran({ onBack, onNavigate }: ListenQuranProps) {
                 {/* 3. بطاقة مؤقت النوم (Sleep Timer) مع رقاقات الوقت (Chips/Tags) بدون حدود سوداء */}
                 <div 
                     id="listen-sleep-timer-card"
-                    className={`w-full rounded-2xl p-4 sm:p-5 space-y-4 flex-shrink-0 transition-all duration-300 ${
+                    className={`app-page-card border-0 w-full rounded-2xl p-4 sm:p-5 space-y-4 flex-shrink-0 transition-all duration-300 ${
                         isBlackTheme 
-                            ? 'bg-[#18181b] border border-white/10 text-white shadow-[0_8px_30px_-4px_rgba(0,0,0,0.7)]' 
-                            : 'bg-white text-slate-800 shadow-[0_4px_20px_-2px_rgba(0,0,0,0.05),0_2px_6px_-1px_rgba(0,0,0,0.02)]'
+                            ? 'bg-[#18181b] text-white' 
+                            : 'bg-white text-slate-800'
                     }`}
-                    style={{ borderRadius: '16px' }}
+                    style={{ borderRadius: '16px', border: 'none' }}
                 >
                     {/* عنوان ورأس البطاقة */}
                     <div className="flex items-center justify-between">
@@ -1198,12 +1222,12 @@ function ListenQuran({ onBack, onNavigate }: ListenQuranProps) {
                 {/* 4. بطاقة خيارات التشغيل (Options Card) بدون إطارات سوداء */}
                 <div 
                     id="listen-options-card"
-                    className={`w-full rounded-2xl p-4 sm:p-5 space-y-4 flex-shrink-0 transition-all duration-300 ${
+                    className={`app-page-card border-0 w-full rounded-2xl p-4 sm:p-5 space-y-4 flex-shrink-0 transition-all duration-300 ${
                         isBlackTheme 
-                            ? 'bg-[#18181b] border border-white/10 text-white shadow-[0_8px_30px_-4px_rgba(0,0,0,0.7)]' 
-                            : 'bg-white text-slate-800 shadow-[0_4px_20px_-2px_rgba(0,0,0,0.05),0_2px_6px_-1px_rgba(0,0,0,0.02)]'
+                            ? 'bg-[#18181b] text-white' 
+                            : 'bg-white text-slate-800'
                     }`}
-                    style={{ borderRadius: '16px' }}
+                    style={{ borderRadius: '16px', border: 'none' }}
                 >
                     {/* خيار تكرار نفس السورة بعد انتهائها */}
                     <div className="flex items-center justify-between">
@@ -1306,12 +1330,12 @@ function ListenQuran({ onBack, onNavigate }: ListenQuranProps) {
                 {/* 5. قسم المفضلات المحفوظة (Favorites Card) بتصميم بطاقات نقية */}
                 <div 
                     id="listen-favorites-card"
-                    className={`w-full rounded-2xl p-4 sm:p-5 space-y-3.5 flex-shrink-0 transition-all duration-300 ${
+                    className={`app-page-card border-0 w-full rounded-2xl p-4 sm:p-5 space-y-3.5 flex-shrink-0 transition-all duration-300 ${
                         isBlackTheme 
-                            ? 'bg-[#18181b] border border-white/10 text-white shadow-[0_8px_30px_-4px_rgba(0,0,0,0.7)]' 
-                            : 'bg-white text-slate-800 shadow-[0_4px_20px_-2px_rgba(0,0,0,0.05),0_2px_6px_-1px_rgba(0,0,0,0.02)]'
+                            ? 'bg-[#18181b] text-white' 
+                            : 'bg-white text-slate-800'
                     }`}
-                    style={{ borderRadius: '16px' }}
+                    style={{ borderRadius: '16px', border: 'none' }}
                 >
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2.5">

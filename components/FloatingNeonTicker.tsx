@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 
 const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRDbre0eogQtQDlyPowjcNSii1jMqURYKK8UjFm9Y2zsZDU5oT9ZmOJgmbz_UarqXp3aduvrlHuGU5F/pub?output=csv';
 
@@ -7,11 +9,226 @@ interface FloatingNeonTickerProps {
   isGolden?: boolean;
 }
 
-const FloatingNeonTicker: React.FC<FloatingNeonTickerProps> = ({ layoutMode, isGolden }) => {
-  const [tickerData, setTickerData] = useState<{ status: string; message: string } | null>(null);
+interface TickerData {
+  status: string;
+  messageAr: string;
+  messageEn?: string;
+}
 
-  // تحقق تلقائي من وضع التصميم الذكي الذهبي (عبر prop أو فحص DOM للـ data-layout)
-  const isModern = layoutMode === 'modern' || isGolden || (typeof document !== 'undefined' && document.querySelector('[data-layout="modern"]') !== null);
+function parseCSVRow(rowStr: string): string[] {
+  const cells: string[] = [];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < rowStr.length; i++) {
+    const ch = rowStr[i];
+    if (ch === '"') {
+      if (inQuotes && rowStr[i + 1] === '"') {
+        current += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (ch === ',' && !inQuotes) {
+      cells.push(current.trim());
+      current = '';
+    } else {
+      current += ch;
+    }
+  }
+  cells.push(current.trim());
+  return cells;
+}
+
+function cleanCSVCell(cell: string): string {
+  let val = cell.trim();
+  if (val.startsWith('"') && val.endsWith('"') && val.length >= 2) {
+    val = val.substring(1, val.length - 1);
+  }
+  return val.replace(/""/g, '"').trim();
+}
+
+function syncTranslateArabicToEnglish(arMessage: string, customEn?: string): string {
+  if (!arMessage) return '';
+  
+  // If custom English translation is explicitly provided in CSV, use it
+  if (customEn && customEn.trim() && customEn.trim().toLowerCase() !== arMessage.trim().toLowerCase()) {
+    return customEn.trim();
+  }
+
+  // If the text is already primarily English, return as is
+  const latinCount = (arMessage.match(/[a-zA-Z]/g) || []).length;
+  const arabicCount = (arMessage.match(/[\u0600-\u06FF]/g) || []).length;
+  if (latinCount > arabicCount) {
+    return arMessage;
+  }
+
+  const cleanText = arMessage.replace(/[\u064B-\u065F\u0670]/g, '').trim();
+  const normalized = cleanText
+    .replace(/[إأآا]/g, 'ا')
+    .replace(/ة/g, 'ه')
+    .replace(/ى/g, 'ي');
+
+  // Occasions & Greetings
+  if (normalized.includes('كل عام وانتم بخير') || normalized.includes('كل عام وانتم بالف خير') || normalized.includes('كل عام وانتم طيبين') || normalized.includes('كل سنه وانتم طيبين')) {
+    return 'Best wishes & happy occasions to you and your family! May you be in goodness every year.';
+  }
+  if (normalized.includes('رمضان كريم') || normalized.includes('رمضان مبارك')) {
+    return 'Ramadan Kareem! May Allah accept your fasting and prayers.';
+  }
+  if (normalized.includes('عيد مبارك') || normalized.includes('عيدكم مبارك') || normalized.includes('تقبل الله طاعتكم')) {
+    return 'Blessed Eid to you and your loved ones! May Allah accept our good deeds.';
+  }
+  if (normalized.includes('جمعه مباركه') || normalized.includes('جمعة مباركة')) {
+    return 'Blessed Friday (Jumaah Mubarakah) to all.';
+  }
+
+  // App Sharing & Benefit
+  if (
+    normalized.includes('اعجبكم') || 
+    normalized.includes('اعجبك') || 
+    (normalized.includes('نشر') && normalized.includes('الاجر')) ||
+    (normalized.includes('نشر') && normalized.includes('ثواب')) ||
+    normalized.includes('شارك التطبيق') ||
+    normalized.includes('انشر التطبيق')
+  ) {
+    return 'If you benefit from the app, please share it to gain the reward. May Allah reward you with goodness.';
+  }
+
+  // Sadaqah Jariyah & Deceased
+  if (normalized.includes('صدقه جاريه') || normalized.includes('عن روح') || normalized.includes('للمرحوم') || normalized.includes('للمتوفي')) {
+    const detail = cleanText.replace(/صدقة جارية|صدقه جاريه/g, '').trim();
+    return detail 
+      ? `Ongoing Charity (Sadaqah Jariyah): ${detail} - May Allah grant them mercy and forgiveness.`
+      : 'Ongoing Charity (Sadaqah Jariyah) - Kindly pray for mercy and forgiveness for the deceased.';
+  }
+
+  // Salawat
+  if (normalized.includes('صلوا علي النبي') || normalized.includes('صلي علي النبي') || normalized.includes('الصلاه علي النبي')) {
+    return 'Send blessings and peace upon our Prophet Muhammad ﷺ.';
+  }
+
+  // Athkar
+  if (normalized.includes('سبحان الله وبحمده') || normalized.includes('سبحان الله العظيم')) {
+    return 'Glory be to Allah and praise Him, Glory be to Allah the Almighty.';
+  }
+  if (normalized.includes('لا اله الا الله')) {
+    return 'There is no deity worthy of worship except Allah alone.';
+  }
+  if (normalized.includes('استغفر الله')) {
+    return 'I seek forgiveness from Allah the Almighty.';
+  }
+
+  // Duas
+  if (normalized.includes('دعائكم') || normalized.includes('ادعوا') || normalized.includes('لاتنسونا')) {
+    return 'Please remember us in your sincere prayers and supplications.';
+  }
+
+  // App Updates
+  if (normalized.includes('تحديث') || normalized.includes('جديد') || normalized.includes('اصدار')) {
+    return 'New update & features available in the Holy Quran application.';
+  }
+
+  // Phrase Replacements
+  const translationsMap: Array<[RegExp, string]> = [
+    [/كل عام/gi, 'Every year'],
+    [/وانتم بخير/gi, 'wishing you peace & goodness'],
+    [/اذا اعجبك/gi, 'If you like'],
+    [/اذا اعجبكم/gi, 'If you like'],
+    [/التطبيق/gi, 'the app'],
+    [/المصحف/gi, 'the Quran'],
+    [/شاركه/gi, 'share it'],
+    [/انشره/gi, 'share it'],
+    [/بنشر/gi, 'by sharing'],
+    [/لتنالوا/gi, 'to gain'],
+    [/الاجر/gi, 'the reward'],
+    [/الثواب/gi, 'the blessing'],
+    [/معنا/gi, 'with us'],
+    [/جزاكم الله خيرا/gi, 'May Allah reward you with goodness'],
+    [/جزاكم الله خير/gi, 'May Allah reward you with goodness'],
+    [/بارك الله فيكم/gi, 'May Allah bless you all'],
+    [/رحمه الله/gi, 'May Allah have mercy on him'],
+    [/رحمها الله/gi, 'May Allah have mercy on her'],
+    [/رحمهم الله/gi, 'May Allah have mercy on them'],
+    [/دعواتكم/gi, 'your prayers'],
+    [/نرجوا الدعاء/gi, 'Kindly pray'],
+    [/لجميع المسلمين/gi, 'for all Muslims'],
+    [/والمسلمات/gi, 'and Muslim women'],
+    [/الاحياء منهم والاموات/gi, 'the living and the deceased'],
+  ];
+
+  let translated = cleanText;
+  translationsMap.forEach(([regex, replacement]) => {
+    translated = translated.replace(regex, replacement);
+  });
+
+  const hasEnglishWords = /[a-zA-Z]{3,}/.test(translated);
+  if (hasEnglishWords) {
+    return translated.replace(/\s+/g, ' ').trim();
+  }
+
+  // Ultimate fallback if offline/unmatched: return clear English announcement header so no raw Arabic is shown in English mode
+  return `Announcement: ${cleanText}`;
+}
+
+// Live Online Translation Function with fallback
+async function fetchOnlineTranslation(arText: string): Promise<string> {
+  if (!arText || !arText.trim()) return '';
+
+  const cleanText = arText.replace(/[\u064B-\u065F\u0670]/g, '').trim();
+
+  // 1. Try Google Translate free endpoint
+  try {
+    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=ar&tl=en&dt=t&q=${encodeURIComponent(cleanText)}`;
+    const res = await fetch(url);
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && Array.isArray(data[0])) {
+        const translatedSegments = data[0].map((seg: any) => seg[0]).filter(Boolean).join(' ');
+        if (translatedSegments && translatedSegments.trim()) {
+          const result = translatedSegments.trim();
+          // Ensure it's in English
+          if (!/[\u0600-\u06FF]/.test(result) || (result.match(/[a-zA-Z]/g) || []).length > 3) {
+            return result;
+          }
+        }
+      }
+    }
+  } catch (e) {
+    // network error fallback
+  }
+
+  // 2. Try MyMemory Translation API
+  try {
+    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(cleanText)}&langpair=ar|en`;
+    const res = await fetch(url);
+    if (res.ok) {
+      const data = await res.json();
+      if (data?.responseData?.translatedText) {
+        const result = data.responseData.translatedText.trim();
+        if (result && (!/[\u0600-\u06FF]/.test(result) || (result.match(/[a-zA-Z]/g) || []).length > 3)) {
+          return result;
+        }
+      }
+    }
+  } catch (e) {
+    // network error fallback
+  }
+
+  // 3. Fallback to synchronous dictionary translation
+  return syncTranslateArabicToEnglish(arText);
+}
+
+const FloatingNeonTicker: React.FC<FloatingNeonTickerProps> = ({ layoutMode, isGolden }) => {
+  const [tickerData, setTickerData] = useState<TickerData | null>(null);
+  const { theme, themeKey, isNightMode, homeThemeVariant } = useTheme();
+  const { language } = useLanguage();
+  const isEn = language === 'en';
+
+  const isNight = isNightMode || themeKey === 'black_gold' || themeKey === 'deep_black' || theme.bgColor === '#000000';
+  const isSky = !isNight && (homeThemeVariant === 'sky' || themeKey === 'sky_mode');
+  const isEmerald = !isNight && (homeThemeVariant === 'emerald' || themeKey === 'emerald_mode');
+  const isBurgundy = !isNight && (homeThemeVariant === 'burgundy' || themeKey === 'burgundy_mode');
+  const isGold = !isNight && (homeThemeVariant === 'gold' || themeKey === 'shiny_gold' || (!isSky && !isEmerald && !isBurgundy && layoutMode === 'modern'));
 
   useEffect(() => {
     let isMounted = true;
@@ -21,12 +238,11 @@ const FloatingNeonTicker: React.FC<FloatingNeonTickerProps> = ({ layoutMode, isG
       try {
         const timestamp = new Date().getTime();
         const response = await fetch(`${CSV_URL}&t=${timestamp}`);
-        if (!response.ok) return; // تجاهل أخطاء الشبكة للحفاظ على حالة الشريط
+        if (!response.ok) return;
         
         const text = await response.text();
         if (!isMounted) return;
 
-        // حماية إضافية: إذا قامت جوجل بإرجاع صفحة خطأ (HTML) بدلاً من CSV بسبب كثرة الطلبات، نتجاهلها
         if (text.trim().toLowerCase().startsWith('<!doctype html>')) {
           return;
         }
@@ -34,41 +250,55 @@ const FloatingNeonTicker: React.FC<FloatingNeonTickerProps> = ({ layoutMode, isG
         const rows = text.split(/\r?\n/).filter(row => row.trim() !== '');
         
         if (rows.length >= 2) {
-          // استخدام طريقة آمنة جداً لفصل الحالة عن النص بدلاً من الـ Regex المعقد
-          const firstCommaIndex = rows[1].indexOf(',');
-          let status = '';
-          let message = '';
-          
-          if (firstCommaIndex !== -1) {
-            status = rows[1].substring(0, firstCommaIndex).trim().toUpperCase();
-            message = rows[1].substring(firstCommaIndex + 1).trim();
-            
-            // إزالة علامات التنصيص المزدوجة التي يضيفها ملف الـ CSV
-            if (message.startsWith('"') && message.endsWith('"')) {
-              message = message.substring(1, message.length - 1);
-            }
-            message = message.replace(/""/g, '"');
-          } else {
-            status = rows[1].trim().toUpperCase();
+          const headers = parseCSVRow(rows[0]).map(h => cleanCSVCell(h).toLowerCase());
+          const dataCells = parseCSVRow(rows[1]);
+
+          const statusIdx = headers.findIndex(h => h.includes('status'));
+          const messageArIdx = headers.findIndex(h => h === 'message' || h === 'messagear' || h === 'message_ar' || h.includes('عرب'));
+          const messageEnIdx = headers.findIndex(h => h === 'messageen' || h === 'message_en' || h === 'english' || h.includes('en'));
+
+          let status = cleanCSVCell(statusIdx !== -1 ? dataCells[statusIdx] : dataCells[0] || '').toUpperCase();
+          let messageAr = cleanCSVCell(messageArIdx !== -1 ? dataCells[messageArIdx] : (dataCells.length > 1 ? dataCells[1] : ''));
+          let messageEn = cleanCSVCell(messageEnIdx !== -1 ? dataCells[messageEnIdx] : (dataCells.length > 2 ? dataCells[2] : ''));
+
+          if (!messageAr && dataCells.length === 1 && dataCells[0].includes(',')) {
+            const firstComma = dataCells[0].indexOf(',');
+            status = cleanCSVCell(dataCells[0].substring(0, firstComma)).toUpperCase();
+            messageAr = cleanCSVCell(dataCells[0].substring(firstComma + 1));
           }
-          
-          // التنفيذ الصارم
+
+          // Initial quick translation from dictionary
+          let translatedEn = syncTranslateArabicToEnglish(messageAr, messageEn);
+
           if (status === 'OFF') {
             setTickerData(null);
           } else if (status === 'ON') {
             setTickerData(prev => {
-              if (prev?.message === message && prev?.status === status) return prev;
-              return { status, message };
+              if (
+                prev?.messageAr === messageAr &&
+                prev?.messageEn &&
+                prev?.status === status
+              ) return prev;
+              return { status, messageAr, messageEn: translatedEn };
             });
+
+            // Perform live online translation in background if no customEn was supplied
+            if (messageAr && (!messageEn || messageEn.trim().toLowerCase() === messageAr.trim().toLowerCase())) {
+              fetchOnlineTranslation(messageAr).then(onlineTranslated => {
+                if (isMounted && onlineTranslated && onlineTranslated !== translatedEn) {
+                  setTickerData(prev => prev ? { ...prev, messageEn: onlineTranslated } : null);
+                }
+              });
+            }
           }
         }
       } catch (error) {
-        // Ignore errors to prevent console spam during background polling
+        // Ignore errors
       }
     };
 
     fetchTicker();
-    intervalId = setInterval(fetchTicker, 5000);
+    intervalId = setInterval(fetchTicker, 60000);
     
     return () => {
       isMounted = false;
@@ -76,72 +306,118 @@ const FloatingNeonTicker: React.FC<FloatingNeonTickerProps> = ({ layoutMode, isG
     };
   }, []);
 
-  // لا نخفي الشريط إلا إذا كانت الحالة ليست ON
   if (!tickerData || tickerData.status !== 'ON') {
     return null;
   }
 
+  const themeStyles = (() => {
+    if (isNight) {
+      return {
+        containerBg: 'linear-gradient(140deg, #1d1d28 0%, #15151e 50%, #0d0d12 100%)',
+        borderColor: '#f59e0b',
+        boxShadow: '0 3px 12px rgba(0, 0, 0, 0.7), 0 0 10px rgba(245, 158, 11, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.15)',
+        textColors: ['#ffffff', '#f8fafc', '#ffffff'],
+        textShadow: '0 0 6px rgba(255, 255, 255, 0.5), 0 1px 2px rgba(0, 0, 0, 0.9)'
+      };
+    }
+    if (isSky) {
+      return {
+        containerBg: 'linear-gradient(140deg, #f0f9ff 0%, #e0f2fe 35%, #bae6fd 70%, #7dd3fc 100%)',
+        borderColor: '#0284c7',
+        boxShadow: '0 3px 10px rgba(2, 132, 199, 0.25), inset 0 2px 2px rgba(255, 255, 255, 0.95), inset 0 -2px 3px rgba(3, 105, 161, 0.15)',
+        textColors: ['#0369a1', '#0284c7', '#075985'],
+        textShadow: '0 1px 1px rgba(255, 255, 255, 0.95)'
+      };
+    }
+    if (isEmerald) {
+      return {
+        containerBg: 'linear-gradient(140deg, #f0fdf4 0%, #dcfce7 35%, #a7f3d0 70%, #6ee7b7 100%)',
+        borderColor: '#047857',
+        boxShadow: '0 3px 10px rgba(4, 120, 87, 0.25), inset 0 2px 2px rgba(255, 255, 255, 0.95), inset 0 -2px 3px rgba(6, 95, 70, 0.15)',
+        textColors: ['#047857', '#059669', '#065f46'],
+        textShadow: '0 1px 1px rgba(255, 255, 255, 0.95)'
+      };
+    }
+    if (isBurgundy) {
+      return {
+        containerBg: 'linear-gradient(140deg, #fff1f2 0%, #ffe4e6 35%, #fecdd3 70%, #fda4af 100%)',
+        borderColor: '#881337',
+        boxShadow: '0 3px 10px rgba(136, 19, 55, 0.25), inset 0 2px 2px rgba(255, 255, 255, 0.95), inset 0 -2px 3px rgba(159, 18, 57, 0.15)',
+        textColors: ['#881337', '#9f1239', '#4c0519'],
+        textShadow: '0 1px 1px rgba(255, 255, 255, 0.95)'
+      };
+    }
+    if (isGold) {
+      return {
+        containerBg: 'linear-gradient(140deg, #FFFDF7 0%, #FEF8E7 18%, #FCE8AB 50%, #F5D374 80%, #E8BE48 100%)',
+        borderColor: '#D97706',
+        boxShadow: '0 3px 10px rgba(180, 115, 20, 0.28), inset 0 2px 2px rgba(255, 255, 255, 0.95), inset 0 -2px 3px rgba(146, 64, 14, 0.16)',
+        textColors: ['#451A03', '#78350F', '#B45309'],
+        textShadow: '0 1px 1px rgba(255, 255, 255, 0.95)'
+      };
+    }
+
+    const primary = theme.palette?.[0] || theme.accent || '#10b981';
+    return {
+      containerBg: theme.cardBg || theme.bgColor || '#1e293b',
+      borderColor: theme.cardBorder || primary,
+      boxShadow: `0 3px 10px ${primary}30`,
+      textColors: [theme.textColor || '#ffffff', primary, theme.textColor || '#ffffff'],
+      textShadow: 'none'
+    };
+  })();
+
+  const rawDisplay = isEn 
+    ? (tickerData.messageEn || syncTranslateArabicToEnglish(tickerData.messageAr)) 
+    : tickerData.messageAr;
+
+  // Guarantee that in English mode, if rawDisplay still contains Arabic characters, we clean it up so no raw Arabic shows in English mode
+  const displayMessage = (isEn && /[\u0600-\u06FF]/.test(rawDisplay))
+    ? syncTranslateArabicToEnglish(tickerData.messageAr)
+    : rawDisplay;
+
   return (
     <div 
-      className="absolute top-0 left-0 right-0 z-10 w-full overflow-hidden rounded-full"
+      className="absolute top-0 left-0 right-0 z-10 w-full overflow-hidden rounded-full transition-all duration-300"
       style={{ height: '100%', minHeight: '27.5px' }}
     >
       <style>
         {`
-          /* أنيميشن التصميم الكلاسيكي - ألوان النيون الأصلية بدون أي تغيير */
-          @keyframes neon-ticker-scroll {
-            0% { left: 0%; transform: translate(-100%, -50%); color: #39FF14; text-shadow: 0 0 10px #39FF14; }
-            25% { color: #00FFFF; text-shadow: 0 0 10px #00FFFF; }
-            50% { color: #FF00FF; text-shadow: 0 0 10px #FF00FF; }
-            75% { color: #FFFF00; text-shadow: 0 0 10px #FFFF00; }
-            100% { left: 100%; transform: translate(0, -50%); color: #39FF14; text-shadow: 0 0 10px #39FF14; }
-          }
-          @keyframes neon-border-glow {
-            0%, 100% { border-color: #39FF14; box-shadow: 0 0 15px rgba(57, 255, 20, 0.7); }
-            25% { border-color: #00FFFF; box-shadow: 0 0 15px rgba(0, 255, 255, 0.7); }
-            50% { border-color: #FF00FF; box-shadow: 0 0 15px rgba(255, 0, 255, 0.7); }
-            75% { border-color: #FFFF00; box-shadow: 0 0 15px rgba(255, 255, 0, 0.7); }
-          }
-
-          /* أنيميشن التصميم الذكي الحديث - متوافق كلياً مع البطاقات الذهبية 3D */
-          @keyframes golden-ticker-scroll {
+          @keyframes themed-ticker-scroll-ltr {
             0% { 
               left: 0%; 
               transform: translate(-100%, -50%); 
-              color: #451A03; 
-              text-shadow: 0 1px 1px rgba(255, 255, 255, 0.95), 0 0 1px rgba(120, 53, 15, 0.3); 
-            }
-            25% { 
-              color: #78350F; 
-              text-shadow: 0 1px 1px rgba(255, 255, 255, 0.95), 0 0 2px rgba(217, 119, 6, 0.4); 
+              color: ${themeStyles.textColors[0]}; 
+              text-shadow: ${themeStyles.textShadow}; 
             }
             50% { 
-              color: #92400E; 
-              text-shadow: 0 1px 1px rgba(255, 255, 255, 0.95), 0 0 2px rgba(245, 158, 11, 0.45); 
-            }
-            75% { 
-              color: #B45309; 
-              text-shadow: 0 1px 1px rgba(255, 255, 255, 0.95), 0 0 2px rgba(180, 83, 9, 0.4); 
+              color: ${themeStyles.textColors[1]}; 
+              text-shadow: ${themeStyles.textShadow}; 
             }
             100% { 
               left: 100%; 
               transform: translate(0, -50%); 
-              color: #451A03; 
-              text-shadow: 0 1px 1px rgba(255, 255, 255, 0.95), 0 0 1px rgba(120, 53, 15, 0.3); 
+              color: ${themeStyles.textColors[2]}; 
+              text-shadow: ${themeStyles.textShadow}; 
             }
           }
-          @keyframes golden-border-glow {
-            0%, 100% { 
-              border-color: #D97706; 
-              box-shadow: 0 3px 10px rgba(180, 115, 20, 0.28), inset 0 2px 2px rgba(255, 255, 255, 0.95), inset 0 -2px 3px rgba(146, 64, 14, 0.16); 
+
+          @keyframes themed-ticker-scroll-rtl {
+            0% { 
+              left: 100%; 
+              transform: translate(0, -50%); 
+              color: ${themeStyles.textColors[0]}; 
+              text-shadow: ${themeStyles.textShadow}; 
             }
-            33% { 
-              border-color: #F59E0B; 
-              box-shadow: 0 3px 14px rgba(245, 158, 11, 0.38), inset 0 2px 2px rgba(255, 255, 255, 0.95), inset 0 -2px 3px rgba(146, 64, 14, 0.16); 
+            50% { 
+              color: ${themeStyles.textColors[1]}; 
+              text-shadow: ${themeStyles.textShadow}; 
             }
-            66% { 
-              border-color: #B45309; 
-              box-shadow: 0 3px 10px rgba(180, 83, 9, 0.32), inset 0 2px 2px rgba(255, 255, 255, 0.95), inset 0 -2px 3px rgba(146, 64, 14, 0.16); 
+            100% { 
+              left: 0%; 
+              transform: translate(-100%, -50%); 
+              color: ${themeStyles.textColors[2]}; 
+              text-shadow: ${themeStyles.textShadow}; 
             }
           }
 
@@ -151,18 +427,10 @@ const FloatingNeonTicker: React.FC<FloatingNeonTickerProps> = ({ layoutMode, isG
             display: inline-block;
             white-space: nowrap;
             width: max-content;
+            animation: ${isEn ? 'themed-ticker-scroll-rtl' : 'themed-ticker-scroll-ltr'} 40s linear infinite;
           }
 
-          .ticker-content-classic {
-            animation: neon-ticker-scroll 40s linear infinite;
-          }
-
-          .ticker-content-modern {
-            animation: golden-ticker-scroll 40s linear infinite;
-          }
-
-          /* حاوية النيون الكلاسيكية */
-          .neon-ticker-container {
+          .themed-ticker-container {
             position: absolute;
             inset: 0;
             z-index: 10;
@@ -170,40 +438,14 @@ const FloatingNeonTicker: React.FC<FloatingNeonTickerProps> = ({ layoutMode, isG
             overflow: hidden;
             display: flex;
             align-items: center;
-            background: #000000;
-            backdrop-filter: blur(20px);
-            border: 2px solid #39FF14;
+            background: ${themeStyles.containerBg};
+            border: 1.5px solid ${themeStyles.borderColor};
             border-radius: 9999px;
-            box-shadow: 0 0 20px rgba(57, 255, 20, 0.4);
-            animation: neon-border-glow 8s linear infinite;
+            box-shadow: ${themeStyles.boxShadow};
+            transition: all 0.3s ease;
           }
 
-          /* حاوية البطاقات الذهبية الحديثة */
-          .golden-ticker-container {
-            position: absolute;
-            inset: 0;
-            z-index: 10;
-            pointer-events: none;
-            overflow: hidden;
-            display: flex;
-            align-items: center;
-            background: linear-gradient(140deg, #FFFDF7 0%, #FEF8E7 18%, #FCE8AB 50%, #F5D374 80%, #E8BE48 100%);
-            border: 1.5px solid #D97706;
-            border-radius: 9999px;
-            animation: golden-border-glow 6s linear infinite;
-          }
-
-          .neon-text {
-            font-weight: 900;
-            font-size: 1.05rem;
-            line-height: normal;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            font-family: 'Cairo', sans-serif;
-            display: inline-block;
-          }
-
-          .golden-text {
+          .themed-ticker-text {
             font-weight: 800;
             font-size: 1.05rem;
             line-height: normal;
@@ -215,12 +457,13 @@ const FloatingNeonTicker: React.FC<FloatingNeonTickerProps> = ({ layoutMode, isG
       </style>
       <div 
         id="floating-neon-ticker" 
-        className={isModern ? "golden-ticker-container" : "neon-ticker-container"}
+        className="themed-ticker-container"
+        dir={isEn ? "ltr" : "rtl"}
       >
-        <div className={`ticker-content ${isModern ? "ticker-content-modern" : "ticker-content-classic"}`}>
+        <div key={isEn ? `ticker-en-${displayMessage}` : `ticker-ar-${displayMessage}`} className="ticker-content" dir={isEn ? "ltr" : "rtl"}>
           <span 
-            className={isModern ? "golden-text" : "neon-text"} 
-            dangerouslySetInnerHTML={{ __html: tickerData.message }}
+            className="themed-ticker-text" 
+            dangerouslySetInnerHTML={{ __html: displayMessage }}
           ></span>
         </div>
       </div>

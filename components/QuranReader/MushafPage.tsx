@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { SAJDAH_LOCATIONS, toArabic, SURAH_INFO, getAyahCountText, SURAH_NAMES_AR } from './constants';
+import { SAJDAH_LOCATIONS, toArabic, SURAH_INFO, getAyahCountText, SURAH_NAMES_AR, getEffectiveWordHighlightColor } from './constants';
 import SurahHeader from './SurahHeader';
 
 interface MushafPageProps {
@@ -20,6 +20,9 @@ interface MushafPageProps {
         theme: string;
         surahHeaderDesign?: number;
         isBold?: boolean;
+        highlightTextColor?: string;
+        wordHighlightEnabled?: boolean;
+        wordHighlightColor?: string;
     };
     currentTheme?: any;
     hideVerses?: boolean;
@@ -28,6 +31,7 @@ interface MushafPageProps {
     isRecording?: boolean;
     revealedAyahs?: string[];
     tempRevealedAyah?: string | null;
+    audioProgress?: { currentTime: number; duration: number } | null;
 }
 
 export const fixQuranText = (text: string) => {
@@ -53,7 +57,7 @@ export const renderTajweedTextHtml = (text: string) => {
     return fixQuranText(text);
 };
 
-const MushafPage: React.FC<MushafPageProps> = React.memo(({ pageNum, pageData, highlightedAyahId, onAyahClick, onVerseClick, onVerseLongPress, onAyahLongPress, onInteractionStart, onInteractionEnd, onSurahHeaderLongPress, settings, currentTheme, hideVerses, memorizationSettings, isPlaying, isRecording, revealedAyahs = [], tempRevealedAyah }) => {
+const MushafPage: React.FC<MushafPageProps> = React.memo(({ pageNum, pageData, highlightedAyahId, onAyahClick, onVerseClick, onVerseLongPress, onAyahLongPress, onInteractionStart, onInteractionEnd, onSurahHeaderLongPress, settings, currentTheme, hideVerses, memorizationSettings, isPlaying, isRecording, revealedAyahs = [], tempRevealedAyah, audioProgress }) => {
     const pageRef = useRef<HTMLDivElement | null>(null);
     const longPressTimer = useRef<number | null>(null);
     const isLongPressTriggered = useRef(false);
@@ -119,7 +123,7 @@ const MushafPage: React.FC<MushafPageProps> = React.memo(({ pageNum, pageData, h
     let currentSurah = -1;
     
     const pageStyle = {
-        fontSize: settings ? `${settings.fontSize}rem` : '1.7rem',
+        fontSize: settings ? `${settings.fontSize}rem` : '1.6rem',
         fontWeight: settings?.isBold ? '900' : 'normal',
         WebkitTextStroke: settings?.isBold ? '0.5px currentColor' : '0px',
         fontFamily: 'var(--qr-fontFamily)',
@@ -130,11 +134,11 @@ const MushafPage: React.FC<MushafPageProps> = React.memo(({ pageNum, pageData, h
     };
 
     const headerStyle = {
-        fontSize: settings ? `${settings.fontSize * 0.94}rem` : '1.6rem',
+        fontSize: settings ? `${settings.fontSize * 0.94}rem` : `${(1.6 * 0.94).toFixed(2)}rem`,
         fontFamily: settings?.fontFamily || 'var(--font-amiri-quran)',
         fontWeight: settings?.isBold ? '900' : 'normal',
         WebkitTextStroke: settings?.isBold ? '0.5px currentColor' : '0px',
-        color: currentTheme?.accent || '#6d28d9'
+        color: currentTheme?.id === 'deep_black' ? '#ffffff' : (currentTheme?.accent || '#6d28d9')
     };
 
     const borderColor = currentTheme?.palette?.[0] || currentTheme?.accent || '#d97706';
@@ -151,9 +155,10 @@ const MushafPage: React.FC<MushafPageProps> = React.memo(({ pageNum, pageData, h
             case 'night_sky': return { num: '#9333ea', bracket: '#9333ea' }; // Purple for both
             case 'green': return { num: '#dc2626', bracket: '#dc2626' }; // Red for both
             case 'red': return { num: '#2563eb', bracket: '#2563eb' }; // Blue for both
-            case 'deep_black': return { num: '#ffffff', bracket: '#ffffff' }; // White for both in deep black
+            case 'gold': return { num: currentTheme?.verseNumber || '#b91c1c', bracket: currentTheme?.verseBracket || '#d4af37' };
+            case 'deep_black': return { num: currentTheme?.verseNumber || '#38bdf8', bracket: currentTheme?.verseBracket || '#fbbf24' };
             default: return { 
-                num: numColor, 
+                num: currentTheme?.verseNumber || numColor, 
                 bracket: bracketColor 
             };
         }
@@ -255,7 +260,7 @@ const MushafPage: React.FC<MushafPageProps> = React.memo(({ pageNum, pageData, h
                             <span 
                                 id={id} 
                                 className={`ayah-text-block ${highlightedAyahId === id ? 'highlighted' : ''} ${isSajdah ? 'ayah-sajdah' : ''} ${shouldHide ? 'hide-text' : ''}`} 
-                                style={highlightedAyahId === id && currentTheme?.id === 'deep_black' ? { color: '#ffffff', textShadow: '0 0 2px rgba(255, 255, 255, 0.8)' } : undefined}
+                                style={highlightedAyahId === id && currentTheme?.id === 'deep_black' ? { color: 'var(--qr-highlight-text, #f59e0b)', textShadow: '0 0 1px rgba(245, 158, 11, 0.45)' } : undefined}
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     if (!isLongPressTriggered.current) {
@@ -276,43 +281,108 @@ const MushafPage: React.FC<MushafPageProps> = React.memo(({ pageNum, pageData, h
                                 data-hizb-quarter={ayah.hizbQuarter}
                             >
                                 {isNewQuarter && <span className="hizb-quarter-marker">۞</span>}
-                                <span 
-                                    style={{ display: 'contents' }}
-                                    dangerouslySetInnerHTML={{ 
-                                        __html: renderTajweedTextHtml(text.replace(/\s+/g, ' ').trim()) 
-                                    }} 
-                                />
-                                {isSajdah && <span className="sajdah-icon-inline">۩</span>}
-                                <span className="verse-container" 
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        if (!isLongPressTriggered.current) {
-                                            onVerseClick(ayah.sNum, ayah.numberInSurah, e);
-                                        }
-                                    }}
-                                    onPointerDown={(e) => handlePointerDown(ayah.sNum, ayah.numberInSurah, e, true)}
-                                    onPointerUp={(e) => {
-                                        e.stopPropagation();
-                                        handlePointerUp();
-                                    }}
-                                    onPointerCancel={(e) => {
-                                        e.stopPropagation();
-                                        handlePointerUp();
-                                    }}
-                                    onPointerLeave={(e) => {
-                                        e.stopPropagation();
-                                        handlePointerLeave();
-                                    }}
-                                    onContextMenu={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                    }}
-                                >
-                                    <span className="verse-bracket" style={{ color: currentTheme?.id === 'deep_black' ? '#ffffff' : (currentTheme?.verseBracket || currentTheme?.accent || '#d97706') }}>﴿</span>
-                                    <span className="verse-num-inner" style={{ color: currentTheme?.id === 'deep_black' ? '#ffffff' : (currentTheme?.accent || '#1d4ed8') }}>{toArabic(ayah.numberInSurah)}</span>
-                                    <span className="verse-bracket" style={{ color: currentTheme?.id === 'deep_black' ? '#ffffff' : (currentTheme?.verseBracket || currentTheme?.accent || '#d97706') }}>﴾</span>
-                                </span>
-                            </span>
+                                {(() => {
+                                    const isHighlighted = highlightedAyahId === id;
+                                    const cleanAyahText = text.replace(/\s+/g, ' ').trim();
+                                    const words = cleanAyahText.split(' ');
+                                    const isWordHighlightActive = isHighlighted && isPlaying && settings?.wordHighlightEnabled && audioProgress && audioProgress.duration > 0;
+
+                                    const ayahHighlightColor = settings?.highlightTextColor || currentTheme?.highlightText || currentTheme?.accent || '#d97706';
+                                    const wordColors = getEffectiveWordHighlightColor(
+                                        ayahHighlightColor,
+                                        settings?.wordHighlightColor,
+                                        currentTheme?.id
+                                    );
+
+                                    if (isWordHighlightActive && words.length > 0) {
+                                        const progressRatio = Math.min(1, Math.max(0, audioProgress.currentTime / audioProgress.duration));
+                                        const activeWordIdx = Math.min(words.length - 1, Math.floor(progressRatio * words.length));
+
+                                        return (
+                                            <span style={{ display: 'contents' }}>
+                                                {words.map((word, wIdx) => {
+                                                    const isCurrentWord = wIdx === activeWordIdx;
+                                                    return (
+                                                        <React.Fragment key={wIdx}>
+                                                            <span 
+                                                                className={`quran-word-span ${isCurrentWord ? 'active-word-highlight' : 'ayah-highlight-word'}`}
+                                                                style={{
+                                                                    color: isCurrentWord ? (wordColors.bg || '#dc2626') : ayahHighlightColor,
+                                                                    transition: 'color 0.1s ease-in-out'
+                                                                }}
+                                                            >
+                                                                {fixQuranText(word)}
+                                                            </span>
+                                                            {wIdx < words.length - 1 ? ' ' : ''}
+                                                        </React.Fragment>
+                                                    );
+                                                })}
+                                            </span>
+                                        );
+                                    }
+
+                                    return (
+                                        <span 
+                                            style={{ display: 'contents' }}
+                                            dangerouslySetInnerHTML={{ 
+                                                __html: renderTajweedTextHtml(cleanAyahText) 
+                                            }} 
+                                        />
+                                    );
+                                })()}
+                                 {isSajdah && <span className="sajdah-icon-inline">۩</span>}
+                                 {(() => {
+                                     const digitCount = String(ayah.numberInSurah).length;
+                                     const isHighlighted = highlightedAyahId === id;
+                                     const themeId = currentTheme?.id;
+                                     const bracketColor = isHighlighted
+                                         ? (settings?.highlightTextColor || currentTheme?.highlightText || currentTheme?.accent || '#d97706')
+                                         : (themeId === 'deep_black'
+                                             ? (currentTheme?.verseBracket || '#fbbf24')
+                                             : (themeId === 'gold'
+                                                 ? (currentTheme?.verseBracket || '#d4af37')
+                                                 : (currentTheme?.verseBracket || currentTheme?.accent || '#d97706')));
+                                     const numColor = isHighlighted
+                                         ? (settings?.highlightTextColor || currentTheme?.highlightText || currentTheme?.accent || '#d97706')
+                                         : (themeId === 'deep_black'
+                                             ? (currentTheme?.verseNumber || '#38bdf8')
+                                             : (themeId === 'gold'
+                                                 ? (currentTheme?.verseNumber || '#b91c1c')
+                                                 : (currentTheme?.verseNumber || currentTheme?.accent || '#1d4ed8')));
+
+                                     return (
+                                         <span className={`verse-container verse-digits-${digitCount} ${isHighlighted ? 'highlighted' : ''}`} 
+                                             onClick={(e) => {
+                                                 e.stopPropagation();
+                                                 if (!isLongPressTriggered.current) {
+                                                     onVerseClick(ayah.sNum, ayah.numberInSurah, e);
+                                                 }
+                                             }}
+                                             onPointerDown={(e) => handlePointerDown(ayah.sNum, ayah.numberInSurah, e, true)}
+                                             onPointerUp={(e) => {
+                                                 e.stopPropagation();
+                                                 handlePointerUp();
+                                             }}
+                                             onPointerCancel={(e) => {
+                                                 e.stopPropagation();
+                                                 handlePointerUp();
+                                             }}
+                                             onPointerLeave={(e) => {
+                                                 e.stopPropagation();
+                                                 handlePointerLeave();
+                                             }}
+                                             onContextMenu={(e) => {
+                                                 e.preventDefault();
+                                                 e.stopPropagation();
+                                             }}
+                                         >
+                                             <span className="verse-bracket" style={{ color: bracketColor }}>﴿</span>
+                                             <span className="verse-num-inner" style={{ color: numColor }}>{toArabic(ayah.numberInSurah)}</span>
+                                             <span className="verse-bracket" style={{ color: bracketColor }}>﴾</span>
+                                         </span>
+                                     );
+                                 })()}
+                             </span>
                         </React.Fragment>
                     );
                 })}

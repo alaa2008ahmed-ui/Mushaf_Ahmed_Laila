@@ -249,20 +249,6 @@ public class DailyWirdAlarmReceiver extends BroadcastReceiver {
             long diffMillis = Math.max(0, todayDate.getTime() - startDate.getTime());
             int calendarDaysElapsed = (int) (diffMillis / (1000L * 60 * 60 * 24));
 
-            // CRITICAL CHECK: If user already completed today's allocated portion:
-            // e.g. calendarDaysElapsed is 1 (day 2) and completedCount is 2 (day 2 completed),
-            // then today's wird is finished! No notification should be shown!
-            if (completedCount > calendarDaysElapsed) {
-                cancelActiveWirdNotifications(context);
-                return;
-            }
-
-            int currentDay = activeProfile.optInt("currentDay", 1);
-            if (completedSet.contains(currentDay)) {
-                cancelActiveWirdNotifications(context);
-                return;
-            }
-
             int expectedPastDays = Math.min(calendarDaysElapsed, totalDays);
             int missedDaysCount = Math.max(0, expectedPastDays - completedCount);
 
@@ -288,6 +274,18 @@ public class DailyWirdAlarmReceiver extends BroadcastReceiver {
             todayStartPage = Math.min(todayStartPage, TOTAL_QURAN_PAGES);
             todayEndPage = Math.min(Math.max(todayStartPage, todayEndPage), TOTAL_QURAN_PAGES);
 
+            // ACCURATE PROGRESS VERIFICATION:
+            // Check if user has read partially today (lastPage) vs fully completing today's portion
+            int lastPageRead = activeProfile.optInt("lastPage", 0);
+            boolean isPartiallyRead = (lastPageRead >= todayStartPage && lastPageRead < todayEndPage);
+            boolean isFullyCompleted = (lastPageRead >= todayEndPage && todayEndPage > 0);
+
+            // If the user reached or passed today's end page, it is fully completed!
+            if (isFullyCompleted) {
+                cancelActiveWirdNotifications(context);
+                return;
+            }
+
             // User Name Formatting ("وباسم المستخدم")
             String rawName = activeProfile.optString("name", "").trim();
             String appLang = storage.getString("app_language", "ar");
@@ -307,7 +305,11 @@ public class DailyWirdAlarmReceiver extends BroadcastReceiver {
                 String prefix = "Dear " + formattedName + ": ";
                 String pageStr = "(p. " + todayStartPage + " - " + todayEndPage + ")";
                 if (isEvening) {
-                    if (missedDaysCount == 0) {
+                    if (isPartiallyRead) {
+                        int remainingPages = Math.max(1, todayEndPage - lastPageRead);
+                        title = prefix + "Complete Today's Portion Tonight";
+                        message = "You read up to page " + lastPageRead + " today. Only " + remainingPages + " page(s) left to complete your portion (up to p. " + todayEndPage + ").. Conclude your day by finishing it now!";
+                    } else if (missedDaysCount == 0) {
                         title = prefix + "Evening Qur'an Reminder";
                         message = "The day is coming to a close and today's portion (Day " + targetDayNumber + ") " + pageStr + " is waiting for you.. Conclude your night with the light of the Qur'an before sleep.";
                     } else if (missedDaysCount == 1) {
@@ -333,9 +335,13 @@ public class DailyWirdAlarmReceiver extends BroadcastReceiver {
                 String prefix = "يا " + formattedName + ": ";
                 String pageStr = "(ص " + todayStartPage + " - " + todayEndPage + ")";
                 if (isEvening) {
-                    if (missedDaysCount == 0) {
+                    if (isPartiallyRead) {
+                        int remainingPages = Math.max(1, todayEndPage - lastPageRead);
+                        title = prefix + "أكمل ورد اليوم قبل النوم";
+                        message = "لقد قرأت حتى صفحة " + lastPageRead + " اليوم، وبقي لك " + remainingPages + " صفحة فقط لإكمال وردك (حتى ص " + todayEndPage + ").. اختم يومك بإكماله الآن لنيل الأجر كاملاً.";
+                    } else if (missedDaysCount == 0) {
                         title = prefix + "تذكير المساء بورد القرآن الكريم";
-                        message = "أوشك اليوم على الانقضاء ولم تقرأ وردك المقرر (اليوم " + targetDayNumber + ") " + pageStr + ".. اختم يومك بنور كتاب الله واقرأ وردك قبل النوم لتنعم بليل مبارك.";
+                        message = "أوشك اليوم على الانقضاء ولم تكمل وردك المقرر (اليوم " + targetDayNumber + ") " + pageStr + ".. اختم يومك بنور كتاب الله واقرأ وردك قبل النوم لتنعم بليل مبارك.";
                     } else if (missedDaysCount == 1) {
                         title = prefix + "تدارك وردك قبل نهاية اليوم";
                         message = "تذكير مسائي: لم تقرأ ورد الأمس وورد اليوم " + pageStr + ".. اجعل مسك ختام ليلتك آيات من الذكر الحكيم واقرأهما الآن.";

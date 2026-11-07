@@ -190,15 +190,108 @@ public class PrayerCompactWidgetProvider extends AppWidgetProvider {
             views.setTextViewTextSize(R.id.compact_remaining_en, TypedValue.COMPLEX_UNIT_SP, Math.round(15f * fontScale));
         }
 
+        JSONObject cachedThemeObj = null;
+
         if (prayerJson != null && !prayerJson.trim().isEmpty()) {
             try {
                 JSONObject data = new JSONObject(prayerJson);
+                if (data.has("theme") && !data.isNull("theme")) {
+                    cachedThemeObj = data.getJSONObject("theme");
+                }
                 JSONObject times = data.optJSONObject("times");
 
                 String nextPrayerId = data.optString("next_prayer_id", "fajr");
                 String nextPrayerName = data.optString("next_prayer_name", isArabic ? "الفجر" : "Fajr");
                 long targetTimeMillis = data.optLong("target_time_millis", 0);
                 long now = System.currentTimeMillis();
+
+                // Dynamic lookup from timestamps if targetTimeMillis is in the past or missing
+                if (data.has("timestamps") && !data.isNull("timestamps")) {
+                    JSONObject timestamps = data.getJSONObject("timestamps");
+                    String[] prayerIds = {
+                        "fajr", "sunrise", "dhuhr", "asr", "maghrib", "isha",
+                        "nextFajr", "nextSunrise", "nextDhuhr", "nextAsr", "nextMaghrib", "nextIsha"
+                    };
+                    String[] prayerNamesAr = {
+                        "الفجر", "الشروق", "الظهر", "العصر", "المغرب", "العشاء",
+                        "الفجر", "الشروق", "الظهر", "العصر", "المغرب", "العشاء"
+                    };
+                    String[] prayerNamesEn = {
+                        "Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha",
+                        "Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"
+                    };
+                    String[] prayerNames = isArabic ? prayerNamesAr : prayerNamesEn;
+
+                    for (int i = 0; i < prayerIds.length; i++) {
+                        if (timestamps.has(prayerIds[i])) {
+                            long pTime = timestamps.getLong(prayerIds[i]);
+                            if (pTime > now) {
+                                targetTimeMillis = pTime;
+                                String id = prayerIds[i];
+                                if (id.startsWith("next")) {
+                                    id = id.substring(4).toLowerCase();
+                                }
+                                nextPrayerId = id;
+                                nextPrayerName = prayerNames[i];
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                // If targetTimeMillis is still expired or 0, fallback to autonomous calculation via PrayerCalculationEngine
+                if ((targetTimeMillis <= now || targetTimeMillis <= 0) && data.has("coordinates")) {
+                    JSONObject coords = data.getJSONObject("coordinates");
+                    double lat = coords.optDouble("lat", 0.0);
+                    double lng = coords.optDouble("lng", 0.0);
+                    int methodId = data.optInt("method_id", 3);
+                    long baseDateMillis = data.optLong("base_date_millis", 0);
+
+                    int[] offsets = new int[6];
+                    if (data.has("prayer_offsets")) {
+                        JSONObject offObj = data.getJSONObject("prayer_offsets");
+                        offsets[0] = offObj.optInt("Fajr", 0);
+                        offsets[1] = offObj.optInt("Sunrise", 0);
+                        offsets[2] = offObj.optInt("Dhuhr", 0);
+                        offsets[3] = offObj.optInt("Asr", 0);
+                        offsets[4] = offObj.optInt("Maghrib", 0);
+                        offsets[5] = offObj.optInt("Isha", 0);
+                    }
+
+                    PrayerCalculationEngine.PrayerResult autoRes = PrayerCalculationEngine.calculate(
+                            new Date(), lat, lng, methodId, false, offsets, isArabic,
+                            baseDateMillis, data.optString("hijri", ""), data.optString("gregorian", "")
+                    );
+
+                    long[] autoTimes = {autoRes.fajrMillis, autoRes.sunriseMillis, autoRes.dhuhrMillis, autoRes.asrMillis, autoRes.maghribMillis, autoRes.ishaMillis};
+                    String[] autoIds = {"fajr", "sunrise", "dhuhr", "asr", "maghrib", "isha"};
+                    String[] autoNamesAr = {"الفجر", "الشروق", "الظهر", "العصر", "المغرب", "العشاء"};
+                    String[] autoNamesEn = {"Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"};
+                    String[] autoNames = isArabic ? autoNamesAr : autoNamesEn;
+
+                    boolean foundNext = false;
+                    for (int i = 0; i < autoTimes.length; i++) {
+                        if (autoTimes[i] > now) {
+                            targetTimeMillis = autoTimes[i];
+                            nextPrayerId = autoIds[i];
+                            nextPrayerName = autoNames[i];
+                            foundNext = true;
+                            break;
+                        }
+                    }
+
+                    if (!foundNext) {
+                        Calendar tomCal = Calendar.getInstance();
+                        tomCal.add(Calendar.DAY_OF_YEAR, 1);
+                        PrayerCalculationEngine.PrayerResult tomRes = PrayerCalculationEngine.calculate(
+                                tomCal.getTime(), lat, lng, methodId, false, offsets, isArabic,
+                                baseDateMillis, data.optString("hijri", ""), data.optString("gregorian", "")
+                        );
+                        targetTimeMillis = tomRes.fajrMillis;
+                        nextPrayerId = "fajr";
+                        nextPrayerName = isArabic ? "الفجر" : "Fajr";
+                    }
+                }
 
                 // Compute previous prayer from prayer sequence
                 String[] prayerOrder = {"fajr", "sunrise", "dhuhr", "asr", "maghrib", "isha"};
@@ -238,32 +331,54 @@ public class PrayerCompactWidgetProvider extends AppWidgetProvider {
                 views.setTextViewText(R.id.compact_remaining_label, isArabic ? "متبقي على الصلاة:" : "Remaining:");
 
                 // Setup countdown
-                if (targetTimeMillis > 0) {
+                if (targetTimeMillis > now) {
                     long remainingMillis = targetTimeMillis - now;
                     if (isArabic) {
                         views.setViewVisibility(R.id.compact_chronometer, View.VISIBLE);
                         views.setViewVisibility(R.id.compact_remaining_en, View.GONE);
-                        if (remainingMillis <= 0) {
-                            views.setChronometer(R.id.compact_chronometer, android.os.SystemClock.elapsedRealtime(), "00:00:00", false);
-                        } else {
-                            long base = android.os.SystemClock.elapsedRealtime() + remainingMillis;
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                                views.setBoolean(R.id.compact_chronometer, "setCountDown", true);
-                            }
-                            views.setChronometer(R.id.compact_chronometer, base, "%s", true);
+                        long base = android.os.SystemClock.elapsedRealtime() + remainingMillis;
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                            views.setBoolean(R.id.compact_chronometer, "setCountDown", true);
                         }
+                        views.setChronometer(R.id.compact_chronometer, base, "%s", true);
                     } else {
                         views.setViewVisibility(R.id.compact_chronometer, View.GONE);
                         views.setViewVisibility(R.id.compact_remaining_en, View.VISIBLE);
                         views.setTextViewText(R.id.compact_remaining_en, PrayerWidgetProvider.formatRemainingTime(remainingMillis));
                     }
-                }
 
+                    // Schedule Alarm for next prayer transition
+                    Intent updateIntent = new Intent(context, PrayerCompactWidgetProvider.class);
+                    updateIntent.setAction(AppWidgetManager.ACTION_APPWIDGET_UPDATE);
+                    updateIntent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, new int[]{appWidgetId});
+                    PendingIntent pendingUpdate = PendingIntent.getBroadcast(
+                            context, appWidgetId + 5000, updateIntent,
+                            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+                    );
+                    scheduleSafeAlarm(context, targetTimeMillis + 1000, pendingUpdate);
+
+                    // Schedule 1-minute recurring update alarm for smooth display
+                    Intent minIntent = new Intent(context, PrayerCompactWidgetProvider.class);
+                    minIntent.setAction(ACTION_REFRESH_COMPACT);
+                    PendingIntent minPending = PendingIntent.getBroadcast(
+                            context, appWidgetId + 9500, minIntent,
+                            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+                    );
+                    long nextMinute = (System.currentTimeMillis() / 60000 + 1) * 60000;
+                    scheduleSafeAlarm(context, nextMinute, minPending);
+                } else {
+                    views.setChronometer(R.id.compact_chronometer, android.os.SystemClock.elapsedRealtime(), "00:00:00", false);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        try {
                 // Theme handling
-                boolean isDark = true;
-                if (data.has("theme") && !data.isNull("theme")) {
-                    JSONObject themeObj = data.getJSONObject("theme");
-                    isDark = themeObj.optBoolean("isDark", true);
+                boolean isDark = false;
+                if (cachedThemeObj != null) {
+                    isDark = cachedThemeObj.optBoolean("isDark", false);
                 }
 
                 if (isDark) {
@@ -289,16 +404,16 @@ public class PrayerCompactWidgetProvider extends AppWidgetProvider {
                     views.setInt(R.id.compact_next_card, "setBackgroundResource", R.drawable.widget_compact_next_card);
                     views.setInt(R.id.compact_countdown_card, "setBackgroundResource", R.drawable.widget_countdown_ribbon);
 
-                    views.setTextColor(R.id.compact_hijri_date, Color.parseColor("#059669"));
-                    views.setTextColor(R.id.compact_gregorian_date, Color.parseColor("#64748B"));
-                    views.setTextColor(R.id.compact_prev_label, Color.parseColor("#64748B"));
-                    views.setTextColor(R.id.compact_prev_name, Color.parseColor("#1E293B"));
-                    views.setTextColor(R.id.compact_prev_time, Color.parseColor("#475569"));
-                    views.setTextColor(R.id.compact_next_label, Color.parseColor("#059669"));
-                    views.setTextColor(R.id.compact_next_name, Color.parseColor("#065F46"));
-                    views.setTextColor(R.id.compact_next_time, Color.parseColor("#047857"));
-                    views.setTextColor(R.id.compact_remaining_label, Color.parseColor("#B45309"));
-                    views.setTextColor(R.id.compact_chronometer, Color.parseColor("#92400E"));
+                    views.setTextColor(R.id.compact_hijri_date, Color.parseColor("#000000"));
+                    views.setTextColor(R.id.compact_gregorian_date, Color.parseColor("#334155"));
+                    views.setTextColor(R.id.compact_prev_label, Color.parseColor("#334155"));
+                    views.setTextColor(R.id.compact_prev_name, Color.parseColor("#000000"));
+                    views.setTextColor(R.id.compact_prev_time, Color.parseColor("#000000"));
+                    views.setTextColor(R.id.compact_next_label, Color.parseColor("#FEF08A"));
+                    views.setTextColor(R.id.compact_next_name, Color.parseColor("#FFFFFF"));
+                    views.setTextColor(R.id.compact_next_time, Color.parseColor("#FFFFFF"));
+                    views.setTextColor(R.id.compact_remaining_label, Color.parseColor("#000000"));
+                    views.setTextColor(R.id.compact_chronometer, Color.parseColor("#C86400"));
                 }
 
                 // Apply transparency and custom theme configuration from SharedPreferences strictly per appWidgetId
@@ -313,7 +428,7 @@ public class PrayerCompactWidgetProvider extends AppWidgetProvider {
                 String overrideTheme = prefs.getString("widget_theme_" + appWidgetId, null);
                 if (overrideTheme == null || overrideTheme.trim().isEmpty()) {
                     overrideTheme = prefs.getString("widget_compact_theme",
-                            prefs.getString("widget_theme", "royal_gold_3d"));
+                            prefs.getString("widget_theme", "golden_trio"));
                 }
 
                 // Vibrant Islamic Emerald & Gold Default Palette
@@ -617,6 +732,10 @@ public class PrayerCompactWidgetProvider extends AppWidgetProvider {
                     labelTextColor = Color.parseColor("#475569");
                 }
 
+                boolean isGoldenTrioTheme = "golden_trio".equalsIgnoreCase(overrideTheme);
+                int nextLabelColor = isGoldenTrioTheme ? Color.parseColor("#FEF08A") : labelTextColor;
+                int refreshTint = isGoldenTrioTheme ? Color.parseColor("#C86400") : dateTextColor;
+
                 rootBg = Color.argb(alphaVal, Color.red(rootBg), Color.green(rootBg), Color.blue(rootBg));
                 prevCardBg = Color.argb(alphaVal, Color.red(prevCardBg), Color.green(prevCardBg), Color.blue(prevCardBg));
                 nextCardBg = Color.argb(alphaVal, Color.red(nextCardBg), Color.green(nextCardBg), Color.blue(nextCardBg));
@@ -626,24 +745,53 @@ public class PrayerCompactWidgetProvider extends AppWidgetProvider {
                 views.setInt(R.id.compact_prev_card, "setBackgroundColor", prevCardBg);
                 views.setInt(R.id.compact_next_card, "setBackgroundColor", nextCardBg);
                 views.setInt(R.id.compact_countdown_card, "setBackgroundColor", ribbonBg);
+                views.setInt(R.id.widget_btn_refresh, "setColorFilter", refreshTint);
 
                 views.setTextColor(R.id.compact_hijri_date, dateTextColor);
                 views.setTextColor(R.id.compact_gregorian_date, labelTextColor);
                 views.setTextColor(R.id.compact_prev_label, labelTextColor);
                 views.setTextColor(R.id.compact_prev_name, prevNameColor);
                 views.setTextColor(R.id.compact_prev_time, prevTimeColor);
-                views.setTextColor(R.id.compact_next_label, labelTextColor);
+                views.setTextColor(R.id.compact_next_label, nextLabelColor);
                 views.setTextColor(R.id.compact_next_name, nextNameColor);
                 views.setTextColor(R.id.compact_next_time, nextTimeColor);
                 views.setTextColor(R.id.compact_remaining_label, ribbonTextColor);
-                views.setTextColor(R.id.compact_chronometer, ribbonTextColor);
-                views.setTextColor(R.id.compact_remaining_en, ribbonTextColor);
+                views.setTextColor(R.id.compact_chronometer, isGoldenTrioTheme ? Color.parseColor("#C86400") : ribbonTextColor);
+                views.setTextColor(R.id.compact_remaining_en, isGoldenTrioTheme ? Color.parseColor("#C86400") : ribbonTextColor);
 
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
 
         appWidgetManager.updateAppWidget(appWidgetId, views);
+    }
+
+    private static void scheduleSafeAlarm(Context context, long triggerMillis, PendingIntent pendingIntent) {
+        AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+        if (alarmManager == null) return;
+
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                if (alarmManager.canScheduleExactAlarms()) {
+                    alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC, triggerMillis, pendingIntent);
+                } else {
+                    alarmManager.setAndAllowWhileIdle(AlarmManager.RTC, triggerMillis, pendingIntent);
+                }
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC, triggerMillis, pendingIntent);
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                alarmManager.setExact(AlarmManager.RTC, triggerMillis, pendingIntent);
+            } else {
+                alarmManager.set(AlarmManager.RTC, triggerMillis, pendingIntent);
+            }
+        } catch (SecurityException se) {
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    alarmManager.setAndAllowWhileIdle(AlarmManager.RTC, triggerMillis, pendingIntent);
+                } else {
+                    alarmManager.set(AlarmManager.RTC, triggerMillis, pendingIntent);
+                }
+            } catch (Exception ignored) {}
+        } catch (Exception ignored) {}
     }
 }

@@ -110,7 +110,7 @@ const ToneSelector: React.FC<ToneSelectorProps> = ({
     const allToneOptions = [
         { name: 'بدون تنبيه', value: 'none' },
         ...internetTones.map(t => ({ name: t.name, value: t.path })),
-        { name: 'نغمة مخصصة من الجهاز...', value: 'custom' },
+        { name: 'اختيار نغمة', value: 'custom' },
     ];
 
     return (

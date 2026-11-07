@@ -9,8 +9,17 @@ import {
     Bell, 
     BellOff, 
     SlidersHorizontal,
-    Clock
+    Clock,
+    CloudRain,
+    Cloud
 } from 'lucide-react';
+
+export interface PrayerWeatherInfo {
+    temp: number;
+    code?: number;
+    conditionAr?: string;
+    conditionEn?: string;
+}
 
 interface PrayerCardProps {
     prayerKey: string;
@@ -36,6 +45,8 @@ interface PrayerCardProps {
     isSummerTime?: boolean;
     toggleSummerTime?: () => void;
     supportsDST?: boolean;
+    weatherInfo?: PrayerWeatherInfo | null;
+    onOpenWeather?: () => void;
 }
 
 const parseHexRgb = (hexColor: string): [number, number, number] => {
@@ -89,9 +100,12 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
     formatTime12,
     isSummerTime,
     toggleSummerTime,
-    supportsDST
+    supportsDST,
+    weatherInfo,
+    onOpenWeather
 }) => {
-    const { language, dir } = useLanguage();
+    const { language, dir, formatNumber } = useLanguage();
+    const isEn = language === 'en';
 
     // Select flat modern icon for each prayer
     const renderPrayerIcon = (key: string) => {
@@ -112,6 +126,26 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
             default:
                 return <Clock className={iconClass} strokeWidth={2.2} />;
         }
+    };
+
+    // Render weather condition icon for prayer time
+    const renderPrayerWeatherIcon = (code?: number, temp?: number) => {
+        const iconClass = "w-3 h-3 shrink-0";
+        if (code !== undefined) {
+            if ([51, 53, 55, 61, 63, 65, 80, 81, 82, 95, 96, 99].includes(code)) {
+                return <CloudRain className={`${iconClass} text-sky-400`} />;
+            }
+            if ([2, 3, 45, 48].includes(code)) {
+                return <Cloud className={`${iconClass} text-slate-400`} />;
+            }
+        }
+        if (temp !== undefined && temp >= 32) {
+            return <Sun className={`${iconClass} text-amber-500`} />;
+        }
+        if (prayerKey === 'Fajr' || prayerKey === 'Isha') {
+            return <Moon className={`${iconClass} text-indigo-400`} />;
+        }
+        return <CloudSun className={`${iconClass} text-amber-500`} />;
     };
 
     // Dynamic Next Prayer Card styling adapted to the active theme
@@ -136,15 +170,6 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
     })();
 
     const nextTextColor = isLightNextBg ? '#000000' : '#FFFFFF';
-    const nextBorderStyle = isGoldenTheme
-        ? 'none'
-        : (isBlackTheme ? '1px solid rgba(255, 255, 255, 0.85)' : '1px solid rgba(255, 255, 255, 0.3)');
-    const nextShadowStyle = isGoldenTheme
-        ? `0 4px 14px -2px ${resolvedAccent}40`
-        : (isBlackTheme
-            ? '0 10px 25px -4px rgba(255, 255, 255, 0.22), 0 4px 10px -2px rgba(255, 255, 255, 0.12)'
-            : `0 10px 25px -4px ${hexToRgba(isDefaultTheme ? '#059669' : resolvedAccent, 0.42)}, 0 4px 10px -2px ${hexToRgba(isDefaultTheme ? '#059669' : resolvedAccent, 0.28)}, inset 0 1px 1.5px rgba(255, 255, 255, 0.4)`);
-
     const cardBgColor = isNextPrayer
         ? nextPrayerDynamicBg
         : (isBlackTheme ? '#18181b' : '#FFFFFF');
@@ -152,24 +177,19 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
     return (
         <div 
             dir={dir}
-            className={`prayer-card rounded-2xl pt-4 pb-2.5 px-3 sm:pt-4 sm:pb-3 sm:px-3.5 flex flex-col items-center justify-between relative min-h-[122px] transition-all duration-300 ${
-                isNextPrayer 
-                    ? 'shadow-lg scale-[1.02]' 
-                    : (isBlackTheme 
-                        ? 'shadow-[0_4px_20px_-2px_rgba(0,0,0,0.7)]' 
-                        : 'shadow-[0_4px_20px_-2px_rgba(0,0,0,0.05),0_2px_6px_-1px_rgba(0,0,0,0.02)]')
+            className={`prayer-card app-page-card border-0 rounded-2xl pt-3.5 pb-2.5 px-3 sm:pt-4 sm:pb-3 sm:px-3.5 flex flex-col items-center justify-between relative min-h-[122px] transition-all duration-300 ${
+                isNextPrayer ? 'scale-[1.02]' : ''
             }`}
             style={{
                 borderRadius: '16px',
                 background: cardBgColor,
-                border: isNextPrayer ? nextBorderStyle : (isBlackTheme ? '1px solid rgba(255,255,255,0.08)' : 'none'),
-                boxShadow: isNextPrayer ? nextShadowStyle : undefined,
+                border: 'none',
                 color: isNextPrayer ? nextTextColor : undefined
             }}
         >
-            {/* Top row: Actions (positioned at top corners with breathing room from border) */}
-            <div className="w-full flex justify-between items-center z-10 relative pt-1 px-0.5">
-                {/* Prayer Icon Badge */}
+            {/* Top row: Actions & Integrated Weather Chip without expanding height */}
+            <div className="w-full flex justify-between items-center z-10 relative px-0.5">
+                {/* Right/Left 1: Prayer Icon Badge */}
                 <div 
                     className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition-colors"
                     style={{
@@ -184,6 +204,35 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
                 >
                     {renderPrayerIcon(prayerKey)}
                 </div>
+
+                {/* Center: Integrated Weather Badge for this prayer */}
+                {weatherInfo && (
+                    <button
+                        type="button"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            if (onOpenWeather) onOpenWeather();
+                        }}
+                        className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold transition-all cursor-pointer select-none active:scale-95 ${
+                            isNextPrayer
+                                ? (isLightNextBg 
+                                    ? 'bg-black/8 hover:bg-black/12 text-slate-800' 
+                                    : 'bg-white/20 hover:bg-white/25 text-white')
+                                : (isBlackTheme
+                                    ? 'bg-white/10 hover:bg-white/15 text-zinc-300'
+                                    : 'bg-slate-100 hover:bg-slate-200/80 text-slate-600')
+                        }`}
+                        title={isEn 
+                            ? `${weatherInfo.temp}°C - ${weatherInfo.conditionEn || 'Weather'} (Click for details)` 
+                            : `${formatNumber(weatherInfo.temp)}°م - ${weatherInfo.conditionAr || 'الطقس'} (انقر للتفاصيل)`}
+                        aria-label={isEn ? 'Prayer weather' : 'طقس وقت الصلاة'}
+                    >
+                        {renderPrayerWeatherIcon(weatherInfo.code, weatherInfo.temp)}
+                        <span className="tabular-nums font-mono leading-none">
+                            {isEn ? `${weatherInfo.temp}°` : `${formatNumber(weatherInfo.temp)}°`}
+                        </span>
+                    </button>
+                )}
 
                 {prayerKey !== 'Sunrise' ? (
                     <div id={idx === 0 ? "prayer-actions-container" : undefined} className="flex items-center gap-1.5">

@@ -74,7 +74,7 @@ const SurahDesignPickerModal: FC<SurahDesignPickerModalProps> = ({
                         <span 
                             className="text-[10px] px-2 py-0.5 rounded-full font-bold quran-raised-btn"
                             style={{ 
-                                color: currentTheme?.accent || '#10b981'
+                                color: currentTheme?.id === 'deep_black' ? '#ffffff' : (currentTheme?.accent || '#10b981')
                             }}
                         >
                             {isEn ? `${designs.length} designs` : `${designs.length} تصميماً`}

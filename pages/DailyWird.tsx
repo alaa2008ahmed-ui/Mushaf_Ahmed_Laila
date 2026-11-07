@@ -74,7 +74,7 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
   const [showProfileMenu, setShowProfileMenu] = useState(false);
 
   const settings = allSettings.find(s => s.id === activeId) || null;
-  const [showSettingsTour, setShowSettingsTour] = useState(() => !settings && !getGuideSeen('daily_wird_settings_tour'));
+  const [showSettingsTour, setShowSettingsTour] = useState(false);
   const [showProgressTour, setShowProgressTour] = useState(false);
 
   useEffect(() => {
@@ -428,8 +428,8 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
   // Modern Flat Settings Screen
   const renderSettings = () => (
     <div 
-      className={`p-5 rounded-3xl shadow-[0_2px_12px_rgba(0,0,0,0.03)] bg-white dark:bg-zinc-900 border-0 ${isEn ? 'text-left' : 'text-right'}`} 
-      style={{ color: 'var(--text-color)' }}
+      className={`app-page-card p-5 rounded-3xl bg-white dark:bg-zinc-900 border-0 ${isEn ? 'text-left' : 'text-right'}`} 
+      style={{ color: 'var(--text-color)', border: 'none' }}
     >
       <h2 className="text-xl font-bold mb-4 text-center font-kufi" style={{ color: primaryColor }}>
         {settings ? (isEn ? 'Edit Khatma Plan' : 'تعديل خطة الختمة') : (isEn ? 'New Khatma Setup' : 'إعداد ختمة جديدة')}
@@ -626,8 +626,8 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
         {/* Progress Card */}
         <div 
           id="wird-progress-container" 
-          className="rounded-3xl p-5 shadow-[0_2px_12px_rgba(0,0,0,0.03)] bg-white dark:bg-zinc-900 border-0 space-y-3"
-          style={{ color: 'var(--text-color)' }}
+          className="app-page-card rounded-3xl p-5 bg-white dark:bg-zinc-900 border-0 space-y-3"
+          style={{ color: 'var(--text-color)', border: 'none' }}
         >
           <div className="flex justify-between items-center">
             <span className="font-bold text-sm text-slate-800 dark:text-zinc-200">
@@ -657,8 +657,8 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
         {/* Current Day's Reading Card */}
         <div 
           id="wird-today-card" 
-          className="rounded-3xl p-5 shadow-[0_2px_12px_rgba(0,0,0,0.03)] bg-white dark:bg-zinc-900 border-0 text-center space-y-4"
-          style={{ color: 'var(--text-color)' }}
+          className="app-page-card rounded-3xl p-5 bg-white dark:bg-zinc-900 border-0 text-center space-y-4"
+          style={{ color: 'var(--text-color)', border: 'none' }}
         >
           <div id="wird-today-container">
             <div className="flex items-center justify-center gap-2 mb-3">

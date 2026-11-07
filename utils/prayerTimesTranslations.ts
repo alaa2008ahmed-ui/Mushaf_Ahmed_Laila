@@ -39,8 +39,17 @@ export const TONE_NAMES_MAP: Record<string, { ar: string; en: string }> = {
   'تكبيرة 6': { ar: 'تكبيرة 6', en: 'Takbeer 6' },
   'الشهادة': { ar: 'الشهادة', en: 'Shahadah' },
   'الصلاة': { ar: 'الصلاة', en: 'Salah' },
-  'نغمة مخصصة من الجهاز...': { ar: 'نغمة مخصصة من الجهاز...', en: 'Custom tone from device...' },
-  'نغمة مخصصة': { ar: 'نغمة مخصصة', en: 'Custom Tone' }
+  'اختيار نغمة': { ar: 'اختيار نغمة', en: 'Select tone' },
+  'نغمة مخصصة من الجهاز...': { ar: 'اختيار نغمة', en: 'Select tone' },
+  'نغمة مخصصة': { ar: 'نغمة مخصصة', en: 'Custom Tone' },
+  'رنين هادئ': { ar: 'رنين هادئ', en: 'Soft Chime' },
+  'جرس لطيف': { ar: 'جرس لطيف', en: 'Gentle Bell' },
+  'بلورات نقية': { ar: 'بلورات نقية', en: 'Crystal Chime' },
+  'قطرة ماء': { ar: 'قطرة ماء', en: 'Water Droplet' },
+  'وتر هادئ': { ar: 'وتر هادئ', en: 'Soft Harpeggio' },
+  'تنبيه خفيف': { ar: 'تنبيه خفيف', en: 'Subtle Ping' },
+  'نغمة خشبية': { ar: 'نغمة خشبية', en: 'Warm Marimba' },
+  'بدون صوت': { ar: 'بدون صوت', en: 'Silent' }
 };
 
 export function getToneDisplayName(name: string, language: Language = 'ar'): string {
@@ -716,12 +725,14 @@ Object.entries(LOCATION_TRANSLATIONS).forEach(([ar, en]) => {
   }
 });
 
-// Explicit overrides and common aliases for English -> Arabic
+// Explicit overrides and common aliases for English -> Arabic (Governorates, Cities, Prefixes)
 const EXPLICIT_EN_TO_AR: Record<string, string> = {
+  // Countries
   'saudi arabia': 'المملكة العربية السعودية',
   'ksa': 'المملكة العربية السعودية',
   'kingdom of saudi arabia': 'المملكة العربية السعودية',
   'egypt': 'جمهورية مصر العربية',
+  'arab republic of egypt': 'جمهورية مصر العربية',
   'united arab emirates': 'الإمارات العربية المتحدة',
   'uae': 'الإمارات العربية المتحدة',
   'kuwait': 'دولة الكويت',
@@ -748,14 +759,210 @@ const EXPLICIT_EN_TO_AR: Record<string, string> = {
   'united states': 'الولايات المتحدة الأمريكية',
   'usa': 'الولايات المتحدة الأمريكية',
   'us': 'الولايات المتحدة الأمريكية',
-  'dhahran': 'الظهران',
-  'dammam': 'الدمام',
+  'turkey': 'تركيا',
+
+  // Egyptian Governorates (All 27 in all Romanized and English forms)
+  'gharbia': 'محافظة الغربية',
+  'gharbiah': 'محافظة الغربية',
+  'gharbiyah': 'محافظة الغربية',
+  'gharbiyya': 'محافظة الغربية',
+  'gharbeia': 'محافظة الغربية',
+  'al gharbia': 'محافظة الغربية',
+  'el gharbia': 'محافظة الغربية',
+  'al gharbiyah': 'محافظة الغربية',
+  'el gharbiyah': 'محافظة الغربية',
+  'gharbia governorate': 'محافظة الغربية',
+  'gharbiyah governorate': 'محافظة الغربية',
+  'muhafazat al gharbiyah': 'محافظة الغربية',
+  'muhafazat gharbia': 'محافظة الغربية',
+  'tanta': 'طنطا',
+  'tanta city': 'طنطا',
+  'qism thani tanta': 'قسم ثان طنطا',
+  'qism awwal tanta': 'قسم أول طنطا',
+  'markaz tanta': 'مركز طنطا',
+  'al mahalla al kubra': 'المحلة الكبرى',
+  'el mahalla el kubra': 'المحلة الكبرى',
+  'mahalla': 'المحلة الكبرى',
+  'kafr el zayat': 'كفر الزيات',
+  'kafr al zayat': 'كفر الزيات',
+  'kafr el-zayat': 'كفر الزيات',
+  'zefta': 'زفتى',
+  'zifta': 'زفتى',
+  'el santa': 'السنطة',
+  'al santa': 'السنطة',
+  'samanoud': 'سمنود',
+  'samanud': 'سمنود',
+  'basyoun': 'بسيون',
+  'basyun': 'بسيون',
+  'qutur': 'قطور',
+  'kotour': 'قطور',
+  'sibirbay': 'سبرباي',
+  'seberbay': 'سبرباي',
+  'lbib': 'لبيب',
+  'lebib': 'لبيب',
+  'ezbet lbib': 'عزبة لبيب',
+  'ezbet lebib': 'عزبة لبيب',
+
+  // Cairo & Giza
+  'cairo': 'القاهرة',
+  'al qahirah': 'القاهرة',
+  'el qahera': 'القاهرة',
+  'cairo governorate': 'محافظة القاهرة',
+  'muhafazat al qahirah': 'محافظة القاهرة',
+  'giza': 'الجيزة',
+  'al jizah': 'الجيزة',
+  'el giza': 'الجيزة',
+  'giza governorate': 'محافظة الجيزة',
+  'muhafazat al jizah': 'محافظة الجيزة',
+  'nasr city': 'مدينة نصر',
+  'maadi': 'المعادي',
+  'heliopolis': 'مصر الجديدة',
+  'new cairo': 'القاهرة الجديدة',
+  '6th of october': 'السادس من أكتوبر',
+  'sheikh zayed': 'الشيخ زايد',
+
+  // Alexandria & Coast
+  'alexandria': 'الإسكندرية',
+  'al iskandariyah': 'الإسكندرية',
+  'alexandria governorate': 'محافظة الإسكندرية',
+  'muhafazat al iskandariyah': 'محافظة الإسكندرية',
+  'borg el arab': 'برج العرب',
+  'matrouh': 'محافظة مطروح',
+  'matruh': 'محافظة مطروح',
+  'marsa matruh': 'مرسى مطروح',
+  'matrouh governorate': 'محافظة مطروح',
+  'muhafazat matruh': 'محافظة مطروح',
+
+  // Delta Governorates
+  'dakahlia': 'محافظة الدقهلية',
+  'daqahlia': 'محافظة الدقهلية',
+  'daqahliyah': 'محافظة الدقهلية',
+  'dakahlia governorate': 'محافظة الدقهلية',
+  'ad daqahliyah': 'محافظة الدقهلية',
+  'muhafazat ad daqahliyah': 'محافظة الدقهلية',
+  'mansoura': 'المنصورة',
+  'al mansurah': 'المنصورة',
+  'sharqia': 'محافظة الشرقية',
+  'sharqiyah': 'محافظة الشرقية',
+  'sharqia governorate': 'محافظة الشرقية',
+  'ash sharqiyah': 'محافظة الشرقية',
+  'muhafazat ash sharqiyah': 'محافظة الشرقية',
+  'zagazig': 'الزقازيق',
+  'az zaqaziq': 'الزقازيق',
+  '10th of ramadan': 'العاشر من رمضان',
+  'monufia': 'محافظة المنوفية',
+  'menofia': 'محافظة المنوفية',
+  'menoufia': 'محافظة المنوفية',
+  'monufiyah': 'محافظة المنوفية',
+  'monufia governorate': 'محافظة المنوفية',
+  'muhafazat al minufiyah': 'محافظة المنوفية',
+  'shibin el kom': 'شبين الكوم',
+  'shebin el kom': 'شبين الكوم',
+  'qalyubia': 'محافظة القليوبية',
+  'qalyubiyah': 'محافظة القليوبية',
+  'qalyubia governorate': 'محافظة القليوبية',
+  'al qalyubiyah': 'محافظة القليوبية',
+  'muhafazat al qalyubiyah': 'محافظة القليوبية',
+  'banha': 'بنها',
+  'benha': 'بنها',
+  'shubra el-kheima': 'شبرا الخيمة',
+  'beheira': 'محافظة البحيرة',
+  'el beheira': 'محافظة البحيرة',
+  'al buhayrah': 'محافظة البحيرة',
+  'beheira governorate': 'محافظة البحيرة',
+  'muhafazat al buhayrah': 'محافظة البحيرة',
+  'damanhour': 'دمنهور',
+  'kafr el sheikh': 'محافظة كفر الشيخ',
+  'kafr el-sheikh': 'محافظة كفر الشيخ',
+  'kafr ash shaykh': 'محافظة كفر الشيخ',
+  'kafr el sheikh governorate': 'محافظة كفر الشيخ',
+  'muhafazat kafr ash shaykh': 'محافظة كفر الشيخ',
+  'damietta': 'محافظة دمياط',
+  'dumyat': 'محافظة دمياط',
+  'damietta governorate': 'محافظة دمياط',
+  'muhafazat dumyat': 'محافظة دمياط',
+  'ras el bar': 'رأس البر',
+
+  // Canal & Sinai
+  'port said': 'محافظة بورسعيد',
+  'bur said': 'محافظة بورسعيد',
+  'port said governorate': 'محافظة بورسعيد',
+  'muhafazat bur said': 'محافظة بورسعيد',
+  'port fouad': 'بورفؤاد',
+  'suez': 'محافظة السويس',
+  'as suways': 'محافظة السويس',
+  'suez governorate': 'محافظة السويس',
+  'muhafazat as suways': 'محافظة السويس',
+  'ismailia': 'محافظة الإسماعيلية',
+  'al ismailiyah': 'محافظة الإسماعيلية',
+  'ismailia governorate': 'محافظة الإسماعيلية',
+  'muhafazat al ismailiyah': 'محافظة الإسماعيلية',
+  'south sinai': 'محافظة جنوب سيناء',
+  'south sinai governorate': 'محافظة جنوب سيناء',
+  'janub sina': 'محافظة جنوب سيناء',
+  'muhafazat janub sina': 'محافظة جنوب سيناء',
+  'sharm el sheikh': 'شرم الشيخ',
+  'dahab': 'دهب',
+  'north sinai': 'محافظة شمال سيناء',
+  'north sinai governorate': 'محافظة شمال سيناء',
+  'shamal sina': 'محافظة شمال سيناء',
+  'muhafazat shamal sina': 'محافظة شمال سيناء',
+  'al arish': 'العريش',
+  'el arish': 'العريش',
+
+  // Upper Egypt & Red Sea
+  'fayoum': 'محافظة الفيوم',
+  'faiyum': 'محافظة الفيوم',
+  'fayoum governorate': 'محافظة الفيوم',
+  'muhafazat al fayyum': 'محافظة الفيوم',
+  'beni suef': 'محافظة بني سويف',
+  'beni suef governorate': 'محافظة بني سويف',
+  'muhafazat bani suwayf': 'محافظة بني سويف',
+  'minya': 'محافظة المنيا',
+  'minya governorate': 'محافظة المنيا',
+  'muhafazat al minya': 'محافظة المنيا',
+  'asyut': 'محافظة أسيوط',
+  'assiut': 'محافظة أسيوط',
+  'asyut governorate': 'محافظة أسيوط',
+  'muhafazat asyut': 'محافظة أسيوط',
+  'sohag': 'محافظة سوهاج',
+  'sohag governorate': 'محافظة سوهاج',
+  'muhafazat sawhaj': 'محافظة سوهاج',
+  'qena': 'محافظة قنا',
+  'qena governorate': 'محافظة قنا',
+  'muhafazat qina': 'محافظة قنا',
+  'luxor': 'محافظة الأقصر',
+  'luxor governorate': 'محافظة الأقصر',
+  'muhafazat al uqsur': 'محافظة الأقصر',
+  'aswan': 'محافظة أسوان',
+  'aswan governorate': 'محافظة أسوان',
+  'muhafazat aswan': 'محافظة أسوان',
+  'red sea': 'محافظة البحر الأحمر',
+  'red sea governorate': 'محافظة البحر الأحمر',
+  'muhafazat al bahr al ahmar': 'محافظة البحر الأحمر',
+  'hurghada': 'الغردقة',
+  'new valley': 'محافظة الوادي الجديد',
+  'new valley governorate': 'محافظة الوادي الجديد',
+  'muhafazat al wadi al jadid': 'محافظة الوادي الجديد',
+
+  // Saudi Arabia
   'eastern province': 'المنطقة الشرقية',
   'eastern region': 'المنطقة الشرقية',
+  'dammam': 'الدمام',
+  'dhahran': 'الظهران',
   'khobar': 'الخبر',
   'al khobar': 'الخبر',
   'al-khobar': 'الخبر',
+  'jubail': 'الجبيل',
+  'al-ahsa': 'الأحساء',
+  'al ahsa': 'الأحساء',
+  'al-hofuf': 'الهفوف',
+  'al hofuf': 'الهفوف',
+  'al-qatif': 'القطيف',
+  'al qatif': 'القطيف',
+  'hafar al-batin': 'حفر الباطن',
   'riyadh': 'الرياض',
+  'riyadh city': 'مدينة الرياض',
   'riyadh region': 'منطقة الرياض',
   'makkah': 'مكة المكرمة',
   'mecca': 'مكة المكرمة',
@@ -764,27 +971,100 @@ const EXPLICIT_EN_TO_AR: Record<string, string> = {
   'medina': 'المدينة المنورة',
   'madinah region': 'منطقة المدينة المنورة',
   'jeddah': 'جدة',
-  'cairo': 'القاهرة',
-  'cairo governorate': 'محافظة القاهرة',
-  'giza': 'الجيزة',
-  'giza governorate': 'محافظة الجيزة',
-  'alexandria': 'الإسكندرية',
-  'alexandria governorate': 'محافظة الإسكندرية',
+  'taif': 'الطائف',
+  'qassim': 'القصيم',
+  'al-qassim': 'القصيم',
+  'qassim region': 'منطقة القصيم',
+  'buraidah': 'بريدة',
+  'unaizah': 'عنيزة',
+  'tabuk': 'تبوك',
+  'tabuk region': 'منطقة تبوك',
+  'hail': 'حائل',
+  'hail region': 'منطقة حائل',
+  'asir': 'عسير',
+  'asir region': 'منطقة عسير',
+  'abha': 'أبها',
+  'khamis mushait': 'خميس مشيط',
+  'jazan': 'جازان',
+  'jizan': 'جازان',
+  'jazan region': 'منطقة جازان',
+  'najran': 'نجران',
+  'najran region': 'منطقة نجران',
+  'al-baha': 'الباحة',
+  'al-baha region': 'منطقة الباحة',
+  'al-jawf': 'الجوف',
+  'al-jawf region': 'منطقة الجوف',
+  'northern borders': 'الحدود الشمالية',
+  'northern borders region': 'منطقة الحدود الشمالية',
+  'yanbu': 'ينبع',
+
+  // Arab Gulf & Levant
   'dubai': 'دبي',
   'abu dhabi': 'أبو ظبي',
   'sharjah': 'الشارقة',
+  'ajman': 'عجمان',
+  'ras al khaimah': 'رأس الخيمة',
+  'fujairah': 'الفجيرة',
   'doha': 'الدوحة',
   'kuwait city': 'مدينة الكويت',
   'manama': 'المنامة',
   'muscat': 'مسقط',
   'amman': 'عمّان',
+  'jerusalem': 'القدس الشريف',
+  'al quds': 'القدس الشريف',
+  'gaza': 'غزة',
+  'ramallah': 'رام الله',
+  'baghdad': 'بغداد',
+  'erbil': 'أربيل',
+  'basra': 'البصرة',
+  'damascus': 'دمشق',
+  'aleppo': 'حلب',
+  'beirut': 'بيروت',
+  'tripoli': 'طرابلس',
+  'sanaa': 'صنعاء',
+  'aden': 'عدن',
+  'khartoum': 'الخرطوم',
+  'tunis': 'تونس',
+  'algiers': 'الجزائر',
+  'rabat': 'الرباط',
+  'casablanca': 'الدار البيضاء',
+  'nouakchott': 'نواكشوط',
+  'mogadishu': 'مقديشو',
+
+  // System & Fallbacks
   'current location': 'موقعي الحالي',
-  'my location': 'موقعي الحالي'
+  'my location': 'موقعي الحالي',
+  'unknown location': 'موقع غير معروف'
 };
 
 Object.entries(EXPLICIT_EN_TO_AR).forEach(([k, v]) => {
   LOCATION_TRANSLATIONS_EN_TO_AR[k.toLowerCase().trim()] = v;
 });
+
+// Helper to strip standard Latin accents and Arabic Romanization diacritics
+export const stripLatinDiacritics = (str: string): string => {
+  if (!str) return '';
+  return str
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[āáàâäǎãå]/gi, 'a')
+    .replace(/[ēéèêëěẽ]/gi, 'e')
+    .replace(/[īíìîïǐĩ]/gi, 'i')
+    .replace(/[ōóòôöǒõ]/gi, 'o')
+    .replace(/[ūúùûüǔũ]/gi, 'u')
+    .replace(/[ḥ]/gi, 'h')
+    .replace(/[ḍ]/gi, 'd')
+    .replace(/[ṭ]/gi, 't')
+    .replace(/[ẓ]/gi, 'z')
+    .replace(/[ṣ]/gi, 's')
+    .replace(/[ḏ]/gi, 'dh')
+    .replace(/[ṯ]/gi, 'th')
+    .replace(/[ġ]/gi, 'gh')
+    .replace(/[ḫ]/gi, 'kh')
+    .replace(/[š]/gi, 'sh')
+    .replace(/[̧]/g, '')
+    .replace(/[‘'’`]/g, '');
+};
 
 // Helper to normalize Arabic text for resilient dictionary lookup
 const normalizeArForMatch = (text: string): string => {
@@ -797,19 +1077,99 @@ const normalizeArForMatch = (text: string): string => {
     .toLowerCase();
 };
 
+// Phonetic fallback: Transliterates remaining Latin letters to Arabic
+export const transliterateLatinToAr = (str: string): string => {
+  if (!str) return '';
+  let s = stripLatinDiacritics(str.trim().toLowerCase());
+  
+  // Replace digraphs first
+  const digraphs: [RegExp, string][] = [
+    [/sh/g, 'ش'],
+    [/ch/g, 'تش'],
+    [/th/g, 'ث'],
+    [/kh/g, 'خ'],
+    [/gh/g, 'غ'],
+    [/dh/g, 'ذ'],
+    [/ph/g, 'ف'],
+    [/ou/g, 'و'],
+    [/ee/g, 'ي'],
+    [/oo/g, 'و'],
+    [/aa/g, 'ا']
+  ];
+  for (const [re, rep] of digraphs) {
+    s = s.replace(re, rep);
+  }
+
+  // Replace single characters
+  const charMap: Record<string, string> = {
+    'a': 'ا', 'b': 'ب', 'c': 'ك', 'd': 'د', 'e': 'ي', 'f': 'ف',
+    'g': 'ج', 'h': 'ه', 'i': 'ي', 'j': 'ج', 'k': 'ك', 'l': 'ل',
+    'm': 'م', 'n': 'ن', 'o': 'و', 'p': 'ب', 'q': 'ق', 'r': 'ر',
+    's': 'س', 't': 'ت', 'u': 'و', 'v': 'ف', 'w': 'و', 'x': 'كس',
+    'y': 'ي', 'z': 'ز'
+  };
+
+  let out = '';
+  for (const char of s) {
+    if (charMap[char]) {
+      out += charMap[char];
+    } else {
+      out += char;
+    }
+  }
+
+  // Clean double identical Arabic letters from transliteration (e.g. يي -> ي)
+  out = out.replace(/(.)\1+/g, '$1');
+  return out;
+};
+
+// Phonetic fallback: Transliterates remaining Arabic letters to English
+export const transliterateArToEn = (str: string): string => {
+  if (!str) return '';
+  const arMap: Record<string, string> = {
+    'ا': 'A', 'أ': 'A', 'إ': 'I', 'آ': 'Aa', 'ب': 'B', 'ت': 'T', 'ث': 'Th',
+    'ج': 'J', 'ح': 'H', 'خ': 'Kh', 'د': 'D', 'ذ': 'Dh', 'ر': 'R', 'ز': 'Z',
+    'س': 'S', 'ش': 'Sh', 'ص': 'S', 'ض': 'D', 'ط': 'T', 'ظ': 'Z', 'ع': 'A',
+    'غ': 'Gh', 'ف': 'F', 'ق': 'Q', 'ك': 'K', 'ل': 'L', 'م': 'M', 'ن': 'N',
+    'ه': 'H', 'و': 'W', 'ي': 'Y', 'ى': 'A', 'ة': 'ah', 'ء': '', 'ئ': 'Y', 'ؤ': 'W'
+  };
+
+  let out = '';
+  for (const char of str.trim()) {
+    if (arMap[char]) {
+      out += arMap[char];
+    } else if (/[0-9\s\-\,\.]/.test(char)) {
+      out += char;
+    }
+  }
+  return out.replace(/\b\w/g, l => l.toUpperCase()).trim();
+};
+
 // Translate a single location token to English
 const translateSingleTokenToEn = (token: string): string => {
   const clean = token.trim();
   if (!clean) return '';
+
+  // 1. If it's Romanized Arabic with diacritics (e.g. "Muḥāfaz̧at al Gharbīyah"):
+  // First normalize and check if it maps to an Arabic entity, then to English!
+  const stripped = stripLatinDiacritics(clean).toLowerCase().trim();
+  if (LOCATION_TRANSLATIONS_EN_TO_AR[stripped]) {
+    const arEntity = LOCATION_TRANSLATIONS_EN_TO_AR[stripped];
+    if (LOCATION_TRANSLATIONS[arEntity]) {
+      return LOCATION_TRANSLATIONS[arEntity];
+    }
+  }
+
+  // 2. Direct lookup in Arabic -> English map
   if (LOCATION_TRANSLATIONS[clean]) return LOCATION_TRANSLATIONS[clean];
 
-  // Try direct normalized matching
+  // 3. Normalized Arabic matching
   const normAr = normalizeArForMatch(clean);
   for (const [k, v] of Object.entries(LOCATION_TRANSLATIONS)) {
     if (normalizeArForMatch(k) === normAr) return v;
   }
 
-  // Handle common prefixes
+  // 4. Handle common Arabic administrative prefixes
   const prefixes = [
     { ar: 'محافظة ', enSuffix: ' Governorate' },
     { ar: 'منطقة ', enSuffix: ' Region' },
@@ -818,20 +1178,44 @@ const translateSingleTokenToEn = (token: string): string => {
     { ar: 'ولاية ', enSuffix: ' State' },
     { ar: 'حي ', enSuffix: ' District' },
     { ar: 'بلدية ', enSuffix: ' Municipality' },
+    { ar: 'مركز ', enSuffix: ' Center' },
+    { ar: 'قسم ', enSuffix: ' District' },
     { ar: 'أمانة ', enSuffix: '' }
   ];
 
   for (const p of prefixes) {
     if (clean.startsWith(p.ar)) {
       const core = clean.slice(p.ar.length).trim();
-      if (LOCATION_TRANSLATIONS[core]) {
-        const translatedCore = LOCATION_TRANSLATIONS[core];
-        if (translatedCore.includes('Province') || translatedCore.includes('Region') || translatedCore.includes('Governorate')) {
-          return translatedCore;
+      const normCore = normalizeArForMatch(core);
+      for (const [k, v] of Object.entries(LOCATION_TRANSLATIONS)) {
+        if (normalizeArForMatch(k) === normCore) {
+          if (v.includes('Province') || v.includes('Region') || v.includes('Governorate')) {
+            return v;
+          }
+          return `${v}${p.enSuffix}`;
         }
-        return `${translatedCore}${p.enSuffix}`;
       }
     }
+  }
+
+  // 5. If it's already pure English/Latin without Arabic, clean up diacritics and return capitalized
+  if (/^[a-zA-Z\s0-9\-\.\,\'\(\)]+$/.test(stripped)) {
+    // If it started with "muhafazat ...", format nicely e.g. "Gharbia Governorate"
+    if (/^muhafazat\s+/i.test(stripped)) {
+      const core = stripped.replace(/^muhafazat\s+(al\s+|el\s+)?/i, '').trim();
+      const arEntity = LOCATION_TRANSLATIONS_EN_TO_AR[core];
+      if (arEntity && LOCATION_TRANSLATIONS[arEntity]) {
+        return LOCATION_TRANSLATIONS[arEntity];
+      }
+      return `${core.charAt(0).toUpperCase() + core.slice(1)} Governorate`;
+    }
+    // Capitalize words
+    return stripped.replace(/\b\w/g, l => l.toUpperCase());
+  }
+
+  // 6. If it still contains Arabic letters, transliterate to English phonetics
+  if (/[\u0600-\u06FF]/.test(clean)) {
+    return transliterateArToEn(clean);
   }
 
   return clean;
@@ -841,45 +1225,88 @@ const translateSingleTokenToEn = (token: string): string => {
 const translateSingleTokenToAr = (token: string): string => {
   const clean = token.trim();
   if (!clean) return '';
-  const lower = clean.toLowerCase();
 
-  if (LOCATION_TRANSLATIONS_EN_TO_AR[lower]) {
-    return LOCATION_TRANSLATIONS_EN_TO_AR[lower];
+  // 1. If it's already pure Arabic, return as-is
+  if (/^[\u0600-\u06FF\s0-9\-\.\,\(\)]+$/.test(clean)) {
+    return clean;
   }
 
-  // Try stripping prefixes like "Al ", "Al-", "El ", "El-"
-  let stripped = lower;
-  if (stripped.startsWith('al-') || stripped.startsWith('el-')) {
-    stripped = stripped.slice(3).trim();
-  } else if (stripped.startsWith('al ') || stripped.startsWith('el ')) {
-    stripped = stripped.slice(3).trim();
-  }
-  if (LOCATION_TRANSLATIONS_EN_TO_AR[stripped]) {
-    return LOCATION_TRANSLATIONS_EN_TO_AR[stripped];
+  // 2. Normalize Latin diacritics and casing
+  const normalized = stripLatinDiacritics(clean).toLowerCase().trim();
+
+  // 3. Direct lookup in inverted dictionary
+  if (LOCATION_TRANSLATIONS_EN_TO_AR[normalized]) {
+    return LOCATION_TRANSLATIONS_EN_TO_AR[normalized];
   }
 
-  // Handle common English suffixes
-  const suffixes = [
-    { en: ' governorate', arPrefix: 'محافظة ' },
-    { en: ' province', arPrefix: 'منطقة ' },
-    { en: ' region', arPrefix: 'منطقة ' },
-    { en: ' city', arPrefix: 'مدينة ' },
-    { en: ' emirate', arPrefix: 'إمارة ' },
-    { en: ' district', arPrefix: 'حي ' },
-    { en: ' state', arPrefix: 'ولاية ' }
+  // 4. Try without articles: al-, el-, ad-, as-, ash-, at-, az-, ar-, an-
+  let strippedArticle = normalized;
+  const articleRegex = /^(al|el|ad|as|ash|at|az|ar|an)[\s\-]+/i;
+  if (articleRegex.test(strippedArticle)) {
+    strippedArticle = strippedArticle.replace(articleRegex, '').trim();
+    if (LOCATION_TRANSLATIONS_EN_TO_AR[strippedArticle]) {
+      return LOCATION_TRANSLATIONS_EN_TO_AR[strippedArticle];
+    }
+  }
+
+  // 5. Handle Romanized Arabic / English administrative prefixes:
+  // e.g. "muhafazat al gharbiyah", "muhafazah of cairo", "region of riyadh"
+  const adminPrefixes = [
+    { prefix: /^(muhafazat|muhafazah|muhafazet|governorate of)\s+/i, arPrefix: 'محافظة ' },
+    { prefix: /^(mintaqat|mintaqah|region of|province of)\s+/i, arPrefix: 'منطقة ' },
+    { prefix: /^(wilayat|wilayah|state of)\s+/i, arPrefix: 'ولاية ' },
+    { prefix: /^(imarat|imarah|emirate of)\s+/i, arPrefix: 'إمارة ' },
+    { prefix: /^(madinat|madinah|city of)\s+/i, arPrefix: 'مدينة ' },
+    { prefix: /^(markaz|center of)\s+/i, arPrefix: 'مركز ' },
+    { prefix: /^(qism|district of|hayy)\s+/i, arPrefix: 'حي ' }
   ];
 
-  for (const s of suffixes) {
-    if (lower.endsWith(s.en)) {
-      const core = lower.slice(0, -s.en.length).trim();
-      const translatedCore = LOCATION_TRANSLATIONS_EN_TO_AR[core];
-      if (translatedCore) {
-        if (translatedCore.startsWith(s.arPrefix) || translatedCore.startsWith('المنطقة ')) {
-          return translatedCore;
+  for (const item of adminPrefixes) {
+    if (item.prefix.test(normalized)) {
+      let core = normalized.replace(item.prefix, '').trim();
+      if (articleRegex.test(core)) {
+        core = core.replace(articleRegex, '').trim();
+      }
+      const trans = LOCATION_TRANSLATIONS_EN_TO_AR[core] || LOCATION_TRANSLATIONS_EN_TO_AR[`al ${core}`];
+      if (trans) {
+        if (trans.startsWith(item.arPrefix) || trans.startsWith('المنطقة ')) {
+          return trans;
         }
-        return `${s.arPrefix}${translatedCore}`;
+        return `${item.arPrefix}${trans}`;
       }
     }
+  }
+
+  // 6. Handle English administrative suffixes:
+  // e.g. "gharbiyah governorate", "eastern province", "riyadh region"
+  const adminSuffixes = [
+    { suffix: /\s+(governorate)$/i, arPrefix: 'محافظة ' },
+    { suffix: /\s+(province|region)$/i, arPrefix: 'منطقة ' },
+    { suffix: /\s+(city)$/i, arPrefix: 'مدينة ' },
+    { suffix: /\s+(emirate)$/i, arPrefix: 'إمارة ' },
+    { suffix: /\s+(district)$/i, arPrefix: 'حي ' },
+    { suffix: /\s+(state)$/i, arPrefix: 'ولاية ' }
+  ];
+
+  for (const item of adminSuffixes) {
+    if (item.suffix.test(normalized)) {
+      let core = normalized.replace(item.suffix, '').trim();
+      if (articleRegex.test(core)) {
+        core = core.replace(articleRegex, '').trim();
+      }
+      const trans = LOCATION_TRANSLATIONS_EN_TO_AR[core] || LOCATION_TRANSLATIONS_EN_TO_AR[`al ${core}`];
+      if (trans) {
+        if (trans.startsWith(item.arPrefix) || trans.startsWith('المنطقة ')) {
+          return trans;
+        }
+        return `${item.arPrefix}${trans}`;
+      }
+    }
+  }
+
+  // 7. Check if word contains any remaining Latin letters - Phonetic Transliteration fallback
+  if (/[a-zA-Z]/.test(clean)) {
+    return transliterateLatinToAr(clean);
   }
 
   return clean;
@@ -888,8 +1315,8 @@ const translateSingleTokenToAr = (token: string): string => {
 /**
  * Universal Bidirectional Location Localizer.
  * Accurately translates any city, governorate/region, and country name:
- * - If language is 'ar', ensures output is in clean Arabic.
- * - If language is 'en', ensures output is in clean English.
+ * - If language is 'ar', ensures output is in clean Arabic with 0% foreign Latin characters.
+ * - If language is 'en', ensures output is in clean English with 0% Arabic characters.
  */
 export function getLocalizedLocationName(text: string, language: Language = 'ar'): string {
   if (!text || !text.trim()) {
@@ -910,18 +1337,29 @@ export function getLocalizedLocationName(text: string, language: Language = 'ar'
     const rawParts = normalizedDelimiters.split(' - ').map(p => p.trim()).filter(Boolean);
     
     const translatedParts = rawParts.map(part => {
-      if (language === 'en') {
-        return translateSingleTokenToEn(part);
-      } else {
-        return translateSingleTokenToAr(part);
-      }
+      return language === 'en'
+        ? translateSingleTokenToEn(part)
+        : translateSingleTokenToAr(part);
     });
 
-    // Remove adjacent duplicates (e.g. "Riyadh - Riyadh")
-    const uniqueParts: string[] = [];
+    // Remove duplicates
+    let uniqueParts: string[] = [];
     for (const part of translatedParts) {
-      if (!uniqueParts.includes(part)) {
+      if (!uniqueParts.includes(part) && part) {
         uniqueParts.push(part);
+      }
+    }
+
+    // Smart cleanup for 3+ parts when a major city and governorate are present:
+    // e.g. ["طنطا", "لبيب", "محافظة الغربية"] -> simplify to "طنطا - محافظة الغربية" for clean top bar display
+    if (uniqueParts.length >= 3) {
+      const govIdx = uniqueParts.findIndex(p => 
+        p.includes('محافظة') || p.includes('منطقة') || p.includes('Governorate') || p.includes('Province') || p.includes('Region')
+      );
+      if (govIdx !== -1) {
+        const gov = uniqueParts[govIdx];
+        const nonGov = uniqueParts.filter((_, idx) => idx !== govIdx);
+        uniqueParts = [nonGov[0], gov];
       }
     }
 
@@ -929,11 +1367,9 @@ export function getLocalizedLocationName(text: string, language: Language = 'ar'
   }
 
   // Single entity (e.g. country name or single city name)
-  if (language === 'en') {
-    return translateSingleTokenToEn(normalizedDelimiters);
-  } else {
-    return translateSingleTokenToAr(normalizedDelimiters);
-  }
+  return language === 'en'
+    ? translateSingleTokenToEn(normalizedDelimiters)
+    : translateSingleTokenToAr(normalizedDelimiters);
 }
 
 export const PRAYER_TIMES_STRINGS: Record<string, { ar: string; en: string }> = {
@@ -992,9 +1428,13 @@ export const PRAYER_TIMES_STRINGS: Record<string, { ar: string; en: string }> = 
 
   // Alert Tone
   alertToneLabel: { ar: 'نغمة التنبيه', en: 'Alert Tone' },
+  notificationToneLabel: { ar: 'نغمة الإشعارات', en: 'Notification Tone' },
   changeTone: { ar: 'تغيير', en: 'Change' },
   currentToneFile: { ar: 'الملف الحالي:', en: 'Current file:' },
   selectToneModalTitle: { ar: 'اختر نغمة التنبيه', en: 'Select Alert Tone' },
+  selectNotificationToneModalTitle: { ar: 'اختر نغمة الإشعارات', en: 'Select Notification Tone' },
+  selectToneFromDevice: { ar: 'اختيار نغمة', en: 'Select tone' },
+  noSound: { ar: 'بدون صوت', en: 'Silent' },
   close: { ar: 'إغلاق', en: 'Close' },
 
   // Pre-reminder

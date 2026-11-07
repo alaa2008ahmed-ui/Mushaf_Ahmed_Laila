@@ -66,7 +66,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Fajr in"
-                    android:textColor="#059669"
+                    android:textColor="#FFFFFF"
                     android:textSize="13.5sp"
                     android:textStyle="bold"
                     android:layout_marginEnd="6dp" />
@@ -75,7 +75,7 @@
                     android:id="@+id/widget_next_prayer_time"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textColor="#1E293B"
+                    android:textColor="#FFFFFF"
                     android:textSize="18sp"
                     android:textStyle="bold"
                     android:layout_marginTop="0dp"
@@ -86,7 +86,7 @@
                     android:id="@+id/widget_next_prayer_time_en"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textColor="#1E293B"
+                    android:textColor="#FFFFFF"
                     android:textSize="17.5sp"
                     android:textStyle="bold"
                     android:layout_marginTop="0dp"
@@ -99,6 +99,7 @@
                 android:layout_width="22dp"
                 android:layout_height="22dp"
                 android:src="@drawable/ic_widget_refresh"
+                android:tint="#FFFFFF"
                 android:layout_alignParentEnd="true"
                 android:layout_centerVertical="true"
                 android:layout_marginEnd="10dp"
@@ -125,7 +126,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="-- Ramadan 1445"
-                android:textColor="#059669"
+                android:textColor="#FFFFFF"
                 android:textSize="11.5sp"
                 android:textStyle="bold"
                 android:gravity="center"
@@ -137,7 +138,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="-- -- --"
-                android:textColor="#059669"
+                android:textColor="#FFFFFF"
                 android:textSize="10sp"
                 android:textStyle="bold"
                 android:gravity="center"
@@ -160,19 +161,19 @@
             android:layout_width="0dp"
             android:layout_weight="1"
             android:layout_height="match_parent"
-            android:background="#059669" />
+            android:background="#C86400" />
         <FrameLayout
             android:id="@+id/full_strip_green"
             android:layout_width="0dp"
             android:layout_weight="1"
             android:layout_height="match_parent"
-            android:background="#D97706" />
+            android:background="#F8DE8A" />
         <FrameLayout
             android:id="@+id/full_strip_teal"
             android:layout_width="0dp"
             android:layout_weight="1"
             android:layout_height="match_parent"
-            android:background="#10B981" />
+            android:background="#D97706" />
         <FrameLayout
             android:id="@+id/full_strip_terracotta"
             android:layout_width="0dp"
@@ -197,43 +198,43 @@
 
         <!-- Fajr -->
         <LinearLayout android:id="@+id/col_fajr" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:orientation="vertical" android:gravity="center">
-            <TextView android:id="@+id/name_fajr" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Fajr" android:textColor="#1E293B" android:textSize="12.5sp" android:textStyle="bold" android:singleLine="true" android:includeFontPadding="false"/>
-            <TextView android:id="@+id/time_fajr" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="04:14" android:textColor="#1E293B" android:textSize="14sp" android:textStyle="bold" android:layout_marginTop="0dp" android:singleLine="true" android:includeFontPadding="false"/>
+            <TextView android:id="@+id/name_fajr" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Fajr" android:textColor="#C86400" android:textSize="12.5sp" android:textStyle="bold" android:singleLine="true" android:includeFontPadding="false"/>
+            <TextView android:id="@+id/time_fajr" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="04:14" android:textColor="#C86400" android:textSize="14sp" android:textStyle="bold" android:layout_marginTop="0dp" android:singleLine="true" android:includeFontPadding="false"/>
         </LinearLayout>
-        <FrameLayout android:id="@+id/sep_1" android:layout_width="1dp" android:layout_height="match_parent" android:background="#E2E8F0" android:layout_marginTop="2dp" android:layout_marginBottom="2dp"/>
+        <FrameLayout android:id="@+id/sep_1" android:layout_width="1dp" android:layout_height="match_parent" android:background="#E5D07B" android:layout_marginTop="2dp" android:layout_marginBottom="2dp"/>
 
         <!-- Sunrise -->
         <LinearLayout android:id="@+id/col_sunrise" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:orientation="vertical" android:gravity="center">
-            <TextView android:id="@+id/name_sunrise" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Sun" android:textColor="#1E293B" android:textSize="12.5sp" android:textStyle="bold" android:singleLine="true" android:includeFontPadding="false"/>
-            <TextView android:id="@+id/time_sunrise" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="05:34" android:textColor="#1E293B" android:textSize="14sp" android:textStyle="bold" android:layout_marginTop="0dp" android:singleLine="true" android:includeFontPadding="false"/>
+            <TextView android:id="@+id/name_sunrise" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Sun" android:textColor="#334155" android:textSize="12.5sp" android:textStyle="bold" android:singleLine="true" android:includeFontPadding="false"/>
+            <TextView android:id="@+id/time_sunrise" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="05:34" android:textColor="#000000" android:textSize="14sp" android:textStyle="bold" android:layout_marginTop="0dp" android:singleLine="true" android:includeFontPadding="false"/>
         </LinearLayout>
-        <FrameLayout android:id="@+id/sep_2" android:layout_width="1dp" android:layout_height="match_parent" android:background="#E2E8F0" android:layout_marginTop="2dp" android:layout_marginBottom="2dp"/>
+        <FrameLayout android:id="@+id/sep_2" android:layout_width="1dp" android:layout_height="match_parent" android:background="#E5D07B" android:layout_marginTop="2dp" android:layout_marginBottom="2dp"/>
 
         <!-- Dhuhr -->
         <LinearLayout android:id="@+id/col_dhuhr" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:orientation="vertical" android:gravity="center">
-            <TextView android:id="@+id/name_dhuhr" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Dhuhr" android:textColor="#1E293B" android:textSize="12.5sp" android:textStyle="bold" android:singleLine="true" android:includeFontPadding="false"/>
-            <TextView android:id="@+id/time_dhuhr" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="11:45" android:textColor="#1E293B" android:textSize="14sp" android:textStyle="bold" android:layout_marginTop="0dp" android:singleLine="true" android:includeFontPadding="false"/>
+            <TextView android:id="@+id/name_dhuhr" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Dhuhr" android:textColor="#334155" android:textSize="12.5sp" android:textStyle="bold" android:singleLine="true" android:includeFontPadding="false"/>
+            <TextView android:id="@+id/time_dhuhr" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="11:45" android:textColor="#000000" android:textSize="14sp" android:textStyle="bold" android:layout_marginTop="0dp" android:singleLine="true" android:includeFontPadding="false"/>
         </LinearLayout>
-        <FrameLayout android:id="@+id/sep_3" android:layout_width="1dp" android:layout_height="match_parent" android:background="#E2E8F0" android:layout_marginTop="2dp" android:layout_marginBottom="2dp"/>
+        <FrameLayout android:id="@+id/sep_3" android:layout_width="1dp" android:layout_height="match_parent" android:background="#E5D07B" android:layout_marginTop="2dp" android:layout_marginBottom="2dp"/>
 
         <!-- Asr -->
         <LinearLayout android:id="@+id/col_asr" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:orientation="vertical" android:gravity="center">
-            <TextView android:id="@+id/name_asr" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Asr" android:textColor="#1E293B" android:textSize="12.5sp" android:textStyle="bold" android:singleLine="true" android:includeFontPadding="false"/>
-            <TextView android:id="@+id/time_asr" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="03:14" android:textColor="#1E293B" android:textSize="14sp" android:textStyle="bold" android:layout_marginTop="0dp" android:singleLine="true" android:includeFontPadding="false"/>
+            <TextView android:id="@+id/name_asr" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Asr" android:textColor="#334155" android:textSize="12.5sp" android:textStyle="bold" android:singleLine="true" android:includeFontPadding="false"/>
+            <TextView android:id="@+id/time_asr" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="03:14" android:textColor="#000000" android:textSize="14sp" android:textStyle="bold" android:layout_marginTop="0dp" android:singleLine="true" android:includeFontPadding="false"/>
         </LinearLayout>
-        <FrameLayout android:id="@+id/sep_4" android:layout_width="1dp" android:layout_height="match_parent" android:background="#E2E8F0" android:layout_marginTop="2dp" android:layout_marginBottom="2dp"/>
+        <FrameLayout android:id="@+id/sep_4" android:layout_width="1dp" android:layout_height="match_parent" android:background="#E5D07B" android:layout_marginTop="2dp" android:layout_marginBottom="2dp"/>
 
         <!-- Maghrib -->
         <LinearLayout android:id="@+id/col_maghrib" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:orientation="vertical" android:gravity="center">
-            <TextView android:id="@+id/name_maghrib" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Magh" android:textColor="#1E293B" android:textSize="12.5sp" android:textStyle="bold" android:singleLine="true" android:includeFontPadding="false"/>
-            <TextView android:id="@+id/time_maghrib" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="05:56" android:textColor="#1E293B" android:textSize="14sp" android:textStyle="bold" android:layout_marginTop="0dp" android:singleLine="true" android:includeFontPadding="false"/>
+            <TextView android:id="@+id/name_maghrib" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Magh" android:textColor="#334155" android:textSize="12.5sp" android:textStyle="bold" android:singleLine="true" android:includeFontPadding="false"/>
+            <TextView android:id="@+id/time_maghrib" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="05:56" android:textColor="#000000" android:textSize="14sp" android:textStyle="bold" android:layout_marginTop="0dp" android:singleLine="true" android:includeFontPadding="false"/>
         </LinearLayout>
-        <FrameLayout android:id="@+id/sep_5" android:layout_width="1dp" android:layout_height="match_parent" android:background="#E2E8F0" android:layout_marginTop="2dp" android:layout_marginBottom="2dp"/>
+        <FrameLayout android:id="@+id/sep_5" android:layout_width="1dp" android:layout_height="match_parent" android:background="#E5D07B" android:layout_marginTop="2dp" android:layout_marginBottom="2dp"/>
 
         <!-- Isha -->
         <LinearLayout android:id="@+id/col_isha" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:orientation="vertical" android:gravity="center">
-            <TextView android:id="@+id/name_isha" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Isha" android:textColor="#1E293B" android:textSize="12.5sp" android:textStyle="bold" android:singleLine="true" android:includeFontPadding="false"/>
-            <TextView android:id="@+id/time_isha" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="07:26" android:textColor="#1E293B" android:textSize="14sp" android:textStyle="bold" android:layout_marginTop="0dp" android:singleLine="true" android:includeFontPadding="false"/>
+            <TextView android:id="@+id/name_isha" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Isha" android:textColor="#334155" android:textSize="12.5sp" android:textStyle="bold" android:singleLine="true" android:includeFontPadding="false"/>
+            <TextView android:id="@+id/time_isha" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="07:26" android:textColor="#000000" android:textSize="14sp" android:textStyle="bold" android:layout_marginTop="0dp" android:singleLine="true" android:includeFontPadding="false"/>
         </LinearLayout>
     </LinearLayout>
 
@@ -257,7 +258,7 @@
             android:layout_weight="1"
             android:layout_height="match_parent"
             android:text="First Third : --:--"
-            android:textColor="#B45309"
+            android:textColor="#000000"
             android:textSize="11sp"
             android:textStyle="bold"
             android:gravity="center" />
@@ -268,7 +269,7 @@
             android:layout_weight="1"
             android:layout_height="match_parent"
             android:text="Midnight : --:--"
-            android:textColor="#B45309"
+            android:textColor="#000000"
             android:textSize="11sp"
             android:textStyle="bold"
             android:gravity="center" />
@@ -279,7 +280,7 @@
             android:layout_weight="1"
             android:layout_height="match_parent"
             android:text="Last Third : --:--"
-            android:textColor="#B45309"
+            android:textColor="#000000"
             android:textSize="11sp"
             android:textStyle="bold"
             android:gravity="center" />

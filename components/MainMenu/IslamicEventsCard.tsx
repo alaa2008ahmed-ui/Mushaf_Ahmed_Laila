@@ -105,7 +105,7 @@ export const IslamicEventsCard: React.FC<IslamicEventsCardProps> = ({
           >
             <Moon className="w-4 h-4 sm:w-4.5 sm:h-4.5" strokeWidth={2.2} />
           </div>
-          <span className={`text-xs sm:text-sm font-bold tracking-tight font-kufi ${isBlackTheme ? 'text-white' : 'text-slate-800'}`}>
+          <span className={`card-header-title text-xs sm:text-sm font-bold tracking-tight font-kufi ${isBlackTheme ? 'text-white' : 'text-slate-800'}`}>
             {t('islamic_events.title', 'المناسبات الإسلامية')}
           </span>
         </div>

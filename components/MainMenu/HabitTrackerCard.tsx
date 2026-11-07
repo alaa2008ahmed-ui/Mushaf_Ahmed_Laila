@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { CheckCircle2, ChevronLeft, ChevronRight } from 'lucide-react';
 import moment from 'moment-hijri';
 import { useHabitTracker } from '../../hooks/useHabitTracker';
@@ -21,18 +21,35 @@ export const HabitTrackerCard: React.FC<HabitTrackerCardProps> = ({
 
   const { getDailyProgress, records } = useHabitTracker();
 
-  // Dates: Today, Yesterday, Day Before Yesterday
-  const todayStr = useMemo(() => moment().format('YYYY-MM-DD'), []);
-  const yesterdayStr = useMemo(() => moment().subtract(1, 'days').format('YYYY-MM-DD'), []);
-  const beforeYesterdayStr = useMemo(() => moment().subtract(2, 'days').format('YYYY-MM-DD'), []);
+  // Dynamic Dates: Today, Yesterday, Day Before Yesterday with 12:00 AM midnight auto-update
+  const [todayStr, setTodayStr] = useState<string>(() => moment().format('YYYY-MM-DD'));
+
+  useEffect(() => {
+    const updateMidnight = () => {
+      const freshStr = moment().format('YYYY-MM-DD');
+      setTodayStr((prev) => (prev !== freshStr ? freshStr : prev));
+    };
+
+    const now = new Date();
+    const nextMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0, 0);
+    const msUntilMidnight = nextMidnight.getTime() - now.getTime();
+
+    const midnightTimeout = setTimeout(updateMidnight, msUntilMidnight);
+    const intervalCheck = setInterval(updateMidnight, 30000);
+
+    return () => {
+      clearTimeout(midnightTimeout);
+      clearInterval(intervalCheck);
+    };
+  }, [todayStr]);
+
+  const yesterdayStr = useMemo(() => moment(todayStr).subtract(1, 'days').format('YYYY-MM-DD'), [todayStr]);
+  const beforeYesterdayStr = useMemo(() => moment(todayStr).subtract(2, 'days').format('YYYY-MM-DD'), [todayStr]);
 
   // Total percentages (re-calculated whenever records change)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const todayProgress = useMemo(() => getDailyProgress(todayStr), [records, todayStr]);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const yesterdayProgress = useMemo(() => getDailyProgress(yesterdayStr), [records, yesterdayStr]);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const beforeYesterdayProgress = useMemo(() => getDailyProgress(beforeYesterdayStr), [records, beforeYesterdayStr]);
+  const todayProgress = useMemo(() => getDailyProgress(todayStr), [records, todayStr, getDailyProgress]);
+  const yesterdayProgress = useMemo(() => getDailyProgress(yesterdayStr), [records, yesterdayStr, getDailyProgress]);
+  const beforeYesterdayProgress = useMemo(() => getDailyProgress(beforeYesterdayStr), [records, beforeYesterdayStr, getDailyProgress]);
 
   // Modern flat design palette & Black Theme support
   const isBlackTheme = themeKey === 'deep_black' || theme?.bgColor === '#000000' || theme?.name === 'اسود' || theme?.name === 'black';

@@ -735,13 +735,13 @@ export function getWidgetThemePalette(themeKey: string, theme?: any) {
       textColor: '#000000',
       section1Bg: '#C86400',
       section1Text: '#FFFFFF',
-      section2Bg: '#FFFFFF',
+      section2Bg: '#F8DE8A',
       section2Text: '#000000',
       heroBg: '#C86400',
       heroPrayerName: '#FFFFFF',
       heroPrayerTime: '#FFFFFF',
       heroCountdown: '#FFFFFF',
-      nextPrayerColor: '#C86400',
+      nextPrayerColor: '#FFFFFF',
       highlightPrayerColor: '#C86400',
       cardCityColor: '#000000',
       cardDateColor: '#000000'
@@ -822,14 +822,15 @@ export function getWidgetThemePalette(themeKey: string, theme?: any) {
 
   if (themeDefinitionsMap[themeKey]) {
     const def = themeDefinitionsMap[themeKey];
+    const isGoldenTrio = themeKey === 'golden_trio';
     return {
       themeKey,
       ...def,
-      stripColor1: def.nextPrayerColor,
-      stripColor2: def.highlightPrayerColor,
-      stripColor3: def.section1Text,
-      stripColor4: def.section2Text,
-      sepColor: def.isDark ? '#334155' : '#CBD5E1',
+      stripColor1: isGoldenTrio ? '#C86400' : def.nextPrayerColor,
+      stripColor2: isGoldenTrio ? '#F8DE8A' : def.highlightPrayerColor,
+      stripColor3: isGoldenTrio ? '#D97706' : def.section1Text,
+      stripColor4: isGoldenTrio ? '#B45309' : def.section2Text,
+      sepColor: isGoldenTrio ? '#E5D07B' : (def.isDark ? '#334155' : '#CBD5E1'),
       primaryColor: def.nextPrayerColor,
       secondaryColor: def.highlightPrayerColor,
       bgColor: def.rootBg
@@ -1466,7 +1467,7 @@ export const updateAndroidWidget = async (data: WidgetData, syncTheme: boolean =
       }
     } catch (e) {}
 
-    const reqThemeKey = data.theme?.themeKey || existingTheme?.themeKey || 'default';
+    const reqThemeKey = data.theme?.themeKey || existingTheme?.themeKey || 'golden_trio';
     const computedPalette = getWidgetThemePalette(reqThemeKey, data.theme);
 
     // When widget_lock_theme is enabled and existingTheme exists, keep existing theme intact!
@@ -1581,7 +1582,7 @@ export const syncWidgetThemeColors = async (themeKey: string, theme: any) => {
   }
 };
 
-export type WidgetStyleType = 'classic' | 'compact';
+export type WidgetStyleType = 'classic' | 'compact' | 'single';
 
 export interface SingleWidgetSettings {
   opacity: number;
@@ -1595,17 +1596,25 @@ export interface SingleWidgetSettings {
 export const DEFAULT_WIDGET_SETTINGS_BY_STYLE: Record<WidgetStyleType, SingleWidgetSettings> = {
   classic: {
     opacity: 0.95,
-    themeChoice: 'royal_gold_3d',
+    themeChoice: 'golden_trio',
     textColor: 'white',
     showDate: true,
     showNight: true,
     showCountdown: true
   },
   compact: {
-    opacity: 0.85,
-    themeChoice: 'royal_gold_3d',
-    textColor: 'gold',
+    opacity: 0.95,
+    themeChoice: 'golden_trio',
+    textColor: 'amber',
     showDate: true,
+    showNight: false,
+    showCountdown: true
+  },
+  single: {
+    opacity: 0.95,
+    themeChoice: 'golden_trio',
+    textColor: 'amber',
+    showDate: false,
     showNight: false,
     showCountdown: true
   }
@@ -1614,11 +1623,11 @@ export const DEFAULT_WIDGET_SETTINGS_BY_STYLE: Record<WidgetStyleType, SingleWid
 export const getWidgetStyle = async (): Promise<WidgetStyleType> => {
   try {
     const res = await Preferences.get({ key: 'widget_style' });
-    if (res.value && ['classic', 'compact'].includes(res.value)) {
+    if (res.value && ['classic', 'compact', 'single'].includes(res.value)) {
       return res.value as WidgetStyleType;
     }
     const local = typeof window !== 'undefined' ? localStorage.getItem('widget_style') : null;
-    if (local && ['classic', 'compact'].includes(local)) {
+    if (local && ['classic', 'compact', 'single'].includes(local)) {
       return local as WidgetStyleType;
     }
   } catch (e) {}

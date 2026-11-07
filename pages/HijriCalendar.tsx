@@ -598,8 +598,8 @@ function HijriCalendar({ onBack, onNavigate }: { onBack: () => void; onNavigate:
 
                     {activeTab === 'calendar' ? (
                         <div className="space-y-3.5">
-                            {/* Calendar Card: Pure white / dark background with soft drop shadow, NO harsh black border */}
-                            <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm sm:shadow-md border border-slate-100 dark:border-white/5 overflow-hidden">
+                            {/* Calendar Card: 3D tactile card depth with NO borders */}
+                            <div className="app-page-card border-0 bg-white dark:bg-slate-900 rounded-3xl overflow-hidden" style={{ border: 'none' }}>
                                 {/* Month Navigation Header */}
                                 <div className="flex items-center justify-between p-3.5 sm:p-4 border-b border-slate-100 dark:border-white/5">
                                     <button 
@@ -649,8 +649,8 @@ function HijriCalendar({ onBack, onNavigate }: { onBack: () => void; onNavigate:
                                 </div>
                             </div>
 
-                            {/* Event List Section (أبرز المناسبات): Clean flat cards, dynamic theme coloring */}
-                            <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl shadow-sm sm:shadow-md border border-slate-100 dark:border-white/5">
+                            {/* Event List Section (أبرز المناسبات): 3D tactile card depth without borders */}
+                            <div className="app-page-card border-0 bg-white dark:bg-slate-900 p-5 rounded-3xl" style={{ border: 'none' }}>
                                 <h3 className="font-kufi font-black text-base sm:text-lg mb-4 flex items-center gap-2.5">
                                     <div className="w-1.5 h-5 rounded-full" style={{ backgroundColor: primaryColor }}></div>
                                     <span style={{ color: primaryColor }}>{tCalendar('eventsTitle', language)}</span>
@@ -718,9 +718,9 @@ function HijriCalendar({ onBack, onNavigate }: { onBack: () => void; onNavigate:
                             </div>
                         </div>
                     ) : (
-                        /* Converter View (محول التاريخ): Modern filled text fields, clean 10% theme container, dynamic theming */
+                        /* Converter View (محول التاريخ): 3D tactile card depth without borders */
                         <div className="space-y-3.5">
-                            <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl shadow-sm sm:shadow-md border border-slate-100 dark:border-white/5 space-y-5 relative">
+                            <div className="app-page-card border-0 bg-white dark:bg-slate-900 p-5 rounded-3xl space-y-5 relative" style={{ border: 'none' }}>
                                 
                                 {/* Mode Toggles: Hijri <-> Gregorian Chips */}
                                 <div className="flex p-1.5 rounded-2xl bg-slate-100 dark:bg-white/10 gap-1.5 text-xs font-bold">
@@ -857,7 +857,8 @@ function HijriCalendar({ onBack, onNavigate }: { onBack: () => void; onNavigate:
                                 <motion.div 
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
-                                    className="bg-white dark:bg-slate-900 p-5 rounded-3xl shadow-sm sm:shadow-md border border-slate-100 dark:border-white/5 relative group"
+                                    className="app-page-card border-0 bg-white dark:bg-slate-900 p-5 rounded-3xl relative group"
+                                    style={{ border: 'none' }}
                                 >
                                     <div className="flex justify-between items-center mb-3">
                                         <div className="flex items-center gap-2.5">

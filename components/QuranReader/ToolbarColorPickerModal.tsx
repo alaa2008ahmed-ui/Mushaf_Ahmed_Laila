@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { registerBackInterceptor } from '../../hooks/useBackButton';
 import { X, Palette, Check, Type, ChevronLeft } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
+import { getClusterModes, getClusterForLanguage } from '../../utils/quranClusterSync';
 
 interface ToolbarColorPickerModalProps {
     onClose: () => void;
@@ -117,6 +118,18 @@ const ToolbarColorPickerModal: React.FC<ToolbarColorPickerModalProps> = ({ onClo
         }
         
         localStorage.setItem('toolbar_colors_v2' + modeSuffix, JSON.stringify(colors));
+        
+        const isWirdOrMemorization = modeSuffix.includes('_wird_') || modeSuffix.includes('_memorization_');
+        if (!isWirdOrMemorization) {
+            const cluster = getClusterForLanguage(language);
+            const modes = getClusterModes(cluster);
+            const orient = isLandscape ? 'h' : 'v';
+            modes.forEach(m => {
+                const sfx = m === 'mushaf' ? (isLandscape ? '_h' : '_v') : `_${m}_${orient}`;
+                localStorage.setItem('toolbar_colors_v2' + sfx, JSON.stringify(colors));
+            });
+        }
+
         window.dispatchEvent(new Event('theme-change'));
         setEditingType(null);
         showToast(isEn ? 'Changes saved successfully' : 'تم حفظ التعديلات');

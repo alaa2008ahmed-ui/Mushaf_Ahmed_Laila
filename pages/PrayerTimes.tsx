@@ -16,6 +16,8 @@ import { Capacitor } from '@capacitor/core';
 import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/CommunitySpotlightGuide';
 import { PRAYER_TIMES_PAGE_STEPS } from '../components/Community/communityTourSteps';
 import { markPageAsSeen } from '../utils/badgeManager';
+import { fetchOutdoorPrayerWeather, OutdoorPrayerWeather } from '../utils/weatherService';
+import OutdoorWeatherBadge from '../components/MainMenu/OutdoorWeatherBadge';
 import {
     applyOffset,
     formatTime12,
@@ -106,6 +108,28 @@ function PrayerTimes({ onBack, onNavigate }) {
     const searchIconRef = useRef(null);
     const [toastMessage, setToastMessage] = useState('');
     const [showGuide, setShowGuide] = useState(false);
+    const [weatherData, setWeatherData] = useState<OutdoorPrayerWeather | null>(null);
+    const [showWeatherModal, setShowWeatherModal] = useState<boolean>(false);
+
+    // Fetch outdoor weather and prayer temperatures for the current location
+    useEffect(() => {
+        const lat = config.location?.lat;
+        const lng = config.location?.lng;
+        if (!lat || !lng) return;
+
+        let isMounted = true;
+        fetchOutdoorPrayerWeather(lat, lng, times?.Fajr, times?.Isha, times)
+            .then(data => {
+                if (isMounted && data) {
+                    setWeatherData(data);
+                }
+            })
+            .catch(() => {});
+
+        return () => {
+            isMounted = false;
+        };
+    }, [config.location?.lat, config.location?.lng, times]);
 
     useEffect(() => {
         markPageAsSeen('prayer_times');
@@ -133,6 +157,10 @@ function PrayerTimes({ onBack, onNavigate }) {
 
     useEffect(() => {
         const interceptor = () => {
+            if (showWeatherModal) {
+                setShowWeatherModal(false);
+                return true;
+            }
             if (isModalOpen) {
                 closeModal();
                 return true;
@@ -145,7 +173,7 @@ function PrayerTimes({ onBack, onNavigate }) {
         };
         const unregister = registerBackInterceptor(interceptor);
         return unregister;
-    }, [isModalOpen, isNotifModalOpen]);
+    }, [isModalOpen, isNotifModalOpen, showWeatherModal]);
 
     const handleBack = () => {
         if (isModalOpen) {
@@ -539,6 +567,13 @@ function PrayerTimes({ onBack, onNavigate }) {
                                         isSummerTime={isSummerTimeActive}
                                         toggleSummerTime={toggleSummerTime}
                                         supportsDST={supportsDST}
+                                        weatherInfo={weatherData?.prayerTemps?.[key] || (weatherData ? {
+                                            temp: key === 'Fajr' ? (weatherData.fajrTemp ?? weatherData.currentTemp) : (key === 'Isha' ? (weatherData.ishaTemp ?? weatherData.currentTemp) : weatherData.currentTemp),
+                                            code: weatherData.currentCode,
+                                            conditionAr: weatherData.currentConditionAr,
+                                            conditionEn: weatherData.currentConditionEn
+                                        } : null)}
+                                        onOpenWeather={() => setShowWeatherModal(true)}
                                 />
                             )
                         })}
@@ -612,6 +647,16 @@ function PrayerTimes({ onBack, onNavigate }) {
                     {toastMessage}
                 </div>
             )}
+
+            {/* Outdoor Weather Details Modal when clicking any prayer's weather badge */}
+            <div className="hidden">
+                <OutdoorWeatherBadge 
+                    lat={config.location?.lat}
+                    lng={config.location?.lng}
+                    fajrTimeStr={times?.Fajr}
+                    ishaTimeStr={times?.Isha}
+                />
+            </div>
 
             <CommunitySpotlightGuide
                 guideKey="prayer_times_page_spotlight_v2"

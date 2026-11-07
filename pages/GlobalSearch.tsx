@@ -18,6 +18,7 @@ import { asmaulHusna } from '../data/asmaulHusnaData';
 import { PROPHETIC_SEERAH_DATA, PROPHETIC_STANCES_DATA } from '../data/propheticSeerahData';
 import { umrahVirtues, umrahSteps } from '../data/hajjUmrahData';
 import { TEN_PROMISED_COMPANIONS } from '../data/tenPromisedData';
+import { DIVINE_MIRACLES_DATA } from '../data/divineMiraclesData';
 import { baseAthkar, fajrDhikr, fajrMaghribDhikr, specialZikr } from '../data/athkarAlSalahData';
 import { registerBackInterceptor } from '../hooks/useBackButton';
 import { 
@@ -39,12 +40,13 @@ const getReaderTheme = (isLandscape = false) => {
         const quranSettings = getQuranSettingsForLayout(suffix) || {};
         const originalTheme = THEMES[themeId as keyof typeof THEMES] || THEMES.black;
         
-        const bgColor = quranSettings.bgColor || originalTheme.bg;
-        const textColor = quranSettings.textColor || originalTheme.text;
-        const accent = quranSettings.highlightTextColor || originalTheme.accent;
+        const isDeepBlack = themeId === 'deep_black';
+        const bgColor = isDeepBlack ? '#000000' : (quranSettings.bgColor || originalTheme.bg);
+        const textColor = isDeepBlack ? '#FFFFFF' : (quranSettings.textColor || originalTheme.text);
+        const accent = isDeepBlack ? '#FFFFFF' : (quranSettings.highlightTextColor || originalTheme.accent);
         const isDark =
             textColor.toLowerCase() === '#ffffff' ||
-            themeId === 'deep_black' ||
+            isDeepBlack ||
             themeId.startsWith('i_') ||
             ['#000000', '#0a0a0a', '#18181b', '#09090b', '#022c22', '#450a0a', '#1e3a8a', '#422006', '#78350f', '#4c1d95', '#280a1e', '#041e3a', '#1e1b4b', '#0f172a', '#064e3b', '#134e4a', '#334155'].includes(bgColor.toLowerCase());
 
@@ -55,6 +57,9 @@ const getReaderTheme = (isLandscape = false) => {
             text: textColor,
             bg: bgColor,
             accent,
+            accentText: isDeepBlack ? '#000000' : (originalTheme.accentText || '#ffffff'),
+            btnBg: isDeepBlack ? '#18181b' : originalTheme.btnBg,
+            btnText: isDeepBlack ? '#FFFFFF' : originalTheme.btnText,
             palette: [accent, originalTheme.barText, originalTheme.btnBg],
             font: quranSettings.fontFamily || originalTheme.font,
             isDark
@@ -93,6 +98,7 @@ export let searchCache = {
     seerahResults: [] as any[],
     hajjUmrahResults: [] as any[],
     tenPromisedResults: [] as any[],
+    divineMiraclesResults: [] as any[],
 };
 
 export const clearSearchCache = () => {
@@ -111,6 +117,7 @@ export const clearSearchCache = () => {
         seerahResults: [],
         hajjUmrahResults: [],
         tenPromisedResults: [],
+        divineMiraclesResults: [],
     };
 };
 
@@ -270,6 +277,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
     const [seerahResults, setSeerahResults] = useState<any[]>(searchCache.seerahResults);
     const [hajjUmrahResults, setHajjUmrahResults] = useState<any[]>(searchCache.hajjUmrahResults);
     const [tenPromisedResults, setTenPromisedResults] = useState<any[]>(searchCache.tenPromisedResults);
+    const [divineMiraclesResults, setDivineMiraclesResults] = useState<any[]>(searchCache.divineMiraclesResults);
 
     const [isSearching, setIsSearching] = useState(false);
     const [expandedSurahs, setExpandedSurahs] = useState<Record<number, boolean>>({});
@@ -285,6 +293,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
         seerah: false,
         hajjUmrah: false,
         tenPromised: false,
+        divineMiracles: false,
     });
     
     useEffect(() => {
@@ -351,6 +360,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
             setSeerahResults([]);
             setHajjUmrahResults([]);
             setTenPromisedResults([]);
+            setDivineMiraclesResults([]);
             setIsSearching(false);
             
             clearSearchCache();
@@ -766,6 +776,30 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
             }
         });
 
+        // 12. Search Divine Miracles (المعجزات الإلهية)
+        const foundDivineMiracles: any[] = [];
+        DIVINE_MIRACLES_DATA.forEach((item) => {
+            if (
+                matchItem(item.titleAr, item.titleEn, item.summaryAr, item.summaryEn) ||
+                matchItem(item.descriptionAr, item.descriptionEn, item.badgeAr, item.badgeEn) ||
+                matchItem(item.scientificOrHistoricalFactAr || '', item.scientificOrHistoricalFactEn || '') ||
+                (item.quranEvidence && matchItem(item.quranEvidence.ayahAr, item.quranEvidence.ayahEn)) ||
+                (item.hadithEvidence && matchItem(item.hadithEvidence.matnAr, item.hadithEvidence.matnEn))
+            ) {
+                foundDivineMiracles.push({
+                    type: 'divineMiracles',
+                    titleAr: item.titleAr,
+                    titleEn: item.titleEn,
+                    badgeAr: item.badgeAr,
+                    badgeEn: item.badgeEn,
+                    summaryAr: item.summaryAr,
+                    summaryEn: item.summaryEn,
+                    id: item.id,
+                    highlightRegex: activeHighlightRegex
+                });
+            }
+        });
+
         setQuranResults(foundQuran);
         setAthkarResults(foundAthkar);
         setSalahAthkarResults(foundSalahAthkar);
@@ -777,6 +811,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
         setSeerahResults(foundSeerah);
         setHajjUmrahResults(foundHajjUmrah);
         setTenPromisedResults(foundTenPromised);
+        setDivineMiraclesResults(foundDivineMiracles);
 
         setIsSearching(false);
         
@@ -792,6 +827,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
         searchCache.seerahResults = foundSeerah;
         searchCache.hajjUmrahResults = foundHajjUmrah;
         searchCache.tenPromisedResults = foundTenPromised;
+        searchCache.divineMiraclesResults = foundDivineMiracles;
     }, [isEn]);
 
     useEffect(() => {
@@ -816,6 +852,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
             setSeerahResults([]);
             setHajjUmrahResults([]);
             setTenPromisedResults([]);
+            setDivineMiraclesResults([]);
             setIsSearching(false);
             clearSearchCache();
             return;
@@ -874,7 +911,8 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
         asmaulHusnaResults.length + 
         seerahResults.length + 
         hajjUmrahResults.length + 
-        tenPromisedResults.length;
+        tenPromisedResults.length +
+        divineMiraclesResults.length;
 
     const renderResults = () => {
         if (isSearching) {
@@ -918,12 +956,12 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                             isEn ? (
                                 <>
                                     Search across all application sections:<br/>
-                                    Quran, Adhkar, Prayers, Supplications, Ruqyah, Hisn Al-Muslim, Seerah, Asmaul Husna, Hajj & Umrah, and Ten Promised Paradise.
+                                    Quran, Adhkar, Prayers, Supplications, Ruqyah, Hisn Al-Muslim, Seerah, Asmaul Husna, Hajj & Umrah, Ten Promised Paradise, and Divine Miracles.
                                 </>
                             ) : (
                                 <>
                                     ابحث في جميع أقسام وصفحات التطبيق:<br/>
-                                    القرآن الكريم، الأذكار، أذكار الصلاة، الأدعية والرقية الشرعية، حصن المسلم، أسماء الله الحسنى، السيرة النبوية، الحج والعمرة، والعشرة المبشرين بالجنة.
+                                    القرآن الكريم، الأذكار، أذكار الصلاة، الأدعية والرقية الشرعية، حصن المسلم، أسماء الله الحسنى، السيرة النبوية، الحج والعمرة، العشرة المبشرون بالجنة، والمعجزات الإلهية.
                                 </>
                             )
                         ) : (
@@ -955,6 +993,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
         const showSeerah = isAllSelected || selectedSections.includes('seerah');
         const showHajjUmrah = isAllSelected || selectedSections.includes('hajjUmrah');
         const showTenPromised = isAllSelected || selectedSections.includes('tenPromised');
+        const showDivineMiracles = isAllSelected || selectedSections.includes('divineMiracles');
         
         const groupedQuran = quranResults.reduce((acc, r) => {
             if (!acc[r.surah]) acc[r.surah] = { surahName: r.surahName, surahNameEn: r.surahNameEn, ayahs: [] };
@@ -1863,6 +1902,81 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                         )}
                     </div>
                 )}
+                {/* 12. Divine Miracles */}
+                {showDivineMiracles && divineMiraclesResults.length > 0 && (
+                    <div className="space-y-3 mt-4">
+                        {isAllSelected ? (
+                            <div className="mb-3 rounded-2xl quran-raised-card overflow-hidden border-0" style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.03)' : (theme.btnBg || '#ffffff'), border: 'none' }}>
+                                <button 
+                                    onClick={() => setExpandedCategories(p => ({ ...p, divineMiracles: !p.divineMiracles }))}
+                                    className="w-full flex justify-between items-center p-4 transition-all quran-raised-btn border-0 rounded-2xl cursor-pointer"
+                                    style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.06)' : (theme.btnBg || '#ffffff'), color: theme.textColor, border: 'none' }}
+                                >
+                                    <h4 className="font-bold text-base flex items-center gap-2.5" style={{ color: theme.accent || theme.palette[0] }}>
+                                        <Sparkles className="w-5 h-5 quran-3d-icon" /> 
+                                        {isEn ? "Divine Miracles" : "المعجزات الإلهية"}
+                                    </h4>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs font-bold px-2.5 py-0.5 rounded-full quran-raised-card border-0" style={{ backgroundColor: theme.accent || theme.palette[0], color: accentBadgeText, border: 'none' }}>
+                                            {isEn ? divineMiraclesResults.length : toArabic(divineMiraclesResults.length)}
+                                        </span>
+                                        <ChevronLeft className={`w-5 h-5 transition-transform quran-3d-icon ${expandedCategories.divineMiracles ? (isEn ? 'rotate-90' : '-rotate-90') : (isEn ? 'rotate-180' : '')}`} />
+                                    </div>
+                                </button>
+                                {expandedCategories.divineMiracles && (
+                                    <div className="p-3 space-y-2.5" style={{ backgroundColor: theme.isDark ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.015)' }}>
+                                        {divineMiraclesResults.map((r, idx) => (
+                                            <button 
+                                                key={`divineMiracles-${idx}`} 
+                                                className={`w-full ${isEn ? 'text-left' : 'text-right'} p-3.5 rounded-2xl quran-raised-card border-0 transition-all active:scale-[0.98] cursor-pointer`}
+                                                onClick={() => handleResultClick('divine-miracles', { highlightId: r.id, itemId: r.id })}
+                                                style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.05)' : '#ffffff', color: theme.textColor, border: 'none' }}
+                                            >
+                                                <div className="font-bold text-sm mb-1" style={{ color: theme.accent || theme.palette[0] }}>
+                                                    {isEn ? r.titleEn : r.titleAr}
+                                                </div>
+                                                <div className="text-xs leading-relaxed opacity-80 line-clamp-2" style={{ color: theme.textColor }}>
+                                                    {highlightText(isEn ? (r.summaryEn || r.badgeEn) : (r.summaryAr || r.badgeAr), r.highlightRegex)}
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <>
+                                <div className="flex items-center gap-2 mb-2 px-1">
+                                    <span className="p-2 rounded-xl quran-raised-card border-0" style={{ backgroundColor: `${theme.accent || theme.palette[0]}18`, color: theme.accent || theme.palette[0], border: 'none' }}>
+                                        <Sparkles className="w-4 h-4 quran-3d-icon" />
+                                    </span>
+                                    <h3 className="font-bold text-sm opacity-90" style={{ color: theme.textColor }}>
+                                        {isEn ? `Divine Miracles (${divineMiraclesResults.length})` : `المعجزات الإلهية (${toArabic(divineMiraclesResults.length)})`}
+                                    </h3>
+                                </div>
+                                {divineMiraclesResults.map((r, idx) => (
+                                    <button 
+                                        key={`divineMiracles-${idx}`} 
+                                        className={`w-full ${isEn ? 'text-left' : 'text-right'} p-4 rounded-2xl quran-raised-card border-0 transition-all active:scale-[0.98] cursor-pointer mb-2.5`}
+                                        style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.05)' : '#ffffff', color: theme.textColor, border: 'none' }}
+                                        onClick={() => handleResultClick('divine-miracles', { highlightId: r.id, itemId: r.id })}
+                                    >
+                                        <div className="font-bold text-base mb-1.5" style={{ color: theme.accent || theme.palette[0] }}>
+                                            {isEn ? r.titleEn : r.titleAr}
+                                        </div>
+                                        <div className="text-xs leading-relaxed opacity-80 mb-2" style={{ color: theme.textColor }}>
+                                            {highlightText(isEn ? r.summaryEn : r.summaryAr, r.highlightRegex)}
+                                        </div>
+                                        {(r.badgeAr || r.badgeEn) && (
+                                            <div className="text-xs opacity-70 font-semibold border-t pt-2 mt-2 border-black/10 dark:border-white/10">
+                                                {isEn ? r.badgeEn : r.badgeAr}
+                                            </div>
+                                        )}
+                                    </button>
+                                ))}
+                            </>
+                        )}
+                    </div>
+                )}
             </div>
         );
     };
@@ -1880,6 +1994,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
         { id: 'seerah', label: isEn ? 'Seerah' : 'السيرة النبوية' },
         { id: 'hajjUmrah', label: isEn ? 'Hajj & Umrah' : 'الحج والعمرة' },
         { id: 'tenPromised', label: isEn ? 'Ten Promised' : 'العشرة المبشرون' },
+        { id: 'divineMiracles', label: isEn ? 'Divine Miracles' : 'المعجزات الإلهية' },
     ];
     const otherSections = sectionsList.filter(s => s.id !== 'all');
     const isAllSelected = selectedSections.includes('all') || selectedSections.length === 0;

@@ -966,8 +966,8 @@ export const PRAYER_TIMES_PAGE_STEPS: SpotlightStep[] = [
     targetSelector: '#prayer-top-bar-settings-btn',
     titleAr: 'إعدادات الصلاة والإشعارات',
     titleEn: 'Prayer Settings & Notifications',
-    descAr: 'اضغط هنا لفتح قائمة إعدادات الصلاة والإشعارات: تفعيل الإشعار المستمر لمواقيت الصلاة، تخصيص التطبيقات المصغرة (الودجت)، كتم التنبيهات الصوتية مؤقتاً، وتنبيهات أذكار قيام الليل واليوم.',
-    descEn: 'Tap here to open prayer settings and notifications: manage persistent prayer notification, customize home screen widgets, temporarily mute audio alerts, and configure night and daily athkar reminders.',
+    descAr: 'اضغط هنا لفتح قائمة إعدادات الصلاة والإشعارات: اختيار وتغيير نغمة الإشعارات للأذكار والتنبيهات، تفعيل الإشعار المستمر لمواقيت الصلاة، تخصيص التطبيقات المصغرة (الودجت)، كتم التنبيهات الصوتية مؤقتاً، وتنبيهات أذكار قيام الليل واليوم.',
+    descEn: 'Tap here to open prayer settings and notifications: choose and change notification tones for adhkar and reminders, manage persistent prayer notification, customize home screen widgets, temporarily mute audio alerts, and configure night and daily athkar reminders.',
     badgeAr: 'إعدادات الصلاة',
     badgeEn: 'Prayer Settings',
     iconName: 'gear',
@@ -976,28 +976,25 @@ export const PRAYER_TIMES_PAGE_STEPS: SpotlightStep[] = [
   },
   {
     id: 'prayer_home_widgets_guide',
-    targetSelector: '#prayer-top-bar-settings-btn',
-    preferredPlacement: 'bottom',
-    titleAr: 'التطبيقات المصغرة (٤ تطبيقات للشاشة)',
-    titleEn: '4 Home Screen Widgets & Settings',
-    descAr: `يوفر التطبيق ٤ تطبيقات مصغرة (ودجت) يمكنك إضافتها لشاشة هاتفك لمتابعة مواقيت الصلاة:
-• كلاسيكي شامل (٤×١)
-• مصغر السابقة والقادمة (٣×١)
-• مجسم عصري ثلاثي الأبعاد (٤×٢)
-• المحراب والزخرفة الإسلامية (٤×٢)
+    preferredPlacement: 'center',
+    titleAr: 'التطبيقات المصغرة (٣ تطبيقات للشاشة)',
+    titleEn: '3 Home Screen Widgets & Settings',
+    descAr: `يوفر التطبيق ٣ تطبيقات مصغرة (ودجت) يمكنك إضافتها لشاشة هاتفك لمتابعة مواقيت الصلاة:
+١. كلاسيكي شامل (٤×١): جدول الصلوات الست والتاريخ وقيام الليل.
+٢. مصغر السابقة والقادمة (٤×١): بطاقتان مجسمتان لصلاتك السابقة والقادمة.
+٣. الصلاة القادمة فقط (٢×١): حجم مصغر وأنيق يعرض اسم الصلاة القادمة والوقت المتبقي فقط مع إمكانية تكبيره بحرية.
 
 ⚙️ ضبط الشفافية وثيم الألوان:
 اضغط مطولاً على أي تطبيق مصغر بشاشة هاتفك ثم اختر (الضبط) للتحكم في نسبة الشفافية (من 0% إلى 100%) وتغيير ثيم الألوان بالكامل بنقرة واحدة.`,
-    descEn: `The app provides 4 unique home screen widgets to track prayer times live:
-• Classic Comprehensive (4x1)
-• Compact Prev & Next (3x1)
-• Modern 3D Floating Pods (4x2)
-• Royal Islamic Mihrab Arch (4x2)
+    descEn: `The app provides 3 home screen widgets to track prayer times live:
+1. Classic Comprehensive (4x1): Full 6-prayer matrix, date, and night milestones.
+2. Compact Prev & Next (4x1): Dual 3D tactile cards for previous and upcoming prayers.
+3. Next Prayer Only (2x1): Ultra-minimal icon-sized card showing only the next prayer and remaining time with free resize capability.
 
 ⚙️ Transparency & Colors:
 Long-press any widget on your phone screen and tap Settings to adjust transparency (0% to 100%) and choose your favorite color theme.`,
-    badgeAr: '٤ تطبيقات مصغرة • تخصيص كامل',
-    badgeEn: '4 Widgets • Customization',
+    badgeAr: '٣ تطبيقات مصغرة • تخصيص كامل',
+    badgeEn: '3 Widgets • Customization',
     iconName: 'widgets',
     accentColor: '#10b981',
     gradient: 'from-emerald-500 to-teal-600'
@@ -1675,15 +1672,71 @@ export const SMART_HOME_PAGE_STEPS: SpotlightStep[] = [
     preferredPlacement: 'bottom'
   },
   {
-    id: 'smart_home_prayer_card',
-    targetSelector: '#modern-card-container-prayer',
-    titleAr: 'بطاقة مواقيت الصلاة والقبلة وتحديث الموقع والتاريخ الهجري',
-    titleEn: 'Prayer Times, Qibla, Location & Hijri Calendar',
-    descAr: 'تستعرض العد التنازلي الحي لأذان الصلاة القادمة ومواقيت الصلوات بدقة. اضغط على زر القبلة (🧭) لتحديد الاتجاه بلمسة واحدة، أو اضغط على التاريخ الهجري للانتقال لصفحة التقويم الهجري الشامل، أو انقر على اسم مدينتك لتحديث الموقع الجغرافي (GPS) تلقائياً وحساب المواقيت بدقة متناهية.',
-    descEn: 'Shows live countdown to next prayer and exact prayer times. Tap the Qibla compass icon (🧭) to find direction, tap the Hijri date to open the Hijri Calendar page, or tap city name/location icon to auto-refresh GPS location and update calculation.',
-    badgeAr: 'مواقيت الصلاة والقبلة',
-    badgeEn: 'Prayer & Qibla',
+    id: 'smart_home_prayer_location',
+    targetSelector: '#home-prayer-location-section',
+    titleAr: 'تحديد الموقع واسم المدينة والدولة (GPS)',
+    titleEn: 'City, Country & GPS Location',
+    descAr: 'انقر على اسم مدينتك أو أيقونة الموقع لتحديث إحداثيات موقعك الجغرافي تلقائياً عبر الأقمار الصناعية (GPS)، وحساب مواقيت الصلاة واتجاه القبلة بدقة متناهية لموقعك الحالي.',
+    descEn: 'Tap your city name or the location pin to automatically refresh your GPS coordinates and calculate exact prayer times and Qibla direction for your current position.',
+    badgeAr: 'الموقع والمدينة',
+    badgeEn: 'GPS Location',
+    iconName: 'map',
+    accentColor: '#d97706',
+    gradient: 'from-amber-500 to-amber-600',
+    preferredPlacement: 'bottom'
+  },
+  {
+    id: 'smart_home_prayer_weather',
+    targetSelector: '#home-prayer-weather-btn',
+    titleAr: 'مؤشر الطقس وحرارة الجو المباشرة',
+    titleEn: 'Live Weather & Outdoor Conditions',
+    descAr: 'عرض درجة الحرارة الحالية وحالة الطقس المباشرة لموقعك الجغرافي. اضغط على زر الطقس لمشاهدة تفاصيل الأحوال الجوية والتوقعات وصلاحية الخروج والتنزه، فضلاً عن ملاءمة الطقس لأداء صلاة الجماعة والمشي إلى المسجد.',
+    descEn: 'Displays live current temperature and weather conditions for your area. Tap the weather button to view detailed forecasts and mosque walking comfort guidelines.',
+    badgeAr: 'حالة الطقس',
+    badgeEn: 'Weather Badge',
+    iconName: 'widgets',
+    accentColor: '#d97706',
+    gradient: 'from-amber-500 to-amber-600',
+    preferredPlacement: 'bottom'
+  },
+  {
+    id: 'smart_home_prayer_qibla',
+    targetSelector: '#home-prayer-qibla-btn',
+    titleAr: 'بوصلة اتجاه القبلة الذكية',
+    titleEn: 'Smart Qibla Compass',
+    descAr: 'اضغط على أيقونة بوصلة القبلة (🧭) لتحديد الاتجاه الدقيق للكعبة المشرفة والمسجد الحرام بلمسة واحدة وسهولة تامة بالبوصلة الرقمية والدرجات.',
+    descEn: 'Tap the Qibla compass icon (🧭) to instantly find the exact direction to the Kaaba and Masjid al-Haram with interactive digital compass degrees.',
+    badgeAr: 'اتجاه القبلة',
+    badgeEn: 'Qibla Direction',
     iconName: 'compass',
+    accentColor: '#d97706',
+    gradient: 'from-amber-500 to-amber-600',
+    preferredPlacement: 'bottom'
+  },
+  {
+    id: 'smart_home_prayer_hijri',
+    targetSelector: '#home-prayer-hijri-date-btn',
+    titleAr: 'التاريخ الهجري والتقويم الإسلامي',
+    titleEn: 'Hijri Date & Islamic Calendar',
+    descAr: 'اضغط على التاريخ الهجري للانتقال المباشر لصفحة التقويم الهجري الشامل، واستعراض المناسبات الدينية والأحداث التاريخية والتحويل بين التاريخين الهجري والميلادي.',
+    descEn: 'Tap the Hijri date to directly open the comprehensive Hijri Calendar, view Islamic events and historical milestones, and convert dates seamlessly.',
+    badgeAr: 'التاريخ الهجري',
+    badgeEn: 'Hijri Calendar',
+    iconName: 'calendar',
+    accentColor: '#d97706',
+    gradient: 'from-amber-500 to-amber-600',
+    preferredPlacement: 'bottom'
+  },
+  {
+    id: 'smart_home_prayer_countdown',
+    targetSelector: '#home-prayer-countdown-section',
+    titleAr: 'العد التنازلي الحي ومواقيت الصلاة',
+    titleEn: 'Live Countdown & Prayer Times',
+    descAr: 'يستعرض العد التنازلي اللحظي المتبقي لأذان الصلاة القادمة بالثواني، وموعد الأذان، مع شريط التقدم اليومي بين الصلوات. اضغط في أي مكان هنا لفتح جدول مواقيت الصلاة الكامل.',
+    descEn: 'Displays live real-time countdown to the upcoming prayer adhan, exact prayer time, and the daily progress bar. Tap anywhere here to open the full prayer timetable.',
+    badgeAr: 'مواقيت الصلاة',
+    badgeEn: 'Prayer Times',
+    iconName: 'clock',
     accentColor: '#d97706',
     gradient: 'from-amber-500 to-amber-600',
     preferredPlacement: 'bottom'
@@ -1719,7 +1772,7 @@ export const SMART_HOME_PAGE_STEPS: SpotlightStep[] = [
   {
     id: 'smart_home_daily_apps_card',
     targetSelector: '#modern-card-container-apps',
-    titleAr: 'بطاقة التطبيقات الإسلامية وتطبيقاتك اليومية (بتبويباتها)',
+    titleAr: 'بطاقة التطبيقات الإسلامية والتطبيقات اليومية (بتبويباتها)',
     titleEn: 'Islamic Apps Drawer & Daily Apps (With Tabs)',
     descAr: 'درج ذكي وتفاعلي يضم كافة التطبيقات والخدمات الإسلامية مقسمة بتبويباتها الشاملة (المكتبة، العبادات، الأدوات).',
     descEn: 'Interactive smart drawer featuring all Islamic apps categorized into comprehensive tabs (Library, Worship, Tools).',

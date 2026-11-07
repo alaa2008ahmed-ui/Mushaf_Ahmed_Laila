@@ -38,6 +38,9 @@ const TitleSection: React.FC<TitleSectionProps> = ({
 }) => {
     const isBlackTheme = theme.bgColor === '#000000';
     const { isNightMode, homeThemeVariant } = useTheme();
+    const isSkyTheme = homeThemeVariant === 'sky';
+    const isEmeraldTheme = homeThemeVariant === 'emerald';
+    const isBurgundyTheme = homeThemeVariant === 'burgundy';
     const { t, dir } = useLanguage();
 
     const editStyles = getThemeEditModeStyles(isNightMode, homeThemeVariant, isBlackTheme);
@@ -119,7 +122,7 @@ const TitleSection: React.FC<TitleSectionProps> = ({
                                         id="app-title" 
                                         className="pointer-events-auto text-[20px] sm:text-[24px] md:text-[27px] font-black font-kufi tracking-tight select-none text-center truncate transition-transform leading-tight" 
                                         style={{ 
-                                            color: isNightMode ? '#F59E0B' : (isBlackTheme ? '#FFFFFF' : (themeKey === 'default' ? '#4C1D95' : theme.textColor)),
+                                            color: isNightMode ? '#FFFFFF' : (isBlackTheme ? '#FFFFFF' : (themeKey === 'default' ? '#4C1D95' : theme.textColor)),
                                             textShadow: isNightMode
                                                 ? 'none'
                                                 : (isBlackTheme 
@@ -143,7 +146,17 @@ const TitleSection: React.FC<TitleSectionProps> = ({
                             <p 
                                 className={`text-[12.5px] sm:text-[13.5px] font-bold font-kufi leading-tight tracking-normal text-center ${isNightMode ? '' : 'drop-shadow-sm'}`}
                                 style={{ 
-                                    color: isNightMode ? '#F59E0B' : (isBlackTheme ? '#FFFFFF' : (themeKey === 'default' ? '#7e22ce' : (themeKey === 'olive_grove' ? '#4D7C0F' : theme.textColor))),
+                                    color: isNightMode 
+                                        ? '#FFFFFF' 
+                                        : (isBlackTheme 
+                                            ? '#FFFFFF' 
+                                            : (isSkyTheme 
+                                                ? '#0284C7' 
+                                                : (isEmeraldTheme 
+                                                    ? '#059669' 
+                                                    : (isBurgundyTheme 
+                                                        ? '#9F1239' 
+                                                        : (theme.palette?.[0] || theme.textColor || '#854D0E'))))),
                                     textShadow: isNightMode
                                         ? 'none'
                                         : (isBlackTheme 

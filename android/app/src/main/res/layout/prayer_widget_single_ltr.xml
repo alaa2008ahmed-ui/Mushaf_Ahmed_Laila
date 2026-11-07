@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:layoutDirection="ltr"
+    android:gravity="center"
+    android:background="@drawable/widget_single_card_bg"
+    android:clipToOutline="true"
+    android:padding="6dp"
+    android:clickable="true"
+    android:focusable="true">
+
+    <LinearLayout
+        android:id="@+id/widget_single_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="4dp">
+
+        <TextView
+            android:id="@+id/widget_single_prayer_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Fajr in"
+            android:textColor="#C86400"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:textAlignment="center"
+            android:singleLine="true"
+            android:includeFontPadding="false"
+            android:layout_marginBottom="4dp" />
+
+        <Chronometer
+            android:id="@+id/widget_single_countdown"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#000000"
+            android:textSize="17sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:textAlignment="center"
+            android:countDown="true"
+            android:singleLine="true"
+            android:includeFontPadding="false" />
+
+        <TextView
+            android:id="@+id/widget_single_countdown_en"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#000000"
+            android:textSize="17sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:textAlignment="center"
+            android:singleLine="true"
+            android:includeFontPadding="false"
+            android:visibility="gone" />
+
+    </LinearLayout>
+</LinearLayout>

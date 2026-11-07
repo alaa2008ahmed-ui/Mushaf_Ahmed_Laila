@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { X, BookOpen, Copy, Check, ZoomIn, ZoomOut, RefreshCw, Layers } from 'lucide-react';
+import { X, BookOpen, Copy, Check, ZoomIn, ZoomOut, RefreshCw, Layers, ChevronDown, Share2, Volume2, VolumeX } from 'lucide-react';
 import { SURAH_NAMES_EN, toArabic } from './constants';
+import { shareAsImage } from '../../utils/shareAsImage';
+import { playTTS, stopTTS, subscribeTTS } from '../../utils/ttsEngine';
 
 export interface EnglishTafseerModalProps {
     isOpen: boolean;
@@ -11,6 +13,9 @@ export interface EnglishTafseerModalProps {
     isLandscape?: boolean;
     quranData?: any;
     readingMode?: string;
+    onPlayAudio?: (s: number, a: number) => void;
+    onStopAudio?: () => void;
+    isAudioPlaying?: boolean;
 }
 
 export const ENGLISH_TAFSIR_EDITIONS = [
@@ -53,7 +58,10 @@ const EnglishTafseerModal: React.FC<EnglishTafseerModalProps> = ({
     ayahNumber,
     currentTheme,
     isLandscape = false,
-    readingMode = 'bilingual'
+    readingMode = 'bilingual',
+    onPlayAudio,
+    onStopAudio,
+    isAudioPlaying
 }) => {
     const isTranslationOnly = readingMode === 'translation';
     const [selectedEdition, setSelectedEdition] = useState<number>(169);
@@ -177,20 +185,72 @@ const EnglishTafseerModal: React.FC<EnglishTafseerModalProps> = ({
     const surahNameEn = SURAH_NAMES_EN[surahNumber - 1] || `Surah ${surahNumber}`;
     const activeEdition = ENGLISH_TAFSIR_EDITIONS.find(e => e.id === selectedEdition) || ENGLISH_TAFSIR_EDITIONS[0];
 
+    const isDeepBlack = currentTheme?.id === 'deep_black';
     const accentColor = currentTheme?.accent || '#10b981';
+    const accentFgColor = isDeepBlack ? '#ffffff' : accentColor;
     const bgColor = currentTheme?.bg || '#ffffff';
     const textColor = currentTheme?.text || '#000000';
     const cardBg = currentTheme?.cardBg || '#f8fafc';
     const cardBorder = currentTheme?.cardBorder || '#e2e8f0';
 
+    const handleToggleZoom = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setFontSize((prev) => (prev >= 26 ? 14 : prev + 3));
+    };
+
+    const handleShare = async (e: React.MouseEvent) => {
+        e.stopPropagation();
+        const tmp = document.createElement('div');
+        tmp.innerHTML = tafsirHtml;
+        const cleanText = tmp.textContent || tmp.innerText || '';
+        const fullShareText = `Surah ${surahNameEn} (${surahNumber}:${ayahNumber})\n\nVerse: "${verseText.en}"\n\nCommentary (${activeEdition.name}):\n${cleanText.trim()}`;
+
+        await shareAsImage({
+            text: fullShareText,
+            title: `English Tafseer - ${surahNameEn}`,
+            source: `${surahNameEn} ${surahNumber}:${ayahNumber}`,
+            category: 'English Commentary',
+            isEn: true,
+            language: 'en',
+        });
+    };
+
+    const [isPlaying, setIsPlaying] = useState<boolean>(false);
+
+    useEffect(() => {
+        const unsubscribe = subscribeTTS((playingText) => {
+            setIsPlaying(Boolean(playingText));
+        });
+        return () => {
+            unsubscribe();
+        };
+    }, []);
+
+    const handlePlayAudio = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (isPlaying) {
+            stopTTS();
+            setIsPlaying(false);
+            return;
+        }
+        const tmp = document.createElement('div');
+        tmp.innerHTML = tafsirHtml;
+        const cleanText = tmp.textContent || tmp.innerText || '';
+        const textToRead = verseText.en ? `${verseText.en}. ${cleanText}` : cleanText;
+        playTTS(textToRead, { isEn: true });
+        setIsPlaying(true);
+    };
+
     return (
         <div 
-            className={`fixed inset-0 z-[1300] bg-black/60 backdrop-blur-sm flex items-center justify-center ${isLandscape ? 'p-1' : 'p-3'} animate-fadeIn`}
+            className="fixed inset-0 z-[1300] bg-black/65 backdrop-blur-xs flex flex-col justify-end select-none animate-fadeIn"
             onClick={onClose}
             dir="ltr"
         >
             <div 
-                className={`w-full ${isLandscape ? 'max-w-4xl h-[95vh] rounded-2xl' : 'max-w-2xl h-[90vh] max-h-[850px] rounded-3xl'} shadow-2xl flex flex-col overflow-hidden animate-modal-enter border-0`}
+                className={`zoom-modal-sheet w-full max-w-xl mx-auto rounded-t-[32px] flex flex-col overflow-hidden relative shadow-2xl animate-modal-enter ${
+                    isLandscape ? 'max-h-[92vh]' : 'max-h-[85vh]'
+                }`}
                 style={{ 
                     backgroundColor: bgColor, 
                     color: textColor,
@@ -200,80 +260,27 @@ const EnglishTafseerModal: React.FC<EnglishTafseerModalProps> = ({
                 }}
                 onClick={e => e.stopPropagation()}
             >
-                {/* Header */}
-                <div 
-                    className="p-3.5 border-0 flex items-center justify-between shrink-0"
-                >
-                    <div className="flex items-center gap-2.5 overflow-hidden">
-                        <div 
-                            className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-sm quran-raised-card border-0"
-                            style={{ backgroundColor: `${accentColor}20`, color: accentColor }}
+                {/* Top Drag Handle & Category Badge */}
+                <div className="pt-3 px-6 pb-2 shrink-0 flex flex-col items-center">
+                    <div className="w-12 h-1.5 rounded-full mb-2.5 bg-slate-300 dark:bg-zinc-700 opacity-70 mx-auto" />
+                    
+                    <div className="w-full flex items-center justify-center relative px-2">
+                        <span 
+                            className="px-4 py-1.5 rounded-full text-xs font-extrabold shadow-2xs border transition-all"
+                            style={{
+                                backgroundColor: isDeepBlack ? 'rgba(255,255,255,0.12)' : `${accentColor}18`,
+                                borderColor: `${accentColor}40`,
+                                color: accentFgColor
+                            }}
                         >
-                            <BookOpen size={18} className="quran-3d-icon" />
-                        </div>
-                        <div className="flex flex-col min-w-0">
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                                <h3 className="font-extrabold text-sm sm:text-base leading-tight truncate">
-                                    Surah {surahNameEn}
-                                </h3>
-                                <span 
-                                    className="text-xs px-2.5 py-0.5 rounded-full font-bold quran-raised-card border-0"
-                                    style={{ backgroundColor: `${accentColor}18`, color: accentColor }}
-                                >
-                                    Ayah {ayahNumber}
-                                </span>
-                            </div>
-                            <span className="text-[11px] opacity-70 truncate font-medium">
-                                {activeEdition.fullName}
-                            </span>
-                        </div>
-                    </div>
-
-                    <div className="flex items-center gap-1.5 shrink-0">
-                        {/* Font resize buttons */}
-                        <div className="flex items-center rounded-xl p-0.5 quran-raised-card border-0 gap-1">
-                            <button 
-                                onClick={() => handleFontSizeChange(-1.5)}
-                                className="px-2 py-1.5 rounded-lg transition text-xs font-bold quran-raised-btn border-0"
-                                title="Decrease font size"
-                            >
-                                <ZoomOut size={14} className="quran-3d-icon" />
-                            </button>
-                            <span className="text-[11px] px-1 font-mono opacity-80 select-none font-bold">
-                                {Math.round(fontSize)}
-                            </span>
-                            <button 
-                                onClick={() => handleFontSizeChange(1.5)}
-                                className="px-2 py-1.5 rounded-lg transition text-xs font-bold quran-raised-btn border-0"
-                                title="Increase font size"
-                            >
-                                <ZoomIn size={14} className="quran-3d-icon" />
-                            </button>
-                        </div>
-
-                        {/* Copy button */}
-                        <button 
-                            onClick={handleCopy}
-                            className="p-2 rounded-xl transition quran-raised-btn border-0"
-                            title="Copy Commentary"
-                        >
-                            {copied ? <Check size={16} className="text-emerald-500 quran-3d-icon" /> : <Copy size={16} className="quran-3d-icon" />}
-                        </button>
-
-                        {/* Close button */}
-                        <button 
-                            onClick={onClose}
-                            className="p-2 rounded-xl transition quran-raised-btn border-0 opacity-70 hover:opacity-100"
-                            title="Close"
-                        >
-                            <X size={18} className="quran-3d-icon" />
-                        </button>
+                            English Commentary • Surah {surahNameEn} ({surahNumber}:{ayahNumber})
+                        </span>
                     </div>
                 </div>
 
                 {/* Edition Selector Tabs */}
                 <div 
-                    className="px-3.5 py-2.5 border-0 flex items-center gap-2 overflow-x-auto scrollbar-hide shrink-0"
+                    className="px-3.5 py-2 border-0 flex items-center gap-2 overflow-x-auto scrollbar-hide shrink-0 justify-center"
                     style={{ backgroundColor: `${cardBg}80` }}
                 >
                     <span className="text-[11px] font-bold opacity-60 mr-1 flex items-center gap-1 shrink-0">
@@ -286,7 +293,7 @@ const EnglishTafseerModal: React.FC<EnglishTafseerModalProps> = ({
                             <button
                                 key={ed.id}
                                 onClick={() => setSelectedEdition(ed.id)}
-                                className={`text-xs px-3 py-1.5 rounded-xl font-bold transition-all shrink-0 select-none border-0 ${
+                                className={`text-xs px-3 py-1 rounded-xl font-bold transition-all shrink-0 select-none border-0 cursor-pointer ${
                                     isSelected 
                                         ? 'quran-raised-btn-selected shadow-sm text-white' 
                                         : 'quran-raised-btn opacity-80 hover:opacity-100'
@@ -304,9 +311,9 @@ const EnglishTafseerModal: React.FC<EnglishTafseerModalProps> = ({
                 {/* Verse Citation Banner */}
                 {((!isTranslationOnly && verseText.ar) || verseText.en) && (
                     <div 
-                        className="mx-3.5 mt-3 p-3.5 rounded-2xl border-0 quran-raised-card shrink-0 text-left"
+                        className="mx-4 mt-2.5 p-3 rounded-2xl border-0 quran-raised-card shrink-0 text-left"
                         style={{ 
-                            backgroundColor: `${cardBg}`,
+                            backgroundColor: cardBg,
                         }}
                     >
                         {!isTranslationOnly && verseText.ar && (
@@ -327,25 +334,21 @@ const EnglishTafseerModal: React.FC<EnglishTafseerModalProps> = ({
                 )}
 
                 {/* Tafsir Content */}
-                <div className="p-4 sm:p-6 overflow-y-auto flex-1 custom-scrollbar">
+                <div className="p-4 sm:p-5 overflow-y-auto flex-1 custom-scrollbar">
                     {isLoading ? (
-                        <div className="py-16 flex flex-col items-center justify-center text-center gap-3">
+                        <div className="py-14 flex flex-col items-center justify-center text-center gap-3">
                             <div 
                                 className="w-10 h-10 rounded-full border-3 border-t-transparent animate-spin"
-                                style={{ borderColor: `${accentColor}33`, borderTopColor: accentColor }}
+                                style={{ borderColor: `${accentFgColor}33`, borderTopColor: accentFgColor }}
                             />
                             <p className="text-sm font-bold opacity-75">Loading English Tafsir...</p>
-                            <span className="text-xs opacity-50">Fetching {activeEdition.name}</span>
                         </div>
                     ) : error ? (
-                        <div className="py-14 flex flex-col items-center justify-center text-center gap-3 max-w-sm mx-auto">
-                            <div className="w-12 h-12 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center text-xl">
-                                ⚠️
-                            </div>
+                        <div className="py-12 flex flex-col items-center justify-center text-center gap-3 max-w-sm mx-auto">
                             <p className="text-sm font-bold text-red-500">{error}</p>
                             <button 
                                 onClick={() => fetchTafsir(selectedEdition)}
-                                className="px-4 py-2.5 rounded-2xl text-xs font-bold text-white shadow-sm flex items-center gap-2 active:scale-95 transition border-0 quran-raised-btn-selected"
+                                className="px-4 py-2 rounded-2xl text-xs font-bold text-white shadow-sm flex items-center gap-2 active:scale-95 transition border-0 quran-raised-btn-selected cursor-pointer"
                                 style={{ backgroundColor: accentColor }}
                             >
                                 <RefreshCw size={14} className="quran-3d-icon" />
@@ -365,20 +368,93 @@ const EnglishTafseerModal: React.FC<EnglishTafseerModalProps> = ({
                     )}
                 </div>
 
-                {/* Footer */}
+                {/* Action Bar matching image (5 round action buttons in RTL: Audio on Right, Chevron on Left) */}
                 <div 
-                    className="p-3 px-4 border-0 flex items-center justify-between shrink-0 rounded-b-3xl"
-                    style={{ backgroundColor: cardBg }}
+                    className="p-4 pt-3.5 shrink-0 flex items-center justify-center gap-3 sm:gap-4 border-t border-slate-200/50 dark:border-white/10"
+                    dir="rtl"
+                    style={{
+                        paddingBottom: 'calc(env(safe-area-inset-bottom, 16px) + 16px)',
+                        backgroundColor: currentTheme?.modalBg || cardBg || '#ffffff'
+                    }}
                 >
-                    <span className="text-[11px] opacity-70 font-medium">
-                        {surahNameEn} {surahNumber}:{ayahNumber} • {activeEdition.name}
-                    </span>
-                    <button 
-                        onClick={onClose}
-                        className="px-6 py-2 rounded-xl font-bold text-xs text-white shadow-sm transition active:scale-95 border-0 quran-raised-btn-selected"
-                        style={{ backgroundColor: accentColor }}
+                    {/* 1. Audio / Recitation Play Button (RIGHTMOST in RTL) */}
+                    <button
+                        type="button"
+                        onClick={handlePlayAudio}
+                        className={`w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border-0 ${
+                            isPlaying ? 'ring-2 ring-red-400/80 animate-pulse' : 'quran-raised-card'
+                        }`}
+                        style={{
+                            backgroundColor: isPlaying ? '#dc2626' : `${accentColor}18`,
+                            color: isPlaying ? '#ffffff' : accentFgColor
+                        }}
+                        title={isPlaying ? 'Stop audio' : 'Play audio'}
                     >
-                        Close
+                        {isPlaying ? (
+                            <VolumeX className="w-5 h-5 text-white animate-pulse" />
+                        ) : (
+                            <Volume2 className="w-5 h-5" style={{ color: accentFgColor, stroke: accentFgColor }} />
+                        )}
+                    </button>
+
+                    {/* 2. Share Button */}
+                    <button
+                        type="button"
+                        onClick={handleShare}
+                        className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border-0 quran-raised-card"
+                        style={{
+                            backgroundColor: `${accentColor}18`,
+                            color: accentFgColor
+                        }}
+                        title="Share image"
+                    >
+                        <Share2 className="w-5 h-5" style={{ color: accentFgColor, stroke: accentFgColor }} />
+                    </button>
+
+                    {/* 3. Copy Button */}
+                    <button
+                        type="button"
+                        onClick={handleCopy}
+                        className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border-0 quran-raised-card"
+                        style={{
+                            backgroundColor: copied ? '#10b981' : `${accentColor}18`,
+                            color: copied ? '#ffffff' : accentFgColor
+                        }}
+                        title="Copy commentary"
+                    >
+                        {copied ? (
+                            <Check className="w-5 h-5 text-white stroke-[2.5]" />
+                        ) : (
+                            <Copy className="w-5 h-5" style={{ color: accentFgColor, stroke: accentFgColor }} />
+                        )}
+                    </button>
+
+                    {/* 4. Zoom Button */}
+                    <button
+                        type="button"
+                        onClick={handleToggleZoom}
+                        className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border-0 quran-raised-card"
+                        style={{
+                            backgroundColor: `${accentColor}18`,
+                            color: accentFgColor
+                        }}
+                        title="Enlarge font size"
+                    >
+                        <ZoomIn className="w-5 h-5" style={{ color: accentFgColor, stroke: accentFgColor }} />
+                    </button>
+
+                    {/* 5. Chevron Down / Hide Modal Button (LEFTMOST in RTL) */}
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border-0 quran-raised-card"
+                        style={{
+                            backgroundColor: `${accentColor}18`,
+                            color: accentFgColor
+                        }}
+                        title="Hide commentary"
+                    >
+                        <ChevronDown className="w-5 h-5" style={{ color: accentFgColor, stroke: accentFgColor }} />
                     </button>
                 </div>
             </div>

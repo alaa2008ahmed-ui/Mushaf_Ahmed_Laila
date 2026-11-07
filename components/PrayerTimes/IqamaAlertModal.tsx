@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Volume2, Check, X } from 'lucide-react';
-import { playNotificationSound } from '../../utils/prayerTimesUtils';
+import { playNotificationSound, getActiveNotificationSoundPath } from '../../utils/prayerTimesUtils';
 import { useLanguage } from '../../context/LanguageContext';
 import { tPrayer, getPrayerDisplayName } from '../../utils/prayerTimesTranslations';
 
@@ -20,12 +20,18 @@ export const IqamaAlertModal: React.FC<IqamaAlertModalProps> = ({ alert, onDismi
     if (!alert) return null;
 
     useEffect(() => {
-        // Automatically play the chime sound when Iqama alert modal appears
-        playNotificationSound('/assets/audio/chime.mp3', true);
+        // Automatically play the chosen notification sound when Iqama alert modal appears
+        const sound = getActiveNotificationSoundPath();
+        if (sound && sound !== 'none') {
+            playNotificationSound(sound, true);
+        }
     }, [alert.prayerKey, alert.timeStr]);
 
     const handleReplay = () => {
-        playNotificationSound('/assets/audio/chime.mp3', true);
+        const sound = getActiveNotificationSoundPath();
+        if (sound && sound !== 'none') {
+            playNotificationSound(sound, true);
+        }
     };
 
     const localizedPrayerName = getPrayerDisplayName(alert.prayerKey, language);

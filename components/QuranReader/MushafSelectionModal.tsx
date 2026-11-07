@@ -15,8 +15,8 @@ const MushafSelectionModal: FC<{
                     <button onClick={() => onSelect('uthmani')} 
                         className="w-full p-5 rounded-2xl text-center font-bold transition flex flex-col justify-center items-center gap-2.5 border-0 quran-raised-btn-selected active:scale-95" 
                         style={{ 
-                            backgroundColor: 'var(--qr-card-bg)', 
-                            color: currentType === 'uthmani' ? 'var(--qr-accent)' : 'var(--qr-card-text)', 
+                            backgroundColor: currentType === 'uthmani' ? 'var(--qr-accent)' : 'var(--qr-card-bg)', 
+                            color: currentType === 'uthmani' ? 'var(--qr-accent-text, #ffffff)' : 'var(--qr-card-text)', 
                             border: 'none'
                         }}>
                         <i className="fa-solid fa-book-open text-3xl quran-3d-icon"></i>

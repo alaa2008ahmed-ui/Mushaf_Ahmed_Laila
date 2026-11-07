@@ -7,6 +7,7 @@ import { ADIA_EN_MAP } from '../data/adiaTranslationsEn';
 import { PhoneNotificationSettings } from '../hooks/useNotificationSettings';
 import { syncDailyWirdNotifications, ensureWirdNotificationChannel } from './dailyWirdNotificationService';
 import { updateNativeAlertsGroupSummary } from './silentMode';
+import { getActiveNotificationTone, getActiveNotificationSoundFileName, getActiveNotificationSoundPath } from './prayerTimesUtils';
 
 const ALL_ATHKAR = [...BASE_ADHKAR_MORNING, ...BASE_ADHKAR_EVENING];
 
@@ -128,6 +129,12 @@ export const setupNotifications = async (settings?: PhoneNotificationSettings, l
     }
 
     const notificationsToSchedule: any[] = [];
+    const activeTone = getActiveNotificationTone();
+    const isSoundMuted = activeTone.id === 'none' || activeTone.data === 'none';
+    const notifSoundPath = getActiveNotificationSoundPath();
+    const cleanToneId = (activeTone.id || 'chime').replace(/[^a-zA-Z0-9_]/g, '');
+    const athkarChannelId = isSoundMuted ? 'athkar_channel_v4_silent' : `athkar_channel_v4_${cleanToneId}`;
+    const soundFileNameForCapacitor = isSoundMuted ? undefined : (activeTone.fileName || (cleanToneId.startsWith('notif_') ? `${cleanToneId}.wav` : `${cleanToneId}.mp3`));
 
     // Helper to parse time string HH:mm
     const parseTime = (timeStr: string) => {
@@ -137,15 +144,42 @@ export const setupNotifications = async (settings?: PhoneNotificationSettings, l
 
     // Ensure Android notification channels exist with high importance and respective sounds
     try {
-      await LocalNotifications.createChannel({
-        id: 'athkar_v3_chime_channel',
-        name: isEn ? 'General Reminders & Adhkar' : 'أذكار وتنبيهات عامة',
-        description: isEn ? 'Morning, evening, and daily remembrances with gentle chime' : 'قناة تنبيهات أذكار الصباح والمساء والسنن والأدعية بنغمة قصيرة وخفيفة',
-        importance: 5,
-        sound: 'chime.mp3',
-        vibration: true,
-        visibility: 1
-      });
+      // Register all short notification tone channels so Android plays the exact selected audio
+      const shortTonesList = [
+        { id: 'chime', name: isEn ? 'Reminders (Chime)' : 'أذكار وتنبيهات (رنين هادئ)', sound: 'chime.mp3' },
+        { id: 'notif_bell', name: isEn ? 'Reminders (Bell)' : 'أذكار وتنبيهات (جرس لطيف)', sound: 'notif_bell.wav' },
+        { id: 'notif_crystal', name: isEn ? 'Reminders (Crystal)' : 'أذكار وتنبيهات (بلورات نقية)', sound: 'notif_crystal.wav' },
+        { id: 'notif_droplet', name: isEn ? 'Reminders (Droplet)' : 'أذكار وتنبيهات (قطرة ماء)', sound: 'notif_droplet.wav' },
+        { id: 'notif_harpeggio', name: isEn ? 'Reminders (Harpeggio)' : 'أذكار وتنبيهات (وتر هادئ)', sound: 'notif_harpeggio.wav' },
+        { id: 'notif_subtle', name: isEn ? 'Reminders (Subtle)' : 'أذكار وتنبيهات (تنبيه خفيف)', sound: 'notif_subtle.wav' },
+        { id: 'notif_marimba', name: isEn ? 'Reminders (Marimba)' : 'أذكار وتنبيهات (نغمة خشبية)', sound: 'notif_marimba.wav' },
+      ];
+
+      for (const t of shortTonesList) {
+        try {
+          await LocalNotifications.createChannel({
+            id: `athkar_channel_v4_${t.id}`,
+            name: t.name,
+            description: isEn ? 'Reminders and adhkar notification' : 'قناة تنبيهات أذكار الصباح والمساء والسنن والأدعية',
+            importance: 5,
+            sound: t.sound,
+            vibration: true,
+            visibility: 1
+          });
+        } catch (e) {}
+      }
+
+      // Silent channel for muted reminders
+      try {
+        await LocalNotifications.createChannel({
+          id: 'athkar_channel_v4_silent',
+          name: isEn ? 'Reminders (Silent)' : 'أذكار وتنبيهات (بدون صوت)',
+          description: isEn ? 'Reminders without sound' : 'قناة تنبيهات الأذكار بدون صوت',
+          importance: 5,
+          vibration: false,
+          visibility: 1
+        });
+      } catch (e) {}
 
       await LocalNotifications.createChannel({
         id: 'islamic_eid_channel',
@@ -244,9 +278,9 @@ export const setupNotifications = async (settings?: PhoneNotificationSettings, l
                 body: notifBody,
                 id: conf.id,
                 schedule: { on: { hour, minute }, allowWhileIdle: true, repeats: true },
-                channelId: 'athkar_v3_chime_channel',
-                sound: 'chime.mp3',
-                extra: { page: conf.page, playSound: true, soundFile: 'chime.mp3' },
+                channelId: athkarChannelId,
+                sound: soundFileNameForCapacitor,
+                extra: { page: conf.page, playSound: !isSoundMuted, soundFile: soundFileNameForCapacitor, soundPath: notifSoundPath },
                 smallIcon: 'ic_stat_name',
             });
         }
@@ -262,9 +296,9 @@ export const setupNotifications = async (settings?: PhoneNotificationSettings, l
           : 'قال رسول الله ﷺ: "من قرأ سورة الكهف في يوم الجمعة أضاء له من النور ما بين الجمعتين".',
         id: 6,
         schedule: { on: { weekday: 6, hour, minute }, allowWhileIdle: true, repeats: true }, // Friday is 6
-        channelId: 'athkar_v3_chime_channel',
-        sound: 'chime.mp3',
-        extra: { page: 'quran', params: { surah: 18 }, playSound: true, soundFile: 'chime.mp3' },
+        channelId: athkarChannelId,
+        sound: soundFileNameForCapacitor,
+        extra: { page: 'quran', params: { surah: 18 }, playSound: !isSoundMuted, soundFile: soundFileNameForCapacitor, soundPath: notifSoundPath },
         smallIcon: 'ic_stat_name',
       });
     }
@@ -297,9 +331,9 @@ export const setupNotifications = async (settings?: PhoneNotificationSettings, l
                             body: isEn ? getRandomAthkarEn() : getRandomAthkar().text,
                             id: 100 + day * 50 + i, // Offset IDs to avoid collision
                             schedule: { at: scheduleDate, allowWhileIdle: true },
-                            channelId: 'athkar_v3_chime_channel',
-                            sound: 'chime.mp3',
-                            extra: { page: 'sabah-masaa', playSound: true, soundFile: 'chime.mp3' },
+                            channelId: athkarChannelId,
+                            sound: soundFileNameForCapacitor,
+                            extra: { page: 'sabah-masaa', playSound: !isSoundMuted, soundFile: soundFileNameForCapacitor, soundPath: notifSoundPath },
                             smallIcon: 'ic_stat_name',
                         });
                     }
@@ -443,9 +477,9 @@ export const setupNotifications = async (settings?: PhoneNotificationSettings, l
           : 'غداً أول أيام شهر رمضان المبارك. قم بتجهيز الورد الشهري الخاص بك الآن.',
         id: 50,
         schedule: { at: dayBeforeRamadan.toDate(), allowWhileIdle: true },
-        channelId: 'athkar_v3_chime_channel',
-        sound: 'chime.mp3',
-        extra: { page: 'daily-wird', playSound: true, soundFile: 'chime.mp3' },
+        channelId: athkarChannelId,
+        sound: soundFileNameForCapacitor,
+        extra: { page: 'daily-wird', playSound: !isSoundMuted, soundFile: soundFileNameForCapacitor, soundPath: notifSoundPath },
         smallIcon: 'ic_stat_name',
       });
     } catch (e) {}

@@ -189,8 +189,8 @@ export const SunMoonQibla = ({ lat, lng, qiblaDirection, heading, theme }: any) 
     const sunHeading = (sunPos.azimuth * 180 / Math.PI + 180) % 360;
     const moonHeading = (moonPos.azimuth * 180 / Math.PI + 180) % 360;
 
-    const sunDiff = Math.abs(sunHeading - qiblaDirection);
-    const moonDiff = Math.abs(moonHeading - qiblaDirection);
+    const sunDiff = Math.abs((sunHeading - qiblaDirection + 540) % 360 - 180);
+    const moonDiff = Math.abs((moonHeading - qiblaDirection + 540) % 360 - 180);
 
     const CompassDial = ({ targetHeading, targetIcon, targetColor }: any) => (
         <div className="relative w-64 h-64 rounded-full border-2 border-slate-100 dark:border-white/10 flex items-center justify-center mx-auto my-6 shadow-[0_8px_30px_rgb(0,0,0,0.06)] bg-white dark:bg-[#1E293B]">
@@ -322,7 +322,7 @@ export const ShadowQibla = ({ lat, lng, qiblaDirection, heading, theme }: any) =
     const sunPos = SunCalc.getPosition(time, lat, lng);
     const sunHeading = (sunPos.azimuth * 180 / Math.PI + 180) % 360;
     const shadowHeading = (sunHeading + 180) % 360;
-    const shadowDiff = Math.abs(shadowHeading - qiblaDirection);
+    const shadowDiff = Math.abs((shadowHeading - qiblaDirection + 540) % 360 - 180);
 
     return (
         <div className="w-full shrink-0 flex flex-col items-center justify-start bg-white dark:bg-[#1E293B] p-6 sm:p-8 pb-8 sm:pb-10 rounded-2xl text-center relative overflow-hidden shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-slate-100 dark:border-white/5 mb-3 sm:mb-4" dir={isEn ? 'ltr' : 'rtl'}>

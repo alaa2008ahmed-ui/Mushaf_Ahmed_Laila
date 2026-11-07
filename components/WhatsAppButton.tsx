@@ -88,7 +88,7 @@ function WhatsAppButton() {
                                 </svg>
                             </div>
                             <h3 className="font-bold text-emerald-600 mb-1">للتواصل والاقتراحات</h3>
-                            <p className="text-gray-500 text-sm mb-4">علاء أحمد</p>
+                            <p className="text-gray-500 text-sm mb-4">علاء أحمد المرشدى</p>
                             <button
                                 className="w-full text-white font-bold py-2.5 px-4 rounded-xl text-sm shadow-md hover:shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2"
                                 style={{ backgroundColor: primaryColor }}

@@ -97,7 +97,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="الفجر بعد 8:35:12"
-                                android:textColor="#059669"
+                                android:textColor="#FFFFFF"
                                 android:textSize="12.5sp"
                                 android:textStyle="bold" />
                         </LinearLayout>
@@ -107,6 +107,7 @@
                             android:layout_width="18dp"
                             android:layout_height="18dp"
                             android:src="@drawable/ic_widget_refresh"
+                            android:tint="#FFFFFF"
                             android:layout_alignParentEnd="true"
                             android:layout_centerVertical="true"
                             android:layout_marginEnd="8dp"
@@ -129,7 +130,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="الإثنين، ٢٢ جمادى الأولى ١٤٤٨"
-                            android:textColor="#059669"
+                            android:textColor="#FFFFFF"
                             android:textSize="10.5sp"
                             android:textStyle="bold"
                             android:singleLine="true" />
@@ -148,28 +149,28 @@
                         android:layout_width="0dp"
                         android:layout_weight="1"
                         android:layout_height="match_parent"
-                        android:background="#EA580C" />
+                        android:background="#C86400" />
 
                     <FrameLayout
                         android:id="@+id/preview_strip_2"
                         android:layout_width="0dp"
                         android:layout_weight="1"
                         android:layout_height="match_parent"
-                        android:background="#059669" />
+                        android:background="#F8DE8A" />
 
                     <FrameLayout
                         android:id="@+id/preview_strip_3"
                         android:layout_width="0dp"
                         android:layout_weight="1"
                         android:layout_height="match_parent"
-                        android:background="#0D9488" />
+                        android:background="#D97706" />
 
                     <FrameLayout
                         android:id="@+id/preview_strip_4"
                         android:layout_width="0dp"
                         android:layout_weight="1"
                         android:layout_height="match_parent"
-                        android:background="#D97706" />
+                        android:background="#B45309" />
                 </LinearLayout>
 
                 <!-- Middle Section: 6 Prayer Columns with Separators -->
@@ -195,7 +196,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="الفجر"
-                            android:textColor="#059669"
+                            android:textColor="#C86400"
                             android:textSize="11sp"
                             android:textStyle="bold" />
 
@@ -204,7 +205,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="04:29"
-                            android:textColor="#059669"
+                            android:textColor="#C86400"
                             android:textSize="12sp"
                             android:textStyle="bold"
                             android:layout_marginTop="1dp" />
@@ -405,7 +406,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="أول الليل : 08:47  |  منتصف الليل : 10:43  |  الثلث الأخير : 12:38"
-                        android:textColor="#B45309"
+                        android:textColor="#000000"
                         android:textSize="10sp"
                         android:textStyle="bold" />
                 </LinearLayout>
@@ -440,7 +441,7 @@
                         android:layout_weight="1"
                         android:layout_height="wrap_content"
                         android:text="الإثنين، ٢٢ جمادى الأولى ١٤٤٨ هـ"
-                        android:textColor="#059669"
+                        android:textColor="#000000"
                         android:textSize="11sp"
                         android:textStyle="bold"
                         android:gravity="center" />
@@ -448,6 +449,7 @@
                         android:layout_width="16dp"
                         android:layout_height="16dp"
                         android:src="@drawable/ic_widget_refresh"
+                        android:tint="#C86400"
                         android:contentDescription="Refresh" />
                 </LinearLayout>
 
@@ -472,7 +474,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="الصلاة السابقة"
-                            android:textColor="#64748B"
+                            android:textColor="#334155"
                             android:textSize="9.5sp"
                             android:textStyle="bold" />
                         <TextView
@@ -480,7 +482,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="الظهر"
-                            android:textColor="#1E293B"
+                            android:textColor="#000000"
                             android:textSize="13sp"
                             android:textStyle="bold" />
                         <TextView
@@ -488,7 +490,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="11:23"
-                            android:textColor="#475569"
+                            android:textColor="#000000"
                             android:textSize="11sp" />
                     </LinearLayout>
 
@@ -507,7 +509,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="الصلاة القادمة"
-                            android:textColor="#059669"
+                            android:textColor="#FEF08A"
                             android:textSize="10sp"
                             android:textStyle="bold" />
                         <TextView
@@ -515,7 +517,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="العصر"
-                            android:textColor="#065F46"
+                            android:textColor="#FFFFFF"
                             android:textSize="15sp"
                             android:textStyle="bold" />
                         <TextView
@@ -523,7 +525,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="02:34"
-                            android:textColor="#047857"
+                            android:textColor="#FFFFFF"
                             android:textSize="12sp"
                             android:textStyle="bold" />
                     </LinearLayout>
@@ -539,17 +541,62 @@
                     android:paddingTop="3dp"
                     android:paddingBottom="3dp">
                     <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="متبقي على الأذان: "
+                        android:textColor="#FEF08A"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+                    <TextView
                         android:id="@+id/tv_compact_preview_countdown"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="متبقي على الأذان: 01:15:30"
-                        android:textColor="#92400E"
-                        android:textSize="11sp"
+                        android:text="00:24:15"
+                        android:textColor="#FFFFFF"
+                        android:textSize="12sp"
                         android:textStyle="bold" />
                 </LinearLayout>
             </LinearLayout>
 
+            <!-- 3. Single Prayer (1x1) Live Preview (shown when 1x1 widget is configured) -->
+            <LinearLayout
+                android:id="@+id/preview_single_card"
+                android:layout_width="120dp"
+                android:layout_height="120dp"
+                android:layout_gravity="center"
+                android:orientation="vertical"
+                android:background="@drawable/widget_single_card_bg"
+                android:layoutDirection="rtl"
+                android:clipToOutline="true"
+                android:gravity="center"
+                android:padding="8dp"
+                android:visibility="gone">
 
+                <TextView
+                    android:id="@+id/tv_single_preview_prayer_name"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="صلاة الفجر بعد"
+                    android:textColor="#C86400"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:singleLine="true"
+                    android:includeFontPadding="false"
+                    android:layout_marginBottom="4dp" />
+
+                <TextView
+                    android:id="@+id/tv_single_preview_countdown"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="00:24:15"
+                    android:textColor="#000000"
+                    android:textSize="17sp"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:singleLine="true"
+                    android:includeFontPadding="false" />
+            </LinearLayout>
 
         </FrameLayout>
     </LinearLayout>
@@ -646,7 +693,7 @@
                     android:textStyle="bold"
                     android:layout_marginBottom="12dp" />
 
-                <!-- Row 1: Gold (Default) & Bronze -->
+                <!-- Row 1: Amber (Default) & Gold -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -654,7 +701,7 @@
                     android:layout_marginBottom="8dp">
 
                     <LinearLayout
-                        android:id="@+id/card_theme_royal_gold_3d"
+                        android:id="@+id/card_theme_golden_trio"
                         android:layout_width="0dp"
                         android:layout_weight="1"
                         android:layout_height="46dp"
@@ -667,10 +714,43 @@
                         android:clickable="true"
                         android:focusable="true">
                         <ImageView
-                            android:id="@+id/iv_radio_royal_gold_3d"
+                            android:id="@+id/iv_radio_golden_trio"
                             android:layout_width="20dp"
                             android:layout_height="20dp"
                             android:src="@drawable/ic_radio_checked"
+                            android:contentDescription="Radio" />
+                        <TextView
+                            android:id="@+id/tv_theme_golden_trio_title"
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="wrap_content"
+                            android:text="عنبري"
+                            android:textColor="#0F172A"
+                            android:textSize="13.5sp"
+                            android:textStyle="bold"
+                            android:gravity="center"
+                            android:layout_marginStart="4dp"
+                            android:layout_marginEnd="4dp" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/card_theme_royal_gold_3d"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="46dp"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:background="@drawable/theme_card_bg"
+                        android:paddingStart="10dp"
+                        android:paddingEnd="10dp"
+                        android:layout_marginStart="4dp"
+                        android:clickable="true"
+                        android:focusable="true">
+                        <ImageView
+                            android:id="@+id/iv_radio_royal_gold_3d"
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:src="@drawable/ic_radio_unchecked"
                             android:contentDescription="Radio" />
                         <TextView
                             android:id="@+id/tv_theme_royal_gold_3d_title"
@@ -685,6 +765,14 @@
                             android:layout_marginStart="4dp"
                             android:layout_marginEnd="4dp" />
                     </LinearLayout>
+                </LinearLayout>
+
+                <!-- Row 2: Bronze & Marble -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="8dp">
 
                     <LinearLayout
                         android:id="@+id/card_theme_antique_bronze_3d"
@@ -696,7 +784,7 @@
                         android:background="@drawable/theme_card_bg"
                         android:paddingStart="10dp"
                         android:paddingEnd="10dp"
-                        android:layout_marginStart="4dp"
+                        android:layout_marginEnd="4dp"
                         android:clickable="true"
                         android:focusable="true">
                         <ImageView
@@ -718,14 +806,6 @@
                             android:layout_marginStart="4dp"
                             android:layout_marginEnd="4dp" />
                     </LinearLayout>
-                </LinearLayout>
-
-                <!-- Row 2: Marble & Pearl -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_marginBottom="8dp">
 
                     <LinearLayout
                         android:id="@+id/card_theme_royal_marble_3d"
@@ -737,7 +817,7 @@
                         android:background="@drawable/theme_card_bg"
                         android:paddingStart="10dp"
                         android:paddingEnd="10dp"
-                        android:layout_marginEnd="4dp"
+                        android:layout_marginStart="4dp"
                         android:clickable="true"
                         android:focusable="true">
                         <ImageView
@@ -759,6 +839,14 @@
                             android:layout_marginStart="4dp"
                             android:layout_marginEnd="4dp" />
                     </LinearLayout>
+                </LinearLayout>
+
+                <!-- Row 3: Pearl & Lilac -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="8dp">
 
                     <LinearLayout
                         android:id="@+id/card_theme_pearl_white_3d"
@@ -770,7 +858,7 @@
                         android:background="@drawable/theme_card_bg"
                         android:paddingStart="10dp"
                         android:paddingEnd="10dp"
-                        android:layout_marginStart="4dp"
+                        android:layout_marginEnd="4dp"
                         android:clickable="true"
                         android:focusable="true">
                         <ImageView
@@ -785,47 +873,6 @@
                             android:layout_weight="1"
                             android:layout_height="wrap_content"
                             android:text="لؤلؤي"
-                            android:textColor="#0F172A"
-                            android:textSize="13.5sp"
-                            android:textStyle="bold"
-                            android:gravity="center"
-                            android:layout_marginStart="4dp"
-                            android:layout_marginEnd="4dp" />
-                    </LinearLayout>
-                </LinearLayout>
-
-                <!-- Row 3: Amber (Golden Trio) & Lilac -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_marginBottom="8dp">
-
-                    <LinearLayout
-                        android:id="@+id/card_theme_golden_trio"
-                        android:layout_width="0dp"
-                        android:layout_weight="1"
-                        android:layout_height="46dp"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical"
-                        android:background="@drawable/theme_card_bg"
-                        android:paddingStart="10dp"
-                        android:paddingEnd="10dp"
-                        android:layout_marginEnd="4dp"
-                        android:clickable="true"
-                        android:focusable="true">
-                        <ImageView
-                            android:id="@+id/iv_radio_golden_trio"
-                            android:layout_width="20dp"
-                            android:layout_height="20dp"
-                            android:src="@drawable/ic_radio_unchecked"
-                            android:contentDescription="Radio" />
-                        <TextView
-                            android:id="@+id/tv_theme_golden_trio_title"
-                            android:layout_width="0dp"
-                            android:layout_weight="1"
-                            android:layout_height="wrap_content"
-                            android:text="عنبري"
                             android:textColor="#0F172A"
                             android:textSize="13.5sp"
                             android:textStyle="bold"

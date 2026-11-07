@@ -74,7 +74,7 @@ const SurahHeader: React.FC<SurahHeaderProps> = ({
     
     // Cartouche (the inner box for the surah name)
     const cartoucheBg = isDarkGroup ? (currentTheme?.bg || '#000000') : '#ffffff';
-    const cartoucheText = (isDefaultTheme && isDesign1) ? '#000000' : (isDarkGroup ? (currentTheme?.accent || '#ffffff') : (currentTheme?.accent || '#14532d'));
+    const cartoucheText = (isDefaultTheme && isDesign1) ? '#000000' : (currentTheme?.id === 'deep_black' ? '#ffffff' : (isDarkGroup ? (currentTheme?.accent || '#ffffff') : (currentTheme?.accent || '#14532d')));
 
     // Ensure "Surah" is not repeated safely
     const cleanSurahName = (surahName || '').replace(/سورة|سُورَةُ|سُورَة/g, '').trim() || (surahNumber > 0 ? (SURAH_NAMES_AR[surahNumber - 1] || '') : '');

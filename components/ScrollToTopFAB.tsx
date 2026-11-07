@@ -359,9 +359,9 @@ export const ScrollToTopFAB: React.FC<ScrollToTopFABProps> = ({
 
   // 0. لا يظهر نهائياً إذا كانت شاشة البداية/الفيديو أو إحدى النوافذ المنبثقة مفتوحة
   const isCurrentlyModalOpen = isModalActive || (typeof document !== 'undefined' && (
-    Boolean(document.getElementById('app-video-splash')) ||
+    Boolean(document.getElementById('initial-boot-splash')) ||
+    Boolean(document.getElementById('app-image-splash')) ||
     Boolean(document.getElementById('app-welcome-splash')) ||
-    Boolean(document.querySelector('video[src*="splash"]')) ||
     document.body.classList.contains('qr-modal-active') ||
     document.body.classList.contains('zoom-modal-active') ||
     document.body.classList.contains('modal-open') ||

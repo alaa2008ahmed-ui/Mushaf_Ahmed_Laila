@@ -12,6 +12,7 @@ import ThemePageLock from '../components/ThemePageLock';
 import { registerBackInterceptor } from '../hooks/useBackButton';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { Capacitor } from '@capacitor/core';
+import { getActiveNotificationSoundFileName } from '../utils/prayerTimesUtils';
 import Confetti from 'react-dom-confetti';
 import HabitArchive from '../components/HabitArchive';
 import WeeklyAchievementModal from '../components/WeeklyAchievementModal';
@@ -74,10 +75,35 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack, onNavigate }) => {
   const { language } = useLanguage();
   const isEn = language === 'en';
   const hexColor = tokens.primaryColor;
-  const todayStr = moment().format('YYYY-MM-DD');
-
-  // Selected date allowing the user to view and record any past day
+  // Dynamic today string for habits & auto-update at 12:00 AM midnight
+  const [todayStr, setTodayStr] = useState<string>(() => moment().format('YYYY-MM-DD'));
   const [selectedDate, setSelectedDate] = useState<string>(() => moment().format('YYYY-MM-DD'));
+
+  useEffect(() => {
+    const updateMidnight = () => {
+      const freshStr = moment().format('YYYY-MM-DD');
+      setTodayStr((prevToday) => {
+        if (prevToday !== freshStr) {
+          setSelectedDate((prevSel) => (prevSel === prevToday ? freshStr : prevSel));
+          return freshStr;
+        }
+        return prevToday;
+      });
+    };
+
+    const now = new Date();
+    const nextMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0, 0);
+    const msUntilMidnight = nextMidnight.getTime() - now.getTime();
+
+    const midnightTimeout = setTimeout(updateMidnight, msUntilMidnight);
+    const intervalCheck = setInterval(updateMidnight, 30000);
+
+    return () => {
+      clearTimeout(midnightTimeout);
+      clearInterval(intervalCheck);
+    };
+  }, []);
+
   const isSelectedToday = selectedDate === todayStr;
   const dateInputRef = useRef<HTMLInputElement>(null);
 
@@ -285,16 +311,21 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack, onNavigate }) => {
           try {
             await LocalNotifications.deleteChannel({ id: 'athkar_reminders_channel' });
             await LocalNotifications.deleteChannel({ id: 'athkar_reminders_alarm_channel' });
+            const notifSoundFile = getActiveNotificationSoundFileName();
+            const soundForCap = notifSoundFile && notifSoundFile !== 'none' ? notifSoundFile : undefined;
             await LocalNotifications.createChannel({
               id: 'athkar_reminders_chime_channel',
               name: 'أذكار وتنبيهات عامة',
               description: 'قناة تنبيهات أذكار الصباح والمساء والسنن والأدعية بنغمة قصيرة وخفيفة',
               importance: 5,
-              sound: 'chime.mp3',
+              sound: soundForCap,
               vibration: true,
               visibility: 1
             });
           } catch (e) {}
+
+          const habitSoundFile = getActiveNotificationSoundFileName();
+          const habitSoundForCap = habitSoundFile && habitSoundFile !== 'none' ? habitSoundFile : undefined;
 
           await LocalNotifications.schedule({
             notifications: [
@@ -304,12 +335,12 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack, onNavigate }) => {
                 body: 'صلاة الضحى غنيمة.. هل صليتها اليوم؟',
                 schedule: { allowWhileIdle: true, on: { hour: 9, minute: 30 } },
                 channelId: 'athkar_reminders_chime_channel',
-                sound: 'chime.mp3',
+                sound: habitSoundForCap,
                 smallIcon: 'ic_stat_name',
                 iconColor: '#2E7D5E',
                 group: 'com.mushaf.ahmedandlayla.GENERAL_ALERTS_CARD',
                 groupSummary: false,
-                extra: { page: 'habit-tracker', playSound: true, soundFile: 'chime.mp3' }
+                extra: { page: 'habit-tracker', playSound: habitSoundForCap !== undefined, soundFile: habitSoundFile }
               },
               {
                 id: 9502,
@@ -317,12 +348,12 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack, onNavigate }) => {
                 body: 'لا تنسَ الاتصال بوالديك والدعاء لأحمد وليلى',
                 schedule: { allowWhileIdle: true, on: { weekday: 6, hour: 10, minute: 0 } },
                 channelId: 'athkar_reminders_chime_channel',
-                sound: 'chime.mp3',
+                sound: habitSoundForCap,
                 smallIcon: 'ic_stat_name',
                 iconColor: '#2E7D5E',
                 group: 'com.mushaf.ahmedandlayla.GENERAL_ALERTS_CARD',
                 groupSummary: false,
-                extra: { page: 'habit-tracker', playSound: true, soundFile: 'chime.mp3' }
+                extra: { page: 'habit-tracker', playSound: habitSoundForCap !== undefined, soundFile: habitSoundFile }
               }
             ]
           });

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { BookOpen, Check, X, Volume2, VolumeX, ArrowLeft, ArrowRight, Sparkles, AlertCircle, Languages } from 'lucide-react';
-import { playNotificationSound, stopNotificationSound } from '../../utils/prayerTimesUtils';
+import { playNotificationSound, stopNotificationSound, getActiveNotificationSoundPath } from '../../utils/prayerTimesUtils';
 import { useLanguage } from '../../context/LanguageContext';
 import { WirdAlertData } from '../../utils/dailyWirdNotificationService';
 
@@ -25,9 +25,14 @@ export const WirdAlertModal: React.FC<WirdAlertModalProps> = ({
   useEffect(() => {
     // Only play sound if on web/browser (never in native APK)
     if (alert && !Capacitor.isNativePlatform()) {
-      // Play gentle chime sound upon alert appearance
-      playNotificationSound('/assets/audio/chime.mp3', true);
-      setIsPlayingSound(true);
+      // Play chosen notification sound upon alert appearance
+      const sound = getActiveNotificationSoundPath();
+      if (sound && sound !== 'none') {
+        playNotificationSound(sound, true);
+        setIsPlayingSound(true);
+      } else {
+        setIsPlayingSound(false);
+      }
     }
     return () => {
       stopNotificationSound();
@@ -42,8 +47,11 @@ export const WirdAlertModal: React.FC<WirdAlertModalProps> = ({
       stopNotificationSound();
       setIsPlayingSound(false);
     } else {
-      playNotificationSound('/assets/audio/chime.mp3', true);
-      setIsPlayingSound(true);
+      const sound = getActiveNotificationSoundPath();
+      if (sound && sound !== 'none') {
+        playNotificationSound(sound, true);
+        setIsPlayingSound(true);
+      }
     }
   };
 

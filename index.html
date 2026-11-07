@@ -10,10 +10,43 @@
     <meta property="og:description" content="تطبيق إسلامي شامل يعمل بدون انترنت، يحتوي على القرآن الكريم، أذكار، تسبيح، مواقيت الصلاة، وقائمة تطبيقات متنوعة. مصمم ليكون رفيقك اليومي." />
     <link rel="icon" type="image/png" href="/app_icon.png" />
     <link rel="apple-touch-icon" href="/app_icon.png" />
+    <script>
+        window.__SPLASH_START_TS__ = Date.now();
+        (function() {
+            var splashSrc = '/splash.jpg';
+            try {
+                var direct = localStorage.getItem('current_splash_image');
+                if (direct) {
+                    splashSrc = direct;
+                } else {
+                    var isNight = localStorage.getItem('night_mode_active_modern') === 'true' || localStorage.getItem('night_mode_active') === 'true';
+                    var variant = localStorage.getItem('modern_home_theme_variant');
+                    if (isNight) {
+                        splashSrc = '/assets/splash/splash_night.jpg';
+                    } else if (variant === 'sky') {
+                        splashSrc = '/assets/splash/splash_sky.jpg';
+                    } else if (variant === 'emerald') {
+                        splashSrc = '/assets/splash/splash_emerald.jpg';
+                    } else if (variant === 'burgundy') {
+                        splashSrc = '/assets/splash/splash_burgundy.jpg';
+                    }
+                }
+            } catch (e) {}
+            window.__CURRENT_SPLASH_SRC__ = splashSrc;
+            var link = document.createElement('link');
+            link.rel = 'preload';
+            link.as = 'image';
+            link.href = splashSrc;
+            link.setAttribute('fetchpriority', 'high');
+            document.head.appendChild(link);
+        })();
+    </script>
+    <link rel="preload" as="image" href="/app_icon.png" fetchpriority="high" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400..900;1,400..900&family=Cinzel+Decorative:wght@700&family=Cinzel:wght@400..900&family=Cormorant+Garamond:ital,wght@0,400..700;1,400..700&family=EB+Garamond:ital,wght@0,400..800;1,400..800&family=Inter:wght@300..800&family=Lora:ital,wght@0,400..700;1,400..700&family=Merriweather:ital,wght@0,300..900;1,300..900&family=Montserrat:ital,wght@0,300..900;1,300..900&family=Outfit:wght@300..800&family=Philosopher:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Poppins:ital,wght@0,300..800;1,300..800&family=Spectral:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Amiri+Quran&family=Amiri:ital,wght@0,400;0,700;1,400;1,700&family=Aref+Ruqaa:wght@400;700&family=Cairo:wght@300..900&family=El+Messiri:wght@400..700&family=Harmattan:wght@400;700&family=Katibeh&family=Kufam:ital,wght@0,400..900;1,400..900&family=Lateef:wght@400;700&family=Mirza:wght@400;700&family=Noto+Naskh+Arabic:wght@400..700&family=Reem+Kufi:wght@400..700&family=Scheherazade+New:wght@400;700&display=swap" rel="stylesheet">
 
     <script>
         if (typeof window !== 'undefined') {
@@ -66,7 +99,52 @@
     </script>
     
 <style>
-      body { background: black; }
+      html, body { background-color: #000000; margin: 0; padding: 0; }
+      .app-splash-overlay {
+          position: fixed;
+          inset: 0;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          width: 100vw;
+          height: 100vh;
+          height: 100dvh;
+          z-index: 99999;
+          overflow: hidden;
+          background: #000000;
+          user-select: none;
+          -webkit-user-select: none;
+          pointer-events: auto;
+          transform: translateZ(0);
+          -webkit-backface-visibility: hidden;
+          backface-visibility: hidden;
+          margin: 0;
+          padding: 0;
+      }
+      .app-splash-fullscreen-img {
+          position: absolute;
+          inset: 0;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          width: 100vw;
+          height: 100vh;
+          height: 100dvh;
+          max-width: none;
+          max-height: none;
+          object-fit: cover;
+          object-position: center center;
+          display: block;
+          margin: 0;
+          padding: 0;
+          border: none;
+          outline: none;
+          user-select: none;
+          -webkit-user-drag: none;
+          pointer-events: none;
+      }
       :root {
           --font-amiri: 'Amiri', serif;
           --font-amiri-quran: 'Amiri Quran', serif;
@@ -118,16 +196,36 @@
       .font-kufi { font-family: 'Reem Kufi', sans-serif; }
       .font-scheherazade { font-family: 'Scheherazade New', serif; }
       
-      /* التصميم الذكي الحديث: خط كايرو ثابت وغير قابل للتغيير نهائياً */
+      /* التصميم الذكي الحديث: خط كايرو ثابت للمجالات الإدارية مع استثناء نص المصحف ومعاينات الخطوط والأيقونات */
       .modern-home-layout,
-      .modern-home-layout *,
-      .modern-home-layout p,
-      .modern-home-layout span,
+      .modern-home-layout *:not(.font-preview):not(.font-preview *):not(.quran-font):not(.font-quran):not(.quran-reader-container):not(.quran-reader-container *):not(.verse-bracket):not(.verse-num-inner):not(.page-content):not(.page-content *):not(i):not([class*="fa-"]):not(.fa-solid):not(.fa-regular):not(.fa-brands):not(.fa):not(.fas):not(.far):not(.fab),
+      .modern-home-layout p:not(.font-preview):not(.page-content *),
+      .modern-home-layout span:not(.font-preview):not(.verse-bracket):not(.verse-num-inner):not(.page-content *),
       .modern-home-layout h1,
       .modern-home-layout h2,
       .modern-home-layout h3,
-      .modern-home-layout button {
+      .modern-home-layout button:not(.font-preview-btn) {
         font-family: 'Cairo', sans-serif !important;
+      }
+
+      /* FontAwesome Icons: حماية خط أيقونات فونت أوسم دائماً */
+      i.fa-solid,
+      i.fa-regular,
+      i.fa-brands,
+      i.fa,
+      i.fas,
+      i.far,
+      i.fab,
+      .fa-solid,
+      .fa-regular,
+      .fa-brands,
+      .fa,
+      .fas,
+      .far,
+      .fab,
+      i[class*="fa-"],
+      [class*="fa-"] {
+        font-family: "Font Awesome 6 Free", "Font Awesome 6 Pro", "Font Awesome 5 Free", "FontAwesome", sans-serif !important;
       }
       
       .app-top-bar {
@@ -261,11 +359,10 @@
           background-color: var(--bottom-bar-bg, #1e293b);
           border-top: 1px solid var(--bottom-bar-border, #334155);
           box-shadow: none; z-index: 50; padding: 0.5rem 1rem calc(0.5rem + env(safe-area-inset-bottom));
-          transition: background-color 0.15s ease, border-top 0.15s ease;
       }
       .app-bottom-bar__inner { max-width: 900px; margin: 0 auto; display: flex; justify-content: center; align-items: center; gap: 1rem; }
-      .bar-button { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; font-weight: 700; font-size: 0.95rem; border-radius: 999px; padding: 0.75rem 1rem; transition: all 0.15s ease; box-shadow: 0 5px 15px -3px rgba(0,0,0,0.15); }
-      .themed-card { background-color: var(--card-bg); border: 1px solid var(--card-border); color: var(--text-color); transition: background-color 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease; box-shadow: var(--card-shadow); }
+      .bar-button { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; font-weight: 700; font-size: 0.95rem; border-radius: 999px; padding: 0.75rem 1rem; transition: transform 0.15s ease, box-shadow 0.15s ease; box-shadow: 0 5px 15px -3px rgba(0,0,0,0.15); }
+      .themed-card { background-color: var(--card-bg); border: 1px solid var(--card-border); color: var(--text-color); box-shadow: var(--card-shadow); }
       .themed-card:hover { background-color: var(--card-bg-hover); }
       .themed-text { color: var(--text-color); }
       .themed-text-muted { color: var(--text-color-muted); }
@@ -426,6 +523,28 @@
 </script>
 </head>
 <body>
+    <div id="initial-boot-splash" class="app-splash-overlay" aria-hidden="true">
+        <script>
+            (function() {
+                var src = window.__CURRENT_SPLASH_SRC__ || '/splash.jpg';
+                document.write('<img class="app-splash-fullscreen-img" src="' + src + '" alt="مصحف أحمد وليلى - Mushaf Ahmed &amp; Laila" decoding="sync" fetchpriority="high" draggable="false" onload="window.__SPLASH_START_TS__ = window.__SPLASH_START_TS__ || Date.now();" />');
+            })();
+        </script>
+        <noscript>
+            <img class="app-splash-fullscreen-img" src="/splash.jpg" alt="مصحف أحمد وليلى - Mushaf Ahmed &amp; Laila" decoding="sync" fetchpriority="high" draggable="false" />
+        </noscript>
+    </div>
+    <script>
+        (function() {
+            try {
+                if (window.__pendingShortcut || localStorage.getItem('pending_shortcut_target')) {
+                    var s = document.getElementById('initial-boot-splash');
+                    if (s) s.remove();
+                    document.body.style.backgroundColor = '#FFFFFF';
+                }
+            } catch (e) {}
+        })();
+    </script>
     <video id="video-background" autoplay muted loop playsinline preload="auto" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: -1; display: none;"></video>
     <div id="root"></div>
     <div id="theme-modal-root"></div>

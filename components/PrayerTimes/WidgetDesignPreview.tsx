@@ -37,11 +37,12 @@ export const WidgetDesignPreview: React.FC<WidgetDesignPreviewProps> = ({ onClos
     const [settingsByStyle, setSettingsByStyle] = useState<Record<WidgetStyleType, SingleWidgetSettings>>(() => ({
         classic: getSingleWidgetSettings('classic'),
         compact: getSingleWidgetSettings('compact'),
+        single: getSingleWidgetSettings('single'),
     }));
 
     useEffect(() => {
         getWidgetStyle().then(style => {
-            const validStyle = (style === 'compact') ? 'compact' : 'classic';
+            const validStyle = (style === 'compact' || style === 'single') ? style : 'classic';
             setSavedStyle(validStyle);
             setSelectedStyle(validStyle);
         });
@@ -49,6 +50,7 @@ export const WidgetDesignPreview: React.FC<WidgetDesignPreviewProps> = ({ onClos
         setSettingsByStyle({
             classic: getSingleWidgetSettings('classic'),
             compact: getSingleWidgetSettings('compact'),
+            single: getSingleWidgetSettings('single'),
         });
     }, []);
 
@@ -79,7 +81,7 @@ export const WidgetDesignPreview: React.FC<WidgetDesignPreviewProps> = ({ onClos
         setSavedStyle(activeStyle);
 
         // Save each style's separate settings to localStorage & Preferences
-        for (const style of ['classic', 'compact'] as WidgetStyleType[]) {
+        for (const style of ['classic', 'compact', 'single'] as WidgetStyleType[]) {
             const st = settingsByStyle[style] || DEFAULT_WIDGET_SETTINGS_BY_STYLE[style];
             await saveSingleWidgetSettings(style, st);
         }
@@ -113,7 +115,7 @@ export const WidgetDesignPreview: React.FC<WidgetDesignPreviewProps> = ({ onClos
                     isha: rawTimes.Isha || rawTimes.isha || '07:10'
                 }
             });
-            const activeThemeChoice = settingsByStyle[activeStyle]?.themeChoice || 'default';
+            const activeThemeChoice = settingsByStyle[activeStyle]?.themeChoice || 'golden_trio';
             await syncWidgetThemeColors(activeThemeChoice === 'app_theme' ? themeKey : activeThemeChoice, theme);
         } catch (e) {}
 
@@ -175,8 +177,8 @@ export const WidgetDesignPreview: React.FC<WidgetDesignPreviewProps> = ({ onClos
     const stylesMeta = [
         {
             id: 'classic' as WidgetStyleType,
-            titleAr: '١. مواقيت الصلاة - كلاسيكي شامل (1x4)',
-            titleEn: '1. Classic Full Prayer Matrix (1x4)',
+            titleAr: '١. مواقيت الصلاة - كلاسيكي شامل (٤×١)',
+            titleEn: '1. Classic Full Prayer Matrix (4x1)',
             badgeAr: 'التصميم الشامل المعتمد',
             badgeEn: 'Original Full Matrix',
             descAr: 'الجدول الشامل لمواقيت الصلوات الست مع التاريخ وشريط الألوان وأوقات قيام الليل بالزمردي والذهبي الملكي.',
@@ -192,6 +194,16 @@ export const WidgetDesignPreview: React.FC<WidgetDesignPreviewProps> = ({ onClos
             descAr: 'يحتوي فقط على التاريخ والصلاة السابقة والصلاة القادمة والوقت المتبقي في بطاقات مجسمة بارزة وساطعة.',
             descEn: 'Strictly displays Date, Previous Prayer, Next Prayer, and remaining countdown in 3D tactile cards.',
             icon: Sparkles
+        },
+        {
+            id: 'single' as WidgetStyleType,
+            titleAr: '٣. مواقيت الصلاة - الصلاة القادمة فقط (٢×١)',
+            titleEn: '3. Next Prayer Only (2x1)',
+            badgeAr: 'حجم مصغر ٢×١ • الصلاة القادمة فقط',
+            badgeEn: 'Ultra-Minimal 2x1 • Next Prayer Only',
+            descAr: 'تطبيق مصغر بحجم ٢×١ خفيف وأنيق، يعرض اسم الصلاة القادمة والوقت المتبقي فقط مع إمكانية تكبيره.',
+            descEn: 'Ultra-minimal 2x1 widget displaying only the next prayer and countdown with resize capability.',
+            icon: Layers
         }
     ];
 
@@ -242,8 +254,8 @@ export const WidgetDesignPreview: React.FC<WidgetDesignPreviewProps> = ({ onClos
         if (choice === 'app_theme') {
             return theme.isDark ? `rgba(24, 24, 27, ${op})` : `rgba(255, 255, 255, ${op})`;
         }
-        // Default: Lustrous Pearl
-        return `rgba(241, 245, 249, ${op})`;
+        // Default: Amber (عنبري)
+        return `rgba(248, 222, 138, ${op})`;
     }, [currentSettings.themeChoice, currentSettings.opacity, theme.isDark]);
 
     // Compute dynamic text color based on currently selected widget's text color
@@ -256,7 +268,7 @@ export const WidgetDesignPreview: React.FC<WidgetDesignPreviewProps> = ({ onClos
 
     // Active color palette according to the widget's selected theme
     const activePalette = useMemo(() => {
-        return getWidgetThemePalette(currentSettings.themeChoice || 'royal_gold_3d');
+        return getWidgetThemePalette(currentSettings.themeChoice || 'golden_trio');
     }, [currentSettings.themeChoice]);
 
     const activeMeta = stylesMeta.find(s => s.id === selectedStyle) || stylesMeta[0];
@@ -317,7 +329,7 @@ export const WidgetDesignPreview: React.FC<WidgetDesignPreviewProps> = ({ onClos
             )}
 
             {/* Style Selector Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                 {stylesMeta.map((s) => {
                     const isSelected = selectedStyle === s.id;
                     const isDefault = savedStyle === s.id;
@@ -457,11 +469,11 @@ export const WidgetDesignPreview: React.FC<WidgetDesignPreviewProps> = ({ onClos
 
                     <div className="grid grid-cols-2 gap-1.5 max-h-56 overflow-y-auto pr-1">
                         {[
-                            { id: 'royal_gold_3d', labelAr: 'عنبري', labelEn: 'Amber', bgHex: '#5E2E00' },
+                            { id: 'golden_trio', labelAr: 'عنبري', labelEn: 'Amber', bgHex: '#F8DE8A' },
+                            { id: 'royal_gold_3d', labelAr: 'ذهبي', labelEn: 'Gold', bgHex: '#5E2E00' },
                             { id: 'antique_bronze_3d', labelAr: 'برونزي', labelEn: 'Bronze', bgHex: '#8C531B' },
                             { id: 'royal_marble_3d', labelAr: 'رخامي', labelEn: 'Marble', bgHex: '#FEF3C7' },
                             { id: 'pearl_white_3d', labelAr: 'لؤلؤي', labelEn: 'Pearl', bgHex: '#F1F5F9' },
-                            { id: 'golden_trio', labelAr: 'عنبري', labelEn: 'Amber', bgHex: '#F8DE8A' },
                             { id: 'violet_green_light', labelAr: 'ليلكي', labelEn: 'Lilac', bgHex: '#F3E8FF' },
                             { id: 'sky_blue_light', labelAr: 'سماوي', labelEn: 'Sky', bgHex: '#E0F2FE' },
                             { id: 'rose_peach_light', labelAr: 'وردي', labelEn: 'Rose', bgHex: '#FFF1F2' },
@@ -525,46 +537,57 @@ export const WidgetDesignPreview: React.FC<WidgetDesignPreviewProps> = ({ onClos
                 </div>
 
                 {/* 4. Content Visibility Toggles */}
-                <div className="space-y-2 pt-1 border-t border-black/10 dark:border-white/10">
-                    <span className="block text-xs font-bold opacity-90">
-                        {isEn ? 'Show / Hide Widget Elements:' : 'خيارات إظهار وإخفاء المحتوى:'}
-                    </span>
+                {selectedStyle !== 'single' ? (
+                    <div className="space-y-2 pt-1 border-t border-black/10 dark:border-white/10">
+                        <span className="block text-xs font-bold opacity-90">
+                            {isEn ? 'Show / Hide Widget Elements:' : 'خيارات إظهار وإخفاء المحتوى:'}
+                        </span>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                        <button
-                            type="button"
-                            onClick={() => updateCurrentSetting('showDate', !currentSettings.showDate)}
-                            className={`p-2 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer ${
-                                currentSettings.showDate ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300' : 'bg-black/5 dark:bg-white/5 opacity-60'
-                            }`}
-                        >
-                            <span>{isEn ? 'Show Date' : 'إظهار التاريخ'}</span>
-                            <Check className={`w-3.5 h-3.5 ${currentSettings.showDate ? 'opacity-100' : 'opacity-0'}`} />
-                        </button>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            <button
+                                type="button"
+                                onClick={() => updateCurrentSetting('showDate', !currentSettings.showDate)}
+                                className={`p-2 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer ${
+                                    currentSettings.showDate ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300' : 'bg-black/5 dark:bg-white/5 opacity-60'
+                                }`}
+                            >
+                                <span>{isEn ? 'Show Date' : 'إظهار التاريخ'}</span>
+                                <Check className={`w-3.5 h-3.5 ${currentSettings.showDate ? 'opacity-100' : 'opacity-0'}`} />
+                            </button>
 
-                        <button
-                            type="button"
-                            onClick={() => updateCurrentSetting('showNight', !currentSettings.showNight)}
-                            className={`p-2 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer ${
-                                currentSettings.showNight ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300' : 'bg-black/5 dark:bg-white/5 opacity-60'
-                            }`}
-                        >
-                            <span>{isEn ? 'Show Night Times' : 'أوقات قيام الليل'}</span>
-                            <Check className={`w-3.5 h-3.5 ${currentSettings.showNight ? 'opacity-100' : 'opacity-0'}`} />
-                        </button>
+                            <button
+                                type="button"
+                                onClick={() => updateCurrentSetting('showNight', !currentSettings.showNight)}
+                                className={`p-2 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer ${
+                                    currentSettings.showNight ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300' : 'bg-black/5 dark:bg-white/5 opacity-60'
+                                }`}
+                            >
+                                <span>{isEn ? 'Show Night Times' : 'أوقات قيام الليل'}</span>
+                                <Check className={`w-3.5 h-3.5 ${currentSettings.showNight ? 'opacity-100' : 'opacity-0'}`} />
+                            </button>
 
-                        <button
-                            type="button"
-                            onClick={() => updateCurrentSetting('showCountdown', !currentSettings.showCountdown)}
-                            className={`p-2 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer ${
-                                currentSettings.showCountdown ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300' : 'bg-black/5 dark:bg-white/5 opacity-60'
-                            }`}
-                        >
-                            <span>{isEn ? 'Show Countdown' : 'العد التنازلي'}</span>
-                            <Check className={`w-3.5 h-3.5 ${currentSettings.showCountdown ? 'opacity-100' : 'opacity-0'}`} />
-                        </button>
+                            <button
+                                type="button"
+                                onClick={() => updateCurrentSetting('showCountdown', !currentSettings.showCountdown)}
+                                className={`p-2 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer ${
+                                    currentSettings.showCountdown ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300' : 'bg-black/5 dark:bg-white/5 opacity-60'
+                                }`}
+                            >
+                                <span>{isEn ? 'Show Countdown' : 'العد التنازلي'}</span>
+                                <Check className={`w-3.5 h-3.5 ${currentSettings.showCountdown ? 'opacity-100' : 'opacity-0'}`} />
+                            </button>
+                        </div>
                     </div>
-                </div>
+                ) : (
+                    <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-800 dark:text-emerald-200 flex items-center gap-2">
+                        <Info className="w-4 h-4 shrink-0 text-emerald-500" />
+                        <span>
+                            {isEn 
+                                ? 'This 2x1 widget is exclusively dedicated to displaying the next prayer and remaining time without any other elements.' 
+                                : 'هذا التطبيق المصغر (٢×١) مخصص حصرياً لعرض اسم الصلاة القادمة والوقت المتبقي فقط بتصميم فائق الخفة والتركيز.'}
+                        </span>
+                    </div>
+                )}
 
                 {/* Save All Customization Button */}
                 <button
@@ -623,33 +646,33 @@ export const WidgetDesignPreview: React.FC<WidgetDesignPreviewProps> = ({ onClos
                     {/* DESIGN 1: CLASSIC COMPREHENSIVE WIDGET (COMPACTED HEIGHT TO MATCH COMPACT WIDGET) */}
                     {selectedStyle === 'classic' && (
                         <div 
-                            className="w-full max-w-sm rounded-[16px] text-white shadow-xl overflow-hidden select-none transition-all duration-300"
+                            className="w-full max-w-sm rounded-[16px] shadow-xl overflow-hidden select-none transition-all duration-300"
                             style={{
                                 background: previewBgStyle,
-                                border: `2px solid ${activePalette.highlightPrayerColor || '#F59E0B'}`,
-                                color: '#FFFFFF'
+                                border: `2px solid ${activePalette.highlightPrayerColor || '#C86400'}`,
+                                color: activePalette.textColor || '#000000'
                             }}
                         >
                             {/* Top Strip */}
                             <div 
                                 className="flex items-center justify-between py-1 px-2.5 border-b"
                                 style={{
-                                    backgroundColor: activePalette.section1Bg || '#5E2E00',
-                                    borderColor: `${activePalette.highlightPrayerColor || '#F59E0B'}40`
+                                    backgroundColor: activePalette.section1Bg || '#C86400',
+                                    borderColor: `${activePalette.highlightPrayerColor || '#C86400'}40`
                                 }}
                             >
                                 {currentSettings.showCountdown && (
                                     <div className="flex items-center gap-1">
-                                        <span className="text-[11px] font-bold" style={{ color: activePalette.nextPrayerColor || '#FBBF24' }}>
-                                            {activeNextName} بعد
+                                        <span className="text-[11px] font-bold" style={{ color: activePalette.nextPrayerColor || '#FFFFFF' }}>
+                                            {activeNextName} {isEn ? 'in' : 'بعد'}
                                         </span>
-                                        <span className="text-xs font-mono font-bold" style={{ color: previewTextColorStyle }}>
+                                        <span className="text-xs font-mono font-bold" style={{ color: activePalette.themeKey === 'golden_trio' ? '#FFFFFF' : previewTextColorStyle }}>
                                             {countdown || '01:25:40'}
                                         </span>
                                     </div>
                                 )}
                                 {currentSettings.showDate && (
-                                    <span className="text-[10.5px] font-bold ms-auto" style={{ color: activePalette.section1Text || '#FDE68A' }}>
+                                    <span className="text-[10.5px] font-bold ms-auto" style={{ color: activePalette.section1Text || '#FFFFFF' }}>
                                         {dates?.hijri || '10 رمضان 1445'}
                                     </span>
                                 )}
@@ -657,41 +680,50 @@ export const WidgetDesignPreview: React.FC<WidgetDesignPreviewProps> = ({ onClos
 
                             {/* 4-Color Accent Strip */}
                             <div className="flex h-1 w-full">
-                                <div className="flex-1 bg-amber-500" />
-                                <div className="flex-1 bg-amber-600" />
-                                <div className="flex-1 bg-yellow-400" />
-                                <div className="flex-1 bg-amber-700" />
+                                <div className="flex-1" style={{ backgroundColor: activePalette.stripColor1 || '#C86400' }} />
+                                <div className="flex-1" style={{ backgroundColor: activePalette.stripColor2 || '#F8DE8A' }} />
+                                <div className="flex-1" style={{ backgroundColor: activePalette.stripColor3 || '#D97706' }} />
+                                <div className="flex-1" style={{ backgroundColor: activePalette.stripColor4 || '#B45309' }} />
                             </div>
 
                             {/* 6 Prayers Row */}
                             <div 
-                                className="grid grid-cols-6 divide-x divide-x-reverse divide-white/10 py-1 text-center"
-                                style={{ backgroundColor: activePalette.cardBg || '#1C0D00' }}
+                                className="grid grid-cols-6 divide-x divide-x-reverse py-1 text-center"
+                                style={{
+                                    backgroundColor: activePalette.cardBg || '#FFFFFF',
+                                    borderColor: activePalette.sepColor || '#E5D07B'
+                                }}
                             >
                                 {[
-                                    { key: 'Fajr', ar: 'الفجر' },
-                                    { key: 'Sunrise', ar: 'الشروق' },
-                                    { key: 'Dhuhr', ar: 'الظهر' },
-                                    { key: 'Asr', ar: 'العصر' },
-                                    { key: 'Maghrib', ar: 'المغرب' },
-                                    { key: 'Isha', ar: 'العشاء' }
+                                    { key: 'Fajr', ar: 'الفجر', en: 'Fajr' },
+                                    { key: 'Sunrise', ar: 'الشروق', en: 'Sunrise' },
+                                    { key: 'Dhuhr', ar: 'الظهر', en: 'Dhuhr' },
+                                    { key: 'Asr', ar: 'العصر', en: 'Asr' },
+                                    { key: 'Maghrib', ar: 'المغرب', en: 'Maghrib' },
+                                    { key: 'Isha', ar: 'العشاء', en: 'Isha' }
                                 ].map(p => {
                                     const isNext = nextPrayer?.key === p.key;
+                                    const isLightTheme = !activePalette.isDark;
+                                    const normalNameColor = isLightTheme ? '#334155' : (activePalette.section1Text || '#FDE68A');
+                                    const normalTimeColor = activePalette.textColor || (isLightTheme ? '#000000' : '#FFFFFF');
+                                    const nextNameColor = isLightTheme ? (activePalette.highlightPrayerColor || '#C86400') : (activePalette.nextPrayerColor || '#FBBF24');
+                                    const nextTimeColor = isLightTheme ? (activePalette.highlightPrayerColor || '#C86400') : previewTextColorStyle;
+
                                     return (
                                         <div 
                                             key={p.key} 
                                             className="px-0.5 py-0.5 rounded-lg transition-colors"
-                                            style={isNext ? { backgroundColor: `${activePalette.section1Bg || '#5E2E00'}90` } : undefined}
+                                            style={isNext ? { backgroundColor: isLightTheme ? 'rgba(200, 100, 0, 0.12)' : `${activePalette.section1Bg || '#5E2E00'}90` } : undefined}
                                         >
                                             <span 
                                                 className="block text-[10px] font-bold"
-                                                style={{ color: isNext ? (activePalette.nextPrayerColor || '#FBBF24') : (activePalette.section1Text || '#FDE68A') }}
+                                                style={{ color: isNext ? nextNameColor : normalNameColor }}
                                             >
-                                                {p.ar}
+                                                {isEn ? p.en : p.ar}
                                             </span>
                                             <span 
-                                                className={`block text-[11px] font-mono font-bold mt-0.5 ${isNext ? 'font-black scale-105' : 'text-white'}`}
-                                                style={isNext ? { color: previewTextColorStyle } : undefined}
+                                                className={`block text-[11px] font-mono font-bold mt-0.5 ${isNext ? 'font-black scale-105' : ''}`}
+                                                style={{ color: isNext ? nextTimeColor : normalTimeColor }}
                                             >
                                                 {times?.[p.key] || '--:--'}
                                             </span>
@@ -705,14 +737,14 @@ export const WidgetDesignPreview: React.FC<WidgetDesignPreviewProps> = ({ onClos
                                 <div 
                                     className="flex items-center justify-around py-0.5 px-1.5 border-t text-[9px] font-bold"
                                     style={{
-                                        backgroundColor: activePalette.section2Bg || '#451A03',
-                                        borderColor: `${activePalette.highlightPrayerColor || '#F59E0B'}40`,
-                                        color: activePalette.section2Text || '#FEF08A'
+                                        backgroundColor: activePalette.section2Bg || '#F8DE8A',
+                                        borderColor: `${activePalette.highlightPrayerColor || '#C86400'}40`,
+                                        color: activePalette.section2Text || '#000000'
                                     }}
                                 >
-                                    <span>أول الليل: 08:30</span>
-                                    <span>منتصف الليل: 11:45</span>
-                                    <span>الثلث الأخير: 02:30</span>
+                                    <span>{isEn ? 'First: 08:30' : 'أول الليل: 08:30'}</span>
+                                    <span>{isEn ? 'Midnight: 11:45' : 'منتصف الليل: 11:45'}</span>
+                                    <span>{isEn ? 'Last Third: 02:30' : 'الثلث الأخير: 02:30'}</span>
                                 </div>
                             )}
                         </div>
@@ -721,11 +753,11 @@ export const WidgetDesignPreview: React.FC<WidgetDesignPreviewProps> = ({ onClos
                     {/* DESIGN 2: COMPACT PREVIOUS & NEXT WIDGET */}
                     {selectedStyle === 'compact' && (
                         <div 
-                            className="w-full max-w-sm rounded-[22px] p-3.5 text-white shadow-xl space-y-2 select-none transition-all duration-300"
+                            className="w-full max-w-sm rounded-[22px] p-3.5 shadow-xl space-y-2 select-none transition-all duration-300"
                             style={{
                                 background: previewBgStyle,
-                                border: `2px solid ${activePalette.section1Bg || '#5E2E00'}`,
-                                color: '#FFFFFF',
+                                border: `2px solid ${activePalette.section1Bg || '#C86400'}`,
+                                color: activePalette.textColor || '#000000',
                                 boxShadow: '0 10px 25px -5px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255,255,255,0.1)'
                             }}
                         >
@@ -735,19 +767,19 @@ export const WidgetDesignPreview: React.FC<WidgetDesignPreviewProps> = ({ onClos
                                     <div className="flex items-center gap-1.5">
                                         <div 
                                             className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-xs"
-                                            style={{ backgroundColor: activePalette.section1Bg || '#5E2E00' }}
+                                            style={{ backgroundColor: activePalette.section1Bg || '#C86400' }}
                                         >
                                             ☪
                                         </div>
-                                        <span className="font-bold text-[11px]" style={{ color: activePalette.section1Text || '#FDE68A' }}>
+                                        <span className="font-bold text-[11px]" style={{ color: !activePalette.isDark ? (activePalette.cardDateColor || '#000000') : (activePalette.section1Text || '#FDE68A') }}>
                                             {dates?.hijri}
                                         </span>
-                                        <span className="text-amber-400 text-[10px]">•</span>
-                                        <span className="text-amber-200 text-[10px]">{dates?.gregorian}</span>
+                                        <span className="text-[10px]" style={{ color: !activePalette.isDark ? '#B45309' : '#FBBF24' }}>•</span>
+                                        <span className="text-[10px]" style={{ color: !activePalette.isDark ? '#334155' : '#FDE68A' }}>{dates?.gregorian}</span>
                                     </div>
                                     <RefreshCw 
                                         className="w-3.5 h-3.5 cursor-pointer active:rotate-180 transition-transform" 
-                                        style={{ color: activePalette.section1Text || '#FDE68A' }}
+                                        style={{ color: !activePalette.isDark ? (activePalette.highlightPrayerColor || '#C86400') : (activePalette.section1Text || '#FDE68A') }}
                                     />
                                 </div>
                             )}
@@ -758,18 +790,20 @@ export const WidgetDesignPreview: React.FC<WidgetDesignPreviewProps> = ({ onClos
                                 <div 
                                     className="p-3 rounded-xl border flex flex-col items-center justify-center text-center"
                                     style={{
-                                        background: activePalette.cardBg || 'rgba(28, 13, 0, 0.95)',
-                                        borderColor: `${activePalette.section1Bg || '#5E2E00'}80`,
-                                        boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.4), 0 2px 4px rgba(0,0,0,0.2)'
+                                        background: activePalette.cardBg || '#FFFFFF',
+                                        borderColor: `${activePalette.section1Bg || '#C86400'}80`,
+                                        boxShadow: !activePalette.isDark
+                                            ? '0 2px 6px rgba(0,0,0,0.08)'
+                                            : 'inset 0 1px 2px rgba(0,0,0,0.4), 0 2px 4px rgba(0,0,0,0.2)'
                                     }}
                                 >
-                                    <span className="text-[10.5px] font-bold" style={{ color: activePalette.section1Text || '#FDE68A' }}>
+                                    <span className="text-[10.5px] font-bold" style={{ color: !activePalette.isDark ? '#334155' : (activePalette.section1Text || '#FDE68A') }}>
                                         {isEn ? 'Previous' : 'الصلاة السابقة'}
                                     </span>
-                                    <span className="text-base font-bold text-white mt-0.5">
+                                    <span className="text-base font-bold mt-0.5" style={{ color: activePalette.textColor || '#000000' }}>
                                         {previousPrayer.name}
                                     </span>
-                                    <span className="text-xs font-mono font-bold mt-0.5" style={{ color: activePalette.section1Text || '#FDE68A' }}>
+                                    <span className="text-xs font-mono font-bold mt-0.5" style={{ color: activePalette.textColor || (activePalette.section1Text || '#FDE68A') }}>
                                         {previousPrayer.time}
                                     </span>
                                 </div>
@@ -778,19 +812,21 @@ export const WidgetDesignPreview: React.FC<WidgetDesignPreviewProps> = ({ onClos
                                 <div 
                                     className="p-3 rounded-xl border-2 flex flex-col items-center justify-center text-center relative overflow-hidden"
                                     style={{
-                                        background: `linear-gradient(135deg, ${activePalette.section2Bg || '#451A03'} 0%, ${activePalette.section1Bg || '#5E2E00'} 100%)`,
-                                        borderColor: activePalette.highlightPrayerColor || '#F59E0B',
-                                        boxShadow: '0 6px 14px rgba(94,46,0,0.5), inset 0 1px 1px rgba(245,158,11,0.4)'
+                                        background: activePalette.themeKey === 'golden_trio'
+                                            ? 'linear-gradient(135deg, #B45309 0%, #C86400 100%)'
+                                            : `linear-gradient(135deg, ${activePalette.section2Bg || '#451A03'} 0%, ${activePalette.section1Bg || '#5E2E00'} 100%)`,
+                                        borderColor: activePalette.themeKey === 'golden_trio' ? '#F59E0B' : (activePalette.highlightPrayerColor || '#F59E0B'),
+                                        boxShadow: '0 6px 14px rgba(94,46,0,0.35), inset 0 1px 1px rgba(245,158,11,0.4)'
                                     }}
                                 >
                                     <div className="absolute top-0 end-0 w-8 h-8 bg-amber-400/20 rounded-full blur-xs" />
-                                    <span className="text-[10.5px] font-bold" style={{ color: activePalette.nextPrayerColor || '#FBBF24' }}>
+                                    <span className="text-[10.5px] font-bold" style={{ color: activePalette.themeKey === 'golden_trio' ? '#FEF08A' : (activePalette.nextPrayerColor || '#FBBF24') }}>
                                         {isEn ? 'Next Prayer' : 'الصلاة القادمة'}
                                     </span>
-                                    <span className="text-base font-bold text-white mt-0.5">
+                                    <span className="text-base font-bold mt-0.5" style={{ color: activePalette.heroPrayerName || '#FFFFFF' }}>
                                         {activeNextName}
                                     </span>
-                                    <span className="text-sm font-mono font-bold text-white mt-0.5" style={{ color: previewTextColorStyle }}>
+                                    <span className="text-sm font-mono font-bold mt-0.5" style={{ color: activePalette.themeKey === 'golden_trio' ? '#FFFFFF' : previewTextColorStyle }}>
                                         {activeNextTime}
                                     </span>
                                 </div>
@@ -801,19 +837,58 @@ export const WidgetDesignPreview: React.FC<WidgetDesignPreviewProps> = ({ onClos
                                 <div 
                                     className="py-1.5 px-3 rounded-xl border flex items-center justify-center gap-2"
                                     style={{
-                                        background: activePalette.section2Bg || '#451A03',
-                                        borderColor: `${activePalette.highlightPrayerColor || '#F59E0B'}70`,
-                                        boxShadow: 'inset 0 1px 1px rgba(245,158,11,0.3)'
+                                        background: activePalette.themeKey === 'golden_trio' ? '#FFFFFF' : (activePalette.section2Bg || '#451A03'),
+                                        borderColor: `${activePalette.highlightPrayerColor || '#C86400'}70`,
+                                        boxShadow: 'inset 0 1px 1px rgba(245,158,11,0.25)'
                                     }}
                                 >
-                                    <span className="text-[11px] font-bold" style={{ color: activePalette.section2Text || '#FEF08A' }}>
+                                    <span className="text-[11px] font-bold" style={{ color: activePalette.themeKey === 'golden_trio' ? '#000000' : (activePalette.section2Text || '#FEF08A') }}>
                                         {isEn ? 'Remaining:' : 'متبقي على الأذان:'}
                                     </span>
-                                    <span className="text-sm font-mono font-bold tracking-wider" style={{ color: previewTextColorStyle }}>
+                                    <span className="text-sm font-mono font-bold tracking-wider" style={{ color: activePalette.themeKey === 'golden_trio' ? '#C86400' : previewTextColorStyle }}>
                                         {countdown || '01:25:40'}
                                     </span>
                                 </div>
                             )}
+                        </div>
+                    )}
+
+                    {/* Single Next Prayer Widget (1x1) */}
+                    {selectedStyle === 'single' && (
+                        <div className="flex flex-col items-center justify-center py-4">
+                            <div 
+                                className="w-36 h-36 rounded-2xl border-2 flex flex-col items-center justify-center p-3 text-center transition-all relative overflow-hidden shadow-xl"
+                                style={{
+                                    background: previewBgStyle,
+                                    borderColor: activePalette.highlightPrayerColor ? `${activePalette.highlightPrayerColor}80` : '#F59E0B80',
+                                    backdropFilter: 'blur(10px)',
+                                    boxShadow: !activePalette.isDark
+                                        ? '0 6px 18px rgba(0,0,0,0.1), inset 0 1px 1px rgba(255,255,255,0.6)'
+                                        : '0 8px 20px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.1)'
+                                }}
+                            >
+                                <div className="flex flex-col items-center justify-center text-center gap-1.5 w-full">
+                                    <span 
+                                        className="text-xs sm:text-sm font-bold tracking-tight leading-tight select-none"
+                                        style={{ 
+                                            color: activePalette.heroPrayerName || (activePalette.isDark ? '#F1F5F9' : '#0F172A')
+                                        }}
+                                    >
+                                        {isEn ? `${activeNextName} in` : `صلاة ${activeNextName} بعد`}
+                                    </span>
+                                    <span 
+                                        className="text-xl sm:text-2xl font-black font-mono tracking-wider select-none"
+                                        style={{ 
+                                            color: activePalette.highlightPrayerColor || previewTextColorStyle || '#F59E0B'
+                                        }}
+                                    >
+                                        {countdown || '00:24:15'}
+                                    </span>
+                                </div>
+                            </div>
+                            <span className="text-[11px] font-bold mt-2.5 opacity-60">
+                                {isEn ? '1x1 Ultra-Minimal • Resizable' : 'مقاس ١×١ مصغر وخفيف • قابل للتكبير بحرية'}
+                            </span>
                         </div>
                     )}
                 </div>

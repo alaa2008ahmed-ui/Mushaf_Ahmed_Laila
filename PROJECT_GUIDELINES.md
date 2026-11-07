@@ -40,8 +40,22 @@
 
 ---
 
+## ثالثاً: القرارات الهيكلية الدائمة لتصميم التطبيق | Permanent Design & Architectural Directives
+
+1. **إخفاء زر المظهر في المصحف الشريف (Hide Quran Theme Button):**
+   - تم إخفاء زر المظهر ("المظهر" / "Themes") نهائياً من الشريط الجانبي لقارئ القرآن الكريم (`FloatingMenu.tsx`) ومن جميع صفحات ونوافذ القراءة الفرعية (مثل نافذة التفسير ومعاني الكلمات `TafseerModal.tsx`) باللغتين العربية والإنجليزية.
+   - *English Summary:* The "Appearance" / "Themes" button (`menu-item-themes`) in the Quran reader sidebar and reading sub-modals (`TafseerModal.tsx`) is permanently hidden across both Arabic and English languages.
+
+2. **إخفاء صفحة التصميم الكلاسيكي للصفحة الرئيسية (Hide Classic Main Layout):**
+   - صفحة التصميم الكلاسيكي للصفحة الرئيسية مخفية تماماً، ونظام تصميم الصفحة الرئيسية محصور كاملاً ومقفول على التصميم الذكي الحديث (`modern`).
+   - *English Summary:* The Classic main menu design layout is permanently hidden and locked to the Modern (`modern`) layout system.
+
+---
+
 ## قائمة التحقق السريعة قبل تنفيذ أي طلب | Pre-Execution Checklist
 - [ ] هل تمت مراجعة ملف `PROJECT_GUIDELINES.md` قبل البدء؟
 - [ ] هل جميع النصوص أو القوائم أو الصفحات الجديدة تدعم اللغتين العربية والإنجليزية تلقائياً؟
 - [ ] هل التصميم الجديد مطابق تماماً لتصميم الصفحات والقوائم والأزرار والثيمات في بقية التطبيق؟
 - [ ] هل تم التأكد من **عدم حذف أي كود أو أمر موجود** لم يطلب المستخدم حذفه صراحةً (أو تم استئذانه أولاً)؟
+- [ ] هل تم الالتزام بالقرارات الهيكلية الدائمة (إخفاء زر المظهر بالقرآن وإخفاء التصميم الكلاسيكي)؟
+

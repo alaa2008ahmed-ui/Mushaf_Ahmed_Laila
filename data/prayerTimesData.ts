@@ -30,3 +30,28 @@ export const ADHAN_CHANNELS_CONFIG = [
     { id: 'adhan_v5_shahadah', sound: 'shahadah.mp3', raw: 'shahadah', name: 'أذان الصلوات (الشهادة)' },
     { id: 'adhan_v5_salah', sound: 'salah.mp3', raw: 'salah', name: 'أذان الصلوات (الصلاة)' },
 ];
+
+export interface NotificationToneOption {
+    id: string;
+    name: string;
+    path: string;
+    fileName: string;
+}
+
+export const shortNotificationTones: NotificationToneOption[] = [
+    { id: 'chime', name: 'رنين هادئ', path: '/assets/audio/chime.mp3', fileName: 'chime.mp3' },
+    { id: 'notif_bell', name: 'جرس لطيف', path: '/assets/audio/notif_bell.wav', fileName: 'notif_bell.wav' },
+    { id: 'notif_crystal', name: 'بلورات نقية', path: '/assets/audio/notif_crystal.wav', fileName: 'notif_crystal.wav' },
+    { id: 'notif_droplet', name: 'قطرة ماء', path: '/assets/audio/notif_droplet.wav', fileName: 'notif_droplet.wav' },
+    { id: 'notif_harpeggio', name: 'وتر هادئ', path: '/assets/audio/notif_harpeggio.wav', fileName: 'notif_harpeggio.wav' },
+    { id: 'notif_subtle', name: 'تنبيه خفيف', path: '/assets/audio/notif_subtle.wav', fileName: 'notif_subtle.wav' },
+    { id: 'notif_marimba', name: 'نغمة خشبية', path: '/assets/audio/notif_marimba.wav', fileName: 'notif_marimba.wav' },
+];
+
+export const DEFAULT_NOTIFICATION_TONE = {
+    id: 'chime',
+    name: 'رنين هادئ',
+    data: '/assets/audio/chime.mp3',
+    path: '/assets/audio/chime.mp3',
+    fileName: 'chime.mp3'
+};

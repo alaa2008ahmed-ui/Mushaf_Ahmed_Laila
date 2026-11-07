@@ -35,13 +35,13 @@ export function getModernFlatTokens(theme: Theme, themeKey?: string): ModernFlat
     const pageBgColor = isDeepBlack ? '#000000' : (theme.bgColor || (isDark ? '#0B0F19' : '#F5F7FA'));
     const cardBgColor = isDark ? (isDeepBlack ? '#111111' : (theme.cardBg || '#161F30')) : '#FFFFFF';
     
-    // Soft drop shadows without harsh outlines
+    // 3D tactile embossed prominence matching the Home Page cards, strictly without borders
     const cardShadow = isDark 
-        ? '0 4px 20px -2px rgba(0, 0, 0, 0.35)' 
-        : '0 4px 14px rgba(0, 0, 0, 0.04)';
+        ? '0 6.5px 0 #0d0d10, 0 14px 28px rgba(0, 0, 0, 0.85), inset 0 2px 2px rgba(255, 255, 255, 0.22), inset 0 -2.5px 5px rgba(0, 0, 0, 0.65)' 
+        : '0 6.5px 0 rgba(0, 0, 0, 0.13), 0 12px 24px -2px rgba(0, 0, 0, 0.11), inset 0 2px 2px rgba(255, 255, 255, 0.95), inset 0 -2.5px 4px rgba(0, 0, 0, 0.05)';
     const cardShadowHover = isDark
-        ? '0 8px 30px -2px rgba(0, 0, 0, 0.45)'
-        : '0 8px 24px rgba(0, 0, 0, 0.07)';
+        ? '0 8.5px 0 #0d0d10, 0 16px 30px -3px rgba(0, 0, 0, 0.8), inset 0 2px 2px rgba(255, 255, 255, 0.28), inset 0 -2.5px 5px rgba(0, 0, 0, 0.5)'
+        : '0 8.5px 0 rgba(0, 0, 0, 0.14), 0 16px 30px -3px rgba(0, 0, 0, 0.14), inset 0 2px 2px rgba(255, 255, 255, 0.95), inset 0 -2.5px 4px rgba(0, 0, 0, 0.05)';
 
     // Modern flat surfaces for capsule tabs, filled inputs, and chips (Pure White in light/golden themes)
     const capsuleBg = isDark ? 'rgba(255, 255, 255, 0.08)' : '#FFFFFF';

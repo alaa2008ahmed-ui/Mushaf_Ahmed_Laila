@@ -146,6 +146,25 @@
                 android:resource="@xml/prayer_compact_widget_info" />
         </receiver>
 
+        <!-- Widget 3: Single Prayer (1x1) Next Prayer Only Widget -->
+        <receiver
+            android:name=".PrayerSinglePrayerWidgetProvider"
+            android:label="@string/widget_name_single"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.mushaf.ahmedandlayla.ACTION_REFRESH_SINGLE" />
+                <action android:name="com.mushaf.ahmedandlayla.ACTION_REFRESH_WIDGET" />
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+                <action android:name="android.intent.action.DATE_CHANGED" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/prayer_single_widget_info" />
+        </receiver>
+
         <receiver
             android:name=".PrayerSilentReceiver"
 
