@@ -298,67 +298,95 @@ public class DailyWirdAlarmReceiver extends BroadcastReceiver {
                 formattedName = rawName;
             }
 
+            // Format Date Range if missed days >= 2: e.g. "من 1 نوفمبر إلى 7 نوفمبر" or "from Nov 1 to Nov 7"
+            String missedRangeStr = "";
+            if (missedDaysCount >= 2) {
+                try {
+                    Calendar endCal = Calendar.getInstance();
+                    endCal.setTime(todayDate);
+                    endCal.add(Calendar.DAY_OF_YEAR, -1); // up to yesterday
+
+                    Calendar startCal = Calendar.getInstance();
+                    startCal.setTime(todayDate);
+                    startCal.add(Calendar.DAY_OF_YEAR, -missedDaysCount);
+
+                    String[] arMonths = {
+                        "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
+                        "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"
+                    };
+                    String[] enMonths = {
+                        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+                    };
+
+                    int sDay = startCal.get(Calendar.DAY_OF_MONTH);
+                    int sMonth = startCal.get(Calendar.MONTH);
+                    int eDay = endCal.get(Calendar.DAY_OF_MONTH);
+                    int eMonth = endCal.get(Calendar.MONTH);
+
+                    if (isEn) {
+                        missedRangeStr = "from " + enMonths[sMonth] + " " + sDay + " to " + enMonths[eMonth] + " " + eDay;
+                    } else {
+                        missedRangeStr = "من يوم " + sDay + " " + arMonths[sMonth] + " إلى " + eDay + " " + arMonths[eMonth];
+                    }
+                } catch (Exception ignored) {}
+            }
+
             String title;
             String message;
 
             if (isEn) {
                 String prefix = "Dear " + formattedName + ": ";
-                String pageStr = "(p. " + todayStartPage + " - " + todayEndPage + ")";
                 if (isEvening) {
-                    if (isPartiallyRead) {
-                        int remainingPages = Math.max(1, todayEndPage - lastPageRead);
-                        title = prefix + "Complete Today's Portion Tonight";
-                        message = "You read up to page " + lastPageRead + " today. Only " + remainingPages + " page(s) left to complete your portion (up to p. " + todayEndPage + ").. Conclude your day by finishing it now!";
-                    } else if (missedDaysCount == 0) {
-                        title = prefix + "Evening Qur'an Reminder";
-                        message = "The day is coming to a close and today's portion (Day " + targetDayNumber + ") " + pageStr + " is waiting for you.. Conclude your night with the light of the Qur'an before sleep.";
+                    if (missedDaysCount == 0) {
+                        title = prefix + "Complete Today's Portion Before Sleep";
+                        message = "The day is coming to a close and today's assigned portion awaits you.. Conclude your day with the Holy Qur'an before sleep.";
                     } else if (missedDaysCount == 1) {
                         title = prefix + "Catch Up Before Day's End";
-                        message = "Evening reminder: Yesterday's and today's portions await you.. Make the seal of your night verses from the Holy Qur'an.";
+                        message = "Evening reminder: Yesterday's portion and today's portion await you.. Make the seal of your night verses from the Holy Qur'an.";
                     } else {
                         title = prefix + "Blessed Opportunity Tonight";
-                        message = "Do not let today's portion and (" + missedDaysCount + ") previous portions pass unread.. Spend a few tranquil minutes catching up tonight.";
+                        String rangeText = !missedRangeStr.isEmpty() ? " (" + missedRangeStr + ")" : "";
+                        message = "Do not let today's portion and your overdue portions" + rangeText + " pass unread.. Spend a few tranquil minutes catching up tonight.";
                     }
                 } else {
                     if (missedDaysCount == 0) {
                         title = prefix + "Illuminate Your Day with the Qur'an";
-                        message = "Daily Qur'an portion reminder for today (Day " + targetDayNumber + ") " + pageStr + ".. Blessed is the one who begins the day with the Qur'an.";
+                        message = "Gentle reminder for today's portion.. Blessed is the one who begins the day with the Qur'an. Open your Mushaf and read now.";
                     } else if (missedDaysCount == 1) {
                         title = prefix + "Gentle Reminder of the Holy Qur'an";
-                        message = "A gentle reminder: You have not completed yesterday's portion yet, and a blessed new portion awaits you today.. Read them together to maintain your Khatma.";
+                        message = "Gentle reminder: Yesterday's portion and today's portion await you.. Read them together to maintain your blessed Khatma.";
                     } else {
                         title = prefix + "Eager for Your Return to the Qur'an";
-                        message = "Today's portion and (" + missedDaysCount + ") previous delayed portions await you.. Do not let days pass without the light of the Qur'an.";
+                        String rangeText = !missedRangeStr.isEmpty() ? " (" + missedRangeStr + ")" : "";
+                        message = "Today's portion and your overdue portions" + rangeText + " await you.. Open your Mushaf now and catch up on your blessed Khatma.";
                     }
                 }
             } else {
                 String prefix = "يا " + formattedName + ": ";
-                String pageStr = "(ص " + todayStartPage + " - " + todayEndPage + ")";
                 if (isEvening) {
-                    if (isPartiallyRead) {
-                        int remainingPages = Math.max(1, todayEndPage - lastPageRead);
+                    if (missedDaysCount == 0) {
                         title = prefix + "أكمل ورد اليوم قبل النوم";
-                        message = "لقد قرأت حتى صفحة " + lastPageRead + " اليوم، وبقي لك " + remainingPages + " صفحة فقط لإكمال وردك (حتى ص " + todayEndPage + ").. اختم يومك بإكماله الآن لنيل الأجر كاملاً.";
-                    } else if (missedDaysCount == 0) {
-                        title = prefix + "تذكير المساء بورد القرآن الكريم";
-                        message = "أوشك اليوم على الانقضاء ولم تكمل وردك المقرر (اليوم " + targetDayNumber + ") " + pageStr + ".. اختم يومك بنور كتاب الله واقرأ وردك قبل النوم لتنعم بليل مبارك.";
+                        message = "أوشك اليوم على الانقضاء وتذكيرك بورد اليوم.. اختم يومك بنور كتاب الله واقرأ وردك قبل النوم لتنعم بليل مبارك.";
                     } else if (missedDaysCount == 1) {
                         title = prefix + "تدارك وردك قبل نهاية اليوم";
-                        message = "تذكير مسائي: لم تقرأ ورد الأمس وورد اليوم " + pageStr + ".. اجعل مسك ختام ليلتك آيات من الذكر الحكيم واقرأهما الآن.";
+                        message = "تذكير مسائي: تدارك ورد الأمس وورد اليوم.. اجعل مسك ختام ليلتك آيات من الذكر الحكيم واقرأهما الآن.";
                     } else {
                         title = prefix + "فرصة طيبة لاستدراك وردك الليلة";
-                        message = "أوشك اليوم على الانتهاء ولديك ورد اليوم " + pageStr + " و (" + missedDaysCount + ") أوراد سابقة متأخرة في انتظارك.. بضع دقائق في سكون الليل كفيلة باستدراك ما فاتك.";
+                        String rangeText = !missedRangeStr.isEmpty() ? " (" + missedRangeStr + ")" : "";
+                        message = "أوشك اليوم على الانتهاء، ولديك ورد اليوم والأوراد السابقة غير المقروءة" + rangeText + ".. بضع دقائق كفيلة باستدراك ما فاتك، افتح مصحفك الآن.";
                     }
                 } else {
                     if (missedDaysCount == 0) {
                         title = prefix + "نور يومك بكتاب الله";
-                        message = "تذكير بوردك القرآني لليوم (اليوم " + targetDayNumber + ") " + pageStr + ".. هنيئاً لمن جعل للقرآن نصيباً من يومه، افتح مصحفك واقرأ وردك الآن.";
+                        message = "تذكير بورد اليوم.. هنيئاً لمن جعل للقرآن نصيباً من يومه، افتح مصحفك واقرأ وردك الآن.";
                     } else if (missedDaysCount == 1) {
                         title = prefix + "تذكير طيب بورد القرآن الكريم";
-                        message = "تذكير لطيف: لم تكمل ورد الأمس، ولديك اليوم ورد مبارك جديد " + pageStr + ".. اقرأهما معاً لتستمر في مسيرة ختمتك المباركة وتفيض عليك البركة.";
+                        message = "تذكير لطيف: تدارك ورد الأمس وورد اليوم.. اقرأهما معاً لتستمر في مسيرة ختمتك المباركة وتفيض عليك البركة.";
                     } else {
                         title = prefix + "مشتاقون لعودتك إلى كتاب الله";
-                        message = "لديك ورد اليوم " + pageStr + " و (" + missedDaysCount + ") أوراد سابقة في انتظارك.. لا تدع الأيام تمضي دون نور القرآن، افتح مصحفك الآن واستدرك ما فاتك.";
+                        String rangeText = !missedRangeStr.isEmpty() ? " (" + missedRangeStr + ")" : "";
+                        message = "في انتظارك ورد اليوم والأوراد السابقة غير المقروءة" + rangeText + ".. لا تدع الأيام تمضي دون نور القرآن، افتح مصحفك واستدرك ما فاتك.";
                     }
                 }
             }
@@ -438,13 +466,6 @@ public class DailyWirdAlarmReceiver extends BroadcastReceiver {
             if (soundUri != null) {
                 builder.setSound(soundUri);
             }
-
-            try {
-                android.graphics.Bitmap largeIcon = android.graphics.BitmapFactory.decodeResource(context.getResources(), R.drawable.app_logo_large);
-                if (largeIcon != null) {
-                    builder.setLargeIcon(largeIcon);
-                }
-            } catch (Exception ignored) {}
 
             nm.notify(notifId, builder.build());
             AlertsGroupHelper.updateGroupSummary(context, nm);

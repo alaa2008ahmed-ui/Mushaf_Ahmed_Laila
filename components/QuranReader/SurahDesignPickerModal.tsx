@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, FC } from 'react';
-import { X, Check } from 'lucide-react';
+import { X } from 'lucide-react';
 import SurahHeader from './SurahHeader';
 import { useLanguage } from '../../context/LanguageContext';
 
@@ -113,23 +113,13 @@ const SurahDesignPickerModal: FC<SurahDesignPickerModalProps> = ({
                                         : 'quran-raised-card hover:scale-[1.01]'
                                 }`}
                                 style={{
-                                    border: 'none',
+                                    border: isSelected ? '2px solid var(--qr-accent, #10b981)' : '2px solid transparent',
                                     outline: 'none',
                                     backgroundColor: isSelected 
-                                        ? 'color-mix(in srgb, var(--qr-accent, #10b981) 15%, transparent)' 
+                                        ? 'color-mix(in srgb, var(--qr-accent, #10b981) 18%, transparent)' 
                                         : (currentTheme?.cardBg || 'rgba(255,255,255,0.03)')
                                 }}
                             >
-                                {/* Selected Active Badge */}
-                                {isSelected && (
-                                    <div 
-                                        className="absolute top-2 start-2 z-20 w-5 h-5 rounded-full flex items-center justify-center shadow-md text-white animate-scaleIn quran-raised-btn-selected"
-                                        style={{ backgroundColor: currentTheme?.accent || 'var(--qr-accent, #10b981)' }}
-                                    >
-                                        <Check size={12} className="stroke-[3] quran-3d-icon" />
-                                    </div>
-                                )}
-
                                 {/* Clean header preview with NO model name / number text */}
                                 <div className="pointer-events-none w-full">
                                     <SurahHeader

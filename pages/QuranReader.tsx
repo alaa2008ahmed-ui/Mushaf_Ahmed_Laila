@@ -1039,10 +1039,22 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
                     };
 
                     recognition.onerror = (event: any) => {
-                        console.error("Speech recognition error", event.error);
-                        showToast(`خطأ في التعرف على الصوت: ${event.error}`);
+                        const err = event?.error;
+                        if (err === 'not-allowed' || err === 'service-not-allowed') {
+                            console.warn("Speech recognition permission denied by user/browser:", err);
+                            showToast(language === 'en' ? 'Microphone permission denied' : 'تم رفض إذن الميكروفون');
+                        } else if (err !== 'no-speech' && err !== 'aborted') {
+                            console.warn("Speech recognition warning:", err);
+                            showToast(language === 'en' ? 'Voice recognition error' : 'تعذر التعرف على الصوت');
+                        }
                         setIsRecording(false);
                         isSpeechRecognitionActiveRef.current = false;
+                        if (speechRecognitionRef.current) {
+                            try {
+                                speechRecognitionRef.current.abort();
+                            } catch (_) {}
+                            speechRecognitionRef.current = null;
+                        }
                     };
 
                         recognition.onresult = (event: any) => {

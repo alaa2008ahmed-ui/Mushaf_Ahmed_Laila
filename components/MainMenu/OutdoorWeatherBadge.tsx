@@ -77,85 +77,80 @@ export const OutdoorWeatherBadge: React.FC<OutdoorWeatherBadgeProps> = ({
     return unregister;
   }, [showModal]);
 
-  // Compute theme-matching styles for the weather modal
+  // Compute theme-matching styles for the weather modal header & flat inner cards
   const themeStyles = useMemo(() => {
     if (isDark) {
       return {
         badgeTextColor: 'text-amber-300',
-        modalBg: 'bg-[#18181b] text-white border-zinc-700/90 shadow-2xl shadow-black/90',
-        headerGradient: 'from-amber-500 via-emerald-500 to-indigo-500',
-        currentCardBg: 'bg-zinc-800/80 border-zinc-700/80 text-white',
-        fajrCardBg: 'bg-indigo-950/40 border-indigo-500/30',
-        fajrTextColor: 'text-indigo-300',
-        ishaCardBg: 'bg-sky-950/40 border-sky-500/30',
-        ishaTextColor: 'text-sky-300',
-        adviceBg: 'bg-amber-500/10 border-amber-500/30 text-amber-200',
-        buttonBg: 'bg-amber-500 hover:bg-amber-600 text-zinc-950 font-black',
-        iconBg: 'bg-amber-500/20 text-amber-400',
+        modalBg: 'bg-zinc-900 text-zinc-100 border-zinc-700/80 shadow-2xl shadow-black/60',
+        headerGradient: 'from-emerald-500 via-teal-500 to-amber-500',
+        currentCardBg: 'bg-zinc-800/90 border border-zinc-700/80 text-zinc-100 shadow-none',
+        fajrCardBg: 'bg-zinc-800/80 border border-zinc-700/80 text-zinc-100 shadow-none',
+        fajrTextColor: 'text-zinc-100',
+        ishaCardBg: 'bg-zinc-800/80 border border-zinc-700/80 text-zinc-100 shadow-none',
+        ishaTextColor: 'text-zinc-100',
+        adviceBg: 'bg-zinc-800/90 border border-zinc-700/80 text-zinc-100 shadow-none',
+        iconBg: 'bg-zinc-800 text-amber-400',
       };
     }
 
     if (isSkyTheme) {
       return {
         badgeTextColor: 'text-sky-950',
-        modalBg: 'bg-[#f0f9ff] text-slate-800 border-sky-200 shadow-xl shadow-sky-900/15',
-        headerGradient: 'from-sky-400 via-blue-500 to-indigo-500',
-        currentCardBg: 'bg-sky-100/70 border-sky-200 text-sky-950',
-        fajrCardBg: 'bg-indigo-50 border-indigo-200',
-        fajrTextColor: 'text-indigo-800',
-        ishaCardBg: 'bg-sky-50 border-sky-200',
-        ishaTextColor: 'text-sky-800',
-        adviceBg: 'bg-sky-100/80 border-sky-300/60 text-sky-950',
-        buttonBg: 'bg-sky-600 hover:bg-sky-700 text-white font-bold',
-        iconBg: 'bg-sky-500/20 text-sky-700',
+        modalBg: 'bg-white text-slate-900 border border-slate-200/90 shadow-2xl shadow-black/20',
+        headerGradient: 'from-sky-400 via-blue-500 to-sky-600',
+        currentCardBg: 'bg-sky-100/90 border border-sky-200 text-sky-950 shadow-none',
+        fajrCardBg: 'bg-sky-100/80 border border-sky-200 text-sky-950 shadow-none',
+        fajrTextColor: 'text-sky-950',
+        ishaCardBg: 'bg-sky-100/80 border border-sky-200 text-sky-950 shadow-none',
+        ishaTextColor: 'text-sky-950',
+        adviceBg: 'bg-sky-100/90 border border-sky-200 text-sky-950 shadow-none',
+        iconBg: 'bg-sky-500/20 text-sky-800',
       };
     }
 
     if (isEmeraldTheme) {
       return {
         badgeTextColor: 'text-emerald-950',
-        modalBg: 'bg-[#ecfdf5] text-slate-800 border-emerald-200 shadow-xl shadow-emerald-900/15',
-        headerGradient: 'from-emerald-500 via-teal-400 to-amber-500',
-        currentCardBg: 'bg-emerald-100/70 border-emerald-200 text-emerald-950',
-        fajrCardBg: 'bg-emerald-50 border-emerald-200',
-        fajrTextColor: 'text-emerald-900',
-        ishaCardBg: 'bg-teal-50 border-teal-200',
-        ishaTextColor: 'text-teal-900',
-        adviceBg: 'bg-emerald-100/80 border-emerald-300/60 text-emerald-950',
-        buttonBg: 'bg-emerald-600 hover:bg-emerald-700 text-white font-bold',
-        iconBg: 'bg-emerald-500/20 text-emerald-700',
+        modalBg: 'bg-white text-slate-900 border border-slate-200/90 shadow-2xl shadow-black/20',
+        headerGradient: 'from-emerald-400 via-teal-500 to-emerald-600',
+        currentCardBg: 'bg-emerald-100/90 border border-emerald-200 text-emerald-950 shadow-none',
+        fajrCardBg: 'bg-emerald-100/80 border border-emerald-200 text-emerald-950 shadow-none',
+        fajrTextColor: 'text-emerald-950',
+        ishaCardBg: 'bg-emerald-100/80 border border-emerald-200 text-emerald-950 shadow-none',
+        ishaTextColor: 'text-emerald-950',
+        adviceBg: 'bg-emerald-100/90 border border-emerald-200 text-emerald-950 shadow-none',
+        iconBg: 'bg-emerald-500/20 text-emerald-800',
       };
     }
 
     if (isBurgundyTheme) {
       return {
         badgeTextColor: 'text-rose-950',
-        modalBg: 'bg-[#fff1f2] text-slate-800 border-rose-200 shadow-xl shadow-rose-900/15',
-        headerGradient: 'from-rose-500 via-amber-500 to-rose-700',
-        currentCardBg: 'bg-rose-100/70 border-rose-200 text-rose-950',
-        fajrCardBg: 'bg-indigo-50 border-indigo-200',
-        fajrTextColor: 'text-indigo-900',
-        ishaCardBg: 'bg-rose-50 border-rose-200',
-        ishaTextColor: 'text-rose-900',
-        adviceBg: 'bg-rose-100/80 border-rose-300/60 text-rose-950',
-        buttonBg: 'bg-rose-600 hover:bg-rose-700 text-white font-bold',
-        iconBg: 'bg-rose-500/20 text-rose-700',
+        modalBg: 'bg-white text-slate-900 border border-slate-200/90 shadow-2xl shadow-black/20',
+        headerGradient: 'from-rose-400 via-rose-500 to-rose-700',
+        currentCardBg: 'bg-rose-100/90 border border-rose-200 text-rose-950 shadow-none',
+        fajrCardBg: 'bg-rose-100/80 border border-rose-200 text-rose-950 shadow-none',
+        fajrTextColor: 'text-rose-950',
+        ishaCardBg: 'bg-rose-100/80 border border-rose-200 text-rose-950 shadow-none',
+        ishaTextColor: 'text-rose-950',
+        adviceBg: 'bg-rose-100/90 border border-rose-200 text-rose-950 shadow-none',
+        iconBg: 'bg-rose-500/20 text-rose-900',
       };
     }
 
     // Default Amber / Golden Sand Theme
     return {
       badgeTextColor: 'text-amber-950',
-      modalBg: 'bg-[#fffbeb] text-slate-800 border-amber-200 shadow-xl shadow-amber-900/15',
-      headerGradient: 'from-amber-400 via-yellow-500 to-amber-600',
-      currentCardBg: 'bg-amber-100/80 border-amber-200/80 text-amber-950',
-      fajrCardBg: 'bg-amber-50 border-amber-200',
-      fajrTextColor: 'text-amber-900',
-      ishaCardBg: 'bg-orange-50 border-orange-200',
-      ishaTextColor: 'text-orange-900',
-      adviceBg: 'bg-amber-100/80 border-amber-300/60 text-amber-950',
-      buttonBg: 'bg-amber-600 hover:bg-amber-700 text-white font-bold',
-      iconBg: 'bg-amber-500/20 text-amber-800',
+      modalBg: 'bg-white text-slate-900 border border-slate-200/90 shadow-2xl shadow-black/20',
+      headerGradient: 'from-amber-400 via-amber-500 to-amber-600',
+      currentCardBg: 'bg-amber-100/90 border border-amber-200 text-amber-950 shadow-none',
+      fajrCardBg: 'bg-amber-100/80 border border-amber-200 text-amber-950 shadow-none',
+      fajrTextColor: 'text-amber-950',
+      ishaCardBg: 'bg-amber-100/80 border border-amber-200 text-amber-950 shadow-none',
+      ishaTextColor: 'text-amber-950',
+      adviceBg: 'bg-amber-100/90 border border-amber-200 text-amber-950 shadow-none',
+      iconBg: 'bg-amber-500/20 text-amber-900',
     };
   }, [isDark, isSkyTheme, isEmeraldTheme, isBurgundyTheme]);
 
@@ -170,9 +165,18 @@ export const OutdoorWeatherBadge: React.FC<OutdoorWeatherBadgeProps> = ({
     return <CloudSun className={`${sizeClass} text-amber-500`} />;
   };
 
-  const formattedCurrentTemp = isEn ? `${weather.currentTemp}°C` : `${formatNumber(weather.currentTemp)}°م`;
-  const formattedFajrTemp = weather.fajrTemp !== null ? (isEn ? `${weather.fajrTemp}°C` : `${formatNumber(weather.fajrTemp)}°م`) : null;
-  const formattedIshaTemp = weather.ishaTemp !== null ? (isEn ? `${weather.ishaTemp}°C` : `${formatNumber(weather.ishaTemp)}°م`) : null;
+  const formatVal = (val: number | null | undefined) => {
+    if (val === null || val === undefined || isNaN(val)) return null;
+    return Number(val).toFixed(2);
+  };
+
+  const currTempStr = formatVal(weather.currentTemp) || '0.00';
+  const fajrTempStr = formatVal(weather.fajrTemp);
+  const ishaTempStr = formatVal(weather.ishaTemp);
+
+  const formattedCurrentTemp = isEn ? `${currTempStr}°C` : `${formatNumber(currTempStr)}°م`;
+  const formattedFajrTemp = fajrTempStr ? (isEn ? `${fajrTempStr}°C` : `${formatNumber(fajrTempStr)}°م`) : null;
+  const formattedIshaTemp = ishaTempStr ? (isEn ? `${ishaTempStr}°C` : `${formatNumber(ishaTempStr)}°م`) : null;
 
   // Render Portal Modal directly into document.body with completely transparent backdrop (NO darkening/dimming)
   const modalContent = showModal && typeof document !== 'undefined' ? createPortal(
@@ -181,15 +185,12 @@ export const OutdoorWeatherBadge: React.FC<OutdoorWeatherBadgeProps> = ({
       onClick={() => setShowModal(false)}
     >
       <div
-        className={`w-full max-w-[310px] sm:max-w-[320px] rounded-2xl p-3.5 sm:p-4 relative border overflow-hidden transition-all ${themeStyles.modalBg}`}
+        className={`w-full max-w-[310px] sm:max-w-[320px] rounded-3xl p-3.5 sm:p-4 relative border overflow-hidden transition-all ${themeStyles.modalBg}`}
         onClick={(e) => e.stopPropagation()}
         dir={isEn ? 'ltr' : 'rtl'}
       >
-        {/* Top Decorative Border Sheen */}
-        <div className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${themeStyles.headerGradient}`} />
-        
-        {/* Header Title (NO X Button as requested) */}
-        <div className="flex items-center gap-2.5 pb-2.5 border-b border-black/10 dark:border-white/10">
+        {/* Header Title */}
+        <div className="flex items-center gap-2.5 pb-2.5 border-b border-slate-200/80 dark:border-white/10">
           <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${themeStyles.iconBg}`}>
             <Footprints className="w-3.5 h-3.5" />
           </div>
@@ -203,8 +204,8 @@ export const OutdoorWeatherBadge: React.FC<OutdoorWeatherBadgeProps> = ({
           </div>
         </div>
 
-        {/* Current Condition Card */}
-        <div className={`my-2.5 p-2.5 rounded-xl border flex items-center justify-between ${themeStyles.currentCardBg}`}>
+        {/* Current Condition Card - Flat Theme Card */}
+        <div className={`my-2.5 p-3 rounded-xl flex items-center justify-between ${themeStyles.currentCardBg}`}>
           <div className="flex items-center gap-2.5">
             <div className={`p-1.5 rounded-lg ${themeStyles.iconBg}`}>
               {renderWeatherIcon("w-5 h-5")}
@@ -232,12 +233,12 @@ export const OutdoorWeatherBadge: React.FC<OutdoorWeatherBadgeProps> = ({
           </div>
         </div>
 
-        {/* Fajr & Isha Outdoor Temperatures */}
+        {/* Fajr & Isha Outdoor Temperatures - Flat Theme Cards */}
         <div className="grid grid-cols-2 gap-2 my-2.5">
           {/* Fajr Card */}
-          <div className={`p-2 rounded-xl border flex flex-col items-center text-center ${themeStyles.fajrCardBg}`}>
+          <div className={`p-2.5 rounded-xl flex flex-col items-center text-center ${themeStyles.fajrCardBg}`}>
             <div className={`flex items-center gap-1 font-bold text-[11px] mb-0.5 ${themeStyles.fajrTextColor}`}>
-              <Moon className="w-3 h-3" />
+              <Moon className="w-3 h-3 opacity-90" />
               <span>{isEn ? 'Fajr Prayer' : 'صلاة الفجر'}</span>
             </div>
             <span className={`text-base font-black tabular-nums ${themeStyles.fajrTextColor}`}>
@@ -249,9 +250,9 @@ export const OutdoorWeatherBadge: React.FC<OutdoorWeatherBadgeProps> = ({
           </div>
 
           {/* Isha Card */}
-          <div className={`p-2 rounded-xl border flex flex-col items-center text-center ${themeStyles.ishaCardBg}`}>
+          <div className={`p-2.5 rounded-xl flex flex-col items-center text-center ${themeStyles.ishaCardBg}`}>
             <div className={`flex items-center gap-1 font-bold text-[11px] mb-0.5 ${themeStyles.ishaTextColor}`}>
-              <Moon className="w-3 h-3" />
+              <Moon className="w-3 h-3 opacity-90" />
               <span>{isEn ? 'Isha Prayer' : 'صلاة العشاء'}</span>
             </div>
             <span className={`text-base font-black tabular-nums ${themeStyles.ishaTextColor}`}>
@@ -263,21 +264,30 @@ export const OutdoorWeatherBadge: React.FC<OutdoorWeatherBadgeProps> = ({
           </div>
         </div>
 
-        {/* Mosque Walk Recommendation */}
-        <div className={`p-2.5 rounded-xl border flex items-start gap-1.5 text-[11px] font-medium leading-relaxed ${themeStyles.adviceBg}`}>
+        {/* Mosque Walk Recommendation - Flat Theme Card */}
+        <div className={`p-3 rounded-xl flex items-start gap-2 text-[11px] font-medium leading-relaxed ${themeStyles.adviceBg}`}>
           <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
           <p>
             {isEn ? weather.adviceEn : weather.adviceAr}
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setShowModal(false)}
-          className={`w-full mt-3 py-1.5 rounded-xl text-xs transition-colors cursor-pointer ${themeStyles.buttonBg}`}
-        >
-          {isEn ? 'Close' : 'حسناً، فهمت'}
-        </button>
+        {/* Centered Compact Close Button (Fit-content text width) */}
+        <div className="flex justify-center w-full mt-3.5">
+          <button
+            type="button"
+            onClick={() => setShowModal(false)}
+            className={`px-6 py-1.5 rounded-full font-bold text-xs flex items-center justify-center shrink-0 active:scale-95 transition-all cursor-pointer ${
+              isDark
+                ? 'night-white-surface bg-white text-black font-extrabold'
+                : 'golden-3d-pill-btn'
+            }`}
+            style={isDark ? { color: '#000000', WebkitTextFillColor: '#000000', backgroundColor: '#ffffff' } : undefined}
+            title={isEn ? 'Close' : 'إغلاق'}
+          >
+            <span>{isEn ? 'Close' : 'إغلاق'}</span>
+          </button>
+        </div>
       </div>
     </div>,
     document.body

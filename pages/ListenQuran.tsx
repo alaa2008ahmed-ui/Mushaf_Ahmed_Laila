@@ -994,7 +994,7 @@ function ListenQuran({ onBack, onNavigate }: ListenQuranProps) {
 
                     {/* أزرار التحكم بالصوت: أيقونات مسطحة عصرية مع زر Play باللون الأساسي الديناميكي */}
                     <div className="flex items-center justify-between px-3 sm:px-8 pt-1">
-                        {/* زر السابق: أيقونة مسطحة عصرية */}
+                        {/* زر السابق: في العربية يظهر على اليمين وأيقونته تشير لليمين ▶| */}
                         <button 
                             type="button"
                             onClick={handlePrevSurah} 
@@ -1038,7 +1038,7 @@ function ListenQuran({ onBack, onNavigate }: ListenQuranProps) {
                             )}
                         </button>
 
-                        {/* زر التالي: أيقونة مسطحة عصرية */}
+                        {/* زر التالي: في العربية يظهر على اليسار وأيقونته تشير لليسار |◀ */}
                         <button 
                             type="button"
                             onClick={handleNextSurah} 

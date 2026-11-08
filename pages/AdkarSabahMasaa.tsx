@@ -9,7 +9,6 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useHabitTracker } from '../hooks/useHabitTracker';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LayoutGrid, ListFilter } from 'lucide-react';
 import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/CommunitySpotlightGuide';
 import { ADKAR_PAGE_STEPS } from '../components/Community/communityTourSteps';
 import { markPageAsSeen } from '../utils/badgeManager';
@@ -319,44 +318,6 @@ function AdkarSabahMasaa({ onBack, onNavigate, navParams }: AdkarSabahMasaaProps
                                 <i className="fa-solid fa-times text-xs"></i>
                             </button>
                         )}
-                    </div>
-
-                    {/* View Mode Switch Chips */}
-                    <div 
-                        className="flex items-center p-1 rounded-2xl shrink-0 gap-1"
-                        style={{
-                            backgroundColor: isBlackTheme ? '#18181b' : (theme.isDark ? 'rgba(39, 39, 42, 0.7)' : '#FFFFFF'),
-                            boxShadow: theme.isDark ? 'none' : '0 4px 14px rgba(0, 0, 0, 0.04)'
-                        }}
-                    >
-                        <button
-                            type="button"
-                            onClick={() => setActiveTabMode('grid')}
-                            className={`flex items-center justify-center w-9 h-9 rounded-xl transition-all cursor-pointer ${
-                                activeTabMode === 'grid' ? 'shadow-sm' : 'opacity-60 hover:opacity-100'
-                            }`}
-                            style={activeTabMode === 'grid' ? {
-                                backgroundColor: primaryColor,
-                                color: btnTextColor
-                            } : { color: 'var(--text-color)' }}
-                            title={isEn ? "Grid View" : "عرض شبكي"}
-                        >
-                            <LayoutGrid size={16} />
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setActiveTabMode('list')}
-                            className={`flex items-center justify-center w-9 h-9 rounded-xl transition-all cursor-pointer ${
-                                activeTabMode === 'list' ? 'shadow-sm' : 'opacity-60 hover:opacity-100'
-                            }`}
-                            style={activeTabMode === 'list' ? {
-                                backgroundColor: primaryColor,
-                                color: btnTextColor
-                            } : { color: 'var(--text-color)' }}
-                            title={isEn ? "List View" : "عرض القوائم"}
-                        >
-                            <ListFilter size={16} />
-                        </button>
                     </div>
                 </div>
 

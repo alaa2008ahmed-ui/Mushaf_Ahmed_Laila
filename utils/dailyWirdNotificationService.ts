@@ -192,47 +192,54 @@ export const buildWirdNotificationContent = (
   isEvening: boolean = false,
   lang: 'ar' | 'en' = getCurrentAppLanguage()
 ) => {
-  const range = getWirdDayRange(dayNumber, profile);
   const isEn = lang === 'en';
   const userName = formatWirdUserName(profile.name, lang);
-  const pageRangeStr = range.start <= range.end 
-    ? (isEn ? `(p. ${range.start} - ${range.end})` : `(ص ${range.start} - ${range.end})`) 
-    : '';
 
-  // Calculate if partially read
-  const lastPage = profile.lastPage || 0;
-  const isPartiallyRead = lastPage >= range.start && lastPage < range.end;
-  const remainingPages = Math.max(1, range.end - lastPage);
+  // Compute date range for missed days >= 2 (e.g., from Nov 1 to Nov 7 / من يوم 1 نوفمبر إلى 7 نوفمبر)
+  let missedRangeStr = '';
+  if (missedCount >= 2) {
+    try {
+      const today = new Date();
+      const endD = new Date(today);
+      endD.setDate(today.getDate() - 1); // yesterday
+      const startD = new Date(today);
+      startD.setDate(today.getDate() - missedCount);
 
-  // Calculate yesterday's range if missed
-  let yesterdayRangeStr = '';
-  if (missedCount >= 1 && dayNumber > 1) {
-    const yRange = getWirdDayRange(dayNumber - 1, profile);
-    yesterdayRangeStr = isEn ? `(p. ${yRange.start} - ${yRange.end})` : `(ص ${yRange.start} - ${yRange.end})`;
+      const arMonths = [
+        'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
+        'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
+      ];
+      const enMonths = [
+        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      ];
+
+      if (isEn) {
+        missedRangeStr = `from ${enMonths[startD.getMonth()]} ${startD.getDate()} to ${enMonths[endD.getMonth()]} ${endD.getDate()}`;
+      } else {
+        missedRangeStr = `من يوم ${startD.getDate()} ${arMonths[startD.getMonth()]} إلى ${endD.getDate()} ${arMonths[endD.getMonth()]}`;
+      }
+    } catch (e) {}
   }
 
   if (isEn) {
     const prefix = `Dear ${userName}: `;
     if (isEvening) {
-      if (isPartiallyRead) {
+      if (missedCount === 0) {
         return {
-          title: `${prefix}Complete Today's Portion Tonight`,
-          body: `You read up to page ${lastPage} today. Only ${remainingPages} page(s) left to complete your portion (up to p. ${range.end}).. Conclude your day by finishing it now!`
-        };
-      } else if (missedCount === 0) {
-        return {
-          title: `${prefix}Evening Qur'an Reminder`,
-          body: `The day is coming to a close and today's assigned portion (Day ${dayNumber}) ${pageRangeStr} awaits you.. Conclude your night with the light of the Qur'an before sleep.`
+          title: `${prefix}Complete Today's Portion Before Sleep`,
+          body: `The day is coming to a close and today's assigned portion awaits you.. Conclude your day with the Holy Qur'an before sleep.`
         };
       } else if (missedCount === 1) {
         return {
           title: `${prefix}Catch Up Before Day's End`,
-          body: `Evening reminder: Yesterday's portion ${yesterdayRangeStr} and today's portion ${pageRangeStr} await you.. Make the seal of your night verses from the Holy Qur'an.`
+          body: `Evening reminder: Yesterday's portion and today's portion await you.. Make the seal of your night verses from the Holy Qur'an.`
         };
       } else {
+        const rangeText = missedRangeStr ? ` (${missedRangeStr})` : '';
         return {
           title: `${prefix}Blessed Opportunity Tonight`,
-          body: `Do not let today's portion ${pageRangeStr} and (${missedCount}) previous portions pass unread.. Spend a few tranquil minutes catching up tonight.`
+          body: `Do not let today's portion and your overdue portions${rangeText} pass unread.. Spend a few tranquil minutes catching up tonight.`
         };
       }
     } else {
@@ -240,17 +247,18 @@ export const buildWirdNotificationContent = (
       if (missedCount === 0) {
         return {
           title: `${prefix}Illuminate Your Day with the Qur'an`,
-          body: `Daily Qur'an portion reminder (Day ${dayNumber}) ${pageRangeStr}.. Blessed is the one who begins the day with the Qur'an. Open your Mushaf and read now.`
+          body: `Gentle reminder for today's portion.. Blessed is the one who begins the day with the Qur'an. Open your Mushaf and read now.`
         };
       } else if (missedCount === 1) {
         return {
           title: `${prefix}Gentle Reminder of the Holy Qur'an`,
-          body: `A gentle reminder: You haven't completed yesterday's portion ${yesterdayRangeStr} yet, and a blessed new portion awaits you today ${pageRangeStr}.. Read them together to maintain your Khatma.`
+          body: `Gentle reminder: Yesterday's portion and today's portion await you.. Read them together to maintain your blessed Khatma.`
         };
       } else {
+        const rangeText = missedRangeStr ? ` (${missedRangeStr})` : '';
         return {
           title: `${prefix}Eager for Your Return to the Qur'an`,
-          body: `Today's portion ${pageRangeStr} and (${missedCount}) previous portions await you.. Do not let days pass without the light of the Qur'an. Catch up now.`
+          body: `Today's portion and your overdue portions${rangeText} await you.. Open your Mushaf now and catch up on your blessed Khatma.`
         };
       }
     }
@@ -259,25 +267,21 @@ export const buildWirdNotificationContent = (
   // Arabic
   const prefix = `يا ${userName}: `;
   if (isEvening) {
-    if (isPartiallyRead) {
+    if (missedCount === 0) {
       return {
         title: `${prefix}أكمل ورد اليوم قبل النوم`,
-        body: `لقد قرأت حتى صفحة ${lastPage} اليوم، وبقي لك ${remainingPages} صفحة فقط لإكمال وردك (حتى ص ${range.end}).. اختم يومك بإكماله الآن لنيل الأجر كاملاً.`
-      };
-    } else if (missedCount === 0) {
-      return {
-        title: `${prefix}تذكير المساء بورد القرآن الكريم`,
-        body: `أوشك اليوم على الانقضاء ولم تكمل وردك المقرر (اليوم ${dayNumber}) ${pageRangeStr}.. اختم يومك بنور كتاب الله واقرأ وردك قبل النوم لتنعم بليل مبارك.`
+        body: `أوشك اليوم على الانقضاء وتذكيرك بورد اليوم.. اختم يومك بنور كتاب الله واقرأ وردك قبل النوم لتنعم بليل مبارك.`
       };
     } else if (missedCount === 1) {
       return {
         title: `${prefix}تدارك وردك قبل نهاية اليوم`,
-        body: `تذكير مسائي: لم تقرأ ورد الأمس ${yesterdayRangeStr} وورد اليوم ${pageRangeStr}.. اجعل مسك ختام ليلتك آيات من الذكر الحكيم واقرأهما الآن.`
+        body: `تذكير مسائي: تدارك ورد الأمس وورد اليوم.. اجعل مسك ختام ليلتك آيات من الذكر الحكيم واقرأهما الآن.`
       };
     } else {
+      const rangeText = missedRangeStr ? ` (${missedRangeStr})` : '';
       return {
         title: `${prefix}فرصة طيبة لاستدراك وردك الليلة`,
-        body: `أوشك اليوم على الانتهاء ولديك ورد اليوم ${pageRangeStr} و (${missedCount}) أوراد سابقة متأخرة في انتظارك.. بضع دقائق في سكون الليل كفيلة باستدراك ما فاتك، افتح مصحفك الآن.`
+        body: `أوشك اليوم على الانتهاء، ولديك ورد اليوم والأوراد السابقة غير المقروءة${rangeText}.. بضع دقائق كفيلة باستدراك ما فاتك، افتح مصحفك الآن.`
       };
     }
   } else {
@@ -285,17 +289,18 @@ export const buildWirdNotificationContent = (
     if (missedCount === 0) {
       return {
         title: `${prefix}نور يومك بكتاب الله`,
-        body: `تذكير بوردك القرآني لليوم (اليوم ${dayNumber}) ${pageRangeStr}.. هنيئاً لمن جعل للقرآن نصيباً من يومه، افتح مصحفك واقرأ وردك الآن.`
+        body: `تذكير بورد اليوم.. هنيئاً لمن جعل للقرآن نصيباً من يومه، افتح مصحفك واقرأ وردك الآن.`
       };
     } else if (missedCount === 1) {
       return {
         title: `${prefix}تذكير طيب بورد القرآن الكريم`,
-        body: `تذكير لطيف: لم تكمل ورد الأمس ${yesterdayRangeStr}، ولديك اليوم ورد مبارك جديد ${pageRangeStr}.. اقرأهما معاً لتستمر في مسيرة ختمتك المباركة وتفيض عليك البركة.`
+        body: `تذكير لطيف: تدارك ورد الأمس وورد اليوم.. اقرأهما معاً لتستمر في مسيرة ختمتك المباركة وتفيض عليك البركة.`
       };
     } else {
+      const rangeText = missedRangeStr ? ` (${missedRangeStr})` : '';
       return {
         title: `${prefix}مشتاقون لعودتك إلى كتاب الله`,
-        body: `لديك ورد اليوم ${pageRangeStr} و (${missedCount}) أوراد سابقة متأخرة في انتظارك.. لا تدع الأيام تمضي دون نور القرآن، افتح مصحفك الآن واستدرك ما فاتك.`
+        body: `في انتظارك ورد اليوم والأوراد السابقة غير المقروءة${rangeText}.. لا تدع الأيام تمضي دون نور القرآن، افتح مصحفك واستدرك ما فاتك.`
       };
     }
   }
@@ -605,10 +610,10 @@ export const triggerTestWirdNotification = async (langOverride?: 'ar' | 'en') =>
     ? buildWirdNotificationContent(profile, dayNumber, 0, false, lang)
     : (isEn ? {
         title: `Dear ${userName}: Daily Wird Phone Alert`,
-        body: `Portion reminder (Day 1) (p. 1 - 20).. Blessed is the one who dedicates time to the Holy Qur'an.`
+        body: `Gentle reminder for today's portion.. Blessed is the one who dedicates time to the Holy Qur'an.`
       } : {
         title: `يا ${userName}: نور يومك بكتاب الله`,
-        body: `تذكير بوردك القرآني لليوم (اليوم 1) (ص 1 - 20).. هنيئاً لمن جعل للقرآن نصيباً من يومه، افتح مصحفك واقرأ وردك الآن.`
+        body: `تذكير بورد اليوم.. هنيئاً لمن جعل للقرآن نصيباً من يومه، افتح مصحفك واقرأ وردك الآن.`
       });
 
   // Play chosen notification sound

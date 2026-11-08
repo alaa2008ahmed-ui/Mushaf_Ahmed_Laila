@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { READERS, ReaderItem, ReadingMode, getReadersForMode, isEnglishReader } from './constants';
-import { Search, Check } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { getReciterDisplayName, tListen } from '../../utils/listenQuranTranslations';
 
@@ -230,18 +230,17 @@ const ReciterSelectModal: React.FC<ReciterSelectModalProps> = ({
                                             onClick={() => handleSelect(r.id)}
                                             className="w-full max-w-md p-5 rounded-2xl border-none transition-all font-bold flex flex-col items-center justify-center text-center cursor-pointer quran-raised-btn quran-raised-btn-selected"
                                             style={{ 
-                                                backgroundColor: isBlackTheme ? 'rgba(255, 255, 255, 0.15)' : 'var(--qr-accent)', 
-                                                color: '#ffffff'
+                                                backgroundColor: 'var(--qr-accent)', 
+                                                color: 'var(--qr-accent-text, #ffffff)'
                                             }}
                                         >
-                                            <div className="flex items-center justify-between w-full">
+                                            <div className="flex items-center justify-center w-full">
                                                 <span className="text-sm font-black truncate flex-1 text-center">
                                                     {getReciterDisplayName(r.name, language)}
                                                 </span>
-                                                <Check size={20} className="shrink-0 ml-1 text-white quran-3d-icon" />
                                             </div>
                                             {!isEnReader && (r.subTitle || r.subTitleEn) && (
-                                                <span className="text-xs mt-1.5 opacity-90 text-indigo-100">
+                                                <span className="text-xs mt-1.5 opacity-90 text-white/90">
                                                     {isEn ? (r.subTitleEn || r.subTitle) : r.subTitle}
                                                 </span>
                                             )}
@@ -269,24 +268,17 @@ const ReciterSelectModal: React.FC<ReciterSelectModalProps> = ({
                                                     : 'quran-raised-btn hover:opacity-90 active:scale-[0.97]'
                                             }`}
                                             style={{ 
-                                                backgroundColor: isEnReader 
-                                                    ? 'var(--qr-card-bg)' 
-                                                    : (isSelected ? (isBlackTheme ? 'rgba(255, 255, 255, 0.18)' : 'var(--qr-accent)') : 'var(--qr-card-bg)'), 
-                                                color: isEnReader 
-                                                    ? 'var(--qr-card-text)' 
-                                                    : (isSelected ? '#ffffff' : 'var(--qr-card-text)')
+                                                backgroundColor: isSelected ? 'var(--qr-accent)' : 'var(--qr-card-bg)', 
+                                                color: isSelected ? 'var(--qr-accent-text, #ffffff)' : 'var(--qr-card-text)'
                                             }}
                                         >
-                                            <div className="flex items-center justify-between w-full gap-1">
+                                            <div className="flex items-center justify-center w-full">
                                                 <span className="text-xs sm:text-[13px] font-bold line-clamp-2 flex-1 text-center leading-snug">
                                                     {displayName}
                                                 </span>
-                                                {isSelected && (
-                                                    <Check size={16} className="shrink-0 quran-3d-icon" style={{ color: isEnReader ? 'var(--qr-card-text)' : '#ffffff' }} />
-                                                )}
                                             </div>
                                             {!isEnReader && subTitle && (
-                                                <span className={`text-[10px] mt-0.5 line-clamp-1 opacity-80 ${isSelected || isBlackTheme ? 'text-white/80' : 'text-indigo-600 dark:text-indigo-300'}`}>
+                                                <span className={`text-[10px] mt-0.5 line-clamp-1 opacity-80 ${isSelected ? 'text-white/90' : 'text-indigo-600 dark:text-indigo-300'}`}>
                                                     {subTitle}
                                                 </span>
                                             )}

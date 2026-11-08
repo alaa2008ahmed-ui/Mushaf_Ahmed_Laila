@@ -71,13 +71,12 @@ const TafseerSelectionModal: FC<{
                         const isSelected = currentTafseerId === t.id;
                         return (
                             <button key={t.id} onClick={() => onSelect(t.id)} 
-                                className={`w-full ${isLandscape ? 'py-2.5 px-3 text-sm' : 'py-3 px-4 text-base'} rounded-xl font-bold transition-all flex items-center justify-between gap-2 cursor-pointer ${isSelected ? 'quran-raised-btn-selected shadow-md' : 'quran-raised-btn'}`} 
+                                className={`w-full ${isLandscape ? 'py-2.5 px-3 text-sm' : 'py-3 px-4 text-base'} rounded-xl font-bold transition-all flex items-center justify-center text-center gap-2 cursor-pointer ${isSelected ? 'quran-raised-btn-selected shadow-md' : 'quran-raised-btn'}`} 
                                 style={{ 
                                     backgroundColor: isSelected ? 'var(--qr-accent)' : 'var(--qr-card-bg)', 
-                                    color: isSelected ? 'var(--qr-accent-text, #fff)' : 'var(--qr-card-text)'
+                                    color: isSelected ? 'var(--qr-accent-text, #ffffff)' : 'var(--qr-card-text)'
                                 }}>
-                                <span className="font-bold truncate">{getTafseerDisplayName(t.id, language as 'ar' | 'en')}</span>
-                                {isSelected && <i className="fa-solid fa-check text-sm quran-3d-icon"></i>}
+                                <span className="font-bold truncate text-center flex-1">{getTafseerDisplayName(t.id, language as 'ar' | 'en')}</span>
                             </button>
                         );
                     })}

@@ -72,13 +72,14 @@ interface ZoomedCardData {
 }
 
 const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, navParams, onOpenThemes }) => {
-    const { theme, themeKey } = useTheme();
+    const { theme, themeKey, isNightMode } = useTheme();
     const { language, isRTL } = useLanguage();
     const isEn = language === 'en';
     const ui = TEN_PROMISED_UI_TEXTS[isEn ? 'en' : 'ar'];
 
     // Modern Flat Design System
     const tokens = useMemo(() => getModernFlatTokens(theme, themeKey), [theme, themeKey]);
+    const isEffectiveDark = isNightMode || tokens.isDark || themeKey === 'black_gold' || themeKey === 'deep_black' || theme.bgColor === '#000000';
     const { 
         primaryColor, 
         secondaryColor, 
@@ -752,7 +753,7 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                 {/* Name */}
                                                 <h3 
                                                     className={`text-base sm:text-lg font-bold ${isEn ? 'font-sans' : 'font-kufi'} transition-colors`}
-                                                    style={{ color: primaryColor }}
+                                                    style={{ color: isEffectiveDark ? '#FFFFFF' : primaryColor }}
                                                 >
                                                     {name}
                                                 </h3>
@@ -835,7 +836,7 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                     <div className="space-y-1">
                                         <h2 
                                             className={`text-2xl sm:text-3xl font-black ${isEn ? 'font-sans' : 'font-kufi'}`}
-                                            style={{ color: primaryColor }}
+                                            style={{ color: isEffectiveDark ? '#FFFFFF' : primaryColor }}
                                         >
                                             {isEn ? selectedCompanion.nameEn : selectedCompanion.nameAr}
                                         </h2>
@@ -2299,7 +2300,7 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                     style={{ 
                                         backgroundColor: cardBgColor, 
                                         boxShadow: cardShadow,
-                                        color: tokens.isDark ? '#E2E8F0' : '#334155'
+                                        color: isEffectiveDark ? '#FFFFFF' : '#334155'
                                     }}
                                 >
                                     <i className={`fa-solid ${isEn ? 'fa-arrow-left' : 'fa-arrow-right'} text-xs`}></i>
@@ -2314,7 +2315,7 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                     style={{ 
                                         backgroundColor: cardBgColor, 
                                         boxShadow: cardShadow,
-                                        color: tokens.isDark ? '#E2E8F0' : '#334155'
+                                        color: isEffectiveDark ? '#FFFFFF' : '#334155'
                                     }}
                                 >
                                     <span className="truncate">{isEn ? nextCompanion.nameEn : nextCompanion.nameAr}</span>

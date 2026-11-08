@@ -502,9 +502,9 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
 
                                 if (isToday) {
                                     if (isBlackAndWhite) {
-                                        rowBg = '#059669';
+                                        rowBg = '#000000';
                                         rowTextColor = '#FFFFFF';
-                                        rowBorderColor = '#34d399';
+                                        rowBorderColor = '#000000';
                                     } else if (isDefaultTheme) {
                                         rowBg = '#000000';
                                         rowTextColor = '#FFFFFF';
@@ -540,13 +540,19 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
                                         <td className="px-1 py-2 font-mono text-[9px] xs:text-[10px]" style={cellStyle} dir="ltr">
                                             <span className="font-bold" style={{ 
                                                 color: isToday 
-                                                    ? '#78350F' 
-                                                    : (isShinyGold ? '#B45309' : (isDefaultTheme ? '#000000' : (isBlackAndWhite ? '#FFFFFF' : primaryColor))) 
+                                                    ? (isBlackAndWhite || isDefaultTheme ? '#FFFFFF' : '#78350F') 
+                                                    : (isShinyGold ? '#B45309' : '#000000') 
                                             }}>
                                                 {day.hijriDay}
                                             </span>
                                             <span className="mx-0.5 opacity-60">/</span>
-                                            <span className="opacity-80">{day.gregorianDay}</span>
+                                            <span className="opacity-90 font-medium" style={{
+                                                color: isToday 
+                                                    ? (isBlackAndWhite || isDefaultTheme ? '#FFFFFF' : '#78350F') 
+                                                    : '#374151'
+                                            }}>
+                                                {day.gregorianDay}
+                                            </span>
                                         </td>
                                         <td className="px-1 py-2 font-mono" style={cellStyle} dir="ltr">
                                             {toEnglishDigits(formatTime12_clean(applyOffset(day.timings.Fajr, getOffset('Fajr'))))}

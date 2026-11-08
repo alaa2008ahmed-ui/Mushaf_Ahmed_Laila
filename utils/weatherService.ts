@@ -105,7 +105,7 @@ export async function fetchOutdoorPrayerWeather(
     const current = data.current_weather;
     if (!current) return null;
 
-    const currentTemp = Math.round(current.temperature);
+    const currentTemp = current.temperature ?? 0;
     const currentCode = current.weathercode ?? 0;
     const windSpeed = Math.round(current.windspeed ?? 0);
     
@@ -169,7 +169,7 @@ export async function fetchOutdoorPrayerWeather(
         const timeKey = `${todayStr}T${prayerHour.toString().padStart(2, '0')}`;
         const pIdx = hourlyTimes.findIndex(t => t.startsWith(timeKey));
         if (pIdx !== -1 && hourlyTemps[pIdx] !== undefined) {
-          const temp = Math.round(hourlyTemps[pIdx]);
+          const temp = Number(hourlyTemps[pIdx]);
           const code = hourlyCodes[pIdx] ?? currentCode;
           prayerTemps[key] = {
             temp,

@@ -176,14 +176,14 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
     const themeStyles = (() => {
         if (isEffectiveBlack) {
             return {
-                modalBg: '#18181b',
+                modalBg: '#121214',
                 modalText: '#ffffff',
-                cardBg: '#27272a',
+                cardBg: '#1e1e24',
                 cardBorder: 'rgba(255, 255, 255, 0.15)',
                 text: '#ffffff',
                 subtext: '#a1a1aa',
-                accent: '#38bdf8',
-                btnBg: '#38bdf8',
+                accent: '#ffffff',
+                btnBg: '#ffffff',
                 btnText: '#000000'
             };
         }
@@ -460,7 +460,7 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
                                     <div
                                         className={`w-4 h-4 rounded-full shadow-md transform transition-transform ${
                                             tempPreReminderEnabled 
-                                                ? (isRTL ? 'bg-white -translate-x-5' : 'bg-white translate-x-5')
+                                                ? (isRTL ? (isEffectiveBlack ? 'bg-black -translate-x-5' : 'bg-white -translate-x-5') : (isEffectiveBlack ? 'bg-black translate-x-5' : 'bg-white translate-x-5'))
                                                 : 'bg-white translate-x-0'
                                         }`}
                                     />
@@ -474,7 +474,7 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
                                     <span 
                                         className="text-[10px] font-bold px-1.5 py-0.5 rounded-full transition-colors"
                                         style={{
-                                            backgroundColor: `${themeStyles.accent}25`,
+                                            backgroundColor: isEffectiveBlack ? 'rgba(255, 255, 255, 0.15)' : `${themeStyles.accent}25`,
                                             color: themeStyles.text
                                         }}
                                     >
@@ -497,7 +497,7 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
                                                 className={`px-2.5 py-0.5 rounded-md text-[10px] font-bold transition-all cursor-pointer ${
                                                     isSelected
                                                         ? 'shadow-xs'
-                                                        : 'bg-black/5 opacity-90 hover:opacity-100'
+                                                        : (isEffectiveBlack ? 'bg-white/10 opacity-90 hover:opacity-100' : 'bg-black/5 opacity-90 hover:opacity-100')
                                                 }`}
                                                 style={isSelected ? {
                                                     backgroundColor: themeStyles.btnBg,
@@ -557,7 +557,7 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
                                     <div
                                         className={`w-4 h-4 rounded-full shadow-md transform transition-transform ${
                                             tempIqamaEnabled 
-                                                ? (isRTL ? 'bg-white -translate-x-5' : 'bg-white translate-x-5')
+                                                ? (isRTL ? (isEffectiveBlack ? 'bg-black -translate-x-5' : 'bg-white -translate-x-5') : (isEffectiveBlack ? 'bg-black translate-x-5' : 'bg-white translate-x-5'))
                                                 : 'bg-white translate-x-0'
                                         }`}
                                     />
@@ -571,7 +571,7 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
                                     <span 
                                         className="text-[10px] font-bold px-1.5 py-0.5 rounded-full transition-colors"
                                         style={{
-                                            backgroundColor: `${themeStyles.accent}25`,
+                                            backgroundColor: isEffectiveBlack ? 'rgba(255, 255, 255, 0.15)' : `${themeStyles.accent}25`,
                                             color: themeStyles.text
                                         }}
                                     >
@@ -607,7 +607,7 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
                                                 className={`px-2.5 py-0.5 rounded-md text-[10px] font-bold transition-all cursor-pointer ${
                                                     isSelected
                                                         ? 'shadow-xs'
-                                                        : 'bg-black/5 opacity-90 hover:opacity-100'
+                                                        : (isEffectiveBlack ? 'bg-white/10 opacity-90 hover:opacity-100' : 'bg-black/5 opacity-90 hover:opacity-100')
                                                 }`}
                                                 style={isSelected ? {
                                                     backgroundColor: themeStyles.btnBg,
@@ -667,7 +667,7 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
                                     <div
                                         className={`w-4 h-4 rounded-full shadow-md transform transition-transform ${
                                             tempAutoSilentEnabled 
-                                                ? (isRTL ? 'bg-white -translate-x-5' : 'bg-white translate-x-5')
+                                                ? (isRTL ? (isEffectiveBlack ? 'bg-black -translate-x-5' : 'bg-white -translate-x-5') : (isEffectiveBlack ? 'bg-black translate-x-5' : 'bg-white translate-x-5'))
                                                 : 'bg-white translate-x-0'
                                         }`}
                                     />
@@ -681,7 +681,7 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
                                     <span 
                                         className="text-[10px] font-bold px-1.5 py-0.5 rounded-full transition-colors"
                                         style={{
-                                            backgroundColor: `${themeStyles.accent}25`,
+                                            backgroundColor: isEffectiveBlack ? 'rgba(255, 255, 255, 0.15)' : `${themeStyles.accent}25`,
                                             color: themeStyles.text
                                         }}
                                     >
@@ -704,7 +704,7 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
                                                 className={`px-2.5 py-0.5 rounded-md text-[10px] font-bold transition-all cursor-pointer ${
                                                     isSelected
                                                         ? 'shadow-xs'
-                                                        : 'bg-black/5 opacity-90 hover:opacity-100'
+                                                        : (isEffectiveBlack ? 'bg-white/10 opacity-90 hover:opacity-100' : 'bg-black/5 opacity-90 hover:opacity-100')
                                                 }`}
                                                 style={isSelected ? {
                                                     backgroundColor: themeStyles.btnBg,

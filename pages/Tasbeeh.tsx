@@ -449,9 +449,14 @@ export function Tasbeeh({ onBack, onNavigate }: TasbeehProps) {
 
                     {/* Quick Chart Trigger Card */}
                     <motion.button
+                        id="tasbeeh-chart-bottom-btn"
+                        type="button"
                         whileTap={{ scale: 0.98 }}
+                        onClick={() => setModals((p: any) => ({ ...p, stats: true }))}
                         className="w-full mt-3 p-3 px-4 rounded-2xl bg-white dark:bg-[#1E293B] shadow-[0_4px_16px_-2px_rgba(0,0,0,0.05)] border-0 flex items-center justify-between text-xs transition-all hover:shadow-md active:scale-98 group cursor-pointer"
                         style={{ border: 'none' }}
+                        title={tTasbeeh('chartTitle', language)}
+                        aria-label={tTasbeeh('chartTitle', language)}
                     >
                         <div className="flex items-center gap-2.5 font-bold">
                             <span 

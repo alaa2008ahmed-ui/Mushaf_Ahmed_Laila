@@ -160,7 +160,6 @@ const ThemesModal: React.FC<ThemesModalProps> = ({ onClose, showToast, isLandsca
                                 }}
                             >
                                 <div className="font-bold mb-2 text-sm flex items-center justify-center gap-2">
-                                    {isSelected && <i className="fa-solid fa-check-circle quran-3d-icon"></i>}
                                     <span>{nameDisplay}</span>
                                 </div>
                                 <div className="w-full h-20 rounded-xl p-2 shadow-inner flex flex-col justify-between" style={{ backgroundColor: t.bg }}>
@@ -202,7 +201,6 @@ const ThemesModal: React.FC<ThemesModalProps> = ({ onClose, showToast, isLandsca
                                 }}
                             >
                                 <div className="font-bold mb-2 text-sm flex items-center justify-center gap-2">
-                                    {isSelected && <i className="fa-solid fa-check-circle quran-3d-icon"></i>}
                                     <span>{nameDisplay}</span>
                                 </div>
                                 <div className="w-full h-20 rounded-xl p-2 shadow-inner flex flex-col justify-between" style={{ backgroundColor: t.bg }}>

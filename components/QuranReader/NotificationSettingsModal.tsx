@@ -167,19 +167,19 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
     });
 
     const { theme, themeKey, homeThemeVariant } = useTheme();
-    const isBlackTheme = themeKey === 'deep_black' || theme?.bgColor === '#000000';
+    const isBlackTheme = themeKey === 'deep_black' || theme?.bgColor === '#000000' || theme?.name === 'اسود' || theme?.name === 'black';
 
     const themeStyles = (() => {
         if (isBlackTheme || themeKey === 'deep_black') {
             return {
-                modalBg: '#18181b',
+                modalBg: '#121214',
                 modalText: '#ffffff',
-                cardBg: '#27272a',
+                cardBg: '#1e1e24',
                 cardBorder: 'rgba(255, 255, 255, 0.15)',
                 text: '#ffffff',
                 subtext: '#a1a1aa',
-                accent: '#38bdf8',
-                btnBg: '#38bdf8',
+                accent: '#ffffff',
+                btnBg: '#ffffff',
                 btnText: '#000000'
             };
         }

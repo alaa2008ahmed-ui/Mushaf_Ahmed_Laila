@@ -102,9 +102,8 @@ const FontSelectModal: FC<{
                                     color: 'var(--qr-card-text)'
                                 }}
                             >
-                                <div className="flex items-center justify-between w-full px-1">
-                                    <span className="text-sm font-bold truncate">{displayName}</span>
-                                    {isSelected && <i className="fa-solid fa-circle-check text-xs quran-3d-icon"></i>}
+                                <div className="flex items-center justify-center w-full px-1">
+                                    <span className="text-sm font-bold truncate text-center">{displayName}</span>
                                 </div>
                                 <span 
                                     className={`w-full truncate px-1 opacity-95 font-preview font-quran ${isTranslationMode ? 'text-sm text-left font-normal italic tracking-wide' : 'text-base sm:text-lg text-center font-normal'}`}

@@ -21,7 +21,6 @@ const MushafSelectionModal: FC<{
                         }}>
                         <i className="fa-solid fa-book-open text-3xl quran-3d-icon"></i>
                         <span className="text-base font-black">المصحف العثماني</span>
-                        {currentType === 'uthmani' && <i className="fa-solid fa-check text-sm quran-3d-icon"></i>}
                     </button>
                 </div>
                 <div className="p-3.5 border-0 themed-card-bg rounded-b-3xl">

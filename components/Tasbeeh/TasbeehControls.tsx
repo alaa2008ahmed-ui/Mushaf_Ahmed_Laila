@@ -64,7 +64,7 @@ const TasbeehControls: React.FC<TasbeehControlsProps> = ({
             </motion.div>
 
             {/* Quick Action Buttons Grid - Pure White Cards with Soft Drop Shadow & Zero Hard Borders */}
-            <div className="grid grid-cols-5 gap-2 h-16">
+            <div className="grid grid-cols-4 gap-2.5 h-16">
                  {/* 1. Add Dhikr */}
                  <motion.button 
                     whileTap={{ scale: 0.95 }} 
@@ -146,28 +146,6 @@ const TasbeehControls: React.FC<TasbeehControlsProps> = ({
                      </div>
                      <span className="truncate max-w-full font-bold">
                          {tTasbeeh('skinBtn', language)}
-                     </span>
-                 </motion.button>
-
-                 {/* 5. Chart Modal Trigger */}
-                 <motion.button 
-                    whileTap={{ scale: 0.95 }} 
-                    type="button"
-                    onClick={() => setModals((p: any) => ({...p, stats: true}))} 
-                    className="flex flex-col items-center justify-center py-1.5 px-1 font-bold rounded-2xl bg-white dark:bg-[#1E293B] text-[10px] sm:text-xs shadow-[0_4px_16px_-2px_rgba(0,0,0,0.05)] hover:shadow-md border border-slate-100/80 dark:border-white/5 h-full transition-all cursor-pointer group active:scale-95" 
-                    style={{ color: textColor }}
-                    title={tTasbeeh('chartCardTitle', language)}
-                 >
-                     <div 
-                         className="w-7 h-7 rounded-full flex items-center justify-center mb-1 transition-transform group-hover:scale-110"
-                         style={{ backgroundColor: `${primaryColor}14`, color: primaryColor }}
-                     >
-                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                         </svg>
-                     </div>
-                     <span className="truncate max-w-full font-bold">
-                         {tTasbeeh('chartBtn', language)}
                      </span>
                  </motion.button>
             </div>

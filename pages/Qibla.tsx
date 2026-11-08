@@ -25,7 +25,7 @@ function Qibla({ onBack, onNavigate }: { onBack: () => void, onNavigate: (page: 
     
     let primaryColor = '#b45309';
     if (isBlackTheme) {
-        primaryColor = '#fbbf24';
+        primaryColor = '#FFFFFF';
     } else if (homeThemeVariant === 'sky' || themeKey === 'sky_mode') {
         primaryColor = '#0284c7';
     } else if (homeThemeVariant === 'emerald' || themeKey === 'emerald_mode') {

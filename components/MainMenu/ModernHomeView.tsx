@@ -129,7 +129,7 @@ export const DEFAULT_MODERN_CARD_ORDER: ModernCardId[] = [
 
 export const MODERN_CARD_TITLES: Record<ModernCardId, { ar: string; en: string }> = {
   quran: { ar: 'متابعة تلاوة المصحف', en: 'Quran Recitation' },
-  'listen-quran': { ar: 'الاستماع للقرآن الكريم', en: 'Audio Quran Recitation' },
+  'listen-quran': { ar: 'الاستماع للقرآن', en: 'Audio Quran Recitation' },
   prayer: { ar: 'مواقيت الصلاة والقبلة', en: 'Prayer Times & Qibla' },
   seasonal: { ar: 'الشريط الموسمي الذكي', en: 'Seasonal Strip' },
   adhkar: { ar: 'الأذكار اليومية والوصول السريع', en: 'Daily Adhkar & Quick Apps' },
@@ -636,7 +636,7 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
     }
   };
   const { records, toggleHabit, getDailyProgress } = useHabitTracker();
-  const { isEnabled, toggleEnabled } = useVoiceControl();
+  const { isEnabled, toggleEnabled, showVoiceIcon } = useVoiceControl();
   const { isPageSeen } = useSeenPages();
 
   // Active category tab for "درج الخدمات الذكي"
@@ -1903,38 +1903,40 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
           </div>
 
           {/* أيقونة التحكم الصوتي فقط باللون الذهبي بدون أي بطاقة خلفية */}
-          <button
-            id="modern-voice-control-btn"
-            type="button"
-            onClick={() => {
-              toggleEnabled();
-              if (!isEnabled) {
-                setToastMessage(isEn ? 'Voice control activated 🎙️' : 'تم تفعيل التحكم الصوتي 🎙️');
-              } else {
-                setToastMessage(isEn ? 'Voice control disabled' : 'تم تعطيل التحكم الصوتي');
+          {showVoiceIcon && (
+            <button
+              id="modern-voice-control-btn"
+              type="button"
+              onClick={() => {
+                toggleEnabled();
+                if (!isEnabled) {
+                  setToastMessage(isEn ? 'Voice control activated 🎙️' : 'تم تفعيل التحكم الصوتي 🎙️');
+                } else {
+                  setToastMessage(isEn ? 'Voice control disabled' : 'تم تعطيل التحكم الصوتي');
+                }
+              }}
+              className="shrink-0 p-2 sm:p-2.5 flex items-center justify-center cursor-pointer select-none transition-all duration-200 active:scale-90 hover:scale-110 bg-transparent border-none outline-none"
+              title={
+                isEnabled 
+                  ? (isEn ? 'Voice control is active (Tap to disable)' : 'التحكم الصوتي مفعّل (انقر للتعطيل)') 
+                  : (isEn ? 'Voice control is disabled (Tap to enable)' : 'التحكم الصوتي معطّل (انقر للتفعيل)')
               }
-            }}
-            className="shrink-0 p-2 sm:p-2.5 flex items-center justify-center cursor-pointer select-none transition-all duration-200 active:scale-90 hover:scale-110 bg-transparent border-none outline-none"
-            title={
-              isEnabled 
-                ? (isEn ? 'Voice control is active (Tap to disable)' : 'التحكم الصوتي مفعّل (انقر للتعطيل)') 
-                : (isEn ? 'Voice control is disabled (Tap to enable)' : 'التحكم الصوتي معطّل (انقر للتفعيل)')
-            }
-          >
-            {isEnabled ? (
-              <div className="relative flex items-center justify-center">
-                <Mic className="w-6 h-6 sm:w-7 sm:h-7 drop-shadow-md voice-control-icon-svg" color={voiceIconColor} style={{ color: voiceIconColor, stroke: voiceIconColor }} strokeWidth={2.4} />
-                <span className="absolute -top-1 -right-1 flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ backgroundColor: voicePingColor }}></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2" style={{ backgroundColor: voiceIconColor }}></span>
-                </span>
-              </div>
-            ) : (
-              <div className="relative flex items-center justify-center">
-                <MicOff className="w-6 h-6 sm:w-7 sm:h-7 drop-shadow-md voice-control-icon-svg" color={voiceIconColor} style={{ color: voiceIconColor, stroke: voiceIconColor }} strokeWidth={2.4} />
-              </div>
-            )}
-          </button>
+            >
+              {isEnabled ? (
+                <div className="relative flex items-center justify-center">
+                  <Mic className="w-6 h-6 sm:w-7 sm:h-7 drop-shadow-md voice-control-icon-svg" color={voiceIconColor} style={{ color: voiceIconColor, stroke: voiceIconColor }} strokeWidth={2.4} />
+                  <span className="absolute -top-1 -right-1 flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ backgroundColor: voicePingColor }}></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2" style={{ backgroundColor: voiceIconColor }}></span>
+                  </span>
+                </div>
+              ) : (
+                <div className="relative flex items-center justify-center">
+                  <MicOff className="w-6 h-6 sm:w-7 sm:h-7 drop-shadow-md voice-control-icon-svg" color={voiceIconColor} style={{ color: voiceIconColor, stroke: voiceIconColor }} strokeWidth={2.4} />
+                </div>
+              )}
+            </button>
+          )}
         </div>
 
         {/* قسم التطبيقات المفضلة المنقول داخل بطاقة البحث مع تصغير الخط لعرض العناوين كاملة بدون تقطيع */}

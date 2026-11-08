@@ -25,6 +25,7 @@ const VoiceControlPage: React.FC<{ onBack: () => void, onNavigate: (pageId: stri
     const { 
         isEnabled, 
         setIsEnabled, 
+        toggleEnabled,
         isListening, 
         transcript, 
         commands, 
@@ -58,7 +59,7 @@ const VoiceControlPage: React.FC<{ onBack: () => void, onNavigate: (pageId: stri
         }
         
         setTimeout(() => setToastMessage(''), 3000);
-        setIsEnabled(!isEnabled);
+        toggleEnabled();
     };
 
     return (
@@ -167,18 +168,47 @@ const VoiceControlPage: React.FC<{ onBack: () => void, onNavigate: (pageId: stri
 
                         <div className="h-px w-full" style={{ backgroundColor: cardBorderColor, opacity: 0.2 }}></div>
 
-                        {/* Toggle Section */}
+                        {/* Activation Toggle linked with Home Screen Icon */}
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <h3 className="font-bold text-sm">{isEn ? 'Voice Control Activation' : 'تفعيل التحكم الصوتي'}</h3>
+                                <p className="text-[10px] opacity-60 mt-0.5">
+                                    {isEnabled 
+                                        ? (isEn ? 'Enabled & synced with home screen button' : 'مفعّل ومرتبط بزر الصفحة الرئيسية') 
+                                        : (isEn ? 'Disabled on home screen and all pages' : 'معطّل بالصفحة الرئيسية وكافة الصفحات')}
+                                </p>
+                            </div>
+                            <button 
+                                id="voice-activation-toggle"
+                                type="button"
+                                onClick={handleToggleVoiceControl}
+                                className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none cursor-pointer"
+                                style={{ backgroundColor: isEnabled ? '#10b981' : '#9ca3af' }}
+                                title={isEnabled ? (isEn ? 'Disable voice control' : 'تعطيل التحكم الصوتي') : (isEn ? 'Enable voice control' : 'تفعيل التحكم الصوتي')}
+                                aria-label={isEnabled ? (isEn ? 'Disable voice control' : 'تعطيل التحكم الصوتي') : (isEn ? 'Enable voice control' : 'تفعيل التحكم الصوتي')}
+                            >
+                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-md transition-transform ${isEnabled ? (isEn ? 'translate-x-6' : '-translate-x-6') : (isEn ? 'translate-x-1' : '-translate-x-1')}`} />
+                            </button>
+                        </div>
+
+                        <div className="h-px w-full" style={{ backgroundColor: cardBorderColor, opacity: 0.2 }}></div>
+
+                        {/* Home Screen Icon Visibility Toggle */}
                         <div className="flex items-center justify-between">
                             <div>
                                 <h3 className="font-bold text-sm">{isEn ? 'Voice Control Icon' : 'أيقونة التحكم الصوتي'}</h3>
                                 <p className="text-[10px] opacity-60 mt-0.5">{isEn ? 'Show voice control icon on home screen' : 'إظهار أيقونة التحكم الصوتي في الصفحة الرئيسية'}</p>
                             </div>
                             <button 
+                                id="voice-show-icon-toggle"
+                                type="button"
                                 onClick={() => setShowVoiceIcon(!showVoiceIcon)}
-                                className="relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none cursor-pointer"
+                                className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none cursor-pointer"
                                 style={{ backgroundColor: showVoiceIcon ? (themeKey === 'default' ? '#000000' : theme.palette[0]) : '#9ca3af' }}
+                                title={showVoiceIcon ? (isEn ? 'Hide icon' : 'إخفاء الأيقونة') : (isEn ? 'Show icon' : 'إظهار الأيقونة')}
+                                aria-label={showVoiceIcon ? (isEn ? 'Hide icon' : 'إخفاء الأيقونة') : (isEn ? 'Show icon' : 'إظهار الأيقونة')}
                             >
-                                <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${showVoiceIcon ? (isEn ? 'translate-x-5' : '-translate-x-5') : (isEn ? 'translate-x-0.5' : '-translate-x-0.5')}`} />
+                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-md transition-transform ${showVoiceIcon ? (isEn ? 'translate-x-6' : '-translate-x-6') : (isEn ? 'translate-x-1' : '-translate-x-1')}`} />
                             </button>
                         </div>
                     </div>

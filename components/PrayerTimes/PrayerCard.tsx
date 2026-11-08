@@ -223,13 +223,13 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
                                     : 'bg-slate-100 hover:bg-slate-200/80 text-slate-600')
                         }`}
                         title={isEn 
-                            ? `${weatherInfo.temp}°C - ${weatherInfo.conditionEn || 'Weather'} (Click for details)` 
-                            : `${formatNumber(weatherInfo.temp)}°م - ${weatherInfo.conditionAr || 'الطقس'} (انقر للتفاصيل)`}
+                            ? `${Number(weatherInfo.temp).toFixed(2)}°C - ${weatherInfo.conditionEn || 'Weather'} (Click for details)` 
+                            : `${formatNumber(Number(weatherInfo.temp).toFixed(2))}°م - ${weatherInfo.conditionAr || 'الطقس'} (انقر للتفاصيل)`}
                         aria-label={isEn ? 'Prayer weather' : 'طقس وقت الصلاة'}
                     >
                         {renderPrayerWeatherIcon(weatherInfo.code, weatherInfo.temp)}
                         <span className="tabular-nums font-mono leading-none">
-                            {isEn ? `${weatherInfo.temp}°` : `${formatNumber(weatherInfo.temp)}°`}
+                            {isEn ? `${Number(weatherInfo.temp).toFixed(2)}°` : `${formatNumber(Number(weatherInfo.temp).toFixed(2))}°`}
                         </span>
                     </button>
                 )}

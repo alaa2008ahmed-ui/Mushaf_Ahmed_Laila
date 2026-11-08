@@ -22,11 +22,12 @@ const STORAGE_KEY = 'listen_quran_state_v7';
 
 export const ListenQuranCard: React.FC<ListenQuranCardProps> = ({ onNavigate }) => {
   const { language, isRTL, dir, formatNumber } = useLanguage();
-  const { theme, themeKey } = useTheme();
+  const { theme, themeKey, isNightMode } = useTheme();
   const isEn = language === 'en';
 
   const isBlackTheme = themeKey === 'deep_black' || theme.bgColor === '#000000' || theme.name === 'اسود' || theme.name === 'black';
-  const primaryColor = isBlackTheme ? '#10b981' : (theme.palette?.[0] || '#059669');
+  const isDark = isNightMode || isBlackTheme;
+  const primaryColor = isDark ? '#10b981' : (theme.palette?.[0] || '#059669');
 
   const [reciterId, setReciterId] = useState<string>(RECITERS[0].id);
   const [surahNumber, setSurahNumber] = useState<number>(1);
@@ -190,10 +191,10 @@ export const ListenQuranCard: React.FC<ListenQuranCardProps> = ({ onNavigate }) 
       <div className="flex items-center justify-between w-full mb-3">
         <div className="flex items-center gap-2.5 min-w-0">
           <div className="flex flex-col text-start min-w-0">
-            <span className="card-header-title text-xs sm:text-sm font-black truncate font-cairo" style={{ color: (isBlackTheme) ? '#FFFFFF' : '#451A03' }}>
-              {isEn ? 'Audio Quran Recitation' : 'الاستماع للقرآن الكريم'}
+            <span className="card-header-title text-xs sm:text-sm font-black truncate font-cairo" style={{ color: (isDark) ? '#FFFFFF' : '#451A03' }}>
+              {isEn ? 'Audio Quran Recitation' : 'الاستماع للقرآن'}
             </span>
-            <span className="text-xs font-medium leading-tight opacity-80 mt-0.5 truncate" style={{ color: (isBlackTheme) ? '#FDE68A' : '#5B2605' }}>
+            <span className="text-xs font-medium leading-tight opacity-80 mt-0.5 truncate" style={{ color: (isDark) ? '#FDE68A' : '#5B2605' }}>
               {reciterName}
             </span>
           </div>
@@ -201,15 +202,24 @@ export const ListenQuranCard: React.FC<ListenQuranCardProps> = ({ onNavigate }) 
 
         {/* Action Controls: Play/Pause Button + Open Player Button */}
         <div className="flex items-center gap-2 shrink-0">
-          {/* 1. Play/Pause Button (Flat solid orange #c25e00 with text only) */}
+          {/* 1. Play/Pause Button */}
           <button
             type="button"
             onClick={handleTogglePlay}
-            className="px-3.5 py-1.5 rounded-full font-extrabold text-xs flex items-center justify-center shrink-0 active:scale-95 transition-all bg-[#c25e00] text-white shadow-none border-none cursor-pointer hover:bg-[#a85200]"
-            style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff', backgroundColor: '#c25e00' }}
+            className={`px-3.5 py-1.5 rounded-full font-extrabold text-xs flex items-center justify-center shrink-0 active:scale-95 transition-all shadow-none border-none cursor-pointer ${
+              isDark ? 'night-white-surface bg-white text-black font-extrabold' : 'bg-[#c25e00] text-white hover:bg-[#a85200]'
+            }`}
+            style={{
+              color: isDark ? '#000000' : '#ffffff',
+              WebkitTextFillColor: isDark ? '#000000' : '#ffffff',
+              backgroundColor: isDark ? '#ffffff' : '#c25e00'
+            }}
             title={isPlaying ? (isEn ? 'Pause' : 'إيقاف مؤقت') : (isEn ? 'Play' : 'تشغيل التلاوة')}
           >
-            <span className="text-[11px] text-white font-extrabold" style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff' }}>
+            <span
+              className={`text-[11px] font-extrabold ${isDark ? 'text-black' : 'text-white'}`}
+              style={{ color: isDark ? '#000000' : '#ffffff', WebkitTextFillColor: isDark ? '#000000' : '#ffffff' }}
+            >
               {isPlaying ? (isEn ? 'Pause' : 'إيقاف مؤقت') : (isEn ? 'Play' : 'تشغيل')}
             </span>
           </button>
@@ -218,17 +228,32 @@ export const ListenQuranCard: React.FC<ListenQuranCardProps> = ({ onNavigate }) 
           <button
             type="button"
             onClick={handleOpenPlayer}
-            className="px-3.5 py-1.5 rounded-full font-extrabold text-xs flex items-center justify-center gap-1 shrink-0 active:scale-95 transition-all bg-[#c25e00] text-white shadow-none border-none cursor-pointer hover:bg-[#a85200]"
-            style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff', backgroundColor: '#c25e00' }}
-            title={isEn ? 'Open Player' : 'فتح المشغل'}
+            className={`px-3.5 py-1.5 rounded-full font-extrabold text-xs flex items-center justify-center gap-1 shrink-0 active:scale-95 transition-all shadow-none border-none cursor-pointer ${
+              isDark ? 'night-white-surface bg-white text-black font-extrabold' : 'bg-[#c25e00] text-white hover:bg-[#a85200]'
+            }`}
+            style={{
+              color: isDark ? '#000000' : '#ffffff',
+              WebkitTextFillColor: isDark ? '#000000' : '#ffffff',
+              backgroundColor: isDark ? '#ffffff' : '#c25e00'
+            }}
+            title={isEn ? 'Listen to Quran' : 'الاستماع للقرآن'}
           >
-            <span className="text-[11px] text-white font-extrabold" style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff' }}>
-              {isEn ? 'Open Player' : 'فتح المشغل'}
+            <span
+              className={`text-[11px] font-extrabold ${isDark ? 'text-black' : 'text-white'}`}
+              style={{ color: isDark ? '#000000' : '#ffffff', WebkitTextFillColor: isDark ? '#000000' : '#ffffff' }}
+            >
+              {isEn ? 'Listen to Quran' : 'الاستماع للقرآن'}
             </span>
             {isRTL ? (
-              <ChevronLeft className="w-3.5 h-3.5 text-white stroke-[2.5]" style={{ color: '#ffffff', stroke: '#ffffff' }} />
+              <ChevronLeft
+                className="w-3.5 h-3.5 stroke-[2.5]"
+                style={{ color: isDark ? '#000000' : '#ffffff', stroke: isDark ? '#000000' : '#ffffff' }}
+              />
             ) : (
-              <ChevronRight className="w-3.5 h-3.5 text-white stroke-[2.5]" style={{ color: '#ffffff', stroke: '#ffffff' }} />
+              <ChevronRight
+                className="w-3.5 h-3.5 stroke-[2.5]"
+                style={{ color: isDark ? '#000000' : '#ffffff', stroke: isDark ? '#000000' : '#ffffff' }}
+              />
             )}
           </button>
         </div>
@@ -236,7 +261,7 @@ export const ListenQuranCard: React.FC<ListenQuranCardProps> = ({ onNavigate }) 
 
       {/* Surah Details Banner & Inner Controls (Time in Center when playing, Prev/Next buttons pinned to Left) */}
       <div className={`p-3 rounded-xl flex items-center justify-between border relative min-h-[58px] ${
-        isBlackTheme ? 'bg-zinc-800/80 border-zinc-700/80' : 'bg-white/60 border-amber-200/60'
+        isDark ? 'bg-zinc-800/80 border-zinc-700/80' : 'bg-white/60 border-amber-200/60'
       }`}>
         {/* Right side (RTL): Surah Name & Dynamic Ayah / Surah number */}
         <div className="flex items-center gap-2 min-w-0 z-10">
@@ -244,10 +269,10 @@ export const ListenQuranCard: React.FC<ListenQuranCardProps> = ({ onNavigate }) 
             <BookOpen className="w-4 h-4" />
           </div>
           <div className="flex flex-col text-start min-w-0">
-            <span className="text-xs font-bold leading-snug truncate" style={{ color: (isBlackTheme) ? '#FFFFFF' : '#451A03' }}>
+            <span className="text-xs font-bold leading-snug truncate" style={{ color: (isDark) ? '#FFFFFF' : '#451A03' }}>
               {surahName}
             </span>
-            <span className="text-[10px] opacity-80 font-medium truncate" style={{ color: (isBlackTheme) ? '#A1A1AA' : '#78350F' }}>
+            <span className="text-[10px] opacity-80 font-medium truncate" style={{ color: (isDark) ? '#A1A1AA' : '#78350F' }}>
               {(isPlaying || currentTime > 0) ? (
                 isEn ? `الآية رقم (${formatNumber(currentAyah)})` : `الآية رقم (${formatNumber(currentAyah)})`
               ) : (
@@ -263,7 +288,7 @@ export const ListenQuranCard: React.FC<ListenQuranCardProps> = ({ onNavigate }) 
             <div 
               className="flex items-center justify-center text-xs sm:text-[13px] font-mono font-black px-2.5 py-1 rounded-lg dir-ltr shrink-0 shadow-2xs"
               style={{
-                backgroundColor: isBlackTheme ? 'rgba(16, 185, 129, 0.2)' : `${primaryColor}15`,
+                backgroundColor: isDark ? 'rgba(16, 185, 129, 0.2)' : `${primaryColor}15`,
                 color: primaryColor
               }}
             >
@@ -274,38 +299,66 @@ export const ListenQuranCard: React.FC<ListenQuranCardProps> = ({ onNavigate }) 
           </div>
         )}
 
-        {/* Left side (RTL): Previous & Next Surah Buttons permanently fixed on the left */}
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 ms-auto z-10">
-          {/* Next Surah Button (In RTL, clicking next advances to the next surah) */}
+        {/* Left side (RTL): Navigation Buttons (Left = Next Surah |◀, Right = Previous Surah ▶|) */}
+        <div 
+          dir="ltr" 
+          className="surah-nav-buttons flex items-center gap-1.5 sm:gap-2 shrink-0 z-10 border-0 border-none outline-none ring-0 shadow-none bg-transparent p-0 m-0"
+          style={{ border: 'none', outline: 'none', boxShadow: 'none', background: 'transparent' }}
+        >
+          {/* 1. Next Surah Button on the LEFT (Points LEFT |◀) */}
           <button
             type="button"
             onClick={handleNextSurah}
-            className="w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-full flex items-center justify-center shrink-0 active:scale-90 transition-all bg-[#c25e00] text-white shadow-none border-none cursor-pointer hover:bg-[#a85200]"
-            style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff', backgroundColor: '#c25e00' }}
+            className={`w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-full flex items-center justify-center shrink-0 active:scale-90 transition-all border-0 border-none outline-none focus:outline-none focus:ring-0 shadow-none cursor-pointer ${
+              isDark ? 'night-white-surface bg-white text-black' : 'bg-[#c25e00] text-white hover:bg-[#a85200]'
+            }`}
+            style={{
+              color: isDark ? '#000000' : '#ffffff',
+              WebkitTextFillColor: isDark ? '#000000' : '#ffffff',
+              backgroundColor: isDark ? '#ffffff' : '#c25e00',
+              border: 'none',
+              outline: 'none',
+              boxShadow: 'none'
+            }}
             title={isEn ? 'Next Surah' : 'السورة التالية'}
             aria-label={isEn ? 'Next Surah' : 'السورة التالية'}
           >
-            {isRTL ? (
-              <SkipBack className="w-3.5 h-3.5 text-white fill-white" />
-            ) : (
-              <SkipForward className="w-3.5 h-3.5 text-white fill-white" />
-            )}
+            <SkipBack
+              className="w-3.5 h-3.5 stroke-[2.2]"
+              style={{
+                color: isDark ? '#000000' : '#ffffff',
+                fill: isDark ? '#000000' : '#ffffff',
+                stroke: isDark ? '#000000' : '#ffffff'
+              }}
+            />
           </button>
 
-          {/* Previous Surah Button */}
+          {/* 2. Previous Surah Button on the RIGHT (Points RIGHT ▶|) */}
           <button
             type="button"
             onClick={handlePrevSurah}
-            className="w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-full flex items-center justify-center shrink-0 active:scale-90 transition-all bg-[#c25e00] text-white shadow-none border-none cursor-pointer hover:bg-[#a85200]"
-            style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff', backgroundColor: '#c25e00' }}
+            className={`w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-full flex items-center justify-center shrink-0 active:scale-90 transition-all border-0 border-none outline-none focus:outline-none focus:ring-0 shadow-none cursor-pointer ${
+              isDark ? 'night-white-surface bg-white text-black' : 'bg-[#c25e00] text-white hover:bg-[#a85200]'
+            }`}
+            style={{
+              color: isDark ? '#000000' : '#ffffff',
+              WebkitTextFillColor: isDark ? '#000000' : '#ffffff',
+              backgroundColor: isDark ? '#ffffff' : '#c25e00',
+              border: 'none',
+              outline: 'none',
+              boxShadow: 'none'
+            }}
             title={isEn ? 'Previous Surah' : 'السورة السابقة'}
             aria-label={isEn ? 'Previous Surah' : 'السورة السابقة'}
           >
-            {isRTL ? (
-              <SkipForward className="w-3.5 h-3.5 text-white fill-white" />
-            ) : (
-              <SkipBack className="w-3.5 h-3.5 text-white fill-white" />
-            )}
+            <SkipForward
+              className="w-3.5 h-3.5 stroke-[2.2]"
+              style={{
+                color: isDark ? '#000000' : '#ffffff',
+                fill: isDark ? '#000000' : '#ffffff',
+                stroke: isDark ? '#000000' : '#ffffff'
+              }}
+            />
           </button>
         </div>
       </div>
