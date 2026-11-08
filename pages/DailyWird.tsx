@@ -12,6 +12,8 @@ import { registerBackInterceptor } from '../hooks/useBackButton';
 import { Preferences } from '@capacitor/preferences';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { Capacitor } from '@capacitor/core';
+import { SURAH_NAMES_AR, SURAH_NAMES_EN, toArabic } from '../components/QuranReader/constants';
+import quranMetadata from '../data/quran-metadata.json';
 
 interface WirdSettings {
   id: string;
@@ -31,6 +33,57 @@ interface WirdSettings {
 }
 
 const TOTAL_PAGES = 604;
+
+export interface WirdAyahInfo {
+  surahNumber: number;
+  surahNameAr: string;
+  surahNameEn: string;
+  ayahNumber: number;
+  juzNumber: number;
+  pageNumber: number;
+}
+
+export function getAyahDetails(page: number, ayahRef?: { s: number; a: number }): WirdAyahInfo {
+  const targetPage = Math.max(1, Math.min(TOTAL_PAGES, page));
+  if (ayahRef && ayahRef.s >= 1 && ayahRef.s <= 114) {
+    const surah = quranMetadata.surahs[ayahRef.s - 1];
+    if (surah) {
+      const ayah = surah.ayahs.find((ay: any) => ay.numberInSurah === ayahRef.a) || surah.ayahs[0];
+      return {
+        surahNumber: ayahRef.s,
+        surahNameAr: SURAH_NAMES_AR[ayahRef.s - 1] || surah.name,
+        surahNameEn: SURAH_NAMES_EN[ayahRef.s - 1] || surah.englishName,
+        ayahNumber: ayah?.numberInSurah || ayahRef.a || 1,
+        juzNumber: ayah?.juz || 1,
+        pageNumber: ayah?.page || targetPage
+      };
+    }
+  }
+
+  // If no specific ayah provided, find the first ayah on the page
+  for (const surah of quranMetadata.surahs) {
+    const ayah = surah.ayahs.find((ay: any) => ay.page === targetPage);
+    if (ayah) {
+      return {
+        surahNumber: surah.number,
+        surahNameAr: SURAH_NAMES_AR[surah.number - 1] || surah.name,
+        surahNameEn: SURAH_NAMES_EN[surah.number - 1] || surah.englishName,
+        ayahNumber: ayah.numberInSurah,
+        juzNumber: ayah.juz,
+        pageNumber: targetPage
+      };
+    }
+  }
+
+  return {
+    surahNumber: 1,
+    surahNameAr: SURAH_NAMES_AR[0],
+    surahNameEn: SURAH_NAMES_EN[0],
+    ayahNumber: 1,
+    juzNumber: 1,
+    pageNumber: targetPage
+  };
+}
 
 // Utility to convert hex colors to rgba for soft tinted badges and highlights
 function hexToRgba(hex: string, alpha: number = 1): string {
@@ -619,7 +672,24 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
     const { start: startPage, end: endPage } = getDayRange(settings.currentDay);
     const isCompleted = settings.completedDays.includes(settings.currentDay);
     const hasPages = startPage <= endPage && startPage <= TOTAL_PAGES;
-    const canContinue = settings.lastPage && !isCompleted;
+    const canContinue = Boolean(settings.lastPage && !isCompleted);
+
+    const targetPage = canContinue ? settings.lastPage! : startPage;
+    let targetAyahRef = canContinue ? settings.lastAyah : undefined;
+
+    if (canContinue && !targetAyahRef) {
+      try {
+        const savedWird = localStorage.getItem('last_read_ayah_wird');
+        if (savedWird) {
+          const parsed = JSON.parse(savedWird);
+          if (parsed?.s && parsed?.a && (!parsed.page || parsed.page === targetPage)) {
+            targetAyahRef = { s: parsed.s, a: parsed.a };
+          }
+        }
+      } catch (e) {}
+    }
+
+    const ayahDetails = getAyahDetails(targetPage, targetAyahRef);
 
     return (
       <div className="space-y-4">
@@ -694,31 +764,55 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
           <div className="flex flex-col gap-2.5 pt-1" id="wird-actions-container">
             {hasPages && (
               isEn ? (
-                <div className="flex flex-col sm:flex-row gap-2 w-full">
-                  {/* Button 1: Open Mushaf */}
+                <div className="flex flex-col gap-2.5 w-full">
+                  {/* Button 1: Open Mushaf with 4 details */}
                   <button 
                     id="btn-wird-mushaf"
                     type="button"
                     onClick={() => {
-                      if (canContinue) {
-                        handleOpenQuran(settings.lastPage!, settings.lastAyah, 'mushaf');
-                      } else {
-                        handleOpenQuran(startPage, undefined, 'mushaf');
-                      }
+                      handleOpenQuran(
+                        ayahDetails.pageNumber, 
+                        { s: ayahDetails.surahNumber, a: ayahDetails.ayahNumber }, 
+                        'mushaf'
+                      );
                     }}
-                    className="flex-1 py-3.5 px-3 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all text-sm shadow-md border-0 cursor-pointer active:scale-98"
+                    className="w-full p-4 rounded-3xl font-bold flex flex-col items-center justify-center transition-all shadow-lg border-0 cursor-pointer active:scale-[0.98]"
                     style={{ 
                       backgroundColor: primaryColor, 
                       color: btnTextColor,
-                      boxShadow: `0 8px 20px -4px ${hexToRgba(primaryColor, 0.35)}`
+                      boxShadow: `0 12px 28px -6px ${hexToRgba(primaryColor, 0.45)}`
                     }}
                   >
-                    <BookOpen size={18} />
-                    <span>
-                      {canContinue 
-                        ? `Continue in Mushaf (p. ${settings.lastPage})` 
-                        : 'Read in Mushaf'}
-                    </span>
+                    <div className="flex items-center justify-between w-full pb-2.5 border-b border-white/20 dark:border-white/15">
+                      <div className="flex items-center gap-2">
+                        <BookOpen size={20} className="shrink-0" />
+                        <span className="text-base font-bold">
+                          {canContinue ? 'Continue Wird (Mushaf)' : 'Start Daily Wird (Mushaf)'}
+                        </span>
+                      </div>
+                      <span className="text-[11px] font-bold opacity-90 bg-black/15 dark:bg-black/25 px-2.5 py-1 rounded-full">
+                        {canContinue ? 'Resume' : 'Start'}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 mt-2.5 w-full">
+                      <div className="bg-white/15 dark:bg-black/20 backdrop-blur-xs rounded-2xl py-2 px-3 flex flex-col items-center justify-center text-center">
+                        <span className="text-[11px] opacity-80 font-medium mb-0.5">Surah</span>
+                        <span className="font-bold text-xs truncate max-w-full">{ayahDetails.surahNameEn}</span>
+                      </div>
+                      <div className="bg-white/15 dark:bg-black/20 backdrop-blur-xs rounded-2xl py-2 px-3 flex flex-col items-center justify-center text-center">
+                        <span className="text-[11px] opacity-80 font-medium mb-0.5">Ayah</span>
+                        <span className="font-black text-sm">{ayahDetails.ayahNumber}</span>
+                      </div>
+                      <div className="bg-white/15 dark:bg-black/20 backdrop-blur-xs rounded-2xl py-2 px-3 flex flex-col items-center justify-center text-center">
+                        <span className="text-[11px] opacity-80 font-medium mb-0.5">Juz</span>
+                        <span className="font-black text-sm">{ayahDetails.juzNumber}</span>
+                      </div>
+                      <div className="bg-white/15 dark:bg-black/20 backdrop-blur-xs rounded-2xl py-2 px-3 flex flex-col items-center justify-center text-center">
+                        <span className="text-[11px] opacity-80 font-medium mb-0.5">Page</span>
+                        <span className="font-black text-sm">{ayahDetails.pageNumber}</span>
+                      </div>
+                    </div>
                   </button>
 
                   {/* Button 2: Open Translation */}
@@ -726,46 +820,83 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
                     id="btn-wird-translation"
                     type="button"
                     onClick={() => {
-                      if (canContinue) {
-                        handleOpenQuran(settings.lastPage!, settings.lastAyah, 'translation');
-                      } else {
-                        handleOpenQuran(startPage, undefined, 'translation');
-                      }
+                      handleOpenQuran(
+                        ayahDetails.pageNumber, 
+                        { s: ayahDetails.surahNumber, a: ayahDetails.ayahNumber }, 
+                        'translation'
+                      );
                     }}
-                    className="flex-1 py-3.5 px-3 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all text-sm shadow-sm bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 border-0 cursor-pointer active:scale-98"
+                    className="w-full py-3 px-3 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all text-xs shadow-sm bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 border-0 cursor-pointer active:scale-98"
                     style={{ color: 'var(--text-color)' }}
                   >
-                    <Languages size={18} />
-                    <span>
-                      {canContinue 
-                        ? `Continue Translation (p. ${settings.lastPage})` 
-                        : 'Read Translation'}
-                    </span>
+                    <Languages size={16} />
+                    <span>{canContinue ? 'Continue in English Translation' : 'Read English Translation'}</span>
                   </button>
                 </div>
               ) : (
                 <button 
                   type="button"
                   onClick={() => {
-                    if (canContinue) {
-                      handleOpenQuran(settings.lastPage!, settings.lastAyah, 'mushaf');
-                    } else {
-                      handleOpenQuran(startPage, undefined, 'mushaf');
-                    }
+                    handleOpenQuran(
+                      ayahDetails.pageNumber, 
+                      { s: ayahDetails.surahNumber, a: ayahDetails.ayahNumber }, 
+                      'mushaf'
+                    );
                   }}
-                  className="w-full py-4 rounded-2xl font-bold flex items-center justify-center gap-2.5 transition-all text-base shadow-md border-0 cursor-pointer active:scale-98"
+                  className="w-full p-4 rounded-3xl font-bold flex flex-col items-center justify-center transition-all shadow-lg border-0 cursor-pointer active:scale-[0.98] group"
                   style={{ 
                     backgroundColor: primaryColor, 
                     color: btnTextColor,
-                    boxShadow: `0 10px 25px -5px ${hexToRgba(primaryColor, 0.4)}`
+                    boxShadow: `0 12px 28px -6px ${hexToRgba(primaryColor, 0.45)}`
                   }}
                 >
-                  <BookOpen size={20} />
-                  <span>
-                    {canContinue 
-                      ? `تكملة الورد (صفحة ${settings.lastPage})` 
-                      : 'افتح المصحف للقراءة'}
-                  </span>
+                  {/* Card Title & Icon */}
+                  <div className="flex items-center justify-between w-full pb-2.5 border-b border-white/20 dark:border-white/15">
+                    <div className="flex items-center gap-2">
+                      <BookOpen size={22} className="shrink-0" />
+                      <span className="text-base sm:text-lg font-black tracking-wide font-kufi">
+                        {canContinue ? 'تكملة الورد' : 'افتح المصحف للقراءة'}
+                      </span>
+                    </div>
+                    <span className="text-[11px] font-bold opacity-90 bg-black/15 dark:bg-black/25 px-2.5 py-1 rounded-full">
+                      {canContinue ? 'متابعة' : 'ابدأ الآن'}
+                    </span>
+                  </div>
+
+                  {/* 4 Details Grid: اسم السورة - رقم الآية - رقم الجزء - رقم الصفحة */}
+                  <div className="grid grid-cols-2 gap-2 mt-2.5 w-full">
+                    {/* اسم السورة */}
+                    <div className="bg-white/15 dark:bg-black/25 backdrop-blur-xs rounded-2xl py-2 px-3 flex flex-col items-center justify-center text-center">
+                      <span className="text-[11px] opacity-80 font-medium mb-0.5">اسم السورة</span>
+                      <span className="font-bold text-sm truncate max-w-full">
+                        {`سورة ${ayahDetails.surahNameAr}`}
+                      </span>
+                    </div>
+
+                    {/* رقم الآية */}
+                    <div className="bg-white/15 dark:bg-black/25 backdrop-blur-xs rounded-2xl py-2 px-3 flex flex-col items-center justify-center text-center">
+                      <span className="text-[11px] opacity-80 font-medium mb-0.5">رقم الآية</span>
+                      <span className="font-black text-sm">
+                        {toArabic(ayahDetails.ayahNumber)}
+                      </span>
+                    </div>
+
+                    {/* رقم الجزء */}
+                    <div className="bg-white/15 dark:bg-black/25 backdrop-blur-xs rounded-2xl py-2 px-3 flex flex-col items-center justify-center text-center">
+                      <span className="text-[11px] opacity-80 font-medium mb-0.5">رقم الجزء</span>
+                      <span className="font-black text-sm">
+                        {toArabic(ayahDetails.juzNumber)}
+                      </span>
+                    </div>
+
+                    {/* رقم الصفحة */}
+                    <div className="bg-white/15 dark:bg-black/25 backdrop-blur-xs rounded-2xl py-2 px-3 flex flex-col items-center justify-center text-center">
+                      <span className="text-[11px] opacity-80 font-medium mb-0.5">رقم الصفحة</span>
+                      <span className="font-black text-sm">
+                        {toArabic(ayahDetails.pageNumber)}
+                      </span>
+                    </div>
+                  </div>
                 </button>
               )
             )}

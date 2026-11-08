@@ -1246,6 +1246,17 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
     }, [currentAyah, isWirdMode, quranData]);
 
     const selectedAyahRef = useRef<{ s: number; a: number; page: number; juz: number } | null>((() => {
+        if (initialSurah && initialAyah) {
+            let p = initialPage;
+            let j = 1;
+            const surah = quranJsonData.surahs[initialSurah - 1];
+            const ayah = surah?.ayahs[(initialAyah || 1) - 1];
+            if (ayah) {
+                p = ayah.page;
+                j = ayah.juz;
+            }
+            return { s: initialSurah, a: initialAyah, page: p || 1, juz: j || 1 };
+        }
         if (isWirdMode || localIsMemorizationMode) {
             if (isWirdMode) {
                 try {
@@ -1272,6 +1283,9 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
         return null;
     })());
     const [highlightedAyahId, setHighlightedAyahId] = useState<string | null>(() => {
+        if (initialSurah && initialAyah) {
+            return `ayah-${initialSurah}-${initialAyah}`;
+        }
         if (isWirdMode || localIsMemorizationMode) {
             if (isWirdMode) {
                 try {
@@ -4240,11 +4254,12 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
         hasJumpedRef.current = true;
 
         if (initialSurah && initialAyah) {
+            jumpToAyah(initialSurah, initialAyah, true);
             setTimeout(() => {
                 if (isMountedRef.current) {
                     jumpToAyah(initialSurah, initialAyah, true);
                 }
-            }, 300); // Increased timeout for better reliability
+            }, 50);
             return;
         }
         
@@ -4273,6 +4288,12 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
             }, 0);
         }
     }, [jumpToAyah, jumpToPage, posSuffix, initialSurah, initialAyah, initialPage, localIsMemorizationMode, localMemorizationSettings, playAudio]);
+
+    useEffect(() => {
+        if (initialSurah && initialAyah) {
+            jumpToAyah(initialSurah, initialAyah, true);
+        }
+    }, [initialSurah, initialAyah, jumpToAyah]);
 
     const handleVoiceCommand = useCallback((text: string) => {
         console.log('QuranReader - Voice Command:', text);
