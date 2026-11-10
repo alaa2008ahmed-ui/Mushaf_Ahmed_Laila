@@ -3,6 +3,7 @@ import { registerBackInterceptor } from '../hooks/useBackButton';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import ThemePageLock from '../components/ThemePageLock';
+import IslamicHistoryMemoryBottomSheet from '../components/MainMenu/IslamicHistoryMemoryBottomSheet';
 import { gregorianMonths, hijriMonths, islamicEvents, IslamicEvent } from '../data/calendarData';
 import {
     tCalendar,
@@ -953,61 +954,31 @@ function HijriCalendar({ onBack, onNavigate }: { onBack: () => void; onNavigate:
                 )}
             </AnimatePresence>
 
-            {/* Zoom Modal */}
-            <AnimatePresence>
-                {showZoomModal && historicalEvent && (
-                    <div className="fixed inset-0 bg-black/75 z-[100] flex justify-center items-center p-4 backdrop-blur-sm" onClick={() => setShowZoomModal(false)}>
-                        <motion.div 
-                            initial={{ scale: 0.92, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.92, opacity: 0 }}
-                            className="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-3xl w-full max-w-2xl text-center relative shadow-2xl flex flex-col max-h-[90vh] overflow-hidden border border-slate-100 dark:border-white/10" 
-                            onClick={e => e.stopPropagation()}
-                            dir={dir}
-                        >
-                            <div className="overflow-y-auto hide-scrollbar flex-1 py-2">
-                                <h3 className="text-xl sm:text-2xl font-black mb-4 sm:mb-6" style={{ color: primaryColor }}>
-                                    {language === 'en' ? historicalEvent.titleEn : historicalEvent.titleAr}
-                                </h3>
-                                <div 
-                                    className={`text-xl sm:text-2xl leading-relaxed text-slate-800 dark:text-slate-100 ${
-                                        language === 'ar' ? 'font-amiri' : 'font-sans'
-                                    }`}
-                                >
-                                    {language === 'en' ? historicalEvent.descriptionEn : historicalEvent.descriptionAr}
-                                </div>
-                                <div className="flex gap-6 text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 mt-6 justify-center">
-                                    <span className="flex items-center gap-1.5">
-                                        <CalendarIcon size={16} style={{ color: primaryColor }} /> {language === 'en' ? historicalEvent.hijriYearEn : historicalEvent.hijriYearAr}
-                                    </span>
-                                    <span className="flex items-center gap-1.5">
-                                        <CalendarIcon size={16} style={{ color: primaryColor }} /> {language === 'en' ? historicalEvent.gregorianYearEn : historicalEvent.gregorianYearAr}
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div className="mt-6 shrink-0 flex gap-3">
-                                <button 
-                                    onClick={() => setShowZoomModal(false)} 
-                                    className="flex-1 py-3.5 rounded-2xl font-bold bg-slate-100 dark:bg-white/10 hover:bg-slate-200/80 dark:hover:bg-white/15 text-slate-700 dark:text-slate-200 transition-colors cursor-pointer"
-                                >
-                                    {tCalendar('close', language)}
-                                </button>
-                                <button 
-                                    onClick={() => handleShare(
-                                        language === 'en' ? historicalEvent.titleEn : historicalEvent.titleAr,
-                                        language === 'en' ? historicalEvent.descriptionEn : historicalEvent.descriptionAr
-                                    )}
-                                    className="flex-1 py-3.5 rounded-2xl font-bold text-white shadow-md transition-all active:scale-98 cursor-pointer"
-                                    style={{ backgroundColor: primaryColor }}
-                                >
-                                    {tCalendar('shareEvent', language)}
-                                </button>
-                            </div>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
+            {/* Zoom Bottom Sheet (ذاكرة التاريخ الإسلامي) */}
+            <IslamicHistoryMemoryBottomSheet
+                isOpen={showZoomModal}
+                onClose={() => setShowZoomModal(false)}
+                event={historicalEvent}
+                onNextEvent={(e) => {
+                    e.stopPropagation();
+                    refreshEvent();
+                }}
+                onShare={(e) => {
+                    e.stopPropagation();
+                    if (historicalEvent) {
+                        handleShare(
+                            language === 'en' ? historicalEvent.titleEn : historicalEvent.titleAr,
+                            language === 'en' ? historicalEvent.descriptionEn : historicalEvent.descriptionAr
+                        );
+                    }
+                }}
+                onCopy={(e) => {
+                    e.stopPropagation();
+                    if (historicalEvent) {
+                        handleCopy(language === 'en' ? historicalEvent.descriptionEn : historicalEvent.descriptionAr);
+                    }
+                }}
+            />
 
             {/* Custom Picker Modal */}
             {pickerConfig.isOpen && (

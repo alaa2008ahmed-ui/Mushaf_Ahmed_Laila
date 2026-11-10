@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  ArrowRight, Trash2, Download, HelpCircle
+  ArrowRight, Trash2, Download, HelpCircle, CheckCircle, Clock, BookOpen, Check, ShieldCheck
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -99,10 +99,10 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
     const [toAyah, setToAyah] = useState(7);
 
     const [rangeRepeat, setRangeRepeat] = useState(1);
-    const [ayahRepeat, setAyahRepeat] = useState(3);
+    const [ayahRepeat, setAyahRepeat] = useState(1);
     const [linkedRepeat, setLinkedRepeat] = useState(false);
     const [isCumulative, setIsCumulative] = useState(false); // 3x3 loop
-    const [pauseLength, setPauseLength] = useState(2);
+    const [pauseLength, setPauseLength] = useState(3);
     const [testAfterSession, setTestAfterSession] = useState(true);
 
     // Data lists
@@ -287,6 +287,16 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
         showToast(isEn ? 'Removed from review schedule' : 'تم الحذف من جدول المراجعة');
     };
 
+    const handleToggleMastery = (id: string) => {
+        const updated = memorizationService.toggleMasteryStatus(id);
+        refreshData();
+        if (updated?.isMastered) {
+            showToast(isEn ? 'Marked as Fully Mastered! (Saved in your mastered treasury)' : 'تم تأكيد ورسوخ الحفظ بنجاح! تم نقله للمحفوظات الراسخة');
+        } else {
+            showToast(isEn ? 'Returned to active review schedule' : 'تمت الإعادة لجدول المراجعة النشط');
+        }
+    };
+
     const handleStartPlan = (plan: MemorizationPlanItem) => {
         memorizationService.startPlan(plan.id);
         refreshData();
@@ -398,6 +408,35 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                             <span>{stats.dueTodayCount > 0 ? (isEn ? `${stats.dueTodayCount} due today` : `${stats.dueTodayCount} بانتظار المراجعة اليوم`) : (isEn ? 'All reviewed!' : 'المراجعات مكتملة اليوم')}</span>
                         </div>
                     </div>
+
+                    {/* Breakdown Badges: Mastered vs Active Review */}
+                    {memorizedRanges.length > 0 && (
+                        <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-100 dark:border-zinc-800/80">
+                            <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between">
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                    <ShieldCheck size={14} className="text-emerald-600 shrink-0" />
+                                    <span className="text-[10px] font-bold text-emerald-800 dark:text-emerald-300 truncate">
+                                        {isEn ? 'Confirmed Mastered' : 'الحفظ الراسخ المؤكّد'}
+                                    </span>
+                                </div>
+                                <span className="text-xs font-black text-emerald-700 dark:text-emerald-300 tabular-nums">
+                                    {memorizedRanges.filter(r => r.isMastered).length}
+                                </span>
+                            </div>
+
+                            <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-between">
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                    <Clock size={14} className="text-amber-600 shrink-0" />
+                                    <span className="text-[10px] font-bold text-amber-800 dark:text-amber-300 truncate">
+                                        {isEn ? 'Currently In Review' : 'قيد المراجعة والتثبيت'}
+                                    </span>
+                                </div>
+                                <span className="text-xs font-black text-amber-700 dark:text-amber-300 tabular-nums">
+                                    {memorizedRanges.filter(r => !r.isMastered).length}
+                                </span>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* 2. Modern 4-Tab Segmented Control */}
@@ -674,7 +713,7 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                                 className="w-full py-4 rounded-2xl font-bold text-base shadow-xl flex items-center justify-center active:scale-95 transition-all cursor-pointer border-0"
                                 style={{ backgroundColor: primaryColor, color: btnTextColor }}
                             >
-                                <span>{isEn ? 'Enter Quran Memorization Studio' : 'دخول استوديو تحفيظ القرآن الكريم'}</span>
+                                <span>{isEn ? 'Start Quran Memorization Session' : 'بدء جلسة تحفيظ القرآن الكريم'}</span>
                             </button>
 
                             <button
@@ -801,14 +840,22 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                                             </div>
 
                                             {/* Status Badge */}
-                                            <div 
-                                                className="px-3 py-1 rounded-full text-[10px] font-bold"
-                                                style={{
-                                                    backgroundColor: isDue ? '#FEE2E2' : '#DCFCE7',
-                                                    color: isDue ? '#B91C1C' : '#15803D'
-                                                }}
-                                            >
-                                                {isDue ? (isEn ? 'Due Today' : 'مستحق اليوم') : (isEn ? 'Scheduled' : 'مجدول')}
+                                            <div className="flex items-center gap-1.5">
+                                                {range.isMastered && (
+                                                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 flex items-center gap-1">
+                                                        <ShieldCheck size={11} />
+                                                        <span>{isEn ? 'Mastered' : 'راسخ مؤكد'}</span>
+                                                    </span>
+                                                )}
+                                                <div 
+                                                    className="px-2.5 py-0.5 rounded-full text-[10px] font-bold"
+                                                    style={{
+                                                        backgroundColor: isDue ? '#FEE2E2' : '#DCFCE7',
+                                                        color: isDue ? '#B91C1C' : '#15803D'
+                                                    }}
+                                                >
+                                                    {isDue ? (isEn ? 'Due Today' : 'مستحق اليوم') : (isEn ? 'Scheduled' : 'مجدول')}
+                                                </div>
                                             </div>
                                         </div>
 
@@ -825,7 +872,7 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                                                 className="flex-1 py-2.5 rounded-xl text-xs font-bold shadow-sm flex items-center justify-center active:scale-95 transition-all border-0 cursor-pointer"
                                                 style={{ backgroundColor: primaryColor, color: btnTextColor }}
                                             >
-                                                <span>{isEn ? 'Review in Studio' : 'مراجعة في الاستوديو'}</span>
+                                                <span>{isEn ? 'Start Review & Repeat' : 'بدء المراجعة والتكرار'}</span>
                                             </button>
 
                                             <button
@@ -837,6 +884,22 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                                                 title={isEn ? 'Test This Range' : 'اختبار وتثبيت هذا النطاق'}
                                             >
                                                 <span>{isEn ? 'Test' : 'اختبار'}</span>
+                                            </button>
+
+                                            {/* Confirm Mastery Toggle Button */}
+                                            <button
+                                                onClick={() => handleToggleMastery(range.id)}
+                                                className={`px-3 h-10 rounded-xl flex items-center justify-center gap-1 active:scale-95 transition-all border-0 cursor-pointer text-xs font-bold ${
+                                                    range.isMastered 
+                                                        ? 'bg-emerald-500 text-white hover:bg-emerald-600 shadow-sm' 
+                                                        : 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100'
+                                                }`}
+                                                title={range.isMastered 
+                                                    ? (isEn ? 'Marked as Mastered (Click to re-activate regular review)' : 'حفظ راسخ ومؤكد (انقر لإعادته للمراجعة الدورية)')
+                                                    : (isEn ? 'Confirm as Fully Mastered' : 'تأكيد الحفظ ورسوخه')}
+                                            >
+                                                <CheckCircle size={15} />
+                                                <span>{range.isMastered ? (isEn ? 'Mastered' : 'مؤكّد') : (isEn ? 'Confirm' : 'تأكيد')}</span>
                                             </button>
 
                                             <button

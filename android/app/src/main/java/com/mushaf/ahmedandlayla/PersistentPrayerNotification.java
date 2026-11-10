@@ -301,8 +301,10 @@ public class PersistentPrayerNotification {
                 expandedView.setViewVisibility(R.id.notif_chronometer_small, android.view.View.GONE);
             }
 
+            // Status Bar Notification Icon: Holy Quran on Rehal (Stand) ic_stat_name
+            int smallIconRes = R.drawable.ic_stat_name;
             NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
-                .setSmallIcon(R.drawable.ic_stat_name)
+                .setSmallIcon(smallIconRes)
                 .setColor(0xFF2E7D5E)
                 .setContentTitle(fallbackTitle)
                 .setSubText(isArabic ? "مواقيت الصلاة" : "Prayer Times")

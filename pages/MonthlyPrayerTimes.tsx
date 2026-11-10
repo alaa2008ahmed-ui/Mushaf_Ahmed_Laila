@@ -48,6 +48,31 @@ const getCalculationParams = (country: string, code: string) => {
     return params;
 };
 
+const toArabicDigits = (val: string | number): string => {
+    if (val === null || val === undefined) return '';
+    return String(val).replace(/[0-9]/g, w => '٠١٢٣٤٥٦٧٨٩'[+w]);
+};
+
+const formatLocalizedTime = (time24Str: string, isAr: boolean) => {
+    if (!time24Str || time24Str.includes('--')) return "--:--";
+    const cleaned = toEnglishDigits(time24Str);
+    let [h, m] = cleaned.split(':');
+    if (!h || !m) return time24Str;
+    let hInt = parseInt(h, 10);
+    const ap = hInt >= 12 ? (isAr ? 'م' : 'pm') : (isAr ? 'ص' : 'am');
+    hInt = hInt % 12 || 12;
+    
+    if (isAr) {
+        const hStr = toArabicDigits(hInt);
+        const mStr = toArabicDigits(m.toString().padStart(2, '0'));
+        return `${hStr}:${mStr} ${ap}`;
+    } else {
+        const hStr = String(hInt);
+        const mStr = m.toString().padStart(2, '0');
+        return `${hStr}:${mStr} ${ap}`;
+    }
+};
+
 export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () => void, onNavigate: (id: string) => void }) {
     const { theme, themeKey } = useTheme();
     const { language, isRTL, dir } = useLanguage();
@@ -91,6 +116,7 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
         const data = [];
         const coordinates = new Coordinates(config.location.lat, config.location.lng);
         const params = getCalculationParams(config.location.fullCountry, config.location.combinedCode);
+        const isAr = language === 'ar';
 
         let daysInMonth = 30;
         if (calendarType === 'hijri') {
@@ -129,9 +155,21 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
                 }
             }
 
-            const dayName = new Intl.DateTimeFormat(language === 'en' ? 'en-US' : 'ar-SA', { weekday: 'long' }).format(date);
-            const gregorianDay = toEnglishDigits(date.getDate());
-            const hijriDay = toEnglishDigits(moment(date).iDate());
+            const dayName = new Intl.DateTimeFormat(isAr ? 'ar-SA' : 'en-US', { weekday: 'long' }).format(date);
+            
+            const gregorianDayNum = date.getDate();
+            const hijriDayNum = moment(date).iDate();
+
+            const gregorianDay = isAr ? toArabicDigits(gregorianDayNum) : String(gregorianDayNum);
+            const hijriDay = isAr ? toArabicDigits(hijriDayNum) : String(hijriDayNum);
+
+            const gregorianYear = isAr ? toArabicDigits(date.getFullYear()) : String(date.getFullYear());
+            const gregorianMonth = isAr ? toArabicDigits(date.getMonth() + 1) : String(date.getMonth() + 1);
+
+            const hijriYear = isAr ? toArabicDigits(moment(date).iYear()) : String(moment(date).iYear());
+            const hijriMonth = isAr ? toArabicDigits(moment(date).iMonth() + 1) : String(moment(date).iMonth() + 1);
+
+            const rawGregorianDateStr = `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`;
             
             const timings = {
                 Fajr: formatTime(prayerTimes.fajr),
@@ -144,8 +182,9 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
             data.push({
                 hijriDay,
                 gregorianDay,
-                gregorianDateStr: `${toEnglishDigits(date.getFullYear())}/${toEnglishDigits(date.getMonth() + 1)}/${gregorianDay}`,
-                hijriDateStr: `${toEnglishDigits(moment(date).iYear())}/${toEnglishDigits(moment(date).iMonth() + 1)}/${hijriDay}`,
+                rawGregorianDateStr,
+                gregorianDateStr: `${gregorianYear}/${gregorianMonth}/${gregorianDay}`,
+                hijriDateStr: `${hijriYear}/${hijriMonth}/${hijriDay}`,
                 dayName,
                 timings
             });
@@ -179,25 +218,28 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
     };
 
     const monthNameDisplay = useMemo(() => {
+        const isAr = language === 'ar';
         if (calendarType === 'hijri') {
             const mIdx = viewDate.iMonth();
-            const year = toEnglishDigits(viewDate.iYear());
-            if (language === 'en') {
+            const yearVal = viewDate.iYear();
+            const yearStr = isAr ? toArabicDigits(yearVal) : String(yearVal);
+            if (!isAr) {
                 const name = HIJRI_MONTHS_EN[mIdx] || '';
-                return `${name} ${year} AH`;
+                return `${name} ${yearStr} AH`;
             } else {
                 const name = HIJRI_MONTHS_AR[mIdx] || '';
-                return `${name} ${year} هـ`;
+                return `${name} ${yearStr} هـ`;
             }
         } else {
             const mIdx = viewDate.month();
-            const year = toEnglishDigits(viewDate.year());
-            if (language === 'en') {
+            const yearVal = viewDate.year();
+            const yearStr = isAr ? toArabicDigits(yearVal) : String(yearVal);
+            if (!isAr) {
                 const name = GREGORIAN_MONTHS_EN[mIdx] || '';
-                return `${name} ${year} AD`;
+                return `${name} ${yearStr} AD`;
             } else {
                 const name = GREGORIAN_MONTHS_AR[mIdx] || '';
-                return `${name} ${year} م`;
+                return `${name} ${yearStr} م`;
             }
         }
     }, [viewDate, calendarType, language]);
@@ -344,9 +386,8 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
                                 id="btn-monthly-pdf"
                                 onClick={handleExportPDF}
                                 disabled={isExporting}
-                                className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer border"
+                                className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
                                 style={{ 
-                                    borderColor: isDefaultTheme ? '#000000' : (isBlackAndWhite ? '#FFFFFF' : primaryColor),
                                     color: topBarTextColor,
                                     backgroundColor: 'transparent'
                                 }}
@@ -370,9 +411,8 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
                                 id="btn-monthly-share"
                                 onClick={handleShare}
                                 disabled={isSharing}
-                                className="h-8 sm:h-9 px-2 sm:px-2.5 rounded-xl text-xs font-bold flex items-center gap-1 transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer border"
+                                className="h-8 sm:h-9 px-2 sm:px-2.5 rounded-xl text-xs font-bold flex items-center gap-1 transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
                                 style={{ 
-                                    borderColor: isDefaultTheme ? '#000000' : (isBlackAndWhite ? '#FFFFFF' : primaryColor),
                                     color: topBarTextColor,
                                     backgroundColor: 'transparent'
                                 }}
@@ -469,36 +509,36 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
                     >
                         <thead className="z-20">
                             <tr style={{ borderBottom: `2px solid ${tableBorderColor}` }}>
-                                <th className="sticky top-0 px-1 py-2 font-bold z-10" style={{ border: `1.5px solid ${tableBorderColor}`, backgroundColor: isDefaultTheme ? '#f3f4f6' : (isBlackAndWhite ? '#222222' : (isShinyGold ? '#D97706' : primaryColor)), color: isDefaultTheme ? '#000000' : '#FFFFFF' }}>
+                                <th className="sticky top-0 px-1 py-2 sm:py-2.5 font-black text-xs sm:text-sm z-10" style={{ border: `1.5px solid ${tableBorderColor}`, backgroundColor: isDefaultTheme ? '#f3f4f6' : (isBlackAndWhite ? '#222222' : (isShinyGold ? '#D97706' : primaryColor)), color: isDefaultTheme ? '#000000' : '#FFFFFF', fontWeight: 900 }}>
                                     {tPrayer('dayHeader', language)}
                                 </th>
-                                <th className="sticky top-0 px-1 py-2 font-bold z-10" style={{ border: `1.5px solid ${tableBorderColor}`, backgroundColor: isDefaultTheme ? '#f3f4f6' : (isBlackAndWhite ? '#222222' : (isShinyGold ? '#D97706' : primaryColor)), color: isDefaultTheme ? '#000000' : '#FFFFFF' }}>
+                                <th className="sticky top-0 px-1 py-2 sm:py-2.5 font-black text-xs sm:text-sm z-10" style={{ border: `1.5px solid ${tableBorderColor}`, backgroundColor: isDefaultTheme ? '#f3f4f6' : (isBlackAndWhite ? '#222222' : (isShinyGold ? '#D97706' : primaryColor)), color: isDefaultTheme ? '#000000' : '#FFFFFF', fontWeight: 900 }}>
                                     {tPrayer('dateHeader', language)}
                                 </th>
-                                <th className="sticky top-0 px-1 py-2 font-bold z-10" style={{ border: `1.5px solid ${tableBorderColor}`, backgroundColor: isDefaultTheme ? '#f3f4f6' : (isBlackAndWhite ? '#222222' : (isShinyGold ? '#D97706' : primaryColor)), color: isDefaultTheme ? '#000000' : '#FFFFFF' }}>
+                                <th className="sticky top-0 px-1 py-2 sm:py-2.5 font-black text-xs sm:text-sm z-10" style={{ border: `1.5px solid ${tableBorderColor}`, backgroundColor: isDefaultTheme ? '#f3f4f6' : (isBlackAndWhite ? '#222222' : (isShinyGold ? '#D97706' : primaryColor)), color: isDefaultTheme ? '#000000' : '#FFFFFF', fontWeight: 900 }}>
                                     {getPrayerDisplayName('Fajr', language)}
                                 </th>
-                                <th className="sticky top-0 px-1 py-2 font-bold z-10" style={{ border: `1.5px solid ${tableBorderColor}`, backgroundColor: isDefaultTheme ? '#f3f4f6' : (isBlackAndWhite ? '#222222' : (isShinyGold ? '#D97706' : primaryColor)), color: isDefaultTheme ? '#000000' : '#FFFFFF' }}>
+                                <th className="sticky top-0 px-1 py-2 sm:py-2.5 font-black text-xs sm:text-sm z-10" style={{ border: `1.5px solid ${tableBorderColor}`, backgroundColor: isDefaultTheme ? '#f3f4f6' : (isBlackAndWhite ? '#222222' : (isShinyGold ? '#D97706' : primaryColor)), color: isDefaultTheme ? '#000000' : '#FFFFFF', fontWeight: 900 }}>
                                     {getPrayerDisplayName('Dhuhr', language)}
                                 </th>
-                                <th className="sticky top-0 px-1 py-2 font-bold z-10" style={{ border: `1.5px solid ${tableBorderColor}`, backgroundColor: isDefaultTheme ? '#f3f4f6' : (isBlackAndWhite ? '#222222' : (isShinyGold ? '#D97706' : primaryColor)), color: isDefaultTheme ? '#000000' : '#FFFFFF' }}>
+                                <th className="sticky top-0 px-1 py-2 sm:py-2.5 font-black text-xs sm:text-sm z-10" style={{ border: `1.5px solid ${tableBorderColor}`, backgroundColor: isDefaultTheme ? '#f3f4f6' : (isBlackAndWhite ? '#222222' : (isShinyGold ? '#D97706' : primaryColor)), color: isDefaultTheme ? '#000000' : '#FFFFFF', fontWeight: 900 }}>
                                     {getPrayerDisplayName('Asr', language)}
                                 </th>
-                                <th className="sticky top-0 px-1 py-2 font-bold z-10" style={{ border: `1.5px solid ${tableBorderColor}`, backgroundColor: isDefaultTheme ? '#f3f4f6' : (isBlackAndWhite ? '#222222' : (isShinyGold ? '#D97706' : primaryColor)), color: isDefaultTheme ? '#000000' : '#FFFFFF' }}>
+                                <th className="sticky top-0 px-1 py-2 sm:py-2.5 font-black text-xs sm:text-sm z-10" style={{ border: `1.5px solid ${tableBorderColor}`, backgroundColor: isDefaultTheme ? '#f3f4f6' : (isBlackAndWhite ? '#222222' : (isShinyGold ? '#D97706' : primaryColor)), color: isDefaultTheme ? '#000000' : '#FFFFFF', fontWeight: 900 }}>
                                     {getPrayerDisplayName('Maghrib', language)}
                                 </th>
-                                <th className="sticky top-0 px-1 py-2 font-bold z-10" style={{ border: `1.5px solid ${tableBorderColor}`, backgroundColor: isDefaultTheme ? '#f3f4f6' : (isBlackAndWhite ? '#222222' : (isShinyGold ? '#D97706' : primaryColor)), color: isDefaultTheme ? '#000000' : '#FFFFFF' }}>
+                                <th className="sticky top-0 px-1 py-2 sm:py-2.5 font-black text-xs sm:text-sm z-10" style={{ border: `1.5px solid ${tableBorderColor}`, backgroundColor: isDefaultTheme ? '#f3f4f6' : (isBlackAndWhite ? '#222222' : (isShinyGold ? '#D97706' : primaryColor)), color: isDefaultTheme ? '#000000' : '#FFFFFF', fontWeight: 900 }}>
                                     {getPrayerDisplayName('Isha', language)}
                                 </th>
                             </tr>
                         </thead>
                         <tbody>
                             {monthData.map((day, idx) => {
-                                const isToday = day.gregorianDateStr === `${new Date().getFullYear()}/${new Date().getMonth() + 1}/${new Date().getDate()}`;
+                                const isToday = day.rawGregorianDateStr === `${new Date().getFullYear()}/${new Date().getMonth() + 1}/${new Date().getDate()}`;
                                 
                                 let rowBg = '#FFFFFF';
-                                let rowTextColor = '#1F2937';
-                                let rowBorderColor = isShinyGold ? 'rgba(217, 119, 6, 0.28)' : (isDefaultTheme ? '#E5E7EB' : tableBorderColor);
+                                let rowTextColor = '#000000';
+                                let rowBorderColor = isShinyGold ? 'rgba(217, 119, 6, 0.35)' : (isDefaultTheme ? '#D1D5DB' : tableBorderColor);
 
                                 if (isToday) {
                                     if (isBlackAndWhite) {
@@ -512,62 +552,64 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
                                     } else {
                                         // Golden row for today's date
                                         rowBg = '#FEF08A';
-                                        rowTextColor = '#78350F';
+                                        rowTextColor = '#000000';
                                         rowBorderColor = '#D97706';
                                     }
                                 }
 
                                 const cellStyle = {
                                     border: `1.5px solid ${rowBorderColor}`,
-                                    borderColor: rowBorderColor,
-                                    borderWidth: '1.5px',
-                                    borderStyle: 'solid',
                                     backgroundColor: isToday ? rowBg : '#FFFFFF',
-                                    color: rowTextColor
+                                    color: rowTextColor,
+                                    fontWeight: '800' as const
                                 };
 
                                 return (
                                     <tr 
                                         key={idx} 
                                         ref={isToday ? todayRowRef : null}
-                                        className={`transition-colors ${isToday ? 'font-bold shadow-xs' : 'hover:bg-amber-50/40'}`} 
+                                        className={`transition-colors font-black ${isToday ? 'shadow-xs' : 'hover:bg-amber-50/50'}`} 
                                         style={{ 
                                             backgroundColor: isToday ? rowBg : '#FFFFFF',
                                             color: rowTextColor 
                                         }}
                                     >
-                                        <td className="px-1 py-2 font-medium" style={cellStyle}>{day.dayName}</td>
-                                        <td className="px-1 py-2 font-mono text-[9px] xs:text-[10px]" style={cellStyle} dir="ltr">
-                                            <span className="font-bold" style={{ 
-                                                color: isToday 
-                                                    ? (isBlackAndWhite || isDefaultTheme ? '#FFFFFF' : '#78350F') 
-                                                    : (isShinyGold ? '#B45309' : '#000000') 
-                                            }}>
+                                        <td className="px-1 py-2 sm:py-2.5 font-black text-xs sm:text-sm text-black" style={cellStyle}>
+                                            <span style={{ color: rowTextColor, fontWeight: '800' }}>{day.dayName}</span>
+                                        </td>
+                                        <td className="px-1 py-2 sm:py-2.5 font-black text-xs sm:text-sm whitespace-nowrap text-black" style={cellStyle} dir="ltr">
+                                            <span className="font-black" style={{ color: rowTextColor, fontWeight: '800' }}>
                                                 {day.hijriDay}
                                             </span>
-                                            <span className="mx-0.5 opacity-60">/</span>
-                                            <span className="opacity-90 font-medium" style={{
-                                                color: isToday 
-                                                    ? (isBlackAndWhite || isDefaultTheme ? '#FFFFFF' : '#78350F') 
-                                                    : '#374151'
-                                            }}>
+                                            <span className="mx-0.5 font-black opacity-70" style={{ color: rowTextColor }}>/</span>
+                                            <span className="font-black" style={{ color: rowTextColor, fontWeight: '800' }}>
                                                 {day.gregorianDay}
                                             </span>
                                         </td>
-                                        <td className="px-1 py-2 font-mono" style={cellStyle} dir="ltr">
-                                            {toEnglishDigits(formatTime12_clean(applyOffset(day.timings.Fajr, getOffset('Fajr'))))}
+                                        <td className="px-1 py-2 sm:py-2.5 font-black text-xs sm:text-sm whitespace-nowrap text-black" style={cellStyle} dir={language === 'ar' ? 'rtl' : 'ltr'}>
+                                            <span className="font-black" style={{ color: rowTextColor, fontWeight: '800' }}>
+                                                {formatLocalizedTime(applyOffset(day.timings.Fajr, getOffset('Fajr')), language === 'ar')}
+                                            </span>
                                         </td>
-                                        <td className="px-1 py-2 font-mono" style={cellStyle} dir="ltr">
-                                            {toEnglishDigits(formatTime12_clean(applyOffset(day.timings.Dhuhr, getOffset('Dhuhr'))))}
+                                        <td className="px-1 py-2 sm:py-2.5 font-black text-xs sm:text-sm whitespace-nowrap text-black" style={cellStyle} dir={language === 'ar' ? 'rtl' : 'ltr'}>
+                                            <span className="font-black" style={{ color: rowTextColor, fontWeight: '800' }}>
+                                                {formatLocalizedTime(applyOffset(day.timings.Dhuhr, getOffset('Dhuhr')), language === 'ar')}
+                                            </span>
                                         </td>
-                                        <td className="px-1 py-2 font-mono" style={cellStyle} dir="ltr">
-                                            {toEnglishDigits(formatTime12_clean(applyOffset(day.timings.Asr, getOffset('Asr'))))}
+                                        <td className="px-1 py-2 sm:py-2.5 font-black text-xs sm:text-sm whitespace-nowrap text-black" style={cellStyle} dir={language === 'ar' ? 'rtl' : 'ltr'}>
+                                            <span className="font-black" style={{ color: rowTextColor, fontWeight: '800' }}>
+                                                {formatLocalizedTime(applyOffset(day.timings.Asr, getOffset('Asr')), language === 'ar')}
+                                            </span>
                                         </td>
-                                        <td className="px-1 py-2 font-mono" style={cellStyle} dir="ltr">
-                                            {toEnglishDigits(formatTime12_clean(applyOffset(day.timings.Maghrib, getOffset('Maghrib'))))}
+                                        <td className="px-1 py-2 sm:py-2.5 font-black text-xs sm:text-sm whitespace-nowrap text-black" style={cellStyle} dir={language === 'ar' ? 'rtl' : 'ltr'}>
+                                            <span className="font-black" style={{ color: rowTextColor, fontWeight: '800' }}>
+                                                {formatLocalizedTime(applyOffset(day.timings.Maghrib, getOffset('Maghrib')), language === 'ar')}
+                                            </span>
                                         </td>
-                                        <td className="px-1 py-2 font-mono" style={cellStyle} dir="ltr">
-                                            {toEnglishDigits(formatTime12_clean(applyOffset(day.timings.Isha, getOffset('Isha'))))}
+                                        <td className="px-1 py-2 sm:py-2.5 font-black text-xs sm:text-sm whitespace-nowrap text-black" style={cellStyle} dir={language === 'ar' ? 'rtl' : 'ltr'}>
+                                            <span className="font-black" style={{ color: rowTextColor, fontWeight: '800' }}>
+                                                {formatLocalizedTime(applyOffset(day.timings.Isha, getOffset('Isha')), language === 'ar')}
+                                            </span>
                                         </td>
                                     </tr>
                                 );
@@ -581,10 +623,10 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
             <div style={{ position: 'fixed', top: '-10000px', left: '-10000px', zIndex: -1000 }}>
                 <div ref={pdfTableRef} style={{ width: '800px', padding: '20px', backgroundColor: '#fff', color: '#000', direction: isRTL ? 'rtl' : 'ltr', fontFamily: 'Cairo, sans-serif' }}>
                     <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-                        <h1 style={{ fontSize: '24px', color: primaryColor }}>
+                        <h1 style={{ fontSize: '24px', color: primaryColor, fontWeight: 'bold' }}>
                             {tPrayer('monthlyShareHeading', language, { m: monthNameDisplay })}
                         </h1>
-                        <p style={{ fontSize: '16px', color: '#666' }}>
+                        <p style={{ fontSize: '16px', color: '#333', fontWeight: 'bold' }}>
                             {tPrayer('locationLabel', language, { 
                                 loc: getLocalizedLocationName(
                                     (language === 'en' ? config.location?.cityGovEn : config.location?.cityGovAr) || config.location?.cityGov, 
@@ -592,34 +634,34 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
                                 ) 
                             })}
                         </p>
-                        <p style={{ fontSize: '14px', color: '#888', marginTop: '5px' }}>
+                        <p style={{ fontSize: '14px', color: '#555', marginTop: '5px' }}>
                             {tPrayer('generatedByLabel', language, { app: tPrayer('createdAppAttribution', language) })}
                         </p>
                     </div>
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'center', fontSize: '14px', border: `1.5px solid ${tableBorderColor}` }}>
                     <thead>
-                        <tr style={{ backgroundColor: isDefaultTheme ? '#000000' : primaryColor, color: '#fff' }}>
-                            <th style={{ padding: '10px', borderWidth: '1.5px', borderStyle: 'solid', borderColor: tableBorderColor }}>{tPrayer('dayHeader', language)}</th>
-                            <th style={{ padding: '10px', borderWidth: '1.5px', borderStyle: 'solid', borderColor: tableBorderColor }}>{tPrayer('hijriDateHeader', language)}</th>
-                            <th style={{ padding: '10px', borderWidth: '1.5px', borderStyle: 'solid', borderColor: tableBorderColor }}>{tPrayer('gregorianDateHeader', language)}</th>
-                            <th style={{ padding: '10px', borderWidth: '1.5px', borderStyle: 'solid', borderColor: tableBorderColor }}>{getPrayerDisplayName('Fajr', language)}</th>
-                            <th style={{ padding: '10px', borderWidth: '1.5px', borderStyle: 'solid', borderColor: tableBorderColor }}>{getPrayerDisplayName('Dhuhr', language)}</th>
-                            <th style={{ padding: '10px', borderWidth: '1.5px', borderStyle: 'solid', borderColor: tableBorderColor }}>{getPrayerDisplayName('Asr', language)}</th>
-                            <th style={{ padding: '10px', borderWidth: '1.5px', borderStyle: 'solid', borderColor: tableBorderColor }}>{getPrayerDisplayName('Maghrib', language)}</th>
-                            <th style={{ padding: '10px', borderWidth: '1.5px', borderStyle: 'solid', borderColor: tableBorderColor }}>{getPrayerDisplayName('Isha', language)}</th>
+                        <tr style={{ backgroundColor: isDefaultTheme ? '#000000' : primaryColor, color: '#fff', fontWeight: 'bold' }}>
+                            <th style={{ padding: '10px', border: `1.5px solid ${tableBorderColor}` }}>{tPrayer('dayHeader', language)}</th>
+                            <th style={{ padding: '10px', border: `1.5px solid ${tableBorderColor}` }}>{tPrayer('hijriDateHeader', language)}</th>
+                            <th style={{ padding: '10px', border: `1.5px solid ${tableBorderColor}` }}>{tPrayer('gregorianDateHeader', language)}</th>
+                            <th style={{ padding: '10px', border: `1.5px solid ${tableBorderColor}` }}>{getPrayerDisplayName('Fajr', language)}</th>
+                            <th style={{ padding: '10px', border: `1.5px solid ${tableBorderColor}` }}>{getPrayerDisplayName('Dhuhr', language)}</th>
+                            <th style={{ padding: '10px', border: `1.5px solid ${tableBorderColor}` }}>{getPrayerDisplayName('Asr', language)}</th>
+                            <th style={{ padding: '10px', border: `1.5px solid ${tableBorderColor}` }}>{getPrayerDisplayName('Maghrib', language)}</th>
+                            <th style={{ padding: '10px', border: `1.5px solid ${tableBorderColor}` }}>{getPrayerDisplayName('Isha', language)}</th>
                         </tr>
                     </thead>
                     <tbody>
                         {monthData.map((day, idx) => (
-                            <tr key={idx}>
-                                <td style={{ padding: '8px', borderWidth: '1.5px', borderStyle: 'solid', borderColor: tableBorderColor }}>{day.dayName}</td>
-                                <td style={{ padding: '8px', borderWidth: '1.5px', borderStyle: 'solid', borderColor: tableBorderColor, direction: 'ltr' }}>{day.hijriDateStr}</td>
-                                <td style={{ padding: '8px', borderWidth: '1.5px', borderStyle: 'solid', borderColor: tableBorderColor, direction: 'ltr' }}>{day.gregorianDateStr}</td>
-                                <td style={{ padding: '8px', borderWidth: '1.5px', borderStyle: 'solid', borderColor: tableBorderColor, direction: 'ltr' }}>{toEnglishDigits(formatTime12_clean(applyOffset(day.timings.Fajr, getOffset('Fajr'))))}</td>
-                                <td style={{ padding: '8px', borderWidth: '1.5px', borderStyle: 'solid', borderColor: tableBorderColor, direction: 'ltr' }}>{toEnglishDigits(formatTime12_clean(applyOffset(day.timings.Dhuhr, getOffset('Dhuhr'))))}</td>
-                                <td style={{ padding: '8px', borderWidth: '1.5px', borderStyle: 'solid', borderColor: tableBorderColor, direction: 'ltr' }}>{toEnglishDigits(formatTime12_clean(applyOffset(day.timings.Asr, getOffset('Asr'))))}</td>
-                                <td style={{ padding: '8px', borderWidth: '1.5px', borderStyle: 'solid', borderColor: tableBorderColor, direction: 'ltr' }}>{toEnglishDigits(formatTime12_clean(applyOffset(day.timings.Maghrib, getOffset('Maghrib'))))}</td>
-                                <td style={{ padding: '8px', borderWidth: '1.5px', borderStyle: 'solid', borderColor: tableBorderColor, direction: 'ltr' }}>{toEnglishDigits(formatTime12_clean(applyOffset(day.timings.Isha, getOffset('Isha'))))}</td>
+                            <tr key={idx} style={{ fontWeight: 'bold', color: '#000000' }}>
+                                <td style={{ padding: '8px', border: `1.5px solid ${tableBorderColor}`, fontWeight: 'bold', color: '#000000' }}>{day.dayName}</td>
+                                <td style={{ padding: '8px', border: `1.5px solid ${tableBorderColor}`, fontWeight: 'bold', color: '#000000', direction: 'ltr' }}>{day.hijriDateStr}</td>
+                                <td style={{ padding: '8px', border: `1.5px solid ${tableBorderColor}`, fontWeight: 'bold', color: '#000000', direction: 'ltr' }}>{day.gregorianDateStr}</td>
+                                <td style={{ padding: '8px', border: `1.5px solid ${tableBorderColor}`, fontWeight: 'bold', color: '#000000', direction: language === 'ar' ? 'rtl' : 'ltr' }}>{formatLocalizedTime(applyOffset(day.timings.Fajr, getOffset('Fajr')), language === 'ar')}</td>
+                                <td style={{ padding: '8px', border: `1.5px solid ${tableBorderColor}`, fontWeight: 'bold', color: '#000000', direction: language === 'ar' ? 'rtl' : 'ltr' }}>{formatLocalizedTime(applyOffset(day.timings.Dhuhr, getOffset('Dhuhr')), language === 'ar')}</td>
+                                <td style={{ padding: '8px', border: `1.5px solid ${tableBorderColor}`, fontWeight: 'bold', color: '#000000', direction: language === 'ar' ? 'rtl' : 'ltr' }}>{formatLocalizedTime(applyOffset(day.timings.Asr, getOffset('Asr')), language === 'ar')}</td>
+                                <td style={{ padding: '8px', border: `1.5px solid ${tableBorderColor}`, fontWeight: 'bold', color: '#000000', direction: language === 'ar' ? 'rtl' : 'ltr' }}>{formatLocalizedTime(applyOffset(day.timings.Maghrib, getOffset('Maghrib')), language === 'ar')}</td>
+                                <td style={{ padding: '8px', border: `1.5px solid ${tableBorderColor}`, fontWeight: 'bold', color: '#000000', direction: language === 'ar' ? 'rtl' : 'ltr' }}>{formatLocalizedTime(applyOffset(day.timings.Isha, getOffset('Isha')), language === 'ar')}</td>
                             </tr>
                         ))}
                     </tbody>
@@ -688,7 +730,7 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
                                         {Array.from({ length: 20 }, (_, i) => {
                                             const baseYear = calendarType === 'hijri' ? moment().iYear() : moment().year();
                                             const year = baseYear - 10 + i;
-                                            return <option key={year} value={year} style={{ backgroundColor: theme.cardBg, color: theme.textColor }}>{toEnglishDigits(year)}</option>;
+                                            return <option key={year} value={year} style={{ backgroundColor: theme.cardBg, color: theme.textColor }}>{language === 'ar' ? toArabicDigits(year) : year}</option>;
                                         })}
                                     </select>
                                 </div>

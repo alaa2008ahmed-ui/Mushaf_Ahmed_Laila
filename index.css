@@ -798,10 +798,6 @@ body.theme-shiny-gold #main-prayer-status-card button * {
 
 /* في الثيم الذهبي: تغيير لون الصفوف والبطاقات في نوافذ إعدادات مواقيت الصلاة والإشعارات من الذهبي إلى الأبيض */
 /* في الثيم الذهبي: تغيير لون الصفوف والبطاقات غير المحددة في نوافذ إعدادات مواقيت الصلاة والإشعارات من الذهبي إلى الأبيض */
-body.theme-shiny-gold .modal-skinned .quran-raised-btn:not(.quran-raised-btn-selected),
-body.theme-shiny-gold .modal-skinned .quran-raised-card,
-html.theme-shiny-gold .modal-skinned .quran-raised-btn:not(.quran-raised-btn-selected),
-html.theme-shiny-gold .modal-skinned .quran-raised-card,
 body.theme-shiny-gold #setting-adhan-adjustment > div,
 body.theme-shiny-gold #setting-pre-reminder,
 body.theme-shiny-gold #setting-iqama-alert,
@@ -819,8 +815,7 @@ html.theme-shiny-gold #setting-tone-selector button:not(.quran-raised-btn-select
     box-shadow: 0 2px 5px rgba(180, 115, 20, 0.08), inset 0 1px 1px #FFFFFF !important;
 }
 
-body.theme-shiny-gold .modal-skinned .quran-raised-btn:not(.quran-raised-btn-selected) *,
-body.theme-shiny-gold .modal-skinned .quran-raised-card * {
+body.theme-shiny-gold #setting-adhan-adjustment * {
     color: #1F2937 !important;
 }
 

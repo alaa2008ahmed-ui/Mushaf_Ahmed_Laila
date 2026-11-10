@@ -21,14 +21,18 @@ const toEnglishDigits = (s: string | number) => String(s ?? '')
     .replace(/[٠-٩]/g, d => (d.charCodeAt(0) - 1632).toString())
     .replace(/[۰-۹]/g, d => (d.charCodeAt(0) - 1776).toString());
 
-export const formatTime12 = (time: string) => {
+const toArabicDigits = (s: string | number) => String(s ?? '').replace(/[0-9]/g, w => '٠١٢٣٤٥٦٧٨٩'[+w]);
+
+export const formatTime12 = (time: string, isAr: boolean = false) => {
     if(!time || time.includes('--')) return "--:-- --";
     const cleaned = toEnglishDigits(time);
     let [h, m] = cleaned.split(':');
     let hInt = parseInt(h);
-    const ap = hInt >= 12 ? 'pm' : 'am';
+    const ap = hInt >= 12 ? (isAr ? 'م' : 'pm') : (isAr ? 'ص' : 'am');
     hInt = hInt % 12 || 12;
-    return `<span class="text-xl font-black">${hInt}:${m.toString().padStart(2, '0')}</span> <span class="time-period">${ap}</span>`;
+    const hStr = isAr ? toArabicDigits(hInt) : String(hInt);
+    const mStr = isAr ? toArabicDigits(m.toString().padStart(2, '0')) : m.toString().padStart(2, '0');
+    return `<span class="text-xl font-black">${hStr}:${mStr}</span> <span class="time-period">${ap}</span>`;
 };
 
 export const formatTime12_EN = (time: string) => {

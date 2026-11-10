@@ -50,6 +50,7 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme.NoActionBar"> 
 
+        <!-- Status Bar Notification Icon: Holy Quran on Rehal (Stand) ic_stat_name -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"
             android:resource="@drawable/ic_stat_name" />
@@ -62,6 +63,18 @@
         <meta-data
             android:name="com.capacitorjs.plugins.localnotifications.default_notification_color"
             android:resource="@color/notification_icon_color" />
+        <meta-data
+            android:name="default_notification_icon"
+            android:resource="@drawable/ic_stat_name" />
+        <meta-data
+            android:name="default_notification_color"
+            android:resource="@color/notification_icon_color" />
+        <meta-data
+            android:name="android.app.default_notification_icon"
+            android:resource="@drawable/ic_stat_name" />
+        <meta-data
+            android:name="com.mushaf.ahmedandlayla.notification_icon"
+            android:resource="@drawable/ic_stat_name" />
         
         <activity
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|layoutDirection|smallestScreenSize|screenLayout|uiMode|navigation|density"

@@ -58,8 +58,8 @@ const MemorizationQuizModal: React.FC<MemorizationQuizModalProps> = ({
   isEn,
   onComplete
 }) => {
-  // Default to voice recitation as requested
-  const [quizType, setQuizType] = useState<QuizType>('voice');
+  // Default to Multiple Choice (اختيار الآية) as requested
+  const [quizType, setQuizType] = useState<QuizType>('next_ayah');
   const [currentStep, setCurrentStep] = useState(0);
   const [score, setScore] = useState(0);
   const [isFinished, setIsFinished] = useState(false);
@@ -608,45 +608,44 @@ const MemorizationQuizModal: React.FC<MemorizationQuizModalProps> = ({
 
         {!isFinished && (
           <>
-            {/* Mode Selector Tabs */}
+            {/* Mode Selector Tabs - Multiple Choice default on Right, Voice Recitation on Left in RTL */}
             <div className="px-5 pt-3">
               <div className="flex p-1 rounded-xl bg-slate-100 dark:bg-zinc-800/80 gap-1 text-[11px] font-bold">
                 <button
                   onClick={() => {
                     stopVoiceRecognition();
-                    setQuizType('voice');
-                  }}
-                  className={`flex-1 py-1.5 rounded-lg transition-all border-0 cursor-pointer flex items-center justify-center gap-1.5 ${
-                    quizType === 'voice' ? 'bg-white dark:bg-zinc-700 shadow-sm text-slate-900 dark:text-white' : 'opacity-60'
-                  }`}
-                  style={{ color: quizType === 'voice' ? primaryColor : undefined }}
-                >
-                  <Mic size={13} />
-                  <span>{isEn ? 'Voice Recitation' : 'التسميع الصوتي'}</span>
-                </button>
-                <button
-                  onClick={() => {
-                    stopVoiceRecognition();
                     setQuizType('next_ayah');
                   }}
-                  className={`flex-1 py-1.5 rounded-lg transition-all border-0 cursor-pointer ${
+                  className={`flex-1 py-1.5 rounded-lg transition-all border-0 cursor-pointer flex items-center justify-center ${
                     quizType === 'next_ayah' ? 'bg-white dark:bg-zinc-700 shadow-sm text-slate-900 dark:text-white' : 'opacity-60'
                   }`}
                   style={{ color: quizType === 'next_ayah' ? primaryColor : undefined }}
                 >
-                  {isEn ? 'Multiple Choice' : 'اختيار الآية'}
+                  <span>{isEn ? 'Multiple Choice' : 'اختيار الآية'}</span>
                 </button>
                 <button
                   onClick={() => {
                     stopVoiceRecognition();
                     setQuizType('scramble');
                   }}
-                  className={`flex-1 py-1.5 rounded-lg transition-all border-0 cursor-pointer ${
+                  className={`flex-1 py-1.5 rounded-lg transition-all border-0 cursor-pointer flex items-center justify-center ${
                     quizType === 'scramble' ? 'bg-white dark:bg-zinc-700 shadow-sm text-slate-900 dark:text-white' : 'opacity-60'
                   }`}
                   style={{ color: quizType === 'scramble' ? primaryColor : undefined }}
                 >
-                  {isEn ? 'Word Order' : 'ترتيب الكلمات'}
+                  <span>{isEn ? 'Word Order' : 'ترتيب الكلمات'}</span>
+                </button>
+                <button
+                  onClick={() => {
+                    stopVoiceRecognition();
+                    setQuizType('voice');
+                  }}
+                  className={`flex-1 py-1.5 rounded-lg transition-all border-0 cursor-pointer flex items-center justify-center ${
+                    quizType === 'voice' ? 'bg-white dark:bg-zinc-700 shadow-sm text-slate-900 dark:text-white' : 'opacity-60'
+                  }`}
+                  style={{ color: quizType === 'voice' ? primaryColor : undefined }}
+                >
+                  <span>{isEn ? 'Voice Recitation' : 'التسميع الصوتي'}</span>
                 </button>
               </div>
             </div>

@@ -4,6 +4,9 @@ import { Preferences } from '@capacitor/preferences';
 import { playNotificationSound, getActiveNotificationSoundFileName, getActiveNotificationSoundPath } from './prayerTimesUtils';
 import { updateNativeAlertsGroupSummary } from './silentMode';
 
+// Android status bar notification icon: Holy Quran on Rehal (Stand)
+export const WIRD_NOTIFICATION_ICON = 'ic_stat_name';
+
 // Plugin interface for native bridge
 interface AutoSilentPluginInterface {
   syncDailyWird: () => Promise<void>;
@@ -535,7 +538,7 @@ export const syncDailyWirdNotifications = async (langOverride?: 'ar' | 'en') => 
         playSound: hasWirdSound,
         soundFile: wirdSoundPath
       },
-      smallIcon: 'ic_stat_name',
+      smallIcon: WIRD_NOTIFICATION_ICON,
       iconColor: '#2E7D5E',
       group: WIRD_GROUP_ID,
       groupSummary: false,

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   CalendarDays, 
@@ -6,11 +6,16 @@ import {
   Copy, 
   Check, 
   RotateCw,
-  Sparkles
+  Sparkles,
+  Volume2,
+  VolumeX,
+  ZoomIn,
+  ChevronDown
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTheme } from '../../context/ThemeContext';
 import { getTranslatedEventText } from '../../utils/onThisDayService';
+import { playTTS, stopTTS, subscribeTTS } from '../../utils/ttsEngine';
 
 interface OnThisDayBottomSheetProps {
   isOpen: boolean;
@@ -38,6 +43,16 @@ export const OnThisDayBottomSheet: React.FC<OnThisDayBottomSheetProps> = ({
   const { theme, themeKey } = useTheme();
   const [copied, setCopied] = useState(false);
   const [isRotating, setIsRotating] = useState(false);
+  const [playingText, setPlayingText] = useState<string | null>(null);
+  const [fontSize, setFontSize] = useState<number>(22);
+
+  useEffect(() => {
+    const unsubscribe = subscribeTTS(setPlayingText);
+    return () => {
+      unsubscribe();
+      stopTTS();
+    };
+  }, []);
 
   const isBlackTheme = themeKey === 'deep_black' || theme.bgColor === '#000000' || theme.name === 'اسود' || theme.name === 'black';
   const primaryColor = isBlackTheme ? '#10b981' : (theme.palette?.[0] || '#059669');
@@ -61,6 +76,23 @@ export const OnThisDayBottomSheet: React.FC<OnThisDayBottomSheetProps> = ({
   const eventContent = language === 'en' 
     ? (event.textEn || getTranslatedEventText(event.text, event.year))
     : event.text;
+
+  const cleanTextToRead = eventContent.replace(/<[^>]*>/g, '').trim();
+  const isPlaying = playingText === cleanTextToRead;
+
+  const handlePlayAudio = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isPlaying) {
+      stopTTS();
+    } else {
+      playTTS(cleanTextToRead, { isEn: language === 'en' });
+    }
+  };
+
+  const handleToggleZoom = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setFontSize((prev) => (prev >= 32 ? 18 : prev + 4));
+  };
 
   return (
     <AnimatePresence>
@@ -86,7 +118,6 @@ export const OnThisDayBottomSheet: React.FC<OnThisDayBottomSheetProps> = ({
         >
           {/* 1. Drag Handle & Header */}
           <div className="pt-3 px-6 pb-2 shrink-0 flex flex-col items-center">
-            {/* مؤشر السحب الصغير (Drag Handle) */}
             <div className={`w-12 h-1.5 rounded-full mb-3 ${isBlackTheme ? 'bg-zinc-700' : 'bg-slate-300'}`} />
 
             <div className="flex items-center justify-between w-full">
@@ -110,7 +141,6 @@ export const OnThisDayBottomSheet: React.FC<OnThisDayBottomSheetProps> = ({
                 </div>
               </div>
 
-              {/* زر الإجراء السريع في الترويسة: زر تغيير الحدث */}
               <div className="flex items-center gap-1.5 shrink-0">
                 <button
                   type="button"
@@ -135,7 +165,6 @@ export const OnThisDayBottomSheet: React.FC<OnThisDayBottomSheetProps> = ({
           {/* 2. Scrollable Body Content */}
           <div className="overflow-y-auto px-6 py-4 flex flex-col gap-5 flex-1 overscroll-contain">
             
-            {/* شريط التاريخ بارز وواضح جداً بلون رمادي/بيج ناعم */}
             <div className={`w-full py-3 px-4 rounded-2xl flex items-center justify-between ${
               isBlackTheme ? 'bg-zinc-800/80 border border-zinc-700/60' : 'bg-slate-50 border border-slate-100'
             }`}>
@@ -161,25 +190,24 @@ export const OnThisDayBottomSheet: React.FC<OnThisDayBottomSheetProps> = ({
               </div>
             </div>
 
-            {/* النص التاريخي بحجم كبير جداً ومسافة أسطر واسعة مريحة لضعاف البصر وكبار السن */}
             <div className={`rounded-2xl p-6 sm:p-7 shadow-xs ${
               isBlackTheme 
                 ? 'bg-zinc-900/90 border border-zinc-700/60' 
                 : 'bg-[#FAF9F5] border border-stone-200/50'
             }`}>
               <p 
-                className={`text-[20px] sm:text-[23px] font-bold font-hafs leading-[2.1] sm:leading-[2.2] tracking-wide text-justify ${
+                className={`font-bold font-hafs leading-[2.1] sm:leading-[2.2] tracking-wide text-justify ${
                   isBlackTheme ? 'text-zinc-100' : 'text-slate-800'
                 }`}
                 style={{
                   wordBreak: 'break-word',
+                  fontSize: `${fontSize}px`
                 }}
               >
                 {eventContent}
               </p>
             </div>
 
-            {/* شريط معلومات تشجيعي مع زر التبديل لحدث آخر */}
             <div className="flex items-center justify-between px-1">
               <div className={`flex items-center gap-2 text-xs font-semibold ${isBlackTheme ? 'text-zinc-400' : 'text-slate-400'}`}>
                 <Sparkles className="w-4 h-4 text-amber-500" />
@@ -199,59 +227,85 @@ export const OnThisDayBottomSheet: React.FC<OnThisDayBottomSheetProps> = ({
             </div>
           </div>
 
-          {/* 3. Sticky Bottom Actions (Never Cut Off / Full-width Buttons) */}
+          {/* 3. Sticky Bottom 5 Action Buttons matching Supplications page */}
           <div 
-            className={`sticky bottom-0 pt-3 pb-7 sm:pb-8 px-6 shrink-0 flex flex-col gap-2.5 ${
+            className={`p-4 pt-3 shrink-0 flex items-center justify-center gap-3 sm:gap-4 border-t ${
               isBlackTheme
-                ? 'bg-[#18181b]/95 backdrop-blur-md border-t border-zinc-800 shadow-[0_-8px_20px_rgba(0,0,0,0.6)]'
-                : 'bg-white/95 backdrop-blur-md border-t border-slate-100 shadow-[0_-8px_20px_rgba(0,0,0,0.04)]'
+                ? 'bg-[#18181b] border-zinc-800'
+                : 'bg-white border-slate-100'
             }`}
+            style={{
+              paddingBottom: 'calc(env(safe-area-inset-bottom, 16px) + 16px)',
+            }}
           >
-            <div className="flex items-center gap-3 w-full">
-              {/* زر المشاركة العريض والبارز */}
-              <button
-                type="button"
-                onClick={onShare}
-                className="flex-1 h-13 sm:h-14 rounded-2xl font-bold text-base sm:text-lg text-white flex items-center justify-center gap-2.5 shadow-md hover:shadow-lg active:scale-98 transition-all cursor-pointer"
-                style={{
-                  backgroundColor: primaryColor,
-                }}
-              >
-                <Share2 className="w-5 h-5" />
-                <span>{t('common.share', 'مشاركة الحدث')}</span>
-              </button>
-
-              {/* زر النسخ السريع */}
-              <button
-                type="button"
-                onClick={handleCopyClick}
-                className={`w-13 h-13 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center transition-all cursor-pointer shrink-0 ${
-                  isBlackTheme 
-                    ? 'bg-zinc-800 hover:bg-zinc-700 active:bg-zinc-600 text-zinc-200 border border-white/5' 
-                    : 'bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700'
-                }`}
-                title={t('common.copy', 'نسخ')}
-                aria-label={t('common.copy', 'نسخ')}
-              >
-                {copied ? (
-                  <Check className="w-6 h-6 text-emerald-400" strokeWidth={2.4} />
-                ) : (
-                  <Copy className="w-5 h-5" strokeWidth={2} />
-                )}
-              </button>
-            </div>
-
-            {/* زر الإغلاق العريض والواضح */}
+            {/* 1. Audio Button */}
             <button
               type="button"
-              onClick={onClose}
-              className={`w-full h-11 rounded-xl font-bold text-sm sm:text-base flex items-center justify-center transition-colors cursor-pointer ${
-                isBlackTheme
-                  ? 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-white/5'
-                  : 'text-slate-600 bg-slate-100 hover:bg-slate-200 active:bg-slate-300'
-              }`}
+              onClick={handlePlayAudio}
+              className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border-0"
+              style={{
+                backgroundColor: isPlaying ? 'rgba(239, 68, 68, 0.15)' : (isBlackTheme ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9'),
+                color: isPlaying ? '#EF4444' : (isBlackTheme ? '#FFFFFF' : '#1E293B')
+              }}
+              title={language === 'en' ? (isPlaying ? 'Stop audio' : 'Play audio') : (isPlaying ? 'إيقاف الصوت' : 'استماع صوتي')}
             >
-              {t('common.close', 'إغلاق النافذة')}
+              {isPlaying ? <VolumeX className="w-5 h-5 text-red-500 animate-pulse" /> : <Volume2 className="w-5 h-5" />}
+            </button>
+
+            {/* 2. Share Button */}
+            <button 
+              type="button"
+              onClick={onShare} 
+              className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border-0"
+              style={{
+                backgroundColor: isBlackTheme ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9',
+                color: isBlackTheme ? '#FFFFFF' : '#1E293B'
+              }}
+              title={language === 'en' ? "Share Image" : "مشاركة كصورة"}
+            >
+              <Share2 className="w-5 h-5" />
+            </button>
+
+            {/* 3. Copy Button */}
+            <button
+              type="button"
+              onClick={handleCopyClick}
+              className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border-0"
+              style={{
+                backgroundColor: copied ? '#10B981' : (isBlackTheme ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9'),
+                color: copied ? '#FFFFFF' : (isBlackTheme ? '#FFFFFF' : '#1E293B')
+              }}
+              title={language === 'en' ? 'Copy text' : 'نسخ النص'}
+            >
+              {copied ? <Check className="w-5 h-5 text-white" /> : <Copy className="w-5 h-5" />}
+            </button>
+
+            {/* 4. Zoom Font Size Button */}
+            <button
+              type="button"
+              onClick={handleToggleZoom}
+              className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border-0"
+              style={{
+                backgroundColor: isBlackTheme ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9',
+                color: isBlackTheme ? '#FFFFFF' : '#1E293B'
+              }}
+              title={language === 'en' ? 'Enlarge font size' : 'تكبير حجم الخط'}
+            >
+              <ZoomIn className="w-5 h-5" />
+            </button>
+
+            {/* 5. Close / Hide Sheet Button */}
+            <button 
+              type="button"
+              onClick={onClose} 
+              className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border-0"
+              style={{
+                backgroundColor: isBlackTheme ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9',
+                color: isBlackTheme ? '#FFFFFF' : '#1E293B'
+              }}
+              title={language === 'en' ? 'Hide list' : 'إخفاء القائمة'}
+            >
+              <ChevronDown className="w-5 h-5" />
             </button>
           </div>
         </motion.div>

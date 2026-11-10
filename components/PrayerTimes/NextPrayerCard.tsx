@@ -35,9 +35,10 @@ const NextPrayerCard: React.FC<NextPrayerCardProps> = ({
     nightNotifications = { firstThird: true, midnight: true, lastThird: true },
     onToggleNightNotification
 }) => {
-    const { language, dir } = useLanguage();
+    const { language, dir, formatNumber } = useLanguage();
     if (!nextPrayer || !times[nextPrayer.key]) return null;
 
+    const isAr = language === 'ar';
     const primaryColor = isBlackTheme ? '#FFFFFF' : (themePalette0 || '#2E7D5E');
     const dividerClass = isBlackTheme ? 'bg-white/10' : 'bg-slate-100';
 
@@ -45,9 +46,12 @@ const NextPrayerCard: React.FC<NextPrayerCardProps> = ({
         if (!timeStr || timeStr.includes('--')) return "--:-- --";
         const [h, m] = timeStr.split(':');
         let hInt = parseInt(h);
-        const ap = hInt >= 12 ? 'pm' : 'am';
+        const ap = hInt >= 12 ? (isAr ? 'م' : 'pm') : (isAr ? 'ص' : 'am');
         hInt = hInt % 12 || 12;
-        return `${hInt}:${m.toString().padStart(2, '0')} ${ap}`;
+        const formattedDigits = isAr 
+            ? `${formatNumber(hInt)}:${formatNumber(m.toString().padStart(2, '0'))}` 
+            : `${hInt}:${m.toString().padStart(2, '0')}`;
+        return `${formattedDigits} ${ap}`;
     };
 
     return (
@@ -61,21 +65,21 @@ const NextPrayerCard: React.FC<NextPrayerCardProps> = ({
             }`}
             style={{ borderRadius: '16px', border: 'none' }}
         >
-            <div className="px-2.5 sm:px-4 py-3 sm:py-4 flex justify-between items-center gap-1.5 sm:gap-3 relative z-10">
+            <div className="px-2.5 sm:px-4 pt-1.5 pb-2.5 sm:pt-2 sm:pb-3 flex justify-between items-center gap-1.5 sm:gap-3 relative z-10">
                 {/* عداد 'المتبقي على الصلاة' داخل حاوية نظيفة بدون حدود، واستخدام لون الثيم لإبراز الأرقام */}
                 <div id="next-prayer-countdown-container" className="text-start flex flex-col justify-center shrink-0 min-w-0">
-                    <p className={`text-[10px] sm:text-xs font-semibold ${isBlackTheme ? 'text-zinc-400' : 'text-slate-500'} mb-0.5 sm:mb-1 leading-tight flex items-center gap-1`}>
-                        <span>{tPrayer('remainingUntil', language)}</span>
-                        <span className="font-bold" style={{ color: primaryColor }}>
+                    <p className="text-[10px] sm:text-xs font-extrabold mb-0.5 sm:mb-1 leading-tight flex items-center gap-1">
+                        <span style={{ color: isBlackTheme ? '#A1A1AA' : '#000000' }}>{tPrayer('remainingUntil', language)}</span>
+                        <span className="font-extrabold" style={{ color: primaryColor }}>
                             {getPrayerDisplayName(nextPrayer.key, language)}
                         </span>
                     </p>
                     <p 
                         className="text-lg sm:text-2xl md:text-3xl font-black font-mono tracking-tight leading-none whitespace-nowrap tabular-nums" 
-                        dir="ltr"
+                        dir={isAr ? "rtl" : "ltr"}
                         style={{ color: primaryColor }}
                     >
-                        {countdown}
+                        {isAr ? formatNumber(countdown) : countdown}
                     </p>
                 </div>
 
@@ -98,11 +102,11 @@ const NextPrayerCard: React.FC<NextPrayerCardProps> = ({
                                     )}
                                 </button>
                             )}
-                            <span className={`text-[9px] sm:text-[10.5px] font-medium ${isBlackTheme ? 'text-zinc-400' : 'text-slate-500'} whitespace-nowrap leading-tight`}>
+                            <span className="text-[9px] sm:text-[10.5px] font-extrabold whitespace-nowrap leading-tight" style={{ color: isBlackTheme ? '#A1A1AA' : '#000000' }}>
                                 {tPrayer('firstThird', language)}
                             </span>
                         </div>
-                        <span className={`text-[9.5px] sm:text-[11.5px] font-bold font-mono ${isBlackTheme ? 'text-zinc-200' : 'text-slate-800'} whitespace-nowrap leading-none tabular-nums`} dir="ltr">
+                        <span className="text-[9.5px] sm:text-[11.5px] font-bold font-mono whitespace-nowrap leading-none tabular-nums" style={{ color: isBlackTheme ? '#FFFFFF' : primaryColor }} dir={isAr ? "rtl" : "ltr"}>
                             {formatNightTime(nightTimes.firstThird)}
                         </span>
                     </div>
@@ -126,11 +130,11 @@ const NextPrayerCard: React.FC<NextPrayerCardProps> = ({
                                     )}
                                 </button>
                             )}
-                            <span className={`text-[9px] sm:text-[10.5px] font-medium ${isBlackTheme ? 'text-zinc-400' : 'text-slate-500'} whitespace-nowrap leading-tight`}>
+                            <span className="text-[9px] sm:text-[10.5px] font-extrabold whitespace-nowrap leading-tight" style={{ color: isBlackTheme ? '#A1A1AA' : '#000000' }}>
                                 {tPrayer('midnight', language)}
                             </span>
                         </div>
-                        <span className={`text-[9.5px] sm:text-[11.5px] font-bold font-mono ${isBlackTheme ? 'text-zinc-200' : 'text-slate-800'} whitespace-nowrap leading-none tabular-nums`} dir="ltr">
+                        <span className="text-[9.5px] sm:text-[11.5px] font-bold font-mono whitespace-nowrap leading-none tabular-nums" style={{ color: isBlackTheme ? '#FFFFFF' : primaryColor }} dir={isAr ? "rtl" : "ltr"}>
                             {formatNightTime(nightTimes.midnight)}
                         </span>
                     </div>
@@ -154,11 +158,11 @@ const NextPrayerCard: React.FC<NextPrayerCardProps> = ({
                                     )}
                                 </button>
                             )}
-                            <span className={`text-[9px] sm:text-[10.5px] font-medium ${isBlackTheme ? 'text-zinc-400' : 'text-slate-500'} whitespace-nowrap leading-tight`}>
+                            <span className="text-[9px] sm:text-[10.5px] font-extrabold whitespace-nowrap leading-tight" style={{ color: isBlackTheme ? '#A1A1AA' : '#000000' }}>
                                 {tPrayer('lastThird', language)}
                             </span>
                         </div>
-                        <span className={`text-[9.5px] sm:text-[11.5px] font-bold font-mono ${isBlackTheme ? 'text-zinc-200' : 'text-slate-800'} whitespace-nowrap leading-none tabular-nums`} dir="ltr">
+                        <span className="text-[9.5px] sm:text-[11.5px] font-bold font-mono whitespace-nowrap leading-none tabular-nums" style={{ color: isBlackTheme ? '#FFFFFF' : primaryColor }} dir={isAr ? "rtl" : "ltr"}>
                             {formatNightTime(nightTimes.lastThird)}
                         </span>
                     </div>

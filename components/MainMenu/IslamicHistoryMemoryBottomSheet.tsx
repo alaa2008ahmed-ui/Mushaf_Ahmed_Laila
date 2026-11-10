@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ScrollText,
@@ -7,11 +7,16 @@ import {
   Copy,
   Check,
   RotateCw,
-  Sparkles
+  Sparkles,
+  Volume2,
+  VolumeX,
+  ZoomIn,
+  ChevronDown
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTheme } from '../../context/ThemeContext';
 import { HistoricalEventLocalized, formatCalendarNumber } from '../../utils/calendarTranslations';
+import { playTTS, stopTTS, subscribeTTS } from '../../utils/ttsEngine';
 
 interface IslamicHistoryMemoryBottomSheetProps {
   isOpen: boolean;
@@ -34,6 +39,16 @@ export const IslamicHistoryMemoryBottomSheet: React.FC<IslamicHistoryMemoryBotto
   const { theme, themeKey } = useTheme();
   const [copied, setCopied] = useState(false);
   const [isRotating, setIsRotating] = useState(false);
+  const [playingText, setPlayingText] = useState<string | null>(null);
+  const [fontSize, setFontSize] = useState<number>(22);
+
+  useEffect(() => {
+    const unsubscribe = subscribeTTS(setPlayingText);
+    return () => {
+      unsubscribe();
+      stopTTS();
+    };
+  }, []);
 
   const isBlackTheme =
     themeKey === 'deep_black' ||
@@ -66,6 +81,23 @@ export const IslamicHistoryMemoryBottomSheet: React.FC<IslamicHistoryMemoryBotto
   const gregorianYear = language === 'en'
     ? event.gregorianYearEn
     : formatCalendarNumber(event.gregorianYearAr, 'ar');
+
+  const fullTextToRead = `${eventTitle}. ${eventDescription}`.replace(/<[^>]*>/g, '').trim();
+  const isPlaying = playingText === fullTextToRead;
+
+  const handlePlayAudio = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isPlaying) {
+      stopTTS();
+    } else {
+      playTTS(fullTextToRead, { isEn: language === 'en' });
+    }
+  };
+
+  const handleToggleZoom = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setFontSize((prev) => (prev >= 32 ? 18 : prev + 4));
+  };
 
   return (
     <AnimatePresence>
@@ -175,10 +207,13 @@ export const IslamicHistoryMemoryBottomSheet: React.FC<IslamicHistoryMemoryBotto
               }`}
             >
               <p
-                className={`text-[20px] sm:text-[23px] font-bold font-hafs leading-[2.1] sm:leading-[2.2] tracking-wide text-justify ${
+                className={`font-bold font-hafs leading-[2.1] sm:leading-[2.2] tracking-wide text-justify ${
                   isBlackTheme ? 'text-zinc-100' : 'text-slate-800'
                 }`}
-                style={{ wordBreak: 'break-word' }}
+                style={{ 
+                  wordBreak: 'break-word',
+                  fontSize: `${fontSize}px` 
+                }}
               >
                 {eventDescription}
               </p>
@@ -203,54 +238,85 @@ export const IslamicHistoryMemoryBottomSheet: React.FC<IslamicHistoryMemoryBotto
             </div>
           </div>
 
-          {/* 3. Sticky Bottom Actions */}
+          {/* 3. Sticky Bottom 5 Action Buttons matching Supplications page */}
           <div
-            className={`sticky bottom-0 pt-3 pb-7 sm:pb-8 px-6 shrink-0 flex flex-col gap-2.5 ${
+            className={`p-4 pt-3 shrink-0 flex items-center justify-center gap-3 sm:gap-4 border-t ${
               isBlackTheme
-                ? 'bg-[#18181b]/95 backdrop-blur-md border-t border-zinc-800 shadow-[0_-8px_20px_rgba(0,0,0,0.6)]'
-                : 'bg-white/95 backdrop-blur-md border-t border-slate-100 shadow-[0_-8px_20px_rgba(0,0,0,0.04)]'
+                ? 'bg-[#18181b] border-zinc-800'
+                : 'bg-white border-slate-100'
             }`}
+            style={{
+              paddingBottom: 'calc(env(safe-area-inset-bottom, 16px) + 16px)',
+            }}
           >
-            <div className="flex items-center gap-3 w-full">
-              <button
-                type="button"
-                onClick={onShare}
-                className="flex-1 h-13 sm:h-14 rounded-2xl font-bold text-base sm:text-lg text-white flex items-center justify-center gap-2.5 shadow-md hover:shadow-lg active:scale-98 transition-all cursor-pointer"
-                style={{ backgroundColor: primaryColor }}
-              >
-                <Share2 className="w-5 h-5" />
-                <span>{t('common.share', 'مشاركة الحدث')}</span>
-              </button>
+            {/* 1. Audio Button */}
+            <button
+              type="button"
+              onClick={handlePlayAudio}
+              className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border-0"
+              style={{
+                backgroundColor: isPlaying ? 'rgba(239, 68, 68, 0.15)' : (isBlackTheme ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9'),
+                color: isPlaying ? '#EF4444' : (isBlackTheme ? '#FFFFFF' : '#1E293B')
+              }}
+              title={language === 'en' ? (isPlaying ? 'Stop audio' : 'Play audio') : (isPlaying ? 'إيقاف الصوت' : 'استماع صوتي')}
+            >
+              {isPlaying ? <VolumeX className="w-5 h-5 text-red-500 animate-pulse" /> : <Volume2 className="w-5 h-5" />}
+            </button>
 
-              <button
-                type="button"
-                onClick={handleCopyClick}
-                className={`w-13 h-13 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center transition-all cursor-pointer shrink-0 ${
-                  isBlackTheme
-                    ? 'bg-zinc-800 hover:bg-zinc-700 active:bg-zinc-600 text-zinc-200 border border-white/5'
-                    : 'bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700'
-                }`}
-                title={t('common.copy', 'نسخ')}
-                aria-label={t('common.copy', 'نسخ')}
-              >
-                {copied ? (
-                  <Check className="w-6 h-6 text-emerald-400" strokeWidth={2.4} />
-                ) : (
-                  <Copy className="w-5 h-5" strokeWidth={2} />
-                )}
-              </button>
-            </div>
+            {/* 2. Share Button */}
+            <button
+              type="button"
+              onClick={onShare}
+              className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border-0"
+              style={{
+                backgroundColor: isBlackTheme ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9',
+                color: isBlackTheme ? '#FFFFFF' : '#1E293B'
+              }}
+              title={language === 'en' ? 'Share Image' : 'مشاركة كصورة'}
+            >
+              <Share2 className="w-5 h-5" />
+            </button>
 
+            {/* 3. Copy Button */}
+            <button
+              type="button"
+              onClick={handleCopyClick}
+              className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border-0"
+              style={{
+                backgroundColor: copied ? '#10B981' : (isBlackTheme ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9'),
+                color: copied ? '#FFFFFF' : (isBlackTheme ? '#FFFFFF' : '#1E293B')
+              }}
+              title={language === 'en' ? 'Copy text' : 'نسخ النص'}
+            >
+              {copied ? <Check className="w-5 h-5 text-white" /> : <Copy className="w-5 h-5" />}
+            </button>
+
+            {/* 4. Zoom Font Size Button */}
+            <button
+              type="button"
+              onClick={handleToggleZoom}
+              className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border-0"
+              style={{
+                backgroundColor: isBlackTheme ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9',
+                color: isBlackTheme ? '#FFFFFF' : '#1E293B'
+              }}
+              title={language === 'en' ? 'Enlarge font size' : 'تكبير حجم الخط'}
+            >
+              <ZoomIn className="w-5 h-5" />
+            </button>
+
+            {/* 5. Close / Hide Sheet Button */}
             <button
               type="button"
               onClick={onClose}
-              className={`w-full h-11 rounded-xl font-bold text-sm sm:text-base flex items-center justify-center transition-colors cursor-pointer ${
-                isBlackTheme
-                  ? 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-white/5'
-                  : 'text-slate-600 bg-slate-100 hover:bg-slate-200 active:bg-slate-300'
-              }`}
+              className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border-0"
+              style={{
+                backgroundColor: isBlackTheme ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9',
+                color: isBlackTheme ? '#FFFFFF' : '#1E293B'
+              }}
+              title={language === 'en' ? 'Hide list' : 'إخفاء القائمة'}
             >
-              {t('common.close', 'إغلاق النافذة')}
+              <ChevronDown className="w-5 h-5" />
             </button>
           </div>
         </motion.div>

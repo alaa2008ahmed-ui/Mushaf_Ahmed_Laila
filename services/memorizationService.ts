@@ -20,6 +20,7 @@ export interface MemorizedRange {
     consecutiveSuccess?: number;
     title?: string;
     totalAyahs?: number;
+    isMastered?: boolean; // When confirmed as fully memorized / fixed
 }
 
 export interface UserPlanProgress {
@@ -118,6 +119,25 @@ class MemorizationService {
 
     updateReviewStatus(id: string): void {
         this.updateReviewMastery(id, 'perfect');
+    }
+
+    toggleMasteryStatus(id: string): MemorizedRange | null {
+        const ranges = this.getMemorizedRanges();
+        const range = ranges.find(r => r.id === id);
+        if (!range) return null;
+
+        range.isMastered = !range.isMastered;
+        if (range.isMastered) {
+            range.masteryLevel = 'perfect';
+            // Extend next review date into the future (30 days) so it doesn't disturb current reviews
+            range.nextReviewDate = Date.now() + 30 * 24 * 60 * 60 * 1000;
+        } else {
+            range.nextReviewDate = Date.now() + 24 * 60 * 60 * 1000;
+        }
+
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(ranges));
+        this.recordActivity();
+        return range;
     }
 
     /**

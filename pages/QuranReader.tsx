@@ -146,23 +146,44 @@ const AyahActionMenu = ({
     const isEn = language === 'en';
     if (!isOpen) return null;
 
-    const themeBorderColor = currentTheme?.id === 'deep_black'
+    const isDarkTheme = currentTheme?.id === 'deep_black' || 
+                        currentTheme?.id?.startsWith('i_') || 
+                        currentTheme?.bg === '#000000';
+
+    const isGoldenTheme = currentTheme?.id === 'gold' || 
+                         currentTheme?.id === 'i_gold' || 
+                         currentTheme?.id === 'i_royal_gold' || 
+                         (typeof document !== 'undefined' && document.body.classList.contains('theme-shiny-gold'));
+
+    // Determine primary accent text/icon color (Golden amber-700 in Gold theme, white in dark, theme accent in others)
+    const accentTextColor = isDarkTheme
         ? '#ffffff'
-        : extractModalAccentColor(
-            currentTheme?.barBorder || currentTheme?.cardBorder || currentTheme?.accent,
-            '#3b82f6'
-        );
+        : (isGoldenTheme ? '#b45309' : (currentTheme?.barText || currentTheme?.btnText || currentTheme?.headerText || currentTheme?.accent || '#b45309'));
+
+    const accentBorderColor = isDarkTheme
+        ? 'rgba(255, 255, 255, 0.22)'
+        : (isGoldenTheme ? 'rgba(217, 119, 6, 0.45)' : `${accentTextColor}45`);
+
+    const options = [
+        { id: 'tafseer', label: isEn ? "Tafseer" : "تفسير الآية", icon: "fa-book-open", onClick: onTafseer },
+        { id: 'asbab', label: isEn ? "Asbab Al-Nuzul" : "أسباب النزول والقصص", icon: "fa-scroll", onClick: onAsbabNuzul },
+        { id: 'irab', label: isEn ? "Syntax & I'rab" : "إعراب الآية وبيانها", icon: "fa-layer-group", onClick: onIrab },
+        { id: 'mutashabihat', label: isEn ? "Mutashabihat" : "المتشابهات اللفظية", icon: "fa-code-compare", onClick: onMutashabihat },
+        { id: 'waqf', label: isEn ? "Waqf Signs" : "علامات الوقف في الآية", icon: "fa-compass", onClick: onWaqf },
+        { id: 'meanings', label: isEn ? "Word Meanings" : "معاني الكلمات", icon: "fa-language", onClick: onMeanings },
+        { id: 'translation', label: isEn ? "Translation" : "الترجمة الإنجليزية", icon: "fa-globe", onClick: onTranslation },
+    ];
 
     return (
-        <div className={`fixed inset-0 z-[1200] bg-black/25 backdrop-blur-[2px] flex items-center justify-center ${isLandscape ? 'p-2' : 'p-3'} animate-fadeIn`} onClick={onClose}>
+        <div className={`fixed inset-0 z-[1200] bg-black/30 backdrop-blur-[2px] flex items-center justify-center ${isLandscape ? 'p-2' : 'p-3'} animate-fadeIn`} onClick={onClose}>
             <div 
                 dir={dir} 
-                className={`modal-skinned w-full ${isLandscape ? 'max-w-[320px] max-h-[92vh] rounded-2xl' : 'max-w-[310px] max-h-[86vh] rounded-3xl'} shadow-2xl flex flex-col overflow-hidden animate-modal-enter border-0`} 
+                className={`modal-skinned w-full ${isLandscape ? 'max-w-[320px] max-h-[92vh] rounded-2xl' : 'max-w-[310px] max-h-[86vh] rounded-3xl'} shadow-2xl flex flex-col overflow-hidden animate-modal-enter`} 
                 style={{ 
                     fontFamily: currentTheme?.font,
                     backgroundColor: currentTheme?.modalBg || 'var(--qr-modal-bg, #ffffff)',
                     color: currentTheme?.modalText || currentTheme?.text || 'var(--qr-modal-text, #000000)',
-                    border: 'none', 
+                    border: isDarkTheme ? '1px solid rgba(255, 255, 255, 0.15)' : `1.5px solid ${accentBorderColor}`, 
                     outline: 'none' 
                 }} 
                 onClick={e => e.stopPropagation()}
@@ -170,82 +191,52 @@ const AyahActionMenu = ({
                 {/* Header Bar */}
                 <div className="p-3 pb-1 shrink-0">
                     <div 
-                        className="py-2 px-3 rounded-2xl flex items-center justify-between transition-colors quran-raised-card border-0"
+                        className="py-2.5 px-3 rounded-2xl flex items-center justify-between transition-colors border shadow-xs"
                         style={{
-                            backgroundColor: `${themeBorderColor}12`,
+                            backgroundColor: isDarkTheme ? 'rgba(255, 255, 255, 0.08)' : `${accentTextColor}12`,
+                            borderColor: accentBorderColor,
                         }}
                     >
-                        <span className="text-xs font-black tracking-wide" style={{ color: themeBorderColor }}>
+                        <span className="text-xs font-black tracking-wide" style={{ color: accentTextColor }}>
                             {isEn ? "Verse Options & Sciences" : "خيارات وتدبر الآية"}
                         </span>
                         <button 
                             onClick={onClose} 
-                            className="p-1.5 quran-raised-btn rounded-full transition-all active:scale-90 flex items-center justify-center border-0 cursor-pointer"
-                            style={{ color: themeBorderColor }}
+                            className="p-1.5 rounded-full transition-all active:scale-90 flex items-center justify-center border cursor-pointer shadow-2xs"
+                            style={{ 
+                                backgroundColor: isDarkTheme ? 'rgba(255, 255, 255, 0.15)' : `${accentTextColor}18`,
+                                borderColor: accentBorderColor,
+                                color: accentTextColor 
+                            }}
                             title={isEn ? "Close" : "إغلاق"}
                         >
-                            <X size={16} />
+                            <X size={15} style={{ color: accentTextColor, stroke: accentTextColor }} />
                         </button>
                     </div>
                 </div>
 
-                {/* Options List */}
+                {/* Options List with 3D Embossed Buttons */}
                 <div className={`overflow-y-auto custom-scrollbar flex flex-col ${isLandscape ? 'p-2.5 gap-2' : 'p-3.5 pt-1 gap-2.5'}`}>
-                    {/* 1. Tafseer */}
-                    <button onClick={onTafseer} className={`w-full ${isLandscape ? 'py-2 px-2.5 text-xs' : 'py-2.5 px-3 text-sm'} rounded-2xl font-bold quran-raised-btn flex items-center transition-transform hover:scale-[1.02] active:scale-95`} style={{ color: currentTheme?.id === 'deep_black' ? '#ffffff' : (currentTheme?.accent || '#4f46e5') }}>
-                        <div className="flex items-center gap-2.5">
-                            <i className="fa-solid fa-book-open quran-3d-icon text-base"></i>
-                            <span>{isEn ? "Tafseer" : "تفسير الآية"}</span>
-                        </div>
-                    </button>
-
-                    {/* 2. Asbab Nuzul */}
-                    <button onClick={onAsbabNuzul} className={`w-full ${isLandscape ? 'py-2 px-2.5 text-xs' : 'py-2.5 px-3 text-sm'} rounded-2xl font-bold quran-raised-btn flex items-center transition-transform hover:scale-[1.02] active:scale-95`} style={{ color: currentTheme?.id === 'deep_black' ? '#ffffff' : (currentTheme?.accent || '#d97706') }}>
-                        <div className="flex items-center gap-2.5">
-                            <i className="fa-solid fa-scroll quran-3d-icon text-base"></i>
-                            <span>{isEn ? "Asbab Al-Nuzul" : "أسباب النزول والقصص"}</span>
-                        </div>
-                    </button>
-
-                    {/* 3. Irab & Grammar */}
-                    <button onClick={onIrab} className={`w-full ${isLandscape ? 'py-2 px-2.5 text-xs' : 'py-2.5 px-3 text-sm'} rounded-2xl font-bold quran-raised-btn flex items-center transition-transform hover:scale-[1.02] active:scale-95`} style={{ color: currentTheme?.id === 'deep_black' ? '#ffffff' : (currentTheme?.accent || '#2563eb') }}>
-                        <div className="flex items-center gap-2.5">
-                            <i className="fa-solid fa-layer-group quran-3d-icon text-base"></i>
-                            <span>{isEn ? "Syntax & I'rab" : "إعراب الآية وبيانها"}</span>
-                        </div>
-                    </button>
-
-                    {/* 4. Mutashabihat */}
-                    <button onClick={onMutashabihat} className={`w-full ${isLandscape ? 'py-2 px-2.5 text-xs' : 'py-2.5 px-3 text-sm'} rounded-2xl font-bold quran-raised-btn flex items-center transition-transform hover:scale-[1.02] active:scale-95`} style={{ color: currentTheme?.id === 'deep_black' ? '#ffffff' : (currentTheme?.accent || '#7c3aed') }}>
-                        <div className="flex items-center gap-2.5">
-                            <i className="fa-solid fa-code-compare quran-3d-icon text-base"></i>
-                            <span>{isEn ? "Mutashabihat" : "المتشابهات اللفظية"}</span>
-                        </div>
-                    </button>
-
-                    {/* 5. Waqf Guide */}
-                    <button onClick={onWaqf} className={`w-full ${isLandscape ? 'py-2 px-2.5 text-xs' : 'py-2.5 px-3 text-sm'} rounded-2xl font-bold quran-raised-btn flex items-center transition-transform hover:scale-[1.02] active:scale-95`} style={{ color: currentTheme?.id === 'deep_black' ? '#ffffff' : (currentTheme?.accent || '#059669') }}>
-                        <div className="flex items-center gap-2.5">
-                            <i className="fa-solid fa-compass quran-3d-icon text-base"></i>
-                            <span>{isEn ? "Waqf Signs" : "علامات الوقف في الآية"}</span>
-                        </div>
-                    </button>
-
-                    {/* 6. Word Meanings */}
-                    <button onClick={onMeanings} className={`w-full ${isLandscape ? 'py-2 px-2.5 text-xs' : 'py-2.5 px-3 text-sm'} rounded-2xl font-bold quran-raised-btn flex items-center transition-transform hover:scale-[1.02] active:scale-95`} style={{ color: currentTheme?.id === 'deep_black' ? '#ffffff' : (currentTheme?.highlightText || currentTheme?.accent || '#0d9488') }}>
-                        <div className="flex items-center gap-2.5">
-                            <i className="fa-solid fa-language quran-3d-icon text-base"></i>
-                            <span>{isEn ? "Word Meanings" : "معاني الكلمات"}</span>
-                        </div>
-                    </button>
-
-                    {/* 7. Translation */}
-                    <button onClick={onTranslation} className={`w-full ${isLandscape ? 'py-2 px-2.5 text-xs' : 'py-2.5 px-3 text-sm'} rounded-2xl font-bold quran-raised-btn flex items-center transition-transform hover:scale-[1.02] active:scale-95`} style={{ color: currentTheme?.id === 'deep_black' ? '#ffffff' : (currentTheme?.accent || '#4f46e5') }}>
-                        <div className="flex items-center gap-2.5">
-                            <i className="fa-solid fa-globe quran-3d-icon text-base"></i>
-                            <span>{isEn ? "Translation" : "الترجمة الإنجليزية"}</span>
-                        </div>
-                    </button>
+                    {options.map((item) => (
+                        <button 
+                            key={item.id}
+                            onClick={item.onClick} 
+                            className={`w-full ${isLandscape ? 'py-2 px-2.5 text-xs' : 'py-2.5 px-3 text-sm'} rounded-2xl font-bold flex items-center transition-all hover:scale-[1.02] active:scale-95 cursor-pointer border`}
+                            style={{ 
+                                backgroundColor: isDarkTheme ? 'rgba(255, 255, 255, 0.06)' : '#ffffff',
+                                color: accentTextColor,
+                                borderColor: accentBorderColor,
+                                boxShadow: isDarkTheme 
+                                    ? '0 3px 0 rgba(0, 0, 0, 0.5), 0 4px 10px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.12)'
+                                    : `0 3.5px 0 ${accentTextColor}30, 0 5px 12px rgba(0, 0, 0, 0.06), inset 0 1px 1.5px #FFFFFF`,
+                            }}
+                        >
+                            <div className="flex items-center gap-2.5">
+                                <i className={`fa-solid ${item.icon} text-base shrink-0`} style={{ color: accentTextColor }}></i>
+                                <span style={{ color: accentTextColor }}>{item.label}</span>
+                            </div>
+                        </button>
+                    ))}
                 </div>
             </div>
         </div>

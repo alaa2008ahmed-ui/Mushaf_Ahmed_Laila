@@ -445,8 +445,10 @@ public class DailyWirdAlarmReceiver extends BroadcastReceiver {
             }
             PendingIntent pendingIntent = PendingIntent.getActivity(context, notifId, openAppIntent, flags);
 
+            // Status Bar Notification Icon: Holy Quran on Rehal (Stand)
+            int smallIconRes = R.drawable.ic_stat_name;
             NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
-                .setSmallIcon(R.drawable.ic_stat_name)
+                .setSmallIcon(smallIconRes)
                 .setColor(0xFF2E7D5E)
                 .setContentTitle(title)
                 .setContentText(message)

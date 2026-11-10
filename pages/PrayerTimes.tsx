@@ -94,6 +94,10 @@ function PrayerTimes({ onBack, onNavigate }) {
     const nextPrayerCardBorderColor = primaryColor;
     const nextPrayerBorderColor = primaryColor;
 
+    const formatTime12ForLang = useCallback((timeStr: string) => {
+        return formatTime12(timeStr, language === 'ar');
+    }, [language]);
+
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isNotifModalOpen, setIsNotifModalOpen] = useState(false);
     const [currentEditingKey, setCurrentEditingKey] = useState(null);
@@ -110,6 +114,7 @@ function PrayerTimes({ onBack, onNavigate }) {
     const [showGuide, setShowGuide] = useState(false);
     const [weatherData, setWeatherData] = useState<OutdoorPrayerWeather | null>(null);
     const [showWeatherModal, setShowWeatherModal] = useState<boolean>(false);
+    const [selectedPrayerForWeather, setSelectedPrayerForWeather] = useState<string>('Fajr');
 
     // Fetch outdoor weather and prayer temperatures for the current location
     useEffect(() => {
@@ -410,9 +415,9 @@ function PrayerTimes({ onBack, onNavigate }) {
                                 className={`flex-1 rounded-2xl p-3 sm:p-3.5 flex items-center justify-center gap-2 font-bold text-xs sm:text-[13px] active:scale-95 transition-all cursor-pointer ${
                                     isBlackTheme 
                                         ? 'bg-[#18181b] border border-white/10 text-white shadow-[0_4px_20px_-2px_rgba(0,0,0,0.7)]' 
-                                        : 'bg-white text-slate-800 shadow-[0_4px_20px_-2px_rgba(0,0,0,0.05),0_2px_6px_-1px_rgba(0,0,0,0.02)]'
+                                        : 'bg-white shadow-[0_4px_20px_-2px_rgba(0,0,0,0.05),0_2px_6px_-1px_rgba(0,0,0,0.02)]'
                                 }`}
-                                style={{ borderRadius: '16px' }}
+                                style={{ borderRadius: '16px', color: isBlackTheme ? '#FFFFFF' : '#000000' }}
                             >
                                 <div 
                                     className="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
@@ -423,7 +428,7 @@ function PrayerTimes({ onBack, onNavigate }) {
                                 >
                                     <MapPin size={15} />
                                 </div>
-                                <span className="truncate whitespace-nowrap">
+                                <span className="truncate whitespace-nowrap font-bold" style={{ color: isBlackTheme ? '#FFFFFF' : '#000000' }}>
                                     {tPrayer('nearbyMosques', language)}
                                 </span>
                             </button>
@@ -433,9 +438,9 @@ function PrayerTimes({ onBack, onNavigate }) {
                                 className={`flex-1 rounded-2xl p-3 sm:p-3.5 flex items-center justify-center gap-2 font-bold text-xs sm:text-[13px] active:scale-95 transition-all cursor-pointer ${
                                     isBlackTheme 
                                         ? 'bg-[#18181b] border border-white/10 text-white shadow-[0_4px_20px_-2px_rgba(0,0,0,0.7)]' 
-                                        : 'bg-white text-slate-800 shadow-[0_4px_20px_-2px_rgba(0,0,0,0.05),0_2px_6px_-1px_rgba(0,0,0,0.02)]'
+                                        : 'bg-white shadow-[0_4px_20px_-2px_rgba(0,0,0,0.05),0_2px_6px_-1px_rgba(0,0,0,0.02)]'
                                 }`}
-                                style={{ borderRadius: '16px' }}
+                                style={{ borderRadius: '16px', color: isBlackTheme ? '#FFFFFF' : '#000000' }}
                             >
                                 <div 
                                     className="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
@@ -446,7 +451,7 @@ function PrayerTimes({ onBack, onNavigate }) {
                                 >
                                     <Calendar size={15} />
                                 </div>
-                                <span className="truncate whitespace-nowrap">
+                                <span className="truncate whitespace-nowrap font-bold" style={{ color: isBlackTheme ? '#FFFFFF' : '#000000' }}>
                                     {tPrayer('monthlyTimes', language)}
                                 </span>
                             </button>
@@ -505,7 +510,7 @@ function PrayerTimes({ onBack, onNavigate }) {
                                 themePalette1={theme.palette[1]}
                                 cardBorderColor={cardBorderColor}
                                 nextPrayerBorderColor={nextPrayerCardBorderColor}
-                                formatTime12={formatTime12}
+                                formatTime12={formatTime12ForLang}
                                 applyOffset={applyOffset}
                                 prayerOffset={nextPrayer ? (config.prayerOffsets[nextPrayer.key] || 0) + (isSummerTimeActive ? 60 : 0) : 0}
                                 nightTimes={nightTimes}
@@ -562,7 +567,7 @@ function PrayerTimes({ onBack, onNavigate }) {
                                         nextPrayerBorderColor={nextPrayerBorderColor}
                                         togglePrayerSound={togglePrayerSound}
                                         openSettings={openSettings}
-                                        formatTime12={formatTime12}
+                                        formatTime12={formatTime12ForLang}
                                         formatTime12_clean={formatTime12_clean}
                                         isSummerTime={isSummerTimeActive}
                                         toggleSummerTime={toggleSummerTime}
@@ -573,7 +578,10 @@ function PrayerTimes({ onBack, onNavigate }) {
                                             conditionAr: weatherData.currentConditionAr,
                                             conditionEn: weatherData.currentConditionEn
                                         } : null)}
-                                        onOpenWeather={() => setShowWeatherModal(true)}
+                                        onOpenWeather={() => {
+                                            setSelectedPrayerForWeather(key);
+                                            setShowWeatherModal(true);
+                                        }}
                                 />
                             )
                         })}
@@ -649,14 +657,16 @@ function PrayerTimes({ onBack, onNavigate }) {
             )}
 
             {/* Outdoor Weather Details Modal when clicking any prayer's weather badge */}
-            <div className="hidden">
-                <OutdoorWeatherBadge 
-                    lat={config.location?.lat}
-                    lng={config.location?.lng}
-                    fajrTimeStr={times?.Fajr}
-                    ishaTimeStr={times?.Isha}
-                />
-            </div>
+            <OutdoorWeatherBadge 
+                lat={config.location?.lat}
+                lng={config.location?.lng}
+                fajrTimeStr={times?.Fajr}
+                ishaTimeStr={times?.Isha}
+                selectedPrayerKey={selectedPrayerForWeather}
+                hidePrayerTabs={true}
+                isOpen={showWeatherModal}
+                onClose={() => setShowWeatherModal(false)}
+            />
 
             <CommunitySpotlightGuide
                 guideKey="prayer_times_page_spotlight_v2"

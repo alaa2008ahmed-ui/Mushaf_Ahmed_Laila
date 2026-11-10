@@ -48,7 +48,8 @@ const PrayerTimesDateSearch: React.FC<PrayerTimesDateSearchProps> = ({
                     dir={dir}
                     className={`w-full bg-transparent py-3 text-xs sm:text-sm font-medium outline-none transition-all ${
                         isRTL ? 'pr-10 pl-4 text-right' : 'pl-10 pr-4 text-left'
-                    } ${isBlackTheme ? 'placeholder:text-zinc-500 text-white' : 'placeholder:text-slate-400 text-slate-800'}`} 
+                    } ${isBlackTheme ? 'placeholder:text-zinc-500 text-white' : 'placeholder:text-slate-400'}`} 
+                    style={{ color: isBlackTheme ? '#FFFFFF' : primaryColor }}
                 />
             </div>
 

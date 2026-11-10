@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   Sparkles, ChevronRight, ChevronLeft, Check, X, HelpCircle, 
   Eye, Info, MessageSquare, Users, BookOpen, Send, Mic, Paperclip, Smile,
-  Clock, Bell, Calendar, Volume2, Settings, MapPin, Moon, FileText, Share2, Sliders, Compass, LayoutGrid
+  Clock, Bell, Calendar, Volume2, Settings, MapPin, Moon, FileText, Share2, Sliders, Compass, LayoutGrid, Cloud
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -17,7 +17,7 @@ export interface SpotlightStep {
   descEn: string;
   badgeAr?: string;
   badgeEn?: string;
-  iconName?: 'lang' | 'tab' | 'user' | 'country' | 'lock' | 'action' | 'nav' | 'profile' | 'quran' | 'search' | 'group' | 'block' | 'chat' | 'verse' | 'attach' | 'emoji' | 'text' | 'voice' | 'clock' | 'bell' | 'calendar' | 'volume' | 'gear' | 'map' | 'moon' | 'file' | 'share' | 'slider' | 'compass' | 'widgets' | 'sparkles';
+  iconName?: 'lang' | 'tab' | 'user' | 'country' | 'lock' | 'action' | 'nav' | 'profile' | 'quran' | 'search' | 'group' | 'block' | 'chat' | 'verse' | 'attach' | 'emoji' | 'text' | 'voice' | 'clock' | 'bell' | 'calendar' | 'volume' | 'gear' | 'map' | 'moon' | 'file' | 'share' | 'slider' | 'compass' | 'widgets' | 'sparkles' | 'cloud';
   accentColor: string; // e.g. '#0284c7', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'
   gradient: string; // e.g. 'from-sky-500 to-blue-600'
   preferredPlacement?: 'top' | 'bottom' | 'center';
@@ -144,6 +144,8 @@ const renderStepIcon = (iconName: string | undefined, color: string) => {
       return <Compass size={16} />;
     case 'widgets':
       return <LayoutGrid size={16} />;
+    case 'cloud':
+      return <Cloud size={16} />;
     default:
       return <Sparkles size={16} />;
   }

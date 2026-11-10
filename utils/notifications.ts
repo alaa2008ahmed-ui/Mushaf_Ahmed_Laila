@@ -9,6 +9,9 @@ import { syncDailyWirdNotifications, ensureWirdNotificationChannel } from './dai
 import { updateNativeAlertsGroupSummary } from './silentMode';
 import { getActiveNotificationTone, getActiveNotificationSoundFileName, getActiveNotificationSoundPath } from './prayerTimesUtils';
 
+// Android status bar notification icon: Holy Quran on Rehal (Stand)
+export const NOTIFICATION_STATUS_BAR_ICON = 'ic_stat_name';
+
 const ALL_ATHKAR = [...BASE_ADHKAR_MORNING, ...BASE_ADHKAR_EVENING];
 
 const ALL_ATHKAR_EN = [
@@ -281,7 +284,8 @@ export const setupNotifications = async (settings?: PhoneNotificationSettings, l
                 channelId: athkarChannelId,
                 sound: soundFileNameForCapacitor,
                 extra: { page: conf.page, playSound: !isSoundMuted, soundFile: soundFileNameForCapacitor, soundPath: notifSoundPath },
-                smallIcon: 'ic_stat_name',
+                smallIcon: NOTIFICATION_STATUS_BAR_ICON,
+                iconColor: '#2E7D5E',
             });
         }
     });
