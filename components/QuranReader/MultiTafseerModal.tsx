@@ -298,7 +298,7 @@ export const MultiTafseerModal: React.FC<MultiTafseerModalProps> = ({
                                 backgroundColor: `${themeAccent}0d`,
                                 borderColor: `${themeAccent}25`,
                                 fontSize: `${fontSize + 2}px`,
-                                fontFamily: "'Cairo', sans-serif"
+                                fontFamily: "'Amiri Quran', 'Scheherazade New', 'Amiri', 'Noto Naskh Arabic', serif"
                             }}
                             dir="rtl"
                         >
@@ -404,23 +404,6 @@ export const MultiTafseerModal: React.FC<MultiTafseerModalProps> = ({
                             </div>
                         </div>
                     </div>
-
-                    {/* Reference Citation Subtitle */}
-                    {(surahName || (surahNumber && ayahNumber)) && (
-                        <div className="flex items-center justify-center mt-3 mb-2">
-                            <span 
-                                className="text-xs sm:text-sm font-extrabold text-center px-4 py-1.5 rounded-xl border shadow-2xs font-cairo"
-                                style={{
-                                    backgroundColor: `${themeAccent}12`,
-                                    borderColor: `${themeAccent}35`,
-                                    color: themeAccentColor
-                                }}
-                                dir={isEn ? 'ltr' : 'rtl'}
-                            >
-                                {sourceRefText}
-                            </span>
-                        </div>
-                    )}
                 </div>
 
                 {/* Action Bar matching image (5 round action buttons in RTL: Audio on Right, Chevron on Left) */}
@@ -432,23 +415,23 @@ export const MultiTafseerModal: React.FC<MultiTafseerModalProps> = ({
                         backgroundColor: currentTheme?.modalBg || currentTheme?.cardBg || currentTheme?.bg || '#ffffff'
                     }}
                 >
-                    {/* 1. Audio / Recitation Play Button (RIGHTMOST in RTL) */}
+                    {/* 1. Play Button */}
                     <button
                         type="button"
                         onClick={handlePlayAudio}
-                        className={`w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border-0 ${
-                            isPlaying ? 'ring-2 ring-red-400/80 animate-pulse' : 'quran-raised-card'
+                        className={`w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border border-slate-200/80 shadow-md ${
+                            isPlaying ? 'ring-2 ring-red-400/80 animate-pulse' : ''
                         }`}
                         style={{
-                            backgroundColor: isPlaying ? '#dc2626' : `${themeAccent}18`,
-                            color: isPlaying ? '#ffffff' : themeAccentColor
+                            backgroundColor: isPlaying ? '#dc2626' : '#ffffff',
+                            color: isPlaying ? '#ffffff' : (currentTheme?.accent || themeAccent)
                         }}
                         title={isEn ? (isPlaying ? 'Stop audio' : 'Play audio') : (isPlaying ? 'إيقاف الصوت' : 'استماع صوتي')}
                     >
                         {isPlaying ? (
                             <VolumeX className="w-5 h-5 text-white animate-pulse" />
                         ) : (
-                            <Volume2 className="w-5 h-5" style={{ color: themeAccentColor, stroke: themeAccentColor }} />
+                            <Volume2 className="w-5 h-5" style={{ color: currentTheme?.accent || themeAccent, stroke: currentTheme?.accent || themeAccent }} />
                         )}
                     </button>
 
@@ -456,31 +439,31 @@ export const MultiTafseerModal: React.FC<MultiTafseerModalProps> = ({
                     <button
                         type="button"
                         onClick={handleShare}
-                        className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border-0 quran-raised-card"
+                        className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border border-slate-200/80 shadow-md"
                         style={{
-                            backgroundColor: `${themeAccent}18`,
-                            color: themeAccentColor
+                            backgroundColor: '#ffffff',
+                            color: currentTheme?.accent || themeAccent
                         }}
                         title={isEn ? 'Share' : 'مشاركة'}
                     >
-                        <Share2 className="w-5 h-5" style={{ color: themeAccentColor, stroke: themeAccentColor }} />
+                        <Share2 className="w-5 h-5" style={{ color: currentTheme?.accent || themeAccent, stroke: currentTheme?.accent || themeAccent }} />
                     </button>
 
                     {/* 3. Copy Button */}
                     <button
                         type="button"
                         onClick={handleCopyAll}
-                        className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border-0 quran-raised-card"
+                        className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border border-slate-200/80 shadow-md"
                         style={{
-                            backgroundColor: copiedAll ? '#10b981' : `${themeAccent}18`,
-                            color: copiedAll ? '#ffffff' : themeAccentColor
+                            backgroundColor: copiedAll ? '#10b981' : '#ffffff',
+                            color: copiedAll ? '#ffffff' : (currentTheme?.accent || themeAccent)
                         }}
                         title={isEn ? 'Copy text' : 'نسخ النص'}
                     >
                         {copiedAll ? (
                             <Check className="w-5 h-5 text-white stroke-[2.5]" />
                         ) : (
-                            <Copy className="w-5 h-5" style={{ color: themeAccentColor, stroke: themeAccentColor }} />
+                            <Copy className="w-5 h-5" style={{ color: currentTheme?.accent || themeAccent, stroke: currentTheme?.accent || themeAccent }} />
                         )}
                     </button>
 
@@ -488,28 +471,28 @@ export const MultiTafseerModal: React.FC<MultiTafseerModalProps> = ({
                     <button
                         type="button"
                         onClick={handleToggleZoom}
-                        className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border-0 quran-raised-card"
+                        className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border border-slate-200/80 shadow-md"
                         style={{
-                            backgroundColor: `${themeAccent}18`,
-                            color: themeAccentColor
+                            backgroundColor: '#ffffff',
+                            color: currentTheme?.accent || themeAccent
                         }}
                         title={isEn ? 'Enlarge font size' : 'تكبير حجم الخط'}
                     >
-                        <ZoomIn className="w-5 h-5" style={{ color: themeAccentColor, stroke: themeAccentColor }} />
+                        <ZoomIn className="w-5 h-5" style={{ color: currentTheme?.accent || themeAccent, stroke: currentTheme?.accent || themeAccent }} />
                     </button>
 
                     {/* 5. Chevron Down / Hide Modal Button (LEFTMOST in RTL) */}
                     <button
                         type="button"
                         onClick={onClose}
-                        className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border-0 quran-raised-card"
+                        className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border border-slate-200/80 shadow-md"
                         style={{
-                            backgroundColor: `${themeAccent}18`,
-                            color: themeAccentColor
+                            backgroundColor: '#ffffff',
+                            color: currentTheme?.accent || themeAccent
                         }}
                         title={isEn ? 'Hide list' : 'إخفاء القائمة'}
                     >
-                        <ChevronDown className="w-5 h-5" style={{ color: themeAccentColor, stroke: themeAccentColor }} />
+                        <ChevronDown className="w-5 h-5" style={{ color: currentTheme?.accent || themeAccent, stroke: currentTheme?.accent || themeAccent }} />
                     </button>
                 </div>
             </div>

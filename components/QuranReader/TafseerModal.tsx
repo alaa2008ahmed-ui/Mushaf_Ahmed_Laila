@@ -210,12 +210,12 @@ const TafseerModal: React.FC<TafseerModalProps> = ({
                     {/* Display Ayah Text if available */}
                     {ayahText && (
                         <div 
-                            className="py-3 px-4 my-2.5 rounded-2xl text-center select-text leading-[2.1] font-bold border quran-raised-card font-cairo transition-all"
+                            className="py-3 px-4 my-2.5 rounded-2xl text-center select-text leading-[2.1] font-bold border quran-raised-card transition-all"
                             style={{
                                 backgroundColor: `${themeAccent}0d`,
                                 borderColor: `${themeAccent}25`,
                                 fontSize: `${fontSize + 4}px`,
-                                fontFamily: "'Cairo', sans-serif"
+                                fontFamily: "'Amiri Quran', 'Scheherazade New', 'Amiri', 'Noto Naskh Arabic', serif"
                             }}
                             dir="rtl"
                         >
@@ -244,26 +244,6 @@ const TafseerModal: React.FC<TafseerModalProps> = ({
                             {text}
                         </div>
                     )}
-
-                    {/* Reference Citation Subtitle */}
-                    {(surahName || (surahNumber && ayahNumber)) && (
-                        <div className="flex items-center justify-center mt-4 mb-2">
-                            <span 
-                                className="font-extrabold text-center px-4 py-1.5 rounded-xl border shadow-2xs font-cairo transition-all"
-                                style={{
-                                    backgroundColor: `${themeAccent}12`,
-                                    borderColor: `${themeAccent}35`,
-                                    color: themeAccentColor,
-                                    fontSize: `${Math.max(12, fontSize - 4)}px`
-                                }}
-                                dir={isEn ? 'ltr' : 'rtl'}
-                            >
-                                {isEn 
-                                    ? `${surahName || `Surah ${surahNumber}`} (Ayah ${ayahNumber})` 
-                                    : `من ${surahName ? (surahName.includes('سورة') ? surahName : `سورة ${surahName}`) : `سورة ${surahNumber}`} (آية ${toArabic(ayahNumber || 1)})`}
-                            </span>
-                        </div>
-                    )}
                 </div>
 
                 {/* Action Bar matching image (5 round action buttons in RTL: Audio on Right, Chevron on Left) */}
@@ -279,19 +259,19 @@ const TafseerModal: React.FC<TafseerModalProps> = ({
                     <button
                         type="button"
                         onClick={handlePlayAudio}
-                        className={`w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border-0 ${
-                            isAudioActive ? 'ring-2 ring-red-400/80 animate-pulse' : 'quran-raised-card'
+                        className={`w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border border-slate-200/80 shadow-md ${
+                            isAudioActive ? 'ring-2 ring-red-400/80 animate-pulse' : ''
                         }`}
                         style={{
-                            backgroundColor: isAudioActive ? '#dc2626' : `${themeAccent}18`,
-                            color: isAudioActive ? '#ffffff' : themeAccentColor
+                            backgroundColor: isAudioActive ? '#dc2626' : '#ffffff',
+                            color: isAudioActive ? '#ffffff' : (currentTheme?.accent || themeAccent)
                         }}
                         title={isEn ? (isAudioActive ? 'Stop audio' : 'Play audio') : (isAudioActive ? 'إيقاف الصوت' : 'استماع صوتي')}
                     >
                         {isAudioActive ? (
                             <VolumeX className="w-5 h-5 text-white animate-pulse" />
                         ) : (
-                            <Volume2 className="w-5 h-5" style={{ color: themeAccentColor, stroke: themeAccentColor }} />
+                            <Volume2 className="w-5 h-5" style={{ color: currentTheme?.accent || themeAccent, stroke: currentTheme?.accent || themeAccent }} />
                         )}
                     </button>
 
@@ -299,31 +279,31 @@ const TafseerModal: React.FC<TafseerModalProps> = ({
                     <button
                         type="button"
                         onClick={handleShare}
-                        className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border-0 quran-raised-card"
+                        className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border border-slate-200/80 shadow-md"
                         style={{
-                            backgroundColor: `${themeAccent}18`,
-                            color: themeAccentColor
+                            backgroundColor: '#ffffff',
+                            color: currentTheme?.accent || themeAccent
                         }}
                         title={isEn ? 'Share' : 'مشاركة'}
                     >
-                        <Share2 className="w-5 h-5" style={{ color: themeAccentColor, stroke: themeAccentColor }} />
+                        <Share2 className="w-5 h-5" style={{ color: currentTheme?.accent || themeAccent, stroke: currentTheme?.accent || themeAccent }} />
                     </button>
 
                     {/* 3. Copy Button */}
                     <button
                         type="button"
                         onClick={handleCopy}
-                        className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border-0 quran-raised-card"
+                        className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border border-slate-200/80 shadow-md"
                         style={{
-                            backgroundColor: copied ? '#10b981' : `${themeAccent}18`,
-                            color: copied ? '#ffffff' : themeAccentColor
+                            backgroundColor: copied ? '#10b981' : '#ffffff',
+                            color: copied ? '#ffffff' : (currentTheme?.accent || themeAccent)
                         }}
                         title={isEn ? 'Copy text' : 'نسخ النص'}
                     >
                         {copied ? (
                             <Check className="w-5 h-5 text-white stroke-[2.5]" />
                         ) : (
-                            <Copy className="w-5 h-5" style={{ color: themeAccentColor, stroke: themeAccentColor }} />
+                            <Copy className="w-5 h-5" style={{ color: currentTheme?.accent || themeAccent, stroke: currentTheme?.accent || themeAccent }} />
                         )}
                     </button>
 
@@ -331,28 +311,28 @@ const TafseerModal: React.FC<TafseerModalProps> = ({
                     <button
                         type="button"
                         onClick={handleToggleZoom}
-                        className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border-0 quran-raised-card"
+                        className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border border-slate-200/80 shadow-md"
                         style={{
-                            backgroundColor: `${themeAccent}18`,
-                            color: themeAccentColor
+                            backgroundColor: '#ffffff',
+                            color: currentTheme?.accent || themeAccent
                         }}
                         title={isEn ? 'Enlarge font size' : 'تكبير حجم الخط'}
                     >
-                        <ZoomIn className="w-5 h-5" style={{ color: themeAccentColor, stroke: themeAccentColor }} />
+                        <ZoomIn className="w-5 h-5" style={{ color: currentTheme?.accent || themeAccent, stroke: currentTheme?.accent || themeAccent }} />
                     </button>
 
                     {/* 5. Chevron Down / Hide Modal Button (LEFTMOST in RTL) */}
                     <button
                         type="button"
                         onClick={handleClose}
-                        className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border-0 quran-raised-card"
+                        className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border border-slate-200/80 shadow-md"
                         style={{
-                            backgroundColor: `${themeAccent}18`,
-                            color: themeAccentColor
+                            backgroundColor: '#ffffff',
+                            color: currentTheme?.accent || themeAccent
                         }}
                         title={isEn ? 'Hide list' : 'إخفاء القائمة'}
                     >
-                        <ChevronDown className="w-5 h-5" style={{ color: themeAccentColor, stroke: themeAccentColor }} />
+                        <ChevronDown className="w-5 h-5" style={{ color: currentTheme?.accent || themeAccent, stroke: currentTheme?.accent || themeAccent }} />
                     </button>
                 </div>
             </div>

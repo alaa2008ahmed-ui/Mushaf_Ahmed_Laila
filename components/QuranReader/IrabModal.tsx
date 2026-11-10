@@ -197,12 +197,12 @@ const IrabModal: React.FC<IrabModalProps> = ({
           {/* Display Ayah Text */}
           {verseText && (
             <div 
-              className="py-3 px-4 my-2.5 rounded-2xl text-center select-text leading-[2.1] font-bold border quran-raised-card font-cairo transition-all"
+              className="py-3 px-4 my-2.5 rounded-2xl text-center select-text leading-[2.1] font-bold border quran-raised-card transition-all"
               style={{
                 backgroundColor: `${themeAccent}0d`,
                 borderColor: `${themeAccent}25`,
                 fontSize: `${fontSize + 4}px`,
-                fontFamily: "'Cairo', sans-serif"
+                fontFamily: "'Amiri Quran', 'Scheherazade New', 'Amiri', 'Noto Naskh Arabic', serif"
               }}
               dir="rtl"
             >
@@ -233,7 +233,15 @@ const IrabModal: React.FC<IrabModalProps> = ({
                       borderColor: isSelected ? themeAccentColor : (isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)')
                     }}
                   >
-                    <span className="font-extrabold text-emerald-600 dark:text-emerald-400 transition-all" style={{ fontSize: `${fontSize + 1}px` }}>{w.word}</span>
+                    <span 
+                      className="font-extrabold text-emerald-600 dark:text-emerald-400 transition-all" 
+                      style={{ 
+                        fontSize: `${fontSize + 2}px`,
+                        fontFamily: "'Amiri Quran', 'Scheherazade New', 'Amiri', 'Noto Naskh Arabic', serif" 
+                      }}
+                    >
+                      {w.word}
+                    </span>
                     <span className="font-bold opacity-80 mt-1 line-clamp-1 transition-all" style={{ fontSize: `${Math.max(11, fontSize - 4)}px` }}>{posText}</span>
                   </button>
                 );
@@ -247,7 +255,11 @@ const IrabModal: React.FC<IrabModalProps> = ({
                 style={{ backgroundColor: `${themeAccent}10`, borderColor: `${themeAccent}30` }}
               >
                 <div className="font-extrabold mb-1 text-emerald-700 dark:text-emerald-300 transition-all" style={{ fontSize: `${fontSize}px` }}>
-                  {isEn ? `Grammatical detail: «${syntaxEntry.words[selectedWordIdx].word}»` : `إعراب كلمة: «${syntaxEntry.words[selectedWordIdx].word}»`}
+                  {isEn ? `Grammatical detail: «` : `إعراب كلمة: «`}
+                  <span style={{ fontFamily: "'Amiri Quran', 'Scheherazade New', 'Amiri', 'Noto Naskh Arabic', serif" }}>
+                    {syntaxEntry.words[selectedWordIdx].word}
+                  </span>
+                  »
                 </div>
                 <div className="font-bold leading-[2.1] opacity-90 transition-all" style={{ fontSize: `${fontSize}px` }}>
                   • <span className="underline">{isEn ? 'Part of Speech:' : 'جزء الكلام والموقع:'}</span> {isEn ? (syntaxEntry.words[selectedWordIdx].posEn || syntaxEntry.words[selectedWordIdx].pos) : syntaxEntry.words[selectedWordIdx].pos}<br/>
@@ -282,29 +294,9 @@ const IrabModal: React.FC<IrabModalProps> = ({
               )}
             </div>
           </div>
-
-          {/* Reference Citation Subtitle */}
-          {(surahName || (surahNumber && ayahNumber)) && (
-            <div className="flex items-center justify-center mt-4 mb-2">
-              <span 
-                className="font-extrabold text-center px-4 py-1.5 rounded-xl border shadow-2xs font-cairo transition-all"
-                style={{
-                  backgroundColor: `${themeAccent}12`,
-                  borderColor: `${themeAccent}35`,
-                  color: themeAccentColor,
-                  fontSize: `${Math.max(12, fontSize - 4)}px`
-                }}
-                dir={isEn ? 'ltr' : 'rtl'}
-              >
-                {isEn 
-                  ? `${displaySurah} (Ayah ${ayahNumber})` 
-                  : `من ${displaySurah} (آية ${toArabic(ayahNumber || 1)})`}
-              </span>
-            </div>
-          )}
         </div>
 
-        {/* Bottom Action Bar matching image (5 round action buttons in RTL: Audio on Right, Chevron on Left) */}
+        {/* Bottom Action Bar (5 round action buttons in RTL: Audio on Right, Chevron on Left) */}
         <div 
           className="p-3 px-6 border-t shrink-0 flex items-center justify-center gap-3 sm:gap-4 font-cairo border-slate-200/50 dark:border-white/10"
           dir="rtl"
@@ -316,59 +308,59 @@ const IrabModal: React.FC<IrabModalProps> = ({
           {/* 1. Audio / Recitation Play Button (RIGHTMOST in RTL) */}
           <button 
             onClick={handlePlayAudio}
-            className={`w-11 h-11 rounded-full flex items-center justify-center transition-all cursor-pointer font-cairo shadow-md active:scale-90 border-0 ${
-              isAudioActive ? 'ring-2 ring-red-400/80 animate-pulse' : 'quran-raised-card'
+            className={`w-11 h-11 rounded-full flex items-center justify-center transition-all cursor-pointer font-cairo shadow-md active:scale-90 border border-slate-200/80 ${
+              isAudioActive ? 'ring-2 ring-red-400/80 animate-pulse' : ''
             }`}
             style={{ 
-              backgroundColor: isAudioActive ? '#dc2626' : `${themeAccent}18`, 
-              color: isAudioActive ? '#ffffff' : themeAccentColor 
+              backgroundColor: isAudioActive ? '#dc2626' : '#ffffff', 
+              color: isAudioActive ? '#ffffff' : (currentTheme?.accent || themeAccent)
             }}
             title={isAudioActive ? (isEn ? "Stop Audio" : "إيقاف الصوت") : (isEn ? "Listen" : "استماع")}
           >
-            {isAudioActive ? <VolumeX size={20} className="text-white animate-pulse" /> : <Volume2 size={20} style={{ color: themeAccentColor }} />}
+            {isAudioActive ? <VolumeX size={20} className="text-white animate-pulse" /> : <Volume2 size={20} style={{ color: currentTheme?.accent || themeAccent }} />}
           </button>
 
           {/* 2. Share Button */}
           <button 
             onClick={handleShare}
-            className="w-11 h-11 rounded-full flex items-center justify-center transition-all cursor-pointer font-cairo shadow-md active:scale-90 border-0 quran-raised-card"
-            style={{ backgroundColor: `${themeAccent}18`, color: themeAccentColor }}
+            className="w-11 h-11 rounded-full flex items-center justify-center transition-all cursor-pointer font-cairo shadow-md active:scale-90 border border-slate-200/80"
+            style={{ backgroundColor: '#ffffff', color: currentTheme?.accent || themeAccent }}
             title={isEn ? "Share" : "مشاركة"}
           >
-            <Share2 size={20} style={{ color: themeAccentColor }} />
+            <Share2 size={20} style={{ color: currentTheme?.accent || themeAccent }} />
           </button>
 
           {/* 3. Copy Button */}
           <button 
             onClick={handleCopy}
-            className="w-11 h-11 rounded-full flex items-center justify-center transition-all cursor-pointer font-cairo shadow-md active:scale-90 border-0 quran-raised-card"
+            className="w-11 h-11 rounded-full flex items-center justify-center transition-all cursor-pointer font-cairo shadow-md active:scale-90 border border-slate-200/80"
             style={{ 
-              backgroundColor: copied ? '#10b981' : `${themeAccent}18`, 
-              color: copied ? '#ffffff' : themeAccentColor 
+              backgroundColor: copied ? '#10b981' : '#ffffff', 
+              color: copied ? '#ffffff' : (currentTheme?.accent || themeAccent)
             }}
             title={isEn ? "Copy" : "نسخ"}
           >
-            {copied ? <Check size={20} className="text-white stroke-[2.5]" /> : <Copy size={20} style={{ color: themeAccentColor }} />}
+            {copied ? <Check size={20} className="text-white stroke-[2.5]" /> : <Copy size={20} style={{ color: currentTheme?.accent || themeAccent }} />}
           </button>
 
           {/* 4. Zoom Button */}
           <button 
             onClick={handleToggleZoom}
-            className="w-11 h-11 rounded-full flex items-center justify-center transition-all cursor-pointer font-cairo shadow-md active:scale-90 border-0 quran-raised-card"
-            style={{ backgroundColor: `${themeAccent}18`, color: themeAccentColor }}
+            className="w-11 h-11 rounded-full flex items-center justify-center transition-all cursor-pointer font-cairo shadow-md active:scale-90 border border-slate-200/80"
+            style={{ backgroundColor: '#ffffff', color: currentTheme?.accent || themeAccent }}
             title={isEn ? "Text Size" : "حجم الخط"}
           >
-            <ZoomIn size={20} style={{ color: themeAccentColor }} />
+            <ZoomIn size={20} style={{ color: currentTheme?.accent || themeAccent }} />
           </button>
 
           {/* 5. Chevron Down / Hide Modal Button (LEFTMOST in RTL) */}
           <button 
             onClick={handleClose}
-            className="w-11 h-11 rounded-full flex items-center justify-center transition-all cursor-pointer font-cairo shadow-md active:scale-90 border-0 quran-raised-card"
-            style={{ backgroundColor: `${themeAccent}18`, color: themeAccentColor }}
+            className="w-11 h-11 rounded-full flex items-center justify-center transition-all cursor-pointer font-cairo shadow-md active:scale-90 border border-slate-200/80"
+            style={{ backgroundColor: '#ffffff', color: currentTheme?.accent || themeAccent }}
             title={isEn ? "Close" : "إغلاق"}
           >
-            <ChevronDown size={22} style={{ color: themeAccentColor }} />
+            <ChevronDown size={22} style={{ color: currentTheme?.accent || themeAccent }} />
           </button>
         </div>
       </div>

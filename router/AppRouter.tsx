@@ -18,6 +18,7 @@ import VoiceControlPage from '../pages/VoiceControlPage';
 import MonthlyPrayerTimes from '../pages/MonthlyPrayerTimes';
 import DailyWird from '../pages/DailyWird';
 import Memorization from '../pages/Memorization';
+import MemorizationSession from '../pages/MemorizationSession';
 import GlobalSearch from '../pages/GlobalSearch';
 import AsmaulHusna from '../pages/AsmaulHusna';
 import HabitTracker from '../pages/HabitTracker';
@@ -83,6 +84,9 @@ const AppRouter: React.FC<AppRouterProps> = ({ page, onBack, onNavigate, onOpenT
         return <DailyWird onBack={onBack} onNavigate={onNavigate} />;
       case 'memorization':
         return <Memorization onBack={onBack} onNavigate={onNavigate} />;
+      case 'memorization-session':
+      case 'memorization-studio':
+        return <MemorizationSession onBack={onBack} onNavigate={onNavigate} params={navParams} />;
       case 'search':
       case 'global-search':
       case 'quran-search':

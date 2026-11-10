@@ -52,6 +52,9 @@ const ScrollSpeedModal: FC<ScrollSpeedModalProps> = ({ isOpen, onClose, onSelect
                             backgroundColor: currentTheme?.id === 'deep_black' ? 'rgba(255, 255, 255, 0.08)' : `${accentColor}12`,
                         }}
                     >
+                        <span className="text-xs sm:text-sm font-black tracking-wide" style={{ color: accentColor }}>
+                            {isEn ? "Auto-Scroll Speed (Minutes)" : "وقت التمرير (بالدقائق)"}
+                        </span>
                         <button 
                             onClick={onClose} 
                             className="p-1.5 quran-raised-btn rounded-full transition-all active:scale-90 flex items-center justify-center border-0 cursor-pointer"
@@ -60,9 +63,6 @@ const ScrollSpeedModal: FC<ScrollSpeedModalProps> = ({ isOpen, onClose, onSelect
                         >
                             <X size={16} />
                         </button>
-                        <span className="text-xs sm:text-sm font-black tracking-wide" style={{ color: accentColor }}>
-                            {isEn ? "Auto-Scroll Speed (Minutes)" : "وقت التمرير (بالدقائق)"}
-                        </span>
                     </div>
                 </div>
 

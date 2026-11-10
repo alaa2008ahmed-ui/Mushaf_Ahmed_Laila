@@ -148,25 +148,14 @@ export const WirdAlertModal: React.FC<WirdAlertModalProps> = ({
         <div className="w-full flex flex-col gap-2">
           {/* Primary Action Button(s) */}
           {isEn ? (
-            <div className="flex flex-col sm:flex-row gap-2 w-full">
-              <button
-                type="button"
-                onClick={() => handleReadNow('mushaf')}
-                className="flex-1 py-3 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-600/30 transition-all cursor-pointer"
-              >
-                <BookOpen size={16} />
-                <span>Read in Mushaf</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleReadNow('translation')}
-                className="flex-1 py-3 px-3 rounded-xl bg-teal-600 hover:bg-teal-700 active:scale-98 text-white font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-lg shadow-teal-600/30 transition-all cursor-pointer"
-              >
-                <Languages size={16} />
-                <span>Read Translation</span>
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => handleReadNow('translation')}
+              className="w-full py-3.5 px-4 rounded-xl bg-teal-600 hover:bg-teal-700 active:scale-98 text-white font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-teal-600/30 transition-all cursor-pointer"
+            >
+              <Languages size={18} />
+              <span>Read Translation</span>
+            </button>
           ) : (
             <button
               type="button"

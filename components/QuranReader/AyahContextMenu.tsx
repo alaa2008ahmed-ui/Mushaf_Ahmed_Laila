@@ -73,6 +73,9 @@ const AyahContextMenu: React.FC<AyahContextMenuProps> = ({
                             backgroundColor: `${themeBorderColor}12`,
                         }}
                     >
+                        <span className="text-xs font-black tracking-wide" style={{ color: themeBorderColor }}>
+                            {isEn ? "Colors & Customization" : "الألوان والتخصيص"}
+                        </span>
                         <button 
                             onClick={() => {
                                 setAyahContextMenu((p: any) => ({...p, isOpen: false}));
@@ -82,9 +85,6 @@ const AyahContextMenu: React.FC<AyahContextMenuProps> = ({
                         >
                             <X size={16} />
                         </button>
-                        <span className="text-xs font-black tracking-wide" style={{ color: themeBorderColor }}>
-                            {isEn ? "Colors & Customization" : "الألوان والتخصيص"}
-                        </span>
                     </div>
 
                     {/* Colors Section */}

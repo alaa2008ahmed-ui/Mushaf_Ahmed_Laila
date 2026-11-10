@@ -1416,7 +1416,7 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
     return allServices.filter(s => s.category === activeTab);
   }, [allServices, activeTab]);
 
-  // أهم 10 تطبيقات يتم فتحها باستمرار: أول تطبيقين الأكثر استخداماً، ومن الثالث للعاشر أحدث التطبيقات المفتوحة
+  // أهم 10 تطبيقات يومية: التطبيق الأول ثابت دائماً للقرآن الكريم، وبقية التطبيقات الـ 9 مرتبة تنازلياً بحسب الأكثر استخداماً وفتحاً
   const favoriteAppIds = useFavoriteApps(10);
   const favoriteServices = useMemo(() => {
     return favoriteAppIds

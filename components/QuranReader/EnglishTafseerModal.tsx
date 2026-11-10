@@ -319,7 +319,7 @@ const EnglishTafseerModal: React.FC<EnglishTafseerModalProps> = ({
                         {!isTranslationOnly && verseText.ar && (
                             <p 
                                 className="text-right text-base sm:text-lg mb-1 leading-relaxed opacity-90 select-text"
-                                style={{ fontFamily: "var(--font-amiri), serif" }}
+                                style={{ fontFamily: "'Amiri Quran', 'Scheherazade New', 'Amiri', 'Noto Naskh Arabic', serif" }}
                                 dir="rtl"
                             >
                                 {verseText.ar} ﴿{toArabic(ayahNumber)}﴾
@@ -381,19 +381,19 @@ const EnglishTafseerModal: React.FC<EnglishTafseerModalProps> = ({
                     <button
                         type="button"
                         onClick={handlePlayAudio}
-                        className={`w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border-0 ${
-                            isPlaying ? 'ring-2 ring-red-400/80 animate-pulse' : 'quran-raised-card'
+                        className={`w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border border-slate-200/80 shadow-md ${
+                            isPlaying ? 'ring-2 ring-red-400/80 animate-pulse' : ''
                         }`}
                         style={{
-                            backgroundColor: isPlaying ? '#dc2626' : `${accentColor}18`,
-                            color: isPlaying ? '#ffffff' : accentFgColor
+                            backgroundColor: isPlaying ? '#dc2626' : '#ffffff',
+                            color: isPlaying ? '#ffffff' : (currentTheme?.accent || accentColor)
                         }}
                         title={isPlaying ? 'Stop audio' : 'Play audio'}
                     >
                         {isPlaying ? (
                             <VolumeX className="w-5 h-5 text-white animate-pulse" />
                         ) : (
-                            <Volume2 className="w-5 h-5" style={{ color: accentFgColor, stroke: accentFgColor }} />
+                            <Volume2 className="w-5 h-5" style={{ color: currentTheme?.accent || accentColor, stroke: currentTheme?.accent || accentColor }} />
                         )}
                     </button>
 
@@ -401,31 +401,31 @@ const EnglishTafseerModal: React.FC<EnglishTafseerModalProps> = ({
                     <button
                         type="button"
                         onClick={handleShare}
-                        className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border-0 quran-raised-card"
+                        className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border border-slate-200/80 shadow-md"
                         style={{
-                            backgroundColor: `${accentColor}18`,
-                            color: accentFgColor
+                            backgroundColor: '#ffffff',
+                            color: currentTheme?.accent || accentColor
                         }}
                         title="Share image"
                     >
-                        <Share2 className="w-5 h-5" style={{ color: accentFgColor, stroke: accentFgColor }} />
+                        <Share2 className="w-5 h-5" style={{ color: currentTheme?.accent || accentColor, stroke: currentTheme?.accent || accentColor }} />
                     </button>
 
                     {/* 3. Copy Button */}
                     <button
                         type="button"
                         onClick={handleCopy}
-                        className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border-0 quran-raised-card"
+                        className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border border-slate-200/80 shadow-md"
                         style={{
-                            backgroundColor: copied ? '#10b981' : `${accentColor}18`,
-                            color: copied ? '#ffffff' : accentFgColor
+                            backgroundColor: copied ? '#10b981' : '#ffffff',
+                            color: copied ? '#ffffff' : (currentTheme?.accent || accentColor)
                         }}
                         title="Copy commentary"
                     >
                         {copied ? (
                             <Check className="w-5 h-5 text-white stroke-[2.5]" />
                         ) : (
-                            <Copy className="w-5 h-5" style={{ color: accentFgColor, stroke: accentFgColor }} />
+                            <Copy className="w-5 h-5" style={{ color: currentTheme?.accent || accentColor, stroke: currentTheme?.accent || accentColor }} />
                         )}
                     </button>
 
@@ -433,28 +433,28 @@ const EnglishTafseerModal: React.FC<EnglishTafseerModalProps> = ({
                     <button
                         type="button"
                         onClick={handleToggleZoom}
-                        className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border-0 quran-raised-card"
+                        className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border border-slate-200/80 shadow-md"
                         style={{
-                            backgroundColor: `${accentColor}18`,
-                            color: accentFgColor
+                            backgroundColor: '#ffffff',
+                            color: currentTheme?.accent || accentColor
                         }}
                         title="Enlarge font size"
                     >
-                        <ZoomIn className="w-5 h-5" style={{ color: accentFgColor, stroke: accentFgColor }} />
+                        <ZoomIn className="w-5 h-5" style={{ color: currentTheme?.accent || accentColor, stroke: currentTheme?.accent || accentColor }} />
                     </button>
 
                     {/* 5. Chevron Down / Hide Modal Button (LEFTMOST in RTL) */}
                     <button
                         type="button"
                         onClick={onClose}
-                        className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border-0 quran-raised-card"
+                        className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border border-slate-200/80 shadow-md"
                         style={{
-                            backgroundColor: `${accentColor}18`,
-                            color: accentFgColor
+                            backgroundColor: '#ffffff',
+                            color: currentTheme?.accent || accentColor
                         }}
                         title="Hide commentary"
                     >
-                        <ChevronDown className="w-5 h-5" style={{ color: accentFgColor, stroke: accentFgColor }} />
+                        <ChevronDown className="w-5 h-5" style={{ color: currentTheme?.accent || accentColor, stroke: currentTheme?.accent || accentColor }} />
                     </button>
                 </div>
             </div>

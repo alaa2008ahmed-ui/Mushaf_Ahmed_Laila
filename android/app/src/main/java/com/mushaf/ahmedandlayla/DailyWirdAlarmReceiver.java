@@ -26,7 +26,7 @@ import java.util.Set;
 
 /**
  * Intelligent Native Alarm Receiver for Daily Wird Phone Reminders
- * Ensures reliable alarms at 9:00 AM and 10:00 PM (22:00) with user's name,
+ * Ensures reliable alarms at 10:00 AM and 10:00 PM (22:00) with user's name,
  * dynamic catch-up messages, custom chime sound, and max-sized notification icon.
  */
 public class DailyWirdAlarmReceiver extends BroadcastReceiver {
@@ -78,7 +78,7 @@ public class DailyWirdAlarmReceiver extends BroadcastReceiver {
     }
 
     /**
-     * Schedules the next 9:00 AM and 10:00 PM (22:00) exact alarms using Android AlarmManager
+     * Schedules the next 10:00 AM and 10:00 PM (22:00) exact alarms using Android AlarmManager
      */
     public static void scheduleNextAlarms(Context context) {
         if (context == null) return;
@@ -87,8 +87,8 @@ public class DailyWirdAlarmReceiver extends BroadcastReceiver {
 
         Calendar now = Calendar.getInstance();
 
-        // 1. Next Morning Alarm (at custom reminderTime or default 09:00 AM)
-        int morningHour = 9;
+        // 1. Next Morning Alarm (at custom reminderTime or default 10:00 AM)
+        int morningHour = 10;
         int morningMinute = 0;
         try {
             SharedPreferences storage = context.getSharedPreferences("CapacitorStorage", Context.MODE_PRIVATE);
@@ -106,7 +106,7 @@ public class DailyWirdAlarmReceiver extends BroadcastReceiver {
                             break;
                         }
                     }
-                    String rTime = activeProfile.optString("reminderTime", "09:00");
+                    String rTime = activeProfile.optString("reminderTime", "10:00");
                     if (rTime != null && rTime.contains(":")) {
                         String[] parts = rTime.split(":");
                         morningHour = Integer.parseInt(parts[0].trim());

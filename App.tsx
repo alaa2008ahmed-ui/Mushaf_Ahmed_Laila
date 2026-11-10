@@ -285,6 +285,7 @@ function App() {
       'home', 'quran', 'quran-landscape', 'quran-download', 'salah-adhkar', 'calendar', 'listen', 'tasbeeh', 
       'hajj-umrah', 'hisn-muslim', 'prayer-times', 'monthly-prayer-times', 'qibla', 
       'sabah-masaa', 'adia', 'nawawi', 'calculators', 'voice-control', 'daily-wird', 'memorization',
+      'memorization-session', 'memorization-studio',
       'phone-notifications', 'search', 'asmaul-husna', 'habit-tracker', 'others', 'islamic-sites',
       'prophetic-seerah', 'ten-promised', 'divine-miracles'
     ];
@@ -375,7 +376,16 @@ function App() {
           return ['home', pageId];
         }
 
-        // 5. Daily Wird
+        // 5. Memorization Studio Session
+        if (pageId === 'memorization-session' || pageId === 'memorization-studio') {
+          const memIdx = prev.lastIndexOf('memorization');
+          if (memIdx !== -1) {
+            return [...prev.slice(0, memIdx + 1), pageId];
+          }
+          return ['home', 'memorization', pageId];
+        }
+
+        // 6. Daily Wird
         if (pageId === 'daily-wird') {
           return ['home', 'daily-wird'];
         }

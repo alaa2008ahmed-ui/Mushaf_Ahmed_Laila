@@ -37,6 +37,19 @@ export function normalizeQuranText(text: string): string {
   return result;
 }
 
+/**
+ * Formats a Quranic word for clean, crisp display in UI cards & labels.
+ * Converts Uthmanic non-standard dagger alef and small vowel ligatures into clean connected forms,
+ * preventing font rendering bugs (such as broken vertical lines over letters).
+ */
+export function formatQuranWordForLabel(word: string): string {
+  if (!word) return word;
+  let text = normalizeQuranText(word);
+  text = text.replace(/([\u064B-\u065F])\u0670/g, 'ا');
+  text = text.replace(/\u0670/g, 'ا');
+  return text;
+}
+
 const correctedSurahs = quranUthmani.data.surahs.map((surah: any) => ({
   ...surah,
   ayahs: surah.ayahs.map((ayah: any) => ({

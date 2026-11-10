@@ -52,6 +52,9 @@ const TafseerSelectionModal: FC<{
                             backgroundColor: `${themeBorderColor}12`,
                         }}
                     >
+                        <span className="text-xs font-black tracking-wide" style={{ color: themeBorderColor }}>
+                            {isEn ? "Select Tafseer" : "اختيار التفسير"}
+                        </span>
                         <button 
                             onClick={onClose} 
                             className="p-1.5 quran-raised-btn rounded-full transition-all active:scale-90 flex items-center justify-center border-0 cursor-pointer"
@@ -60,9 +63,6 @@ const TafseerSelectionModal: FC<{
                         >
                             <X size={16} />
                         </button>
-                        <span className="text-xs font-black tracking-wide" style={{ color: themeBorderColor }}>
-                            {isEn ? "Select Tafseer" : "اختيار التفسير"}
-                        </span>
                     </div>
                 </div>
 

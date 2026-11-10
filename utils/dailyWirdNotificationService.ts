@@ -25,7 +25,7 @@ export interface WirdProfile {
   lastPage?: number;
   lastAyah?: { s: number; a: number };
   reminderEnabled?: boolean;
-  reminderTime?: string; // HH:mm format, e.g. "09:00"
+  reminderTime?: string; // HH:mm format, e.g. "10:00"
   lastCompletedDate?: string; // YYYY-MM-DD or ISO
 }
 
@@ -48,7 +48,7 @@ export const WIRD_GROUP_ID = 'com.mushaf.ahmedandlayla.GENERAL_ALERTS_CARD';
 
 // Notification IDs:
 // 9300: Test notification
-// 9301: Daily morning recurring fallback (9:00 AM)
+// 9301: Daily morning recurring fallback (10:00 AM)
 // 9302: Daily evening recurring fallback (10:00 PM)
 // 9310 - 9324: Exact upcoming morning notifications (days 0..14)
 // 9330 - 9344: Exact upcoming evening notifications (days 0..14)
@@ -58,25 +58,101 @@ const RECURRING_EVENING_ID = 9302;
 const BASE_MORNING_EXACT_ID = 9310;
 const BASE_EVENING_EXACT_ID = 9330;
 
+// Exact canonical page boundaries for all 30 Juz of the Holy Qur'an (Madinah Mushaf - 604 pages)
+// Juz 1 starts at page 1 and ends at page 21 (Al-Baqarah 141).
+// Juz 2 to 29 are exactly 20 pages each.
+// Juz 30 is 23 pages (582 to 604).
+export const JUZ_PAGE_BOUNDARIES: { start: number; end: number }[] = [
+  { start: 1, end: 21 },    // Juz 1
+  { start: 22, end: 41 },   // Juz 2
+  { start: 42, end: 61 },   // Juz 3
+  { start: 62, end: 81 },   // Juz 4
+  { start: 82, end: 101 },  // Juz 5
+  { start: 102, end: 121 }, // Juz 6
+  { start: 122, end: 141 }, // Juz 7
+  { start: 142, end: 161 }, // Juz 8
+  { start: 162, end: 181 }, // Juz 9
+  { start: 182, end: 201 }, // Juz 10
+  { start: 202, end: 221 }, // Juz 11
+  { start: 222, end: 241 }, // Juz 12
+  { start: 242, end: 261 }, // Juz 13
+  { start: 262, end: 281 }, // Juz 14
+  { start: 282, end: 301 }, // Juz 15
+  { start: 302, end: 321 }, // Juz 16
+  { start: 322, end: 341 }, // Juz 17
+  { start: 342, end: 361 }, // Juz 18
+  { start: 362, end: 381 }, // Juz 19
+  { start: 382, end: 401 }, // Juz 20
+  { start: 402, end: 421 }, // Juz 21
+  { start: 422, end: 441 }, // Juz 22
+  { start: 442, end: 461 }, // Juz 23
+  { start: 462, end: 481 }, // Juz 24
+  { start: 482, end: 501 }, // Juz 25
+  { start: 502, end: 521 }, // Juz 26
+  { start: 522, end: 541 }, // Juz 27
+  { start: 542, end: 561 }, // Juz 28
+  { start: 562, end: 581 }, // Juz 29
+  { start: 582, end: 604 }, // Juz 30
+];
+
 /**
  * Calculates start and end page for a given day in the Khatma
+ * Accurately aligns with canonical Qur'anic Juz boundaries (e.g. Day 1: 1-21, Day 2: 22-41)
  */
-export const getWirdDayRange = (day: number, profile: WirdProfile) => {
+export const getWirdDayRange = (
+  day: number,
+  profile: { mode: 'days' | 'pages'; value: number; startPage?: number }
+) => {
   const startPage = profile.startPage || 1;
-  const pagesLeft = TOTAL_QURAN_PAGES - startPage + 1;
-  const offset = startPage - 1;
+  const safeDay = Math.max(1, day);
 
-  if (profile.mode === 'days') {
-    const totalDays = profile.value;
-    const start = Math.floor(((day - 1) * pagesLeft) / totalDays) + 1 + offset;
-    const end = Math.floor((day * pagesLeft) / totalDays) + offset;
-    return { start: Math.min(start, TOTAL_QURAN_PAGES), end: Math.min(Math.max(start, end), TOTAL_QURAN_PAGES) };
-  } else {
-    const pagesPerDay = profile.value;
-    const start = (day - 1) * pagesPerDay + 1 + offset;
-    const end = Math.min(day * pagesPerDay + offset, TOTAL_QURAN_PAGES);
-    return { start: Math.min(start, TOTAL_QURAN_PAGES), end: Math.min(Math.max(start, end), TOTAL_QURAN_PAGES) };
+  // 1. Standard 30-Day Khatma (1 Juz per day) starting from page 1:
+  // Use canonical Madinah Mushaf Juz boundaries (Juz 1: 1-21, Juz 2: 22-41, etc.)
+  if (profile.mode === 'days' && profile.value === 30 && startPage === 1) {
+    const idx = Math.min(Math.max(0, safeDay - 1), 29);
+    return JUZ_PAGE_BOUNDARIES[idx];
   }
+
+  // 2. Standard 60-Day Khatma (Half Juz / 1 Hizb per day) starting from page 1:
+  if (profile.mode === 'days' && profile.value === 60 && startPage === 1) {
+    const juzIndex = Math.min(Math.floor((safeDay - 1) / 2), 29);
+    const isSecondHalf = (safeDay - 1) % 2 === 1;
+    const juz = JUZ_PAGE_BOUNDARIES[juzIndex];
+    const midPage = Math.floor((juz.start + juz.end) / 2);
+    if (!isSecondHalf) {
+      return { start: juz.start, end: midPage };
+    } else {
+      return { start: midPage + 1, end: juz.end };
+    }
+  }
+
+  // 3. Arbitrary Days Mode:
+  if (profile.mode === 'days') {
+    const totalDays = Math.max(1, profile.value);
+    const pagesLeft = TOTAL_QURAN_PAGES - startPage + 1;
+    const offset = startPage - 1;
+
+    // Continuous contiguous distribution without gaps
+    const start = Math.floor(((safeDay - 1) * pagesLeft) / totalDays) + 1 + offset;
+    let end = Math.floor((safeDay * pagesLeft) / totalDays) + offset;
+    if (safeDay >= totalDays) {
+      end = TOTAL_QURAN_PAGES;
+    }
+    return {
+      start: Math.min(start, TOTAL_QURAN_PAGES),
+      end: Math.min(Math.max(start, end), TOTAL_QURAN_PAGES)
+    };
+  }
+
+  // 4. Pages Mode:
+  const pagesPerDay = Math.max(1, profile.value);
+  const offset = startPage - 1;
+  const start = (safeDay - 1) * pagesPerDay + 1 + offset;
+  const end = Math.min(start + pagesPerDay - 1, TOTAL_QURAN_PAGES);
+  return {
+    start: Math.min(start, TOTAL_QURAN_PAGES),
+    end: Math.min(Math.max(start, end), TOTAL_QURAN_PAGES)
+  };
 };
 
 /**
@@ -183,7 +259,7 @@ export const calculateWirdStatus = (profile: WirdProfile, targetDate = new Date(
 
 /**
  * Builds respectful, inspiring Arabic or English notification texts addressing the user by name
- * Supports morning (9:00 AM) and evening (10:00 PM / 22:00) reminders with delayed catch-up.
+ * Supports morning (10:00 AM) and evening (10:00 PM / 22:00) reminders with delayed catch-up.
  */
 export const buildWirdNotificationContent = (
   profile: WirdProfile,
@@ -243,7 +319,7 @@ export const buildWirdNotificationContent = (
         };
       }
     } else {
-      // Morning (9:00 AM)
+      // Morning (10:00 AM)
       if (missedCount === 0) {
         return {
           title: `${prefix}Illuminate Your Day with the Qur'an`,
@@ -285,7 +361,7 @@ export const buildWirdNotificationContent = (
       };
     }
   } else {
-    // Morning (9:00 AM)
+    // Morning (10:00 AM)
     if (missedCount === 0) {
       return {
         title: `${prefix}نور يومك بكتاب الله`,
@@ -342,7 +418,7 @@ export const ensureWirdNotificationChannel = async (lang: 'ar' | 'en' = getCurre
  * Synchronizes and schedules daily notifications for the active Khatma
  * - Immediately requests permissions if not granted
  * - Stores state in Preferences for native Android background alarms
- * - Schedules morning (09:00 AM) and evening (10:00 PM / 22:00) reminders
+ * - Schedules morning (10:00 AM) and evening (10:00 PM / 22:00) reminders
  * - Automatically addresses user by name
  * - Handles missed days catch-up dynamically
  */
@@ -435,7 +511,7 @@ export const syncDailyWirdNotifications = async (langOverride?: 'ar' | 'en') => 
     const notificationsToSchedule: any[] = [];
 
     // 3. Baseline Daily Repeating Notifications via AlarmManager:
-    // Morning (09:00 AM) and Evening (10:00 PM / 22:00)
+    // Morning (10:00 AM) and Evening (10:00 PM / 22:00)
     const baselineDayNumber = Math.min(profile.completedDays.length + 1, totalDays);
     const morningBaseContent = buildWirdNotificationContent(profile, baselineDayNumber, 0, false, lang);
     const eveningBaseContent = buildWirdNotificationContent(profile, baselineDayNumber, 0, true, lang);
@@ -448,7 +524,7 @@ export const syncDailyWirdNotifications = async (langOverride?: 'ar' | 'en') => 
       id: RECURRING_MORNING_ID,
       title: morningBaseContent.title,
       body: morningBaseContent.body,
-      schedule: { on: { hour: 9, minute: 0 }, allowWhileIdle: true, repeats: true },
+      schedule: { on: { hour: 10, minute: 0 }, allowWhileIdle: true, repeats: true },
       channelId: WIRD_CHANNEL_ID,
       sound: wirdCapacitorSound,
       extra: {
@@ -516,9 +592,9 @@ export const syncDailyWirdNotifications = async (langOverride?: 'ar' | 'en') => 
 
       const targetDayNumber = Math.min(profile.completedDays.length + 1, totalDays);
 
-      // Morning Schedule (09:00 AM)
+      // Morning Schedule (10:00 AM)
       const morningTarget = new Date(targetDate);
-      morningTarget.setHours(9, 0, 0, 0);
+      morningTarget.setHours(10, 0, 0, 0);
 
       // If today and already completed today, skip morning reminder for today
       const shouldScheduleMorning = (dayOffset > 0 || !isTodayAlreadyCompleted) && (morningTarget.getTime() > now.getTime());

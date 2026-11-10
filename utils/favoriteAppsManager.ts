@@ -3,18 +3,32 @@ import { useState, useEffect, useCallback } from 'react';
 const USAGE_STORAGE_KEY = 'mushaf_app_usage_counts_v1';
 const LAST_VISIT_STORAGE_KEY = 'mushaf_app_last_visit_v1';
 
-// التطبيقات الأولوية الافتراضية عند التشغيل لأول مرة
+// التطبيقات الأولوية الافتراضية عند التشغيل لأول مرة (الأيقونة الأولى ثنائية الأهمية دائماً للقرآن الكريم)
 export const DEFAULT_FAVORITE_APPS = [
   'quran',
+  'daily-wird',
+  'voice-control',
+  'prayer-times',
+  'sabah-masaa',
   'listen',
   'habit-tracker',
-  'daily-wird',
-  'prophetic-seerah',
-  'prayer-times',
+  'hisn-muslim',
   'salah-adhkar',
-  'sabah-masaa',
+  'adia',
+  'qibla',
+  'tasbeeh',
   'others',
-  'hisn-muslim'
+  'ten-promised',
+  'hajj-umrah',
+  'asmaul-husna',
+  'calculators',
+  'nawawi',
+  'calendar',
+  'islamic-sites',
+  'prophetic-seerah',
+  'divine-miracles',
+  'quran-landscape',
+  'memorization'
 ];
 
 export const VALID_APP_IDS = [
@@ -40,7 +54,8 @@ export const VALID_APP_IDS = [
   'islamic-sites',
   'voice-control',
   'quran-landscape',
-  'divine-miracles'
+  'divine-miracles',
+  'memorization'
 ];
 
 export function getAppUsageCounts(): Record<string, number> {
@@ -95,6 +110,9 @@ export function recordAppVisit(pageId: string) {
     'miracles': 'divine-miracles',
     'divine-miracle': 'divine-miracles',
     'moajazat': 'divine-miracles',
+    'monthly-prayer-times': 'prayer-times',
+    'quran-download': 'quran',
+    'quran-search': 'quran',
   };
   const normalizedId = aliasMap[pageId] || pageId;
 
@@ -117,60 +135,40 @@ export function recordAppVisit(pageId: string) {
 }
 
 /**
- * استخراج أهم 10 تطبيقات:
- * أول تطبيقين هما الأكثر استخداماً، ومن التطبيق الثالث إلى العاشر حسب أحدث تاريخ فتح (أحدث الزيارات)
+ * استخراج التطبيقات اليومية (10 تطبيقات):
+ * - الأيقونة الأولى ثابته دائماً لـ القرآن الكريم ('quran')
+ * - التطبيقات الـ 9 الأخرى مرتبة حسب الأكثر فتحاً واستخداماً (عدد المرات تنازلياً)
  */
 export function getFavoriteAppIds(limit = 10): string[] {
   const counts = getAppUsageCounts();
   const timestamps = getLastVisitTimestamps();
 
-  const hasUsage = Object.values(counts).some(c => c > 0) || Object.values(timestamps).some(t => t > 0);
+  const firstApp = 'quran';
+  const otherAppIds = VALID_APP_IDS.filter(id => id !== firstApp);
 
-  if (!hasUsage) {
-    return DEFAULT_FAVORITE_APPS.slice(0, limit);
-  }
-
-  // 1. فرز كافة التطبيقات بحسب الأكثر استخداماً (عدد المرات)
-  const sortedByCount = [...VALID_APP_IDS].sort((a, b) => {
+  // فرز باقي التطبيقات بحسب الأكثر استخداماً أولاً (عدد الزيارات تنازلياً)
+  const sortedOthers = [...otherAppIds].sort((a, b) => {
     const countA = counts[a] || 0;
     const countB = counts[b] || 0;
     if (countB !== countA) {
-      return countB - countA;
+      return countB - countA; // الأكثر استخداماً يظهر أولاً
     }
     const timeA = timestamps[a] || 0;
     const timeB = timestamps[b] || 0;
     if (timeB !== timeA) {
-      return timeB - timeA;
+      return timeB - timeA; // أحدث زيارة في حال التساوي
     }
     const defaultIndexA = DEFAULT_FAVORITE_APPS.indexOf(a);
     const defaultIndexB = DEFAULT_FAVORITE_APPS.indexOf(b);
-    return (defaultIndexA !== -1 ? defaultIndexA : 999) - (defaultIndexB !== -1 ? defaultIndexB : 999);
+    const idxA = defaultIndexA !== -1 ? defaultIndexA : 999;
+    const idxB = defaultIndexB !== -1 ? defaultIndexB : 999;
+    return idxA - idxB;
   });
 
-  // استخراج أكثر تطبيقين استخداماً
-  const top2MostUsed = sortedByCount.slice(0, 2);
+  const neededOthersCount = Math.max(0, limit - 1);
+  const topOthers = sortedOthers.slice(0, neededOthersCount);
 
-  // 2. فرز بقية التطبيقات بحسب آخر وقت زيارة (أحدث تطبيق تم فتحه أولاً)
-  const remainingApps = VALID_APP_IDS.filter(id => !top2MostUsed.includes(id));
-  const sortedByRecent = remainingApps.sort((a, b) => {
-    const timeA = timestamps[a] || 0;
-    const timeB = timestamps[b] || 0;
-    if (timeB !== timeA) {
-      return timeB - timeA;
-    }
-    const countA = counts[a] || 0;
-    const countB = counts[b] || 0;
-    if (countB !== countA) {
-      return countB - countA;
-    }
-    const defaultIndexA = DEFAULT_FAVORITE_APPS.indexOf(a);
-    const defaultIndexB = DEFAULT_FAVORITE_APPS.indexOf(b);
-    return (defaultIndexA !== -1 ? defaultIndexA : 999) - (defaultIndexB !== -1 ? defaultIndexB : 999);
-  });
-
-  // الدمج: [الأكثر استخداماً 1، الأكثر استخداماً 2، أحدث زيارة 1، أحدث زيارة 2، ...] حتى 10 تطبيقات
-  const combined = [...top2MostUsed, ...sortedByRecent];
-  return combined.slice(0, limit);
+  return [firstApp, ...topOthers];
 }
 
 /**

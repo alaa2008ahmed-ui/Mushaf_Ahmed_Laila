@@ -96,7 +96,7 @@ import {
     QURAN_SURAH_JUZ_STEPS, 
     QuranGuideStep
 } from '../components/QuranReader/quranGuideSteps';
-import { syncDailyWirdNotifications } from '../utils/dailyWirdNotificationService';
+import { syncDailyWirdNotifications, getWirdDayRange } from '../utils/dailyWirdNotificationService';
 
 declare var window: any;
 
@@ -175,6 +175,9 @@ const AyahActionMenu = ({
                             backgroundColor: `${themeBorderColor}12`,
                         }}
                     >
+                        <span className="text-xs font-black tracking-wide" style={{ color: themeBorderColor }}>
+                            {isEn ? "Verse Options & Sciences" : "خيارات وتدبر الآية"}
+                        </span>
                         <button 
                             onClick={onClose} 
                             className="p-1.5 quran-raised-btn rounded-full transition-all active:scale-90 flex items-center justify-center border-0 cursor-pointer"
@@ -183,75 +186,65 @@ const AyahActionMenu = ({
                         >
                             <X size={16} />
                         </button>
-                        <span className="text-xs font-black tracking-wide" style={{ color: themeBorderColor }}>
-                            {isEn ? "Verse Options & Sciences" : "خيارات وتدبر الآية"}
-                        </span>
                     </div>
                 </div>
 
                 {/* Options List */}
                 <div className={`overflow-y-auto custom-scrollbar flex flex-col ${isLandscape ? 'p-2.5 gap-2' : 'p-3.5 pt-1 gap-2.5'}`}>
                     {/* 1. Tafseer */}
-                    <button onClick={onTafseer} className={`w-full ${isLandscape ? 'py-2 px-2.5 text-xs' : 'py-2.5 px-3 text-sm'} rounded-2xl font-bold quran-raised-btn flex items-center justify-between transition-transform hover:scale-[1.02] active:scale-95`} style={{ color: currentTheme?.id === 'deep_black' ? '#ffffff' : (currentTheme?.accent || '#4f46e5') }}>
+                    <button onClick={onTafseer} className={`w-full ${isLandscape ? 'py-2 px-2.5 text-xs' : 'py-2.5 px-3 text-sm'} rounded-2xl font-bold quran-raised-btn flex items-center transition-transform hover:scale-[1.02] active:scale-95`} style={{ color: currentTheme?.id === 'deep_black' ? '#ffffff' : (currentTheme?.accent || '#4f46e5') }}>
                         <div className="flex items-center gap-2.5">
                             <i className="fa-solid fa-book-open quran-3d-icon text-base"></i>
                             <span>{isEn ? "Tafseer" : "تفسير الآية"}</span>
                         </div>
-                        <span className="text-[10px] opacity-60">📖</span>
                     </button>
 
                     {/* 2. Asbab Nuzul */}
-                    <button onClick={onAsbabNuzul} className={`w-full ${isLandscape ? 'py-2 px-2.5 text-xs' : 'py-2.5 px-3 text-sm'} rounded-2xl font-bold quran-raised-btn flex items-center justify-between transition-transform hover:scale-[1.02] active:scale-95`} style={{ color: currentTheme?.id === 'deep_black' ? '#ffffff' : (currentTheme?.accent || '#d97706') }}>
+                    <button onClick={onAsbabNuzul} className={`w-full ${isLandscape ? 'py-2 px-2.5 text-xs' : 'py-2.5 px-3 text-sm'} rounded-2xl font-bold quran-raised-btn flex items-center transition-transform hover:scale-[1.02] active:scale-95`} style={{ color: currentTheme?.id === 'deep_black' ? '#ffffff' : (currentTheme?.accent || '#d97706') }}>
                         <div className="flex items-center gap-2.5">
                             <i className="fa-solid fa-scroll quran-3d-icon text-base"></i>
                             <span>{isEn ? "Asbab Al-Nuzul" : "أسباب النزول والقصص"}</span>
                         </div>
-                        <span className="text-[10px] opacity-60">📜</span>
                     </button>
 
                     {/* 3. Irab & Grammar */}
-                    <button onClick={onIrab} className={`w-full ${isLandscape ? 'py-2 px-2.5 text-xs' : 'py-2.5 px-3 text-sm'} rounded-2xl font-bold quran-raised-btn flex items-center justify-between transition-transform hover:scale-[1.02] active:scale-95`} style={{ color: currentTheme?.id === 'deep_black' ? '#ffffff' : (currentTheme?.accent || '#2563eb') }}>
+                    <button onClick={onIrab} className={`w-full ${isLandscape ? 'py-2 px-2.5 text-xs' : 'py-2.5 px-3 text-sm'} rounded-2xl font-bold quran-raised-btn flex items-center transition-transform hover:scale-[1.02] active:scale-95`} style={{ color: currentTheme?.id === 'deep_black' ? '#ffffff' : (currentTheme?.accent || '#2563eb') }}>
                         <div className="flex items-center gap-2.5">
                             <i className="fa-solid fa-layer-group quran-3d-icon text-base"></i>
                             <span>{isEn ? "Syntax & I'rab" : "إعراب الآية وبيانها"}</span>
                         </div>
-                        <span className="text-[10px] opacity-60">⚖️</span>
                     </button>
 
                     {/* 4. Mutashabihat */}
-                    <button onClick={onMutashabihat} className={`w-full ${isLandscape ? 'py-2 px-2.5 text-xs' : 'py-2.5 px-3 text-sm'} rounded-2xl font-bold quran-raised-btn flex items-center justify-between transition-transform hover:scale-[1.02] active:scale-95`} style={{ color: currentTheme?.id === 'deep_black' ? '#ffffff' : (currentTheme?.accent || '#7c3aed') }}>
+                    <button onClick={onMutashabihat} className={`w-full ${isLandscape ? 'py-2 px-2.5 text-xs' : 'py-2.5 px-3 text-sm'} rounded-2xl font-bold quran-raised-btn flex items-center transition-transform hover:scale-[1.02] active:scale-95`} style={{ color: currentTheme?.id === 'deep_black' ? '#ffffff' : (currentTheme?.accent || '#7c3aed') }}>
                         <div className="flex items-center gap-2.5">
                             <i className="fa-solid fa-code-compare quran-3d-icon text-base"></i>
                             <span>{isEn ? "Mutashabihat" : "المتشابهات اللفظية"}</span>
                         </div>
-                        <span className="text-[10px] opacity-60">🔍</span>
                     </button>
 
                     {/* 5. Waqf Guide */}
-                    <button onClick={onWaqf} className={`w-full ${isLandscape ? 'py-2 px-2.5 text-xs' : 'py-2.5 px-3 text-sm'} rounded-2xl font-bold quran-raised-btn flex items-center justify-between transition-transform hover:scale-[1.02] active:scale-95`} style={{ color: currentTheme?.id === 'deep_black' ? '#ffffff' : (currentTheme?.accent || '#059669') }}>
+                    <button onClick={onWaqf} className={`w-full ${isLandscape ? 'py-2 px-2.5 text-xs' : 'py-2.5 px-3 text-sm'} rounded-2xl font-bold quran-raised-btn flex items-center transition-transform hover:scale-[1.02] active:scale-95`} style={{ color: currentTheme?.id === 'deep_black' ? '#ffffff' : (currentTheme?.accent || '#059669') }}>
                         <div className="flex items-center gap-2.5">
                             <i className="fa-solid fa-compass quran-3d-icon text-base"></i>
                             <span>{isEn ? "Waqf Signs" : "علامات الوقف في الآية"}</span>
                         </div>
-                        <span className="text-[10px] opacity-60">🛑</span>
                     </button>
 
                     {/* 6. Word Meanings */}
-                    <button onClick={onMeanings} className={`w-full ${isLandscape ? 'py-2 px-2.5 text-xs' : 'py-2.5 px-3 text-sm'} rounded-2xl font-bold quran-raised-btn flex items-center justify-between transition-transform hover:scale-[1.02] active:scale-95`} style={{ color: currentTheme?.id === 'deep_black' ? '#ffffff' : (currentTheme?.highlightText || currentTheme?.accent || '#0d9488') }}>
+                    <button onClick={onMeanings} className={`w-full ${isLandscape ? 'py-2 px-2.5 text-xs' : 'py-2.5 px-3 text-sm'} rounded-2xl font-bold quran-raised-btn flex items-center transition-transform hover:scale-[1.02] active:scale-95`} style={{ color: currentTheme?.id === 'deep_black' ? '#ffffff' : (currentTheme?.highlightText || currentTheme?.accent || '#0d9488') }}>
                         <div className="flex items-center gap-2.5">
                             <i className="fa-solid fa-language quran-3d-icon text-base"></i>
                             <span>{isEn ? "Word Meanings" : "معاني الكلمات"}</span>
                         </div>
-                        <span className="text-[10px] opacity-60">💬</span>
                     </button>
 
                     {/* 7. Translation */}
-                    <button onClick={onTranslation} className={`w-full ${isLandscape ? 'py-2 px-2.5 text-xs' : 'py-2.5 px-3 text-sm'} rounded-2xl font-bold quran-raised-btn flex items-center justify-between transition-transform hover:scale-[1.02] active:scale-95`} style={{ color: currentTheme?.id === 'deep_black' ? '#ffffff' : (currentTheme?.accent || '#4f46e5') }}>
+                    <button onClick={onTranslation} className={`w-full ${isLandscape ? 'py-2 px-2.5 text-xs' : 'py-2.5 px-3 text-sm'} rounded-2xl font-bold quran-raised-btn flex items-center transition-transform hover:scale-[1.02] active:scale-95`} style={{ color: currentTheme?.id === 'deep_black' ? '#ffffff' : (currentTheme?.accent || '#4f46e5') }}>
                         <div className="flex items-center gap-2.5">
                             <i className="fa-solid fa-globe quran-3d-icon text-base"></i>
                             <span>{isEn ? "Translation" : "الترجمة الإنجليزية"}</span>
                         </div>
-                        <span className="text-[10px] opacity-60">🌐</span>
                     </button>
                 </div>
             </div>
@@ -260,25 +253,11 @@ const AyahActionMenu = ({
 };
 
     const getDayRange = (day: number, settings: any) => {
-        const TOTAL_PAGES = 604;
-        const startPage = settings.startPage || 1;
-        const pagesLeft = TOTAL_PAGES - startPage + 1;
-        const offset = startPage - 1;
-
-        if (settings.mode === 'days') {
-            const totalDays = settings.value;
-            const start = Math.floor(((day - 1) * pagesLeft) / totalDays) + 1 + offset;
-            const end = Math.floor((day * pagesLeft) / totalDays) + offset;
-            return { start, end: Math.max(start - 1, end) };
-        } else {
-            const pagesPerDay = settings.value;
-            const start = (day - 1) * pagesPerDay + 1 + offset;
-            const end = Math.min(day * pagesPerDay + offset, TOTAL_PAGES);
-            return { start: Math.min(start, TOTAL_PAGES + 1), end };
-        }
+        if (!settings) return { start: 1, end: 21 };
+        return getWirdDayRange(day, settings);
     };
 
-const WirdCompletionModal = ({ isOpen, onClose, onGoToWird, onGoHome, currentTheme, onMarkCompleted, onMarkAndContinue, isLandscape }: any) => {
+const WirdCompletionModal = ({ isOpen, onClose, onContinue, onGoToWird, onGoHome, currentTheme, isLandscape, isEn }: any) => {
     if (!isOpen) return null;
     return (
         <div className={`fixed inset-0 z-[1100] bg-black/40 backdrop-blur-[2px] flex items-center justify-center ${isLandscape ? 'p-0' : 'p-4'} animate-fadeIn`}>
@@ -294,43 +273,38 @@ const WirdCompletionModal = ({ isOpen, onClose, onGoToWird, onGoHome, currentThe
                      style={{ backgroundColor: currentTheme?.id === 'deep_black' ? 'rgba(255,255,255,0.12)' : `${currentTheme?.accent}20`, color: currentTheme?.id === 'deep_black' ? '#ffffff' : currentTheme?.accent }}>
                     <i className="fa-solid fa-check-double text-3xl quran-3d-icon"></i>
                 </div>
-                <h2 className="text-xl font-bold mb-3 font-kufi" style={{ color: currentTheme?.id === 'deep_black' ? '#ffffff' : currentTheme?.accent }}>تقبل الله طاعتك!</h2>
-                <p className="opacity-80 mb-6 text-sm leading-relaxed">لقد وصلت إلى نهاية وردك اليومي المحدد. يمكنك التوقف عن القراءة الآن أو الاستمرار كما تحب.</p>
+                <h2 className="text-xl font-bold mb-3 font-kufi" style={{ color: currentTheme?.id === 'deep_black' ? '#ffffff' : currentTheme?.accent }}>
+                    {isEn ? "May Allah Accept Your Worship!" : "تقبل الله طاعتك!"}
+                </h2>
+                <p className="opacity-80 mb-6 text-sm leading-relaxed">
+                    {isEn 
+                        ? "You have completed your assigned daily portion. You may pause now or continue reading as you like." 
+                        : "لقد وصلت إلى نهاية وردك اليومي المحدد. يمكنك التوقف عن القراءة الآن أو الاستمرار كما تحب."}
+                </p>
                 <div className="flex flex-col gap-3">
                     <button 
-                        onClick={() => onMarkCompleted()}
-                        className="w-full py-3 rounded-2xl font-bold text-sm transition-transform active:scale-95 flex items-center justify-center gap-2 border-0 quran-raised-btn-selected"
+                        onClick={onContinue}
+                        className="w-full py-3.5 rounded-2xl font-bold text-sm transition-transform active:scale-95 flex items-center justify-center border-0 quran-raised-btn-selected cursor-pointer"
                         style={{ backgroundColor: currentTheme?.accent, color: currentTheme?.accentText }}
                     >
-                        <i className="fa-solid fa-check-circle quran-3d-icon"></i>
-                        حفظ الورد
-                    </button>
-                    <button 
-                        onClick={() => onMarkAndContinue()}
-                        className="w-full py-3 rounded-2xl font-bold text-sm transition-transform active:scale-95 flex items-center justify-center gap-2 border-0 quran-raised-btn"
-                        style={{ backgroundColor: currentTheme?.btnBg, color: currentTheme?.btnText }}
-                    >
-                        <i className="fa-solid fa-forward-step quran-3d-icon"></i>
-                        حفظ الورد واستمرار القراءة
+                        <span>{isEn ? "Continue Reading" : "استمرار القراءة"}</span>
                     </button>
                     <button 
                         onClick={onGoToWird}
-                        className="w-full py-3 rounded-2xl font-bold text-sm transition-transform active:scale-95 flex items-center justify-center gap-2 border-0 quran-raised-btn"
+                        className="w-full py-3.5 rounded-2xl font-bold text-sm transition-transform active:scale-95 flex items-center justify-center border-0 quran-raised-btn cursor-pointer"
                         style={{ backgroundColor: currentTheme?.headerBg, color: currentTheme?.headerText }}
                     >
-                        <i className="fa-solid fa-calendar-check quran-3d-icon"></i>
-                        العودة لصفحة الورد
+                        <span>{isEn ? "Return to Daily Wird Page" : "العوده لصفحة الورد اليومى"}</span>
                     </button>
                     <button 
                         onClick={onGoHome}
-                        className="w-full py-3 rounded-2xl font-bold text-sm transition-transform active:scale-95 flex items-center justify-center gap-2 border-0 quran-raised-btn"
+                        className="w-full py-3.5 rounded-2xl font-bold text-sm transition-transform active:scale-95 flex items-center justify-center border-0 quran-raised-btn cursor-pointer"
                         style={currentTheme?.bg === '#000000' ? {
                             backgroundColor: '#000000',
                             color: '#FFFFFF'
                         } : { backgroundColor: `${currentTheme?.barBg}80`, color: currentTheme?.barText }}
                     >
-                        <i className="fa-solid fa-house quran-3d-icon"></i>
-                        الصفحة الرئيسية
+                        <span>{isEn ? "Return to Home Page" : "العوده للصفحه الرئيسيه"}</span>
                     </button>
                 </div>
             </div>
@@ -816,6 +790,7 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
     const [wirdEndPage, setWirdEndPage] = useState<number | null>(null);
     const [showWirdCompleteModal, setShowWirdCompleteModal] = useState(false);
     const [hasShownWirdComplete, setHasShownWirdComplete] = useState(false);
+    const currentWirdDayRef = useRef<number>(1);
 
     useEffect(() => {
         if (isWirdMode) {
@@ -825,6 +800,7 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
                     const parsed = JSON.parse(saved);
                     const activeProfile = parsed.profiles?.find((p: any) => p.id === parsed.activeId);
                     if (activeProfile && activeProfile.isActive) {
+                        currentWirdDayRef.current = activeProfile.currentDay;
                         const { end } = getDayRange(activeProfile.currentDay, activeProfile);
                         setWirdEndPage(end);
                     }
@@ -1194,56 +1170,160 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
         }
     };
 
+    const wirdCompletionTriggeredRef = useRef<number | null>(null);
+    const jumpToPageRef = useRef<(pageNum: number, instant?: boolean) => void>(() => {});
+
+    const autoSaveDailyWirdCompletion = useCallback((finishedWirdEndPage?: number) => {
+        const saved = localStorage.getItem('dailyWirdSettings_v2');
+        if (!saved) return;
+        try {
+            const parsed = JSON.parse(saved);
+            const activeProfile = parsed.profiles?.find((p: any) => p.id === parsed.activeId);
+            if (!activeProfile) return;
+
+            const TOTAL_PAGES_COUNT = 604;
+            const getTotalDaysCount = (st: any) => {
+                return st.mode === 'days' ? st.value : Math.ceil(TOTAL_PAGES_COUNT / st.value);
+            };
+            const totalDays = getTotalDaysCount(activeProfile);
+            const todayStr = new Date().toISOString().split('T')[0];
+
+            let dayToComplete = currentWirdDayRef.current || activeProfile.currentDay;
+            if (finishedWirdEndPage) {
+                for (let d = 1; d <= totalDays; d++) {
+                    const range = getWirdDayRange(d, activeProfile);
+                    if (range.end === finishedWirdEndPage || (d === dayToComplete && finishedWirdEndPage >= range.start && finishedWirdEndPage <= range.end)) {
+                        dayToComplete = d;
+                        break;
+                    }
+                }
+            }
+
+            // CRITICAL IDEMPOTENT PROTECTION:
+            // If dayToComplete is ALREADY in completedDays, DO NOT increment currentDay or touch completedDays!
+            if (activeProfile.completedDays && activeProfile.completedDays.includes(dayToComplete)) {
+                if (activeProfile.lastPage !== undefined || activeProfile.lastAyah !== undefined) {
+                    const updatedProfile = {
+                        ...activeProfile,
+                        lastPage: undefined,
+                        lastAyah: undefined
+                    };
+                    const newProfiles = parsed.profiles.map((p: any) => p.id === activeProfile.id ? updatedProfile : p);
+                    const dataStr = JSON.stringify({ ...parsed, profiles: newProfiles });
+                    localStorage.setItem('dailyWirdSettings_v2', dataStr);
+                    try { Preferences.set({ key: 'dailyWirdSettings_v2', value: dataStr }); } catch (e) {}
+                }
+                return;
+            }
+
+            // Single step increment: add dayToComplete to completedDays, set currentDay = dayToComplete + 1
+            const newCompleted = Array.from(new Set([...(activeProfile.completedDays || []), dayToComplete])).sort((a, b) => a - b);
+            const newCurrentDay = Math.min(dayToComplete + 1, totalDays);
+
+            const newProfile = {
+                ...activeProfile,
+                completedDays: newCompleted,
+                currentDay: newCurrentDay,
+                lastPage: undefined,
+                lastAyah: undefined,
+                lastCompletedDate: todayStr
+            };
+
+            currentWirdDayRef.current = newCurrentDay;
+
+            const newProfiles = parsed.profiles.map((p: any) => p.id === activeProfile.id ? newProfile : p);
+            const dataStr = JSON.stringify({ ...parsed, profiles: newProfiles });
+            localStorage.setItem('dailyWirdSettings_v2', dataStr);
+            try {
+                Preferences.set({ key: 'dailyWirdSettings_v2', value: dataStr });
+            } catch (e) {}
+            syncDailyWirdNotifications();
+        } catch (e) {
+            console.error('Error auto-saving daily wird progress:', e);
+        }
+    }, []);
+
     useEffect(() => {
         if (isWirdMode && wirdEndPage && quranData && !hasShownWirdComplete) {
             const ayah = quranData.surahs[currentAyah.s - 1]?.ayahs[currentAyah.a - 1];
-            if (ayah && ayah.page > wirdEndPage) {
-                // تأخير ظهور النافذة لضمان رؤية اكتمال الصفحة وانتقالها للأعلى
-                const timer = setTimeout(() => {
-                    setShowWirdCompleteModal(true);
-                    setHasShownWirdComplete(true);
-                }, 1200);
-                return () => clearTimeout(timer);
-            }
-        }
-    }, [currentAyah, wirdEndPage, quranData, hasShownWirdComplete, isWirdMode]);
-    const isInitialMountRef = useRef(true);
-
-    useEffect(() => {
-        if (isInitialMountRef.current) {
-            isInitialMountRef.current = false;
-            return;
-        }
-        if (isWirdMode && quranData) {
-            const ayah = quranData.surahs[currentAyah.s - 1]?.ayahs[currentAyah.a - 1];
             if (ayah) {
-                const page = ayah.page;
-                // Update localStorage for Daily Wird progress
-                const saved = localStorage.getItem('dailyWirdSettings_v2');
-                if (saved) {
-                    try {
-                        const parsed = JSON.parse(saved);
-                        const activeProfileIndex = parsed.profiles?.findIndex((p: any) => p.id === parsed.activeId);
-                        if (activeProfileIndex !== -1) {
-                            // Only update if it's a new position
-                            if (parsed.profiles[activeProfileIndex].lastPage !== page || 
-                                parsed.profiles[activeProfileIndex].lastAyah?.s !== currentAyah.s ||
-                                parsed.profiles[activeProfileIndex].lastAyah?.a !== currentAyah.a) {
-                                
-                                parsed.profiles[activeProfileIndex].lastPage = page;
-                                parsed.profiles[activeProfileIndex].lastAyah = currentAyah;
-                                const dataStr = JSON.stringify(parsed);
-                                localStorage.setItem('dailyWirdSettings_v2', dataStr);
-                                try {
-                                    Preferences.set({ key: 'dailyWirdSettings_v2', value: dataStr });
-                                } catch (e) {}
-                            }
-                        }
-                    } catch (e) {}
+                const isPastEnd = ayah.page > wirdEndPage;
+                const isFinalAyahOfQuran = wirdEndPage >= 604 && ayah.page === 604 && currentAyah.s === 114 && currentAyah.a === 6;
+                if (isPastEnd || isFinalAyahOfQuran) {
+                    if (wirdCompletionTriggeredRef.current === wirdEndPage) {
+                        return;
+                    }
+                    wirdCompletionTriggeredRef.current = wirdEndPage;
+                    setHasShownWirdComplete(true);
+                    setShowWirdCompleteModal(true);
+                    autoSaveDailyWirdCompletion(wirdEndPage);
                 }
             }
         }
-    }, [currentAyah, isWirdMode, quranData]);
+    }, [currentAyah, wirdEndPage, quranData, hasShownWirdComplete, isWirdMode, autoSaveDailyWirdCompletion]);
+    const isWirdModeRef = useRef(isWirdMode);
+    useEffect(() => { isWirdModeRef.current = isWirdMode; }, [isWirdMode]);
+    const wirdEndPageRef = useRef(wirdEndPage);
+    useEffect(() => { wirdEndPageRef.current = wirdEndPage; }, [wirdEndPage]);
+
+    const saveWirdPosition = useCallback((s: number, a: number, explicitPage?: number) => {
+        if (!isWirdModeRef.current) return;
+        if (showWirdCompleteModal || hasShownWirdComplete) return;
+
+        let pageNum = explicitPage;
+        let juzNum = 1;
+        if (quranData) {
+            const surah = quranData.surahs?.[s - 1];
+            const ayah = surah?.ayahs?.[a - 1];
+            if (!pageNum && ayah?.page) {
+                pageNum = ayah.page;
+            }
+            if (ayah?.juz) {
+                juzNum = ayah.juz;
+            }
+        }
+        if (!pageNum) return;
+
+        if (wirdEndPageRef.current && pageNum > wirdEndPageRef.current) {
+            return;
+        }
+
+        const savedObj = { s, a, page: pageNum, juz: juzNum, ts: Date.now() };
+        const orient = isLandscapeRef.current ? 'h' : 'v';
+        localStorage.setItem(`last_pos_wird_${orient}`, JSON.stringify(savedObj));
+        localStorage.setItem('last_read_ayah_wird', JSON.stringify(savedObj));
+        localStorage.setItem('last_pos_wird', JSON.stringify(savedObj));
+
+        // Update dailyWirdSettings_v2 profile so Daily Wird page immediately sees the current ayah & page
+        const saved = localStorage.getItem('dailyWirdSettings_v2');
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                const activeProfileIndex = parsed.profiles?.findIndex((p: any) => p.id === parsed.activeId);
+                if (activeProfileIndex !== -1) {
+                    const prof = parsed.profiles[activeProfileIndex];
+                    if (prof.lastPage !== pageNum || prof.lastAyah?.s !== s || prof.lastAyah?.a !== a) {
+                        prof.lastPage = pageNum;
+                        prof.lastAyah = { s, a };
+                        const dataStr = JSON.stringify(parsed);
+                        localStorage.setItem('dailyWirdSettings_v2', dataStr);
+                        try {
+                            Preferences.set({ key: 'dailyWirdSettings_v2', value: dataStr });
+                        } catch (e) {}
+                    }
+                }
+            } catch (e) {}
+        }
+    }, [showWirdCompleteModal, hasShownWirdComplete, quranData]);
+
+    useEffect(() => {
+        if (isWirdMode && quranData && !showWirdCompleteModal && !hasShownWirdComplete) {
+            const ayah = quranData.surahs[currentAyah.s - 1]?.ayahs[currentAyah.a - 1];
+            if (ayah) {
+                saveWirdPosition(currentAyah.s, currentAyah.a, ayah.page);
+            }
+        }
+    }, [currentAyah, isWirdMode, quranData, showWirdCompleteModal, hasShownWirdComplete, saveWirdPosition]);
 
     const selectedAyahRef = useRef<{ s: number; a: number; page: number; juz: number } | null>((() => {
         if (initialSurah && initialAyah) {
@@ -2733,6 +2813,9 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
 
         setPlayingAyah({ s, a });
         setCurrentAyah({ s, a });
+        if (isWirdMode) {
+            saveWirdPosition(s, a);
+        }
         setHighlightedAyahId(`ayah-${s}-${a}`);
         scrollToAyah(s, a, false);
         
@@ -2852,8 +2935,8 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
                         });
                     } else {
                         currentRepeatCountRef.current = 0;
-                        // Check if we reached the end of the range
-                        if (s === memSettings.toSurah && a === memSettings.toAyah) {
+                        // Check if we reached or exceeded the end of the range
+                        if (s > memSettings.toSurah || (s === memSettings.toSurah && a >= memSettings.toAyah)) {
                             const maxRangeRepeat = memSettings.rangeRepeat || 1;
                             if (rangeRepeatCountRef.current < maxRangeRepeat - 1) {
                                 rangeRepeatCountRef.current += 1;
@@ -3347,9 +3430,7 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
             if (isWirdMode) {
                 const orient = isLandscapeRef.current ? 'h' : 'v';
                 localStorage.setItem(`last_pos${posSuffix}`, JSON.stringify(savedObj));
-                localStorage.setItem(`last_pos_wird_${orient}`, JSON.stringify(savedObj));
-                localStorage.setItem('last_read_ayah_wird', JSON.stringify(savedObj));
-                localStorage.setItem('last_pos_wird', JSON.stringify(savedObj));
+                saveWirdPosition(s, a, pageNum);
                 return;
             }
 
@@ -3806,56 +3887,56 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
         };
     }, [themeSuffix, bookmarkSuffix]);
 
-    const handleMarkWirdCompleted = useCallback((shouldContinue = false) => {
+    const handleMarkWirdCompleted = useCallback((action: 'continue' | 'daily-wird' | 'home' = 'continue') => {
+        setShowWirdCompleteModal(false);
+
         const saved = localStorage.getItem('dailyWirdSettings_v2');
         if (saved) {
             try {
                 const parsed = JSON.parse(saved);
                 const activeProfile = parsed.profiles?.find((p: any) => p.id === parsed.activeId);
                 if (activeProfile) {
-                    const TOTAL_PAGES_COUNT = 604;
-                    const getTotalDaysCount = (settings: any) => {
-                        return settings.mode === 'days' ? settings.value : Math.ceil(TOTAL_PAGES_COUNT / settings.value);
-                    };
-                    
-                    const todayStr = new Date().toISOString().split('T')[0];
-                    const newCompleted = [...activeProfile.completedDays, activeProfile.currentDay];
-                    const totalDays = getTotalDaysCount(activeProfile);
-                    const newCurrentDay = activeProfile.currentDay < totalDays ? activeProfile.currentDay + 1 : activeProfile.currentDay;
-                    
-                    const newProfile = {
-                        ...activeProfile,
-                        completedDays: newCompleted,
-                        currentDay: newCurrentDay,
-                        lastPage: undefined,
-                        lastAyah: undefined,
-                        lastCompletedDate: todayStr
-                    };
-                    
-                    const newProfiles = parsed.profiles.map((p: any) => p.id === activeProfile.id ? newProfile : p);
-                    const dataStr = JSON.stringify({ ...parsed, profiles: newProfiles });
-                    localStorage.setItem('dailyWirdSettings_v2', dataStr);
-                    try {
-                        Preferences.set({ key: 'dailyWirdSettings_v2', value: dataStr });
-                    } catch (e) {}
-                    syncDailyWirdNotifications();
-                    
-                    if (shouldContinue) {
-                        const { end } = getDayRange(newProfile.currentDay, newProfile);
-                        setWirdEndPage(end);
+                    // Ensure lastPage and lastAyah remain cleared so starting next wird begins from its first page
+                    if (activeProfile.lastPage !== undefined || activeProfile.lastAyah !== undefined) {
+                        const updatedProfile = {
+                            ...activeProfile,
+                            lastPage: undefined,
+                            lastAyah: undefined
+                        };
+                        const newProfiles = parsed.profiles.map((p: any) => p.id === activeProfile.id ? updatedProfile : p);
+                        const dataStr = JSON.stringify({ ...parsed, profiles: newProfiles });
+                        localStorage.setItem('dailyWirdSettings_v2', dataStr);
+                        try {
+                            Preferences.set({ key: 'dailyWirdSettings_v2', value: dataStr });
+                        } catch (e) {}
+                    }
+
+                    if (action === 'continue') {
+                        currentWirdDayRef.current = activeProfile.currentDay;
+                        const nextDayRange = getDayRange(activeProfile.currentDay, activeProfile);
+                        setWirdEndPage(nextDayRange.end);
                         setHasShownWirdComplete(false);
-                        setShowWirdCompleteModal(false);
-                        showToast('تم حفظ الورد والاستمرار في القراءة');
-                    } else {
-                        showToast('تم حفظ الورد اليومي بنجاح');
-                        setShowWirdCompleteModal(false);
+                        wirdCompletionTriggeredRef.current = null;
+                        jumpToPageRef.current(nextDayRange.start, true);
+                        showToast(isEn ? 'Portion saved! Continuing to next day' : 'تم حفظ الورد ومتابعة قراءة ورد اليوم التالي');
+                        return;
                     }
                 }
             } catch (e) {
-                console.error('Error saving wird progress:', e);
+                console.error('Error handling wird completion modal action:', e);
             }
         }
-    }, [showToast]);
+
+        if (action === 'daily-wird') {
+            showToast(isEn ? 'Daily portion saved successfully' : 'تم حفظ الورد اليومي بنجاح');
+            restoreHomeThemeDOMInstantly();
+            onNavigate('daily-wird');
+        } else if (action === 'home') {
+            showToast(isEn ? 'Daily portion saved successfully' : 'تم حفظ الورد اليومي بنجاح');
+            restoreHomeThemeDOMInstantly();
+            onNavigate('home');
+        }
+    }, [showToast, onNavigate, isEn]);
 
     useLayoutEffect(() => {
         const root = document.documentElement;
@@ -4061,8 +4142,7 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
                         if (isWirdMode) {
                             const orient = isLandscapeRef.current ? 'h' : 'v';
                             localStorage.setItem(`last_pos${posSuffix}`, JSON.stringify({ s, a, ts: Date.now() }));
-                            localStorage.setItem(`last_pos_wird_${orient}`, JSON.stringify({ s, a, ts: Date.now() }));
-                            localStorage.setItem('last_read_ayah_wird', JSON.stringify({ s, a, ts: Date.now() }));
+                            saveWirdPosition(s, a);
                             return;
                         }
 
@@ -4240,6 +4320,10 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
             // Keep user on current page/surah
         }
     }, [isMainGuideOpen]);
+
+    useEffect(() => {
+        jumpToPageRef.current = jumpToPage;
+    }, [jumpToPage]);
 
     const handleCloseMainGuide = useCallback(() => {
         setIsMainGuideOpen(false);
@@ -5618,8 +5702,7 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
                                         if (isWirdMode) {
                                             const orient = isLandscapeRef.current ? 'h' : 'v';
                                             localStorage.setItem(`last_pos${posSuffix}`, JSON.stringify({ s, a, ts: Date.now() }));
-                                            localStorage.setItem(`last_pos_wird_${orient}`, JSON.stringify({ s, a, ts: Date.now() }));
-                                            localStorage.setItem('last_read_ayah_wird', JSON.stringify({ s, a, ts: Date.now() }));
+                                            saveWirdPosition(s, a);
                                             return;
                                         }
 
@@ -5791,12 +5874,12 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
             <WirdCompletionModal 
                 isOpen={showWirdCompleteModal} 
                 onClose={() => setShowWirdCompleteModal(false)} 
-                onGoToWird={handleHomeClick} 
-                onGoHome={() => handleHomeClick('home')}
-                onMarkCompleted={() => handleMarkWirdCompleted(false)}
-                onMarkAndContinue={() => handleMarkWirdCompleted(true)}
+                onContinue={() => handleMarkWirdCompleted('continue')}
+                onGoToWird={() => handleMarkWirdCompleted('daily-wird')}
+                onGoHome={() => handleMarkWirdCompleted('home')}
                 currentTheme={currentTheme} 
                 isLandscape={isLandscape}
+                isEn={isEn}
             />
             {activeModals.includes('search-modal') && <SearchModal quranData={quranData} onSelect={(s,a) => jumpToAyah(s,a, true)} onClose={() => closeModal('search-modal')} isLandscape={isLandscape} initialQuery={initialSearchQuery} readingMode={readingMode} currentTheme={currentTheme} />}
             {activeModals.includes('share-ayah') && <ShareAyahModal isOpen={true} onClose={() => closeModal('share-ayah')} currentAyah={currentAyah} quranData={quranData} currentTheme={currentTheme} readingMode={readingMode} settings={settings} showToast={showToast} />}

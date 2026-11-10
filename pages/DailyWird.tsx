@@ -7,7 +7,7 @@ import ThemePageLock from '../components/ThemePageLock';
 import ResetConfirmModal from '../components/DailyWird/ResetConfirmModal';
 import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/CommunitySpotlightGuide';
 import { DAILY_SETTINGS_STEPS, DAILY_PROGRESS_STEPS } from '../components/Community/communityTourSteps';
-import { syncDailyWirdNotifications } from '../utils/dailyWirdNotificationService';
+import { syncDailyWirdNotifications, getWirdDayRange, JUZ_PAGE_BOUNDARIES } from '../utils/dailyWirdNotificationService';
 import { registerBackInterceptor } from '../hooks/useBackButton';
 import { Preferences } from '@capacitor/preferences';
 import { LocalNotifications } from '@capacitor/local-notifications';
@@ -28,7 +28,7 @@ interface WirdSettings {
   lastPage?: number;
   lastAyah?: { s: number; a: number };
   reminderEnabled?: boolean;
-  reminderTime?: string; // e.g. "09:00"
+  reminderTime?: string; // e.g. "10:00"
   lastCompletedDate?: string;
 }
 
@@ -120,7 +120,7 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
   const [tempValue, setTempValue] = useState<string>('30');
   const [tempName, setTempName] = useState<string>('');
   const [tempReminderEnabled, setTempReminderEnabled] = useState<boolean>(true);
-  const [tempReminderTime, setTempReminderTime] = useState<string>('09:00');
+  const [tempReminderTime, setTempReminderTime] = useState<string>('10:00');
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   const [calcMethod, setCalcMethod] = useState<'remaining' | 'total'>('remaining');
@@ -156,15 +156,46 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
       let wasSanitized = false;
       const profiles = (parsed.profiles || []).map((p: any) => {
         let sanitizedStartPage = p.startPage || 1;
-        // Fix corrupted startPage where startPage was mistakenly set to 21 or lastPageRead + 1
-        // during an edit while completedDays contains day 1 or currentDay > 1
-        if (sanitizedStartPage > 1 && (p.completedDays?.includes(1) || p.currentDay > 1)) {
+        if (sanitizedStartPage > 1 && (p.completedDays?.includes(1) || p.currentDay > 1 || sanitizedStartPage > 600 || (p.mode === 'days' && p.value === 30))) {
           sanitizedStartPage = 1;
           wasSanitized = true;
         }
+
+        const totalDays = p.mode === 'days' ? p.value : Math.ceil(TOTAL_PAGES / p.value);
+        let sanitizedCurrentDay = Math.min(Math.max(1, p.currentDay || 1), totalDays);
+        let sanitizedCompletedDays: number[] = Array.isArray(p.completedDays) ? [...p.completedDays] : [];
+
+
+        // Clean duplicates and sort completedDays
+        sanitizedCompletedDays = Array.from(new Set(sanitizedCompletedDays)).sort((a, b) => a - b);
+
+        // Ensure currentDay aligns with completedDays
+        if (sanitizedCompletedDays.length > 0) {
+          const maxCompleted = Math.max(...sanitizedCompletedDays);
+          const expectedNextDay = Math.min(maxCompleted + 1, totalDays);
+          if (sanitizedCurrentDay !== expectedNextDay) {
+            sanitizedCurrentDay = expectedNextDay;
+            wasSanitized = true;
+          }
+        }
+
+        // Check if lastPage is out of range for the current day
+        const dayRange = getWirdDayRange(sanitizedCurrentDay, { ...p, startPage: sanitizedStartPage });
+        let sanitizedLastPage = p.lastPage;
+        let sanitizedLastAyah = p.lastAyah;
+        if (sanitizedLastPage && (sanitizedLastPage < dayRange.start || sanitizedLastPage > dayRange.end)) {
+          sanitizedLastPage = undefined;
+          sanitizedLastAyah = undefined;
+          wasSanitized = true;
+        }
+
         return {
           ...p,
           startPage: sanitizedStartPage,
+          currentDay: sanitizedCurrentDay,
+          completedDays: sanitizedCompletedDays,
+          lastPage: sanitizedLastPage,
+          lastAyah: sanitizedLastAyah,
           reminderEnabled: p.reminderEnabled !== false
         };
       });
@@ -241,11 +272,19 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
   useEffect(() => {
     if (settings) {
       setTempReminderEnabled(settings.reminderEnabled !== false);
-      setTempReminderTime(settings.reminderTime || '09:00');
+      setTempReminderTime(settings.reminderTime || '10:00');
     }
   }, [settings]);
 
+  const [nameError, setNameError] = useState(false);
+
   const handleStart = async () => {
+    if (!tempName.trim()) {
+      setNameError(true);
+      return;
+    }
+    setNameError(false);
+
     if (Capacitor.isNativePlatform()) {
       try {
         await LocalNotifications.requestPermissions();
@@ -257,7 +296,7 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
     let startPage = 1;
     let currentDay = settings ? settings.currentDay : 1;
     let completedDays = settings ? settings.completedDays : [];
-    const profileName = tempName.trim() || (isEn ? `User ${allSettings.length + 1}` : `مستخدم ${allSettings.length + 1}`);
+    const profileName = tempName.trim();
 
     if (settings && settings.completedDays.length > 0) {
       if (calcMethod === 'remaining') {
@@ -308,8 +347,9 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
     setTempMode('days');
     setTempValue('30');
     setTempName('');
+    setNameError(false);
     setTempReminderEnabled(true);
-    setTempReminderTime('09:00');
+    setTempReminderTime('10:00');
     setCalcMethod('total');
     setActiveId(null);
     setShowSettings(true);
@@ -321,8 +361,9 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
     setTempMode(profile.mode);
     setTempValue(profile.value.toString());
     setTempName(profile.name);
+    setNameError(false);
     setTempReminderEnabled(profile.reminderEnabled !== false);
-    setTempReminderTime(profile.reminderTime || '09:00');
+    setTempReminderTime(profile.reminderTime || '10:00');
     setCalcMethod('total');
     setShowSettings(true);
     setShowProfileMenu(false);
@@ -354,8 +395,9 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
       setTempMode(settings.mode);
       setTempValue(settings.value.toString());
       setTempName(settings.name);
+      setNameError(false);
       setTempReminderEnabled(settings.reminderEnabled !== false);
-      setTempReminderTime(settings.reminderTime || '09:00');
+      setTempReminderTime(settings.reminderTime || '10:00');
       setCalcMethod('total');
       setShowSettings(true);
     }
@@ -381,6 +423,9 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
         currentDay: 1,
         completedDays: [],
         startPage: 1,
+        lastPage: undefined,
+        lastAyah: undefined,
+        startDate: new Date().toISOString(),
         isActive: true,
         reminderEnabled: tempReminderEnabled,
         reminderTime: tempReminderTime
@@ -392,7 +437,8 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
       setTempMode('days');
       setTempValue('30');
       setTempName(settings.name);
-      setCalcMethod('remaining');
+      setNameError(false);
+      setCalcMethod('total');
       setShowSettings(true);
     }
     setShowResetConfirm(false);
@@ -405,6 +451,9 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
         currentDay: 1,
         completedDays: [],
         startPage: 1,
+        lastPage: undefined,
+        lastAyah: undefined,
+        startDate: new Date().toISOString(),
         isActive: true,
         reminderEnabled: tempReminderEnabled,
         reminderTime: tempReminderTime
@@ -416,7 +465,8 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
       setTempMode(settings.mode);
       setTempValue(settings.value.toString());
       setTempName(settings.name);
-      setCalcMethod('remaining');
+      setNameError(false);
+      setCalcMethod('total');
       setShowSettings(true);
     }
   };
@@ -424,18 +474,22 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
   const markDayCompleted = async () => {
     if (!settings) return;
     const todayStr = new Date().toISOString().split('T')[0];
-    const newCompleted = [...settings.completedDays, settings.currentDay];
-    const newWird: WirdSettings = {
-      ...settings,
-      completedDays: newCompleted,
-      currentDay: settings.currentDay < getTotalDays() ? settings.currentDay + 1 : settings.currentDay,
-      lastPage: undefined,
-      lastAyah: undefined,
-      lastCompletedDate: todayStr
-    };
-    const newProfiles = allSettings.map(p => p.id === settings.id ? newWird : p);
-    saveAllSettings(newProfiles, settings.id);
-    await syncDailyWirdNotifications(language);
+    const totalDays = getTotalDays();
+    if (!settings.completedDays.includes(settings.currentDay)) {
+      const newCompleted = [...settings.completedDays, settings.currentDay];
+      const newCurrentDay = settings.currentDay < totalDays ? settings.currentDay + 1 : settings.currentDay;
+      const newWird: WirdSettings = {
+        ...settings,
+        completedDays: newCompleted,
+        currentDay: newCurrentDay,
+        lastPage: undefined,
+        lastAyah: undefined,
+        lastCompletedDate: todayStr
+      };
+      const newProfiles = allSettings.map(p => p.id === settings.id ? newWird : p);
+      saveAllSettings(newProfiles, settings.id);
+      await syncDailyWirdNotifications(language);
+    }
   };
 
   const getTotalDays = () => {
@@ -458,24 +512,10 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
     });
   };
 
-  const getDayRange = (day: number) => {
-    if (!settings) return { start: 1, end: 20 };
-    
-    const startPage = settings.startPage || 1;
-    const pagesLeft = TOTAL_PAGES - startPage + 1;
-    const offset = startPage - 1;
-
-    if (settings.mode === 'days') {
-      const totalDays = settings.value;
-      const start = Math.floor(((day - 1) * pagesLeft) / totalDays) + 1 + offset;
-      const end = Math.floor((day * pagesLeft) / totalDays) + offset;
-      return { start, end: Math.max(start - 1, end) };
-    } else {
-      const pagesPerDay = settings.value;
-      const start = (day - 1) * pagesPerDay + 1 + offset;
-      const end = Math.min(day * pagesPerDay + offset, TOTAL_PAGES);
-      return { start: Math.min(start, TOTAL_PAGES + 1), end };
-    }
+  const getDayRange = (day: number, profileOverride?: WirdSettings) => {
+    const active = profileOverride || settings;
+    if (!active) return { start: 1, end: 21 };
+    return getWirdDayRange(day, active);
   };
 
   // Modern Flat Settings Screen
@@ -492,18 +532,28 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
         {/* Profile Name */}
         <div id="wird-name-container" className="space-y-1.5">
           <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300 px-1">
-            {isEn ? 'Khatma / User Name:' : 'اسم الختمة / المستخدم:'}
+            {isEn ? 'Khatma / User Name:' : 'اسم الختمة / المستخدم:'} <span className="text-red-500 font-bold">*</span>
           </label>
           <input 
             type="text"
             value={tempName}
-            onChange={(e) => setTempName(e.target.value)}
-            className={`w-full bg-slate-100 dark:bg-zinc-800/80 rounded-2xl p-3.5 ${isEn ? 'text-left' : 'text-right'} font-semibold text-sm border-0 focus:outline-none focus:ring-2 transition-all`}
+            onChange={(e) => {
+              setTempName(e.target.value);
+              if (e.target.value.trim()) setNameError(false);
+            }}
+            className={`w-full bg-slate-100 dark:bg-zinc-800/80 rounded-2xl p-3.5 ${isEn ? 'text-left' : 'text-right'} font-semibold text-sm border-0 focus:outline-none focus:ring-2 transition-all ${
+              nameError ? 'ring-2 ring-red-500 bg-red-50/50 dark:bg-red-950/20' : ''
+            }`}
             style={{ 
               color: 'var(--text-color)'
             }}
             placeholder={isEn ? 'e.g. Ahmed, Ramadan Khatma...' : 'مثال: أحمد، ختمة رمضان...'}
           />
+          {nameError && (
+            <p className="text-xs font-bold text-red-500 px-1 pt-0.5 animate-bounce">
+              {isEn ? '⚠️ Please enter Khatma / User name before starting' : '⚠️ يرجى تسجيل اسم الختمة / المستخدم أولاً قبل البدء'}
+            </p>
+          )}
         </div>
 
         {/* Khatma Method Segmented Chips */}
@@ -672,7 +722,12 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
     const { start: startPage, end: endPage } = getDayRange(settings.currentDay);
     const isCompleted = settings.completedDays.includes(settings.currentDay);
     const hasPages = startPage <= endPage && startPage <= TOTAL_PAGES;
-    const canContinue = Boolean(settings.lastPage && !isCompleted);
+    const canContinue = Boolean(
+      settings.lastPage && 
+      !isCompleted && 
+      settings.lastPage >= startPage && 
+      settings.lastPage <= endPage
+    );
 
     const targetPage = canContinue ? settings.lastPage! : startPage;
     let targetAyahRef = canContinue ? settings.lastAyah : undefined;
@@ -761,196 +816,134 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
             </div>
           </div>
 
-          <div className="flex flex-col gap-2.5 pt-1" id="wird-actions-container">
-            {hasPages && (
-              isEn ? (
-                <div className="flex flex-col gap-2.5 w-full">
-                  {/* Button 1: Open Mushaf with 4 details */}
-                  <button 
-                    id="btn-wird-mushaf"
-                    type="button"
-                    onClick={() => {
-                      handleOpenQuran(
-                        ayahDetails.pageNumber, 
-                        { s: ayahDetails.surahNumber, a: ayahDetails.ayahNumber }, 
-                        'mushaf'
-                      );
-                    }}
-                    className="w-full p-4 rounded-3xl font-bold flex flex-col items-center justify-center transition-all shadow-lg border-0 cursor-pointer active:scale-[0.98]"
-                    style={{ 
-                      backgroundColor: primaryColor, 
-                      color: btnTextColor,
-                      boxShadow: `0 12px 28px -6px ${hexToRgba(primaryColor, 0.45)}`
-                    }}
-                  >
-                    <div className="flex items-center justify-between w-full pb-2.5 border-b border-white/20 dark:border-white/15">
-                      <div className="flex items-center gap-2">
-                        <BookOpen size={20} className="shrink-0" />
-                        <span className="text-base font-bold">
-                          {canContinue ? 'Continue Wird (Mushaf)' : 'Start Daily Wird (Mushaf)'}
-                        </span>
-                      </div>
-                      <span className="text-[11px] font-bold opacity-90 bg-black/15 dark:bg-black/25 px-2.5 py-1 rounded-full">
-                        {canContinue ? 'Resume' : 'Start'}
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2 mt-2.5 w-full">
-                      <div className="bg-white/15 dark:bg-black/20 backdrop-blur-xs rounded-2xl py-2 px-3 flex flex-col items-center justify-center text-center">
-                        <span className="text-[11px] opacity-80 font-medium mb-0.5">Surah</span>
-                        <span className="font-bold text-xs truncate max-w-full">{ayahDetails.surahNameEn}</span>
-                      </div>
-                      <div className="bg-white/15 dark:bg-black/20 backdrop-blur-xs rounded-2xl py-2 px-3 flex flex-col items-center justify-center text-center">
-                        <span className="text-[11px] opacity-80 font-medium mb-0.5">Ayah</span>
-                        <span className="font-black text-sm">{ayahDetails.ayahNumber}</span>
-                      </div>
-                      <div className="bg-white/15 dark:bg-black/20 backdrop-blur-xs rounded-2xl py-2 px-3 flex flex-col items-center justify-center text-center">
-                        <span className="text-[11px] opacity-80 font-medium mb-0.5">Juz</span>
-                        <span className="font-black text-sm">{ayahDetails.juzNumber}</span>
-                      </div>
-                      <div className="bg-white/15 dark:bg-black/20 backdrop-blur-xs rounded-2xl py-2 px-3 flex flex-col items-center justify-center text-center">
-                        <span className="text-[11px] opacity-80 font-medium mb-0.5">Page</span>
-                        <span className="font-black text-sm">{ayahDetails.pageNumber}</span>
-                      </div>
-                    </div>
-                  </button>
-
-                  {/* Button 2: Open Translation */}
-                  <button 
-                    id="btn-wird-translation"
-                    type="button"
-                    onClick={() => {
-                      handleOpenQuran(
-                        ayahDetails.pageNumber, 
-                        { s: ayahDetails.surahNumber, a: ayahDetails.ayahNumber }, 
-                        'translation'
-                      );
-                    }}
-                    className="w-full py-3 px-3 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all text-xs shadow-sm bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 border-0 cursor-pointer active:scale-98"
-                    style={{ color: 'var(--text-color)' }}
-                  >
-                    <Languages size={16} />
-                    <span>{canContinue ? 'Continue in English Translation' : 'Read English Translation'}</span>
-                  </button>
+          {/* Current Reading Position Card (4 Details Grid) */}
+          {hasPages && (
+            <div 
+              onClick={() => {
+                handleOpenQuran(
+                  ayahDetails.pageNumber, 
+                  { s: ayahDetails.surahNumber, a: ayahDetails.ayahNumber }, 
+                  isEn ? 'translation' : 'mushaf'
+                );
+              }}
+              className="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border-0 cursor-pointer transition-all hover:opacity-95"
+            >
+              <div className="text-xs font-bold opacity-60 mb-2.5 text-center">
+                {isEn ? 'Current Reading Position' : 'موضع القراءة الحالي'}
+              </div>
+              <div className="grid grid-cols-2 gap-2.5 w-full">
+                {/* اسم السورة */}
+                <div 
+                  className="rounded-2xl py-2.5 px-3 flex flex-col items-center justify-center text-center shadow-xs"
+                  style={{ backgroundColor: primaryColor, color: '#ffffff' }}
+                >
+                  <span className="text-[11px] opacity-90 font-medium mb-0.5">{isEn ? 'Surah Name' : 'اسم السورة'}</span>
+                  <span className="font-extrabold text-sm truncate max-w-full">
+                    {isEn ? ayahDetails.surahNameEn : `سورة ${ayahDetails.surahNameAr}`}
+                  </span>
                 </div>
-              ) : (
+
+                {/* رقم الآية */}
+                <div 
+                  className="rounded-2xl py-2.5 px-3 flex flex-col items-center justify-center text-center shadow-xs"
+                  style={{ backgroundColor: primaryColor, color: '#ffffff' }}
+                >
+                  <span className="text-[11px] opacity-90 font-medium mb-0.5">{isEn ? 'Ayah Number' : 'رقم الآية'}</span>
+                  <span className="font-black text-sm">
+                    {isEn ? ayahDetails.ayahNumber : toArabic(ayahDetails.ayahNumber)}
+                  </span>
+                </div>
+
+                {/* رقم الجزء */}
+                <div 
+                  className="rounded-2xl py-2.5 px-3 flex flex-col items-center justify-center text-center shadow-xs"
+                  style={{ backgroundColor: primaryColor, color: '#ffffff' }}
+                >
+                  <span className="text-[11px] opacity-90 font-medium mb-0.5">{isEn ? 'Juz Number' : 'رقم الجزء'}</span>
+                  <span className="font-black text-sm">
+                    {isEn ? ayahDetails.juzNumber : toArabic(ayahDetails.juzNumber)}
+                  </span>
+                </div>
+
+                {/* رقم الصفحة */}
+                <div 
+                  className="rounded-2xl py-2.5 px-3 flex flex-col items-center justify-center text-center shadow-xs"
+                  style={{ backgroundColor: primaryColor, color: '#ffffff' }}
+                >
+                  <span className="text-[11px] opacity-90 font-medium mb-0.5">{isEn ? 'Page Number' : 'رقم الصفحة'}</span>
+                  <span className="font-black text-sm">
+                    {isEn ? ayahDetails.pageNumber : toArabic(ayahDetails.pageNumber)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Compact Action Button replacing full width button */}
+          <div className="flex flex-col gap-2.5 pt-1 items-center justify-center" id="wird-actions-container">
+            {hasPages ? (
+              !isCompleted ? (
                 <button 
+                  id="btn-wird-start-now"
                   type="button"
                   onClick={() => {
                     handleOpenQuran(
                       ayahDetails.pageNumber, 
                       { s: ayahDetails.surahNumber, a: ayahDetails.ayahNumber }, 
-                      'mushaf'
+                      isEn ? 'translation' : 'mushaf'
                     );
                   }}
-                  className="w-full p-4 rounded-3xl font-bold flex flex-col items-center justify-center transition-all shadow-lg border-0 cursor-pointer active:scale-[0.98] group"
+                  className="px-8 py-3.5 rounded-2xl font-bold flex items-center justify-center transition-all active:scale-[0.98] shadow-md border-0 cursor-pointer mx-auto"
                   style={{ 
                     backgroundColor: primaryColor, 
                     color: btnTextColor,
-                    boxShadow: `0 12px 28px -6px ${hexToRgba(primaryColor, 0.45)}`
+                    boxShadow: `0 8px 20px -4px ${hexToRgba(primaryColor, 0.35)}`
                   }}
                 >
-                  {/* Card Title & Icon */}
-                  <div className="flex items-center justify-between w-full pb-2.5 border-b border-white/20 dark:border-white/15">
-                    <div className="flex items-center gap-2">
-                      <BookOpen size={22} className="shrink-0" />
-                      <span className="text-base sm:text-lg font-black tracking-wide font-kufi">
-                        {canContinue ? 'تكملة الورد' : 'افتح المصحف للقراءة'}
-                      </span>
-                    </div>
-                    <span className="text-[11px] font-bold opacity-90 bg-black/15 dark:bg-black/25 px-2.5 py-1 rounded-full">
-                      {canContinue ? 'متابعة' : 'ابدأ الآن'}
-                    </span>
-                  </div>
-
-                  {/* 4 Details Grid: اسم السورة - رقم الآية - رقم الجزء - رقم الصفحة */}
-                  <div className="grid grid-cols-2 gap-2 mt-2.5 w-full">
-                    {/* اسم السورة */}
-                    <div className="bg-white/15 dark:bg-black/25 backdrop-blur-xs rounded-2xl py-2 px-3 flex flex-col items-center justify-center text-center">
-                      <span className="text-[11px] opacity-80 font-medium mb-0.5">اسم السورة</span>
-                      <span className="font-bold text-sm truncate max-w-full">
-                        {`سورة ${ayahDetails.surahNameAr}`}
-                      </span>
-                    </div>
-
-                    {/* رقم الآية */}
-                    <div className="bg-white/15 dark:bg-black/25 backdrop-blur-xs rounded-2xl py-2 px-3 flex flex-col items-center justify-center text-center">
-                      <span className="text-[11px] opacity-80 font-medium mb-0.5">رقم الآية</span>
-                      <span className="font-black text-sm">
-                        {toArabic(ayahDetails.ayahNumber)}
-                      </span>
-                    </div>
-
-                    {/* رقم الجزء */}
-                    <div className="bg-white/15 dark:bg-black/25 backdrop-blur-xs rounded-2xl py-2 px-3 flex flex-col items-center justify-center text-center">
-                      <span className="text-[11px] opacity-80 font-medium mb-0.5">رقم الجزء</span>
-                      <span className="font-black text-sm">
-                        {toArabic(ayahDetails.juzNumber)}
-                      </span>
-                    </div>
-
-                    {/* رقم الصفحة */}
-                    <div className="bg-white/15 dark:bg-black/25 backdrop-blur-xs rounded-2xl py-2 px-3 flex flex-col items-center justify-center text-center">
-                      <span className="text-[11px] opacity-80 font-medium mb-0.5">رقم الصفحة</span>
-                      <span className="font-black text-sm">
-                        {toArabic(ayahDetails.pageNumber)}
-                      </span>
-                    </div>
-                  </div>
+                  <span className="text-base font-black tracking-wide font-kufi">
+                    {canContinue 
+                      ? (isEn ? 'Continue Reading' : 'متابعة القراءة') 
+                      : (isEn ? 'Start Now' : 'ابدأ الآن')}
+                  </span>
                 </button>
-              )
-            )}
-
-            {!isCompleted ? (
-              <button 
-                type="button"
-                onClick={markDayCompleted}
-                className="w-full py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all text-sm shadow-sm border-0 cursor-pointer active:scale-98"
-                style={{ 
-                  backgroundColor: hexToRgba(primaryColor, 0.12), 
-                  color: primaryColor
-                }}
-              >
-                <CheckCircle size={18} />
-                <span>{isEn ? 'Mark Day as Completed' : 'تمت قراءة ورد اليوم'}</span>
-              </button>
-            ) : (
-              <div className="flex flex-col gap-2">
-                <div 
-                  className="w-full py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2 text-sm border-0"
-                  style={{ 
-                    backgroundColor: hexToRgba(primaryColor, 0.14), 
-                    color: primaryColor
-                  }}
-                >
-                  <CheckCircle size={18} />
-                  <span>{isEn ? 'Completed Today\'s Wird' : 'أنجزت الورد كاملاً لهذا اليوم'}</span>
-                </div>
-                <div className="flex gap-2">
-                  <button 
-                    type="button"
-                    onClick={handleStartNewWird}
-                    className="flex-1 py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all text-xs shadow-md border-0 cursor-pointer"
+              ) : (
+                <div className="flex flex-col gap-2">
+                  <div 
+                    className="w-full py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2 text-sm border-0"
                     style={{ 
-                      backgroundColor: primaryColor, 
-                      color: btnTextColor 
+                      backgroundColor: hexToRgba(primaryColor, 0.14), 
+                      color: primaryColor
                     }}
                   >
-                    <Plus size={16} />
-                    <span>{isEn ? 'Start New Wird' : 'بداية ورد جديد'}</span>
-                  </button>
-                  <button 
-                    type="button"
-                    onClick={() => onNavigate('home')}
-                    className="flex-1 py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all text-xs bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 border-0 cursor-pointer"
-                    style={{ color: 'var(--text-color)' }}
-                  >
-                    <Home size={16} />
-                    <span>{isEn ? 'Home' : 'الرئيسية'}</span>
-                  </button>
+                    <CheckCircle size={18} />
+                    <span>{isEn ? 'Completed Today\'s Wird' : 'أنجزت الورد كاملاً لهذا اليوم'}</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <button 
+                      type="button"
+                      onClick={handleStartNewWird}
+                      className="flex-1 py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all text-xs shadow-md border-0 cursor-pointer"
+                      style={{ 
+                        backgroundColor: primaryColor, 
+                        color: btnTextColor 
+                      }}
+                    >
+                      <Plus size={16} />
+                      <span>{isEn ? 'Start New Wird' : 'بداية ورد جديد'}</span>
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={() => onNavigate('home')}
+                      className="flex-1 py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all text-xs bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 border-0 cursor-pointer"
+                      style={{ color: 'var(--text-color)' }}
+                    >
+                      <Home size={16} />
+                      <span>{isEn ? 'Home' : 'الرئيسية'}</span>
+                    </button>
+                  </div>
                 </div>
-              </div>
-            )}
+              )
+            ) : null}
           </div>
         </div>
 
@@ -1208,7 +1201,7 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
                     const updated = {
                       ...settings,
                       reminderEnabled: next,
-                      reminderTime: settings.reminderTime || '09:00'
+                      reminderTime: settings.reminderTime || '10:00'
                     };
                     const newProfiles = allSettings.map(p => p.id === settings.id ? updated : p);
                     saveAllSettings(newProfiles, settings.id);

@@ -63,14 +63,6 @@ const BookmarksModal: React.FC<BookmarksModalProps> = ({ bookmarks, quranData, o
                             backgroundColor: isDeepBlack ? 'rgba(255, 255, 255, 0.08)' : `${accentColor}12`,
                         }}
                     >
-                        <button 
-                            onClick={onClose} 
-                            className="p-1.5 quran-raised-btn rounded-full transition-all active:scale-90 flex items-center justify-center border-0 cursor-pointer"
-                            style={{ color: accentColor }}
-                            title={isEn ? "Close" : "إغلاق"}
-                        >
-                            <X size={16} />
-                        </button>
                         <div className="flex items-center gap-2">
                             <span className="text-xs sm:text-sm font-black tracking-wide" style={{ color: accentColor }}>
                                 {isEn ? "Bookmarks" : "الإشارات المرجعية"}
@@ -79,6 +71,14 @@ const BookmarksModal: React.FC<BookmarksModalProps> = ({ bookmarks, quranData, o
                                 {isEn ? bookmarks.length : toArabic(bookmarks.length)}
                             </span>
                         </div>
+                        <button 
+                            onClick={onClose} 
+                            className="p-1.5 quran-raised-btn rounded-full transition-all active:scale-90 flex items-center justify-center border-0 cursor-pointer"
+                            style={{ color: accentColor }}
+                            title={isEn ? "Close" : "إغلاق"}
+                        >
+                            <X size={16} />
+                        </button>
                     </div>
                 </div>
 
