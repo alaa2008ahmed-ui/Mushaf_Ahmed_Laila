@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BarChart3, Calendar, TrendingUp, Zap } from 'lucide-react';
+import { Zap } from 'lucide-react';
 import { Theme } from '../../context/themes';
 import { useLanguage } from '../../context/LanguageContext';
 import { formatTasbeehNumber, tTasbeeh } from '../../utils/tasbeehTranslations';
@@ -47,21 +47,37 @@ export const TasbeehChartModal: React.FC<TasbeehChartModalProps> = ({
     const primaryColor = isBlackTheme ? '#FFFFFF' : (theme.palette?.[0] || theme.accent || '#2E7D5E');
     const secondaryColor = isBlackTheme ? '#d1d5db' : (theme.palette?.[1] || '#059669');
     const cardBorderColor = isBlackTheme ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.06)';
-    const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
+    const todayStr = useMemo(() => moment().format('YYYY-MM-DD'), []);
 
     const isEn = language === 'en';
 
-    // Build the dataset for weekly (7 days) or monthly (30 days) with bilingual localization
+    // Build the dataset for the current week only (Sat-Fri) or current month only (1st to last day of month)
     const chartData = useMemo(() => {
-        const daysCount = period === 'weekly' ? 7 : 30;
+        const today = moment().startOf('day');
         const result = [];
 
-        for (let i = daysCount - 1; i >= 0; i--) {
-            const dateObj = moment().subtract(i, 'days');
+        let startDate: moment.Moment;
+        let daysCount: number;
+
+        if (period === 'weekly') {
+            // Current week starting Saturday (Arab week convention used across the app)
+            const dayOfWeek = today.day(); // 0=Sun, 1=Mon, ..., 6=Sat
+            const daysSinceSaturday = (dayOfWeek + 1) % 7;
+            startDate = today.clone().subtract(daysSinceSaturday, 'days');
+            daysCount = 7;
+        } else {
+            // Current month only (from 1st of current month to last day of current month)
+            startDate = today.clone().startOf('month');
+            daysCount = today.daysInMonth();
+        }
+
+        for (let i = 0; i < daysCount; i++) {
+            const dateObj = startDate.clone().add(i, 'days');
             const dateStr = dateObj.format('YYYY-MM-DD');
             const stat = dailyStats.find(s => s.date === dateStr);
             const count = stat ? stat.count : 0;
             const isToday = dateStr === todayStr;
+            const isFuture = dateObj.isAfter(today, 'day');
 
             const jsDate = dateObj.toDate();
             const dayOfWeek = jsDate.getDay();
@@ -76,6 +92,7 @@ export const TasbeehChartModal: React.FC<TasbeehChartModalProps> = ({
                 date: dateStr,
                 count,
                 isToday,
+                isFuture,
                 dayName,
                 shortDayName,
                 dayNumber: formatTasbeehNumber(dayOfMonth, language),
@@ -91,7 +108,8 @@ export const TasbeehChartModal: React.FC<TasbeehChartModalProps> = ({
     const statsSummary = useMemo(() => {
         const total = chartData.reduce((acc, curr) => acc + curr.count, 0);
         const daysWithCount = chartData.filter(d => d.count > 0).length;
-        const average = Math.round(total / (chartData.length || 1));
+        const elapsedDays = chartData.filter(d => !d.isFuture).length || 1;
+        const average = Math.round(total / elapsedDays);
         const max = Math.max(...chartData.map(d => d.count), 0);
         const peakDay = chartData.find(d => d.count === max && max > 0);
         const todayStat = chartData.find(d => d.isToday);
@@ -175,8 +193,7 @@ export const TasbeehChartModal: React.FC<TasbeehChartModalProps> = ({
 
                 {/* Main Scrollable Content */}
                 <main 
-                    className="flex-1 overflow-y-auto px-3 sm:px-4 pt-3 max-w-lg mx-auto w-full space-y-3.5 overscroll-contain"
-                    style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 2rem)' }}
+                    className="flex-1 min-h-0 overflow-y-auto px-3 sm:px-4 pt-3 max-w-lg mx-auto w-full space-y-3.5 overscroll-contain app-scroll-safe"
                 >
                     {/* Period Switcher (Weekly / Monthly) */}
                     <div className="shrink-0">
@@ -187,15 +204,14 @@ export const TasbeehChartModal: React.FC<TasbeehChartModalProps> = ({
                                     setPeriod('weekly');
                                     setSelectedDayIndex(null);
                                 }}
-                                className={`py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                                className={`py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center ${
                                     period === 'weekly' 
                                         ? 'bg-white dark:bg-gray-700 shadow-sm text-gray-900 dark:text-white' 
                                         : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                                 }`}
                                 style={period === 'weekly' ? { color: primaryColor } : {}}
                             >
-                                <Calendar className="w-3.5 h-3.5" />
-                                <span>{isEn ? 'Weekly (Last 7 days)' : 'أسبوعي (آخر ٧ أيام)'}</span>
+                                <span>{tTasbeeh('weeklyTab', language)}</span>
                             </button>
 
                             <button
@@ -204,15 +220,14 @@ export const TasbeehChartModal: React.FC<TasbeehChartModalProps> = ({
                                     setPeriod('monthly');
                                     setSelectedDayIndex(null);
                                 }}
-                                className={`py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                                className={`py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center ${
                                     period === 'monthly' 
                                         ? 'bg-white dark:bg-gray-700 shadow-sm text-gray-900 dark:text-white' 
                                         : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                                 }`}
                                 style={period === 'monthly' ? { color: primaryColor } : {}}
                             >
-                                <TrendingUp className="w-3.5 h-3.5" />
-                                <span>{isEn ? 'Monthly (Last 30 days)' : 'شهري (آخر ٣٠ يوماً)'}</span>
+                                <span>{tTasbeeh('monthlyTab', language)}</span>
                             </button>
                         </div>
                     </div>
@@ -441,12 +456,12 @@ export const TasbeehChartModal: React.FC<TasbeehChartModalProps> = ({
                                 <span>{isEn ? 'Daily Tasbeeh Log' : 'سجل التسبيح يوماً بيوم'}</span>
                             </h4>
                             <span className="text-[10px] text-gray-400 font-bold">
-                                {period === 'weekly' ? (isEn ? '7 Days' : '٧ أيام') : (isEn ? '30 Days' : '٣٠ يوماً')}
+                                {period === 'weekly' ? (isEn ? 'Current Week' : 'الأسبوع الحالي') : (isEn ? 'Current Month' : 'الشهر الحالي')}
                             </span>
                         </div>
 
                         <div className="space-y-1.5">
-                            {[...chartData].reverse().map((item, idx) => {
+                            {chartData.filter(d => !d.isFuture).reverse().map((item, idx) => {
                                 const percentOfMax = statsSummary.max > 0 ? (item.count / statsSummary.max) * 100 : 0;
                                 const isSelected = activeSelectedDay?.date === item.date;
 

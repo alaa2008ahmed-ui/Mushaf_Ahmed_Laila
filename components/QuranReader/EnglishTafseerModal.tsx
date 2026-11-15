@@ -3,6 +3,7 @@ import { X, BookOpen, Copy, Check, ZoomIn, ZoomOut, RefreshCw, Layers, ChevronDo
 import { SURAH_NAMES_EN, toArabic } from './constants';
 import { shareAsImage } from '../../utils/shareAsImage';
 import { playTTS, stopTTS, subscribeTTS } from '../../utils/ttsEngine';
+import { registerBackInterceptor } from '../../hooks/useBackButton';
 
 export interface EnglishTafseerModalProps {
     isOpen: boolean;
@@ -74,6 +75,18 @@ const EnglishTafseerModal: React.FC<EnglishTafseerModalProps> = ({
     });
     const [copied, setCopied] = useState<boolean>(false);
     const [verseText, setVerseText] = useState<{ ar: string; en: string }>({ ar: '', en: '' });
+
+    const onCloseRef = useRef(onClose);
+    onCloseRef.current = onClose;
+
+    useEffect(() => {
+        if (!isOpen) return;
+        const unregister = registerBackInterceptor(() => {
+            onCloseRef.current();
+            return true;
+        });
+        return unregister;
+    }, [isOpen]);
 
     // Load verse text from /en.json
     useEffect(() => {
@@ -249,7 +262,7 @@ const EnglishTafseerModal: React.FC<EnglishTafseerModalProps> = ({
         >
             <div 
                 className={`zoom-modal-sheet w-full max-w-xl mx-auto rounded-t-[32px] flex flex-col overflow-hidden relative shadow-2xl animate-modal-enter ${
-                    isLandscape ? 'max-h-[92vh]' : 'max-h-[85vh]'
+                    isLandscape ? 'max-h-[92dvh]' : 'max-h-[88dvh]'
                 }`}
                 style={{ 
                     backgroundColor: bgColor, 
@@ -334,7 +347,7 @@ const EnglishTafseerModal: React.FC<EnglishTafseerModalProps> = ({
                 )}
 
                 {/* Tafsir Content */}
-                <div className="p-4 sm:p-5 overflow-y-auto flex-1 custom-scrollbar">
+                <div className="p-4 sm:p-5 overflow-y-auto flex-1 min-h-0 custom-scrollbar">
                     {isLoading ? (
                         <div className="py-14 flex flex-col items-center justify-center text-center gap-3">
                             <div 
@@ -370,10 +383,10 @@ const EnglishTafseerModal: React.FC<EnglishTafseerModalProps> = ({
 
                 {/* Action Bar matching image (5 round action buttons in RTL: Audio on Right, Chevron on Left) */}
                 <div 
-                    className="p-4 pt-3.5 shrink-0 flex items-center justify-center gap-3 sm:gap-4 border-t border-slate-200/50 dark:border-white/10"
+                    data-toast-bottom-bar="true"
+                    className="px-4 pt-3.5 modal-sheet-safe-bottom shrink-0 flex items-center justify-center gap-3 sm:gap-4 border-t border-slate-200/50 dark:border-white/10"
                     dir="rtl"
                     style={{
-                        paddingBottom: 'calc(env(safe-area-inset-bottom, 16px) + 16px)',
                         backgroundColor: currentTheme?.modalBg || cardBg || '#ffffff'
                     }}
                 >

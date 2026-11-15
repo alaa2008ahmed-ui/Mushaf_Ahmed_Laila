@@ -425,15 +425,15 @@ export const ShareAppQrModal: React.FC<ShareAppQrModalProps> = ({ isOpen, onClos
                   : 'bg-[#fffdfa] text-slate-800'
         }`}
         style={{
-          paddingTop: 'env(safe-area-inset-top, 0px)',
-          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+          paddingTop: 'var(--app-safe-top, 0px)',
+          paddingBottom: 'var(--app-safe-bottom, 0px)',
           fontFamily: "'Cairo', sans-serif",
         }}
       >
         {/* بطاقة الكيو ار تملأ الشاشة تماماً */}
-        <div className="flex-1 w-full h-full flex flex-col items-center justify-center p-4 sm:p-6 text-center">
+        <div className="flex-1 min-h-0 overflow-y-auto w-full p-4 sm:p-6 text-center">
           <div
-            className={`w-full h-full rounded-none sm:rounded-3xl p-6 sm:p-10 flex flex-col items-center justify-center transition-all ${
+            className={`w-full min-h-full rounded-none sm:rounded-3xl p-6 sm:p-10 flex flex-col items-center justify-center transition-all ${
               isBlackTheme
                 ? 'bg-[#18181b] border-0 sm:border sm:border-amber-500/20'
                 : isSkyTheme

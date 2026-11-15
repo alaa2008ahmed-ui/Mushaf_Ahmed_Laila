@@ -242,7 +242,7 @@ const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, onOpenTheme
 
   return (
     <div 
-      className="h-screen w-full flex flex-col overflow-hidden relative transition-colors" 
+      className="h-[100dvh] w-full flex flex-col overflow-hidden relative transition-colors" 
       style={{ 
         fontFamily: isEn ? 'inherit' : theme.font,
         backgroundColor: isBlackTheme ? '#000000' : (theme.bgColor || (theme.isDark ? '#0F172A' : '#F5F7FA')) 
@@ -300,7 +300,7 @@ const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, onOpenTheme
       </header>
 
       {/* Main Container */}
-      <main className="w-full flex-1 overflow-y-auto px-4 pt-3 pb-3">
+      <main className="w-full flex-1 min-h-0 overflow-y-auto px-4 pt-3 app-scroll-safe-fab">
         {/* Modern Borderless Search and View Mode Control */}
         <div className="mb-6 max-w-3xl mx-auto flex items-center gap-2.5 w-full" dir={isEn ? 'ltr' : 'rtl'}>
           <div className="relative flex-1 rounded-2xl transition-all focus-within:ring-2 focus-within:ring-opacity-40 flex items-center overflow-hidden"
@@ -336,7 +336,7 @@ const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, onOpenTheme
         </div>
 
         <div 
-          className={`${activeTabMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'space-y-4'} max-w-3xl mx-auto gap-4 pt-1 pb-6 ${isEn ? 'text-left' : 'text-right'}`}
+          className={`${activeTabMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'space-y-4'} max-w-3xl mx-auto gap-4 pt-1 ${isEn ? 'text-left' : 'text-right'}`}
           dir={isEn ? 'ltr' : 'rtl'}
         >
           <AnimatePresence mode="wait">
@@ -511,7 +511,6 @@ const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, onOpenTheme
               </div>
             )}
           </AnimatePresence>
-          <div className="shrink-0 w-full h-14 col-span-full"></div>
         </div>
       </main>
 
@@ -522,7 +521,8 @@ const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, onOpenTheme
             initial={{ opacity: 0, y: 50, x: '-50%' }}
             animate={{ opacity: 1, y: 0, x: '-50%' }}
             exit={{ opacity: 0, y: 50, x: '-50%' }}
-            className="fixed bottom-8 left-1/2 z-[200] bg-gray-900/90 backdrop-blur text-white px-6 py-3 rounded-full shadow-2xl font-bold text-sm text-center whitespace-nowrap border border-white/10"
+            className="fixed left-1/2 z-[200] bg-gray-900/90 backdrop-blur text-white px-6 py-3 rounded-full shadow-2xl font-bold text-sm text-center whitespace-nowrap border border-white/10"
+            style={{ bottom: 'calc(var(--app-safe-bottom) + 1.25rem)' }}
           >
             {toastMessage}
           </motion.div>
@@ -543,8 +543,7 @@ const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, onOpenTheme
       {/* Floating Action Button (FAB) & Menu */}
       <div 
         ref={fabContainerRef} 
-        className={`fixed ${isEn ? 'left-5 items-start' : 'right-5 items-end'} ${isMenuOpen ? 'z-[1250]' : 'z-[90]'} flex flex-col`}
-        style={{ bottom: 'calc(env(safe-area-inset-bottom, 24px) + 32px)' }}
+        className={`fixed app-fab-bottom ${isEn ? 'left-5 items-start' : 'right-5 items-end'} ${isMenuOpen ? 'z-[1250]' : 'z-[90]'} flex flex-col`}
       >
         <AnimatePresence>
           {isMenuOpen && (

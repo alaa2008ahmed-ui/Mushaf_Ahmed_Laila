@@ -214,7 +214,7 @@ const FitrAndUdhiyahCalculator: React.FC<FitrAndUdhiyahCalculatorProps> = ({
     const hasAnyDefect = Object.values(checkedDefects).some(v => v === true);
 
     return (
-        <div className="space-y-4 animate-fade-in pb-8" dir={isEn ? 'ltr' : 'rtl'}>
+        <div className="space-y-4 animate-fade-in" dir={isEn ? 'ltr' : 'rtl'}>
             {/* Sub-Tabs Switcher (Zero Border Segmented Pill) */}
             <div 
                 id="fitr-udhiyah-subtabs" 

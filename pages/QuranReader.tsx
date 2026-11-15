@@ -3,6 +3,13 @@ import { ScreenOrientation } from '@capacitor/screen-orientation';
 import { Capacitor } from '@capacitor/core';
 import { Preferences } from '@capacitor/preferences';
 import { VoiceRecorder } from 'capacitor-voice-recorder';
+import { acquireListenInterruption, releaseListenInterruption } from '../utils/listenAudioCoordinator';
+import {
+    getAppNotificationSettings,
+    shouldShowAppToast,
+    showGlobalAppToast,
+    APP_NOTIFICATION_CHANGE_EVENT
+} from '../utils/appNotificationSettings';
 import './QuranReader.css'; 
 import { 
     ReadingMode, 
@@ -30,8 +37,10 @@ import {
     getToolbarColorsForTheme,
     syncQuranThemeToStorage,
     getLinkedQuranThemeForHomeVariant,
-    getEffectiveWordHighlightColor
+    getEffectiveWordHighlightColor,
+    isDarkQuranTheme
 } from '../components/QuranReader/constants';
+import { syncSystemStatusBar } from '../utils/statusBar';
 import SearchModal from '../components/QuranReader/SearchModal';
 import ThemesModal from '../components/QuranReader/ThemesModal';
 import SettingsModal from '../components/QuranReader/SettingsModal';
@@ -139,6 +148,7 @@ const AyahActionMenu = ({
     onIrab,
     onMutashabihat,
     onWaqf,
+    onShareCard,
     currentTheme, 
     isLandscape 
 }: any) => {
@@ -170,6 +180,7 @@ const AyahActionMenu = ({
         { id: 'irab', label: isEn ? "Syntax & I'rab" : "إعراب الآية وبيانها", icon: "fa-layer-group", onClick: onIrab },
         { id: 'mutashabihat', label: isEn ? "Mutashabihat" : "المتشابهات اللفظية", icon: "fa-code-compare", onClick: onMutashabihat },
         { id: 'waqf', label: isEn ? "Waqf Signs" : "علامات الوقف في الآية", icon: "fa-compass", onClick: onWaqf },
+        { id: 'share-card', label: isEn ? "Share as Designed Card" : "مشاركة الآية كبطاقة مصممة", icon: "fa-palette", onClick: onShareCard },
         { id: 'meanings', label: isEn ? "Word Meanings" : "معاني الكلمات", icon: "fa-language", onClick: onMeanings },
         { id: 'translation', label: isEn ? "Translation" : "الترجمة الإنجليزية", icon: "fa-globe", onClick: onTranslation },
     ];
@@ -178,7 +189,7 @@ const AyahActionMenu = ({
         <div className={`fixed inset-0 z-[1200] bg-black/30 backdrop-blur-[2px] flex items-center justify-center ${isLandscape ? 'p-2' : 'p-3'} animate-fadeIn`} onClick={onClose}>
             <div 
                 dir={dir} 
-                className={`modal-skinned w-full ${isLandscape ? 'max-w-[320px] max-h-[92vh] rounded-2xl' : 'max-w-[310px] max-h-[86vh] rounded-3xl'} shadow-2xl flex flex-col overflow-hidden animate-modal-enter`} 
+                className={`modal-skinned w-full ${isLandscape ? 'max-w-[320px] max-h-[92dvh] rounded-2xl' : 'max-w-[310px] max-h-[86dvh] rounded-3xl'} shadow-2xl flex flex-col overflow-hidden animate-modal-enter`} 
                 style={{ 
                     fontFamily: currentTheme?.font,
                     backgroundColor: currentTheme?.modalBg || 'var(--qr-modal-bg, #ffffff)',
@@ -216,7 +227,7 @@ const AyahActionMenu = ({
                 </div>
 
                 {/* Options List with 3D Embossed Buttons */}
-                <div className={`overflow-y-auto custom-scrollbar flex flex-col ${isLandscape ? 'p-2.5 gap-2' : 'p-3.5 pt-1 gap-2.5'}`}>
+                <div className={`flex-1 min-h-0 overflow-y-auto custom-scrollbar flex flex-col ${isLandscape ? 'p-2.5 gap-2' : 'p-3.5 pt-1 gap-2.5'}`}>
                     {options.map((item) => (
                         <button 
                             key={item.id}
@@ -252,7 +263,7 @@ const WirdCompletionModal = ({ isOpen, onClose, onContinue, onGoToWird, onGoHome
     if (!isOpen) return null;
     return (
         <div className={`fixed inset-0 z-[1100] bg-black/40 backdrop-blur-[2px] flex items-center justify-center ${isLandscape ? 'p-0' : 'p-4'} animate-fadeIn`}>
-            <div className={`modal-skinned w-full ${isLandscape ? 'max-w-4xl h-full rounded-none' : 'max-w-[320px] rounded-3xl'} shadow-2xl flex flex-col animate-modal-enter p-6 text-center border-0`} 
+            <div className={`modal-skinned w-full ${isLandscape ? 'max-w-4xl h-full rounded-none overflow-y-auto modal-sheet-safe-bottom' : 'max-w-[320px] max-h-[90dvh] overflow-y-auto rounded-3xl'} shadow-2xl flex flex-col animate-modal-enter p-6 text-center border-0`} 
                  style={{ 
                      fontFamily: currentTheme?.font,
                      backgroundColor: currentTheme?.modalBg,
@@ -307,7 +318,7 @@ const ResumeSessionModal = ({ isOpen, onClose, onResume, onStartNew, currentThem
     if (!isOpen || !savedSession) return null;
     return (
         <div className={`fixed inset-0 z-[1100] bg-black/40 backdrop-blur-[2px] flex items-center justify-center ${isLandscape ? 'p-0' : 'p-4'} animate-fadeIn`}>
-            <div className={`modal-skinned w-full ${isLandscape ? 'max-w-4xl h-full rounded-none' : 'max-w-sm rounded-3xl'} shadow-2xl p-6 text-center animate-modal-enter border-0`}
+            <div className={`modal-skinned w-full ${isLandscape ? 'max-w-4xl h-full rounded-none overflow-y-auto modal-sheet-safe-bottom' : 'max-w-sm max-h-[90dvh] overflow-y-auto rounded-3xl'} shadow-2xl p-6 text-center animate-modal-enter border-0`}
                  style={{ fontFamily: currentTheme?.font, border: 'none', outline: 'none' }}>
                 <div className="w-16 h-16 bg-blue-500/20 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-4 quran-raised-card">
                     <i className="fa-solid fa-play text-3xl quran-3d-icon"></i>
@@ -554,16 +565,11 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
             }
         };
         
-        // Use both resize event and ResizeObserver for maximum robustness
         window.addEventListener('resize', handleResize);
-        const resizeObserver = new ResizeObserver(handleResize);
-        resizeObserver.observe(document.body);
-        
         handleResize(); // Initial check
-        
+
         return () => {
             window.removeEventListener('resize', handleResize);
-            resizeObserver.disconnect();
         };
     }, []);
 
@@ -959,6 +965,7 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
             recordedAudioRef.current.pause();
             recordedAudioRef.current = null;
         }
+        acquireListenInterruption('quran-reader-mic');
         
         recognizedTextRef.current = '';
         isSpeechRecognitionActiveRef.current = false;
@@ -1016,6 +1023,7 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
                         }
                         setIsRecording(false);
                         isSpeechRecognitionActiveRef.current = false;
+                        releaseListenInterruption('quran-reader-mic');
                         if (speechRecognitionRef.current) {
                             try {
                                 speechRecognitionRef.current.abort();
@@ -1064,6 +1072,7 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
                 if (!hasPermission.value) {
                     const request = await VoiceRecorder.requestAudioRecordingPermission();
                     if (!request.value) {
+                        releaseListenInterruption('quran-reader-mic');
                         showToast('الرجاء منح صلاحية الميكروفون');
                         return;
                     }
@@ -1074,6 +1083,7 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
                     setIsRecording(true);
                     showToast('بدأ التسجيل...');
                 } else {
+                    releaseListenInterruption('quran-reader-mic');
                     showToast('فشل بدء التسجيل');
                 }
             } else {
@@ -1093,6 +1103,7 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
                     const audioUrl = URL.createObjectURL(audioBlob);
                     setRecordedAudio(audioUrl);
                     setIsRecording(false);
+                    releaseListenInterruption('quran-reader-mic');
                 };
 
                 mediaRecorder.start();
@@ -1101,6 +1112,7 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
             }
         } catch (err) {
             console.error("Error starting recording", err);
+            releaseListenInterruption('quran-reader-mic');
             showToast('فشل بدء التسجيل');
         }
     };
@@ -1108,6 +1120,7 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
     const stopRecording = async (isAutoMatched: any = false) => {
         const autoMatched = isAutoMatched === true;
         setIsRecording(false);
+        releaseListenInterruption('quran-reader-mic');
         if (localMemorizationSettings?.isReviewMode && isSpeechRecognitionActiveRef.current) {
             try {
                 if (Capacitor.isNativePlatform()) {
@@ -1153,11 +1166,21 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
         stopAudio(); // Stop reciter audio
         if (recordedAudioRef.current) {
             recordedAudioRef.current.pause();
+            recordedAudioRef.current = null;
         }
         if (recordedAudio) {
+            acquireListenInterruption('quran-reader-recorded');
             const audio = new Audio(recordedAudio);
             recordedAudioRef.current = audio;
-            audio.play();
+            audio.onended = () => {
+                releaseListenInterruption('quran-reader-recorded');
+            };
+            audio.onerror = () => {
+                releaseListenInterruption('quran-reader-recorded');
+            };
+            audio.play().catch(() => {
+                releaseListenInterruption('quran-reader-recorded');
+            });
         }
     };
 
@@ -1842,38 +1865,15 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
     const [markerNotification, setMarkerNotification] = useState<{ show: boolean, type: 'quarter' | 'sajda' | 'surah', text: string }>({ show: false, type: 'quarter', text: '' });
     const [juzNotification, setJuzNotification] = useState({ show: false, text: '' });
     const juzTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-    const [notificationSettings, setNotificationSettings] = useState(() => {
-        const saved = localStorage.getItem('notification_settings' + modeSuffix);
-        if (saved) {
-            try {
-                return JSON.parse(saved);
-            } catch (e) {
-                console.error('Error parsing notification settings', e);
-            }
-        }
-        return {
-            quarter: true,
-            juz: true,
-            sajda: true,
-            themes: true,
-            downloads: true,
-            bookmarks: true,
-            general: true
-        };
-    });
+    const [notificationSettings, setNotificationSettings] = useState(() => getAppNotificationSettings());
 
     useEffect(() => {
         const handleUpdate = () => {
-            const saved = localStorage.getItem('notification_settings' + modeSuffix);
-            if (saved) {
-                try {
-                    setNotificationSettings(JSON.parse(saved));
-                } catch (e) {}
-            }
+            setNotificationSettings(getAppNotificationSettings());
         };
-        window.addEventListener('notification-settings-change', handleUpdate);
-        return () => window.removeEventListener('notification-settings-change', handleUpdate);
-    }, [modeSuffix]);
+        window.addEventListener(APP_NOTIFICATION_CHANGE_EVENT, handleUpdate);
+        return () => window.removeEventListener(APP_NOTIFICATION_CHANGE_EVENT, handleUpdate);
+    }, []);
     const lastNotifiedQuarter = useRef<number | null>(null);
     const lastNotifiedJuz = useRef<number | null>(null);
     const handleScrollRef = useRef<(() => void) | null>(null);
@@ -2272,6 +2272,11 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
         return THEMES[themeId as keyof typeof THEMES] || THEMES[fallbackThemeId as keyof typeof THEMES] || THEMES['gold'];
     });
 
+    useEffect(() => {
+        const isDarkTheme = isDarkQuranTheme(currentTheme);
+        syncSystemStatusBar(isDarkTheme, currentTheme?.bg || '#FFFFFF', `quran:${currentTheme?.id || ''}`);
+    }, [currentTheme]);
+
     // Keep screen awake logic
     useEffect(() => {
         let wakeLock: any = null;
@@ -2424,22 +2429,9 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
     }, [isPageInputActive]);
 
     const showToast = useCallback((message: string) => {
-        // Check notification settings
-        const isTheme = message.includes('ثيم') || message.includes('الشفافية') || message.includes('لون التحديد');
-        const isDownload = message.includes('تحميل') || message.includes('محملة مسبقاً');
-        const isBookmark = message.includes('الإشارة المرجعية');
-        
-        if (isTheme && notificationSettings.themes === false) return;
-        if (isDownload && notificationSettings.downloads === false) return;
-        if (isBookmark && notificationSettings.bookmarks === false) return;
-        if (!isTheme && !isDownload && !isBookmark && notificationSettings.general === false) {
-            // Only allow critical messages if general is off? 
-            // For now, respect the user's wish to turn off general notifications
-            return;
-        }
-
-        setToast({ show: true, message });
-    }, [notificationSettings]);
+        if (!shouldShowAppToast(message)) return;
+        showGlobalAppToast(message);
+    }, []);
     
     const stopAudio = useCallback(() => {
         playSingleAyahOnlyRef.current = false;
@@ -2456,6 +2448,8 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
             pauseTimeoutRef.current = null;
         }
         currentRepeatCountRef.current = 0;
+        releaseListenInterruption('quran-reader-audio');
+        releaseListenInterruption('quran-reader-recorded');
         setIsPlaying(false);
         setIsAudioLoading(false);
         setPlayingAyah(null);
@@ -2571,12 +2565,23 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
                 localStorage.setItem('memorization_session_v1', JSON.stringify(sessionData));
             }
             stopAudio();
+            if (speechRecognitionRef.current) {
+                try { speechRecognitionRef.current.stop(); } catch (_) {}
+            }
+            if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+                try {
+                    mediaRecorderRef.current.stop();
+                    mediaRecorderRef.current.stream.getTracks().forEach(t => t.stop());
+                } catch (_) {}
+            }
+            releaseListenInterruption('quran-reader-mic');
         };
     }, [localIsMemorizationMode, stopAudio]);
     const showMarkerNotification = useCallback((type: 'quarter' | 'sajda' | 'surah', text: string) => {
-        // Map types to settings
+        // Map types to settings (read fresh settings to avoid stale closures)
+        const latestSettings = getAppNotificationSettings();
         const settingKey = type === 'quarter' ? 'quarter' : type === 'sajda' ? 'sajda' : 'general';
-        if (!notificationSettings[settingKey]) return;
+        if (latestSettings[settingKey] === false) return;
         
         // Defer state update to prevent "Cannot update a component while rendering" error
         // as this can be called from Virtuoso callbacks
@@ -2588,10 +2593,10 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
                 markerTimeoutRef.current = null;
             }, 3500);
         }, 0);
-    }, [notificationSettings]);
+    }, []);
 
     const showJuzNotification = useCallback((text: string) => {
-        if (notificationSettings.juz === false) return;
+        if (getAppNotificationSettings().juz === false) return;
         
         // Defer state update to prevent "Cannot update a component while rendering" error
         setTimeout(() => {
@@ -2602,7 +2607,7 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
                 juzTimeoutRef.current = null;
             }, 4000);
         }, 0);
-    }, [notificationSettings.juz]);
+    }, []);
 
     const handleSajdahVisible = useCallback((surahName: string, sNum: number, ayahNum: number) => {
         if (sajdahCardInfoRef.current.show) return;
@@ -2796,6 +2801,7 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
 
     const playAudio = useCallback(async (s: number, a: number, isLinked = false, targetAyah?: {s: number, a: number}, singleAyahOnly = false) => {
         stopAudio();
+        acquireListenInterruption('quran-reader-audio');
         playSingleAyahOnlyRef.current = singleAyahOnly;
         setIsAudioLoading(true);
 
@@ -3574,7 +3580,8 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
         setSettings(newSettings);
         localStorage.setItem('quran_settings' + themeSuffix, JSON.stringify(newSettings));
         window.dispatchEvent(new Event('settings-change'));
-    }, [settings, tafseerSelectionInfo.wasAutoscrolling]);
+        showToast(isEn ? 'Tafseer updated successfully' : 'تم تغيير التفسير بنجاح');
+    }, [settings, tafseerSelectionInfo.wasAutoscrolling, showToast, isEn]);
     
     useEffect(() => {
         const fetchTafseer = async () => {
@@ -4173,7 +4180,7 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
                         if (juzAttr) {
                             const newJuz = parseInt(juzAttr, 10);
                             if (lastNotifiedJuz.current !== null && newJuz !== lastNotifiedJuz.current) {
-                                if (notificationSettings.juz !== false) {
+                                if (getAppNotificationSettings().juz !== false) {
                                     if (juzTimeoutRef.current) clearTimeout(juzTimeoutRef.current);
                                     const isBackward = newJuz < lastNotifiedJuz.current;
                                     const text = isBackward
@@ -5744,7 +5751,7 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
                 ayahContextColorField={ayahContextColorField}
                 setAyahContextColorField={setAyahContextColorField}
                 setAyahContextMenu={setAyahContextMenu}
-                onTempSettingsChange={(newSettings) => {
+                onTempSettingsChange={(newSettings, fieldChanged) => {
                     setSettings(prev => {
                         const updated = { ...prev, ...newSettings };
                         localStorage.setItem('quran_settings' + themeSuffix, JSON.stringify(updated));
@@ -5756,6 +5763,13 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
                         }
                         return updated;
                     });
+                    if (fieldChanged === 'textColor') {
+                        showToast(isEn ? 'Text color updated' : 'تم تغيير لون النص');
+                    } else if (fieldChanged === 'bgColor') {
+                        showToast(isEn ? 'Background color updated' : 'تم تغيير لون الخلفية');
+                    } else if (fieldChanged === 'highlightTextColor') {
+                        showToast(isEn ? 'Highlight color updated' : 'تم تغيير لون التحديد');
+                    }
                 }}
                 renderCheckerboard={renderCheckerboard}
                 PREDEFINED_COLORS={PREDEFINED_COLORS}
@@ -5788,8 +5802,16 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
                 isOpen={isAutoScrollSettingsOpen}
                 onClose={() => setIsAutoScrollSettingsOpen(false)}
                 onSelectTime={(minutes) => {
-                    setSettings(p => ({...p, scrollMinutes: minutes}));
-                    localStorage.setItem('quran_settings' + themeSuffix, JSON.stringify({...settings, scrollMinutes: minutes}));
+                    const newSettings = { ...settings, scrollMinutes: minutes };
+                    setSettings(newSettings);
+                    localStorage.setItem('quran_settings' + themeSuffix, JSON.stringify(newSettings));
+                    if (!isWirdMode && !localIsMemorizationMode) {
+                        const cluster = getClusterForLanguage(language);
+                        syncClusterSettings(cluster, newSettings, isLandscape);
+                    } else {
+                        window.dispatchEvent(new Event('settings-change'));
+                    }
+                    showToast(isEn ? `Scroll speed: ${minutes} min` : `سرعة التمرير: ${minutes} دقيقة`);
                 }}
                 currentMinutes={settings.scrollMinutes}
                 isLandscape={isLandscape}
@@ -5928,7 +5950,7 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
                 setSettings(newSettings);
                 localStorage.setItem('quran_settings' + themeSuffix, JSON.stringify(newSettings));
                 window.dispatchEvent(new Event('settings-change'));
-                showToast('تم تغيير سرعة التمرير');
+                showToast(isEn ? `Scroll speed: ${m} min` : `سرعة التمرير: ${m} دقيقة`);
                 closeModal('scroll-speed-modal');
             }} />}
             {activeModals.includes('reciter-modal') && (
@@ -6180,6 +6202,15 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
                     setAyahActionMenu(p => ({ ...p, isOpen: false }));
                     setWaqfGuideInfo({ isOpen: true, s: ayahActionMenu.s, a: ayahActionMenu.a, surahName: ayahActionMenu.surahName, verseText, openedFromAyahMenu: true });
                 }}
+                onShareCard={() => {
+                    if (ayahActionMenu.wasAutoscrolling) {
+                        autoScrollPausedRef.current = false;
+                        setAutoScrollState(p => ({ ...p, isPaused: false }));
+                    }
+                    setCurrentAyah({ s: ayahActionMenu.s, a: ayahActionMenu.a });
+                    setAyahActionMenu(p => ({ ...p, isOpen: false, wasAutoscrolling: false }));
+                    openModal('share-ayah');
+                }}
             />
             {/* 6 New Features Modals */}
             <WaqfGuideModal 
@@ -6312,7 +6343,7 @@ const QuranReader: FC<{ page: string, onBack: () => void, onNavigate: (pageId: s
             
             {/* Memorization Review Controls */}
             {localIsMemorizationMode && localMemorizationSettings?.isReviewMode && (
-                <div className="fixed bottom-24 left-4 right-4 z-50 flex flex-col gap-3 pointer-events-none">
+                <div className="fixed bottom-[calc(4.75rem+var(--app-safe-bottom,0px))] left-4 right-4 z-50 flex flex-col gap-3 pointer-events-none">
                     <div className="flex justify-between items-end w-full pointer-events-auto">
                         <div className="flex flex-col gap-2">
                             <button 

@@ -5,11 +5,13 @@ import { usePrayerTimes } from '../context/PrayerTimesContext';
 import { VisualQibla, ARQibla, SunMoonQibla, ShadowQibla } from '../components/QiblaModes';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { Capacitor } from '@capacitor/core';
+import { App as CapacitorApp } from '@capacitor/app';
 import { useLanguage } from '../context/LanguageContext';
 import { HelpCircle, Compass, MapPin, Eye, Sun, SunDim } from 'lucide-react';
 import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/CommunitySpotlightGuide';
 import { QIBLA_PAGE_STEPS } from '../components/Community/communityTourSteps';
 import { markPageAsSeen } from '../utils/badgeManager';
+import { openLocationSettings, requestLocationPermission } from '../utils/permissionHelper';
 
 // --- Helper Functions ---
 const toRad = (deg: number) => deg * Math.PI / 180;
@@ -113,6 +115,8 @@ function Qibla({ onBack, onNavigate }: { onBack: () => void, onNavigate: (page: 
         }
     };
 
+    const waitingForLocationSettingsRef = useRef(false);
+
     const handleRefreshLocation = async () => {
         setIsRefreshing(true);
         setError('');
@@ -122,6 +126,49 @@ function Qibla({ onBack, onNavigate }: { onBack: () => void, onNavigate: (page: 
             setError(isEn ? 'An error occurred while updating location.' : 'حدث خطأ أثناء تحديث الموقع.');
         } finally {
             setIsRefreshing(false);
+        }
+    };
+
+    useEffect(() => {
+        const handleReturnFromSettings = () => {
+            if (document.visibilityState === 'hidden') return;
+            if (waitingForLocationSettingsRef.current) {
+                waitingForLocationSettingsRef.current = false;
+                handleRefreshLocation();
+            }
+        };
+        window.addEventListener('focus', handleReturnFromSettings);
+        document.addEventListener('visibilitychange', handleReturnFromSettings);
+        let appListener: any = null;
+        if (Capacitor.isNativePlatform()) {
+            appListener = CapacitorApp.addListener('appStateChange', ({ isActive }) => {
+                if (isActive && waitingForLocationSettingsRef.current) {
+                    waitingForLocationSettingsRef.current = false;
+                    handleRefreshLocation();
+                }
+            });
+        }
+        return () => {
+            window.removeEventListener('focus', handleReturnFromSettings);
+            document.removeEventListener('visibilitychange', handleReturnFromSettings);
+            if (appListener && typeof appListener.then === 'function') {
+                appListener.then((l: any) => l.remove()).catch(() => {});
+            }
+        };
+    }, []);
+
+    const handleOpenLocationSettings = async () => {
+        if (Capacitor.isNativePlatform()) {
+            waitingForLocationSettingsRef.current = true;
+            const opened = await openLocationSettings();
+            if (!opened) {
+                waitingForLocationSettingsRef.current = false;
+                await requestLocationPermission();
+                await handleRefreshLocation();
+            }
+        } else {
+            await requestLocationPermission();
+            await handleRefreshLocation();
         }
     };
 
@@ -280,7 +327,7 @@ function Qibla({ onBack, onNavigate }: { onBack: () => void, onNavigate: (page: 
 
     return (
         <div 
-            className="h-screen flex flex-col font-cairo overflow-hidden select-none" 
+            className="h-[100dvh] flex flex-col font-cairo overflow-hidden select-none" 
             style={{ backgroundColor: pageBgColor, color: isBlackTheme ? '#FFFFFF' : (theme.textColor || '#1E293B') }} 
             dir={isEn ? 'ltr' : 'rtl'}
         >
@@ -386,10 +433,10 @@ function Qibla({ onBack, onNavigate }: { onBack: () => void, onNavigate: (page: 
                 </div>
             </div>
 
-            <main className="flex-1 w-full flex flex-col items-center justify-start p-4 gap-4 text-center overflow-y-auto overflow-x-hidden pb-8 sm:pb-10 pb-[calc(env(safe-area-inset-bottom,0px)+2rem)] z-10">
+            <main className="flex-1 min-h-0 w-full overflow-y-auto overflow-x-hidden px-4 pt-4 text-center app-scroll-safe z-10">
                  {error && (
                      <div 
-                         className="p-3.5 rounded-2xl w-full max-w-md shrink-0 bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 font-bold text-xs" 
+                         className="p-3.5 rounded-2xl w-full max-w-md mx-auto mb-4 bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 font-bold text-xs" 
                          style={{ borderRadius: '16px' }}
                      >
                          {error}
@@ -402,7 +449,7 @@ function Qibla({ onBack, onNavigate }: { onBack: () => void, onNavigate: (page: 
                  )}
                  
                 {activeMode === 'compass' && (
-                    <div className="flex-1 flex flex-col items-center justify-start w-full pt-8 sm:pt-10">
+                    <div className="flex flex-col items-center justify-start w-full pt-8 sm:pt-10">
                         {/* واجهة البوصلة: دائرة بتظليل ناعم Neumorphic / مسطح بدون حلقة سوداء صلبة */}
                         <div 
                             onMouseDown={handleTouchOrMouseDown}
@@ -543,37 +590,50 @@ function Qibla({ onBack, onNavigate }: { onBack: () => void, onNavigate: (page: 
                             </div>
                         )}
                         
-                        <p className="text-center text-xs opacity-65 text-slate-500 dark:text-zinc-400 shrink-0 pb-4">
-                            {isEn ? '(Location must be enabled to calculate exact position)' : '(يجب تفعيل الموقع للهاتف لحساب الموقع بدقه)'}
-                        </p>
+                        <div className="flex justify-center mt-1 mb-3 shrink-0 px-2">
+                            <button
+                                type="button"
+                                onClick={handleOpenLocationSettings}
+                                className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-center text-xs sm:text-sm font-extrabold transition-all active:scale-95 cursor-pointer underline decoration-2 underline-offset-4"
+                                style={{
+                                    color: isBlackTheme ? '#FBBF24' : primaryColor,
+                                }}
+                                title={isEn ? 'Open device location (GPS) settings' : 'الدخول إلى صفحة إعدادات الموقع (GPS) بالهاتف'}
+                            >
+                                <MapPin className="w-4 h-4 shrink-0" />
+                                <span>
+                                    {isEn
+                                        ? 'Location service (GPS) must be enabled to calculate Qibla direction accurately'
+                                        : 'يجب تفعيل خدمة الموقع (GPS) لحساب اتجاه القبله بدقه'}
+                                </span>
+                            </button>
+                        </div>
                     </div>
                 )}
 
                 {activeMode === 'visual' && config?.location && (
-                    <div className="w-full flex-1 min-h-[460px] max-w-2xl flex flex-col">
+                    <div className="w-full h-full min-h-[460px] max-w-2xl mx-auto flex flex-col">
                         <VisualQibla lat={config.location.lat} lng={config.location.lng} theme={theme} />
                     </div>
                 )}
 
                 {activeMode === 'ar' && qiblaDirection !== null && (
-                    <div className="w-full flex-1 min-h-[460px] max-w-2xl flex flex-col">
+                    <div className="w-full h-full min-h-[460px] max-w-2xl mx-auto flex flex-col">
                         <ARQibla qiblaDirection={qiblaDirection} heading={heading} isAligned={isAligned} theme={theme} />
                     </div>
                 )}
 
                 {activeMode === 'sun_moon' && config?.location && qiblaDirection !== null && (
-                    <div className="w-full flex-1 min-h-[460px] max-w-2xl flex flex-col">
+                    <div className="w-full max-w-2xl mx-auto flex flex-col">
                         <SunMoonQibla lat={config.location.lat} lng={config.location.lng} qiblaDirection={qiblaDirection} heading={heading} theme={theme} />
                     </div>
                 )}
 
                 {activeMode === 'shadow' && config?.location && qiblaDirection !== null && (
-                    <div className="w-full flex-1 min-h-[460px] max-w-2xl flex flex-col">
+                    <div className="w-full max-w-2xl mx-auto flex flex-col">
                         <ShadowQibla lat={config.location.lat} lng={config.location.lng} qiblaDirection={qiblaDirection} heading={heading} theme={theme} />
                     </div>
                 )}
-                {/* Bottom Spacer for Mobile Phone Navigation Bar */}
-                <div className="w-full h-16 sm:h-24 shrink-0 pointer-events-none"></div>
             </main>
             <CommunitySpotlightGuide
                 isOpen={showGuide}

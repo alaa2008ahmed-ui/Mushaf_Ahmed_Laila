@@ -1,5 +1,6 @@
 import { Capacitor } from '@capacitor/core';
-import { playNativeTone, stopNativeTone } from './silentMode';
+import { playNativeTone, stopNativeTone, setNativeAlertVolume, addNativeToneEndedListener } from './silentMode';
+import { acquireListenInterruption, releaseListenInterruption } from './listenAudioCoordinator';
 
 export const checkSupportsDST = (combinedCode: string, fullCountry: string) => {
     if (!combinedCode && !fullCountry) return false;
@@ -81,9 +82,35 @@ export const getMediaURL = (s: string) => {
 // Global audio instance for playing and previewing tones
 let previewAudio: HTMLAudioElement | null = null;
 let activeBufferSource: AudioBufferSourceNode | null = null;
+let activeGainNode: GainNode | null = null;
 let currentAudioSource: string | null = null;
 let lastPlayTimestamp = 0;
 let audioContext: AudioContext | null = null;
+
+export const computeScaledVolume = (volumePercent: number): number => {
+    const clamped = Math.max(0, Math.min(100, Math.round(volumePercent)));
+    if (clamped <= 0) return 0;
+    const normalized = clamped / 100;
+    return normalized * normalized;
+};
+
+export const updateActiveWebAudioVolume = (volumePercent: number) => {
+    const scaled = computeScaledVolume(volumePercent);
+    if (scaled <= 0) {
+        stopNotificationSound();
+        return;
+    }
+    if (activeGainNode && audioContext) {
+        try {
+            activeGainNode.gain.setValueAtTime(scaled, audioContext.currentTime);
+        } catch (e) {}
+    }
+    if (previewAudio) {
+        try {
+            previewAudio.volume = scaled;
+        } catch (e) {}
+    }
+};
 
 const getAudioContext = () => {
     if (typeof window === 'undefined') return null;
@@ -111,13 +138,49 @@ if (typeof window !== 'undefined') {
     window.addEventListener('click', unlock, { once: true, passive: true });
     window.addEventListener('touchstart', unlock, { once: true, passive: true });
     window.addEventListener('keydown', unlock, { once: true, passive: true });
+
+    addNativeToneEndedListener(() => {
+        currentAudioSource = null;
+        releaseListenInterruption('notification-sound');
+    }).catch(() => {});
 }
 
-export const playSyntheticChime = () => {
+export const getStoredAlertVolume = (): number => {
+    try {
+        const saved = localStorage.getItem('prayer_alert_volume');
+        if (saved !== null) {
+            const parsed = parseInt(saved, 10);
+            if (!isNaN(parsed) && parsed >= 0 && parsed <= 100) return parsed;
+        }
+        const cfgStr = localStorage.getItem('prayerFinal_v34');
+        if (cfgStr) {
+            const parsedCfg = JSON.parse(cfgStr);
+            if (typeof parsedCfg?.alertVolume === 'number') {
+                return Math.max(0, Math.min(100, Math.round(parsedCfg.alertVolume)));
+            }
+        }
+    } catch (e) {}
+    return 100;
+};
+
+export const setStoredAlertVolume = (volume: number) => {
+    const clamped = Math.max(0, Math.min(100, Math.round(volume)));
+    try {
+        localStorage.setItem('prayer_alert_volume', String(clamped));
+    } catch (e) {}
+    if (Capacitor.isNativePlatform()) {
+        setNativeAlertVolume(clamped).catch(() => {});
+    }
+};
+
+export const playSyntheticChime = (volumeOverride?: number) => {
     try {
         const ctx = getAudioContext();
         if (!ctx) return;
         const now = ctx.currentTime;
+        const volumePercent = typeof volumeOverride === 'number' ? volumeOverride : getStoredAlertVolume();
+        if (volumePercent <= 0) return;
+        const volRatio = computeScaledVolume(volumePercent);
         
         // Gentle melodic two-tone chime bell (D5 -> A5)
         const notes = [
@@ -132,7 +195,7 @@ export const playSyntheticChime = () => {
             osc.frequency.setValueAtTime(freq, start);
             
             gain.gain.setValueAtTime(0, start);
-            gain.gain.linearRampToValueAtTime(0.35, start + 0.05);
+            gain.gain.linearRampToValueAtTime(0.35 * volRatio, start + 0.05);
             gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
 
             osc.connect(gain);
@@ -146,8 +209,15 @@ export const playSyntheticChime = () => {
     }
 };
 
-export const playNotificationSound = async (source: string, force: boolean = false) => {
+export const playNotificationSound = async (source: string, force: boolean = false, volumeOverride?: number) => {
     if (!source || source === 'none') return;
+
+    const volumePercent = typeof volumeOverride === 'number' ? volumeOverride : getStoredAlertVolume();
+    if (volumePercent <= 0) {
+        stopNotificationSound();
+        return;
+    }
+    const volRatio = computeScaledVolume(volumePercent);
 
     const now = Date.now();
     if (!force) {
@@ -168,13 +238,14 @@ export const playNotificationSound = async (source: string, force: boolean = fal
 
     lastPlayTimestamp = now;
     currentAudioSource = source;
+    acquireListenInterruption('notification-sound');
 
-    // 1. Android Native APK Playback (Highest fidelity & 100% reliable for bundled res/raw & file URIs):
+    // 1. Android Native APK Playback (Direct MediaPlayer volume without changing device ringer):
     if (Capacitor.isNativePlatform()) {
         try {
-            const played = await playNativeTone(source);
+            const played = await playNativeTone(source, volumePercent);
             if (played) {
-                console.log(`[playNotificationSound] Played natively via Android MediaPlayer: ${source}`);
+                console.log(`[playNotificationSound] Played natively via Android MediaPlayer at ${volumePercent}%: ${source}`);
                 return;
             }
         } catch (nativeErr) {
@@ -204,18 +275,21 @@ export const playNotificationSound = async (source: string, force: boolean = fal
 
                 const sourceNode = ctx.createBufferSource();
                 const gainNode = ctx.createGain();
-                gainNode.gain.setValueAtTime(1.0, ctx.currentTime);
+                gainNode.gain.setValueAtTime(volRatio, ctx.currentTime);
 
                 sourceNode.buffer = audioBuffer;
                 sourceNode.connect(gainNode);
                 gainNode.connect(ctx.destination);
 
                 activeBufferSource = sourceNode;
+                activeGainNode = gainNode;
                 sourceNode.onended = () => {
                     if (activeBufferSource === sourceNode) {
                         activeBufferSource = null;
+                        activeGainNode = null;
                         currentAudioSource = null;
                     }
+                    releaseListenInterruption('notification-sound');
                 };
 
                 sourceNode.start(0);
@@ -229,7 +303,7 @@ export const playNotificationSound = async (source: string, force: boolean = fal
     // 3. Fallback to HTML5 Audio element:
     try {
         const audio = new Audio(mediaUrl);
-        audio.volume = 1.0;
+        audio.volume = volRatio;
         previewAudio = audio;
 
         audio.onended = () => {
@@ -237,6 +311,7 @@ export const playNotificationSound = async (source: string, force: boolean = fal
                 previewAudio = null;
                 currentAudioSource = null;
             }
+            releaseListenInterruption('notification-sound');
         };
 
         const playPromise = audio.play();
@@ -259,7 +334,7 @@ export const playNotificationSound = async (source: string, force: boolean = fal
                 const altSource = source.startsWith('/') ? source.slice(1) : `/${source}`;
                 try {
                     const fallbackAudio = new Audio(altSource);
-                    fallbackAudio.volume = 1.0;
+                    fallbackAudio.volume = volRatio;
                     previewAudio = fallbackAudio;
 
                     fallbackAudio.onended = () => {
@@ -267,20 +342,28 @@ export const playNotificationSound = async (source: string, force: boolean = fal
                             previewAudio = null;
                             currentAudioSource = null;
                         }
+                        releaseListenInterruption('notification-sound');
                     };
 
                     fallbackAudio.play().catch(err => {
                         if (err && (err.name === 'AbortError' || err.message?.includes('interrupted'))) {
+                            releaseListenInterruption('notification-sound');
                             return;
                         }
                         console.warn("[playNotificationSound] Fallback audio failed:", err);
                         if (source.includes('chime')) {
                             playSyntheticChime();
+                            setTimeout(() => releaseListenInterruption('notification-sound'), 1500);
+                        } else {
+                            releaseListenInterruption('notification-sound');
                         }
                     });
                 } catch (err2) {
                     if (source.includes('chime')) {
                         playSyntheticChime();
+                        setTimeout(() => releaseListenInterruption('notification-sound'), 1500);
+                    } else {
+                        releaseListenInterruption('notification-sound');
                     }
                 }
             });
@@ -289,6 +372,9 @@ export const playNotificationSound = async (source: string, force: boolean = fal
         console.error("Failed to play notification sound with HTML5 Audio:", e);
         if (source.includes('chime')) {
             playSyntheticChime();
+            setTimeout(() => releaseListenInterruption('notification-sound'), 1500);
+        } else {
+            releaseListenInterruption('notification-sound');
         }
     }
 };
@@ -307,6 +393,12 @@ export const stopNotificationSound = () => {
         } catch (e) {}
         activeBufferSource = null;
     }
+    if (activeGainNode) {
+        try {
+            activeGainNode.disconnect();
+        } catch (e) {}
+        activeGainNode = null;
+    }
 
     // 3. Stop HTML5 audio
     if (previewAudio) {
@@ -321,6 +413,7 @@ export const stopNotificationSound = () => {
     }
 
     currentAudioSource = null;
+    releaseListenInterruption('notification-sound');
 };
 
 export const isNotificationSoundPlaying = () => {

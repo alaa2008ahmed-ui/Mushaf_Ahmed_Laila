@@ -2,7 +2,7 @@ import React from 'react';
 import ThemePageLock from '../ThemePageLock';
 import { useLanguage } from '../../context/LanguageContext';
 import { tTasbeeh } from '../../utils/tasbeehTranslations';
-import { Check } from 'lucide-react';
+import { useShowPageGuides } from '../../utils/guideManager';
 
 interface TasbeehHeaderProps {
     title?: string;
@@ -21,6 +21,7 @@ const TasbeehHeader: React.FC<TasbeehHeaderProps> = ({
     showQuickTasbeehOnHome = false,
     onToggleQuickTasbeehOnHome
 }) => {
+    const showPageGuides = useShowPageGuides();
     const { language, isRTL } = useLanguage();
     const localizedTitle = tTasbeeh('title', language);
     const isEn = language === 'en';
@@ -41,25 +42,6 @@ const TasbeehHeader: React.FC<TasbeehHeaderProps> = ({
                                 <i className={`fa-solid ${isRTL ? 'fa-arrow-right' : 'fa-arrow-left'} text-xl`}></i>
                             </button>
                         )}
-
-                        {onToggleQuickTasbeehOnHome && (
-                            <button
-                                type="button"
-                                onClick={onToggleQuickTasbeehOnHome}
-                                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center transition-all hover:bg-black/5 dark:hover:bg-white/5 active:scale-90 cursor-pointer shrink-0"
-                                title={
-                                    isEn 
-                                        ? (showQuickTasbeehOnHome ? 'Quick Tasbeeh on Home: Enabled (Click to disable)' : 'Quick Tasbeeh on Home: Disabled (Click to enable)') 
-                                        : (showQuickTasbeehOnHome ? 'ظهور التسبيح السريع في الرئيسية: مفعّل (اضغط للتعطيل)' : 'ظهور التسبيح السريع في الرئيسية: معطّل (اضغط للتفعيل)')
-                                }
-                            >
-                                <div className={`w-[18px] h-[18px] sm:w-[20px] sm:h-[20px] rounded-full border-[1.5px] border-white/90 shadow-xs transition-all flex items-center justify-center ${
-                                    showQuickTasbeehOnHome ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'
-                                }`}>
-                                    {showQuickTasbeehOnHome ? <Check className="w-2.5 h-2.5 sm:w-3 sm:h-3 stroke-[3]" /> : <span className="w-1.5 h-0.5 bg-white rounded-full" />}
-                                </div>
-                            </button>
-                        )}
                     </div>
 
                     {/* Page title in center */}
@@ -71,7 +53,7 @@ const TasbeehHeader: React.FC<TasbeehHeaderProps> = ({
 
                     {/* Guide, Home icon & Theme Lock on left/right */}
                     <div className="absolute left-0 flex items-center gap-1 rtl:left-0 rtl:right-auto ltr:left-auto ltr:right-0">
-                        {onOpenGuide && (
+                        {onOpenGuide && showPageGuides && (
                             <button
                                 type="button"
                                 onClick={onOpenGuide}

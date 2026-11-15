@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Mic, 
   MapPin, 
   Bell, 
   Camera, 
-  X, 
   CheckCircle2, 
   Settings as SettingsIcon, 
   AlertCircle,
@@ -41,18 +40,13 @@ export const InAppPermissionModal: React.FC<InAppPermissionModalProps> = ({
   customTitle,
   customDescription
 }) => {
-  const { theme } = useTheme();
+  const { theme, isNightMode } = useTheme();
   const { language } = useLanguage();
   const isEn = language === 'en';
+  const isBlackTheme = theme.bgColor === '#000000' || isNightMode;
 
   const [isLoading, setIsLoading] = useState(false);
   const [hasFailedOnce, setHasFailedOnce] = useState(false);
-
-  const isBlackTheme = theme.bgColor === '#000000';
-  const cardBg = isBlackTheme ? '#181818' : (theme.cardBg || (theme.isDark ? '#1e293b' : '#ffffff'));
-  const cardBorder = isBlackTheme ? '#333333' : (theme.cardBorder || (theme.isDark ? '#334155' : '#e2e8f0'));
-  const textColor = theme.textColor || (theme.isDark ? '#ffffff' : '#000000');
-  const textMuted = isBlackTheme ? '#9ca3af' : (theme.isDark ? '#94a3b8' : '#64748b');
 
   const getConfig = () => {
     switch (type) {
@@ -100,7 +94,7 @@ export const InAppPermissionModal: React.FC<InAppPermissionModalProps> = ({
         return {
           icon: Bell,
           iconBg: 'bg-amber-500/15 text-amber-600 dark:text-amber-400',
-          badge: isEn ? 'Notifications Permission' : 'صلاحية الإشعارات والتنبيهات',
+          badge: isEn ? 'Phone Notifications' : 'إشعارات الهاتف',
           title: customTitle || (isEn ? 'Enable Prayer & Azan Alerts' : 'تفعيل إشعارات الأذان والصلوات'),
           description: customDescription || (isEn
             ? 'Never miss a prayer with on-time Azan alerts and daily Athkar reminders.'
@@ -168,148 +162,140 @@ export const InAppPermissionModal: React.FC<InAppPermissionModalProps> = ({
     onClose();
   };
 
+  if (!isOpen) return null;
+
   return (
     <AnimatePresence>
-      {isOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs"
-          onClick={onClose}
-          dir={isEn ? 'ltr' : 'rtl'}
-          style={{ fontFamily: theme.font }}
-        >
-          <motion.div
-            initial={{ opacity: 0, y: 40, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 40, scale: 0.95 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 350 }}
-            onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-md rounded-3xl border shadow-2xl p-6 space-y-5 overflow-hidden relative"
-            style={{
-              backgroundColor: cardBg,
-              borderColor: cardBorder,
-              color: textColor
-            }}
-          >
-            {/* Top decorative accent bar */}
-            <div 
-              className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-emerald-500 via-teal-400 to-amber-500 opacity-90" 
-            />
-
-            {/* Header row */}
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-3">
-                <div className={`w-13 h-13 rounded-2xl flex items-center justify-center shadow-inner ${config.iconBg}`}>
-                  <IconComponent size={26} className="animate-pulse" />
-                </div>
-                <div>
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 mb-1">
-                    <ShieldCheck size={12} />
-                    {config.badge}
-                  </span>
-                  <h3 className="text-base font-bold leading-tight" style={{ color: textColor }}>
-                    {config.title}
-                  </h3>
-                </div>
+      <motion.div
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 15 }}
+        transition={{ duration: 0.2, ease: 'easeOut' }}
+        className="fixed inset-0 z-[9999999] flex flex-col font-cairo select-none overflow-hidden"
+        style={{ 
+          backgroundColor: isBlackTheme ? '#000000' : (theme.bgColor || (theme.isDark ? '#0F172A' : '#FFFFFF')) 
+        }}
+        dir={isEn ? 'ltr' : 'rtl'}
+      >
+        {/* Standard Page Header - Identical to Adia */}
+        <header className="app-top-bar" dir={isEn ? 'ltr' : 'rtl'}>
+          <div className="app-top-bar__inner">
+            <div className="relative flex items-center justify-center w-full min-h-[44px]">
+              <div className={`absolute ${isEn ? 'left-0' : 'right-0'} flex items-center`}>
+                <button
+                  onClick={onClose}
+                  className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                  title={isEn ? "Go Back" : "رجوع للخلف"}
+                  aria-label={isEn ? "Go Back" : "رجوع للخلف"}
+                >
+                  <i className={`fa-solid ${isEn ? 'fa-arrow-left' : 'fa-arrow-right'} text-xl`}></i>
+                </button>
               </div>
 
-              <button
-                type="button"
-                onClick={onClose}
-                className="w-8 h-8 rounded-xl flex items-center justify-center border transition-all active:scale-95 cursor-pointer hover:bg-neutral-500/10"
-                style={{ borderColor: cardBorder, color: textMuted }}
-                title={isEn ? 'Close' : 'إغلاق'}
-              >
-                <X size={16} />
-              </button>
-            </div>
+              <div className="text-center px-12 min-w-0">
+                <h1 className="app-top-bar__title text-lg sm:text-xl font-kufi truncate">
+                  {config.badge}
+                </h1>
+              </div>
 
-            {/* Description */}
-            <p className="text-xs sm:text-sm leading-relaxed" style={{ color: textMuted }}>
-              {config.description}
-            </p>
-
-            {/* Features list */}
-            <div 
-              className="rounded-2xl p-3.5 space-y-2 border text-xs"
-              style={{ 
-                backgroundColor: isBlackTheme ? '#121212' : (theme.isDark ? '#0f172a80' : '#f8fafc'),
-                borderColor: cardBorder 
-              }}
-            >
-              {config.features.map((feature, idx) => (
-                <div key={idx} className="flex items-center gap-2.5">
-                  <CheckCircle2 size={15} className="text-emerald-500 shrink-0" />
-                  <span style={{ color: textColor }}>{feature}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* Fallback warning if rejected previously */}
-            {hasFailedOnce && (
-              <motion.div 
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                className="rounded-2xl p-3 bg-amber-500/10 border border-amber-500/30 flex items-start gap-2 text-xs text-amber-700 dark:text-amber-300"
-              >
-                <AlertCircle size={16} className="shrink-0 mt-0.5" />
-                <div className="space-y-1">
-                  <p className="font-bold">
-                    {isEn 
-                      ? 'Permission was declined or blocked by system.' 
-                      : 'تم رفض الإذن أو إيقافه من إعدادات الهاتف.'}
-                  </p>
-                  <p className="text-[11px] opacity-90">
-                    {isEn 
-                      ? 'You can grant it directly from App Settings with one tap below.' 
-                      : 'يمكنك فتح صفحة أذونات التطبيق مباشرة بالضغط على الزر أدناه ومنح الصلاحية.'}
-                  </p>
-                </div>
-              </motion.div>
-            )}
-
-            {/* Action Buttons */}
-            <div className="space-y-2 pt-1">
-              <button
-                type="button"
-                onClick={handleGrantPermission}
-                disabled={isLoading}
-                className="w-full py-3.5 px-4 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2 shadow-lg transition-all active:scale-[0.98] cursor-pointer disabled:opacity-60 bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 hover:brightness-105"
-              >
-                {isLoading ? (
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                ) : (
-                  <>
-                    <Sparkles size={16} />
-                    <span>{isEn ? 'Grant Permission Now' : 'السماح بالصلاحية الآن'}</span>
-                  </>
-                )}
-              </button>
-
-              {hasFailedOnce && (
+              <div className={`absolute ${isEn ? 'right-0' : 'left-0'} flex items-center gap-1`}>
                 <button
-                  type="button"
-                  onClick={handleOpenSettings}
-                  className="w-full py-2.5 px-4 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 border transition-all active:scale-[0.98] cursor-pointer hover:bg-neutral-500/10"
-                  style={{ borderColor: cardBorder, color: textColor }}
+                  onClick={onClose}
+                  className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                  title={isEn ? "Close" : "إغلاق"}
+                  aria-label={isEn ? "Close" : "إغلاق"}
                 >
-                  <SettingsIcon size={14} />
-                  <span>{isEn ? 'Open App Settings' : 'فتح إعدادات التطبيق بالهاتف'}</span>
+                  <i className="fa-solid fa-xmark text-xl"></i>
                 </button>
-              )}
+              </div>
+            </div>
+          </div>
+        </header>
 
+        {/* Content Body */}
+        <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 max-w-2xl mx-auto w-full space-y-5 modal-sheet-safe-bottom">
+          <div className="flex items-center gap-3.5 p-4 rounded-2xl quran-raised-card bg-white dark:bg-zinc-900">
+            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-inner ${config.iconBg}`}>
+              <IconComponent size={24} className="animate-pulse" />
+            </div>
+            <div>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 mb-1">
+                <ShieldCheck size={12} />
+                {config.badge}
+              </span>
+              <h3 className="text-base sm:text-lg font-bold leading-tight">
+                {config.title}
+              </h3>
+            </div>
+          </div>
+
+          <p className="text-xs sm:text-sm leading-relaxed text-slate-600 dark:text-zinc-300 px-1">
+            {config.description}
+          </p>
+
+          <div className="rounded-2xl p-4 space-y-3 quran-raised-card bg-white dark:bg-zinc-900 text-xs sm:text-sm">
+            {config.features.map((feature, idx) => (
+              <div key={idx} className="flex items-center gap-2.5">
+                <CheckCircle2 size={16} className="text-emerald-500 shrink-0" />
+                <span>{feature}</span>
+              </div>
+            ))}
+          </div>
+
+          {hasFailedOnce && (
+            <motion.div 
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              className="rounded-2xl p-4 bg-amber-500/10 border border-amber-500/30 flex items-start gap-3 text-xs sm:text-sm text-amber-700 dark:text-amber-300"
+            >
+              <AlertCircle size={18} className="shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <p className="font-bold">
+                  {isEn 
+                    ? 'Permission was declined or blocked by system.' 
+                    : 'تم رفض الإذن أو إيقافه من إعدادات الهاتف.'}
+                </p>
+                <p className="text-xs opacity-90">
+                  {isEn 
+                    ? 'You can grant it directly from App Settings with one tap below.' 
+                    : 'يمكنك فتح صفحة أذونات التطبيق مباشرة بالضغط على الزر أدناه ومنح الصلاحية.'}
+                </p>
+              </div>
+            </motion.div>
+          )}
+
+          <div className="space-y-3 pt-2">
+            <button
+              type="button"
+              onClick={handleGrantPermission}
+              disabled={isLoading}
+              className="w-full py-4 px-5 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2 shadow-lg transition-all active:scale-[0.98] cursor-pointer disabled:opacity-60 bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 hover:brightness-105"
+            >
+              {isLoading ? (
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <>
+                  <Sparkles size={18} />
+                  <span>{isEn ? 'Grant Permission Now' : 'السماح بالصلاحية الآن'}</span>
+                </>
+              )}
+            </button>
+
+            {hasFailedOnce && (
               <button
                 type="button"
-                onClick={onClose}
-                className="w-full py-2 text-center text-xs font-medium cursor-pointer transition-colors hover:underline"
-                style={{ color: textMuted }}
+                onClick={handleOpenSettings}
+                className="w-full py-3.5 px-5 rounded-2xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer quran-raised-card bg-white dark:bg-zinc-900"
               >
-                {isEn ? 'Cancel / Later' : 'إلغاء / لاحقاً'}
+                <SettingsIcon size={16} />
+                <span>{isEn ? 'Open App Settings' : 'فتح إعدادات التطبيق بالهاتف'}</span>
               </button>
-            </div>
-          </motion.div>
+            )}
+          </div>
         </div>
-      )}
+      </motion.div>
     </AnimatePresence>
   );
 };
+
 export default InAppPermissionModal;

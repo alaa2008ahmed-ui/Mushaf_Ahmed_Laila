@@ -159,7 +159,7 @@ const ThematicEncyclopediaModal: React.FC<ThematicEncyclopediaModalProps> = ({
     >
       <div 
         className={`zoom-modal-sheet w-full max-w-xl mx-auto rounded-t-[32px] flex flex-col overflow-hidden relative shadow-2xl animate-modal-enter ${
-          isLandscape ? 'max-h-[92vh]' : 'max-h-[85vh]'
+          isLandscape ? 'max-h-[92dvh]' : 'max-h-[88dvh]'
         }`}
         style={{ 
           backgroundColor: modalBg, 
@@ -213,7 +213,7 @@ const ThematicEncyclopediaModal: React.FC<ThematicEncyclopediaModalProps> = ({
         </div>
 
         {/* Scrollable Content Area */}
-        <div className="overflow-y-auto custom-scrollbar flex-1 px-6 py-3">
+        <div className="overflow-y-auto custom-scrollbar flex-1 min-h-0 px-6 py-3">
           {!allFilteredConcepts ? (
             <>
               {/* Category Pills Header */}
@@ -395,10 +395,9 @@ const ThematicEncyclopediaModal: React.FC<ThematicEncyclopediaModalProps> = ({
 
         {/* Bottom Action Bar matching image (5 round action buttons in RTL: Audio on Right, Chevron on Left) */}
         <div 
-          className="p-3 px-6 border-t shrink-0 flex items-center justify-center gap-3 sm:gap-4 font-cairo border-slate-200/50 dark:border-white/10"
+          className="pt-3 px-6 modal-sheet-safe-bottom border-t shrink-0 flex items-center justify-center gap-3 sm:gap-4 font-cairo border-slate-200/50 dark:border-white/10"
           dir="rtl"
           style={{
-            paddingBottom: 'calc(env(safe-area-inset-bottom, 16px) + 16px)',
             backgroundColor: modalBg
           }}
         >

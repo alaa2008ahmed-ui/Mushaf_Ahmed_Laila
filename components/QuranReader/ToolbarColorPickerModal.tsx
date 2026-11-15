@@ -155,7 +155,7 @@ const ToolbarColorPickerModal: React.FC<ToolbarColorPickerModalProps> = ({ onClo
     if (editingType) {
         return (
             <div className={`fixed inset-0 z-[1200] bg-black/40 backdrop-blur-sm flex items-center justify-center ${isLandscape ? 'p-0' : 'p-4'} animate-fadeIn`} dir={isEn ? "ltr" : "rtl"} onClick={() => setEditingType(null)}>
-                <div className={`modal-skinned w-full ${isLandscape ? 'max-w-4xl h-full rounded-none max-h-screen' : 'max-w-md rounded-3xl max-h-[85vh]'} shadow-2xl overflow-hidden animate-modal-enter flex flex-col border-0`} onClick={e => e.stopPropagation()} style={{ backgroundColor: currentTheme.bg, color: currentTheme.text, border: 'none', outline: 'none' }}>
+                <div className={`modal-skinned w-full ${isLandscape ? 'max-w-4xl h-full rounded-none max-h-[100dvh]' : 'max-w-md rounded-3xl max-h-[88dvh]'} shadow-2xl overflow-hidden animate-modal-enter flex flex-col border-0`} onClick={e => e.stopPropagation()} style={{ backgroundColor: currentTheme.bg, color: currentTheme.text, border: 'none', outline: 'none' }}>
                     <div className="p-4 flex justify-between items-center">
                         <div className="flex items-center gap-2">
                             <Palette className="w-5 h-5 quran-3d-icon" />
@@ -166,7 +166,7 @@ const ToolbarColorPickerModal: React.FC<ToolbarColorPickerModalProps> = ({ onClo
                         </button>
                     </div>
                     
-                    <div className={`p-5 overflow-y-auto flex-1 ${isLandscape ? 'grid grid-cols-2 gap-6 items-start' : 'space-y-6'}`}>
+                    <div className={`p-5 overflow-y-auto flex-1 min-h-0 ${isLandscape ? 'grid grid-cols-2 gap-6 items-start' : 'space-y-6'}`}>
                         {!editingType.includes('toolbar') && (
                             <div className={isLandscape ? 'col-span-1' : ''}>
                                 <div className="flex items-center gap-2 mb-2">
@@ -260,7 +260,7 @@ const ToolbarColorPickerModal: React.FC<ToolbarColorPickerModalProps> = ({ onClo
                         </div>
                     </div>
 
-                    <div className="p-4 flex justify-center">
+                    <div className={`p-4 ${isLandscape ? 'modal-sheet-safe-bottom' : ''} flex justify-center`}>
                         <button 
                             onClick={saveElementChanges} 
                             className="w-full quran-raised-btn-selected font-bold py-3.5 rounded-2xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer border-0"
@@ -277,7 +277,7 @@ const ToolbarColorPickerModal: React.FC<ToolbarColorPickerModalProps> = ({ onClo
     
     return (
         <div className={`fixed inset-0 bg-black/40 backdrop-blur-sm z-[1200] flex items-center justify-center ${isLandscape ? 'p-0' : 'p-4'} animate-fadeIn`} dir={isEn ? "ltr" : "rtl"} onClick={handleClose}>
-            <div className={`modal-skinned w-full ${isLandscape ? 'max-w-5xl h-full rounded-none max-h-screen' : 'max-w-md rounded-2xl max-h-[85vh]'} shadow-2xl overflow-hidden flex flex-col animate-modal-enter border-0`} onClick={e => e.stopPropagation()} style={{ backgroundColor: currentTheme.bg, color: currentTheme.text, border: 'none', outline: 'none' }}>
+            <div className={`modal-skinned w-full ${isLandscape ? 'max-w-5xl h-full rounded-none max-h-[100dvh]' : 'max-w-md rounded-2xl max-h-[88dvh]'} shadow-2xl overflow-hidden flex flex-col animate-modal-enter border-0`} onClick={e => e.stopPropagation()} style={{ backgroundColor: currentTheme.bg, color: currentTheme.text, border: 'none', outline: 'none' }}>
                 <div className="p-4 flex justify-between items-center">
                     <div className="flex items-center gap-2">
                         <Palette className="w-5 h-5 quran-3d-icon" />
@@ -288,7 +288,7 @@ const ToolbarColorPickerModal: React.FC<ToolbarColorPickerModalProps> = ({ onClo
                     </button>
                 </div>
 
-                <div className={`flex-1 overflow-y-auto p-4 space-y-6 ${isLandscape ? 'grid grid-cols-2 gap-6 space-y-0' : ''}`}>
+                <div className={`flex-1 min-h-0 overflow-y-auto p-4 space-y-6 ${isLandscape ? 'grid grid-cols-2 gap-6 space-y-0' : ''}`}>
                     {/* Main Toolbars Section */}
                     <div className="space-y-3">
                         <h4 className="text-sm font-bold opacity-60 px-2 flex items-center gap-2">
@@ -377,7 +377,7 @@ const ToolbarColorPickerModal: React.FC<ToolbarColorPickerModalProps> = ({ onClo
                 </div>
 
                 {/* Sticky/Fixed Bottom Footer - Back to Settings Button */}
-                <div className="p-3.5 sm:p-4 shrink-0 border-t border-black/5 dark:border-white/10">
+                <div className={`p-3.5 sm:p-4 ${isLandscape ? 'modal-sheet-safe-bottom' : ''} shrink-0 border-t border-black/5 dark:border-white/10`}>
                     <button 
                         onClick={handleClose} 
                         className="quran-raised-btn-selected w-full py-3.5 rounded-xl font-bold shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2 text-sm cursor-pointer border-0"

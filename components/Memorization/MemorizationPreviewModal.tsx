@@ -73,7 +73,7 @@ const MemorizationPreviewModal: React.FC<MemorizationPreviewModalProps> = ({
       dir={isEn ? 'ltr' : 'rtl'}
     >
       <div 
-        className="w-full max-w-lg max-h-[88vh] rounded-[2rem] shadow-2xl flex flex-col overflow-hidden bg-white dark:bg-zinc-900 border-0 text-slate-800 dark:text-zinc-100" 
+        className="w-full max-w-lg max-h-[88dvh] rounded-[2rem] shadow-2xl flex flex-col overflow-hidden bg-white dark:bg-zinc-900 border-0 text-slate-800 dark:text-zinc-100" 
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
@@ -135,7 +135,7 @@ const MemorizationPreviewModal: React.FC<MemorizationPreviewModalProps> = ({
         </div>
 
         {/* Content Body */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-4">
+        <div className="flex-1 min-h-0 overflow-y-auto p-5 space-y-4">
           {activeTab === 'text' ? (
             <div className="p-4 rounded-2xl bg-amber-50/50 dark:bg-zinc-800/40 border border-amber-200/40 dark:border-zinc-700/50 space-y-3">
               <div 

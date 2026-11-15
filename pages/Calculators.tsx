@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import ThemePageLock from '../components/ThemePageLock';
 import ZakatCalculator from '../components/Calculators/ZakatCalculator';
@@ -6,7 +6,7 @@ import MawarithCalculator from '../components/Calculators/MawarithCalculator';
 import KaffaratCalculator from '../components/Calculators/KaffaratCalculator';
 import FitrAndUdhiyahCalculator from '../components/Calculators/FitrAndUdhiyahCalculator';
 import { useLanguage } from '../context/LanguageContext';
-import { HelpCircle } from 'lucide-react';
+import { HelpCircle, ShieldAlert } from 'lucide-react';
 import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/CommunitySpotlightGuide';
 import { 
     CALCULATOR_ZAKAT_STEPS, 
@@ -17,6 +17,7 @@ import {
 } from '../components/Community/communityTourSteps';
 import { markPageAsSeen } from '../utils/badgeManager';
 import { getModernFlatTokens, hexToRgba } from '../utils/flatDesignTokens';
+import { useShowPageGuides } from '../utils/guideManager';
 
 interface CalculatorsProps {
     onBack: () => void;
@@ -24,7 +25,8 @@ interface CalculatorsProps {
 }
 
 const Calculators: React.FC<CalculatorsProps> = ({ onBack, onNavigate }) => {
-    const { theme, themeKey } = useTheme();
+    const showPageGuides = useShowPageGuides();
+    const { theme, themeKey, isNightMode, homeThemeVariant } = useTheme();
     const tokens = getModernFlatTokens(theme, themeKey);
     const { t, language } = useLanguage();
     const isEn = language === 'en';
@@ -32,6 +34,27 @@ const Calculators: React.FC<CalculatorsProps> = ({ onBack, onNavigate }) => {
     const [activeTab, setActiveTab] = useState<'zakat' | 'mawarith' | 'kaffarat' | 'fitr-udhiyah'>('zakat');
     const [fitrUdhiyahSubTab, setFitrUdhiyahSubTab] = useState<'fitr' | 'udhiyah'>('fitr');
     const [showGuide, setShowGuide] = useState(false);
+    const scrollContainerRef = useRef<HTMLElement | null>(null);
+
+    const resetScrollToTop = () => {
+        if (scrollContainerRef.current) {
+            scrollContainerRef.current.scrollTop = 0;
+        }
+        try {
+            window.scrollTo(0, 0);
+            document.documentElement.scrollTop = 0;
+            document.body.scrollTop = 0;
+        } catch {}
+    };
+
+    // Always start from the very top when opening or switching between calculator tabs/sub-tabs
+    useLayoutEffect(() => {
+        resetScrollToTop();
+        const rafId = requestAnimationFrame(() => {
+            resetScrollToTop();
+        });
+        return () => cancelAnimationFrame(rafId);
+    }, [activeTab, fitrUdhiyahSubTab]);
 
     // Initial check for Zakat guide on first entry
     useEffect(() => {
@@ -110,9 +133,36 @@ const Calculators: React.FC<CalculatorsProps> = ({ onBack, onNavigate }) => {
 
     const activeGuide = getActiveGuideConfig();
 
+    const activeDisclaimerKey =
+        activeTab === 'zakat'
+            ? 'calculators.disclaimer_zakat'
+            : activeTab === 'mawarith'
+                ? 'calculators.disclaimer_mawarith'
+                : activeTab === 'kaffarat'
+                    ? 'calculators.disclaimer_kaffarat'
+                    : 'calculators.disclaimer_fitr_udhiyah';
+
+    const disclaimerText = t(activeDisclaimerKey);
+    const colonIdx = disclaimerText.indexOf(':');
+    const disclaimerLabel = colonIdx !== -1 ? disclaimerText.slice(0, colonIdx + 1) : '';
+    const disclaimerBody = colonIdx !== -1 ? disclaimerText.slice(colonIdx + 1).trim() : disclaimerText;
+
+    const isBlackTheme = tokens.isDeepBlack || isNightMode;
+    const noticeAccent = isBlackTheme
+        ? '#F59E0B'
+        : homeThemeVariant === 'sky'
+            ? '#0284c7'
+            : homeThemeVariant === 'emerald'
+                ? '#047857'
+                : homeThemeVariant === 'burgundy'
+                    ? '#881337'
+                    : (tokens.primaryColor === '#EAB308' || tokens.primaryColor === '#FACC15'
+                        ? '#B45309'
+                        : tokens.primaryColor);
+
     return (
         <div 
-            className="h-screen flex flex-col"
+            className="h-[100dvh] flex flex-col overflow-hidden"
             dir={isEn ? 'ltr' : 'rtl'}
             style={{ backgroundColor: tokens.pageBgColor, color: tokens.textColor, fontFamily: theme.font }}
         >
@@ -140,17 +190,19 @@ const Calculators: React.FC<CalculatorsProps> = ({ onBack, onNavigate }) => {
 
                         {/* Guide / Home / Lock */}
                         <div className={`absolute ${isEn ? 'right-0' : 'left-0'} flex items-center gap-1`}>
-                            <button
-                                id="btn-calc-help"
-                                type="button"
-                                onClick={() => setShowGuide(true)}
-                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/5 dark:hover:bg-white/5 active:scale-90 cursor-pointer border-0"
-                                style={{ color: 'var(--top-bar-text, inherit)' }}
-                                title={isEn ? "Calculator Guide" : "دليل وشرح الحاسبة الشرعية"}
-                                aria-label={isEn ? "Calculator Guide" : "دليل وشرح الحاسبة الشرعية"}
-                            >
-                                <i className="fa-solid fa-circle-question text-lg"></i>
-                            </button>
+                            {showPageGuides && (
+                                <button
+                                    id="btn-calc-help"
+                                    type="button"
+                                    onClick={() => setShowGuide(true)}
+                                    className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/5 dark:hover:bg-white/5 active:scale-90 cursor-pointer border-0"
+                                    style={{ color: 'var(--top-bar-text, inherit)' }}
+                                    title={isEn ? "Calculator Guide" : "دليل وشرح الحاسبة الشرعية"}
+                                    aria-label={isEn ? "Calculator Guide" : "دليل وشرح الحاسبة الشرعية"}
+                                >
+                                    <i className="fa-solid fa-circle-question text-lg"></i>
+                                </button>
+                            )}
                             <ThemePageLock />
                             <button
                                 onClick={() => onNavigate('home')}
@@ -203,7 +255,7 @@ const Calculators: React.FC<CalculatorsProps> = ({ onBack, onNavigate }) => {
             </div>
 
             {/* Main Content */}
-            <main id="calc-scroll-container" className="flex-1 overflow-y-auto px-4 pb-6 pt-2 hide-scrollbar">
+            <main ref={scrollContainerRef} id="calc-scroll-container" className="flex-1 min-h-0 overflow-y-auto px-4 pt-2 app-scroll-safe hide-scrollbar">
                 <div className="max-w-3xl mx-auto">
                     {activeTab === 'zakat' && <ZakatCalculator />}
                     {activeTab === 'mawarith' && <MawarithCalculator />}
@@ -214,8 +266,46 @@ const Calculators: React.FC<CalculatorsProps> = ({ onBack, onNavigate }) => {
                             onSubTabChange={handleFitrUdhiyahSubTabChange}
                         />
                     )}
+
+                    {/* Dynamic Tab-Specific Sharia Disclaimer Card */}
+                    <div
+                        id="calc-sharia-disclaimer"
+                        role="note"
+                        className="mt-5 mb-2 p-3.5 sm:p-4 rounded-2xl flex items-start gap-3 transition-all"
+                        style={{
+                            backgroundColor: tokens.isDark
+                                ? (isBlackTheme ? '#141418' : tokens.cardBgColor)
+                                : '#FFFFFF',
+                            border: `1px solid ${hexToRgba(noticeAccent, tokens.isDark ? 0.28 : 0.22)}`,
+                            boxShadow: tokens.isDark
+                                ? '0 4px 14px rgba(0, 0, 0, 0.45)'
+                                : '0 2px 10px rgba(15, 23, 42, 0.05)',
+                        }}
+                    >
+                        <div
+                            className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5"
+                            style={{
+                                backgroundColor: hexToRgba(noticeAccent, tokens.isDark ? 0.16 : 0.12),
+                                color: noticeAccent,
+                            }}
+                        >
+                            <ShieldAlert size={17} strokeWidth={2.2} />
+                        </div>
+                        <p
+                            className="text-xs sm:text-[13px] leading-relaxed font-semibold m-0"
+                            style={{
+                                color: tokens.isDark ? 'rgba(255, 255, 255, 0.88)' : tokens.textColor,
+                            }}
+                        >
+                            {disclaimerLabel && (
+                                <strong className="font-black" style={{ color: noticeAccent }}>
+                                    {disclaimerLabel}{' '}
+                                </strong>
+                            )}
+                            <span>{disclaimerBody}</span>
+                        </p>
+                    </div>
                 </div>
-                <div className="shrink-0 w-full h-6"></div>
             </main>
 
             {/* Interactive Spotlight Guide */}

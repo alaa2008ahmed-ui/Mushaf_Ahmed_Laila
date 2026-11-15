@@ -173,7 +173,7 @@ const HadithModal: React.FC<HadithModalProps> = ({
                 animate={{ y: 0, opacity: 1 }}
                 exit={{ y: '100%', opacity: 0 }}
                 transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-                className="w-full max-w-xl max-h-[88vh] rounded-t-[28px] sm:rounded-[24px] flex flex-col overflow-hidden shadow-2xl border-0" 
+                className="w-full max-w-xl max-h-[88dvh] rounded-t-[28px] sm:rounded-[24px] flex flex-col overflow-hidden shadow-2xl border-0" 
                 style={{ 
                     backgroundColor: tokens.cardBgColor, 
                     color: tokens.textColor, 
@@ -253,7 +253,7 @@ const HadithModal: React.FC<HadithModalProps> = ({
                 
                 {/* Tab 1: Hadith Text */}
                 {activeTab === 'hadith' && (
-                    <div className="p-6 sm:p-8 overflow-y-auto leading-[2.3] text-center flex-1 hide-scrollbar" style={{ fontSize: `${fontSize}px`, color: tokens.textColor }}>
+                    <div className="p-6 sm:p-8 overflow-y-auto leading-[2.3] text-center flex-1 min-h-0 hide-scrollbar" style={{ fontSize: `${fontSize}px`, color: tokens.textColor }}>
                         <p className={`whitespace-pre-line leading-[2.3] selection:bg-amber-100 ${isEn ? 'font-sans text-left' : 'font-amiri'}`} style={{ textAlign: isEn ? 'left' : 'center' }}>
                             {activeHadithText}
                         </p>
@@ -279,7 +279,7 @@ const HadithModal: React.FC<HadithModalProps> = ({
 
                 {/* Tab 2: Explanation & Benefits */}
                 {activeTab === 'explanation' && (
-                    <div className={`p-4 sm:p-6 overflow-y-auto flex-1 hide-scrollbar space-y-4 ${isEn ? 'text-left' : 'text-right'}`}>
+                    <div className={`p-4 sm:p-6 overflow-y-auto flex-1 min-h-0 hide-scrollbar space-y-4 ${isEn ? 'text-left' : 'text-right'}`}>
                         {activeExplanation ? (
                             <>
                                 {/* Brief Summary */}
@@ -375,12 +375,9 @@ const HadithModal: React.FC<HadithModalProps> = ({
                     </div>
                 )}
 
-                {/* Footer Controls - Clean Modern Style with safe-area padding to avoid phone buttons */}
+                {/* Footer Controls - Clean Modern Style with dynamic safe-area padding */}
                 <div 
-                    className="p-4 pt-3 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-center gap-3 sm:gap-4"
-                    style={{ 
-                        paddingBottom: 'calc(env(safe-area-inset-bottom, 16px) + 16px)'
-                    }}
+                    className="p-4 pt-3 modal-sheet-safe-bottom shrink-0 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-center gap-3 sm:gap-4"
                 >
                     {/* Audio */}
                     <button 
@@ -595,7 +592,7 @@ const Nawawi: React.FC<NawawiProps> = ({ onBack, onNavigate, navParams }) => {
     });
 
     return (
-        <div className="h-screen flex flex-col overflow-hidden" style={{ backgroundColor: tokens.pageBgColor, color: tokens.textColor, fontFamily: theme.font }} dir={isEn ? 'ltr' : 'rtl'}>
+        <div className="h-[100dvh] flex flex-col overflow-hidden" style={{ backgroundColor: tokens.pageBgColor, color: tokens.textColor, fontFamily: theme.font }} dir={isEn ? 'ltr' : 'rtl'}>
             <header className="app-top-bar">
                 <div className="app-top-bar__inner">
                     <div className="relative flex items-center justify-center w-full min-h-[44px]">
@@ -644,7 +641,7 @@ const Nawawi: React.FC<NawawiProps> = ({ onBack, onNavigate, navParams }) => {
                 </div>
             </header>
 
-            <main className="flex-1 overflow-y-auto hide-scrollbar px-4 pt-3 pb-6">
+            <main className="flex-1 min-h-0 overflow-y-auto hide-scrollbar px-4 pt-3 app-scroll-safe">
                 {/* Search and View Mode Control - Flat Modern Surface */}
                 <div className="mb-5 max-w-3xl mx-auto flex items-center gap-2.5 w-full" dir={isEn ? 'ltr' : 'rtl'}>
                     <div 
@@ -943,7 +940,6 @@ const Nawawi: React.FC<NawawiProps> = ({ onBack, onNavigate, navParams }) => {
                         </button>
                     </div>
                 )}
-                <div className="shrink-0 w-full h-6"></div>
             </main>
 
             <AnimatePresence>
@@ -969,7 +965,8 @@ const Nawawi: React.FC<NawawiProps> = ({ onBack, onNavigate, navParams }) => {
                         initial={{ opacity: 0, y: 50, x: '-50%' }}
                         animate={{ opacity: 1, y: 0, x: '-50%' }}
                         exit={{ opacity: 0, y: 50, x: '-50%' }}
-                        className="fixed bottom-8 left-1/2 z-[200] bg-gray-800 text-white px-6 py-3 rounded-full shadow-lg font-bold text-sm text-center whitespace-nowrap"
+                        className="fixed left-1/2 z-[200] bg-gray-800 text-white px-6 py-3 rounded-full shadow-lg font-bold text-sm text-center whitespace-nowrap"
+                        style={{ bottom: 'calc(var(--app-bottom-clearance) + 1rem)' }}
                     >
                         {toastMessage}
                     </motion.div>

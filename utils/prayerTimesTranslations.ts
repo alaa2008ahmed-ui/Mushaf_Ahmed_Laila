@@ -1391,7 +1391,7 @@ export const PRAYER_TIMES_STRINGS: Record<string, { ar: string; en: string }> = 
   enable: { ar: 'تفعيل', en: 'Enable' },
 
   // Next Prayer Card
-  remainingUntil: { ar: 'المتبقي على صلاة', en: 'Time remaining until' },
+  remainingUntil: { ar: 'المتبقي على', en: 'Remaining until' },
   firstThird: { ar: 'أول الليل', en: 'First Third' },
   midnight: { ar: 'منتصف الليل', en: 'Midnight' },
   lastThird: { ar: 'الثلث الأخير', en: 'Last Third' },
@@ -1411,8 +1411,8 @@ export const PRAYER_TIMES_STRINGS: Record<string, { ar: string; en: string }> = 
 
   // Footer Note
   locationRequirementNote: {
-    ar: '(يجب تفعيل الموقع للهاتف لحساب الموقع بدقه)',
-    en: '(Device location must be enabled for accurate prayer calculations)'
+    ar: 'يجب تفعيل خدمة الموقع (GPS) لحساب مواقيت الصلاة بدقة',
+    en: 'Location service (GPS) must be enabled to calculate prayer times accurately'
   },
 
   // Settings Modal
@@ -1570,7 +1570,17 @@ export const PRAYER_TIMES_STRINGS: Record<string, { ar: string; en: string }> = 
   createdAppAttribution: { ar: 'مصحف أحمد و ليلى', en: 'Mushaf Ahmed & Laila' },
   monthlyShareHeading: { ar: 'مواقيت الصلاة لشهر {m}', en: 'Prayer Times for the Month of {m}' },
   locationLabel: { ar: 'الموقع: {loc}', en: 'Location: {loc}' },
-  generatedByLabel: { ar: 'تم الإنشاء بواسطة: {app}', en: 'Created by: {app}' }
+  generatedByLabel: { ar: 'تم الإنشاء بواسطة: {app}', en: 'Created by: {app}' },
+
+  // Prayer Alerts Volume Control (Short & Compact)
+  alertVolumeTitle: { ar: 'صوت تنبيهات الصلاة', en: 'Prayer Alerts Volume' },
+  alertVolumeDesc: { 
+    ar: 'خاص بأذان وإقامة التطبيق دون التأثير على صوت الهاتف.', 
+    en: 'App Adhan & Iqama only (does not change phone volume).' 
+  },
+  alertVolumeMuted: { ar: 'مكتوم', en: 'Muted' },
+  testAlertSound: { ar: 'تجربة', en: 'Test' },
+  stopAlertSound: { ar: 'إيقاف', en: 'Stop' }
 };
 
 export function tPrayer(key: string, language: Language = 'ar', params?: Record<string, string | number>): string {

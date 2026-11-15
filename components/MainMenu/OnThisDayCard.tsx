@@ -55,9 +55,10 @@ export const OnThisDayCard: React.FC<OnThisDayCardProps> = ({
     onCopy(e);
   };
 
-  const eventContent = language === 'en' 
+  const rawContent = language === 'en' 
     ? (event.textEn || getTranslatedEventText(event.text, event.year))
     : event.text;
+  const eventContent = (rawContent || '').replace(/[ \t]+/g, ' ').trim();
 
   return (
     <div
@@ -209,7 +210,7 @@ export const OnThisDayCard: React.FC<OnThisDayCardProps> = ({
       {/* 3. تحسين القراءة (Typography مع مسافة أسطر واسعة مريحة للعين ومساحات داخلية متقنة) */}
       <div className="w-full">
         <p 
-          className={`text-[14px] sm:text-[15px] font-normal text-justify leading-[1.85] sm:leading-[1.9] tracking-normal break-words ${
+          className={`text-[14px] sm:text-[15px] font-normal text-center leading-[1.85] sm:leading-[1.9] tracking-normal break-words ${
             isBlackTheme ? 'text-zinc-200' : 'text-slate-700'
           }`}
           style={{

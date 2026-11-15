@@ -48,7 +48,7 @@ const BookmarksModal: React.FC<BookmarksModalProps> = ({ bookmarks, quranData, o
     return (
         <div className={`fixed inset-0 z-[1200] bg-black/30 backdrop-blur-sm flex items-center justify-center ${isLandscape ? 'p-0' : 'p-4'} animate-fadeIn`} onClick={onClose} dir={isEn ? "ltr" : "rtl"}>
             <div 
-                className={`modal-skinned w-full ${isLandscape ? 'max-w-[400px] max-h-[90vh] rounded-3xl' : 'max-w-[360px] sm:max-w-[380px] rounded-3xl max-h-[85vh]'} flex flex-col shadow-2xl border-none animate-modal-enter overflow-hidden`} 
+                className={`modal-skinned w-full ${isLandscape ? 'max-w-[400px] max-h-[90dvh] rounded-3xl' : 'max-w-[360px] sm:max-w-[380px] rounded-3xl max-h-[88dvh]'} flex flex-col shadow-2xl border-none animate-modal-enter overflow-hidden`} 
                 style={{
                     backgroundColor: currentTheme?.modalBg || currentTheme?.bg || '#ffffff',
                     color: currentTheme?.modalText || currentTheme?.text || '#000000'
@@ -82,7 +82,7 @@ const BookmarksModal: React.FC<BookmarksModalProps> = ({ bookmarks, quranData, o
                     </div>
                 </div>
 
-                <div className="overflow-y-auto p-4 pt-1 flex-1 flex flex-col gap-4">
+                <div className="overflow-y-auto p-4 pt-1 flex-1 min-h-0 flex flex-col gap-4">
                     {bookmarks.length === 0 ? (
                         <div className="col-span-full text-center py-8 font-bold opacity-70 text-sm">{isEn ? "No saved bookmarks" : "لا توجد إشارات مرجعية محفوظة"}</div>
                     ) : (

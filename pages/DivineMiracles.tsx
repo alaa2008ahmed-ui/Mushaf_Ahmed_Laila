@@ -18,47 +18,11 @@ import {
     Share2, 
     Copy, 
     Check, 
-    Search, 
-    X, 
-    Sparkles, 
-    BookOpen, 
-    Compass, 
-    Atom, 
-    ScrollText, 
-    HeartHandshake,
-    Quote,
-    ExternalLink,
     ChevronDown
 } from 'lucide-react';
 import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/CommunitySpotlightGuide';
 import { DIVINE_MIRACLES_PAGE_STEPS } from '../components/Community/communityTourSteps';
 import { getModernFlatTokens, hexToRgba } from '../utils/flatDesignTokens';
-
-const normalizeArabicSearch = (text: string): string => {
-    if (!text) return '';
-    return text
-        .replace(/[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06ED]/g, '')
-        .replace(/[أإآٱ]/g, 'ا')
-        .replace(/ة/g, 'ه')
-        .replace(/ى/g, 'ي')
-        .replace(/ؤ/g, 'و')
-        .replace(/ئ/g, 'ي')
-        .replace(/ء/g, '')
-        .replace(/ـ+/g, '')
-        .replace(/[«»""''.,;:!?()\[\]{}\\/—–-]/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim()
-        .toLowerCase();
-};
-
-const matchesArabicSearch = (content: string, rawQuery: string): boolean => {
-    const cleanQuery = normalizeArabicSearch(rawQuery);
-    if (!cleanQuery) return true;
-    const tokens = cleanQuery.split(' ').filter(Boolean);
-    if (tokens.length === 0) return true;
-    const cleanContent = normalizeArabicSearch(content);
-    return tokens.every(token => cleanContent.includes(token));
-};
 
 interface DivineMiraclesProps {
     onBack?: () => void;
@@ -86,13 +50,100 @@ interface ZoomedCardData {
     sources?: string[];
 }
 
+interface AutoFitSingleLineProps {
+    as?: 'h2' | 'h3' | 'h4' | 'span';
+    text: string;
+    baseFontSize: number;
+    smFontSize?: number;
+    minFontSize?: number;
+    textScale?: number;
+    className?: string;
+    style?: React.CSSProperties;
+}
+
+const AutoFitSingleLine: React.FC<AutoFitSingleLineProps> = ({
+    as: Tag = 'h3',
+    text,
+    baseFontSize,
+    smFontSize,
+    minFontSize = 8.5,
+    textScale = 1,
+    className = '',
+    style,
+}) => {
+    const elRef = useRef<HTMLElement | null>(null);
+
+    const fitText = useCallback(() => {
+        const el = elRef.current;
+        if (!el) return;
+
+        const effectiveBase =
+            smFontSize && typeof window !== 'undefined' && window.innerWidth >= 640
+                ? smFontSize
+                : baseFontSize;
+        const targetSize = effectiveBase * textScale;
+        el.style.fontSize = `${targetSize}px`;
+
+        const availableWidth = el.clientWidth;
+        if (availableWidth <= 0) return;
+
+        const floor = Math.min(minFontSize, 8.5);
+        if (el.scrollWidth > availableWidth) {
+            const ratio = availableWidth / el.scrollWidth;
+            let currentSize = Math.max(floor, Math.floor(targetSize * ratio * 2) / 2);
+            el.style.fontSize = `${currentSize}px`;
+
+            while (el.scrollWidth > el.clientWidth && currentSize > floor) {
+                currentSize = Math.max(floor, currentSize - 0.5);
+                el.style.fontSize = `${currentSize}px`;
+            }
+        }
+    }, [text, baseFontSize, smFontSize, minFontSize, textScale]);
+
+    useLayoutEffect(() => {
+        fitText();
+    }, [fitText]);
+
+    useEffect(() => {
+        const el = elRef.current;
+        if (!el) return;
+        let rafId: number | null = null;
+        const scheduleFit = () => {
+            if (rafId !== null) cancelAnimationFrame(rafId);
+            rafId = requestAnimationFrame(() => {
+                fitText();
+            });
+        };
+        const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(scheduleFit) : null;
+        if (ro) ro.observe(el);
+        if (typeof document !== 'undefined' && document.fonts?.ready) {
+            document.fonts.ready.then(scheduleFit).catch(() => {});
+        }
+        return () => {
+            if (ro) ro.disconnect();
+            if (rafId !== null) cancelAnimationFrame(rafId);
+        };
+    }, [fitText]);
+
+    return (
+        <Tag
+            ref={elRef as any}
+            className={`seerah-autofit-heading block whitespace-nowrap overflow-hidden text-ellipsis ${className}`}
+            style={style}
+        >
+            {text}
+        </Tag>
+    );
+};
+
 const DivineMiracles: React.FC<DivineMiraclesProps> = ({ onBack, onNavigate, navParams }) => {
-    const { theme, themeKey } = useTheme();
+    const { theme, themeKey, isNightMode } = useTheme();
     const { language, isRTL } = useLanguage();
     const isEn = language === 'en';
 
     // Modern Flat Design Tokens
     const tokens = useMemo(() => getModernFlatTokens(theme, themeKey), [theme, themeKey]);
+    const isEffectiveDark = isNightMode || tokens.isDark || themeKey === 'black_gold' || themeKey === 'deep_black' || theme.bgColor === '#000000';
     const { 
         primaryColor, 
         themeActiveTextColor, 
@@ -100,16 +151,18 @@ const DivineMiracles: React.FC<DivineMiraclesProps> = ({ onBack, onNavigate, nav
         cardBgColor, 
         cardShadow, 
         capsuleBg, 
-        filledInputBg
+        actionBtnBg
     } = tokens;
+    const themeHeadingColor = (tokens.isDeepBlack || (isEffectiveDark && (themeKey === 'deep_black' || theme.bgColor === '#000000'))) ? '#FFFFFF' : primaryColor;
 
     // Scroll container refs
     const mainScrollRef = useRef<HTMLElement | null>(null);
     const zoomScrollRef = useRef<HTMLDivElement | null>(null);
+    const savedListScrollTopRef = useRef<number>(0);
+    const restoreScrollTargetRef = useRef<number | null>(null);
 
-    // Filter & Search states
+    // Filter state
     const [activeTab, setActiveTab] = useState<string>('all');
-    const [searchQuery, setSearchQuery] = useState<string>('');
     const [selectedItem, setSelectedItem] = useState<DivineMiracleItem | null>(null);
 
     // Zoom modal state for focused reading
@@ -172,9 +225,20 @@ const DivineMiracles: React.FC<DivineMiraclesProps> = ({ onBack, onNavigate, nav
     }, []);
 
     useLayoutEffect(() => {
-        if (mainScrollRef.current) {
-            mainScrollRef.current.scrollTop = 0;
+        const el = mainScrollRef.current;
+        if (!el) return;
+        if (!selectedItem && restoreScrollTargetRef.current !== null) {
+            const targetScroll = restoreScrollTargetRef.current;
+            restoreScrollTargetRef.current = null;
+            el.scrollTop = targetScroll;
+            requestAnimationFrame(() => {
+                if (mainScrollRef.current) {
+                    mainScrollRef.current.scrollTop = targetScroll;
+                }
+            });
+            return;
         }
+        el.scrollTop = 0;
     }, [selectedItem?.id, activeTab]);
 
     useLayoutEffect(() => {
@@ -183,6 +247,25 @@ const DivineMiracles: React.FC<DivineMiraclesProps> = ({ onBack, onNavigate, nav
         }
     }, [zoomedCard]);
 
+    const handleSelectItem = useCallback((item: DivineMiracleItem) => {
+        if (!selectedItem && mainScrollRef.current) {
+            savedListScrollTopRef.current = mainScrollRef.current.scrollTop;
+        }
+        restoreScrollTargetRef.current = null;
+        setSelectedItem(item);
+    }, [selectedItem]);
+
+    // Prev / Next Miracle Navigation
+    const currentIndex = useMemo(() => {
+        if (!selectedItem) return -1;
+        return DIVINE_MIRACLES_DATA.findIndex(i => i.id === selectedItem.id);
+    }, [selectedItem?.id]);
+
+    const prevItem = currentIndex > 0 ? DIVINE_MIRACLES_DATA[currentIndex - 1] : null;
+    const nextItem = currentIndex >= 0 && currentIndex < DIVINE_MIRACLES_DATA.length - 1
+        ? DIVINE_MIRACLES_DATA[currentIndex + 1]
+        : null;
+
     // Handle back button clicks
     const handleBackClick = useCallback(() => {
         if (zoomedCard) {
@@ -190,11 +273,12 @@ const DivineMiracles: React.FC<DivineMiraclesProps> = ({ onBack, onNavigate, nav
             return;
         }
         if (selectedItem) {
+            restoreScrollTargetRef.current = savedListScrollTopRef.current;
             setSelectedItem(null);
-            scrollToTop();
             return;
         }
         if (activeTab !== 'all') {
+            restoreScrollTargetRef.current = null;
             setActiveTab('all');
             scrollToTop();
             return;
@@ -214,11 +298,12 @@ const DivineMiracles: React.FC<DivineMiraclesProps> = ({ onBack, onNavigate, nav
                 return true;
             }
             if (selectedItem) {
+                restoreScrollTargetRef.current = savedListScrollTopRef.current;
                 setSelectedItem(null);
-                scrollToTop();
                 return true;
             }
             if (activeTab !== 'all') {
+                restoreScrollTargetRef.current = null;
                 setActiveTab('all');
                 scrollToTop();
                 return true;
@@ -235,7 +320,10 @@ const DivineMiracles: React.FC<DivineMiraclesProps> = ({ onBack, onNavigate, nav
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'Escape') {
                 if (zoomedCard) setZoomedCard(null);
-                else if (selectedItem) setSelectedItem(null);
+                else if (selectedItem) {
+                    restoreScrollTargetRef.current = savedListScrollTopRef.current;
+                    setSelectedItem(null);
+                }
             }
         };
         window.addEventListener('keydown', handleKeyDown);
@@ -244,39 +332,11 @@ const DivineMiracles: React.FC<DivineMiraclesProps> = ({ onBack, onNavigate, nav
 
     // Filter items
     const filteredItems = useMemo(() => {
-        let list = [...DIVINE_MIRACLES_DATA];
-
-        if (activeTab !== 'all') {
-            list = list.filter(item => item.category === activeTab);
+        if (activeTab === 'all') {
+            return [...DIVINE_MIRACLES_DATA];
         }
-
-        const query = searchQuery.trim();
-        if (query) {
-            list = list.filter(item => {
-                const searchable = [
-                    item.titleAr,
-                    item.titleEn,
-                    item.badgeAr,
-                    item.badgeEn,
-                    item.summaryAr,
-                    item.summaryEn,
-                    item.descriptionAr,
-                    item.descriptionEn,
-                    item.scientificOrHistoricalFactAr || '',
-                    item.scientificOrHistoricalFactEn || '',
-                    item.quranEvidence?.ayahAr || '',
-                    item.quranEvidence?.surahAr || '',
-                    item.hadithEvidence?.matnAr || '',
-                    ...(item.reflectionsAr || []),
-                    ...(item.sourcesAr || [])
-                ].join(' ');
-
-                return matchesArabicSearch(searchable, query);
-            });
-        }
-
-        return list;
-    }, [activeTab, searchQuery]);
+        return DIVINE_MIRACLES_DATA.filter(item => item.category === activeTab);
+    }, [activeTab]);
 
     // Copy Item
     const handleCopyItem = (item: DivineMiracleItem, e?: React.MouseEvent) => {
@@ -358,18 +418,6 @@ const DivineMiracles: React.FC<DivineMiraclesProps> = ({ onBack, onNavigate, nav
             showToast(isEn ? 'Failed to share card' : 'تعذر مشاركة البطاقة');
         } finally {
             setIsSharing(false);
-        }
-    };
-
-    const getCategoryIcon = (catId: string) => {
-        const cls = "w-4 h-4";
-        switch (catId) {
-            case 'existence': return <Compass className={cls} />;
-            case 'divine_origin': return <BookOpen className={cls} />;
-            case 'scientific': return <Atom className={cls} />;
-            case 'prophecies': return <ScrollText className={cls} />;
-            case 'daily_life': return <HeartHandshake className={cls} />;
-            default: return <Sparkles className={cls} />;
         }
     };
 
@@ -484,7 +532,7 @@ const DivineMiracles: React.FC<DivineMiraclesProps> = ({ onBack, onNavigate, nav
 
     return (
         <div 
-            className={`flex flex-col h-screen overflow-hidden select-none ${isEn ? 'text-left font-sans' : 'text-right'}`}
+            className={`flex flex-col h-[100dvh] overflow-hidden select-none ${isEn ? 'text-left font-sans' : 'text-right'}`}
             style={{ 
                 backgroundColor: pageBgColor, 
                 color: theme.textColor,
@@ -545,7 +593,7 @@ const DivineMiracles: React.FC<DivineMiraclesProps> = ({ onBack, onNavigate, nav
                         {/* Title in center - strictly bounded between buttons, zero overlap */}
                         <div className="flex-1 min-w-0 flex items-center justify-center px-1 text-center overflow-hidden">
                             <h1 
-                                className={`app-top-bar__title ${isEn ? 'font-bold' : 'font-kufi'} transition-all truncate leading-snug`}
+                                className={`app-top-bar__title ${isEn ? 'font-bold' : 'font-kufi'} truncate leading-snug`}
                                 style={{
                                     fontSize: selectedItem 
                                         ? 'clamp(0.78rem, 2.9vw, 0.95rem)' 
@@ -589,7 +637,7 @@ const DivineMiracles: React.FC<DivineMiraclesProps> = ({ onBack, onNavigate, nav
             {!selectedItem && (
                 <div 
                     id="divine-miracles-tabs-nav"
-                    className="shrink-0 z-10 px-3 sm:px-4 pt-2.5 pb-2 transition-colors border-0"
+                    className="shrink-0 z-10 px-3 sm:px-4 pt-2.5 pb-2 border-0"
                     style={{ backgroundColor: pageBgColor }}
                 >
                     <div className="max-w-3xl mx-auto">
@@ -604,8 +652,8 @@ const DivineMiracles: React.FC<DivineMiraclesProps> = ({ onBack, onNavigate, nav
                                         key={cat.id}
                                         type="button"
                                         onClick={() => {
+                                            restoreScrollTargetRef.current = null;
                                             setActiveTab(cat.id);
-                                            scrollToTop();
                                         }}
                                         className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border-0 shrink-0 flex items-center gap-1.5 active:scale-95 cursor-pointer ${
                                             isSelected ? 'shadow-xs' : 'hover:bg-black/5 dark:hover:bg-white/5 opacity-80 hover:opacity-100'
@@ -615,7 +663,6 @@ const DivineMiracles: React.FC<DivineMiraclesProps> = ({ onBack, onNavigate, nav
                                             color: isSelected ? themeActiveTextColor : (tokens.isDark ? '#CBD5E1' : '#475569')
                                         }}
                                     >
-                                        {getCategoryIcon(cat.id)}
                                         <span>{isEn ? cat.titleEn : cat.titleAr}</span>
                                     </button>
                                 );
@@ -628,95 +675,50 @@ const DivineMiracles: React.FC<DivineMiraclesProps> = ({ onBack, onNavigate, nav
             {/* Main Content Area */}
             <main 
                 ref={mainScrollRef} 
-                className="flex-1 overflow-y-auto hide-scrollbar relative max-w-3xl mx-auto w-full px-3.5 sm:px-4 pb-14 sm:pb-16 flex flex-col pt-1"
+                className="flex-1 min-h-0 overflow-y-auto hide-scrollbar relative max-w-3xl mx-auto w-full px-3.5 sm:px-4 app-scroll-safe pt-1"
             >
-                {/* Search Bar - only shown in main list view */}
-                {!selectedItem && (
-                    <div className="mb-4 w-full flex items-center gap-2 z-10 shrink-0">
-                        <div 
-                            className="relative flex-1 rounded-[18px] overflow-hidden transition-all shadow-xs" 
-                            style={{ 
-                                backgroundColor: filledInputBg,
-                                boxShadow: cardShadow
-                            }}
-                        >
-                            <input 
-                                type="text" 
-                                placeholder={isEn ? "Search miracles, verses, or prophecies..." : "ابحث في المعجزات، الآيات، النبوءات، أو الحقائق..."} 
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className={`w-full bg-transparent py-3 text-sm ${isEn ? 'pl-11 pr-10 text-left font-sans' : 'pr-11 pl-10 text-right font-cairo'} focus:outline-none placeholder-gray-400 dark:placeholder-gray-500`}
-                                style={{ color: 'var(--text-color)' }}
-                            />
-                            <Search 
-                                className={`w-4 h-4 absolute ${isEn ? 'left-4' : 'right-4'} top-1/2 transform -translate-y-1/2 opacity-40`} 
-                                style={{ color: 'var(--text-color)' }}
-                            />
-                            {searchQuery && (
-                                <button
-                                    type="button"
-                                    onClick={() => setSearchQuery('')}
-                                    className={`absolute ${isEn ? 'right-3' : 'left-3'} top-1/2 transform -translate-y-1/2 w-6 h-6 rounded-full flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/10 opacity-60 hover:opacity-100 transition cursor-pointer`}
-                                    style={{ color: 'var(--text-color)' }}
-                                    title={isEn ? "Clear search" : "مسح البحث"}
-                                >
-                                    <X className="w-3.5 h-3.5" />
-                                </button>
-                            )}
-                        </div>
-                    </div>
-                )}
-
                 {/* VIEW 1: Detailed Item View */}
                 {selectedItem ? (
                     <div className="space-y-4">
                         {/* Header Banner Card */}
                         <div 
-                            className="rounded-[22px] p-5 sm:p-6 text-start relative border-0 shadow-sm"
+                            className="rounded-[18px] p-5 sm:p-6 text-start relative border-0"
                             style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
                         >
-                            <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
-                                <span 
-                                    className="px-3 py-1 rounded-full text-xs font-bold border-0"
-                                    style={{ 
-                                        backgroundColor: hexToRgba(primaryColor, 0.12),
-                                        color: primaryColor
-                                    }}
+                            <div className="flex items-center justify-end gap-1.5 sm:gap-2 mb-3">
+                                <button
+                                    type="button"
+                                    onClick={(e) => handleShareItemImage(selectedItem, e)}
+                                    disabled={isSharing}
+                                    className="w-8 h-8 rounded-full border-0 flex items-center justify-center transition-colors opacity-85 hover:opacity-100 cursor-pointer shrink-0"
+                                    style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#0F172A' }}
+                                    title={isEn ? "Share as image card" : "مشاركة كبطاقة صورة"}
+                                    aria-label={isEn ? "Share as image card" : "مشاركة كبطاقة صورة"}
                                 >
-                                    {isEn ? selectedItem.badgeEn : selectedItem.badgeAr}
-                                </span>
-
-                                <div className="flex items-center gap-1.5">
-                                    <button
-                                        type="button"
-                                        onClick={(e) => handleCopyItem(selectedItem, e)}
-                                        className="p-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 active:scale-90 transition cursor-pointer"
-                                        title={isEn ? "Copy complete text" : "نسخ النص كاملاً"}
-                                        style={{ color: tokens.textColor }}
-                                    >
-                                        <Copy className="w-4 h-4" />
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={(e) => handleShareItemImage(selectedItem, e)}
-                                        className="p-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 active:scale-90 transition cursor-pointer"
-                                        title={isEn ? "Share as image card" : "مشاركة كبطاقة صورة"}
-                                        style={{ color: tokens.textColor }}
-                                    >
-                                        <Share2 className="w-4 h-4" />
-                                    </button>
-                                </div>
+                                    {isSharing ? <i className="fa-solid fa-circle-notch fa-spin text-xs"></i> : <Share2 className="w-3.5 h-3.5" />}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={(e) => handleCopyItem(selectedItem, e)}
+                                    className="w-8 h-8 rounded-full border-0 flex items-center justify-center transition-colors opacity-85 hover:opacity-100 cursor-pointer shrink-0"
+                                    style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+                                    title={isEn ? "Copy complete text" : "نسخ النص كاملاً"}
+                                    aria-label={isEn ? "Copy complete text" : "نسخ النص كاملاً"}
+                                >
+                                    <i className="fa-regular fa-copy text-xs"></i>
+                                </button>
                             </div>
 
-                            <h2 
-                                className="font-extrabold leading-snug mb-3"
-                                style={{ 
-                                    color: primaryColor, 
-                                    fontSize: `${20 * cardTextScale}px` 
-                                }}
-                            >
-                                {isEn ? selectedItem.titleEn : selectedItem.titleAr}
-                            </h2>
+                            <AutoFitSingleLine
+                                as="h2"
+                                text={isEn ? selectedItem.titleEn : selectedItem.titleAr}
+                                baseFontSize={20}
+                                smFontSize={22}
+                                minFontSize={11}
+                                textScale={cardTextScale}
+                                className={`font-extrabold mb-3 ${isEn ? 'font-sans' : 'font-kufi'}`}
+                                style={{ color: themeHeadingColor }}
+                            />
 
                             <p 
                                 className="leading-relaxed opacity-90 font-medium"
@@ -732,30 +734,43 @@ const DivineMiracles: React.FC<DivineMiraclesProps> = ({ onBack, onNavigate, nav
                         {/* Quran Evidence Card */}
                         {selectedItem.quranEvidence && (
                             <div 
-                                className="rounded-[20px] p-5 text-start relative border-0 shadow-sm"
+                                className="rounded-[18px] p-5 text-start relative border-0"
                                 style={{ 
-                                    backgroundColor: tokens.isDark ? 'rgba(217, 119, 6, 0.08)' : '#FEF3C7',
+                                    backgroundColor: cardBgColor,
                                     boxShadow: cardShadow
                                 }}
                             >
-                                <div className="flex items-center gap-2 mb-2 text-amber-800 dark:text-amber-300">
-                                    <BookOpen className="w-4 h-4" />
-                                    <span className="font-bold text-xs uppercase tracking-wide">
-                                        {isEn ? 'Holy Quran Evidence' : 'الدليل والبرهان من القرآن الكريم'}
-                                    </span>
+                                <div className="mb-2">
+                                    <AutoFitSingleLine
+                                        as="h3"
+                                        text={isEn ? 'Holy Quran Evidence' : 'الدليل والبرهان من القرآن الكريم'}
+                                        baseFontSize={13}
+                                        minFontSize={9.5}
+                                        textScale={cardTextScale}
+                                        className={`font-bold ${isEn ? 'font-sans' : 'font-kufi'}`}
+                                        style={{ color: themeHeadingColor }}
+                                    />
                                 </div>
 
                                 <p 
-                                    className={`leading-loose font-bold text-amber-950 dark:text-amber-100 ${isEn ? 'font-sans' : 'font-amiri'}`}
-                                    style={{ fontSize: `${18 * cardTextScale}px` }}
+                                    className={`leading-loose font-bold ${isEn ? 'font-sans' : 'font-amiri'}`}
+                                    style={{ fontSize: `${18 * cardTextScale}px`, color: tokens.textColor }}
                                 >
                                     {isEn ? `"${selectedItem.quranEvidence.ayahEn}"` : `﴿${selectedItem.quranEvidence.ayahAr}﴾`}
                                 </p>
 
-                                <div className="mt-3 text-xs font-bold text-amber-800/80 dark:text-amber-400">
-                                    {isEn 
-                                        ? `[${selectedItem.quranEvidence.surahEn}: ${selectedItem.quranEvidence.ayahNumber}]`
-                                        : `[${selectedItem.quranEvidence.surahAr}: الآية ${selectedItem.quranEvidence.ayahNumber}]`}
+                                <div className="mt-3 opacity-70 font-bold">
+                                    <AutoFitSingleLine
+                                        as="span"
+                                        text={isEn 
+                                            ? `[${selectedItem.quranEvidence.surahEn}: ${selectedItem.quranEvidence.ayahNumber}]`
+                                            : `[${selectedItem.quranEvidence.surahAr}: الآية ${selectedItem.quranEvidence.ayahNumber}]`}
+                                        baseFontSize={12}
+                                        minFontSize={7.5}
+                                        textScale={cardTextScale}
+                                        className="w-full"
+                                        style={{ color: tokens.textColor }}
+                                    />
                                 </div>
                             </div>
                         )}
@@ -763,46 +778,63 @@ const DivineMiracles: React.FC<DivineMiraclesProps> = ({ onBack, onNavigate, nav
                         {/* Hadith Evidence Card */}
                         {selectedItem.hadithEvidence && (
                             <div 
-                                className="rounded-[20px] p-5 text-start relative border-0 shadow-sm"
+                                className="rounded-[18px] p-5 text-start relative border-0"
                                 style={{ 
-                                    backgroundColor: tokens.isDark ? 'rgba(16, 185, 129, 0.08)' : '#ECFDF5',
+                                    backgroundColor: cardBgColor,
                                     boxShadow: cardShadow
                                 }}
                             >
-                                <div className="flex items-center gap-2 mb-2 text-emerald-800 dark:text-emerald-300">
-                                    <ScrollText className="w-4 h-4" />
-                                    <span className="font-bold text-xs uppercase tracking-wide">
-                                        {isEn ? 'Prophetic Sunnah Evidence' : 'الدليل والبرهان من السنة النبوية'}
-                                    </span>
+                                <div className="mb-2">
+                                    <AutoFitSingleLine
+                                        as="h3"
+                                        text={isEn ? 'Prophetic Sunnah Evidence' : 'الدليل والبرهان من السنة النبوية'}
+                                        baseFontSize={13}
+                                        minFontSize={9.5}
+                                        textScale={cardTextScale}
+                                        className={`font-bold ${isEn ? 'font-sans' : 'font-kufi'}`}
+                                        style={{ color: themeHeadingColor }}
+                                    />
                                 </div>
 
                                 <p 
-                                    className="leading-relaxed font-semibold text-emerald-950 dark:text-emerald-100"
-                                    style={{ fontSize: `${16 * cardTextScale}px` }}
+                                    className="leading-relaxed font-semibold"
+                                    style={{ fontSize: `${16 * cardTextScale}px`, color: tokens.textColor }}
                                 >
                                     {isEn ? `"${selectedItem.hadithEvidence.matnEn}"` : `«${selectedItem.hadithEvidence.matnAr}»`}
                                 </p>
 
-                                <div className="mt-2.5 text-xs font-medium text-emerald-800/80 dark:text-emerald-400">
-                                    {isEn 
-                                        ? `Narrated by: ${selectedItem.hadithEvidence.narratorEn} • ${selectedItem.hadithEvidence.sourceEn}`
-                                        : `رواه: ${selectedItem.hadithEvidence.narratorAr} • ${selectedItem.hadithEvidence.sourceAr}`}
+                                <div className="mt-2.5 opacity-70 font-medium">
+                                    <AutoFitSingleLine
+                                        as="span"
+                                        text={isEn 
+                                            ? `Narrated by: ${selectedItem.hadithEvidence.narratorEn} • ${selectedItem.hadithEvidence.sourceEn}`
+                                            : `رواه: ${selectedItem.hadithEvidence.narratorAr} • ${selectedItem.hadithEvidence.sourceAr}`}
+                                        baseFontSize={12}
+                                        minFontSize={7.5}
+                                        textScale={cardTextScale}
+                                        className="w-full"
+                                        style={{ color: tokens.textColor }}
+                                    />
                                 </div>
                             </div>
                         )}
 
                         {/* Detailed Explanation */}
                         <div 
-                            className="rounded-[22px] p-5 sm:p-6 text-start relative border-0 shadow-sm"
+                            className="rounded-[18px] p-5 sm:p-6 text-start relative border-0"
                             style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
                         >
-                            <h3 
-                                className="font-bold mb-3 flex items-center gap-2"
-                                style={{ color: primaryColor, fontSize: `${16 * cardTextScale}px` }}
-                            >
-                                <Sparkles className="w-4 h-4" />
-                                <span>{isEn ? 'Comprehensive Detailed Explanation' : 'الشرح والبيان المفصل'}</span>
-                            </h3>
+                            <div className="mb-3">
+                                <AutoFitSingleLine
+                                    as="h3"
+                                    text={isEn ? 'Comprehensive Detailed Explanation' : 'الشرح والبيان المفصل'}
+                                    baseFontSize={15}
+                                    minFontSize={10}
+                                    textScale={cardTextScale}
+                                    className={`font-bold ${isEn ? 'font-sans' : 'font-kufi'}`}
+                                    style={{ color: themeHeadingColor }}
+                                />
+                            </div>
 
                             <div 
                                 className="space-y-3 leading-relaxed whitespace-pre-line opacity-95"
@@ -818,22 +850,27 @@ const DivineMiracles: React.FC<DivineMiraclesProps> = ({ onBack, onNavigate, nav
                         {/* Scientific / Historical Fact Card */}
                         {(selectedItem.scientificOrHistoricalFactAr || selectedItem.scientificOrHistoricalFactEn) && (
                             <div 
-                                className="rounded-[20px] p-5 text-start relative border-0 shadow-sm"
+                                className="rounded-[18px] p-5 text-start relative border-0"
                                 style={{ 
-                                    backgroundColor: tokens.isDark ? 'rgba(59, 130, 246, 0.08)' : '#EFF6FF',
+                                    backgroundColor: cardBgColor,
                                     boxShadow: cardShadow
                                 }}
                             >
-                                <div className="flex items-center gap-2 mb-2 text-blue-800 dark:text-blue-300">
-                                    <Atom className="w-4 h-4" />
-                                    <span className="font-bold text-xs uppercase tracking-wide">
-                                        {isEn ? 'Scientific / Historical Documentation' : 'التوثيق العلمي والتاريخي الحديث'}
-                                    </span>
+                                <div className="mb-2">
+                                    <AutoFitSingleLine
+                                        as="h3"
+                                        text={isEn ? 'Scientific / Historical Documentation' : 'التوثيق العلمي والتاريخي الحديث'}
+                                        baseFontSize={13}
+                                        minFontSize={9.5}
+                                        textScale={cardTextScale}
+                                        className={`font-bold ${isEn ? 'font-sans' : 'font-kufi'}`}
+                                        style={{ color: themeHeadingColor }}
+                                    />
                                 </div>
 
                                 <p 
-                                    className="leading-relaxed font-semibold text-blue-950 dark:text-blue-100"
-                                    style={{ fontSize: `${14 * cardTextScale}px` }}
+                                    className="leading-relaxed font-semibold"
+                                    style={{ fontSize: `${14 * cardTextScale}px`, color: tokens.textColor }}
                                 >
                                     {isEn ? selectedItem.scientificOrHistoricalFactEn : selectedItem.scientificOrHistoricalFactAr}
                                 </p>
@@ -843,25 +880,34 @@ const DivineMiracles: React.FC<DivineMiraclesProps> = ({ onBack, onNavigate, nav
                         {/* Faith Reflections */}
                         {((isEn ? selectedItem.reflectionsEn : selectedItem.reflectionsAr) || []).length > 0 && (
                             <div 
-                                className="rounded-[20px] p-5 text-start relative border-0 shadow-sm"
+                                className="rounded-[18px] p-5 text-start relative border-0"
                                 style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
                             >
-                                <h4 
-                                    className="font-bold mb-3 text-xs uppercase tracking-wide flex items-center gap-2"
-                                    style={{ color: primaryColor }}
-                                >
-                                    <Quote className="w-3.5 h-3.5" />
-                                    <span>{isEn ? 'Faith Lessons & Reflections' : 'دروس وإشراقات إيمانية'}</span>
-                                </h4>
+                                <div className="mb-3">
+                                    <AutoFitSingleLine
+                                        as="h4"
+                                        text={isEn ? 'Faith Lessons & Reflections' : 'دروس وإشراقات إيمانية'}
+                                        baseFontSize={14}
+                                        minFontSize={9.5}
+                                        textScale={cardTextScale}
+                                        className={`font-bold ${isEn ? 'font-sans' : 'font-kufi'}`}
+                                        style={{ color: themeHeadingColor }}
+                                    />
+                                </div>
 
-                                <ul className="space-y-2">
+                                <ul className="space-y-2.5">
                                     {(isEn ? selectedItem.reflectionsEn : selectedItem.reflectionsAr)?.map((r, i) => (
                                         <li 
                                             key={i} 
                                             className="flex items-start gap-2.5"
                                             style={{ fontSize: `${13.5 * cardTextScale}px`, color: tokens.textColor }}
                                         >
-                                            <span className="w-2 h-2 rounded-full mt-2 shrink-0" style={{ backgroundColor: primaryColor }} />
+                                            <span 
+                                                className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 font-bold text-[11px] mt-0.5"
+                                                style={{ backgroundColor: hexToRgba(themeHeadingColor, 0.12), color: themeHeadingColor }}
+                                            >
+                                                {i + 1}
+                                            </span>
                                             <span className="leading-relaxed opacity-90">{r}</span>
                                         </li>
                                     ))}
@@ -871,19 +917,27 @@ const DivineMiracles: React.FC<DivineMiraclesProps> = ({ onBack, onNavigate, nav
 
                         {/* Sources & Citations */}
                         <div 
-                            className="rounded-[18px] p-4 text-start relative border-0 opacity-80"
-                            style={{ backgroundColor: tokens.isDark ? 'rgba(255,255,255,0.03)' : '#F8FAFC' }}
+                            className="rounded-[18px] p-4 sm:p-5 text-start relative border-0"
+                            style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
                         >
-                            <span className="text-[11px] font-bold block mb-1 opacity-70" style={{ color: tokens.textColor }}>
-                                {isEn ? 'Documented Sources & References:' : 'المصادر والمراجع الموثقة:'}
-                            </span>
+                            <div className="mb-2">
+                                <AutoFitSingleLine
+                                    as="h4"
+                                    text={isEn ? 'Documented Sources & References:' : 'المصادر والمراجع الموثقة:'}
+                                    baseFontSize={13}
+                                    minFontSize={9}
+                                    textScale={cardTextScale}
+                                    className={`font-bold ${isEn ? 'font-sans' : 'font-kufi'}`}
+                                    style={{ color: themeHeadingColor }}
+                                />
+                            </div>
                             <div className="flex flex-wrap gap-1.5">
                                 {(isEn ? selectedItem.sourcesEn : selectedItem.sourcesAr).map((s, idx) => (
                                     <span 
                                         key={idx}
-                                        className="text-[11px] px-2 py-0.5 rounded-md font-mono"
+                                        className="text-[11px] px-2.5 py-1 rounded-lg font-mono"
                                         style={{ 
-                                            backgroundColor: hexToRgba(primaryColor, 0.08),
+                                            backgroundColor: tokens.isDark ? 'rgba(255, 255, 255, 0.05)' : '#F8FAFC',
                                             color: tokens.textColor 
                                         }}
                                     >
@@ -893,23 +947,37 @@ const DivineMiracles: React.FC<DivineMiraclesProps> = ({ onBack, onNavigate, nav
                             </div>
                         </div>
 
-                        {/* Return to list button */}
-                        <div className="pt-2 flex justify-center">
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setSelectedItem(null);
-                                    scrollToTop();
-                                }}
-                                className="px-6 py-2.5 rounded-full font-bold text-xs flex items-center gap-2 transition-all active:scale-95 cursor-pointer shadow-sm"
-                                style={{ 
-                                    backgroundColor: primaryColor, 
-                                    color: themeActiveTextColor 
-                                }}
-                            >
-                                {isEn ? <ArrowLeft className="w-4 h-4" /> : <ArrowRight className="w-4 h-4" />}
-                                <span>{isEn ? 'Back to All Miracles' : 'العودة لقائمة المعجزات'}</span>
-                            </button>
+                        {/* Bottom Prev / Next Miracle Navigation */}
+                        <div className="grid grid-cols-2 gap-3 pt-2">
+                            {prevItem ? (
+                                <button
+                                    type="button"
+                                    onClick={() => handleSelectItem(prevItem)}
+                                    className="p-3.5 rounded-[16px] border-0 flex items-center justify-center text-center transition-opacity active:scale-95 hover:opacity-90 cursor-pointer"
+                                    style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+                                >
+                                    <span className={`text-xs sm:text-sm font-bold ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: themeHeadingColor }}>
+                                        {isEn ? 'Previous Miracle' : 'المعجزة السابقة'}
+                                    </span>
+                                </button>
+                            ) : (
+                                <div />
+                            )}
+
+                            {nextItem ? (
+                                <button
+                                    type="button"
+                                    onClick={() => handleSelectItem(nextItem)}
+                                    className="p-3.5 rounded-[16px] border-0 flex items-center justify-center text-center transition-opacity active:scale-95 hover:opacity-90 cursor-pointer"
+                                    style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+                                >
+                                    <span className={`text-xs sm:text-sm font-bold ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: themeHeadingColor }}>
+                                        {isEn ? 'Next Miracle' : 'المعجزة التالية'}
+                                    </span>
+                                </button>
+                            ) : (
+                                <div />
+                            )}
                         </div>
                     </div>
                 ) : (
@@ -917,7 +985,7 @@ const DivineMiracles: React.FC<DivineMiraclesProps> = ({ onBack, onNavigate, nav
                     <div className="space-y-3.5">
                         {filteredItems.length === 0 ? (
                             <div 
-                                className="rounded-[22px] p-8 text-center border-0 shadow-xs"
+                                className="rounded-[18px] p-8 text-center border-0"
                                 style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
                             >
                                 <p className="text-sm font-bold opacity-75" style={{ color: tokens.textColor }}>
@@ -929,91 +997,78 @@ const DivineMiracles: React.FC<DivineMiraclesProps> = ({ onBack, onNavigate, nav
                                 <div
                                     key={item.id}
                                     id={`divine-miracle-card-${idx + 1}`}
-                                    onClick={() => {
-                                        setSelectedItem(item);
-                                        scrollToTop();
-                                    }}
-                                    className="rounded-[20px] p-4.5 sm:p-5 text-start relative border-0 cursor-pointer transition-all hover:scale-[1.01] active:scale-[0.99] group"
+                                    onClick={() => handleSelectItem(item)}
+                                    className="rounded-[18px] p-4 sm:p-5 text-start relative border-0 cursor-pointer hover:shadow-md transition-shadow active:scale-[0.99] group"
                                     style={{ 
                                         backgroundColor: cardBgColor, 
                                         boxShadow: cardShadow 
                                     }}
                                 >
-                                    {/* Badge and action tools */}
-                                    <div className="flex items-center justify-between gap-2 mb-2.5">
-                                        <div className="flex items-center gap-2">
-                                            <span 
-                                                className="px-2.5 py-0.5 rounded-full text-[11px] font-bold border-0"
-                                                style={{ 
-                                                    backgroundColor: hexToRgba(primaryColor, 0.1),
-                                                    color: primaryColor
-                                                }}
-                                            >
-                                                {isEn ? item.badgeEn : item.badgeAr}
-                                            </span>
-                                        </div>
-
-                                        <div className="flex items-center gap-1">
-                                            {/* Magnifying Glass to open individual card modal */}
-                                            <button
-                                                type="button"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setZoomedCard({
-                                                        title: isEn ? item.titleEn : item.titleAr,
-                                                        subtitle: isEn ? item.badgeEn : item.badgeAr,
-                                                        content: isEn ? item.descriptionEn : item.descriptionAr,
-                                                        quranEvidence: item.quranEvidence ? {
-                                                            ayah: isEn ? item.quranEvidence.ayahEn : item.quranEvidence.ayahAr,
-                                                            surah: isEn ? item.quranEvidence.surahEn : item.quranEvidence.surahAr,
-                                                            number: item.quranEvidence.ayahNumber
-                                                        } : undefined,
-                                                        hadithEvidence: item.hadithEvidence ? {
-                                                            matn: isEn ? item.hadithEvidence.matnEn : item.hadithEvidence.matnAr,
-                                                            narrator: isEn ? item.hadithEvidence.narratorEn : item.hadithEvidence.narratorAr,
-                                                            source: isEn ? item.hadithEvidence.sourceEn : item.hadithEvidence.sourceAr
-                                                        } : undefined,
-                                                        fact: isEn ? item.scientificOrHistoricalFactEn : item.scientificOrHistoricalFactAr,
-                                                        sources: isEn ? item.sourcesEn : item.sourcesAr
-                                                    });
-                                                }}
-                                                className="p-1.5 rounded-lg opacity-75 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/5 transition cursor-pointer"
-                                                title={isEn ? "Open card modal" : "تكبير وقراءة البطاقة"}
-                                                style={{ color: tokens.textColor }}
-                                            >
-                                                <ZoomIn className="w-4 h-4" />
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={(e) => handleCopyItem(item, e)}
-                                                className="p-1.5 rounded-lg opacity-75 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/5 transition cursor-pointer"
-                                                title={isEn ? "Copy" : "نسخ"}
-                                                style={{ color: tokens.textColor }}
-                                            >
-                                                <Copy className="w-4 h-4" />
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={(e) => handleShareItemImage(item, e)}
-                                                className="p-1.5 rounded-lg opacity-75 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/5 transition cursor-pointer"
-                                                title={isEn ? "Share as image" : "مشاركة كبطاقة"}
-                                                style={{ color: tokens.textColor }}
-                                            >
-                                                <Share2 className="w-4 h-4" />
-                                            </button>
-                                        </div>
+                                    {/* Action tools */}
+                                    <div className="flex items-center justify-end gap-1.5 sm:gap-2 mb-2.5">
+                                        <button
+                                            type="button"
+                                            onClick={(e) => handleCopyItem(item, e)}
+                                            className="w-8 h-8 rounded-full border-0 flex items-center justify-center text-xs transition-colors opacity-85 hover:opacity-100 cursor-pointer shrink-0"
+                                            style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+                                            title={isEn ? "Copy" : "نسخ"}
+                                            aria-label={isEn ? "Copy" : "نسخ"}
+                                        >
+                                            <i className="fa-regular fa-copy"></i>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setZoomedCard({
+                                                    title: isEn ? item.titleEn : item.titleAr,
+                                                    subtitle: isEn ? item.badgeEn : item.badgeAr,
+                                                    content: isEn ? item.descriptionEn : item.descriptionAr,
+                                                    quranEvidence: item.quranEvidence ? {
+                                                        ayah: isEn ? item.quranEvidence.ayahEn : item.quranEvidence.ayahAr,
+                                                        surah: isEn ? item.quranEvidence.surahEn : item.quranEvidence.surahAr,
+                                                        number: item.quranEvidence.ayahNumber
+                                                    } : undefined,
+                                                    hadithEvidence: item.hadithEvidence ? {
+                                                        matn: isEn ? item.hadithEvidence.matnEn : item.hadithEvidence.matnAr,
+                                                        narrator: isEn ? item.hadithEvidence.narratorEn : item.hadithEvidence.narratorAr,
+                                                        source: isEn ? item.hadithEvidence.sourceEn : item.hadithEvidence.sourceAr
+                                                    } : undefined,
+                                                    fact: isEn ? item.scientificOrHistoricalFactEn : item.scientificOrHistoricalFactAr,
+                                                    sources: isEn ? item.sourcesEn : item.sourcesAr
+                                                });
+                                            }}
+                                            className="w-8 h-8 rounded-full border-0 flex items-center justify-center text-xs transition-colors opacity-80 hover:opacity-100 cursor-pointer shrink-0"
+                                            style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+                                            title={isEn ? "Open card modal" : "تكبير وقراءة البطاقة"}
+                                            aria-label={isEn ? "Open card modal" : "تكبير وقراءة البطاقة"}
+                                        >
+                                            <i className="fa-solid fa-magnifying-glass-plus"></i>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={(e) => handleShareItemImage(item, e)}
+                                            disabled={isSharing}
+                                            className="w-8 h-8 rounded-full border-0 flex items-center justify-center text-xs transition-colors opacity-85 hover:opacity-100 cursor-pointer shrink-0"
+                                            style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#0F172A' }}
+                                            title={isEn ? "Share as image" : "مشاركة كبطاقة"}
+                                            aria-label={isEn ? "Share as image" : "مشاركة كبطاقة"}
+                                        >
+                                            {isSharing ? <i className="fa-solid fa-circle-notch fa-spin"></i> : <Share2 className="w-3.5 h-3.5" />}
+                                        </button>
                                     </div>
 
                                     {/* Card Title */}
-                                    <h3 
-                                        className="font-bold leading-snug mb-2 group-hover:opacity-90 transition-opacity"
-                                        style={{ 
-                                            color: primaryColor, 
-                                            fontSize: `${16.5 * cardTextScale}px` 
-                                        }}
-                                    >
-                                        {isEn ? item.titleEn : item.titleAr}
-                                    </h3>
+                                    <AutoFitSingleLine
+                                        as="h3"
+                                        text={isEn ? item.titleEn : item.titleAr}
+                                        baseFontSize={16}
+                                        smFontSize={18}
+                                        minFontSize={9}
+                                        textScale={cardTextScale}
+                                        className={`font-bold mb-2 ${isEn ? 'font-sans' : 'font-kufi'}`}
+                                        style={{ color: themeHeadingColor }}
+                                    />
 
                                     {/* Card Summary */}
                                     <p 
@@ -1026,26 +1081,35 @@ const DivineMiracles: React.FC<DivineMiraclesProps> = ({ onBack, onNavigate, nav
                                         {isEn ? item.summaryEn : item.summaryAr}
                                     </p>
 
-                                    {/* Quran or Hadith preview snippet */}
+                                    {/* Quran preview snippet */}
                                     {item.quranEvidence && (
                                         <div 
-                                            className="p-2.5 rounded-xl bg-amber-500/10 mb-2 border-0"
-                                            style={{ fontSize: `${13 * cardTextScale}px` }}
+                                            className="p-3 rounded-xl mb-2.5 border-0 text-center"
+                                            style={{ 
+                                                backgroundColor: tokens.isDark ? 'rgba(255, 255, 255, 0.05)' : '#F8FAFC',
+                                                fontSize: `${13 * cardTextScale}px`
+                                            }}
                                         >
-                                            <p className={`text-amber-950 dark:text-amber-200 line-clamp-2 ${isEn ? 'font-sans' : 'font-amiri font-bold'}`}>
+                                            <p 
+                                                className={`line-clamp-2 ${isEn ? 'font-sans font-semibold' : 'font-amiri font-bold'}`}
+                                                style={{ color: themeHeadingColor }}
+                                            >
                                                 {isEn ? `"${item.quranEvidence.ayahEn}"` : `﴿${item.quranEvidence.ayahAr}﴾`}
                                             </p>
                                         </div>
                                     )}
 
-                                    {/* Read more indicator */}
-                                    <div className="flex items-center justify-between pt-1 border-t border-slate-100 dark:border-zinc-800/80 text-xs font-bold">
-                                        <span style={{ color: primaryColor }}>
-                                            {isEn ? 'Read complete documentation →' : 'اضغط لقراءة التوثيق والشرح كاملاً ←'}
-                                        </span>
-                                        <span className="text-[10px] opacity-50 font-mono" style={{ color: tokens.textColor }}>
-                                            {item.sourcesAr[0]}
-                                        </span>
+                                    {/* Footer source line */}
+                                    <div className="pt-2 border-t border-slate-100 dark:border-slate-800/60 opacity-75">
+                                        <AutoFitSingleLine
+                                            as="span"
+                                            text={isEn ? (item.sourcesEn[0] || '') : (item.sourcesAr[0] || '')}
+                                            baseFontSize={11}
+                                            minFontSize={7.5}
+                                            textScale={cardTextScale}
+                                            className="font-mono w-full"
+                                            style={{ color: tokens.textColor }}
+                                        />
                                     </div>
                                 </div>
                             ))
@@ -1067,7 +1131,7 @@ const DivineMiracles: React.FC<DivineMiraclesProps> = ({ onBack, onNavigate, nav
                             animate={{ y: 0, opacity: 1 }}
                             exit={{ y: '100%', opacity: 0 }}
                             transition={{ type: 'spring', damping: 28, stiffness: 280 }}
-                            className="w-full max-w-xl mx-auto rounded-t-[28px] flex flex-col max-h-[85vh] overflow-hidden relative shadow-2xl border-t border-slate-100/40 dark:border-white/10"
+                            className="w-full max-w-xl mx-auto rounded-t-[28px] flex flex-col max-h-[88dvh] overflow-hidden relative shadow-2xl border-t border-slate-100/40 dark:border-white/10"
                             style={{ 
                                 backgroundColor: cardBgColor, 
                                 color: tokens.textColor,
@@ -1075,15 +1139,15 @@ const DivineMiracles: React.FC<DivineMiraclesProps> = ({ onBack, onNavigate, nav
                             }}
                             onClick={(e) => e.stopPropagation()}
                         >
-                            {/* Top Drag Handle & Category pill */}
+                            {/* Top Drag Handle */}
                             <div className="pt-3 px-6 pb-2 shrink-0 flex flex-col items-center">
                                 <div className="w-12 h-1.5 rounded-full bg-slate-300 dark:bg-zinc-700 mb-2" />
                                 <div className="w-full flex items-center justify-center">
                                     <span 
                                         className="px-3.5 py-1 rounded-full text-xs font-bold"
                                         style={{
-                                            backgroundColor: hexToRgba(tokens.primaryColor, 0.1),
-                                            color: tokens.primaryColor
+                                            backgroundColor: hexToRgba(themeHeadingColor, 0.1),
+                                            color: themeHeadingColor
                                         }}
                                     >
                                         {zoomedCard.subtitle || (isEn ? "Divine Miracles" : "المعجزات الإلهية")}
@@ -1095,43 +1159,49 @@ const DivineMiracles: React.FC<DivineMiraclesProps> = ({ onBack, onNavigate, nav
                             {zoomedCard.title && (
                                 <h3 
                                     className={`text-base sm:text-lg font-bold ${isEn ? 'font-sans' : 'font-kufi'} text-center leading-snug px-6 pb-2`} 
-                                    style={{ color: tokens.primaryColor }}
+                                    style={{ color: themeHeadingColor }}
                                 >
                                     {zoomedCard.title}
                                 </h3>
                             )}
 
                             {/* Modal Scrollable Body */}
-                            <div ref={zoomScrollRef} className="overflow-y-auto hide-scrollbar flex-1 px-6 py-4 space-y-4">
+                            <div ref={zoomScrollRef} className="overflow-y-auto hide-scrollbar flex-1 min-h-0 px-6 py-4 space-y-4">
                                 {zoomedCard.quranEvidence && (
-                                    <div className="p-4 rounded-xl bg-amber-500/10 border-0">
-                                        <span className="text-xs font-bold text-amber-800 dark:text-amber-300 block mb-1">
+                                    <div 
+                                        className="p-4 rounded-xl border-0"
+                                        style={{ backgroundColor: tokens.isDark ? 'rgba(255, 255, 255, 0.05)' : '#F8FAFC' }}
+                                    >
+                                        <span className="text-xs font-bold block mb-1" style={{ color: themeHeadingColor }}>
                                             {isEn ? 'Holy Quran' : 'القرآن الكريم'}:
                                         </span>
                                         <p 
-                                            className={`leading-relaxed text-amber-950 dark:text-amber-100 ${isEn ? 'font-sans' : 'font-amiri font-bold'}`}
-                                            style={{ fontSize: `${zoomFontSize + 4}px` }}
+                                            className={`leading-relaxed ${isEn ? 'font-sans' : 'font-amiri font-bold'}`}
+                                            style={{ fontSize: `${zoomFontSize + 4}px`, color: tokens.textColor }}
                                         >
                                             {isEn ? `"${zoomedCard.quranEvidence.ayah}"` : `﴿${zoomedCard.quranEvidence.ayah}﴾`}
                                         </p>
-                                        <span className="text-[11px] font-bold text-amber-700/80 dark:text-amber-400 block mt-2">
+                                        <span className="text-[11px] font-bold opacity-70 block mt-2" style={{ color: tokens.textColor }}>
                                             [{zoomedCard.quranEvidence.surah}: {zoomedCard.quranEvidence.number}]
                                         </span>
                                     </div>
                                 )}
 
                                 {zoomedCard.hadithEvidence && (
-                                    <div className="p-4 rounded-xl bg-emerald-500/10 border-0">
-                                        <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300 block mb-1">
+                                    <div 
+                                        className="p-4 rounded-xl border-0"
+                                        style={{ backgroundColor: tokens.isDark ? 'rgba(255, 255, 255, 0.05)' : '#F8FAFC' }}
+                                    >
+                                        <span className="text-xs font-bold block mb-1" style={{ color: themeHeadingColor }}>
                                             {isEn ? 'Prophetic Hadith' : 'الحديث النبوي الشريف'}:
                                         </span>
                                         <p 
-                                            className="leading-relaxed font-semibold text-emerald-950 dark:text-emerald-100"
-                                            style={{ fontSize: `${zoomFontSize + 1}px` }}
+                                            className="leading-relaxed font-semibold"
+                                            style={{ fontSize: `${zoomFontSize + 1}px`, color: tokens.textColor }}
                                         >
                                             {isEn ? `"${zoomedCard.hadithEvidence.matn}"` : `«${zoomedCard.hadithEvidence.matn}»`}
                                         </p>
-                                        <span className="text-[11px] font-medium text-emerald-700/80 dark:text-emerald-400 block mt-1.5">
+                                        <span className="text-[11px] font-medium opacity-70 block mt-1.5" style={{ color: tokens.textColor }}>
                                             {isEn ? `Narrated by: ${zoomedCard.hadithEvidence.narrator} (${zoomedCard.hadithEvidence.source})` : `رواه: ${zoomedCard.hadithEvidence.narrator} (${zoomedCard.hadithEvidence.source})`}
                                         </span>
                                     </div>
@@ -1145,13 +1215,16 @@ const DivineMiracles: React.FC<DivineMiraclesProps> = ({ onBack, onNavigate, nav
                                 </div>
 
                                 {zoomedCard.fact && (
-                                    <div className="p-3.5 rounded-xl bg-blue-500/10 border-0">
-                                        <span className="text-xs font-bold text-blue-800 dark:text-blue-300 block mb-1">
+                                    <div 
+                                        className="p-3.5 rounded-xl border-0"
+                                        style={{ backgroundColor: tokens.isDark ? 'rgba(255, 255, 255, 0.05)' : '#F8FAFC' }}
+                                    >
+                                        <span className="text-xs font-bold block mb-1" style={{ color: themeHeadingColor }}>
                                             {isEn ? 'Scientific Fact' : 'الحقيقة العلمية'}:
                                         </span>
                                         <p 
-                                            className="font-medium text-blue-950 dark:text-blue-100"
-                                            style={{ fontSize: `${Math.max(13, zoomFontSize - 2)}px` }}
+                                            className="font-medium"
+                                            style={{ fontSize: `${Math.max(13, zoomFontSize - 2)}px`, color: tokens.textColor }}
                                         >
                                             {zoomedCard.fact}
                                         </p>
@@ -1161,10 +1234,9 @@ const DivineMiracles: React.FC<DivineMiraclesProps> = ({ onBack, onNavigate, nav
 
                             {/* Action Bar (Share, Copy, Zoom, ChevronDown to close) - Identical to PropheticSeerahPage */}
                             <div 
-                                className="p-4 pt-3 shrink-0 flex items-center justify-center gap-3 sm:gap-4 border-t border-slate-100 dark:border-white/5" 
+                                className="p-4 pt-3 modal-sheet-safe-bottom shrink-0 flex items-center justify-center gap-3 sm:gap-4 border-t border-slate-100 dark:border-white/5" 
                                 style={{ 
-                                    backgroundColor: cardBgColor,
-                                    paddingBottom: 'calc(env(safe-area-inset-bottom, 16px) + 16px)'
+                                    backgroundColor: cardBgColor
                                 }}
                             >
                                 {/* Share Button */}

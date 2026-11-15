@@ -15,6 +15,7 @@ import { scrollToNextCard } from '../utils/cardScrollHelper';
 import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/CommunitySpotlightGuide';
 import { ATHKAR_SALAH_PAGE_STEPS } from '../components/Community/communityTourSteps';
 import { markPageAsSeen } from '../utils/badgeManager';
+import { useShowPageGuides } from '../utils/guideManager';
 
 const SalahZikrCard = ({ 
     zikr, 
@@ -236,6 +237,7 @@ interface AthkarAlSalahProps {
 }
 
 function AthkarAlSalah({ onBack, onNavigate, navParams }: AthkarAlSalahProps) {
+    const showPageGuides = useShowPageGuides();
     const { theme, themeKey } = useTheme();
     const { language } = useLanguage();
     const isEn = language === 'en';
@@ -455,7 +457,7 @@ function AthkarAlSalah({ onBack, onNavigate, navParams }: AthkarAlSalahProps) {
 
     return (
         <div 
-            className="h-screen flex flex-col overflow-hidden transition-colors" 
+            className="h-[100dvh] flex flex-col overflow-hidden transition-colors" 
             dir={isEn ? 'ltr' : 'rtl'}
             style={{ backgroundColor: isBlackTheme ? '#000000' : (theme.bgColor || (theme.isDark ? '#0F172A' : '#F5F7FA')) }}
         >
@@ -483,7 +485,7 @@ function AthkarAlSalah({ onBack, onNavigate, navParams }: AthkarAlSalahProps) {
 
                         {/* زر الهوم والدليل: يظهر الدليل فقط في الصفحة الأولى */}
                         <div className="flex items-center gap-1 shrink-0 justify-end min-w-[40px]">
-                            {!currentPrayer && !isFavoritesView && (
+                            {!currentPrayer && !isFavoritesView && showPageGuides && (
                                 <button
                                     type="button"
                                     onClick={() => setShowGuide(true)}
@@ -509,7 +511,7 @@ function AthkarAlSalah({ onBack, onNavigate, navParams }: AthkarAlSalahProps) {
                 </div>
             </header>
 
-            <main className="flex-1 overflow-y-auto hide-scrollbar relative max-w-3xl mx-auto w-full px-4 pt-2 pb-3.5 sm:pb-4 pb-[calc(env(safe-area-inset-bottom,0px)+0.875rem)] flex flex-col">
+            <main className="flex-1 min-h-0 overflow-y-auto hide-scrollbar relative max-w-3xl mx-auto w-full px-4 pt-2 app-scroll-safe-fab">
                 {/* Controls Bar: Search and View Mode Switch - Matches Adia/OthersPage */}
                 <div className="mb-6 max-w-3xl mx-auto w-full flex items-center gap-2 z-10 shrink-0" dir={isEn ? 'ltr' : 'rtl'}>
                     {/* Search Input */}
@@ -671,7 +673,6 @@ function AthkarAlSalah({ onBack, onNavigate, navParams }: AthkarAlSalahProps) {
                         ))}
                     </div>
                 )}
-                <div className="shrink-0 w-full h-4"></div>
             </main>
 
             {/* Backdrop to close floating menu when clicking anywhere, absorbing the click */}
@@ -689,8 +690,7 @@ function AthkarAlSalah({ onBack, onNavigate, navParams }: AthkarAlSalahProps) {
             {/* Floating Menu & FAB */}
             <div 
                 ref={fabContainerRef} 
-                className={`fixed ${isEn ? 'left-4 items-start' : 'right-4 items-end'} ${isMenuOpen ? 'z-[1250]' : 'z-[90]'} flex flex-col`}
-                style={{ bottom: 'calc(env(safe-area-inset-bottom, 24px) + 32px)' }}
+                className={`fixed app-fab-bottom ${isEn ? 'left-4 items-start' : 'right-4 items-end'} ${isMenuOpen ? 'z-[1250]' : 'z-[90]'} flex flex-col`}
             >
                 <AnimatePresence>
                     {isMenuOpen && (
@@ -763,7 +763,7 @@ function AthkarAlSalah({ onBack, onNavigate, navParams }: AthkarAlSalahProps) {
                         initial={{ opacity: 0, y: 50 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 50 }}
-                        className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[101] bg-gray-800 text-white px-6 py-3 rounded-full shadow-2xl font-bold flex items-center gap-2 whitespace-nowrap border border-white/10"
+                        className="fixed bottom-[calc(var(--app-bottom-clearance,0px)+1rem)] left-1/2 -translate-x-1/2 z-[101] bg-gray-800 text-white px-6 py-3 rounded-full shadow-2xl font-bold flex items-center gap-2 whitespace-nowrap border border-white/10"
                     >
                         <i className="fa-solid fa-spinner fa-spin text-primary" style={{ color: theme.palette[0] }}></i>
                         {toastMessage}

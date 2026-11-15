@@ -1,8 +1,9 @@
 import React, { createContext, useState, useContext, useEffect, useLayoutEffect, useMemo, useCallback, ReactNode } from 'react';
 import { presetThemes, Theme } from './themes';
 import { syncWidgetThemeColors } from '../utils/widgetUtils';
-import { getQuranThemeForLayout, THEMES as QURAN_THEMES, getLinkedQuranThemeForHomeVariant, applyQuranThemeForHomeVariant } from '../components/QuranReader/constants';
+import { getQuranThemeForLayout, THEMES as QURAN_THEMES, getLinkedQuranThemeForHomeVariant, applyQuranThemeForHomeVariant, isDarkQuranTheme } from '../components/QuranReader/constants';
 import { syncCurrentSplashImage } from '../utils/splashThemeHelper';
+import { syncSystemStatusBar } from '../utils/statusBar';
 
 // State to be saved to localStorage
 interface ThemeSettings {
@@ -139,6 +140,7 @@ export const restoreHomeThemeDOMInstantly = () => {
             syncModernDOMClasses(isNight, variant);
             body.style.backgroundColor = isNight ? '#000000' : '#FFFFFF';
             body.style.backgroundImage = 'none';
+            syncSystemStatusBar(isNight, '#FFFFFF', `modern:${isNight ? 'night' : variant}`);
         }
     } catch (e) {}
 };
@@ -151,6 +153,7 @@ try {
             const isNight = localStorage.getItem('night_mode_active_modern') === 'true' || localStorage.getItem('night_mode_active') === 'true';
             const variant = (localStorage.getItem('modern_home_theme_variant') as any) || 'gold';
             syncModernDOMClasses(isNight, variant);
+            syncSystemStatusBar(isNight, '#FFFFFF', `modern:${isNight ? 'night' : variant}`);
         }
     }
 } catch (e) {}
@@ -710,6 +713,22 @@ export const ThemeProvider = ({ children }: { children?: ReactNode }) => {
         root.style.setProperty('--qr-modal-bg', isBlackTheme ? '#000000' : (theme.cardBg || (isDark ? '#1e293b' : '#ffffff')));
         root.style.setProperty('--qr-modal-text', isBlackTheme ? '#FFFFFF' : theme.textColor);
         root.style.setProperty('--qr-modal-border', isBlackTheme ? '#FFFFFF' : theme.palette[0]);
+
+        // Synchronize mobile StatusBar icons ONLY when theme changes (QuranReader syncs its own active Quran theme)
+        const isQuranReaderScreen = currentPage === 'quran' || currentPage === 'quran-landscape';
+        if (!isQuranReaderScreen) {
+            let shouldUseLightStatusBarIcons = false;
+            if (pageKey === 'quran') {
+                const modeSuffix = (currentPage && currentPage.includes('landscape')) ? '_h' : '_v';
+                const layout = isModern ? 'modern' : 'classic';
+                const quranThemeId = getQuranThemeForLayout(layout, modeSuffix);
+                shouldUseLightStatusBarIcons = isDarkQuranTheme(quranThemeId);
+            } else {
+                shouldUseLightStatusBarIcons = isNightMode || isBlackTheme || Boolean(isDark);
+            }
+            const statusColor = isModern ? '#FFFFFF' : (theme.topBarBg || theme.bgColor || '#FFFFFF');
+            syncSystemStatusBar(shouldUseLightStatusBarIcons, statusColor, activeThemeKey);
+        }
     }, [settings.customBg, theme, currentPage, homeLayout, homeThemeVariant, isNightMode]);
 
     useEffect(() => {

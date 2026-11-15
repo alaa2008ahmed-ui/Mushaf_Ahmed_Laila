@@ -34,7 +34,7 @@ const RateUs: React.FC = () => {
 
     return (
         <div 
-            className="fixed bottom-28 right-6 z-[100] cursor-pointer animate-bounce"
+            className="fixed bottom-[calc(var(--app-bottom-clearance,5.25rem)+1rem)] right-6 z-[100] cursor-pointer animate-bounce"
             onClick={handleRateClick}
             style={{ animationDuration: '2s' }}
         >

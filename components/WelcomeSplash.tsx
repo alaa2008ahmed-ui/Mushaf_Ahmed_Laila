@@ -25,8 +25,8 @@ export const WelcomeSplash: React.FC<WelcomeSplashProps> = ({ onSelectLanguage }
       id="app-welcome-splash"
       className="fixed inset-0 z-[9998] flex flex-col justify-between items-center px-4 sm:px-6 py-5 sm:py-8 select-none overflow-y-auto overflow-x-hidden"
       style={{
-        paddingTop: 'max(1.25rem, env(safe-area-inset-top, 1.25rem))',
-        paddingBottom: 'max(1.25rem, env(safe-area-inset-bottom, 1.25rem))',
+        paddingTop: 'max(1.25rem, var(--app-safe-top, 1.25rem))',
+        paddingBottom: 'max(1.25rem, var(--app-safe-bottom, 1.25rem))',
         paddingLeft: 'max(1rem, env(safe-area-inset-left, 1rem))',
         paddingRight: 'max(1rem, env(safe-area-inset-right, 1rem))',
         background: 'radial-gradient(ellipse at 50% 35%, #FFFFFF 0%, #FFFDF5 45%, #FEF9EB 80%, #FDF3DA 100%)',

@@ -242,7 +242,7 @@ function HisnAlmuslim({ onBack, onNavigate, navParams }: HisnAlmuslimProps) {
 
     return (
         <div 
-            className="h-screen flex flex-col overflow-hidden" 
+            className="h-[100dvh] flex flex-col overflow-hidden" 
             dir={isEn ? 'ltr' : 'rtl'}
             style={{ 
                 backgroundColor: tokens.pageBgColor,
@@ -258,7 +258,7 @@ function HisnAlmuslim({ onBack, onNavigate, navParams }: HisnAlmuslimProps) {
                 onOpenGuide={!selectedCategory ? () => setShowGuide(true) : undefined}
             />
 
-            <main ref={mainRef} className="flex-1 overflow-y-auto hide-scrollbar relative mx-auto w-full max-w-3xl px-4 pb-3 flex flex-col pt-3">
+            <main ref={mainRef} className="flex-1 min-h-0 overflow-y-auto hide-scrollbar relative mx-auto w-full max-w-3xl px-4 app-scroll-safe-fab pt-3">
                 {!selectedCategory && (
                     <div className="mb-4 max-w-3xl mx-auto w-full flex items-center gap-2.5 z-10 shrink-0" dir={isEn ? 'ltr' : 'rtl'}>
                         {/* Search Input */}
@@ -351,7 +351,6 @@ function HisnAlmuslim({ onBack, onNavigate, navParams }: HisnAlmuslimProps) {
                         />
                     )}
                 </div>
-                <div className="shrink-0 w-full h-4"></div>
             </main>
 
             {/* Backdrop to close floating menu when clicking anywhere, absorbing the click */}
@@ -369,8 +368,7 @@ function HisnAlmuslim({ onBack, onNavigate, navParams }: HisnAlmuslimProps) {
             {/* Floating Menu & FAB */}
             <div 
                 ref={fabContainerRef} 
-                className={`fixed ${isEn ? 'right-4 items-end' : 'right-4 items-end'} ${isMenuOpen ? 'z-[1250]' : 'z-[90]'} flex flex-col`}
-                style={{ bottom: 'calc(env(safe-area-inset-bottom, 24px) + 32px)' }}
+                className={`fixed app-fab-bottom ${isEn ? 'right-4 items-end' : 'right-4 items-end'} ${isMenuOpen ? 'z-[1250]' : 'z-[90]'} flex flex-col`}
                 dir={isEn ? 'ltr' : 'rtl'}
             >
                 <AnimatePresence>
@@ -435,7 +433,8 @@ function HisnAlmuslim({ onBack, onNavigate, navParams }: HisnAlmuslimProps) {
                         initial={{ opacity: 0, y: 50 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 50 }}
-                        className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[101] bg-gray-800 text-white px-6 py-3 rounded-full shadow-2xl font-bold flex items-center gap-2 whitespace-nowrap border border-white/10"
+                        className="fixed left-1/2 -translate-x-1/2 z-[101] bg-gray-800 text-white px-6 py-3 rounded-full shadow-2xl font-bold flex items-center gap-2 whitespace-nowrap border border-white/10"
+                        style={{ bottom: 'calc(var(--app-safe-bottom) + 5.25rem)' }}
                     >
                         <i className="fa-solid fa-check text-green-400"></i>
                         {toastMessage}

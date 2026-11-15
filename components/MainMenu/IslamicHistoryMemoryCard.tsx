@@ -55,7 +55,8 @@ export const IslamicHistoryMemoryCard: React.FC<IslamicHistoryMemoryCardProps> =
   };
 
   const eventTitle = language === 'en' ? event.titleEn : event.titleAr;
-  const eventDescription = language === 'en' ? event.descriptionEn : event.descriptionAr;
+  const rawDesc = language === 'en' ? event.descriptionEn : event.descriptionAr;
+  const eventDescription = (rawDesc || '').replace(/[ \t]+/g, ' ').trim();
   const hijriYear = language === 'en'
     ? event.hijriYearEn
     : formatCalendarNumber(event.hijriYearAr, 'ar');
@@ -213,7 +214,7 @@ export const IslamicHistoryMemoryCard: React.FC<IslamicHistoryMemoryCardProps> =
       {/* 3. وصف الحدث التاريخي كما في تبويب محول التاريخ */}
       <div className="w-full">
         <p
-          className={`text-[14px] sm:text-[15px] font-normal text-justify leading-[1.85] sm:leading-[1.9] tracking-normal break-words ${
+          className={`text-[14px] sm:text-[15px] font-normal text-center leading-[1.85] sm:leading-[1.9] tracking-normal break-words ${
             language === 'ar' ? 'border-r-2 pr-3.5' : 'border-l-2 pl-3.5'
           } ${isBlackTheme ? 'text-zinc-200' : 'text-slate-700'}`}
           style={{

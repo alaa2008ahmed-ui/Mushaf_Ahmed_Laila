@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { ShieldAlert, HelpCircle } from 'lucide-react';
 import ToneSelector from './ToneSelector';
+import PrayerAlertVolumeSlider from './PrayerAlertVolumeSlider';
 import { Capacitor } from '@capacitor/core';
 import { isDndPermissionGranted, requestDndPermission } from '../../utils/silentMode';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { playNotificationSound } from '../../utils/prayerTimesUtils';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTheme } from '../../context/ThemeContext';
+import { usePrayerTimes } from '../../context/PrayerTimesContext';
 import { tPrayer, getPrayerDisplayName } from '../../utils/prayerTimesTranslations';
 import { CommunitySpotlightGuide, getGuideSeen } from '../Community/CommunitySpotlightGuide';
 import { PRAYER_SETTINGS_MODAL_STEPS } from '../Community/communityTourSteps';
 import { IslamicTimePickerModal } from '../Common/IslamicTimePickerModal';
+import { useShowPageGuides } from '../../utils/guideManager';
 
 interface PrayerTimesSettingsModalProps {
     isOpen: boolean;
@@ -92,14 +95,23 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
     tempAutoSilentDuration,
     setTempAutoSilentDuration
 }) => {
+    const showPageGuides = useShowPageGuides();
     const { language, isRTL, dir } = useLanguage();
     const { themeKey, homeThemeVariant } = useTheme();
+    const { alertVolume = 100, setAlertVolume } = usePrayerTimes();
+    const [tempAlertVolume, setTempAlertVolume] = useState<number>(alertVolume);
     const [hasDndPermission, setHasDndPermission] = useState(true);
     const [showGuide, setShowGuide] = useState(false);
 
     // Local string state to handle manual typing seamlessly across Android APK and web
     const [offsetInputValue, setOffsetInputValue] = useState<string>(() => String(tempOffset));
     const [isDirectTimePickerOpen, setIsDirectTimePickerOpen] = useState(false);
+
+    useEffect(() => {
+        if (isOpen) {
+            setTempAlertVolume(alertVolume);
+        }
+    }, [isOpen, alertVolume]);
 
     useEffect(() => {
         if (isOpen && Capacitor.getPlatform() === 'android') {
@@ -315,7 +327,7 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
             className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4 sm:p-6 scale-in"
         >
             <div 
-                className="rounded-[2.5rem] w-full max-w-sm max-h-[92vh] flex flex-col p-5 sm:p-6 shadow-2xl" 
+                className="rounded-[2.5rem] w-full max-w-sm max-h-[92dvh] flex flex-col p-5 sm:p-6 shadow-2xl" 
                 style={{ 
                     backgroundColor: themeStyles.modalBg, 
                     color: themeStyles.modalText,
@@ -328,16 +340,18 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
                         {tPrayer('prayerSettingsTitle', language, { p: getPrayerDisplayName(currentEditingKey, language) })}
                     </h3>
                     <div className="flex items-center gap-1.5">
-                        <button 
-                            type="button"
-                            onClick={() => setShowGuide(true)} 
-                            className="w-8 h-8 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer" 
-                            style={{ color: themeStyles.subtext }}
-                            title={language === 'en' ? "Settings Guide" : "دليل إعدادات الصلاة"}
-                            aria-label={language === 'en' ? "Settings Guide" : "دليل إعدادات الصلاة"}
-                        >
-                            <HelpCircle size={19} />
-                        </button>
+                        {showPageGuides && (
+                            <button 
+                                type="button"
+                                onClick={() => setShowGuide(true)} 
+                                className="w-8 h-8 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer" 
+                                style={{ color: themeStyles.subtext }}
+                                title={language === 'en' ? "Settings Guide" : "دليل إعدادات الصلاة"}
+                                aria-label={language === 'en' ? "Settings Guide" : "دليل إعدادات الصلاة"}
+                            >
+                                <HelpCircle size={19} />
+                            </button>
+                        )}
                         <button 
                             onClick={closeModal} 
                             className="hover:text-red-500 transition-colors cursor-pointer" 
@@ -351,7 +365,7 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
                 </div>
 
                 {/* Scrollable Content */}
-                <div id="prayer-settings-scroll-container" className="space-y-3 overflow-y-auto hide-scrollbar flex-1 pr-0.5">
+                <div id="prayer-settings-scroll-container" className="space-y-3 overflow-y-auto hide-scrollbar flex-1 min-h-0 pr-0.5">
                     {/* تعديل وقت الأذان يدوياً وبالأزرار */}
                     <div id="setting-adhan-adjustment">
                         <label className="block text-[10px] font-black mb-1.5 uppercase tracking-widest text-center" style={{ color: themeStyles.subtext }}>
@@ -582,7 +596,7 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
                                 <button
                                     type="button"
                                     onClick={() => {
-                                        playNotificationSound('/assets/audio/chime.mp3', true);
+                                        playNotificationSound('/assets/audio/notif_droplet.wav', true);
                                     }}
                                     className="px-2 py-0.5 rounded-md bg-black/10 hover:bg-black/15 text-[10px] font-bold flex items-center gap-1 transition-all active:scale-95 cursor-pointer shrink-0"
                                     title={tPrayer('iqamaSoundPreviewTooltip', language)}
@@ -772,6 +786,7 @@ const PrayerTimesSettingsModal: React.FC<PrayerTimesSettingsModalProps> = ({
                 <button 
                     id="setting-save-btn"
                     onClick={() => {
+                        setAlertVolume(tempAlertVolume);
                         saveUserConfig();
                     }} 
                     className="w-full mt-4 py-3 sm:py-3.5 rounded-2xl font-black text-sm shadow-lg active:scale-95 transition-all shrink-0 cursor-pointer" 

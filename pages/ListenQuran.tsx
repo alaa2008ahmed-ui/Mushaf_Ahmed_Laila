@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import ThemePageLock from '../components/ThemePageLock';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -14,23 +14,20 @@ import { SURAH_LIST, RECITERS } from '../data/listenQuranData';
 import ReciterSelectModal from '../components/QuranReader/ReciterSelectModal';
 import ListenSurahSelectModal from '../components/QuranReader/ListenSurahSelectModal';
 import { QuranDownloadModal } from '../components/QuranReader/DownloadModals';
-import { SURAH_INFO, ARABIC_READERS } from '../components/QuranReader/constants';
+import { SURAH_INFO } from '../components/QuranReader/constants';
 import { registerBackInterceptor } from '../hooks/useBackButton';
-import { getAvailableSurahsForReader } from '../utils/listenQuranUtils';
+import { estimateCurrentAyahAndJuz } from '../utils/listenQuranUtils';
+import { useListenQuranStore } from '../hooks/useListenQuranStore';
 import './QuranReader.css';
 import { 
-    HelpCircle, 
     Play, 
     Pause, 
     SkipBack, 
     SkipForward, 
-    RotateCcw, 
     RotateCw, 
     Moon, 
     Heart, 
     Download, 
-    User, 
-    BookOpen, 
     ChevronDown, 
     ChevronLeft, 
     ChevronRight, 
@@ -38,13 +35,11 @@ import {
     Minus, 
     Trash2, 
     Repeat,
-    Check
+    Gauge
 } from 'lucide-react';
 import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/CommunitySpotlightGuide';
 import { LISTEN_QURAN_PAGE_STEPS } from '../components/Community/communityTourSteps';
 import { markPageAsSeen } from '../utils/badgeManager';
-
-const STORAGE_KEY = 'listen_quran_state_v7';
 
 const mockQuranData = {
     surahs: SURAH_LIST.map(s => ({
@@ -53,34 +48,6 @@ const mockQuranData = {
         revelationType: SURAH_INFO[s.number]?.type === 'مكية' ? 'Meccan' : 'Medinan',
         ayahs: new Array(SURAH_INFO[s.number]?.ayahs || 0)
     }))
-};
-
-// Normalize URL for consistent mapping
-const normalizeUrl = (url: string) => {
-    if (!url) return '';
-    return url.toLowerCase()
-        .replace(/^https?:\/\//, '')
-        .replace(/www\./, '')
-        .replace(/\/+/g, '/') // Group multiple slashes into one
-        .replace(/\/$/, '')
-        .trim();
-};
-
-// Simplify Arabic names for better matching
-const simplifyName = (name: string) => {
-    if (!name) return '';
-    return name
-        .toLowerCase()
-        .replace(/^(ال)/, '') // Remove prefix Al
-        .replace(/\s(ال)/g, ' ') // Remove Al after space
-        .replace(/[أإآا]/g, 'ا')
-        .replace(/ة/g, 'ه')
-        .replace(/ى/g, 'ي')
-        .replace(/ئ/g, 'ي')
-        .replace(/ؤ/g, 'و')
-        .replace(/[\u064B-\u065F]/g, '') // Remove harakat
-        .replace(/[^ا-ي0-9]/g, '') // Keep only Arabic letters and numbers
-        .trim();
 };
 
 interface ListenFavorite {
@@ -111,70 +78,56 @@ function ListenQuran({ onBack, onNavigate }: ListenQuranProps) {
         }
     }, []);
 
-    const [showListenOnHome, setShowListenOnHome] = useState<boolean>(() => {
-        try {
-            return localStorage.getItem('show_listen_quran_home') === 'true';
-        } catch {
-            return false;
-        }
-    });
-
-    const handleToggleListenOnHome = useCallback(() => {
-        setShowListenOnHome(prev => {
-            const nextVal = !prev;
-            try {
-                localStorage.setItem('show_listen_quran_home', String(nextVal));
-            } catch {}
-            window.dispatchEvent(new CustomEvent('listen-card-visibility-changed', { detail: { enabled: nextVal } }));
-            if (navigator.vibrate) {
-                try { navigator.vibrate(nextVal ? [30, 40, 30] : 30); } catch {}
-            }
-            showToast(
-                nextVal
-                    ? (language === 'en' ? 'Audio Quran Card enabled on Home ✓' : 'مفعّل بطاقة الاستماع بالرئيسية ✓')
-                    : (language === 'en' ? 'Audio Quran Card disabled on Home' : 'معطّل بطاقة الاستماع بالرئيسية')
-            );
-            return nextVal;
-        });
-    }, [language]);
-
     // --- Dynamic Theme Tokens (Matching MainMenu Design System) ---
     const isBlackTheme = themeKey === 'deep_black' || theme.bgColor === '#000000' || theme.name === 'اسود' || theme.name === 'black';
     const primaryColor = isBlackTheme ? '#FFFFFF' : (theme.palette?.[0] || theme.accent || theme.btnBg || '#2E7D5E');
     const pageBgColor = isBlackTheme ? '#000000' : (theme.bgColor || '#F8FAFC');
 
-    const [reciterId, setReciterId] = useState(RECITERS[0].id);
-    const [surahNumber, setSurahNumber] = useState(1);
-    const [isPlaying, setIsPlaying] = useState(false);
-    const [isContinuousPlay, setIsContinuousPlay] = useState(true);
-    const [isRepeatSurah, setIsRepeatSurah] = useState(false);
-    const isRepeatSurahRef = useRef(isRepeatSurah);
-    const [duration, setDuration] = useState(0);
-    const [currentTime, setCurrentTime] = useState(0);
-    const [isLoading, setIsLoading] = useState(false);
-    const [, setError] = useState('');
+    const {
+        reciterId,
+        surahNumber,
+        isPlaying,
+        isLoading,
+        currentTime,
+        duration,
+        isContinuousPlay,
+        isRepeatSurah,
+        playbackRate,
+        reciterSurahs,
+        sleepTimerMode,
+        isSleepTimerActive,
+        sleepTimerRemainingSeconds,
+        customTimerMinutes,
+        initAudio,
+        fetchReciterSurahs,
+        getAvailableSurahs,
+        setReciterId,
+        setSurahNumber,
+        setReciterAndSurah,
+        togglePlay,
+        seek,
+        setPlaybackRate,
+        nextSurah,
+        prevSurah,
+        toggleContinuousPlay,
+        toggleRepeatSurah,
+        setPresetTimer,
+        setEndOfSurahTimer,
+        startCustomTimer,
+        cancelSleepTimer,
+        incrementTimer,
+        decrementTimer,
+    } = useListenQuranStore();
+
     const [showReciterModal, setShowReciterModal] = useState(false);
     const [showSurahModal, setShowSurahModal] = useState(false);
     const [showDownloadModal, setShowDownloadModal] = useState(false);
-    const [reciterSurahs, setReciterSurahs] = useState<Record<string, number[]>>({});
-
-    // مؤقت النوم (Sleep Timer)
-    const [sleepTimerMode, setSleepTimerMode] = useState<'off' | '15' | '30' | '60' | 'custom' | 'end_of_surah'>('off');
-    const [isSleepTimerActive, setIsSleepTimerActive] = useState(false);
-    const [sleepTimerRemainingSeconds, setSleepTimerRemainingSeconds] = useState<number | null>(null);
-    const [customTimerMinutes, setCustomTimerMinutes] = useState(15);
-
-    const sleepTimerModeRef = useRef(sleepTimerMode);
-    const isSleepTimerActiveRef = useRef(isSleepTimerActive);
+    const [showSpeedMenu, setShowSpeedMenu] = useState(false);
 
     useEffect(() => {
-        isRepeatSurahRef.current = isRepeatSurah;
-    }, [isRepeatSurah]);
-
-    useEffect(() => {
-        sleepTimerModeRef.current = sleepTimerMode;
-        isSleepTimerActiveRef.current = isSleepTimerActive;
-    }, [sleepTimerMode, isSleepTimerActive]);
+        initAudio();
+        fetchReciterSurahs();
+    }, [initAudio, fetchReciterSurahs]);
 
     // قائمة المفضلات المحفوظة (حتى 10 تلاوات)
     const [favorites, setFavorites] = useState<ListenFavorite[]>(() => {
@@ -198,143 +151,23 @@ function ListenQuran({ onBack, onNavigate }: ListenQuranProps) {
         }
     }, [favorites]);
 
-    const getAvailableSurahs = useCallback((id: string) => {
-        const rName = RECITERS.find(r => r.id === id)?.name;
-        return getAvailableSurahsForReader(id, rName, reciterSurahs);
-    }, [reciterSurahs]);
-
     const availableSurahIds = useMemo(() => {
         return getAvailableSurahs(reciterId);
-    }, [reciterId, getAvailableSurahs]);
+    }, [reciterId, reciterSurahs, getAvailableSurahs]);
 
     // Ensure selected surahNumber is valid for current reciter
     useEffect(() => {
         if (availableSurahIds.length > 0 && !availableSurahIds.includes(surahNumber)) {
             setSurahNumber(availableSurahIds[0]);
         }
-    }, [availableSurahIds, surahNumber]);
-
-    const audioRef = useRef<HTMLAudioElement | null>(null);
-    const autoPlayNextRef = useRef(false);
-    const objectUrlRef = useRef<string | null>(null);
-
-    // Fetch reciter availability mapping
-    useEffect(() => {
-        const fetchSurahs = async () => {
-            try {
-                const CACHE_KEY = 'mp3quran_surahs_cache_v6';
-                const cached = localStorage.getItem(CACHE_KEY);
-                if (cached) {
-                    const { data, timestamp } = JSON.parse(cached);
-                    if (Date.now() - timestamp < 24 * 60 * 60 * 1000) {
-                        setReciterSurahs(data);
-                        return;
-                    }
-                }
-
-                const res = await fetch('https://mp3quran.net/api/v3/reciters?language=ar');
-                if (!res.ok) throw new Error('Network response was not ok');
-                const data = await res.json();
-                const mapping: Record<string, number[]> = {};
-                
-                if (data.reciters && Array.isArray(data.reciters)) {
-                    data.reciters.forEach((r: any) => {
-                        const nameKey = `name:${simplifyName(r.name)}`;
-                        if (r.moshaf && Array.isArray(r.moshaf)) {
-                            r.moshaf.forEach((m: any) => {
-                                const rawSuras = m.suras || m.surah_list;
-                                if (m.server && rawSuras) {
-                                    const surasArray = typeof rawSuras === 'string' ? rawSuras.split(',').map(Number) : (Array.isArray(rawSuras) ? rawSuras : []);
-                                    const urlKey = normalizeUrl(m.server);
-                                    if (urlKey) mapping[urlKey] = surasArray;
-                                    
-                                    // Merge surahs for the same name to show all available across different moshafs
-                                    if (!mapping[nameKey]) {
-                                        mapping[nameKey] = surasArray;
-                                    } else {
-                                        const merged = Array.from(new Set([...mapping[nameKey], ...surasArray]));
-                                        mapping[nameKey] = merged;
-                                    }
-                                }
-                            });
-                        }
-                    });
-                }
-                
-                setReciterSurahs(mapping);
-                localStorage.setItem(CACHE_KEY, JSON.stringify({
-                    data: mapping,
-                    timestamp: Date.now()
-                }));
-            } catch (e) {
-                console.error("Failed to fetch surahs mapping", e);
-            }
-        };
-        fetchSurahs();
-    }, []);
-
-    useEffect(() => {
-        try {
-            const savedState = localStorage.getItem(STORAGE_KEY);
-            if (savedState) {
-                const { savedReciterId, savedSurahNumber, savedContinuousPlay, savedRepeatSurah } = JSON.parse(savedState);
-                if (savedReciterId) {
-                    const match = RECITERS.find(r => r.id === savedReciterId);
-                    if (match) {
-                        setReciterId(match.id);
-                    } else {
-                        const eaReader = ARABIC_READERS.find(r => r.id === savedReciterId);
-                        const targetName = eaReader?.name;
-                        const matchedByName = targetName 
-                            ? RECITERS.find(r => r.name.includes(targetName) || targetName.includes(r.name)) 
-                            : null;
-                        if (matchedByName) {
-                            setReciterId(matchedByName.id);
-                        } else {
-                            setReciterId(RECITERS[0].id);
-                        }
-                    }
-                }
-                if (SURAH_LIST.some(s => s.number === savedSurahNumber)) setSurahNumber(savedSurahNumber);
-                if (typeof savedRepeatSurah === 'boolean') {
-                    setIsRepeatSurah(savedRepeatSurah);
-                    if (savedRepeatSurah) setIsContinuousPlay(false);
-                }
-                if (typeof savedContinuousPlay === 'boolean' && !savedRepeatSurah) {
-                    setIsContinuousPlay(savedContinuousPlay);
-                }
-            }
-        } catch (e) {
-            console.error("Failed to load state from localStorage", e);
-        }
-    }, []);
-
-    // Self-healing: if reciterId in state is not in RECITERS
-    useEffect(() => {
-        if (!RECITERS.some(r => r.id === reciterId)) {
-            const eaReader = ARABIC_READERS.find(r => r.id === reciterId);
-            const targetName = eaReader?.name;
-            const matchedByName = targetName 
-                ? RECITERS.find(r => r.name.includes(targetName) || targetName.includes(r.name)) 
-                : null;
-            setReciterId(matchedByName ? matchedByName.id : RECITERS[0].id);
-        }
-    }, [reciterId]);
+    }, [availableSurahIds, surahNumber, setSurahNumber]);
 
     const handleToggleRepeatSurah = () => {
-        const next = !isRepeatSurah;
-        setIsRepeatSurah(next);
-        if (next) {
-            setIsContinuousPlay(false);
-        }
+        toggleRepeatSurah();
     };
 
     const handleToggleContinuousPlay = () => {
-        const next = !isContinuousPlay;
-        setIsContinuousPlay(next);
-        if (next) {
-            setIsRepeatSurah(false);
-        }
+        toggleContinuousPlay();
     };
 
     const handleBack = useCallback(() => {
@@ -363,24 +196,12 @@ function ListenQuran({ onBack, onNavigate }: ListenQuranProps) {
     }, [showReciterModal, showSurahModal, showDownloadModal]);
 
     const handleNextSurah = useCallback(() => {
-        const available = getAvailableSurahs(reciterId);
-        const currentIndex = available.indexOf(surahNumber);
-        if (currentIndex !== -1 && currentIndex < available.length - 1) {
-            setSurahNumber(available[currentIndex + 1]);
-        } else {
-            setSurahNumber(available[0] || 1);
-        }
-    }, [getAvailableSurahs, reciterId, surahNumber]);
+        nextSurah();
+    }, [nextSurah]);
 
     const handlePrevSurah = useCallback(() => {
-        const available = getAvailableSurahs(reciterId);
-        const currentIndex = available.indexOf(surahNumber);
-        if (currentIndex !== -1 && currentIndex > 0) {
-            setSurahNumber(available[currentIndex - 1]);
-        } else {
-            setSurahNumber(available[available.length - 1] || 1);
-        }
-    }, [getAvailableSurahs, reciterId, surahNumber]);
+        prevSurah();
+    }, [prevSurah]);
 
     // Apply CSS variables for the dynamic theme
     useEffect(() => {
@@ -408,184 +229,28 @@ function ListenQuran({ onBack, onNavigate }: ListenQuranProps) {
         root.style.setProperty('--qr-slider-thumb', primaryColor);
     }, [theme, themeKey, primaryColor, isBlackTheme]);
 
-    useEffect(() => {
-        audioRef.current = new Audio();
-        const audio = audioRef.current;
-
-        const handleTimeUpdate = () => setCurrentTime(audio.currentTime);
-        const handleDurationChange = () => setDuration(audio.duration);
-        const handlePlay = () => setIsPlaying(true);
-        const handlePause = () => setIsPlaying(false);
-        const handleWaiting = () => setIsLoading(true);
-        const handlePlaying = () => setIsLoading(false);
-        const handleError = () => {
-            setError('خطأ في تحميل المقطع الصوتي. قد يكون غير متوفر حاليًا.');
-            setIsLoading(false);
-            setIsPlaying(false);
-        };
-
-        audio.addEventListener('timeupdate', handleTimeUpdate);
-        audio.addEventListener('durationchange', handleDurationChange);
-        audio.addEventListener('play', handlePlay);
-        audio.addEventListener('pause', handlePause);
-        audio.addEventListener('error', handleError);
-        audio.addEventListener('waiting', handleWaiting);
-        audio.addEventListener('playing', handlePlaying);
-
-        return () => {
-            audio.pause();
-            audio.src = '';
-            if (objectUrlRef.current) {
-                URL.revokeObjectURL(objectUrlRef.current);
-                objectUrlRef.current = null;
-            }
-            audio.removeEventListener('timeupdate', handleTimeUpdate);
-            audio.removeEventListener('durationchange', handleDurationChange);
-            audio.removeEventListener('play', handlePlay);
-            audio.removeEventListener('pause', handlePause);
-            audio.removeEventListener('error', handleError);
-            audio.removeEventListener('waiting', handleWaiting);
-            audio.removeEventListener('playing', handlePlaying);
-        };
-    }, []);
-
-    const showToast = useCallback((_msg?: string) => {}, []);
-
-    // تأثير العد التنازلي لمؤقت النوم
-    useEffect(() => {
-        if (!isSleepTimerActive || sleepTimerRemainingSeconds === null) return;
-
-        if (sleepTimerRemainingSeconds <= 0) {
-            if (audioRef.current) {
-                audioRef.current.pause();
-            }
-            setIsPlaying(false);
-            setIsSleepTimerActive(false);
-            setSleepTimerMode('off');
-            setSleepTimerRemainingSeconds(null);
-            showToast(tListen('sleepTimerEndedToast', language));
-            return;
-        }
-
-        const interval = setInterval(() => {
-            setSleepTimerRemainingSeconds(prev => {
-                if (prev === null) return null;
-                return Math.max(0, prev - 1);
-            });
-        }, 1000);
-
-        return () => clearInterval(interval);
-    }, [isSleepTimerActive, sleepTimerRemainingSeconds, showToast, language]);
-
-    // معالجة انتهاء السورة الصوتية مع دعم مؤقت النوم
-    useEffect(() => {
-        const audio = audioRef.current;
-        if (!audio) return;
-
-        const handleEnded = () => {
-             if (isSleepTimerActiveRef.current && sleepTimerModeRef.current === 'end_of_surah') {
-                 setIsPlaying(false);
-                 setCurrentTime(0);
-                 setIsSleepTimerActive(false);
-                 setSleepTimerMode('off');
-                 setSleepTimerRemainingSeconds(null);
-                 return;
-             }
-             if (isRepeatSurahRef.current) {
-                 if (audioRef.current) {
-                     audioRef.current.currentTime = 0;
-                     audioRef.current.play().then(() => {
-                         setIsPlaying(true);
-                     }).catch(err => {
-                         console.error("Failed to repeat surah:", err);
-                         setIsPlaying(false);
-                     });
-                 }
-                 return;
-             }
-             if (isContinuousPlay) {
-                autoPlayNextRef.current = true;
-                handleNextSurah();
-             } else {
-                setIsPlaying(false);
-                setCurrentTime(0);
-             }
-        };
-
-        audio.addEventListener('ended', handleEnded);
-        return () => {
-            audio.removeEventListener('ended', handleEnded);
-        };
-    }, [isContinuousPlay, isRepeatSurah, handleNextSurah, surahNumber]);
-
-    // دوال التحكم بمؤقت النوم
     const handleSetPresetTimer = (minutes: number) => {
-        const secs = minutes * 60;
-        setCustomTimerMinutes(minutes);
-        setSleepTimerMode(String(minutes) as any);
-        setSleepTimerRemainingSeconds(secs);
-        setIsSleepTimerActive(true);
-        showToast(
-            language === 'en'
-                ? `Sleep timer set: ${formatListenNumber(minutes, language)} min`
-                : `تم تفعيل مؤقت النوم: ${formatListenNumber(minutes, language)} دقيقة`
-        );
+        setPresetTimer(minutes);
     };
 
     const handleSetEndOfSurahTimer = () => {
-        setSleepTimerMode('end_of_surah');
-        setSleepTimerRemainingSeconds(null);
-        setIsSleepTimerActive(true);
-        const sName = getSurahDisplayName(surahNumber, language);
-        showToast(
-            language === 'en'
-                ? `Sleep timer set to end of Surah ${sName}`
-                : `تم تفعيل مؤقت النوم عند نهاية سورة ${sName}`
-        );
+        setEndOfSurahTimer();
     };
 
     const handleStartCustomTimer = () => {
-        const secs = customTimerMinutes * 60;
-        setSleepTimerMode('custom');
-        setSleepTimerRemainingSeconds(secs);
-        setIsSleepTimerActive(true);
-        showToast(
-            language === 'en'
-                ? `Sleep timer set: ${formatListenNumber(customTimerMinutes, language)} min`
-                : `تم تفعيل مؤقت النوم: ${formatListenNumber(customTimerMinutes, language)} دقيقة`
-        );
+        startCustomTimer();
     };
 
     const handleCancelSleepTimer = () => {
-        setIsSleepTimerActive(false);
-        setSleepTimerMode('off');
-        setSleepTimerRemainingSeconds(null);
-        showToast(language === 'en' ? 'Sleep timer cancelled' : 'تم إيقاف مؤقت النوم');
+        cancelSleepTimer();
     };
 
     const handleIncrementTimer = () => {
-        if (isSleepTimerActive && sleepTimerRemainingSeconds !== null) {
-            setSleepTimerRemainingSeconds(prev => (prev || 0) + 300);
-            showToast(language === 'en' ? 'Added 5 minutes to sleep timer' : 'تمت زيادة ٥ دقائق لمؤقت النوم');
-        } else {
-            setCustomTimerMinutes(prev => Math.min(180, prev + 5));
-        }
+        incrementTimer();
     };
 
     const handleDecrementTimer = () => {
-        if (isSleepTimerActive && sleepTimerRemainingSeconds !== null) {
-            if (sleepTimerRemainingSeconds > 300) {
-                setSleepTimerRemainingSeconds(prev => Math.max(60, (prev || 0) - 300));
-                showToast(language === 'en' ? 'Reduced 5 minutes from sleep timer' : 'تم إنقاص ٥ دقائق من مؤقت النوم');
-            } else if (sleepTimerRemainingSeconds > 60) {
-                setSleepTimerRemainingSeconds(60);
-                showToast(language === 'en' ? 'Timer set to 1 minute' : 'تم تعيين المؤقت إلى دقيقة واحدة');
-            } else {
-                showToast(language === 'en' ? 'Minimum duration is 1 minute' : 'الحد الأدنى دقيقة واحدة');
-            }
-        } else {
-            setCustomTimerMinutes(prev => Math.max(5, prev - 5));
-        }
+        decrementTimer();
     };
 
     const isCurrentFavorite = useMemo(() => {
@@ -613,8 +278,7 @@ function ListenQuran({ onBack, onNavigate }: ListenQuranProps) {
     };
 
     const handleSelectFavorite = (fav: ListenFavorite) => {
-        setReciterId(fav.reciterId);
-        setSurahNumber(fav.surahNumber);
+        setReciterAndSurah(fav.reciterId, fav.surahNumber);
     };
 
     const handleRemoveFavorite = (favId: string, e: React.MouseEvent) => {
@@ -622,189 +286,50 @@ function ListenQuran({ onBack, onNavigate }: ListenQuranProps) {
         setFavorites(prev => prev.filter(f => f.id !== favId));
     };
 
-    useEffect(() => {
-        if (Object.keys(reciterSurahs).length > 0) {
-            const available = getAvailableSurahs(reciterId);
-            if (!available.includes(surahNumber)) {
-                setSurahNumber(available[0] || 1);
-            }
-        }
-    }, [reciterId, reciterSurahs, getAvailableSurahs, surahNumber]);
-
-    useEffect(() => {
-        if (!reciterId || !surahNumber) return;
-
-        const audio = audioRef.current;
-        if (!audio) return;
-        
-        const wasPlaying = !audio.paused;
-        audio.pause();
-        
-        setIsLoading(true);
-        setError('');
-
-        const surahFormatted = String(surahNumber).padStart(3, '0');
-        const baseUrl = reciterId.endsWith('/') ? reciterId.slice(0, -1) : reciterId;
-        const audioUrl = `${baseUrl}/${surahFormatted}.mp3`;
-
-        const loadAudio = async () => {
-            try {
-                if (objectUrlRef.current) {
-                    URL.revokeObjectURL(objectUrlRef.current);
-                    objectUrlRef.current = null;
-                }
-
-                const cache = await caches.open('quran-audio-cache');
-                const match = await cache.match(audioUrl);
-                
-                if (match) {
-                    const blob = await match.blob();
-                    const url = URL.createObjectURL(blob);
-                    objectUrlRef.current = url;
-                    audio.src = url;
-                } else {
-                    audio.src = audioUrl;
-                }
-                
-                audio.load();
-
-                if (wasPlaying || autoPlayNextRef.current) {
-                    audio.play().catch(err => {
-                        console.error("Failed to autoplay:", err);
-                        setError(tListen('autoPlayError', language));
-                        setIsLoading(false);
-                    });
-                    if (autoPlayNextRef.current) {
-                        autoPlayNextRef.current = false;
-                    }
-                } else {
-                    setIsLoading(false);
-                }
-            } catch (err) {
-                console.error("Error loading audio:", err);
-                audio.src = audioUrl;
-                audio.load();
-                setIsLoading(false);
-            }
-        };
-
-        loadAudio();
-        
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({ 
-            savedReciterId: reciterId, 
-            savedSurahNumber: surahNumber,
-            savedContinuousPlay: isContinuousPlay,
-            savedRepeatSurah: isRepeatSurah,
-        }));
-
-    }, [reciterId, surahNumber, isContinuousPlay, isRepeatSurah, language]);
-    
-    useEffect(() => {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({
-             savedReciterId: reciterId, 
-             savedSurahNumber: surahNumber,
-             savedContinuousPlay: isContinuousPlay,
-             savedRepeatSurah: isRepeatSurah
-        }));
-    }, [isContinuousPlay, isRepeatSurah, reciterId, surahNumber]);
-    
     const handlePlayPause = async () => {
-        const audio = audioRef.current;
-        if (!audio) return;
-        setError('');
-        if (isPlaying) {
-            audio.pause();
-        } else {
-            try {
-                if (!audio.src || audio.src === window.location.href || audio.src.endsWith('/')) {
-                    const surahFormatted = String(surahNumber).padStart(3, '0');
-                    const baseUrl = reciterId.endsWith('/') ? reciterId.slice(0, -1) : reciterId;
-                    audio.src = `${baseUrl}/${surahFormatted}.mp3`;
-                    audio.load();
-                }
-                setIsLoading(true);
-                await audio.play();
-            } catch (err) {
-                console.error("Playback error:", err);
-                setError(tListen('browserPlayError', language));
-                setIsLoading(false);
-            }
-        }
+        await togglePlay();
     };
 
     const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const audio = audioRef.current;
-        if (audio) {
-            audio.currentTime = Number(e.target.value);
-            setCurrentTime(audio.currentTime);
-        }
+        seek(Number(e.target.value));
     };
-    
+
     const currentReciter = useMemo(() => {
         return RECITERS.find(r => r.id === reciterId) || RECITERS[0];
     }, [reciterId]);
     const reciterName = currentReciter.name;
     const surahName = SURAH_LIST.find(s => s.number === surahNumber)?.name || SURAH_LIST[0].name;
+    const surahMeta = SURAH_INFO[surahNumber] || { ayahs: 7, type: 'مكية' };
+    const totalAyahs = surahMeta.ayahs;
+    const revelationType = isEn
+        ? (surahMeta.type === 'مدنية' ? 'Medinan' : 'Meccan')
+        : surahMeta.type;
+
+    const { ayahNumber: currentAyah, juzNumber: currentJuz } = useMemo(
+        () => estimateCurrentAyahAndJuz(surahNumber, currentTime, duration),
+        [surahNumber, currentTime, duration]
+    );
 
     const progressPercent = duration > 0 ? Math.min(100, Math.max(0, (currentTime / duration) * 100)) : 0;
 
     return (
         <div 
             dir={dir} 
-            className="h-screen flex flex-col font-cairo overflow-hidden select-none" 
+            className="h-[100dvh] flex flex-col font-cairo overflow-hidden select-none" 
             style={{ 
                 backgroundColor: pageBgColor, 
                 color: isBlackTheme ? '#FFFFFF' : (theme.textColor || '#1E293B') 
             }}
         >
-            <header className="app-top-bar" dir={dir}>
-                <style>{`
-                    .quran-slider {
-                        -webkit-appearance: none;
-                        appearance: none;
-                        width: 100%;
-                        height: 10px;
-                        border-radius: 9999px;
-                        outline: none;
-                        cursor: pointer;
-                        transition: all 0.2s ease;
-                    }
-                    .quran-slider::-webkit-slider-thumb {
-                        -webkit-appearance: none;
-                        appearance: none;
-                        width: 22px;
-                        height: 22px;
-                        background: #FFFFFF;
-                        border: 3.5px solid var(--qr-slider-thumb, ${primaryColor});
-                        border-radius: 50%;
-                        cursor: pointer;
-                        box-shadow: 0 2px 8px rgba(0,0,0,0.22);
-                        transition: transform 0.15s ease, box-shadow 0.15s ease;
-                    }
-                    .quran-slider::-webkit-slider-thumb:hover {
-                        transform: scale(1.15);
-                        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-                    }
-                    .quran-slider::-webkit-slider-thumb:active {
-                        transform: scale(0.95);
-                    }
-                    .quran-slider::-moz-range-thumb {
-                        width: 22px;
-                        height: 22px;
-                        background: #FFFFFF;
-                        border: 3.5px solid var(--qr-slider-thumb, ${primaryColor});
-                        border-radius: 50%;
-                        cursor: pointer;
-                        box-shadow: 0 2px 8px rgba(0,0,0,0.22);
-                    }
-                `}</style>
+            <header className="app-top-bar shrink-0 relative z-40" style={{ position: 'relative' }} dir={dir}>
                 <div className="app-top-bar__inner">
                     <div className="relative flex items-center justify-between w-full min-h-[44px]">
                         {/* زر الرجوع للخلف وأيقونة المفضلة وزر التفعيل ملاصقة بدون فجوات فارغة */}
                         <div className="flex items-center gap-0 z-10 shrink-0">
                             <button
+                                type="button"
                                 onClick={handleBack}
-                                className="w-8 h-9 rounded-full flex items-center justify-center transition-all hover:bg-black/5 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                className="w-8 h-9 rounded-full flex items-center justify-center transition-colors hover:bg-black/5 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
                                 title={tListen('back', language)}
                                 aria-label={tListen('back', language)}
                             >
@@ -814,32 +339,15 @@ function ListenQuran({ onBack, onNavigate }: ListenQuranProps) {
                                 id="btn-listen-toggle-fav"
                                 type="button"
                                 onClick={handleToggleFavorite}
-                                className="w-8 h-9 rounded-full flex items-center justify-center transition-all hover:bg-black/5 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                className="w-8 h-9 rounded-full flex items-center justify-center transition-colors hover:bg-black/5 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
                                 title={isCurrentFavorite ? tListen('removeFromFavorites', language) : tListen('addToFavorites', language)}
                                 aria-label={tListen('favorites', language)}
                             >
                                 <Heart 
                                     className={`w-5 h-5 transition-transform duration-200 ${isCurrentFavorite ? 'scale-110 fill-red-500 text-red-500' : 'opacity-70 hover:opacity-100'}`} 
-                                    strokeWidth={isCurrentFavorite ? 0 : 2}
+                                    fill={isCurrentFavorite ? 'currentColor' : 'none'}
+                                    strokeWidth={isCurrentFavorite ? 1.5 : 2}
                                 />
-                            </button>
-
-                            {/* زر تفعيل وتعطيل ظهور بطاقة الاستماع في الصفحة الرئيسية (مطابق لزر السبحة) */}
-                            <button
-                                type="button"
-                                onClick={handleToggleListenOnHome}
-                                className="w-8 h-9 rounded-full flex items-center justify-center transition-all hover:bg-black/5 dark:hover:bg-white/5 active:scale-90 cursor-pointer shrink-0"
-                                title={
-                                    isEn 
-                                        ? (showListenOnHome ? 'Audio Quran Card on Home: Enabled (Click to disable)' : 'Audio Quran Card on Home: Disabled (Click to enable)') 
-                                        : (showListenOnHome ? 'ظهور بطاقة الاستماع في الرئيسية: مفعّل (اضغط للتعطيل)' : 'ظهور بطاقة الاستماع في الرئيسية: معطّل (اضغط للتفعيل)')
-                                }
-                            >
-                                <div className={`w-[18px] h-[18px] sm:w-[20px] sm:h-[20px] rounded-full border-[1.5px] border-white/90 shadow-xs transition-all flex items-center justify-center ${
-                                    showListenOnHome ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'
-                                }`}>
-                                    {showListenOnHome ? <Check className="w-2.5 h-2.5 sm:w-3 sm:h-3 stroke-[3]" /> : <span className="w-1.5 h-0.5 bg-white rounded-full" />}
-                                </div>
                             </button>
                         </div>
 
@@ -878,7 +386,7 @@ function ListenQuran({ onBack, onNavigate }: ListenQuranProps) {
 
             <main 
                 id="listen-scroll-container" 
-                className="w-full max-w-lg mx-auto flex-1 flex flex-col px-4 sm:px-6 py-4 z-10 overflow-y-auto space-y-4"
+                className="w-full max-w-lg mx-auto flex-1 min-h-0 px-4 sm:px-6 pt-4 app-scroll-safe z-10 overflow-y-auto space-y-4"
             >
                 {/* 1. مربعات الاختيار (القارئ والسورة) كبطاقات بيضاء ناعمة بظلال مطابقة للرئيسية */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 flex-shrink-0">
@@ -1017,8 +525,7 @@ function ListenQuran({ onBack, onNavigate }: ListenQuranProps) {
                         <button 
                             type="button"
                             onClick={handlePlayPause} 
-                            disabled={isLoading && !isPlaying} 
-                            className="w-20 h-20 sm:w-22 sm:h-22 rounded-full flex items-center justify-center active:scale-95 transition-all duration-300 disabled:opacity-70 cursor-pointer" 
+                            className="w-20 h-20 sm:w-22 sm:h-22 rounded-full flex items-center justify-center active:scale-95 transition-all duration-300 cursor-pointer" 
                             style={{ 
                                 backgroundColor: primaryColor, 
                                 color: isBlackTheme ? '#000000' : '#FFFFFF',
@@ -1029,10 +536,10 @@ function ListenQuran({ onBack, onNavigate }: ListenQuranProps) {
                             title={isPlaying ? tListen('pause', language) : tListen('play', language)}
                             aria-label={isPlaying ? tListen('pause', language) : tListen('play', language)}
                         >
-                            {isLoading && !isPlaying ? (
-                                <i className="fa-solid fa-spinner fa-spin fa-2x"></i>
-                            ) : isPlaying ? (
+                            {isPlaying ? (
                                 <Pause className="w-8 h-8 sm:w-9 sm:h-9" strokeWidth={2.4} />
+                            ) : isLoading ? (
+                                <i className="fa-solid fa-spinner fa-spin fa-2x"></i>
                             ) : (
                                 <Play className={`w-8 h-8 sm:w-9 sm:h-9 ${isRTL ? '-translate-x-0.5' : 'translate-x-0.5'}`} strokeWidth={2.4} fill="currentColor" />
                             )}
@@ -1056,6 +563,166 @@ function ListenQuran({ onBack, onNavigate }: ListenQuranProps) {
                                 <SkipForward className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={2.3} />
                             )}
                         </button>
+                    </div>
+
+                    {/* معلومات الآية الحالية والجزء ونوع السورة تحت أزرار التحكم */}
+                    <div className="text-center pt-1">
+                        <p className={`text-xs sm:text-sm font-bold ${isBlackTheme ? 'text-zinc-300' : 'text-slate-600'}`}>
+                            {isEn
+                                ? `Ayah ${formatListenNumber(currentAyah, language)}/${formatListenNumber(totalAyahs, language)} • Juz ${formatListenNumber(currentJuz, language)} • ${revelationType}`
+                                : `الآية (${formatListenNumber(currentAyah, language)}) • الجزء ${formatListenNumber(currentJuz, language)} • ${revelationType}`}
+                        </p>
+                    </div>
+
+                    {/* زر التحكم في سرعة التلاوة (بطيئة 0.50 و 0.75 / أسرع 1.25 و 1.5) */}
+                    <div className="pt-1 flex flex-col items-center">
+                        <button
+                            id="btn-listen-speed"
+                            type="button"
+                            onClick={() => setShowSpeedMenu(prev => !prev)}
+                            aria-expanded={showSpeedMenu}
+                            className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all duration-200 active:scale-95 cursor-pointer ${
+                                playbackRate !== 1 || showSpeedMenu
+                                    ? 'shadow-sm'
+                                    : (isBlackTheme
+                                        ? 'bg-white/[0.08] hover:bg-white/[0.14] text-white'
+                                        : 'bg-slate-100 hover:bg-slate-200/80 text-slate-700')
+                            }`}
+                            style={playbackRate !== 1 || showSpeedMenu ? {
+                                backgroundColor: isBlackTheme ? 'rgba(255,255,255,0.16)' : `${primaryColor}18`,
+                                color: primaryColor,
+                                outline: `1.5px solid ${primaryColor}45`
+                            } : undefined}
+                        >
+                            <Gauge className="w-4 h-4 shrink-0" strokeWidth={2.2} />
+                            <span>{tListen('playbackSpeed', language)}</span>
+                            <span
+                                dir="ltr"
+                                className="px-2 py-0.5 rounded-full text-[11px] font-extrabold tabular-nums"
+                                style={{
+                                    backgroundColor: playbackRate !== 1 ? primaryColor : (isBlackTheme ? 'rgba(255,255,255,0.14)' : 'rgba(15,23,42,0.08)'),
+                                    color: playbackRate !== 1 ? (isBlackTheme ? '#000000' : '#FFFFFF') : (isBlackTheme ? '#FFFFFF' : '#334155')
+                                }}
+                            >
+                                {playbackRate === 0.5 ? '0.50×' : `${playbackRate}×`}
+                            </span>
+                            <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${showSpeedMenu ? 'rotate-180' : ''}`} />
+                        </button>
+
+                        {showSpeedMenu && (
+                            <div
+                                id="listen-speed-menu"
+                                className={`mt-3 w-full rounded-2xl p-3 space-y-2.5 ${
+                                    isBlackTheme
+                                        ? 'bg-white/[0.05] text-white'
+                                        : 'bg-slate-50 text-slate-700'
+                                }`}
+                            >
+                                {/* السرعات البطيئة والأسرع */}
+                                <div className="grid grid-cols-2 gap-2.5">
+                                    {/* سرعات بطيئة: 0.50 و 0.75 فقط */}
+                                    <div className="space-y-1.5">
+                                        <span className={`block text-[11px] font-bold text-center ${isBlackTheme ? 'text-zinc-400' : 'text-slate-500'}`}>
+                                            {tListen('slowerSpeeds', language)}
+                                        </span>
+                                        <div className="grid grid-cols-2 gap-1.5">
+                                            {[
+                                                { value: 0.5, label: '0.50×' },
+                                                { value: 0.75, label: '0.75×' }
+                                            ].map(opt => {
+                                                const isActive = Math.abs(playbackRate - opt.value) < 0.001;
+                                                return (
+                                                    <button
+                                                        key={opt.value}
+                                                        type="button"
+                                                        dir="ltr"
+                                                        onClick={() => {
+                                                            setPlaybackRate(opt.value);
+                                                            setShowSpeedMenu(false);
+                                                        }}
+                                                        className={`py-2 px-1 rounded-xl text-xs font-extrabold tabular-nums transition-all duration-150 active:scale-95 cursor-pointer ${
+                                                            isActive
+                                                                ? 'shadow-sm'
+                                                                : (isBlackTheme
+                                                                    ? 'bg-white/[0.07] hover:bg-white/[0.12] text-zinc-200'
+                                                                    : 'bg-white hover:bg-slate-100 text-slate-700 shadow-2xs')
+                                                        }`}
+                                                        style={isActive ? {
+                                                            backgroundColor: primaryColor,
+                                                            color: isBlackTheme ? '#000000' : '#FFFFFF'
+                                                        } : undefined}
+                                                    >
+                                                        {opt.label}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+
+                                    {/* سرعات أسرع: 1.25 و 1.5 فقط */}
+                                    <div className="space-y-1.5">
+                                        <span className={`block text-[11px] font-bold text-center ${isBlackTheme ? 'text-zinc-400' : 'text-slate-500'}`}>
+                                            {tListen('fasterSpeeds', language)}
+                                        </span>
+                                        <div className="grid grid-cols-2 gap-1.5">
+                                            {[
+                                                { value: 1.25, label: '1.25×' },
+                                                { value: 1.5, label: '1.5×' }
+                                            ].map(opt => {
+                                                const isActive = Math.abs(playbackRate - opt.value) < 0.001;
+                                                return (
+                                                    <button
+                                                        key={opt.value}
+                                                        type="button"
+                                                        dir="ltr"
+                                                        onClick={() => {
+                                                            setPlaybackRate(opt.value);
+                                                            setShowSpeedMenu(false);
+                                                        }}
+                                                        className={`py-2 px-1 rounded-xl text-xs font-extrabold tabular-nums transition-all duration-150 active:scale-95 cursor-pointer ${
+                                                            isActive
+                                                                ? 'shadow-sm'
+                                                                : (isBlackTheme
+                                                                    ? 'bg-white/[0.07] hover:bg-white/[0.12] text-zinc-200'
+                                                                    : 'bg-white hover:bg-slate-100 text-slate-700 shadow-2xs')
+                                                        }`}
+                                                        style={isActive ? {
+                                                            backgroundColor: primaryColor,
+                                                            color: isBlackTheme ? '#000000' : '#FFFFFF'
+                                                        } : undefined}
+                                                    >
+                                                        {opt.label}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* زر العودة للسرعة العادية 1× */}
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setPlaybackRate(1);
+                                        setShowSpeedMenu(false);
+                                    }}
+                                    className={`w-full py-2 px-3 rounded-xl text-xs font-bold transition-all duration-150 active:scale-[0.98] cursor-pointer flex items-center justify-center gap-1.5 ${
+                                        playbackRate === 1
+                                            ? 'shadow-sm'
+                                            : (isBlackTheme
+                                                ? 'bg-white/[0.07] hover:bg-white/[0.12] text-zinc-200'
+                                                : 'bg-white hover:bg-slate-100 text-slate-700 shadow-2xs')
+                                    }`}
+                                    style={playbackRate === 1 ? {
+                                        backgroundColor: primaryColor,
+                                        color: isBlackTheme ? '#000000' : '#FFFFFF'
+                                    } : undefined}
+                                >
+                                    <span>{tListen('normalSpeed', language)}</span>
+                                    <span dir="ltr">(1×)</span>
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -1438,11 +1105,9 @@ function ListenQuran({ onBack, onNavigate }: ListenQuranProps) {
                 </div>
 
                 {/* ملاحظة الاتصال بالإنترنت */}
-                <p className={`text-xs text-center mt-2 mb-2 px-3 leading-relaxed ${isBlackTheme ? 'text-zinc-500' : 'text-slate-400'}`}>
+                <p className={`text-xs text-center mt-2 mb-0 px-3 leading-relaxed ${isBlackTheme ? 'text-zinc-500' : 'text-slate-400'}`}>
                     {tListen('internetNote', language)}
                 </p>
-
-                <div className="w-full h-8 shrink-0"></div>
             </main>
 
             {showReciterModal && (

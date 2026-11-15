@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Check, X, Smartphone, AppWindow, VolumeX, Shuffle, LayoutGrid, BellRing, Bell, ShieldCheck, Zap, Sparkles } from 'lucide-react';
+import { Check, X, Smartphone, AppWindow, VolumeX, Volume2, Shuffle, LayoutGrid, BellRing, Bell, ShieldCheck, Zap, Sparkles } from 'lucide-react';
 import { toArabic } from './constants';
 import { IslamicTimePickerModal } from '../Common/IslamicTimePickerModal';
 import { usePrayerTimes } from '../../context/PrayerTimesContext';
+import PrayerAlertVolumeSlider from '../PrayerTimes/PrayerAlertVolumeSlider';
 import { setupNotifications } from '../../utils/notifications';
 import { useNotificationSettings, PhoneNotificationSettings } from '../../hooks/useNotificationSettings';
 import { useLanguage } from '../../context/LanguageContext';
@@ -19,6 +20,13 @@ import {
     requestNativeBatteryOptimization,
     openNativeNotificationSettings
 } from '../../utils/silentMode';
+import {
+    getAppNotificationSettings,
+    saveAppNotificationSettings,
+    APP_NOTIFICATION_CHANGE_EVENT,
+    AppNotificationSettings
+} from '../../utils/appNotificationSettings';
+import { registerBackInterceptor } from '../../hooks/useBackButton';
 
 const toEnglishDigits = (val: string | number): string =>
     String(val ?? '')
@@ -128,6 +136,8 @@ interface NotificationSettingsModalProps {
     modeSuffix: string;
     initialTab?: 'app' | 'phone';
     hideAppTab?: boolean;
+    hidePhoneTab?: boolean;
+    hideTabsBar?: boolean;
     phoneTabTitle?: string;
 }
 
@@ -138,35 +148,27 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
     modeSuffix, 
     initialTab,
     hideAppTab = false,
+    hidePhoneTab = false,
+    hideTabsBar = false,
     phoneTabTitle
 }) => {
     const { language, dir, isRTL } = useLanguage();
     const isEn = language === 'en';
-    const { config, updateConfig } = usePrayerTimes();
+    const { config, updateConfig, alertVolume = 100, setAlertVolume } = usePrayerTimes();
     const { phoneSettings, updateSpecificSetting, updateRandomSettings } = useNotificationSettings();
-    const [activeTab, setActiveTab] = useState<'app' | 'phone'>(hideAppTab ? 'phone' : (initialTab || 'app'));
+    const [activeTab, setActiveTab] = useState<'app' | 'phone'>(
+        hideAppTab ? 'phone' : (hidePhoneTab ? 'app' : (initialTab || 'app'))
+    );
 
-    const [appSettings, setAppSettings] = useState(() => {
-        const saved = localStorage.getItem('notification_settings' + modeSuffix);
-        if (saved) {
-            try {
-                return JSON.parse(saved);
-            } catch (e) {
-                console.error('Error parsing notification settings', e);
-            }
-        }
-        return {
-            quarter: true,
-            sajda: true,
-            themes: true,
-            downloads: true,
-            bookmarks: true,
-            juz: true,
-            general: true
-        };
-    });
+    const [appSettings, setAppSettings] = useState<AppNotificationSettings>(() => getAppNotificationSettings());
 
-    const { theme, themeKey, homeThemeVariant } = useTheme();
+    useEffect(() => {
+        const syncAppSettings = () => setAppSettings(getAppNotificationSettings());
+        window.addEventListener(APP_NOTIFICATION_CHANGE_EVENT, syncAppSettings);
+        return () => window.removeEventListener(APP_NOTIFICATION_CHANGE_EVENT, syncAppSettings);
+    }, []);
+
+    const { theme, themeKey, homeThemeVariant, isNightMode } = useTheme();
     const isBlackTheme = themeKey === 'deep_black' || theme?.bgColor === '#000000' || theme?.name === 'اسود' || theme?.name === 'black';
 
     const themeStyles = (() => {
@@ -293,6 +295,23 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
     const [showWidgetsGuide, setShowWidgetsGuide] = useState<boolean>(false);
     const [showWidgetDesignModal, setShowWidgetDesignModal] = useState<boolean>(false);
 
+    useEffect(() => {
+        const interceptor = () => {
+            if (showWidgetsGuide) {
+                setShowWidgetsGuide(false);
+                return true;
+            }
+            if (showWidgetDesignModal) {
+                setShowWidgetDesignModal(false);
+                return true;
+            }
+            onClose();
+            return true;
+        };
+        const unregister = registerBackInterceptor(interceptor);
+        return unregister;
+    }, [showWidgetsGuide, showWidgetDesignModal, onClose]);
+
     const handleToggleWidgetArabic = async () => {
         const next = widgetLockLang === 'ar' ? null : 'ar';
         setWidgetLockLang(next);
@@ -337,11 +356,10 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
         window.dispatchEvent(new CustomEvent('widget-settings-changed'));
     };
 
-    const toggleAppSetting = (key: string) => {
+    const toggleAppSetting = (key: keyof AppNotificationSettings) => {
         const newSettings = { ...appSettings, [key]: !appSettings[key] };
         setAppSettings(newSettings);
-        localStorage.setItem('notification_settings' + modeSuffix, JSON.stringify(newSettings));
-        window.dispatchEvent(new Event('notification-settings-change'));
+        saveAppNotificationSettings(newSettings);
         
         const labelsAr: Record<string, string> = {
             quarter: 'تنبيهات الأحزاب والأرباع',
@@ -481,60 +499,113 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
 
     const isAudioMuted = config.audioMutedUntil && Date.now() < config.audioMutedUntil;
 
-    return (
-        <div dir={dir} lang={isEn ? 'en' : 'ar'} className={`fixed inset-0 bg-black/40 backdrop-blur-sm z-[1200] flex items-center justify-center ${isLandscape ? 'p-0' : 'p-4'} animate-fadeIn`} onClick={onClose}>
-            <div 
-                className={`modal-skinned w-full ${isLandscape ? 'max-w-4xl h-full rounded-none max-h-screen' : 'max-w-md rounded-2xl max-h-[85vh]'} shadow-2xl overflow-hidden flex flex-col animate-modal-enter border-0`} 
-                style={{ backgroundColor: themeStyles.modalBg, color: themeStyles.modalText, border: 'none', outline: 'none' }} 
-                onClick={e => e.stopPropagation()}
-            >
+    const themeTopBarBg = isNightMode 
+        ? '#09090b' 
+        : (homeThemeVariant === 'sky' 
+            ? '#0284c7' 
+            : (homeThemeVariant === 'emerald' 
+                ? '#047857' 
+                : (homeThemeVariant === 'burgundy' 
+                    ? '#881337' 
+                    : '#b45309')));
 
-                {hideAppTab ? (
-                    <div className="flex items-center justify-between p-3.5 sm:p-4 border-b" style={{ borderColor: `${themeStyles.accent}20` }}>
-                        <div className="flex items-center gap-2 font-black text-sm sm:text-base" style={{ color: themeStyles.accent }}>
-                            <Smartphone className="w-5 h-5 shrink-0 quran-3d-icon" />
-                            <span>{phoneTabTitle || (isEn ? 'Prayer Settings & Notifications' : 'إعدادات الصلاة والإشعارات')}</span>
+    const notifPageBg = isBlackTheme 
+        ? '#000000' 
+        : (theme?.bgColor && theme.bgColor.toLowerCase() !== '#ffffff' 
+            ? theme.bgColor 
+            : (homeThemeVariant === 'sky' 
+                ? '#F0F9FF' 
+                : (homeThemeVariant === 'emerald' 
+                    ? '#F0FDF4' 
+                    : (homeThemeVariant === 'burgundy' 
+                        ? '#FFF1F2' 
+                        : '#FEF9C3'))));
+
+    return (
+        <div 
+            dir={isEn ? 'ltr' : 'rtl'} 
+            lang={isEn ? 'en' : 'ar'} 
+            className="fixed inset-0 z-[9999999] flex flex-col font-cairo select-none overflow-hidden animate-fadeIn"
+            style={{ 
+                backgroundColor: notifPageBg
+            }}
+        >
+            {/* Standard Page Header - Identical to Adia */}
+            <header className="app-top-bar settings-top-bar" dir={isEn ? 'ltr' : 'rtl'}>
+                <div className="app-top-bar__inner">
+                    <div className="relative flex items-center justify-center w-full min-h-[44px]">
+                        {/* Back button */}
+                        <div className={`absolute ${isEn ? 'left-0' : 'right-0'} flex items-center`}>
+                            <button
+                                onClick={onClose}
+                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                title={isEn ? "Go Back" : "رجوع للخلف"}
+                                aria-label={isEn ? "Go Back" : "رجوع للخلف"}
+                            >
+                                <i className={`fa-solid ${isEn ? 'fa-arrow-left' : 'fa-arrow-right'} text-xl`}></i>
+                            </button>
                         </div>
-                        <button 
-                            type="button"
-                            onClick={onClose}
-                            className="w-8 h-8 rounded-xl flex items-center justify-center active:scale-95 transition-all cursor-pointer"
-                            style={{ backgroundColor: `${themeStyles.accent}18`, color: themeStyles.accent }}
-                            title={isEn ? "Close" : "إغلاق"}
-                        >
-                            <X className="w-5 h-5 quran-3d-icon" />
-                        </button>
+
+                        {/* Title in center */}
+                        <div className="text-center px-12 min-w-0">
+                            <h1 className="app-top-bar__title text-lg sm:text-xl font-kufi truncate">
+                                {activeTab === 'app' ? (isEn ? 'App Notifications' : 'إشعارات التطبيق') : (phoneTabTitle || (isEn ? 'Phone Notifications' : 'إشعارات الهاتف'))}
+                            </h1>
+                        </div>
+
+                        {/* Home button */}
+                        <div className={`absolute ${isEn ? 'right-0' : 'left-0'} flex items-center gap-1`}>
+                            <button
+                                onClick={onClose}
+                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                title={isEn ? "Home" : "الصفحة الرئيسية"}
+                                aria-label={isEn ? "Home" : "الصفحة الرئيسية"}
+                            >
+                                <i className="fa-solid fa-house text-xl"></i>
+                            </button>
+                        </div>
                     </div>
-                ) : (
-                    <div className="flex gap-2 p-3 border-b" style={{ borderColor: `${themeStyles.accent}20` }}>
-                        <button 
-                            className="flex-1 py-2.5 px-3 text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer rounded-xl border-0 shadow-xs"
-                            style={{ 
-                                backgroundColor: activeTab === 'app' ? themeStyles.accent : themeStyles.cardBg,
-                                color: activeTab === 'app' ? themeStyles.btnText : themeStyles.text,
-                                border: 'none'
-                            }}
-                            onClick={() => setActiveTab('app')}
-                        >
-                            <AppWindow className="w-4 h-4 quran-3d-icon" />
-                            {isEn ? 'App Notifications' : 'إشعارات التطبيق'}
-                        </button>
-                        <button 
-                            className="flex-1 py-2.5 px-3 text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer rounded-xl border-0 shadow-xs"
-                            style={{ 
-                                backgroundColor: activeTab === 'phone' ? themeStyles.accent : themeStyles.cardBg,
-                                color: activeTab === 'phone' ? themeStyles.btnText : themeStyles.text,
-                                border: 'none'
-                            }}
-                            onClick={() => setActiveTab('phone')}
-                        >
-                            <Smartphone className="w-4 h-4 quran-3d-icon" />
-                            {phoneTabTitle || (isEn ? 'Phone Notifications' : 'إشعارات الهاتف')}
-                        </button>
+                </div>
+            </header>
+
+            {/* Inner Content Container */}
+            <div className="flex-1 min-h-0 overflow-hidden max-w-2xl mx-auto w-full flex flex-col px-4 pt-4 space-y-4">
+                {!hideTabsBar && !hideAppTab && !hidePhoneTab && (
+                    <div className="flex gap-2 p-2 rounded-2xl quran-raised-card bg-slate-100 dark:bg-zinc-900 shrink-0">
+                        {!hideAppTab && (
+                            <button 
+                                className="flex-1 py-2.5 px-3 text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer rounded-xl border-0 shadow-xs"
+                                style={{ 
+                                    backgroundColor: activeTab === 'app' ? themeStyles.accent : 'transparent',
+                                    color: activeTab === 'app' ? themeStyles.btnText : themeStyles.text,
+                                    border: 'none'
+                                }}
+                                onClick={() => setActiveTab('app')}
+                            >
+                                <AppWindow className="w-4 h-4 quran-3d-icon" />
+                                {isEn ? 'App Notifications' : 'إشعارات التطبيق'}
+                            </button>
+                        )}
+                        {!hidePhoneTab && (
+                            <button 
+                                className="flex-1 py-2.5 px-3 text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer rounded-xl border-0 shadow-xs"
+                                style={{ 
+                                    backgroundColor: activeTab === 'phone' ? themeStyles.accent : 'transparent',
+                                    color: activeTab === 'phone' ? themeStyles.btnText : themeStyles.text,
+                                    border: 'none'
+                                }}
+                                onClick={() => setActiveTab('phone')}
+                            >
+                                <Smartphone className="w-4 h-4 quran-3d-icon" />
+                                {phoneTabTitle || (isEn ? 'Phone Notifications' : 'إشعارات الهاتف')}
+                            </button>
+                        )}
                     </div>
                 )}
 
-                <div className="px-4 py-2.5 space-y-3 overflow-y-auto flex-1 custom-scrollbar">
+                <div 
+                    className="px-4 pt-2.5 space-y-3 overflow-y-auto flex-1 min-h-0 app-scroll-safe custom-scrollbar"
+                >
                     {activeTab === 'app' ? (
                         <div className="space-y-2 animate-fadeIn">
                             {[
@@ -545,30 +616,52 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
                                 { id: 'downloads', label: isEn ? 'Downloads' : 'التحميلات' },
                                 { id: 'bookmarks', label: isEn ? 'Bookmarks' : 'الإشارات المرجعية' },
                                 { id: 'general', label: isEn ? 'General Alerts' : 'تنبيهات عامة' }
-                            ].map((item) => (
+                            ].map((item) => {
+                                const settingKey = item.id as keyof AppNotificationSettings;
+                                return (
                                 <div 
                                     key={item.id}
-                                    onClick={() => toggleAppSetting(item.id)}
+                                    onClick={() => toggleAppSetting(settingKey)}
                                     className="flex items-center justify-between py-2.5 px-3.5 rounded-xl transition-all cursor-pointer border-0 shadow-2xs"
                                     style={{ 
-                                        backgroundColor: themeStyles.cardBg, 
-                                        color: themeStyles.text,
-                                        border: `1px solid ${themeStyles.cardBorder}`
+                                        backgroundColor: '#ffffff', 
+                                        color: '#0f172a',
+                                        border: `1px solid ${themeStyles.cardBorder || 'rgba(0,0,0,0.08)'}`
                                     }}
                                 >
-                                    <span className="font-bold text-sm">{item.label}</span>
-                                    <div className="w-5 h-5 rounded-full flex items-center justify-center transition-colors shadow-inner shrink-0" style={{ backgroundColor: appSettings[item.id] ? themeStyles.accent : 'rgba(0,0,0,0.1)', color: appSettings[item.id] ? '#ffffff' : 'transparent' }}>
-                                        {appSettings[item.id] && <Check className="w-3 h-3 stroke-[3] quran-3d-icon" />}
+                                    <span className="font-bold text-sm text-slate-900">{item.label}</span>
+                                    <div className="w-5 h-5 rounded-full flex items-center justify-center transition-colors shadow-inner shrink-0" style={{ backgroundColor: appSettings[settingKey] ? themeStyles.accent : 'rgba(0,0,0,0.1)', color: appSettings[settingKey] ? '#ffffff' : 'transparent' }}>
+                                        {appSettings[settingKey] && <Check className="w-3 h-3 stroke-[3] quran-3d-icon" />}
                                     </div>
                                 </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     ) : (
-                        <div className="space-y-3 animate-fadeIn pb-4">
+                        <div className="space-y-3 animate-fadeIn">
+                            {/* Adhan Volume Level Card */}
+                            <div className="space-y-1.5" id="prayer-alert-volume-card">
+                                <h4 className="font-bold text-xs sm:text-sm opacity-90" style={{ color: themeStyles.accent }}>
+                                    {isEn ? 'Adhan Volume Level' : 'مستوى صوت الأذان'}
+                                </h4>
+                                <PrayerAlertVolumeSlider 
+                                    volume={alertVolume}
+                                    onChange={(val) => setAlertVolume(val)}
+                                    primaryColor={themeStyles.accent}
+                                    secondaryColor={themeStyles.subtext}
+                                    cardBorderColor={themeStyles.cardBorder}
+                                    isBlackTheme={isBlackTheme}
+                                    cardBg="#ffffff"
+                                    textColor="#0f172a"
+                                    subtextColor="#64748b"
+                                    hideHeader={true}
+                                    showDescription={false}
+                                />
+                            </div>
+
                             {/* Persistent Prayer Times Notification Card */}
                             <div className="space-y-2">
                                 <h4 className="font-bold text-xs sm:text-sm opacity-90 flex items-center gap-2" style={{ color: themeStyles.accent }}>
-                                    <BellRing className="w-4 h-4 quran-3d-icon shrink-0" />
                                     <span>{isEn ? 'Ongoing Prayer Notification' : 'الإشعار المستمر لمواقيت الصلاة'}</span>
                                 </h4>
 
@@ -576,13 +669,13 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
                                     onClick={togglePersistentNotification}
                                     className="flex items-center justify-between gap-2 py-2.5 px-3.5 rounded-xl transition-all cursor-pointer border-0 shadow-2xs"
                                     style={{ 
-                                        backgroundColor: themeStyles.cardBg, 
-                                        color: themeStyles.text,
-                                        border: `1px solid ${themeStyles.cardBorder}`
+                                        backgroundColor: '#ffffff', 
+                                        color: '#0f172a',
+                                        border: `1px solid ${themeStyles.cardBorder || 'rgba(0,0,0,0.08)'}`
                                     }}
                                 >
-                                    <span className="font-bold text-xs sm:text-sm">
-                                        {isEn ? 'Persistent Prayer Notification (Status Bar)' : 'إشعار الصلاة المستمر (الشريط العلوي بجوار الساعة)'}
+                                    <span className="font-bold text-xs sm:text-sm text-slate-900">
+                                        {isEn ? 'Persistent Prayer Notification' : 'إشعار الصلاة المستمر'}
                                     </span>
                                     <div 
                                         className="w-5 h-5 rounded-full flex items-center justify-center transition-colors flex-shrink-0 shadow-inner" 
@@ -600,18 +693,18 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
                                     <div 
                                         className="py-2.5 px-3.5 rounded-xl flex items-center justify-between gap-2 text-xs border-0 shadow-2xs" 
                                         style={{ 
-                                            backgroundColor: themeStyles.cardBg, 
-                                            color: themeStyles.text,
-                                            border: `1px solid ${themeStyles.cardBorder}`
+                                            backgroundColor: '#ffffff', 
+                                            color: '#0f172a',
+                                            border: `1px solid ${themeStyles.cardBorder || 'rgba(0,0,0,0.08)'}`
                                         }}
                                     >
                                         <div className="flex items-center gap-2 min-w-0">
                                             {isBatteryIgnored ? (
-                                                <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0 quran-3d-icon" />
+                                                <ShieldCheck className="w-4 h-4 text-emerald-600 flex-shrink-0 quran-3d-icon" />
                                             ) : (
-                                                <Zap className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 quran-3d-icon" />
+                                                <Zap className="w-4 h-4 text-amber-600 flex-shrink-0 quran-3d-icon" />
                                             )}
-                                            <span className="font-bold text-xs truncate">
+                                            <span className="font-bold text-xs truncate text-slate-900">
                                                 {isBatteryIgnored 
                                                     ? (isEn ? 'Background: Unrestricted' : 'حالة البطارية: غير مقيد') 
                                                     : (isEn ? 'Battery Optimization Active' : 'استثناء من توفير البطارية')}
@@ -634,10 +727,27 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
                                 )}
                             </div>
 
+                            {/* نغمة إشعارات الأذكار والتنبيهات */}
+                            <div className="space-y-1.5 pt-1" id="settings-notification-tone-section">
+                                <h4 className="font-bold text-xs sm:text-sm opacity-90 flex items-center gap-2" style={{ color: themeStyles.accent }}>
+                                    <span>{isEn ? 'Notification Tone (Athkar & Reminders)' : 'نغمة إشعارات الأذكار والتنبيهات'}</span>
+                                </h4>
+                                <NotificationToneSelector 
+                                    currentTone={activeNotificationTone}
+                                    onToneChange={handleNotificationToneChange}
+                                    secondaryColor={themeStyles.subtext}
+                                    primaryColor={themeStyles.accent}
+                                    cardBorderColor={themeStyles.cardBorder}
+                                    isDefaultTheme={true}
+                                    isBlackTheme={isBlackTheme}
+                                    hideLabel={true}
+                                    hidePreviewButton={true}
+                                />
+                            </div>
+
                             {/* Home Screen Widgets Section */}
                             <div className="space-y-2 pt-1">
                                 <h4 className="font-bold text-xs sm:text-sm opacity-90 flex items-center gap-2" style={{ color: themeStyles.accent }}>
-                                    <LayoutGrid className="w-4 h-4 quran-3d-icon shrink-0" />
                                     <span>{isEn ? 'Home Screen Widgets' : 'التطبيقات المصغرة (الودجت)'}</span>
                                 </h4>
 
@@ -646,12 +756,12 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
                                         onClick={handleToggleWidgetArabic}
                                         className="py-2.5 px-3 rounded-xl transition-all cursor-pointer flex items-center justify-between gap-2 border-0 shadow-2xs"
                                         style={{ 
-                                            backgroundColor: themeStyles.cardBg, 
-                                            color: themeStyles.text,
-                                            border: `1px solid ${themeStyles.cardBorder}`
+                                            backgroundColor: '#ffffff', 
+                                            color: '#0f172a',
+                                            border: `1px solid ${themeStyles.cardBorder || 'rgba(0,0,0,0.08)'}`
                                         }}
                                     >
-                                        <span className="font-bold text-xs">{isEn ? 'Lock Arabic' : 'تثبيت العربية'}</span>
+                                        <span className="font-bold text-xs text-slate-900">{isEn ? 'Lock Arabic' : 'تثبيت العربية'}</span>
                                         <div 
                                             className="w-5 h-5 rounded-full flex items-center justify-center transition-colors shrink-0 shadow-inner"
                                             style={{
@@ -667,12 +777,12 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
                                         onClick={handleToggleWidgetEnglish}
                                         className="py-2.5 px-3 rounded-xl transition-all cursor-pointer flex items-center justify-between gap-2 border-0 shadow-2xs"
                                         style={{ 
-                                            backgroundColor: themeStyles.cardBg, 
-                                            color: themeStyles.text,
-                                            border: `1px solid ${themeStyles.cardBorder}`
+                                            backgroundColor: '#ffffff', 
+                                            color: '#0f172a',
+                                            border: `1px solid ${themeStyles.cardBorder || 'rgba(0,0,0,0.08)'}`
                                         }}
                                     >
-                                        <span className="font-bold text-xs">{isEn ? 'Lock English' : 'تثبيت الإنجليزية'}</span>
+                                        <span className="font-bold text-xs text-slate-900">{isEn ? 'Lock English' : 'تثبيت الإنجليزية'}</span>
                                         <div 
                                             className="w-5 h-5 rounded-full flex items-center justify-center transition-colors shrink-0 shadow-inner"
                                             style={{
@@ -701,52 +811,18 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
                                             onClick={() => toggleNightNotification(item.id as 'firstThird' | 'midnight' | 'lastThird')}
                                             className="flex items-center justify-between py-2.5 px-3.5 rounded-xl transition-all cursor-pointer border-0 shadow-2xs"
                                             style={{ 
-                                                backgroundColor: themeStyles.cardBg, 
-                                                color: themeStyles.text,
-                                                border: `1px solid ${themeStyles.cardBorder}`
+                                                backgroundColor: '#ffffff', 
+                                                color: '#0f172a',
+                                                border: `1px solid ${themeStyles.cardBorder || 'rgba(0,0,0,0.08)'}`
                                             }}
                                         >
-                                            <span className="font-bold text-xs sm:text-sm">{item.label}</span>
+                                            <span className="font-bold text-xs sm:text-sm text-slate-900">{item.label}</span>
                                             <div className="w-5 h-5 rounded-full flex items-center justify-center transition-colors shadow-inner shrink-0" style={{ backgroundColor: isEnabled ? themeStyles.accent : 'rgba(0,0,0,0.12)', color: isEnabled ? '#ffffff' : 'transparent' }}>
                                                 {isEnabled && <Check className="w-3 h-3 stroke-[3] quran-3d-icon" />}
                                             </div>
                                         </div>
                                     );
                                 })}
-                            </div>
-
-                            {/* نغمة إشعارات الأذكار والتنبيهات */}
-                            <div className="space-y-2 pt-1" id="settings-notification-tone-section">
-                                <div className="flex flex-col text-right">
-                                    <h4 className="font-bold text-xs sm:text-sm opacity-90 flex items-center gap-2" style={{ color: themeStyles.accent }}>
-                                        <Bell className="w-4 h-4 quran-3d-icon shrink-0" />
-                                        <span>{isEn ? 'Notification Tone (Athkar & Reminders)' : 'نغمة إشعارات الأذكار والتنبيهات'}</span>
-                                    </h4>
-                                    <p className="text-[11px] opacity-70 mt-0.5 leading-relaxed">
-                                        {isEn 
-                                            ? 'Tone for athkar, supplications, and general reminders only. Does not affect Adhan prayer alerts.' 
-                                            : 'خاصة بنغمة الأذكار والأدعية والتنبيهات العامة فقط، ولا تؤثر نهائياً على أصوات وتنبيهات الأذان.'}
-                                    </p>
-                                </div>
-                                <div 
-                                    className="p-2.5 rounded-2xl border-0 shadow-2xs"
-                                    style={{ 
-                                        backgroundColor: themeStyles.cardBg, 
-                                        color: themeStyles.text,
-                                        border: `1px solid ${themeStyles.cardBorder}`
-                                    }}
-                                >
-                                    <NotificationToneSelector 
-                                        currentTone={activeNotificationTone}
-                                        onToneChange={handleNotificationToneChange}
-                                        secondaryColor={themeStyles.subtext}
-                                        primaryColor={themeStyles.accent}
-                                        cardBorderColor={themeStyles.cardBorder}
-                                        isDefaultTheme={true}
-                                        isBlackTheme={isBlackTheme}
-                                        hideLabel={true}
-                                    />
-                                </div>
                             </div>
 
                             {/* Athkar & Tasbeeh Section */}
@@ -768,16 +844,16 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
                                             onClick={() => togglePhoneSetting(settingKey)}
                                             className="flex items-center justify-between py-2.5 px-3.5 rounded-xl transition-all cursor-pointer border-0 shadow-2xs"
                                             style={{ 
-                                                backgroundColor: themeStyles.cardBg, 
-                                                color: themeStyles.text,
-                                                border: `1px solid ${themeStyles.cardBorder}`
+                                                backgroundColor: '#ffffff', 
+                                                color: '#0f172a',
+                                                border: `1px solid ${themeStyles.cardBorder || 'rgba(0,0,0,0.08)'}`
                                             }}
                                         >
                                             <div className="flex items-center gap-2 min-w-0">
                                                 <div className="w-5 h-5 rounded-full flex items-center justify-center transition-colors shadow-inner shrink-0" style={{ backgroundColor: setting.enabled ? themeStyles.accent : 'rgba(0,0,0,0.12)', color: setting.enabled ? '#ffffff' : 'transparent' }}>
                                                     {setting.enabled && <Check className="w-3 h-3 stroke-[3] quran-3d-icon" />}
                                                 </div>
-                                                <span className="font-bold text-xs sm:text-sm truncate">{item.label}</span>
+                                                <span className="font-bold text-xs sm:text-sm truncate text-slate-900">{item.label}</span>
                                             </div>
                                             
                                             {setting.enabled && (
@@ -786,7 +862,7 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
                                                     onChange={(newTime) => handleTimeChange(settingKey, newTime)}
                                                     isEn={isEn}
                                                     title={item.label}
-                                                    className="text-xs px-2 py-0.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/10"
+                                                    className="text-xs px-2 py-0.5 rounded-lg hover:bg-black/5"
                                                 />
                                             )}
                                         </div>
@@ -798,8 +874,7 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
                             <div className="space-y-2 pt-1">
                                 <div className="flex items-center justify-between">
                                     <h4 className="font-bold text-xs sm:text-sm opacity-90 flex items-center gap-2" style={{ color: themeStyles.accent }}>
-                                        <Shuffle className="w-4 h-4 quran-3d-icon shrink-0" />
-                                        {isEn ? 'Random Athkar' : 'أذكار عشوائية'}
+                                        <span>{isEn ? 'Random Athkar' : 'أذكار عشوائية'}</span>
                                     </h4>
                                     <div 
                                         onClick={toggleRandomAthkar}
@@ -818,13 +893,13 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
                                     <div 
                                         className="p-3 rounded-2xl space-y-2.5 animate-fadeIn border-0 shadow-2xs"
                                         style={{ 
-                                            backgroundColor: themeStyles.cardBg, 
-                                            color: themeStyles.text,
-                                            border: `1px solid ${themeStyles.cardBorder}`
+                                            backgroundColor: '#ffffff', 
+                                            color: '#0f172a',
+                                            border: `1px solid ${themeStyles.cardBorder || 'rgba(0,0,0,0.08)'}`
                                         }}
                                     >
                                         <div className="flex items-center justify-between">
-                                            <span className="text-xs font-bold">{isEn ? 'Daily Frequency:' : 'عدد المرات يومياً:'}</span>
+                                            <span className="text-xs font-bold text-slate-900">{isEn ? 'Daily Frequency:' : 'عدد المرات يومياً:'}</span>
                                             <div className="flex items-center gap-3">
                                                 <button 
                                                     onClick={() => handleRandomSettingChange({ frequency: Math.max(1, phoneSettings.randomAthkar.frequency - 1) })}
@@ -852,25 +927,25 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
 
                                         <div className="grid grid-cols-2 gap-2.5">
                                             <div className="space-y-1">
-                                                <span className="text-[10px] opacity-80 block">{isEn ? 'Start Time:' : 'وقت البدء:'}</span>
+                                                <span className="text-[10px] opacity-80 block text-slate-700">{isEn ? 'Start Time:' : 'وقت البدء:'}</span>
                                                 <ClickableTimeValue
                                                     value={phoneSettings.randomAthkar.startTime}
                                                     onChange={(newTime) => handleRandomSettingChange({ startTime: newTime })}
                                                     isEn={isEn}
                                                     title={isEn ? 'Start Time' : 'وقت البدء'}
                                                     accentColor={false}
-                                                    className="w-full text-xs text-inherit py-2 px-2.5 rounded-xl border border-black/10 dark:border-white/10"
+                                                    className="w-full text-xs text-slate-900 py-2 px-2.5 rounded-xl border border-slate-200"
                                                 />
                                             </div>
                                             <div className="space-y-1">
-                                                <span className="text-[10px] opacity-80 block">{isEn ? 'End Time:' : 'وقت الانتهاء:'}</span>
+                                                <span className="text-[10px] opacity-80 block text-slate-700">{isEn ? 'End Time:' : 'وقت الانتهاء:'}</span>
                                                 <ClickableTimeValue
                                                     value={phoneSettings.randomAthkar.endTime}
                                                     onChange={(newTime) => handleRandomSettingChange({ endTime: newTime })}
                                                     isEn={isEn}
                                                     title={isEn ? 'End Time' : 'وقت الانتهاء'}
                                                     accentColor={false}
-                                                    className="w-full text-xs text-inherit py-2 px-2.5 rounded-xl border border-black/10 dark:border-white/10"
+                                                    className="w-full text-xs text-slate-900 py-2 px-2.5 rounded-xl border border-slate-200"
                                                 />
                                             </div>
                                         </div>
@@ -882,8 +957,7 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
                             <div className="space-y-2 pt-1">
                                 <div className="flex items-center justify-between">
                                     <h4 className="font-bold text-xs sm:text-sm opacity-90 flex items-center gap-2" style={{ color: themeStyles.accent }}>
-                                        <VolumeX className="w-4 h-4 quran-3d-icon shrink-0" />
-                                        {isEn ? 'Pause Prayer Audio Alerts' : 'إيقاف التنبيهات الصوتية للصلاة'}
+                                        <span>{isEn ? 'Pause Prayer Audio Alerts' : 'إيقاف التنبيهات الصوتية للصلاة'}</span>
                                     </h4>
                                     {isAudioMuted && (
                                         <button onClick={unmuteAudio} className="text-xs bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 px-2.5 py-1 rounded-xl font-bold cursor-pointer border-0">
@@ -912,11 +986,11 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
                                         <button
                                             key={opt.labelEn}
                                             onClick={() => muteAudioForDuration(opt.days)}
-                                            className="py-2 px-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer border-0 shadow-2xs hover:scale-105 active:scale-95"
+                                            className="py-2 px-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer border-0 shadow-2xs hover:scale-105 active:scale-95 text-slate-900"
                                             style={{ 
-                                                backgroundColor: themeStyles.cardBg, 
-                                                color: themeStyles.text,
-                                                border: `1px solid ${themeStyles.cardBorder}`
+                                                backgroundColor: '#ffffff', 
+                                                color: '#0f172a',
+                                                border: `1px solid ${themeStyles.cardBorder || 'rgba(0,0,0,0.08)'}`
                                             }}
                                         >
                                             {isEn ? opt.labelEn : opt.labelAr}
@@ -926,19 +1000,6 @@ const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
                             </div>
                         </div>
                     )}
-                </div>
-
-                <div className="p-3.5 flex justify-center border-t" style={{ borderColor: `${themeStyles.accent}20` }}>
-                    <button 
-                        onClick={() => {
-                            setupNotifications();
-                            onClose();
-                        }}
-                        className="w-full font-bold py-3 sm:py-3.5 rounded-xl shadow-lg transition-transform active:scale-95 cursor-pointer border-0 text-sm"
-                        style={{ backgroundColor: themeStyles.btnBg, color: themeStyles.btnText, border: 'none' }}
-                    >
-                        {isEn ? 'Save & Close' : 'حفظ وإغلاق'}
-                    </button>
                 </div>
             </div>
 

@@ -11,6 +11,7 @@ import { SURAH_NAMES_EN } from '../../pages/Memorization';
 import { registerBackInterceptor } from '../../hooks/useBackButton';
 import { Capacitor } from '@capacitor/core';
 import { Haptics, NotificationType } from '@capacitor/haptics';
+import { acquireListenInterruption, releaseListenInterruption } from '../../utils/listenAudioCoordinator';
 
 interface MemorizationQuizModalProps {
   isOpen: boolean;
@@ -109,20 +110,26 @@ const MemorizationQuizModal: React.FC<MemorizationQuizModalProps> = ({
   const playSound = (type: 'correct' | 'wrong') => {
     try {
       if (type === 'correct') {
+        acquireListenInterruption('mem-quiz-chime');
         const audio = new Audio('/assets/audio/chime.mp3');
         audio.volume = 0.5;
-        audio.play().catch(() => {});
+        audio.onended = () => releaseListenInterruption('mem-quiz-chime');
+        audio.onerror = () => releaseListenInterruption('mem-quiz-chime');
+        audio.play().catch(() => releaseListenInterruption('mem-quiz-chime'));
         Haptics.notification({ type: NotificationType.Success }).catch(() => {});
       } else {
         Haptics.notification({ type: NotificationType.Warning }).catch(() => {});
       }
-    } catch (e) {}
+    } catch (e) {
+      releaseListenInterruption('mem-quiz-chime');
+    }
   };
 
   // Stop recognition helper without evaluation
   const stopVoiceRecognition = useCallback(async () => {
     isListeningRef.current = false;
     setIsListening(false);
+    releaseListenInterruption('mem-quiz-mic');
 
     if (silenceTimerRef.current) {
       clearTimeout(silenceTimerRef.current);
@@ -242,6 +249,7 @@ const MemorizationQuizModal: React.FC<MemorizationQuizModalProps> = ({
       setVoiceStatus('listening');
       isListeningRef.current = true;
       setIsListening(true);
+      acquireListenInterruption('mem-quiz-mic');
 
       // Max recording safety timer (15 seconds)
       maxTimerRef.current = setTimeout(() => {
@@ -259,6 +267,7 @@ const MemorizationQuizModal: React.FC<MemorizationQuizModalProps> = ({
             setIsListening(false);
             isListeningRef.current = false;
             setVoiceStatus('idle');
+            releaseListenInterruption('mem-quiz-mic');
             alert(isEn ? 'Microphone permission is required to recite' : 'يرجى إعطاء إذن المايكروفون للتمكن من التسميع الصوتي');
             return;
           }
@@ -295,6 +304,7 @@ const MemorizationQuizModal: React.FC<MemorizationQuizModalProps> = ({
           setIsListening(false);
           isListeningRef.current = false;
           setVoiceStatus('idle');
+          releaseListenInterruption('mem-quiz-mic');
           alert(isEn ? 'Speech recognition is not supported in this browser' : 'التعرف الصوتي غير مدعوم في هذا المتصفح، يمكنك استخدام ترتيب الكلمات أو الاختيار.');
           return;
         }
@@ -573,7 +583,7 @@ const MemorizationQuizModal: React.FC<MemorizationQuizModalProps> = ({
       dir={isEn ? 'ltr' : 'rtl'}
     >
       <div 
-        className="w-full max-w-lg max-h-[92vh] rounded-[2rem] shadow-2xl flex flex-col overflow-hidden bg-white dark:bg-zinc-900 border border-slate-200/50 dark:border-zinc-800 text-slate-800 dark:text-zinc-100" 
+        className="w-full max-w-lg max-h-[92dvh] rounded-[2rem] shadow-2xl flex flex-col overflow-hidden bg-white dark:bg-zinc-900 border border-slate-200/50 dark:border-zinc-800 text-slate-800 dark:text-zinc-100" 
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
@@ -664,7 +674,7 @@ const MemorizationQuizModal: React.FC<MemorizationQuizModalProps> = ({
         )}
 
         {/* Content Body */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-4">
+        <div className="flex-1 min-h-0 overflow-y-auto p-5 space-y-4">
           {!isFinished ? (
             <>
               {/* Question Context Badge */}

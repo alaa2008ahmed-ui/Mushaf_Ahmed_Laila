@@ -92,7 +92,7 @@ export function getLastVisitTimestamps(): Record<string, number> {
  * تسجيل فتح صفحة/تطبيق لزيادة عدد مرات استخدامه وتحديث أحدث وقت زيارة
  */
 export function recordAppVisit(pageId: string) {
-  if (!pageId || pageId === 'home') return;
+  if (!pageId || pageId === 'home' || pageId === 'settings' || pageId.includes('settings') || pageId.includes('download')) return;
 
   // Normalize aliases if needed
   const aliasMap: Record<string, string> = {
@@ -111,7 +111,6 @@ export function recordAppVisit(pageId: string) {
     'divine-miracle': 'divine-miracles',
     'moajazat': 'divine-miracles',
     'monthly-prayer-times': 'prayer-times',
-    'quran-download': 'quran',
     'quran-search': 'quran',
   };
   const normalizedId = aliasMap[pageId] || pageId;

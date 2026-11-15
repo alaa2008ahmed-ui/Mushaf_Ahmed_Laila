@@ -367,7 +367,7 @@ export async function sharePropheticLineageImage(options: PropheticLineageShareO
             throw new Error('Canvas toDataURL returned empty data');
         }
 
-        const shareTitle = 'النسب النبوي الشريف لسيدنا ومولانا رسول الله ﷺ';
+        const shareTitle = 'النسب النبوي الشريف لسيدنا رسول الله ﷺ';
 
         if (Capacitor.isNativePlatform()) {
             const fileName = `prophetic_lineage_${Date.now()}.jpg`;

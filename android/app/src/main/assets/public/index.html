@@ -278,11 +278,12 @@
       html.theme-black header:not(.quran-reader-header):not(.quran-context) svg[fill="none"] {
           fill: none !important;
       }
-      body.hide-top-bars .app-top-bar { display: none !important; }
+      body.hide-top-bars .app-top-bar:not(.settings-top-bar) { display: none !important; }
+      body.hide-top-bars .settings-top-bar { display: block !important; }
       
       /* When top bars are hidden in other pages */
       body.hide-top-bars:not(.quran-context) main:not(.absolute),
-      body.hide-top-bars:not(.quran-context) .app-top-bar + * {
+      body.hide-top-bars:not(.quran-context) .app-top-bar:not(.settings-top-bar) + * {
           padding-top: calc(env(safe-area-inset-top) + 0.5rem) !important;
       }
 
@@ -476,6 +477,10 @@
       body[data-zoom-modal="true"] #scroll-to-top-fab,
       body.modal-open #scroll-to-top-fab,
       body.qr-modal-active #scroll-to-top-fab,
+      body.settings-modal-open #scroll-to-top-fab,
+      body:has(#home-screen-settings-modal) #scroll-to-top-fab,
+      body.settings-modal-open #whatsapp-button-container,
+      body:has(#home-screen-settings-modal) #whatsapp-button-container,
       body:has(#unified-event-zoom-modal-backdrop) #scroll-to-top-fab,
       body:has(.zoom-modal-active) #scroll-to-top-fab,
       #unified-event-zoom-modal-backdrop ~ #scroll-to-top-fab {

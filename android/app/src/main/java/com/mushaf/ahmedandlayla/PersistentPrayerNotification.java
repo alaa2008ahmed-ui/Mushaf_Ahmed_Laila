@@ -376,7 +376,7 @@ public class PersistentPrayerNotification {
             }
         }
 
-        // 2. Alarm for the next minute to update the countdown string smoothly
+        // 2. Non-Doze-waking alarm for the next minute display refresh (Chronometer counts down natively during Doze)
         long now = System.currentTimeMillis();
         long nextMinute = (now / 60000 + 1) * 60000 + 500;
         if (targetTimeMillis > 0 && nextMinute < targetTimeMillis) {
@@ -385,13 +385,21 @@ public class PersistentPrayerNotification {
             PendingIntent piMinute = PendingIntent.getBroadcast(context, 9904, minuteIntent, flags);
 
             try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    am.setExactAndAllowWhileIdle(android.app.AlarmManager.RTC, nextMinute, piMinute);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    if (am.canScheduleExactAlarms()) {
+                        am.setExact(android.app.AlarmManager.RTC, nextMinute, piMinute);
+                    } else {
+                        am.set(android.app.AlarmManager.RTC, nextMinute, piMinute);
+                    }
                 } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
                     am.setExact(android.app.AlarmManager.RTC, nextMinute, piMinute);
                 } else {
                     am.set(android.app.AlarmManager.RTC, nextMinute, piMinute);
                 }
+            } catch (SecurityException se) {
+                try {
+                    am.set(android.app.AlarmManager.RTC, nextMinute, piMinute);
+                } catch (Exception ignored) {}
             } catch (Exception e) {
                 e.printStackTrace();
             }

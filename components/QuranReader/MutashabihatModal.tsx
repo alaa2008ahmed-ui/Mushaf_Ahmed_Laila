@@ -64,14 +64,10 @@ const MutashabihatModal: React.FC<MutashabihatModalProps> = ({
   const [fontSize, setFontSize] = useState<number>(16);
   const [copied, setCopied] = useState<boolean>(false);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
-  const [selectedCardAudio, setSelectedCardAudio] = useState<string | null>(null);
 
   useEffect(() => {
     const unsubscribe = subscribeTTS((playingText) => {
       setIsPlaying(Boolean(playingText));
-      if (!playingText) {
-        setSelectedCardAudio(null);
-      }
     });
     return () => {
       unsubscribe();
@@ -118,50 +114,67 @@ const MutashabihatModal: React.FC<MutashabihatModalProps> = ({
 
   const handleCopy = (e: React.MouseEvent) => {
     e.stopPropagation();
+    const rhetoricalHeader = activeGroup.rhetoricalSecretAr
+      ? (isEn ? `\n\nRhetorical Nuance & Eloquence (Al-Iskafi & Al-Gharnati):\n${activeGroup.rhetoricalSecretAr}` : `\n\nأسرار الفروق البلاغية واللطائف البيانية (درة التنزيل للإسكافي وملاك التأويل للغرناطي):\n${activeGroup.rhetoricalSecretAr}`)
+      : '';
     const versesText = activeGroup.verses
-      .map(v => `${SURAH_NAMES_EN[v.surahNumber - 1] || SURAH_NAMES_AR[v.surahNumber - 1] || v.surahName} (${isEn ? `Ayah ${v.ayahNumber}` : `آية ${toArabic(v.ayahNumber)}`}):\n${v.verseText}`)
+      .map(v => {
+        const title = `${SURAH_NAMES_EN[v.surahNumber - 1] || SURAH_NAMES_AR[v.surahNumber - 1] || v.surahName} (${isEn ? `Ayah ${v.ayahNumber}` : `آية ${toArabic(v.ayahNumber)}`})`;
+        const diff = v.highlightedDifference ? `\n[موضع التباين]: ${v.highlightedDifference}` : '';
+        const insight = v.balaghahInsight ? `\n[السر البلاغي]: ${v.balaghahInsight}` : '';
+        return `${title}:\n${v.verseText}${diff}${insight}`;
+      })
       .join('\n\n');
     const headerRef = isEn ? `[Mutashabihat Concordance - ${groupTopicText}]` : `[متشابهات القرآن - ${groupTopicText}]`;
-    const fullText = `${displaySurah} (${isEn ? `Ayah ${ayahNumber}` : `آية ${toArabic(ayahNumber)}`}):\n${verseText}\n\n${groupRuleText}\n\n${headerRef}\n\n${versesText}`;
+    const fullText = `${displaySurah} (${isEn ? `Ayah ${ayahNumber}` : `آية ${toArabic(ayahNumber)}`}):\n${verseText}\n\n[القاعدة الذهبية للضبط]:\n${groupRuleText}${rhetoricalHeader}\n\n${headerRef}\n\n${versesText}`;
 
     if (navigator.clipboard) {
       navigator.clipboard.writeText(fullText).then(() => {
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
-        if (showToast) showToast(isEn ? 'Copied to clipboard' : 'تم نسخ المتشابهات إلى الحافظة');
+        if (showToast) showToast(isEn ? 'Copied to clipboard' : 'تم نسخ المتشابهات والفروق البلاغية إلى الحافظة');
       });
     }
   };
 
   const handleShare = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    const rhetoricalHeader = activeGroup.rhetoricalSecretAr
+      ? `\n\n[سر الفرق البلاغي (درة التنزيل وملاك التأويل)]:\n${activeGroup.rhetoricalSecretAr}`
+      : '';
     const versesText = activeGroup.verses
-      .slice(0, 8)
-      .map(v => `• ${SURAH_NAMES_AR[v.surahNumber - 1] || v.surahName} (${v.ayahNumber}): ${v.verseText}`)
+      .slice(0, 6)
+      .map(v => {
+        const diff = v.highlightedDifference ? ` (${v.highlightedDifference})` : '';
+        return `• ${SURAH_NAMES_AR[v.surahNumber - 1] || v.surahName} (${toArabic(v.ayahNumber)}): ${v.verseText}${diff}`;
+      })
       .join('\n\n');
-    const fullShareText = `${displaySurah} (${toArabic(ayahNumber)}):\n${verseText}\n\n${groupRuleText}\n\n${versesText}`;
+    const fullShareText = `${displaySurah} (${toArabic(ayahNumber)}):\n${verseText}\n\n[الضابط الإتقاني]:\n${groupRuleText}${rhetoricalHeader}\n\n[النظائر القرآنية]:\n${versesText}`;
 
     await shareAsImage({
       text: fullShareText,
-      title: isEn ? "Mutashabihat & Verse Concordance" : "متشابهات الآية ونظائرها",
+      title: isEn ? "Mutashabihat & Rhetorical Nuances" : "متشابهات الآية وأسرار الفروق البلاغية",
       source: groupTopicText,
-      category: isEn ? "Mutashabihat" : "متشابهات القرآن",
+      category: isEn ? "Mutashabihat & Balaghah" : "متشابهات وبلاغة القرآن",
       isEn,
       language: isEn ? 'en' : 'ar',
       setToastMessage: showToast,
     });
   };
 
-  const handlePlayCurrentAyah = (e: React.MouseEvent) => {
+  const handlePlayAudio = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (isAudioActive) {
       stopTTS();
       if (onStopAudio) onStopAudio();
       setIsPlaying(false);
-      setSelectedCardAudio(null);
       return;
     }
-    stopTTS();
+    if (onPlayAudio && surahNumber && ayahNumber) {
+      stopTTS();
+      onPlayAudio(surahNumber, ayahNumber);
+      return;
+    }
     if (verseText) {
       playTTS(verseText, {
         isEn,
@@ -169,26 +182,6 @@ const MutashabihatModal: React.FC<MutashabihatModalProps> = ({
       });
       setIsPlaying(true);
     }
-  };
-
-  const handlePlayVerseCard = (e: React.MouseEvent, v: MutashabihVerse) => {
-    e.stopPropagation();
-    const cardKey = `${v.surahNumber}:${v.ayahNumber}`;
-
-    if (selectedCardAudio === cardKey && isPlaying) {
-      stopTTS();
-      if (onStopAudio) onStopAudio();
-      setSelectedCardAudio(null);
-      return;
-    }
-
-    stopTTS();
-    if (onStopAudio) onStopAudio();
-    setSelectedCardAudio(cardKey);
-    playTTS(v.verseText, {
-      isEn,
-      onToast: (msg) => { if (showToast) showToast(msg); }
-    });
   };
 
   // Helper to render verse in amber color without underline
@@ -247,7 +240,7 @@ const MutashabihatModal: React.FC<MutashabihatModalProps> = ({
     >
       <div 
         className={`zoom-modal-sheet w-full max-w-xl mx-auto rounded-t-[32px] flex flex-col overflow-hidden relative shadow-2xl animate-modal-enter ${
-          isLandscape ? 'max-h-[94vh]' : 'max-h-[88vh]'
+          isLandscape ? 'max-h-[92dvh]' : 'max-h-[88dvh]'
         }`}
         style={{ 
           backgroundColor: modalBg, 
@@ -280,7 +273,7 @@ const MutashabihatModal: React.FC<MutashabihatModalProps> = ({
         </div>
 
         {/* Scrollable Content Area */}
-        <div className="overflow-y-auto custom-scrollbar flex-1 px-5 sm:px-6 py-3 space-y-3">
+        <div className="overflow-y-auto custom-scrollbar flex-1 min-h-0 px-5 sm:px-6 py-3 space-y-3">
           {/* 1. Display Selected Current Ayah Text (Colored distinctly with warm cream/amber tint) */}
           {verseText && (
             <div 
@@ -318,6 +311,55 @@ const MutashabihatModal: React.FC<MutashabihatModalProps> = ({
             </div>
           )}
 
+          {/* Golden Rule Card for Mutashabihat */}
+          {groupRuleText && (
+            <div 
+              className="p-3.5 sm:p-4 rounded-2xl border quran-raised-card font-cairo shadow-xs transition-all"
+              style={{
+                backgroundColor: isDark ? 'rgba(217, 119, 6, 0.1)' : 'rgba(254, 243, 199, 0.5)',
+                borderColor: isDark ? 'rgba(245, 158, 11, 0.3)' : 'rgba(217, 119, 6, 0.25)'
+              }}
+            >
+              <div className="flex items-center gap-2 mb-1.5 text-xs font-black" style={{ color: amberVerseColor }}>
+                <Sparkles size={15} />
+                <span>{isEn ? "Golden Memorization Rule:" : "الضابط الإتقاني والقاعدة الذهبية للمتشابهة:"}</span>
+              </div>
+              <p className="text-xs sm:text-[13px] font-bold leading-relaxed opacity-95 text-justify" style={{ color: modalText }}>
+                {groupRuleText}
+              </p>
+            </div>
+          )}
+
+          {/* Rhetorical Nuances & Eloquence Card (أسرار الفروق البلاغية واللطائف البيانية) */}
+          {activeGroup.rhetoricalSecretAr && (
+            <div 
+              className="p-3.5 sm:p-4 rounded-2xl border quran-raised-card font-cairo shadow-xs transition-all"
+              style={{
+                backgroundColor: isDark ? 'rgba(16, 185, 129, 0.08)' : 'rgba(236, 253, 245, 0.7)',
+                borderColor: isDark ? 'rgba(16, 185, 129, 0.25)' : 'rgba(16, 185, 129, 0.3)'
+              }}
+            >
+              <div className="flex items-center justify-between gap-2 mb-2 pb-1.5 border-b border-emerald-600/15">
+                <div className="flex items-center gap-2 text-xs font-black text-emerald-700 dark:text-emerald-300">
+                  <BookOpen size={15} />
+                  <span>{isEn ? "Rhetorical Secrets & Eloquence Nuances:" : "أسرار الفروق البلاغية واللطائف البيانية:"}</span>
+                </div>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border border-emerald-500/25">
+                  {isEn ? "Al-Iskafi & Al-Gharnati" : "درة التنزيل وملاك التأويل"}
+                </span>
+              </div>
+              <p className="text-xs sm:text-[12.5px] font-bold leading-relaxed text-justify opacity-95" style={{ color: modalText }}>
+                {activeGroup.rhetoricalSecretAr}
+              </p>
+              <div className="mt-2 text-[10.5px] opacity-70 flex items-center gap-1 font-bold">
+                <span>{isEn ? "Classical references:" : "المرجع التراثي المعتمد:"}</span>
+                <span className="font-black text-emerald-700 dark:text-emerald-400">
+                  {activeGroup.rhetoricalReference || (isEn ? "Durrat Al-Tanzil (Al-Iskafi) & Malak Al-Ta'wil (Al-Gharnati)" : "«درة التنزيل وغرة التأويل» للخطيب الإسكافي و«ملاك التأويل» لابن الزبير الغرناطي")}
+                </span>
+              </div>
+            </div>
+          )}
+
           {/* 2. Comparison Cards Across Surahs */}
           <div className="space-y-3 pt-1">
             <div className="flex items-center justify-between font-bold opacity-80 transition-all text-xs font-cairo">
@@ -344,7 +386,6 @@ const MutashabihatModal: React.FC<MutashabihatModalProps> = ({
                 const cleanVName = SURAH_NAMES_AR[v.surahNumber - 1] || (v.surahName || '').replace(/سُورَةُ\s*/g, '').trim();
                 const vSurahName = isEn ? (SURAH_NAMES_EN[v.surahNumber - 1] || v.surahName) : cleanVName;
                 const cardKey = `${v.surahNumber}:${v.ayahNumber}`;
-                const isThisCardAudioPlaying = selectedCardAudio === cardKey;
 
                 return (
                   <div
@@ -357,7 +398,7 @@ const MutashabihatModal: React.FC<MutashabihatModalProps> = ({
                       borderColor: isCurrent ? amberVerseColor : (isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)')
                     }}
                   >
-                    {/* Top Row: Verse Number badge + Surah & Ayah badge + Action buttons */}
+                    {/* Top Row: Verse Number badge + Surah & Ayah badge */}
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2 flex-wrap font-cairo">
                         <span 
@@ -392,20 +433,6 @@ const MutashabihatModal: React.FC<MutashabihatModalProps> = ({
                           </span>
                         )}
                       </div>
-
-                      {/* Right buttons: Audio only */}
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        {/* Audio play for this single ayah */}
-                        <button
-                          onClick={(e) => handlePlayVerseCard(e, v)}
-                          className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all border ${
-                            isThisCardAudioPlaying ? 'bg-red-500 text-white animate-pulse' : 'bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10'
-                          }`}
-                          title={isThisCardAudioPlaying ? (isEn ? "Stop" : "إيقاف") : (isEn ? "Listen to Ayah" : "استماع للآية")}
-                        >
-                          {isThisCardAudioPlaying ? <VolumeX size={13} /> : <Volume2 size={13} style={{ color: amberVerseColor }} />}
-                        </button>
-                      </div>
                     </div>
 
                     {/* Verse Text rendered in Amiri Quran font with amber color */}
@@ -420,6 +447,42 @@ const MutashabihatModal: React.FC<MutashabihatModalProps> = ({
                     >
                       {renderHighlightedVerse(v.verseText, v.matchedPhrase || activeGroup.topicAr, isCurrent, amberVerseColor)}
                     </p>
+
+                    {/* Difference and Balaghah Insight for this specific occurrence */}
+                    {(v.highlightedDifference || v.balaghahInsight || v.contextExplanation) && (
+                      <div 
+                        className="mt-2.5 pt-2 border-t border-slate-200/50 dark:border-white/10 space-y-1.5 font-cairo text-right"
+                      >
+                        {v.highlightedDifference && (
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-[10.5px] font-bold opacity-75">
+                              {isEn ? "Variation Point:" : "موضع التباين:"}
+                            </span>
+                            <span className="px-2 py-0.5 rounded-md text-[11px] font-black bg-amber-500/15 text-amber-800 dark:text-amber-200 border border-amber-500/25">
+                              {v.highlightedDifference}
+                            </span>
+                          </div>
+                        )}
+                        {v.balaghahInsight && (
+                          <p className="text-[11.5px] font-bold leading-relaxed opacity-90 text-justify pt-0.5">
+                            <span className="text-emerald-700 dark:text-emerald-400 font-black ml-1">﴿السر البلاغي﴾:</span>
+                            {v.balaghahInsight}
+                          </p>
+                        )}
+                        {!v.balaghahInsight && v.contextExplanation && (
+                          <p className="text-[11.5px] font-bold leading-relaxed opacity-85 text-justify pt-0.5">
+                            <span className="text-amber-700 dark:text-amber-300 font-black ml-1">﴿التوجيه﴾:</span>
+                            {v.contextExplanation}
+                          </p>
+                        )}
+                        {v.balaghahReference && (
+                          <div className="text-[10px] opacity-60 font-bold flex items-center gap-1 pt-0.5">
+                            <span>{isEn ? "Ref:" : "المرجع:"}</span>
+                            <span>{v.balaghahReference}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               })
@@ -429,16 +492,16 @@ const MutashabihatModal: React.FC<MutashabihatModalProps> = ({
 
         {/* Bottom Action Bar (matching UI: 5 round action buttons in RTL) */}
         <div 
-          className="p-3 px-6 border-t shrink-0 flex items-center justify-center gap-3 sm:gap-4 font-cairo border-slate-200/50 dark:border-white/10"
+          data-toast-bottom-bar="true"
+          className="pt-3 px-6 modal-sheet-safe-bottom border-t shrink-0 flex items-center justify-center gap-3 sm:gap-4 font-cairo border-slate-200/50 dark:border-white/10"
           dir="rtl"
           style={{
-            paddingBottom: 'calc(env(safe-area-inset-bottom, 16px) + 16px)',
             backgroundColor: modalBg
           }}
         >
           {/* 1. Audio / Recitation Play Button (RIGHTMOST in RTL) */}
           <button 
-            onClick={handlePlayCurrentAyah}
+            onClick={handlePlayAudio}
             className={`w-11 h-11 rounded-full flex items-center justify-center transition-all cursor-pointer font-cairo shadow-md active:scale-90 border border-slate-200/80 ${
               isAudioActive ? 'ring-2 ring-red-400/80 animate-pulse' : ''
             }`}
@@ -446,7 +509,7 @@ const MutashabihatModal: React.FC<MutashabihatModalProps> = ({
               backgroundColor: isAudioActive ? '#dc2626' : '#ffffff', 
               color: isAudioActive ? '#ffffff' : (currentTheme?.accent || themeAccent)
             }}
-            title={isAudioActive ? (isEn ? "Stop Audio" : "إيقاف الصوت") : (isEn ? "Listen" : "استماع للآية")}
+            title={isAudioActive ? (isEn ? "Stop Audio" : "إيقاف الصوت") : (isEn ? "Listen" : "استماع")}
           >
             {isAudioActive ? <VolumeX size={20} className="text-white animate-pulse" /> : <Volume2 size={20} style={{ color: currentTheme?.accent || themeAccent }} />}
           </button>

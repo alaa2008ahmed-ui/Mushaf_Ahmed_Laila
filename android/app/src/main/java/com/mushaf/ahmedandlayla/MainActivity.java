@@ -1,5 +1,6 @@
 package com.mushaf.ahmedandlayla;
 
+import android.app.Activity;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -12,7 +13,15 @@ import android.media.AudioAttributes;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
 import android.webkit.PermissionRequest;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 import com.getcapacitor.BridgeActivity;
 import com.getcapacitor.BridgeWebChromeClient;
 
@@ -20,6 +29,15 @@ public class MainActivity extends BridgeActivity {
     public static volatile String pendingShortcut = null;
     public static volatile long pendingShortcutSeq = 0L;
     public static volatile long lastConsumedShortcutSeq = 0L;
+    private static volatile boolean currentStatusBarIsDark = false;
+    private static volatile Boolean lastAppliedStatusBarIsDark = null;
+    private static volatile int lastAppliedWindowHash = 0;
+    private volatile float lastSafeTopCss = 0f;
+    private volatile float lastSafeBottomCss = 0f;
+    private volatile float appliedSafeTopCss = -1f;
+    private volatile float appliedSafeBottomCss = -1f;
+    private volatile float fallbackStatusBarCss = 0f;
+    private volatile boolean initialInsetsCaptured = false;
 
     private static synchronized long nextShortcutSeq() {
         long now = System.currentTimeMillis();
@@ -65,13 +83,22 @@ public class MainActivity extends BridgeActivity {
             setIntent(incomingIntent);
         }
 
+        if (incomingIntent != null && incomingIntent.getBooleanExtra("stop_adhan_audio", false)) {
+            AdhanPlaybackService.stopIfPlaying(this, false);
+        }
+
         android.content.SharedPreferences prefs = getSharedPreferences("CapacitorStorage", Context.MODE_PRIVATE);
         String appLang = prefs.getString("app_language", "ar");
+        currentStatusBarIsDark = prefs.getBoolean("status_bar_is_dark", false);
+        applyStatusBarStyle(this, currentStatusBarIsDark);
         AutoSilentPlugin.applyAppLocale(this, appLang);
         
         createAdhanNotificationChannels("ar".equalsIgnoreCase(appLang));
         updateDynamicShortcuts("ar".equalsIgnoreCase(appLang));
         DailyWirdAlarmReceiver.scheduleNextAlarms(this);
+        AdhanAlarmReceiver.rescheduleSavedAlarms(this);
+        PrayerSilentReceiver.rescheduleSavedIqamas(this);
+        PrayerSilentReceiver.rescheduleSavedWindows(this);
 
         // Preserve all Capacitor BridgeWebChromeClient capabilities (file chooser, camera, photo gallery)
         // while ensuring native Android permissions are requested if not already granted.
@@ -104,6 +131,8 @@ public class MainActivity extends BridgeActivity {
                 }
             });
 
+            setupWindowInsetsBridge(this.bridge.getWebView());
+
             if (coldTarget != null) {
                 final String targetToDispatch = coldTarget;
                 final long seqToDispatch = coldSeq;
@@ -113,6 +142,182 @@ public class MainActivity extends BridgeActivity {
                 }
             }
         }
+    }
+
+    public static void applyStatusBarStyle(final Activity activity, final boolean isDarkTheme) {
+        currentStatusBarIsDark = isDarkTheme;
+        if (activity == null) return;
+        final int windowHash = System.identityHashCode(activity);
+        if (lastAppliedStatusBarIsDark != null
+                && lastAppliedStatusBarIsDark.booleanValue() == isDarkTheme
+                && lastAppliedWindowHash == windowHash) {
+            return;
+        }
+        lastAppliedStatusBarIsDark = isDarkTheme;
+        lastAppliedWindowHash = windowHash;
+
+        activity.runOnUiThread(() -> {
+            try {
+                Window window = activity.getWindow();
+                if (window == null) return;
+                View decorView = window.getDecorView();
+                if (decorView == null) return;
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    int winFlags = window.getAttributes().flags;
+                    if ((winFlags & WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS) != 0) {
+                        window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+                    }
+                    if ((winFlags & WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS) == 0) {
+                        window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+                    }
+                }
+
+                // isAppearanceLightStatusBars(false) => WHITE icons (light content on black/dark theme)
+                // isAppearanceLightStatusBars(true)  => BLACK icons (dark content on light themes)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(window, decorView);
+                    if (controller != null) {
+                        boolean wantLight = !isDarkTheme;
+                        if (controller.isAppearanceLightStatusBars() != wantLight) {
+                            controller.setAppearanceLightStatusBars(wantLight);
+                        }
+                        if (controller.isAppearanceLightNavigationBars() != wantLight) {
+                            controller.setAppearanceLightNavigationBars(wantLight);
+                        }
+                    }
+                } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    int currentFlags = decorView.getSystemUiVisibility();
+                    int newFlags = currentFlags;
+                    if (isDarkTheme) {
+                        newFlags &= ~View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+                    } else {
+                        newFlags |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+                    }
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        if (isDarkTheme) {
+                            newFlags &= ~View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+                        } else {
+                            newFlags |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+                        }
+                    }
+                    if (newFlags != currentFlags) {
+                        decorView.setSystemUiVisibility(newFlags);
+                    }
+                }
+            } catch (Exception ignored) {}
+        });
+    }
+
+    private float resolveFallbackStatusBarCss() {
+        try {
+            float density = getResources().getDisplayMetrics().density;
+            if (density <= 0f) density = 1f;
+            int resId = getResources().getIdentifier("status_bar_height", "dimen", "android");
+            if (resId > 0) {
+                int px = getResources().getDimensionPixelSize(resId);
+                if (px > 0) {
+                    return px / density;
+                }
+            }
+        } catch (Exception ignored) {}
+        return 0f;
+    }
+
+    private void setupWindowInsetsBridge(android.webkit.WebView webView) {
+        if (webView == null) return;
+        fallbackStatusBarCss = resolveFallbackStatusBarCss();
+        android.content.SharedPreferences prefs = getSharedPreferences("CapacitorStorage", Context.MODE_PRIVATE);
+        float cachedTop = prefs.getFloat("native_safe_top_css_num", 0f);
+        float cachedBottom = prefs.getFloat("native_safe_bottom_css_num", 0f);
+        if (cachedTop > 0f) {
+            lastSafeTopCss = cachedTop;
+        } else if (fallbackStatusBarCss > 0f) {
+            lastSafeTopCss = fallbackStatusBarCss;
+        }
+        if (cachedBottom > 0f) {
+            lastSafeBottomCss = cachedBottom;
+        }
+
+        WindowInsetsCompat rootInsets = ViewCompat.getRootWindowInsets(webView);
+        if (rootInsets != null) {
+            Insets sysBars = rootInsets.getInsets(
+                WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout()
+            );
+            float density = getResources().getDisplayMetrics().density;
+            if (density <= 0f) density = 1f;
+            float topCss = Math.max(0f, sysBars.top / density);
+            float bottomCss = Math.max(0f, sysBars.bottom / density);
+            if (topCss > 0f) {
+                lastSafeTopCss = topCss;
+                initialInsetsCaptured = true;
+            }
+            if (bottomCss >= 0f) {
+                lastSafeBottomCss = bottomCss;
+            }
+        }
+
+        if (!initialInsetsCaptured) {
+            ViewCompat.setOnApplyWindowInsetsListener(webView, (v, windowInsets) -> {
+                if (!initialInsetsCaptured) {
+                    Insets sysBars = windowInsets.getInsets(
+                        WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout()
+                    );
+                    float density = getResources().getDisplayMetrics().density;
+                    if (density <= 0f) density = 1f;
+                    float topCss = Math.max(0f, sysBars.top / density);
+                    float bottomCss = Math.max(0f, sysBars.bottom / density);
+                    if (topCss > 0f || fallbackStatusBarCss <= 0f) {
+                        lastSafeTopCss = topCss;
+                    }
+                    lastSafeBottomCss = bottomCss;
+                    initialInsetsCaptured = true;
+                    applyNativeSafeAreaCssVars(false);
+                    // Detach listener after capturing initial insets once so window insets are never re-processed continuously
+                    ViewCompat.setOnApplyWindowInsetsListener(v, null);
+                }
+                return ViewCompat.onApplyWindowInsets(v, windowInsets);
+            });
+        }
+        applyNativeSafeAreaCssVars(true);
+    }
+
+    private void applyNativeSafeAreaCssVars(boolean force) {
+        if (!force
+            && Math.abs(lastSafeTopCss - appliedSafeTopCss) < 0.5f
+            && Math.abs(lastSafeBottomCss - appliedSafeBottomCss) < 0.5f) {
+            return;
+        }
+        appliedSafeTopCss = lastSafeTopCss;
+        appliedSafeBottomCss = lastSafeBottomCss;
+
+        try {
+            if (lastSafeTopCss > 0f) {
+                getSharedPreferences("CapacitorStorage", Context.MODE_PRIVATE)
+                    .edit()
+                    .putFloat("native_safe_top_css_num", lastSafeTopCss)
+                    .putFloat("native_safe_bottom_css_num", lastSafeBottomCss)
+                    .apply();
+            }
+        } catch (Exception ignored) {}
+
+        final String topVal = String.format(java.util.Locale.US, "%.2fpx", lastSafeTopCss);
+        final String bottomVal = String.format(java.util.Locale.US, "%.2fpx", lastSafeBottomCss);
+        final String js = "(function(){" +
+            "var r=document.documentElement;" +
+            "if(r&&r.style){" +
+            "if(r.style.getPropertyValue('--native-safe-top')!=='" + topVal + "'){r.style.setProperty('--native-safe-top','" + topVal + "');}" +
+            "if(r.style.getPropertyValue('--native-safe-bottom')!=='" + bottomVal + "'){r.style.setProperty('--native-safe-bottom','" + bottomVal + "');}" +
+            "try{if(" + (lastSafeTopCss > 0f ? "true" : "false") + "){localStorage.setItem('native_safe_top_css','" + topVal + "');localStorage.setItem('native_safe_bottom_css','" + bottomVal + "');}}catch(e){}" +
+            "}" +
+            "})();";
+        runOnUiThread(() -> {
+            try {
+                if (this.bridge != null && this.bridge.getWebView() != null) {
+                    this.bridge.getWebView().evaluateJavascript(js, null);
+                }
+            } catch (Exception ignored) {}
+        });
     }
 
     @Override
@@ -127,11 +332,40 @@ public class MainActivity extends BridgeActivity {
     }
 
     @Override
+    public void onPause() {
+        super.onPause();
+        if (QuranPlaybackKeepAliveService.isPlaybackActive() && this.bridge != null && this.bridge.getWebView() != null) {
+            try {
+                this.bridge.getWebView().onResume();
+                this.bridge.getWebView().resumeTimers();
+            } catch (Exception ignored) {}
+        }
+    }
+
+    @Override
     public void onStop() {
         super.onStop();
         try {
             unregisterReceiver(timeTickReceiver);
         } catch (Exception ignored) {}
+        if (QuranPlaybackKeepAliveService.isPlaybackActive() && this.bridge != null && this.bridge.getWebView() != null) {
+            try {
+                this.bridge.getWebView().onResume();
+                this.bridge.getWebView().resumeTimers();
+            } catch (Exception ignored) {}
+        }
+    }
+
+    @Override
+    public void onDestroy() {
+        if (isFinishing()) {
+            QuranPlaybackKeepAliveService.stopService(this);
+        }
+        if (lastAppliedWindowHash == System.identityHashCode(this)) {
+            lastAppliedStatusBarIsDark = null;
+            lastAppliedWindowHash = 0;
+        }
+        super.onDestroy();
     }
 
     @Override
@@ -146,10 +380,20 @@ public class MainActivity extends BridgeActivity {
         AlertsGroupHelper.updateGroupSummary(this, (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE));
         updateDynamicShortcuts("ar".equalsIgnoreCase(appLang));
         DailyWirdAlarmReceiver.scheduleNextAlarms(this);
+        PrayerSilentReceiver.reconcileState(this);
+        AutoSilentPlugin.notifySilentStateChanged(this);
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
     }
 
     @Override
     protected void onNewIntent(Intent intent) {
+        if (intent != null && intent.getBooleanExtra("stop_adhan_audio", false)) {
+            AdhanPlaybackService.stopIfPlaying(this, false);
+        }
         String warmTarget = extractShortcutTarget(intent);
         long warmSeq = 0L;
 
@@ -359,11 +603,14 @@ public class MainActivity extends BridgeActivity {
             String[] legacyChannels = new String[]{
                 "pre_adhan_reminder_channel",
                 "pre_adhan_alarm_channel",
+                "pre_adhan_v3_chime_channel",
                 "iqama_reminder_channel",
                 "iqama_alarm_channel",
                 "iqama_v3_chime_channel",
+                "iqama_v4_chime_channel",
                 "prayer_silent_channel",
                 "prayer_silent_v3_chime_channel",
+                "prayer_silent_v4_chime_channel",
                 "night_times_channel",
                 "night_times_alarm_channel",
                 "athkar_reminders_channel",
@@ -411,10 +658,10 @@ public class MainActivity extends BridgeActivity {
                 {"adhan_v5_shahadah", isArabic ? "أذان الصلوات (الشهادة)" : "Prayer Adhan (Shahadah)", "shahadah"},
                 {"adhan_v5_salah", isArabic ? "أذان الصلوات (الصلاة)" : "Prayer Adhan (Salah)", "salah"},
 
-                // Short gentle chime alerts (Preparation, Iqama, Silent Mode, Night, Athkar, Wird, Habits)
-                {"pre_adhan_v3_chime_channel", isArabic ? "تنبيه الاستعداد للصلاة" : "Prayer Preparation Alert", "chime"},
-                {"iqama_v4_chime_channel", isArabic ? "تنبيه إقامة الصلاة" : "Prayer Iqama Alert", "chime"},
-                {"prayer_silent_v4_chime_channel", isArabic ? "الصامت التلقائي للصلاة" : "Auto Silent Mode", "chime"},
+                // Short gentle droplet alerts (Preparation, Iqama, Silent Mode) and chime alerts (Night, Athkar, Wird, Habits)
+                {"pre_adhan_v4_droplet_channel", isArabic ? "تنبيه الاستعداد للصلاة" : "Prayer Preparation Alert", "notif_droplet"},
+                {"iqama_v5_droplet_channel", isArabic ? "تنبيه إقامة الصلاة" : "Prayer Iqama Alert", "notif_droplet"},
+                {"prayer_silent_v5_droplet_channel", isArabic ? "الصامت التلقائي للصلاة" : "Auto Silent Mode", "notif_droplet"},
                 {"night_times_v3_chime_channel", isArabic ? "تنبيهات أوقات الليل" : "Night Times Reminders", "chime"},
                 {"athkar_v3_chime_channel", isArabic ? "أذكار وتنبيهات عامة" : "General Adhkar & Reminders", "chime"},
                 {"daily_wird_reminders_channel", isArabic ? "تنبيهات الورد القرآني" : "Daily Wird Reminders", "chime"},
@@ -467,7 +714,7 @@ public class MainActivity extends BridgeActivity {
                 } catch (Exception ignored) {}
             }
 
-            // Silent Adhan channel
+            // Silent Adhan channel (used when Adhan or volume preset is muted)
             try {
                 NotificationChannel silentChan = new NotificationChannel(
                     "adhan_v5_silent",
@@ -478,8 +725,14 @@ public class MainActivity extends BridgeActivity {
                 silentChan.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
                 silentChan.enableVibration(false);
                 silentChan.setShowBadge(false);
+                silentChan.setSound(null, null);
                 nm.createNotificationChannel(silentChan);
             } catch (Exception ignored) {}
+
+            // Volume-controlled Adhan visual notification channel (audio handled by AdhanPlaybackService)
+            AdhanPlaybackService.ensureVisualChannel(this, isArabic);
+            // Auto-silent chime & silent notification channels
+            PrayerSilentReceiver.ensureChannels(this, nm, isArabic);
         }
     }
 }

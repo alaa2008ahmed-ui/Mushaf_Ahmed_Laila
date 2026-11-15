@@ -227,7 +227,7 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
     };
 
     return (
-        <div className="h-screen flex flex-col overflow-hidden relative" style={{ backgroundColor: tokens.pageBgColor, color: tokens.textColor, fontFamily: theme.font }} dir={isEn ? 'ltr' : 'rtl'}>
+        <div className="h-[100dvh] flex flex-col overflow-hidden relative" style={{ backgroundColor: tokens.pageBgColor, color: tokens.textColor, fontFamily: theme.font }} dir={isEn ? 'ltr' : 'rtl'}>
             <header className="app-top-bar z-20" dir={isEn ? 'ltr' : 'rtl'}>
                 <div className="app-top-bar__inner">
                     <div className="relative flex items-center justify-between w-full min-h-[44px]">
@@ -343,8 +343,8 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                 </div>
             </div>
 
-            <main className="flex-1 overflow-hidden flex flex-col px-4 z-10">
-                <div className="flex-1 overflow-y-auto hide-scrollbar pt-1 pb-7 sm:pb-8 pb-[calc(env(safe-area-inset-bottom,0px)+1.75rem)]">
+            <main className="flex-1 min-h-0 overflow-hidden flex flex-col px-4 z-10">
+                <div className="flex-1 min-h-0 overflow-y-auto hide-scrollbar pt-1 app-scroll-safe">
                     {filteredNames.length === 0 ? (
                         <div className="py-16 text-center opacity-60 font-bold">
                             <Search className="w-10 h-10 mb-3 mx-auto opacity-40" />
@@ -399,8 +399,6 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                                     </div>
                                 </motion.button>
                             ))}
-                            {/* Bottom Spacer for Mobile Phone Navigation Bar */}
-                            <div className="col-span-full h-8 sm:h-12 pointer-events-none" />
                         </div>
                     ) : (
                         /* List View - Zero Border Policy, Pure White Cards */
@@ -476,8 +474,6 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                                     </div>
                                 </div>
                             ))}
-                            {/* Bottom Spacer for Mobile Phone Navigation Bar */}
-                            <div className="w-full h-8 sm:h-12 pointer-events-none" />
                         </div>
                     )}
                 </div>
@@ -495,7 +491,7 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                             animate={{ y: 0, opacity: 1 }}
                             exit={{ y: '100%', opacity: 0 }}
                             transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-                            className="rounded-t-[28px] sm:rounded-[24px] w-full max-w-xl text-center relative shadow-2xl flex flex-col max-h-[85vh] overflow-hidden border-0" 
+                            className="rounded-t-[28px] sm:rounded-[24px] w-full max-w-xl text-center relative shadow-2xl flex flex-col max-h-[88dvh] overflow-hidden border-0" 
                             style={{ 
                                 backgroundColor: tokens.cardBgColor,
                                 color: tokens.textColor,
@@ -522,7 +518,7 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                                 </span>
                             </div>
 
-                            <div className="overflow-y-auto hide-scrollbar flex-1 px-6 py-3 space-y-4">
+                            <div className="overflow-y-auto hide-scrollbar flex-1 min-h-0 px-6 py-3 space-y-4">
                                 <div>
                                     {isEn ? (
                                         <>
@@ -578,12 +574,9 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                                 )}
                             </div>
 
-                            {/* Footer Actions with safe-area bottom elevation */}
+                            {/* Footer Actions with dynamic safe-area bottom elevation */}
                             <div 
-                                className="p-4 pt-3 border-t border-slate-100 dark:border-zinc-800 flex justify-center items-center gap-3 sm:gap-4"
-                                style={{ 
-                                    paddingBottom: 'calc(env(safe-area-inset-bottom, 16px) + 16px)'
-                                }}
+                                className="p-4 pt-3 modal-sheet-safe-bottom shrink-0 border-t border-slate-100 dark:border-zinc-800 flex justify-center items-center gap-3 sm:gap-4"
                             >
                                 {/* Audio */}
                                 <button 
@@ -652,7 +645,7 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                         initial={{ opacity: 0, y: 50, x: '-50%' }}
                         animate={{ opacity: 1, y: 0, x: '-50%' }}
                         exit={{ opacity: 0, y: 50, x: '-50%' }}
-                        className="fixed bottom-8 left-1/2 z-[200] bg-gray-800 text-white px-6 py-3 rounded-full shadow-lg font-bold text-sm text-center whitespace-nowrap flex items-center gap-2 pointer-events-none"
+                        className="fixed bottom-[calc(var(--app-bottom-clearance,0px)+1rem)] left-1/2 z-[200] bg-gray-800 text-white px-6 py-3 rounded-full shadow-lg font-bold text-sm text-center whitespace-nowrap flex items-center gap-2 pointer-events-none"
                     >
                         <i className="fa-solid fa-check text-green-400"></i>
                         {toastMessage}

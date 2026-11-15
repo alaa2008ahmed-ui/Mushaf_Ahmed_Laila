@@ -5,7 +5,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { shareAsImage } from '../../utils/shareAsImage';
 import { playTTS, stopTTS, subscribeTTS } from '../../utils/ttsEngine';
-import { Volume2, VolumeX, Copy, Check, Share2, ZoomIn, ChevronDown } from 'lucide-react';
+import { Volume2, VolumeX, Copy, Check, Share2, ZoomIn, ChevronDown, RotateCw } from 'lucide-react';
 import { hexToRgba, getModernFlatTokens } from '../../utils/flatDesignTokens';
 import { registerBackInterceptor } from '../../hooks/useBackButton';
 
@@ -18,6 +18,7 @@ export interface UnifiedEventZoomModalProps {
   source?: string;
   setToastMessage?: (msg: string) => void;
   isGolden?: boolean;
+  onNextEvent?: (e?: React.MouseEvent) => void;
 }
 
 export const UnifiedEventZoomModal: React.FC<UnifiedEventZoomModalProps> = ({
@@ -29,6 +30,7 @@ export const UnifiedEventZoomModal: React.FC<UnifiedEventZoomModalProps> = ({
   source,
   setToastMessage,
   isGolden,
+  onNextEvent,
 }) => {
   const { theme, themeKey, isNightMode, homeThemeVariant } = useTheme();
   const { language, dir } = useLanguage();
@@ -373,7 +375,7 @@ export const UnifiedEventZoomModal: React.FC<UnifiedEventZoomModalProps> = ({
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: '100%', opacity: 0 }}
           transition={{ type: 'spring', damping: 28, stiffness: 280 }}
-          className={`zoom-modal-sheet w-full max-w-xl mx-auto rounded-t-[32px] flex flex-col max-h-[85vh] overflow-hidden relative shadow-2xl ${
+          className={`zoom-modal-sheet w-full max-w-xl mx-auto rounded-t-[32px] flex flex-col max-h-[88dvh] overflow-hidden relative shadow-2xl ${
             isModernMode ? themeStyles.modalBorderClass : ''
           }`}
           style={{
@@ -391,7 +393,7 @@ export const UnifiedEventZoomModal: React.FC<UnifiedEventZoomModalProps> = ({
                 isModernMode ? themeStyles.dragHandleClass : 'bg-slate-300 dark:bg-zinc-700'
               }`}
             />
-            <div className="w-full flex items-center justify-center">
+            <div className="w-full flex items-center justify-center gap-2">
               <span
                 className={`zoom-category-badge px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
                   isModernMode ? 'border shadow-2xs' : ''
@@ -405,11 +407,30 @@ export const UnifiedEventZoomModal: React.FC<UnifiedEventZoomModalProps> = ({
               >
                 {categoryTitle}
               </span>
+              {onNextEvent && (
+                <button
+                  type="button"
+                  onClick={onNextEvent}
+                  className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-90 cursor-pointer shadow-2xs shrink-0 ${
+                    isModernMode ? 'border' : ''
+                  }`}
+                  style={{
+                    background: isModernMode ? themeStyles.badgeBg : hexToRgba(tokens.primaryColor, 0.1),
+                    borderColor: isModernMode ? themeStyles.badgeBorder : undefined,
+                    color: isModernMode ? themeStyles.badgeColor : tokens.primaryColor,
+                    boxShadow: isModernMode ? themeStyles.badgeShadow : undefined,
+                  }}
+                  title={isEn ? 'Show another event' : 'حدث آخر'}
+                  aria-label={isEn ? 'Show another event' : 'حدث آخر'}
+                >
+                  <RotateCw className="w-3.5 h-3.5 sm:w-4 sm:h-4 transition-transform duration-300 active:rotate-180" strokeWidth={2.2} />
+                </button>
+              )}
             </div>
           </div>
 
           {/* Scrollable Content Area */}
-          <div className="overflow-y-auto hide-scrollbar flex-1 px-6 py-4">
+          <div className="overflow-y-auto hide-scrollbar flex-1 min-h-0 px-6 py-4">
             {isEn ? (
               <div
                 className="leading-relaxed font-sans font-bold text-center my-4 select-none text-balance zoom-modal-text"
@@ -462,13 +483,12 @@ export const UnifiedEventZoomModal: React.FC<UnifiedEventZoomModalProps> = ({
 
           {/* Action Bar matching image with safe-area bottom elevation */}
           <div
-            className={`zoom-modal-action-bar p-4 pt-3.5 shrink-0 flex items-center justify-center gap-3 sm:gap-4 border-t ${
+            className={`zoom-modal-action-bar p-4 pt-3.5 modal-sheet-safe-bottom shrink-0 flex items-center justify-center gap-3 sm:gap-4 border-t ${
               isModernMode ? `${themeStyles.actionBarBorderClass} shadow-inner` : 'border-slate-100 dark:border-white/5'
             }`}
             dir="ltr"
             style={{
               background: isModernMode ? themeStyles.actionBarBg : tokens.cardBgColor,
-              paddingBottom: 'calc(env(safe-area-inset-bottom, 16px) + 16px)',
             }}
           >
             {/* 1. Chevron Down / Hide Modal Button */}

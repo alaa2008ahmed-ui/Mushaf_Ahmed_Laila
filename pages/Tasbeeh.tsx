@@ -9,7 +9,6 @@ import TasbeehControls from '../components/Tasbeeh/TasbeehControls';
 import TasbeehCounter from '../components/Tasbeeh/TasbeehCounter';
 import ThreeDButton from '../components/Tasbeeh/ThreeDButton';
 import TasbeehModals from '../components/Tasbeeh/TasbeehModals';
-import { BarChart3, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { tTasbeeh, getPhraseDisplay } from '../utils/tasbeehTranslations';
 import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/CommunitySpotlightGuide';
@@ -58,7 +57,7 @@ interface TasbeehProps {
 
 export function Tasbeeh({ onBack, onNavigate }: TasbeehProps) {
     const { theme, themeKey } = useTheme();
-    const { language, isRTL, dir } = useLanguage();
+    const { language, dir } = useLanguage();
     
     // Counter Colors and Themes
     const isBlackTheme = theme.bgColor === '#000000' || theme.name === 'اسود' || theme.name === 'black';
@@ -257,8 +256,9 @@ export function Tasbeeh({ onBack, onNavigate }: TasbeehProps) {
         vibrate(30);
         const newCount = count + 1;
 
-        // Update daily stats
-        const today = new Date().toISOString().split('T')[0];
+        // Update daily stats (local YYYY-MM-DD to match chart and home card)
+        const now = new Date();
+        const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
         setDailyStats(prev => {
             const newStats = [...prev];
             const todayStatIndex = newStats.findIndex(s => s.date === today);
@@ -391,7 +391,7 @@ export function Tasbeeh({ onBack, onNavigate }: TasbeehProps) {
     };
 
     return (
-        <div className="h-screen h-[100dvh] max-h-screen max-h-[100dvh] flex flex-col bg-transparent overflow-hidden" dir={dir}>
+        <div className="h-[100dvh] max-h-[100dvh] flex flex-col bg-transparent overflow-hidden" dir={dir}>
             <TasbeehHeader 
                 title={tTasbeeh('title', language)} 
                 subtitle={tTasbeeh('subtitle', language)} 
@@ -403,8 +403,9 @@ export function Tasbeeh({ onBack, onNavigate }: TasbeehProps) {
             />
             
             <main 
-                className="px-4 flex-1 min-h-0 relative flex flex-col items-center overflow-y-auto overscroll-contain fade-in pt-1 pb-7 sm:pb-8 pb-[calc(env(safe-area-inset-bottom,0px)+1.75rem)]"
+                className="px-4 flex-1 min-h-0 relative overflow-y-auto overscroll-contain fade-in pt-1 app-scroll-safe"
             >
+                 <div className="w-full flex flex-col items-center">
                  <TasbeehControls 
                     isBlackAndWhite={isBlackAndWhite}
                     theme={theme}
@@ -429,7 +430,7 @@ export function Tasbeeh({ onBack, onNavigate }: TasbeehProps) {
                     cardBorderColor={cardBorderColor}
                  />
                 
-                <div className="w-full max-w-lg px-4 mt-6 mb-6">
+                <div className="w-full max-w-lg px-4 mt-6 mb-0">
                     <div className="grid grid-cols-2 gap-3">
                         <ThreeDButton 
                             label={tTasbeeh('reset', language)} 
@@ -453,37 +454,17 @@ export function Tasbeeh({ onBack, onNavigate }: TasbeehProps) {
                         type="button"
                         whileTap={{ scale: 0.98 }}
                         onClick={() => setModals((p: any) => ({ ...p, stats: true }))}
-                        className="w-full mt-3 p-3 px-4 rounded-2xl bg-white dark:bg-[#1E293B] shadow-[0_4px_16px_-2px_rgba(0,0,0,0.05)] border-0 flex items-center justify-between text-xs transition-all hover:shadow-md active:scale-98 group cursor-pointer"
+                        className="w-full mt-3 py-3.5 px-4 rounded-2xl bg-white dark:bg-[#1E293B] shadow-[0_4px_16px_-2px_rgba(0,0,0,0.05)] border-0 flex items-center justify-center text-xs transition-all hover:shadow-md active:scale-98 group cursor-pointer"
                         style={{ border: 'none' }}
                         title={tTasbeeh('chartTitle', language)}
                         aria-label={tTasbeeh('chartTitle', language)}
                     >
-                        <div className="flex items-center gap-2.5 font-bold">
-                            <span 
-                                className="p-1.5 rounded-xl transition-transform group-hover:scale-110"
-                                style={{ backgroundColor: `${primaryColor}14`, color: primaryColor }}
-                            >
-                                <BarChart3 className="w-4 h-4" />
-                            </span>
-                            <span className="font-bold text-sm text-slate-800 dark:text-white">
-                                {tTasbeeh('chartTitle', language)}
-                            </span>
-                        </div>
-                        <div className="flex items-center gap-1.5 font-bold" style={{ color: primaryTextColor }}>
-                            <span className="text-[11px] opacity-80">
-                                {tTasbeeh('weeklyMonthly', language)}
-                            </span>
-                            {isRTL ? (
-                                <ChevronLeft className="w-3.5 h-3.5 opacity-60 group-hover:translate-x-[-2px] transition-transform" />
-                            ) : (
-                                <ChevronRight className="w-3.5 h-3.5 opacity-60 group-hover:translate-x-[2px] transition-transform" />
-                            )}
-                        </div>
+                        <span className="font-bold text-sm text-slate-800 dark:text-white">
+                            {tTasbeeh('chartTitle', language)}
+                        </span>
                     </motion.button>
-
-                    {/* Bottom Spacer for Mobile Phone Navigation Bar */}
-                    <div className="w-full h-2 sm:h-3 shrink-0 pointer-events-none" />
                 </div>
+                 </div>
             </main>
             
             {/* Modals */}
@@ -518,7 +499,7 @@ export function Tasbeeh({ onBack, onNavigate }: TasbeehProps) {
                         initial={{ opacity: 0, y: 20, x: '-50%' }}
                         animate={{ opacity: 1, y: 0, x: '-50%' }}
                         exit={{ opacity: 0, y: 10, x: '-50%' }}
-                        className="fixed bottom-8 left-1/2 px-4 py-2 rounded-full shadow-2xl z-[200] font-bold text-xs sm:text-sm font-cairo flex items-center justify-center gap-1.5 border backdrop-blur-md select-none"
+                        className="fixed bottom-[calc(var(--app-bottom-clearance,0px)+1rem)] left-1/2 px-4 py-2 rounded-full shadow-2xl z-[200] font-bold text-xs sm:text-sm font-cairo flex items-center justify-center gap-1.5 border backdrop-blur-md select-none"
                         style={{
                             backgroundColor: isBlackTheme 
                                 ? '#18181b' 

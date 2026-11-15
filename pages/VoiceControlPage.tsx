@@ -63,7 +63,7 @@ const VoiceControlPage: React.FC<{ onBack: () => void, onNavigate: (pageId: stri
     };
 
     return (
-        <div className="h-screen flex flex-col bg-transparent overflow-hidden" dir={isEn ? 'ltr' : 'rtl'}>
+        <div className="h-[100dvh] flex flex-col bg-transparent overflow-hidden" dir={isEn ? 'ltr' : 'rtl'}>
             <header className="app-top-bar">
                 <div className="app-top-bar__inner">
                     <div className="relative flex items-center justify-center w-full min-h-[44px]">
@@ -112,8 +112,8 @@ const VoiceControlPage: React.FC<{ onBack: () => void, onNavigate: (pageId: stri
                 </div>
             </header>
 
-            <main className={`w-full flex-1 flex flex-col items-center overflow-hidden px-4 pt-2 pb-4 ${isEn ? 'text-left' : 'text-right'}`}>
-                <div className="w-full max-w-lg flex-1 overflow-y-auto hide-scrollbar pb-6 space-y-6">
+            <main className={`w-full flex-1 min-h-0 flex flex-col items-center overflow-hidden px-4 pt-2 ${isEn ? 'text-left' : 'text-right'}`}>
+                <div className="w-full max-w-lg flex-1 min-h-0 overflow-y-auto hide-scrollbar app-scroll-safe space-y-6">
                     {/* Merged Status & Settings Section */}
                     <div 
                         className="themed-card app-page-card p-4 rounded-2xl space-y-4 relative border-0"
@@ -345,8 +345,6 @@ const VoiceControlPage: React.FC<{ onBack: () => void, onNavigate: (pageId: stri
                             </div>
                         </div>
                     </div>
-
-                    <div className="shrink-0 w-full h-4"></div>
                 </div>
             </main>
             <CommunitySpotlightGuide

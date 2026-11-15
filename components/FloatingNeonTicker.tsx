@@ -378,56 +378,47 @@ const FloatingNeonTicker: React.FC<FloatingNeonTickerProps> = ({ layoutMode, isG
 
   return (
     <div 
-      className="absolute top-0 left-0 right-0 z-10 w-full overflow-hidden rounded-full transition-all duration-300"
-      style={{ height: '100%', minHeight: '27.5px' }}
+      className="absolute top-0 left-0 right-0 z-10 w-full overflow-hidden rounded-full"
+      style={{ height: '27.5px', minHeight: '27.5px', contain: 'layout style paint' }}
     >
       <style>
         {`
-          @keyframes themed-ticker-scroll-ltr {
-            0% { 
-              left: 0%; 
-              transform: translate(-100%, -50%); 
-              color: ${themeStyles.textColors[0]}; 
-              text-shadow: ${themeStyles.textShadow}; 
-            }
-            50% { 
-              color: ${themeStyles.textColors[1]}; 
-              text-shadow: ${themeStyles.textShadow}; 
-            }
-            100% { 
-              left: 100%; 
-              transform: translate(0, -50%); 
-              color: ${themeStyles.textColors[2]}; 
-              text-shadow: ${themeStyles.textShadow}; 
-            }
+          @keyframes themed-ticker-track-ltr {
+            0% { transform: translate3d(0%, 0, 0); }
+            100% { transform: translate3d(100%, 0, 0); }
           }
 
-          @keyframes themed-ticker-scroll-rtl {
-            0% { 
-              left: 100%; 
-              transform: translate(0, -50%); 
-              color: ${themeStyles.textColors[0]}; 
-              text-shadow: ${themeStyles.textShadow}; 
-            }
-            50% { 
-              color: ${themeStyles.textColors[1]}; 
-              text-shadow: ${themeStyles.textShadow}; 
-            }
-            100% { 
-              left: 0%; 
-              transform: translate(-100%, -50%); 
-              color: ${themeStyles.textColors[2]}; 
-              text-shadow: ${themeStyles.textShadow}; 
-            }
+          @keyframes themed-ticker-inner-ltr {
+            0% { transform: translate3d(-100%, 0, 0); }
+            100% { transform: translate3d(0%, 0, 0); }
+          }
+
+          @keyframes themed-ticker-track-rtl {
+            0% { transform: translate3d(100%, 0, 0); }
+            100% { transform: translate3d(0%, 0, 0); }
+          }
+
+          @keyframes themed-ticker-inner-rtl {
+            0% { transform: translate3d(0%, 0, 0); }
+            100% { transform: translate3d(-100%, 0, 0); }
+          }
+
+          .ticker-track {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            will-change: transform;
+            pointer-events: none;
+            animation: ${isEn ? 'themed-ticker-track-rtl' : 'themed-ticker-track-ltr'} 40s linear infinite;
           }
 
           .ticker-content {
-            position: absolute;
-            top: 50%;
             display: inline-block;
             white-space: nowrap;
             width: max-content;
-            animation: ${isEn ? 'themed-ticker-scroll-rtl' : 'themed-ticker-scroll-ltr'} 40s linear infinite;
+            will-change: transform;
+            animation: ${isEn ? 'themed-ticker-inner-rtl' : 'themed-ticker-inner-ltr'} 40s linear infinite;
           }
 
           .themed-ticker-container {
@@ -442,7 +433,7 @@ const FloatingNeonTicker: React.FC<FloatingNeonTickerProps> = ({ layoutMode, isG
             border: 1.5px solid ${themeStyles.borderColor};
             border-radius: 9999px;
             box-shadow: ${themeStyles.boxShadow};
-            transition: all 0.3s ease;
+            contain: layout style paint;
           }
 
           .themed-ticker-text {
@@ -452,23 +443,28 @@ const FloatingNeonTicker: React.FC<FloatingNeonTickerProps> = ({ layoutMode, isG
             letter-spacing: 0.5px;
             font-family: 'Cairo', sans-serif;
             display: inline-block;
+            color: ${themeStyles.textColors[0]};
+            text-shadow: ${themeStyles.textShadow};
           }
         `}
       </style>
       <div 
         id="floating-neon-ticker" 
         className="themed-ticker-container"
-        dir={isEn ? "ltr" : "rtl"}
+        dir="ltr"
       >
-        <div key={isEn ? `ticker-en-${displayMessage}` : `ticker-ar-${displayMessage}`} className="ticker-content" dir={isEn ? "ltr" : "rtl"}>
-          <span 
-            className="themed-ticker-text" 
-            dangerouslySetInnerHTML={{ __html: displayMessage }}
-          ></span>
+        <div key={isEn ? `ticker-en-${displayMessage}` : `ticker-ar-${displayMessage}`} className="ticker-track" dir="ltr">
+          <div className="ticker-content">
+            <span 
+              className="themed-ticker-text" 
+              dir={isEn ? "ltr" : "rtl"}
+              dangerouslySetInnerHTML={{ __html: displayMessage }}
+            ></span>
+          </div>
         </div>
       </div>
     </div>
   );
 };
 
-export default FloatingNeonTicker;
+export default React.memo(FloatingNeonTicker);

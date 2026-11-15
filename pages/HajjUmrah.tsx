@@ -15,7 +15,7 @@ import {
 import { registerBackInterceptor } from '../hooks/useBackButton';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
-    ChevronLeft, ChevronRight, ChevronDown, ChevronUp,
+    ChevronLeft, ChevronRight, ChevronDown,
     Plus, Minus, RotateCcw,
     ZoomIn, ZoomOut,
     Copy, Check, HelpCircle, X, Share2
@@ -34,6 +34,7 @@ import { getModernFlatTokens, hexToRgba } from '../utils/flatDesignTokens';
 export interface CardZoomData {
     title: string;
     subtitle?: string;
+    category?: string;
     text?: string;
     points?: string[];
     evidence?: string;
@@ -54,6 +55,8 @@ export interface CardZoomData {
     duaaItems?: string[];
     duaaIndex?: number;
     onIndexChange?: (newIndex: number) => void;
+    virtues?: { title: string; source: string; text: string; explanation: string }[];
+    sections?: { tabLabel: string; title: string; subtitle?: string; quranAyah?: string; hadith?: string; points: string[] }[];
 }
 
 interface DuaaSectionProps {
@@ -78,13 +81,13 @@ const DuaaSection: FC<DuaaSectionProps> = ({ id, title, items, isOpen, onToggle,
         }
     }, [isOpen]);
 
-    const handleNext = (e: React.MouseEvent) => {
-        e.stopPropagation();
+    const handleNext = (e?: React.MouseEvent) => {
+        if (e) e.stopPropagation();
         if (currentIndex < items.length - 1) setCurrentIndex(i => i + 1);
     };
 
-    const handlePrev = (e: React.MouseEvent) => {
-        e.stopPropagation();
+    const handlePrev = (e?: React.MouseEvent) => {
+        if (e) e.stopPropagation();
         if (currentIndex > 0) setCurrentIndex(i => i - 1);
     };
 
@@ -133,21 +136,13 @@ const DuaaSection: FC<DuaaSectionProps> = ({ id, title, items, isOpen, onToggle,
                     >
                         <div className="p-4 pt-1">
                             <div 
-                                className="flex flex-col gap-4 p-5 rounded-[16px] relative min-h-[160px] justify-center items-center text-center border-0" 
+                                onClick={handleZoomClick}
+                                className="flex flex-col gap-4 p-5 rounded-[16px] relative min-h-[160px] justify-center items-center text-center border-0 cursor-pointer" 
                                 style={{ backgroundColor: tokens.isDark ? 'rgba(255, 255, 255, 0.04)' : '#F8F9FA' }}
                             >
                                 <span className={`absolute top-3 ${isRTL ? 'right-4' : 'left-4'} text-xs font-bold opacity-60 font-mono`} style={{ color: tokens.textColor }}>
                                     {currentIndex + 1} / {items.length}
                                 </span>
-                                <button 
-                                    type="button"
-                                    onClick={handleZoomClick} 
-                                    className={`absolute top-2 ${isRTL ? 'left-2' : 'right-2'} p-2 shrink-0 opacity-80 hover:opacity-100 hover:bg-black/5 transition-opacity rounded-full dark:hover:bg-zinc-700 cursor-pointer border-0`} 
-                                    title={isEn ? "Enlarge card text" : "تكبير نص البطاقة"}
-                                    style={{ color: tokens.textColor }}
-                                >
-                                    <ZoomIn className="w-5 h-5" />
-                                </button>
                                 
                                 <div className="mt-6 mb-2 space-y-3 w-full">
                                     {isEn ? (
@@ -165,7 +160,7 @@ const DuaaSection: FC<DuaaSectionProps> = ({ id, title, items, isOpen, onToggle,
                                 <div className="flex w-full justify-between items-center mt-2 border-t border-slate-100 dark:border-zinc-800 pt-3">
                                     <button 
                                         type="button"
-                                        onClick={handleNext}
+                                        onClick={(e) => { e.stopPropagation(); handleNext(); }}
                                         disabled={currentIndex === items.length - 1}
                                         className="p-2 px-3.5 rounded-xl bg-slate-100 dark:bg-zinc-800 disabled:opacity-30 hover:scale-105 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer font-bold text-xs sm:text-sm border-0"
                                         style={{ color: tokens.textColor }}
@@ -176,7 +171,7 @@ const DuaaSection: FC<DuaaSectionProps> = ({ id, title, items, isOpen, onToggle,
                                     
                                     <button 
                                         type="button"
-                                        onClick={handlePrev}
+                                        onClick={(e) => { e.stopPropagation(); handlePrev(); }}
                                         disabled={currentIndex === 0}
                                         className="p-2 px-3.5 rounded-xl bg-slate-100 dark:bg-zinc-800 disabled:opacity-30 hover:scale-105 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer font-bold text-xs sm:text-sm border-0"
                                         style={{ color: tokens.textColor }}
@@ -255,22 +250,16 @@ const ChecklistScreen = ({ tokens, cardTextScale, onZoom }: { tokens: any, cardT
                         className="rounded-[18px] p-4.5 relative border-0" 
                         style={{ backgroundColor: tokens.cardBgColor, boxShadow: tokens.cardShadow }}
                     >
-                        <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-slate-100 dark:border-zinc-800">
+                        <div 
+                            onClick={() => onZoom({
+                                title: cat.title,
+                                points: cat.items.map(item => isEn ? (CHECKLIST_ITEMS_EN[item.id] || item.ar) : item.ar)
+                            })}
+                            className="pb-2.5 mb-3 border-b border-slate-100 dark:border-zinc-800 cursor-pointer"
+                        >
                             <h3 className="font-bold text-base text-start" style={{ color: tokens.primaryColor, fontSize: `${15 * cardTextScale}px` }}>
                                 {cat.title}
                             </h3>
-                            <button
-                                type="button"
-                                onClick={() => onZoom({
-                                    title: cat.title,
-                                    points: cat.items.map(item => isEn ? (CHECKLIST_ITEMS_EN[item.id] || item.ar) : item.ar)
-                                })}
-                                className="p-1.5 rounded-lg opacity-75 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/5 transition cursor-pointer border-0"
-                                title={isEn ? "Enlarge card text" : "تكبير نص البطاقة"}
-                                style={{ color: tokens.textColor }}
-                            >
-                                <ZoomIn className="w-4 h-4" />
-                            </button>
                         </div>
                         <div className="space-y-1.5">
                             {cat.items.map(item => {
@@ -524,27 +513,18 @@ const HomeScreen = ({ setScreen, tokens, cardTextScale, onZoom }: { setScreen: a
             {additions.map((item, index) => (
                  <div 
                     key={index} 
-                    className="rounded-[18px] p-5 text-start relative border-0" 
+                    onClick={() => onZoom({
+                        title: item.title,
+                        points: item.content,
+                        text: item.type === 'hadith' ? item.content[0] : undefined
+                    })}
+                    className="rounded-[18px] p-5 text-start relative border-0 cursor-pointer hover:shadow-md transition-all" 
                     style={{ backgroundColor: tokens.cardBgColor, boxShadow: tokens.cardShadow }}
                  >
-                    <div className="flex items-center justify-between mb-2 gap-2">
+                    <div className="mb-2">
                         <h3 className="font-bold text-base leading-snug" style={{ color: tokens.primaryColor, fontSize: `${15 * cardTextScale}px` }}>
                             <span>{item.title}</span>
                         </h3>
-                        {/* Magnifying Glass to zoom card text */}
-                        <button
-                            type="button"
-                            onClick={() => onZoom({
-                                title: item.title,
-                                points: item.content,
-                                text: item.type === 'hadith' ? item.content[0] : undefined
-                            })}
-                            className="p-1.5 rounded-lg opacity-75 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/5 transition cursor-pointer shrink-0 border-0"
-                            title={isEn ? "Enlarge card text" : "تكبير نص البطاقة"}
-                            style={{ color: tokens.textColor }}
-                        >
-                            <ZoomIn className="w-4 h-4" />
-                        </button>
                     </div>
 
                     {item.type === 'hadith' ? (
@@ -566,26 +546,19 @@ const HomeScreen = ({ setScreen, tokens, cardTextScale, onZoom }: { setScreen: a
 
             {/* Warning Card */}
             <div 
-                className="col-span-1 md:col-span-2 rounded-[18px] p-5 text-start relative border-0" 
+                onClick={() => onZoom({
+                    title: isEn ? 'Important Warning' : 'تنبيه هام',
+                    text: isEn 
+                        ? 'Omitting a pillar invalidates the ritual, whereas omitting an obligation requires a sacrificial penalty (dam), and committing prohibitions incurs an expiation (fidyah).' 
+                        : 'ترك ركن يبطل النسك، أما ترك واجب فيُجبر بدم، وارتكاب المحظورات يوجب الفدية.'
+                })}
+                className="col-span-1 md:col-span-2 rounded-[18px] p-5 text-start relative border-0 cursor-pointer hover:shadow-md transition-all" 
                 style={{ backgroundColor: tokens.cardBgColor, boxShadow: tokens.cardShadow }}
             >
-                <div className="flex items-center justify-between mb-1.5 gap-2">
+                <div className="mb-1.5">
                     <h3 className="font-bold text-orange-600 dark:text-orange-400 text-base" style={{ fontSize: `${15 * cardTextScale}px` }}>
                         <span>{isEn ? 'Important Warning' : 'تنبيه هام'}</span>
                     </h3>
-                    <button
-                        type="button"
-                        onClick={() => onZoom({
-                            title: isEn ? 'Important Warning' : 'تنبيه هام',
-                            text: isEn 
-                                ? 'Omitting a pillar invalidates the ritual, whereas omitting an obligation requires a sacrificial penalty (dam), and committing prohibitions incurs an expiation (fidyah).' 
-                                : 'ترك ركن يبطل النسك، أما ترك واجب فيُجبر بدم، وارتكاب المحظورات يوجب الفدية.'
-                        })}
-                        className="p-1.5 rounded-lg opacity-75 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/5 transition cursor-pointer shrink-0 text-orange-600 dark:text-orange-400 border-0"
-                        title={isEn ? "Enlarge card text" : "تكبير نص البطاقة"}
-                    >
-                        <ZoomIn className="w-4 h-4" />
-                    </button>
                 </div>
                 <p className="leading-[2.1] text-xs text-orange-950 dark:text-orange-200" style={{ fontSize: `${12.5 * cardTextScale}px` }}>
                     {isEn 
@@ -598,14 +571,27 @@ const HomeScreen = ({ setScreen, tokens, cardTextScale, onZoom }: { setScreen: a
     );
 };
 
-const UmrahScreen = ({ tokens, onSelectDetail, cardTextScale, onZoom }: { tokens: any, onSelectDetail: any, cardTextScale: number, onZoom: (data: CardZoomData) => void }) => {
+const UmrahScreen = ({ tokens, onSelectDetail, cardTextScale, onZoom }: { tokens: any, onSelectDetail: (data: CardZoomData) => void, cardTextScale: number, onZoom: (data: CardZoomData) => void }) => {
     const { language } = useLanguage();
     const isEn = language === 'en';
-    const [showVirtues, setShowVirtues] = useState(false);
 
     const virtuesList = isEn ? umrahVirtuesEn : umrahVirtues;
     const generalInfo = isEn ? umrahGeneralInfoEn : umrahGeneralInfo;
     const stepsList = isEn ? umrahStepsEn : umrahSteps;
+    const umrahCategory = tHajj('screenUmrahTitle', language);
+
+    const openStepZoom = (step: any) => {
+        onZoom({
+            category: umrahCategory,
+            title: step.title,
+            subtitle: step.subtitle,
+            quranAyah: step.quranAyah,
+            hadith: step.hadith,
+            points: step.points,
+            sunan: step.sunan,
+            mistakes: step.mistakes
+        });
+    };
 
     return (
      <section id="umrah-screen" className="space-y-4">
@@ -617,157 +603,104 @@ const UmrahScreen = ({ tokens, onSelectDetail, cardTextScale, onZoom }: { tokens
             <p className="font-amiri text-base font-bold text-amber-800 dark:text-amber-300 px-4" style={{ fontSize: `${16 * cardTextScale}px` }}>
                 {tHajj('umrahIntroVerse', language)}
             </p>
-            <p className="text-xs opacity-75 mt-1 px-4" style={{ color: tokens.textColor, fontSize: `${12 * cardTextScale}px` }}>
-                {tHajj('umrahIntroDesc', language)}
-            </p>
         </div>
 
-        {/* Card: Virtues */}
-        <div 
-            className="rounded-[18px] overflow-hidden border-0" 
-            style={{ backgroundColor: tokens.cardBgColor, boxShadow: tokens.cardShadow }}
-        >
-            <div 
-                role="button"
-                tabIndex={0}
-                onClick={() => setShowVirtues(!showVirtues)}
-                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowVirtues(!showVirtues); } }}
-                className="w-full p-4.5 flex items-center justify-between transition-colors hover:bg-black/5 dark:hover:bg-white/5 text-start cursor-pointer border-0"
+        {/* Summary Cards: Virtues + 2 Condensed Single-Row Cards */}
+        <div className="space-y-3">
+            {/* Card: Virtues (opens bottom-sheet zoom modal) */}
+            <button
+                id="hajj-umrah-virtues-card"
+                type="button"
+                onClick={() => onZoom({
+                    category: umrahCategory,
+                    title: tHajj('umrahVirtuesTitle', language),
+                    subtitle: tHajj('umrahVirtuesSubtitle', language),
+                    virtues: virtuesList
+                })}
+                className="w-full text-start rounded-[18px] p-4.5 flex items-center justify-between gap-3.5 hover:shadow-md transition-all group border-0 cursor-pointer"
+                style={{ backgroundColor: tokens.cardBgColor, boxShadow: tokens.cardShadow }}
             >
-                <div>
-                    <h3 className="font-bold text-sm" style={{ color: tokens.textColor, fontSize: `${14.5 * cardTextScale}px` }}>
+                <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-sm md:text-base leading-snug" style={{ color: tokens.textColor, fontSize: `${15 * cardTextScale}px` }}>
                         {tHajj('umrahVirtuesTitle', language)}
                     </h3>
-                    <p className="text-[11px] opacity-70" style={{ color: tokens.subtextColor, fontSize: `${11 * cardTextScale}px` }}>
+                    <p className="text-xs opacity-75 mt-0.5 truncate" style={{ color: tokens.subtextColor, fontSize: `${12 * cardTextScale}px` }}>
                         {tHajj('umrahVirtuesSubtitle', language)}
                     </p>
                 </div>
-                <div className="flex items-center gap-2">
-                    <button
-                        type="button"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onZoom({
-                                title: tHajj('umrahVirtuesTitle', language),
-                                subtitle: tHajj('umrahVirtuesSubtitle', language),
-                                points: virtuesList.map(v => `<b>${v.title}</b> (${v.source}):<br/>${v.text}<br/><span style="opacity:0.8">${v.explanation}</span>`)
-                            });
-                        }}
-                        className="p-1.5 opacity-75 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition cursor-pointer border-0"
-                        title={isEn ? "Enlarge card text" : "تكبير نص البطاقة"}
-                        style={{ color: tokens.textColor }}
-                    >
-                        <ZoomIn className="w-4 h-4" />
-                    </button>
-                    {showVirtues ? <ChevronUp size={18} style={{ color: tokens.textColor }} /> : <ChevronDown size={18} style={{ color: tokens.textColor }} />}
-                </div>
-            </div>
-
-            {showVirtues && (
-                <div className="p-4 border-t border-slate-100 dark:border-zinc-800 space-y-3 text-start">
-                    {virtuesList.map((v, i) => (
-                        <div id={`hajj-umrah-item-${(v as any).id || i+1}`} key={i} className="p-3.5 rounded-xl border-0 space-y-1.5 transition-all" style={{ backgroundColor: tokens.isDark ? 'rgba(255, 255, 255, 0.04)' : '#F8F9FA' }}>
-                            <div className="flex justify-between items-center text-xs">
-                                <span className="font-bold" style={{ color: tokens.primaryColor, fontSize: `${13 * cardTextScale}px` }}>{v.title}</span>
-                                <span className="text-[10px] opacity-60 font-mono">{v.source}</span>
-                            </div>
-                            <p className={`text-sm font-semibold text-amber-700 dark:text-amber-300 ${isEn ? 'font-sans' : 'font-amiri'}`} style={{ fontSize: `${14 * cardTextScale}px` }}>{v.text}</p>
-                            <p className="text-xs opacity-80 leading-relaxed" style={{ color: tokens.textColor, fontSize: `${12 * cardTextScale}px` }}>{v.explanation}</p>
-                        </div>
-                    ))}
-                </div>
-            )}
-        </div>
-
-        {/* General Info Grid: Arkan, Wajibat, Sunan, Mufsidat */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <button 
-                type="button"
-                onClick={() => onSelectDetail({
-                    title: isEn ? 'The Three Pillars of Umrah' : 'أركان العمرة الثلاثة',
-                    subtitle: isEn ? 'Umrah is invalid without them and cannot be compensated by animal sacrifice' : 'لا تصح العمرة إلا بها ولا تُجبر بدم بإجماع العلماء',
-                    points: generalInfo.arkan,
-                    quranAyah: isEn ? '﴿ And complete the Hajj and \'Umrah for Allah ﴾ [Al-Baqarah: 196]' : '﴿ وَأَتِمُّوا الْحَجَّ وَالْعُمْرَةَ لِلَّهِ ﴾ [البقرة: 196]، وقوله تعالى: ﴿ وَلْيَطَّوَّفُوا بِالْبَيْتِ الْعَتِيقِ ﴾ [الحج: 29]',
-                    hadith: isEn ? 'The Prophet ﷺ said: «Actions are judged by intentions», and: «Perform Sa\'i, for Allah has prescribed Sa\'i upon you»' : 'قال رسول الله ﷺ: «إِنَّمَا الأَعْمَالُ بِالنِّيَّاتِ» وقال: «اسْعَوْا فَإِنَّ اللهَ كَتَبَ عَلَيْكُمُ السَّعْيَ»'
-                })}
-                className="rounded-[18px] p-4 text-start hover:scale-[1.02] transition-all group cursor-pointer border-0" 
-                style={{ backgroundColor: tokens.cardBgColor, boxShadow: tokens.cardShadow }}
-            >
-                <div className="flex items-center justify-between mb-1.5">
-                    <span className="font-bold text-xs" style={{ color: tokens.primaryColor, fontSize: `${12 * cardTextScale}px` }}>
-                        {tHajj('pillarsLabel', language)} (3)
-                    </span>
-                    <ZoomIn size={14} className="opacity-70 group-hover:scale-110 transition-transform" />
-                </div>
-                <p className="text-[11px] opacity-75 line-clamp-2" style={{ color: tokens.subtextColor, fontSize: `${11 * cardTextScale}px` }}>
-                    {isEn ? 'Ihram, Tawaf (7 circuits), Sa\'i (7 laps)' : 'الإحرام، الطواف 7 أشواط، السعي 7 أشواط'}
-                </p>
             </button>
 
+            {/* Card 1: Pillars & Obligations (single row) */}
             <button 
                 type="button"
                 onClick={() => onSelectDetail({
-                    title: isEn ? 'Obligations of Umrah (Wajibat)' : 'واجبات العمرة',
-                    subtitle: isEn ? 'Omitting an obligation requires a sacrificial penalty (dam) and Umrah remains valid' : 'من ترك واجباً لزمه دم (شاة) وعمرته صحيحة',
-                    points: generalInfo.wajibat,
-                    hadith: isEn ? 'The Prophet ﷺ said: «These boundaries are for their people and whoever passes them...» and: «O Allah, have mercy on those who shave their heads»' : 'قال رسول الله ﷺ: «هُنَّ لَهُنَّ، وَلِمَنْ أَتَى عَلَيْهِنَّ...» وقال: «اللَّهُمَّ ارْحَمِ المُحَلِّقِينَ»'
+                    category: umrahCategory,
+                    title: '',
+                    sections: [
+                        {
+                            tabLabel: isEn ? 'Pillars' : 'الأركان',
+                            title: isEn ? 'Pillars of Umrah' : 'أركان العمرة',
+                            subtitle: isEn ? 'Umrah is invalid without them and cannot be compensated by animal sacrifice' : 'لا تصح العمرة إلا بها ولا تُجبر بدم بإجماع العلماء',
+                            quranAyah: isEn ? '﴿ And complete the Hajj and \'Umrah for Allah ﴾ [Al-Baqarah: 196]' : '﴿ وَأَتِمُّوا الْحَجَّ وَالْعُمْرَةَ لِلَّهِ ﴾ [البقرة: 196]، وقوله تعالى: ﴿ وَلْيَطَّوَّفُوا بِالْبَيْتِ الْعَتِيقِ ﴾ [الحج: 29]',
+                            hadith: isEn ? 'The Prophet ﷺ said: «Actions are judged by intentions», and: «Perform Sa\'i, for Allah has prescribed Sa\'i upon you»' : 'قال رسول الله ﷺ: «إِنَّمَا الأَعْمَالُ بِالنِّيَّاتِ» وقال: «اسْعَوْا فَإِنَّ اللهَ كَتَبَ عَلَيْكُمُ السَّعْيَ»',
+                            points: generalInfo.arkan
+                        },
+                        {
+                            tabLabel: isEn ? 'Obligations' : 'الواجبات',
+                            title: isEn ? 'Obligations of Umrah (Wajibat)' : 'واجبات العمرة',
+                            subtitle: isEn ? 'Omitting an obligation requires a sacrificial penalty (dam) and Umrah remains valid' : 'من ترك واجباً لزمه دم (شاة) وعمرته صحيحة',
+                            hadith: isEn ? 'The Prophet ﷺ said: «These boundaries are for their people and whoever passes them...» and: «O Allah, have mercy on those who shave their heads»' : 'قال رسول الله ﷺ: «هُنَّ لَهُنَّ، وَلِمَنْ أَتَى عَلَيْهِنَّ...» وقال: «اللَّهُمَّ ارْحَمِ المُحَلِّقِينَ»',
+                            points: generalInfo.wajibat
+                        }
+                    ]
                 })}
-                className="rounded-[18px] p-4 text-start hover:scale-[1.02] transition-all group cursor-pointer border-0" 
+                className="w-full text-start rounded-[18px] p-4.5 flex items-center justify-between gap-3.5 hover:shadow-md transition-all group border-0 cursor-pointer" 
                 style={{ backgroundColor: tokens.cardBgColor, boxShadow: tokens.cardShadow }}
             >
-                <div className="flex items-center justify-between mb-1.5">
-                    <span className="font-bold text-xs" style={{ color: tokens.primaryColor, fontSize: `${12 * cardTextScale}px` }}>
-                        {tHajj('obligationsLabel', language)} (2)
-                    </span>
-                    <ZoomIn size={14} className="opacity-70 group-hover:scale-110 transition-transform" />
+                <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-sm md:text-base leading-snug truncate" style={{ color: tokens.textColor, fontSize: `${15 * cardTextScale}px` }}>
+                        {isEn ? `${tHajj('pillarsLabel', language)} & ${tHajj('obligationsLabel', language)}` : `${tHajj('pillarsLabel', language)} والواجبات`}
+                    </h3>
+                    <p className="text-xs opacity-75 mt-0.5 truncate" style={{ color: tokens.subtextColor, fontSize: `${12 * cardTextScale}px` }}>
+                        {isEn ? 'Ihram, Tawaf, Sa\'i • Miqat, Shaving or Trimming' : 'الإحرام، الطواف، السعي • الميقات، الحلق أو التقصير'}
+                    </p>
                 </div>
-                <p className="text-[11px] opacity-75 line-clamp-2" style={{ color: tokens.subtextColor, fontSize: `${11 * cardTextScale}px` }}>
-                    {isEn ? 'Ihram from the Miqat, Shaving or Trimming hair' : 'الإحرام من الميقات، الحلق أو التقصير'}
-                </p>
             </button>
 
+            {/* Card 2: Sunnahs & Prohibitions (single row) */}
             <button 
                 type="button"
                 onClick={() => onSelectDetail({
-                    title: isEn ? 'Prophetic Sunnahs of Umrah' : 'سنن وآداب العمرة النبوية',
-                    subtitle: isEn ? 'Recommended acts that multiply rewards in following the Prophet ﷺ' : 'أعمال مستحبة تزيد في الأجر والاقتداء بالنبي ﷺ',
-                    points: generalInfo.sunan,
-                    hadith: isEn ? 'The Messenger of Allah ﷺ frequently chanted the Talbiyah, uncovered his right shoulder, and quickened his pace in the first three circuits of Tawaf.' : 'كان رسول الله ﷺ يكثر من التلبية ويضطبع ويرمل في الثلاثة أشواط الأولى في طواف العمرة'
+                    category: umrahCategory,
+                    title: '',
+                    sections: [
+                        {
+                            tabLabel: isEn ? 'Sunnahs & Etiquette' : 'السنن والآداب',
+                            title: isEn ? 'Prophetic Sunnahs of Umrah' : 'سنن وآداب العمرة النبوية',
+                            subtitle: isEn ? 'Recommended acts that multiply rewards in following the Prophet ﷺ' : 'أعمال مستحبة تزيد في الأجر والاقتداء بالنبي ﷺ',
+                            hadith: isEn ? 'The Messenger of Allah ﷺ frequently chanted the Talbiyah, uncovered his right shoulder, and quickened his pace in the first three circuits of Tawaf.' : 'كان رسول الله ﷺ يكثر من التلبية ويضطبع ويرمل في الثلاثة أشواط الأولى في طواف العمرة',
+                            points: generalInfo.sunan
+                        },
+                        {
+                            tabLabel: isEn ? 'Prohibitions' : 'المحظورات',
+                            title: isEn ? 'Prohibitions & Nullifiers of Umrah' : 'مفسدات ومحظورات العمرة',
+                            subtitle: isEn ? 'Acts that invalidate Umrah or incur an expiation' : 'أعمال تبطل العمرة أو توجب الفدية',
+                            quranAyah: isEn ? '﴿ So whoever has made Hajj obligatory upon himself therein, there is [to be for him] no sexual relations and no disobedience and no disputing during Hajj ﴾ [Al-Baqarah: 197]' : '﴿ فَمَن فَرَضَ فِيهِنَّ الْحَجَّ فَلَا رَفَثَ وَلَا فُسُوقَ وَلَا جِدَالَ فِي الْحَجِّ ﴾ [البقرة: 197]',
+                            points: generalInfo.mufsidat
+                        }
+                    ]
                 })}
-                className="rounded-[18px] p-4 text-start hover:scale-[1.02] transition-all group cursor-pointer border-0" 
+                className="w-full text-start rounded-[18px] p-4.5 flex items-center justify-between gap-3.5 hover:shadow-md transition-all group border-0 cursor-pointer" 
                 style={{ backgroundColor: tokens.cardBgColor, boxShadow: tokens.cardShadow }}
             >
-                <div className="flex items-center justify-between mb-1.5">
-                    <span className="font-bold text-xs" style={{ color: tokens.primaryColor, fontSize: `${12 * cardTextScale}px` }}>
-                        {tHajj('sunnahsLabel', language)} (8)
-                    </span>
-                    <ZoomIn size={14} className="opacity-70 group-hover:scale-110 transition-transform" />
+                <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-sm md:text-base leading-snug truncate" style={{ color: tokens.textColor, fontSize: `${15 * cardTextScale}px` }}>
+                        {isEn ? `${tHajj('sunnahsLabel', language)} & ${tHajj('prohibitionsLabel', language)}` : `${tHajj('sunnahsLabel', language)} والمفسدات`}
+                    </h3>
+                    <p className="text-xs opacity-75 mt-0.5 truncate" style={{ color: tokens.subtextColor, fontSize: `${12 * cardTextScale}px` }}>
+                        {isEn ? 'Ghusl, Talbiyah, Idtiba\' • Intercourse, omitting pillars, violations' : 'الغسل، الطيب، التلبية، الرمل • الجماع، ترك ركن، المحظورات'}
+                    </p>
                 </div>
-                <p className="text-[11px] opacity-75 line-clamp-2" style={{ color: tokens.subtextColor, fontSize: `${11 * cardTextScale}px` }}>
-                    {isEn ? 'Ghusl, Perfume, Talbiyah, Ramal, Idtiba\'...' : 'الغسل، الطيب، التلبية، الرمل، الاضطباع...'}
-                </p>
-            </button>
-
-            <button 
-                type="button"
-                onClick={() => onSelectDetail({
-                    title: isEn ? 'Prohibitions & Nullifiers of Umrah' : 'مفسدات ومحظورات العمرة',
-                    subtitle: isEn ? 'Acts that invalidate Umrah or incur an expiation' : 'أعمال تبطل العمرة أو توجب الفدية',
-                    points: generalInfo.mufsidat,
-                    quranAyah: isEn ? '﴿ So whoever has made Hajj obligatory upon himself therein, there is [to be for him] no sexual relations and no disobedience and no disputing during Hajj ﴾ [Al-Baqarah: 197]' : '﴿ فَمَن فَرَضَ فِيهِنَّ الْحَجَّ فَلَا رَفَثَ وَلَا فُسُوقَ وَلَا جِدَالَ فِي الْحَجِّ ﴾ [البقرة: 197]'
-                })}
-                className="rounded-[18px] p-4 text-start hover:scale-[1.02] transition-all group cursor-pointer border-0" 
-                style={{ backgroundColor: tokens.cardBgColor, boxShadow: tokens.cardShadow }}
-            >
-                <div className="flex items-center justify-between mb-1.5">
-                    <span className="font-bold text-xs text-orange-600 dark:text-orange-400" style={{ fontSize: `${12 * cardTextScale}px` }}>
-                        {tHajj('prohibitionsLabel', language)} (3)
-                    </span>
-                    <ZoomIn size={14} className="text-orange-500 group-hover:scale-110 transition-transform" />
-                </div>
-                <p className="text-[11px] opacity-75 line-clamp-2 text-orange-950 dark:text-orange-200" style={{ fontSize: `${11 * cardTextScale}px` }}>
-                    {isEn ? 'Marital relations before Tahallul, missing a pillar...' : 'الجماع قبل التحلل، ترك ركن، ارتكاب المحظورات'}
-                </p>
             </button>
         </div>
 
@@ -779,13 +712,11 @@ const UmrahScreen = ({ tokens, onSelectDetail, cardTextScale, onZoom }: { tokens
             {stepsList.map((step) => (
                 <div 
                     key={step.title}
-                    className="w-full text-start rounded-[18px] p-4.5 flex items-center justify-between gap-3.5 hover:shadow-md transition-all group border-0"
+                    onClick={() => openStepZoom(step)}
+                    className="w-full text-start rounded-[18px] p-4.5 flex items-center justify-between gap-3.5 hover:shadow-md transition-all group border-0 cursor-pointer"
                     style={{ backgroundColor: tokens.cardBgColor, boxShadow: tokens.cardShadow }}
                 >
-                    <div 
-                        className="flex-1 min-w-0 cursor-pointer"
-                        onClick={() => onSelectDetail(step)}
-                    >
+                    <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                             <h4 className="font-bold text-sm md:text-base leading-snug" style={{ color: tokens.textColor, fontSize: `${15 * cardTextScale}px` }}>
                                 {step.title}
@@ -797,31 +728,6 @@ const UmrahScreen = ({ tokens, onSelectDetail, cardTextScale, onZoom }: { tokens
                             </p>
                         )}
                     </div>
-
-                    <div className="flex items-center gap-1.5 shrink-0">
-                        <button
-                            type="button"
-                            onClick={() => onZoom({
-                                title: step.title,
-                                subtitle: step.subtitle,
-                                points: step.points,
-                                quranAyah: step.quranAyah,
-                                hadith: step.hadith
-                            })}
-                            className="p-2 rounded-xl opacity-75 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/5 transition cursor-pointer border-0"
-                            title={isEn ? "Enlarge card text" : "تكبير نص البطاقة"}
-                            style={{ color: tokens.textColor }}
-                        >
-                            <ZoomIn className="w-5 h-5" />
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => onSelectDetail(step)}
-                            className="p-1 cursor-pointer border-0"
-                        >
-                            <ChevronRight size={18} className="opacity-40 group-hover:opacity-75 transition-opacity rtl:rotate-180" style={{ color: tokens.textColor }} />
-                        </button>
-                    </div>
                 </div>
             ))}
         </div>
@@ -829,8 +735,8 @@ const UmrahScreen = ({ tokens, onSelectDetail, cardTextScale, onZoom }: { tokens
     );
 };
 
-const HajjScreen = ({ hajjType, setHajjType, onSelectDetail, cardTextScale, onZoom, tokens }: { hajjType: any, setHajjType: any, onSelectDetail: any, cardTextScale: number, onZoom: (data: CardZoomData) => void, tokens: any }) => {
-    const { language, isRTL } = useLanguage();
+const HajjScreen = ({ hajjType, setHajjType, onSelectDetail, cardTextScale, onZoom, tokens }: { hajjType: any, setHajjType: any, onSelectDetail: (data: CardZoomData) => void, cardTextScale: number, onZoom: (data: CardZoomData) => void, tokens: any }) => {
+    const { language } = useLanguage();
     const isEn = language === 'en';
 
     const rawTypes = isEn ? hajjTypesEn : hajjTypes;
@@ -838,9 +744,19 @@ const HajjScreen = ({ hajjType, setHajjType, onSelectDetail, cardTextScale, onZo
     const tamattuPlan = isEn ? hajjTamattuPlanEn : hajjTamattuPlan;
     const ifradPlan = isEn ? hajjIfradPlanEn : hajjIfradPlan;
     const qiranPlan = isEn ? hajjQiranPlanEn : hajjQiranPlan;
-    const generalInfo = isEn ? hajjGeneralInfoEn : hajjGeneralInfo;
+    const hajjCategory = tHajj('screenHajjTitle', language);
 
     const currentType = typesList.find((t: any) => t.id === hajjType) || typesList[0];
+
+    const openTimelineDayZoom = (day: any) => {
+        onSelectDetail({
+            category: hajjCategory,
+            title: day.day,
+            subtitle: day.summary,
+            evidence: day.evidence,
+            points: day.actions
+        });
+    };
 
     return (
     <section id="hajj-screen" className="space-y-4">
@@ -852,17 +768,10 @@ const HajjScreen = ({ hajjType, setHajjType, onSelectDetail, cardTextScale, onZo
             <p className="font-amiri text-base font-bold text-amber-800 dark:text-amber-300 px-4" style={{ fontSize: `${16 * cardTextScale}px` }}>
                 {tHajj('hajjIntroVerse', language)}
             </p>
-            <p className="text-xs opacity-75 mt-1 px-4" style={{ color: tokens.textColor, fontSize: `${12 * cardTextScale}px` }}>
-                {tHajj('hajjIntroDesc', language)}
-            </p>
         </div>
 
         {/* 3 Types Segmented Selection */}
         <div className="space-y-3">
-            <h3 className="text-base font-bold text-start" style={{ color: tokens.textColor, fontSize: `${16 * cardTextScale}px` }}>
-                <span>{tHajj('hajjTypesSectionTitle', language)}</span>
-            </h3>
-
             <div 
                 className="grid grid-cols-3 gap-2 p-1.5 rounded-2xl border-0"
                 style={{ backgroundColor: tokens.capsuleBg, boxShadow: tokens.cardShadow }}
@@ -881,7 +790,6 @@ const HajjScreen = ({ hajjType, setHajjType, onSelectDetail, cardTextScale, onZo
                             }}
                         >
                             <span className="block font-bold text-xs sm:text-sm">{t.name}</span>
-                            <span className="block text-[10px] opacity-80 mt-0.5 truncate">{t.badge}</span>
                         </button>
                     );
                 })}
@@ -889,117 +797,84 @@ const HajjScreen = ({ hajjType, setHajjType, onSelectDetail, cardTextScale, onZo
 
             {/* Selected type card */}
             {currentType && (
-                <div 
-                    className="rounded-[18px] p-5 space-y-4 text-start relative border-0" 
-                    style={{ backgroundColor: tokens.cardBgColor, boxShadow: tokens.cardShadow }}
-                >
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-zinc-800">
-                        <div className="pr-2">
-                            <div className="flex items-center gap-2 flex-wrap">
-                                <h4 className="text-lg md:text-xl font-bold" style={{ color: tokens.primaryColor, fontSize: `${18 * cardTextScale}px` }}>
-                                    {currentType.name}
-                                </h4>
-                                <span className="px-3 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/10 text-amber-700 dark:text-amber-300 border-0">
-                                    {currentType.badge}
-                                </span>
+                <div className="space-y-3">
+                    {/* Section 1: Badge & Centered Definition */}
+                    <div 
+                        className="rounded-[18px] p-5 text-center relative border-0" 
+                        style={{ backgroundColor: tokens.cardBgColor, boxShadow: tokens.cardShadow }}
+                    >
+                        <div className="flex items-center justify-center gap-2 flex-wrap">
+                            <span className="px-3 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/10 text-amber-700 dark:text-amber-300 border-0">
+                                {currentType.badge}
+                            </span>
+                        </div>
+                        <p className="text-xs font-medium mt-2.5 leading-relaxed text-center" style={{ color: tokens.isDark ? tokens.textColor : '#000000', fontSize: `${12.5 * cardTextScale}px` }}>
+                            {currentType.definition}
+                        </p>
+                    </div>
+
+                    {/* 2 Stacked Title-Only Cards matching Dhul Hijjah day cards */}
+                    {[
+                        {
+                            key: 'quran',
+                            title: tHajj('quranEvidenceTitle', language),
+                            payload: {
+                                category: currentType.name,
+                                title: tHajj('quranEvidenceTitle', language),
+                                subtitle: currentType.badge,
+                                quranEvidence: currentType.quranEvidence
+                            }
+                        },
+                        {
+                            key: 'sunnah',
+                            title: tHajj('sunnahEvidenceTitle', language),
+                            payload: {
+                                category: currentType.name,
+                                title: tHajj('sunnahEvidenceTitle', language),
+                                subtitle: currentType.badge,
+                                sunnahEvidence: currentType.sunnahEvidence
+                            }
+                        }
+                    ].map((card) => (
+                        <div
+                            key={card.key}
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => onSelectDetail(card.payload)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    onSelectDetail(card.payload);
+                                }
+                            }}
+                            className="w-full text-start rounded-[18px] p-4.5 flex items-center justify-between gap-3.5 hover:shadow-md transition-all group border-0 cursor-pointer"
+                            style={{ backgroundColor: tokens.cardBgColor, boxShadow: tokens.cardShadow }}
+                        >
+                            <div className="flex-1 min-w-0">
+                                <h5 className="font-bold text-sm md:text-base" style={{ color: tokens.textColor, fontSize: `${15 * cardTextScale}px` }}>
+                                    {card.title}
+                                </h5>
                             </div>
-                            <p className="text-xs opacity-80 mt-1 leading-relaxed" style={{ color: tokens.subtextColor, fontSize: `${12.5 * cardTextScale}px` }}>
-                                {currentType.definition}
-                            </p>
                         </div>
-
-                        <div className="flex items-center gap-2 shrink-0">
-                            <button
-                                type="button"
-                                onClick={() => onZoom({
-                                    title: currentType.name,
-                                    subtitle: currentType.badge,
-                                    definition: currentType.definition,
-                                    quranEvidence: currentType.quranEvidence,
-                                    sunnahEvidence: currentType.sunnahEvidence,
-                                    hadyRuling: currentType.hadyRuling,
-                                    points: currentType.detailedSteps
-                                })}
-                                className="p-2 rounded-xl opacity-80 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/5 transition cursor-pointer border-0"
-                                title={isEn ? "Enlarge card text" : "تكبير نص البطاقة"}
-                                style={{ color: tokens.textColor }}
-                            >
-                                <ZoomIn className="w-5 h-5" />
-                            </button>
-
-                            <button 
-                                type="button"
-                                onClick={() => onSelectDetail({
-                                    title: `${currentType.name} - ${isEn ? 'Complete Proof & Steps' : 'الدليل والأحكام الكاملة'}`,
-                                    subtitle: currentType.badge,
-                                    definition: currentType.definition,
-                                    quranEvidence: currentType.quranEvidence,
-                                    sunnahEvidence: currentType.sunnahEvidence,
-                                    hadyRuling: currentType.hadyRuling,
-                                    whoIsItFor: currentType.whoIsItFor,
-                                    detailedSteps: currentType.detailedSteps,
-                                    comparison: currentType.comparison
-                                })}
-                                className="px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center cursor-pointer border-0"
-                                style={{ 
-                                    backgroundColor: tokens.primaryColor, 
-                                    color: '#FFFFFF' 
-                                }}
-                            >
-                                <span>{tHajj('viewFullEvidenceBtn', language)}</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Evidences */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div className="p-3.5 rounded-xl bg-amber-500/10 border-0 space-y-1.5">
-                            <span className="font-bold text-xs flex items-center gap-1.5 text-amber-700 dark:text-amber-300" style={{ fontSize: `${12.5 * cardTextScale}px` }}>
-                                {tHajj('quranEvidenceTitle', language)}
-                            </span>
-                            {currentType.quranEvidence.map((ev: string, idx: number) => (
-                                <p key={idx} className={`text-xs md:text-sm leading-relaxed text-amber-900 dark:text-amber-200 ${isEn ? 'font-sans font-medium' : 'font-amiri'}`} style={{ fontSize: `${13 * cardTextScale}px` }}>
-                                    {ev}
-                                </p>
-                            ))}
-                        </div>
-
-                        <div className="p-3.5 rounded-xl bg-emerald-500/10 border-0 space-y-1.5">
-                            <span className="font-bold text-xs flex items-center gap-1.5 text-emerald-700 dark:text-emerald-300" style={{ fontSize: `${12.5 * cardTextScale}px` }}>
-                                {tHajj('sunnahEvidenceTitle', language)}
-                            </span>
-                            {currentType.sunnahEvidence.slice(0, 2).map((ev: string, idx: number) => (
-                                <p key={idx} className={`text-xs leading-relaxed text-emerald-950 dark:text-emerald-200 ${isEn ? 'font-sans' : ''}`} style={{ fontSize: `${13 * cardTextScale}px` }}>
-                                    {ev}
-                                </p>
-                            ))}
-                        </div>
-                    </div>
+                    ))}
                 </div>
             )}
         </div>
 
         {/* Timeline */}
         <div className="pt-2">
-            <h3 className="text-base font-bold mb-3 text-start" style={{ color: tokens.textColor, fontSize: `${16 * cardTextScale}px` }}>
+            <h3 className="text-base font-bold mb-3 text-center" style={{ color: tokens.textColor, fontSize: `${16 * cardTextScale}px` }}>
                 <span>{tHajj('hajjTimelineSectionTitle', language)}</span>
             </h3>
             <div className="space-y-3">
                 {(hajjType === 'tamattu' ? tamattuPlan : hajjType === 'ifrad' ? ifradPlan : qiranPlan).map((day: any, i: number) => (
                     <div 
                         key={i} 
-                        className="w-full text-start rounded-[18px] p-4.5 flex items-center justify-between gap-3.5 hover:shadow-md transition-all group border-0"
+                        onClick={() => openTimelineDayZoom(day)}
+                        className="w-full text-start rounded-[18px] p-4.5 flex items-center justify-between gap-3.5 hover:shadow-md transition-all group border-0 cursor-pointer"
                         style={{ backgroundColor: tokens.cardBgColor, boxShadow: tokens.cardShadow }}
                     >
-                        <div 
-                            className="flex-1 min-w-0 cursor-pointer"
-                            onClick={() => onSelectDetail({ 
-                                title: day.day, 
-                                subtitle: day.summary,
-                                evidence: day.evidence,
-                                points: day.actions
-                            })}
-                        >
+                        <div className="flex-1 min-w-0">
                             <h5 className="font-bold text-sm md:text-base" style={{ color: tokens.textColor, fontSize: `${15 * cardTextScale}px` }}>{day.day}</h5>
                             <p className="text-xs opacity-75 mt-0.5 truncate" style={{ color: tokens.subtextColor, fontSize: `${12 * cardTextScale}px` }}>{day.summary}</p>
                             {day.evidence && (
@@ -1007,35 +882,6 @@ const HajjScreen = ({ hajjType, setHajjType, onSelectDetail, cardTextScale, onZo
                                     {day.evidence}
                                 </p>
                             )}
-                        </div>
-
-                        <div className="flex items-center gap-1.5 shrink-0">
-                            <button
-                                type="button"
-                                onClick={() => onZoom({
-                                    title: day.day,
-                                    subtitle: day.summary,
-                                    evidence: day.evidence,
-                                    points: day.actions
-                                })}
-                                className="p-2 rounded-xl opacity-80 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/5 transition cursor-pointer border-0"
-                                title={isEn ? "Enlarge card text" : "تكبير نص البطاقة"}
-                                style={{ color: tokens.textColor }}
-                            >
-                                <ZoomIn className="w-5 h-5" />
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => onSelectDetail({ 
-                                    title: day.day, 
-                                    subtitle: day.summary,
-                                    evidence: day.evidence,
-                                    points: day.actions
-                                })}
-                                className="p-1 cursor-pointer border-0"
-                            >
-                                <ChevronRight size={18} className="opacity-40 group-hover:opacity-75 transition-opacity rtl:rotate-180" style={{ color: tokens.textColor }} />
-                            </button>
                         </div>
                     </div>
                 ))}
@@ -1092,7 +938,6 @@ const HajjUmrah: FC<{ onBack: () => void, onNavigate: (page: string) => void, na
         return 'home';
     });
     const [hajjType, setHajjType] = useState<'tamattu' | 'ifrad' | 'qiran'>('tamattu');
-    const [selectedDetail, setSelectedDetail] = useState<any>(null);
     const [openDuaaId, setOpenDuaaId] = useState<number | null>(1);
     const [tawafState, setTawafState] = useState(getTawafCounterState());
 
@@ -1136,6 +981,8 @@ const HajjUmrah: FC<{ onBack: () => void, onNavigate: (page: string) => void, na
     
     const [zoomedCard, setZoomedCard] = useState<CardZoomData | null>(null);
     const [currentDuaaIdx, setCurrentDuaaIdx] = useState<number>(0);
+    const [activeSectionIdx, setActiveSectionIdx] = useState<number>(0);
+    const zoomScrollRef = React.useRef<HTMLDivElement | null>(null);
     const [zoomFontSize, setZoomFontSize] = useState<number>(24);
     const [copySuccess, setCopySuccess] = useState(false);
     const [showGuide, setShowGuide] = useState(false);
@@ -1173,7 +1020,12 @@ const HajjUmrah: FC<{ onBack: () => void, onNavigate: (page: string) => void, na
     const openZoomModal = (data: CardZoomData) => {
         setZoomedCard(data);
         setCurrentDuaaIdx(data.duaaIndex ?? 0);
-        setZoomFontSize(26);
+        setActiveSectionIdx(0);
+        const hasLongList = Boolean(
+            !data.duaaItems?.length &&
+            (data.points?.length || data.actions?.length || data.detailedSteps?.length || data.quranEvidence?.length || data.virtues?.length || data.sections?.length)
+        );
+        setZoomFontSize(hasLongList ? 20 : 26);
         setCopySuccess(false);
     };
 
@@ -1215,17 +1067,33 @@ const HajjUmrah: FC<{ onBack: () => void, onNavigate: (page: string) => void, na
         if (zoomedCard.title) parts.push(zoomedCard.title);
         if (zoomedCard.subtitle) parts.push(zoomedCard.subtitle);
         if (zoomedCard.quranAyah) parts.push(zoomedCard.quranAyah);
+        if (zoomedCard.evidence) parts.push(zoomedCard.evidence);
+        if (zoomedCard.quranEvidence) parts.push(...zoomedCard.quranEvidence);
         if (zoomedCard.hadith) parts.push(zoomedCard.hadith);
+        if (zoomedCard.sunnahEvidence) parts.push(...zoomedCard.sunnahEvidence);
         if (zoomedCard.text) parts.push(zoomedCard.text.replace(/<[^>]*>/g, ''));
         if (zoomedCard.definition) parts.push(zoomedCard.definition);
         if (zoomedCard.description) parts.push(zoomedCard.description);
-        if (zoomedCard.evidence) parts.push(zoomedCard.evidence);
         if (zoomedCard.hadyRuling) parts.push(zoomedCard.hadyRuling);
         if (zoomedCard.whoIsItFor) parts.push(zoomedCard.whoIsItFor);
         if (zoomedCard.points) parts.push(...zoomedCard.points.map(p => `• ${p.replace(/<[^>]*>/g, '')}`));
+        if (zoomedCard.actions) parts.push(...zoomedCard.actions.map(p => `• ${p.replace(/<[^>]*>/g, '')}`));
         if (zoomedCard.detailedSteps) parts.push(...zoomedCard.detailedSteps.map(p => `• ${p.replace(/<[^>]*>/g, '')}`));
-        if (zoomedCard.quranEvidence) parts.push(...zoomedCard.quranEvidence);
-        if (zoomedCard.sunnahEvidence) parts.push(...zoomedCard.sunnahEvidence);
+        if (zoomedCard.virtues) {
+            zoomedCard.virtues.forEach(v => {
+                parts.push(`${v.title} (${v.source})\n${v.text}\n${v.explanation}`);
+            });
+        }
+        if (zoomedCard.sections && zoomedCard.sections.length > 0) {
+            const activeSec = zoomedCard.sections[activeSectionIdx] || zoomedCard.sections[0];
+            if (activeSec) {
+                parts.push(activeSec.title);
+                if (activeSec.subtitle) parts.push(activeSec.subtitle);
+                if (activeSec.quranAyah) parts.push(activeSec.quranAyah);
+                if (activeSec.hadith) parts.push(activeSec.hadith);
+                if (activeSec.points) parts.push(...activeSec.points.map(p => `• ${p.replace(/<[^>]*>/g, '')}`));
+            }
+        }
         if (zoomedCard.sunan) parts.push(...zoomedCard.sunan.map(s => `• ${s}`));
         if (zoomedCard.mistakes) parts.push(...zoomedCard.mistakes.map(m => `• ${m}`));
 
@@ -1244,19 +1112,39 @@ const HajjUmrah: FC<{ onBack: () => void, onNavigate: (page: string) => void, na
         } else {
             const parts: string[] = [];
             if (zoomedCard.quranAyah) parts.push(zoomedCard.quranAyah);
+            if (zoomedCard.evidence) parts.push(zoomedCard.evidence);
+            if (zoomedCard.quranEvidence) parts.push(...zoomedCard.quranEvidence);
             if (zoomedCard.hadith) parts.push(zoomedCard.hadith);
+            if (zoomedCard.sunnahEvidence) parts.push(...zoomedCard.sunnahEvidence);
             if (zoomedCard.text) parts.push(zoomedCard.text.replace(/<[^>]*>/g, ''));
             if (zoomedCard.definition) parts.push(zoomedCard.definition);
             if (zoomedCard.description) parts.push(zoomedCard.description);
-            if (zoomedCard.evidence) parts.push(zoomedCard.evidence);
+            if (zoomedCard.hadyRuling) parts.push(zoomedCard.hadyRuling);
+            if (zoomedCard.whoIsItFor) parts.push(zoomedCard.whoIsItFor);
             if (zoomedCard.points) parts.push(...zoomedCard.points.map(p => `• ${p.replace(/<[^>]*>/g, '')}`));
+            if (zoomedCard.actions) parts.push(...zoomedCard.actions.map(p => `• ${p.replace(/<[^>]*>/g, '')}`));
             if (zoomedCard.detailedSteps) parts.push(...zoomedCard.detailedSteps.map(p => `• ${p.replace(/<[^>]*>/g, '')}`));
+            if (zoomedCard.virtues) {
+                zoomedCard.virtues.forEach(v => {
+                    parts.push(`${v.title} (${v.source})\n${v.text}\n${v.explanation}`);
+                });
+            }
+            if (zoomedCard.sections && zoomedCard.sections.length > 0) {
+                const activeSec = zoomedCard.sections[activeSectionIdx] || zoomedCard.sections[0];
+                if (activeSec) {
+                    parts.push(activeSec.title);
+                    if (activeSec.subtitle) parts.push(activeSec.subtitle);
+                    if (activeSec.quranAyah) parts.push(activeSec.quranAyah);
+                    if (activeSec.hadith) parts.push(activeSec.hadith);
+                    if (activeSec.points) parts.push(...activeSec.points.map(p => `• ${p.replace(/<[^>]*>/g, '')}`));
+                }
+            }
             textToShare = parts.join('\n\n');
         }
         await shareAsImage({
-            title: zoomedCard.title,
+            title: zoomedCard.title || zoomedCard.sections?.[activeSectionIdx]?.title || '',
             text: textToShare,
-            category: isEn ? "Hajj & Umrah Guide" : "دليل الحج والعمرة",
+            category: zoomedCard.category || (isEn ? "Hajj & Umrah Guide" : "دليل الحج والعمرة"),
             theme,
             isEn,
             language: isEn ? 'en' : 'ar'
@@ -1264,17 +1152,13 @@ const HajjUmrah: FC<{ onBack: () => void, onNavigate: (page: string) => void, na
     };
 
     const handleToggleZoomFontSize = () => {
-        setZoomFontSize(prev => (prev >= 30 ? 17 : prev + 3));
+        setZoomFontSize(prev => (prev >= 34 ? 18 : prev + 4));
     };
 
     useEffect(() => {
         const interceptor = () => {
             if (zoomedCard) {
                 closeZoomModal();
-                return true;
-            }
-            if (selectedDetail) {
-                setSelectedDetail(null);
                 return true;
             }
             if (screen !== 'home') {
@@ -1286,13 +1170,11 @@ const HajjUmrah: FC<{ onBack: () => void, onNavigate: (page: string) => void, na
 
         const unregister = registerBackInterceptor(interceptor);
         return unregister;
-    }, [screen, zoomedCard, selectedDetail]);
+    }, [screen, zoomedCard]);
 
     const handleBack = () => {
         if (zoomedCard) {
             closeZoomModal();
-        } else if (selectedDetail) {
-            setSelectedDetail(null);
         } else if (screen !== 'home') {
             setScreen('home');
         } else {
@@ -1302,7 +1184,6 @@ const HajjUmrah: FC<{ onBack: () => void, onNavigate: (page: string) => void, na
 
     const handleGoHome = () => {
         if (zoomedCard) closeZoomModal();
-        if (selectedDetail) setSelectedDetail(null);
         if (screen !== 'home') setScreen('home');
         onNavigate('home');
     };
@@ -1321,9 +1202,9 @@ const HajjUmrah: FC<{ onBack: () => void, onNavigate: (page: string) => void, na
     const renderScreen = () => {
         switch (screen) {
             case 'umrah': 
-                return <UmrahScreen key="umrah" tokens={tokens} onSelectDetail={setSelectedDetail} cardTextScale={cardTextScale} onZoom={openZoomModal} />;
+                return <UmrahScreen key="umrah" tokens={tokens} onSelectDetail={openZoomModal} cardTextScale={cardTextScale} onZoom={openZoomModal} />;
             case 'hajj': 
-                return <HajjScreen key="hajj" hajjType={hajjType} setHajjType={setHajjType} tokens={tokens} onSelectDetail={setSelectedDetail} cardTextScale={cardTextScale} onZoom={openZoomModal} />;
+                return <HajjScreen key="hajj" hajjType={hajjType} setHajjType={setHajjType} tokens={tokens} onSelectDetail={openZoomModal} cardTextScale={cardTextScale} onZoom={openZoomModal} />;
             case 'duaa': 
                 return <DuaaScreen key="duaa" tokens={tokens} openDuaaId={openDuaaId} onToggle={handleDuaaToggle} onZoom={openZoomModal} cardTextScale={cardTextScale} />;
             case 'checklist': 
@@ -1336,7 +1217,7 @@ const HajjUmrah: FC<{ onBack: () => void, onNavigate: (page: string) => void, na
     };
 
     return (
-        <div className="h-screen flex flex-col" style={{ backgroundColor: tokens.pageBgColor, color: tokens.textColor, fontFamily: theme.font }} dir={dir}>
+        <div className="h-[100dvh] flex flex-col overflow-hidden" style={{ backgroundColor: tokens.pageBgColor, color: tokens.textColor, fontFamily: theme.font }} dir={dir}>
             <header className="app-top-bar">
                 <div className="app-top-bar__inner">
                     <div className="relative flex items-center justify-center w-full min-h-[44px]">
@@ -1365,25 +1246,6 @@ const HajjUmrah: FC<{ onBack: () => void, onNavigate: (page: string) => void, na
                                     </span>
                                 )}
                             </button>
-
-                            {screen === 'counters' && (
-                                <button
-                                    type="button"
-                                    onClick={toggleTawafHomeVisibility}
-                                    className="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center transition-all hover:bg-black/5 dark:hover:bg-white/5 active:scale-90 cursor-pointer shrink-0"
-                                    title={
-                                        isEn 
-                                            ? (tawafState.showOnHome ? 'Tawaf Counter on Home: Enabled (Click to disable)' : 'Tawaf Counter on Home: Disabled (Click to enable)') 
-                                            : (tawafState.showOnHome ? 'ظهور عداد الطواف في الرئيسية: مفعّل (اضغط للتعطيل)' : 'ظهور عداد الطواف في الرئيسية: معطّل (اضغط للتفعيل)')
-                                    }
-                                >
-                                    <div className={`w-[18px] h-[18px] sm:w-[20px] sm:h-[20px] rounded-full border-[1.5px] border-white/90 shadow-xs transition-all flex items-center justify-center ${
-                                        tawafState.showOnHome ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'
-                                    }`}>
-                                        {tawafState.showOnHome ? <Check className="w-2.5 h-2.5 sm:w-3 sm:h-3 stroke-[3]" /> : <span className="w-1.5 h-0.5 bg-white rounded-full" />}
-                                    </div>
-                                </button>
-                            )}
                         </div>
 
                         {/* Screen Title */}
@@ -1395,7 +1257,7 @@ const HajjUmrah: FC<{ onBack: () => void, onNavigate: (page: string) => void, na
 
                         {/* Right Tools: Guide & Home Button */}
                         <div className={`absolute ${isRTL ? 'left-0' : 'right-0'} flex items-center gap-0.5 sm:gap-1 z-10`}>
-                            {screen === 'home' && !selectedDetail && (
+                            {screen === 'home' && !zoomedCard && (
                                 <button
                                     type="button"
                                     onClick={() => setShowGuide(true)}
@@ -1423,162 +1285,11 @@ const HajjUmrah: FC<{ onBack: () => void, onNavigate: (page: string) => void, na
                 </div>
             </header>
 
-            <main className="w-full max-w-4xl mx-auto px-4 pt-3 flex-1 overflow-y-auto pb-6 hide-scrollbar">
+            <main className="w-full max-w-4xl mx-auto px-4 pt-3 flex-1 min-h-0 overflow-y-auto app-scroll-safe hide-scrollbar">
                 {renderScreen()}
-                <div className="w-full h-6 shrink-0"></div>
             </main>
 
-            {/* Selected Detail Modal - Sliding Modal Bottom Sheet */}
-            <AnimatePresence>
-                {selectedDetail && (
-                    <div 
-                        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-hidden" 
-                        onClick={() => setSelectedDetail(null)}
-                    >
-                        <motion.div 
-                            initial={{ y: '100%', opacity: 0 }}
-                            animate={{ y: 0, opacity: 1 }}
-                            exit={{ y: '100%', opacity: 0 }}
-                            transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-                            className="w-full max-w-xl rounded-t-[28px] sm:rounded-[24px] overflow-hidden flex flex-col max-h-[88vh] shadow-2xl border-0"
-                            style={{ backgroundColor: tokens.cardBgColor, color: tokens.textColor }}
-                            onClick={e => e.stopPropagation()}
-                        >
-                            {/* Drag handle */}
-                            <div className="pt-3 pb-1 flex justify-center sm:hidden">
-                                <div className="w-12 h-1.5 rounded-full bg-slate-300 dark:bg-zinc-700" />
-                            </div>
-
-                            {/* Header */}
-                            <div className="p-5 border-b border-slate-100 dark:border-zinc-800 flex items-center justify-between">
-                                <div className="text-start pr-2">
-                                    <h3 className="text-lg md:text-xl font-bold leading-tight" style={{ color: tokens.textColor, fontSize: `${18 * cardTextScale}px` }}>
-                                        {selectedDetail.title}
-                                    </h3>
-                                    {selectedDetail.subtitle && (
-                                        <p className="text-xs opacity-75 mt-0.5" style={{ color: tokens.subtextColor, fontSize: `${12 * cardTextScale}px` }}>
-                                            {selectedDetail.subtitle}
-                                        </p>
-                                    )}
-                                </div>
-                                <div className="flex items-center gap-1.5 shrink-0">
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            const detailCopy = { ...selectedDetail };
-                                            setSelectedDetail(null);
-                                            openZoomModal(detailCopy);
-                                        }}
-                                        className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition cursor-pointer border-0"
-                                        title={isEn ? "Enlarge card text" : "تكبير نص البطاقة"}
-                                        style={{ color: tokens.textColor }}
-                                    >
-                                        <ZoomIn className="w-5 h-5" />
-                                    </button>
-                                    <button 
-                                        type="button"
-                                        onClick={() => setSelectedDetail(null)} 
-                                        className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition cursor-pointer border-0"
-                                    >
-                                        <X size={20} style={{ color: tokens.textColor }} />
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Body */}
-                            <div className="flex-1 overflow-y-auto p-5 space-y-4 text-start hide-scrollbar">
-                                {/* Quranic Verse Callout */}
-                                {(selectedDetail.quranAyah || selectedDetail.evidence || (selectedDetail.quranEvidence && selectedDetail.quranEvidence.length > 0)) && (
-                                    <div className="p-4 rounded-[16px] bg-amber-500/10 border-0">
-                                        <div className="mb-1.5 text-amber-700 dark:text-amber-400 font-bold text-xs" style={{ fontSize: `${12 * cardTextScale}px` }}>
-                                            <span>{tHajj('quranEvidenceSection', language)}</span>
-                                        </div>
-                                        {selectedDetail.quranAyah && (
-                                            <p className={`text-base md:text-lg leading-[2.2] text-amber-900 dark:text-amber-200 ${isEn ? 'font-sans font-medium' : 'font-amiri font-bold'}`} style={{ fontSize: `${16 * cardTextScale}px` }}>
-                                                {selectedDetail.quranAyah}
-                                            </p>
-                                        )}
-                                        {selectedDetail.evidence && !selectedDetail.quranAyah && (
-                                            <p className={`text-sm md:text-base leading-[2.2] text-amber-900 dark:text-amber-200 ${isEn ? 'font-sans font-medium' : 'font-amiri font-bold'}`} style={{ fontSize: `${14 * cardTextScale}px` }}>
-                                                {selectedDetail.evidence}
-                                            </p>
-                                        )}
-                                        {selectedDetail.quranEvidence && selectedDetail.quranEvidence.map((ev: string, idx: number) => (
-                                            <p key={idx} className={`text-base leading-[2.2] text-amber-900 dark:text-amber-200 mt-1 ${isEn ? 'font-sans font-medium' : 'font-amiri font-bold'}`} style={{ fontSize: `${15 * cardTextScale}px` }}>
-                                                {ev}
-                                            </p>
-                                        ))}
-                                    </div>
-                                )}
-
-                                {/* Hadith Callout */}
-                                {(selectedDetail.hadith || (selectedDetail.sunnahEvidence && selectedDetail.sunnahEvidence.length > 0)) && (
-                                    <div className="p-4 rounded-[16px] bg-emerald-500/10 border-0">
-                                        <div className="mb-1.5 text-emerald-700 dark:text-emerald-400 font-bold text-xs" style={{ fontSize: `${12 * cardTextScale}px` }}>
-                                            <span>{tHajj('sunnahEvidenceSection', language)}</span>
-                                        </div>
-                                        {selectedDetail.hadith && (
-                                            <p className={`text-sm md:text-base leading-[2.2] text-emerald-950 dark:text-emerald-200 ${isEn ? 'font-sans font-medium' : 'font-amiri'}`} style={{ fontSize: `${14 * cardTextScale}px` }}>
-                                                {selectedDetail.hadith}
-                                            </p>
-                                        )}
-                                        {selectedDetail.sunnahEvidence && selectedDetail.sunnahEvidence.map((ev: string, idx: number) => (
-                                            <p key={idx} className={`text-sm md:text-base leading-[2.2] text-emerald-950 dark:text-emerald-200 mt-2 ${isEn ? 'font-sans font-medium' : 'font-amiri'}`} style={{ fontSize: `${14 * cardTextScale}px` }}>
-                                                {ev}
-                                            </p>
-                                        ))}
-                                    </div>
-                                )}
-
-                                {/* Fiqhi Definition or Summary */}
-                                {(selectedDetail.definition || selectedDetail.description) && (
-                                    <div className="p-4 rounded-[16px] bg-blue-500/10 border-0">
-                                        <div className="mb-1 text-blue-700 dark:text-blue-400 font-bold text-xs" style={{ fontSize: `${12 * cardTextScale}px` }}>
-                                            <span>{tHajj('fiqhDefSection', language)}</span>
-                                        </div>
-                                        <p className="text-sm leading-relaxed" style={{ color: tokens.textColor, fontSize: `${13.5 * cardTextScale}px` }}>
-                                            {selectedDetail.definition || selectedDetail.description}
-                                        </p>
-                                    </div>
-                                )}
-
-                                {/* Step points / Actions */}
-                                {(selectedDetail.points || selectedDetail.actions || selectedDetail.detailedSteps) && (
-                                    <div className="space-y-2">
-                                        <h4 className="font-bold text-xs mb-2" style={{ color: tokens.primaryColor, fontSize: `${13 * cardTextScale}px` }}>
-                                            {tHajj('practicalStepsSection', language)}
-                                        </h4>
-                                        <ul className="space-y-2.5">
-                                            {(selectedDetail.points || selectedDetail.actions || selectedDetail.detailedSteps).map((point: string, i: number) => (
-                                                <li key={i} className="flex gap-3 p-3.5 rounded-[14px] border-0" style={{ backgroundColor: tokens.isDark ? 'rgba(255, 255, 255, 0.04)' : '#F8F9FA' }}>
-                                                    <div className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shadow-sm" style={{ backgroundColor: tokens.primaryColor, color: '#FFFFFF' }}>
-                                                        {i + 1}
-                                                    </div>
-                                                    <p className="flex-1 text-sm leading-relaxed" style={{ color: tokens.textColor, fontSize: `${13.5 * cardTextScale}px` }} dangerouslySetInnerHTML={{ __html: point }}></p>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Footer Button */}
-                            <div className="p-4 border-t border-slate-100 dark:border-zinc-800">
-                                <button 
-                                    type="button"
-                                    onClick={() => setSelectedDetail(null)} 
-                                    className="w-full py-3.5 rounded-xl font-bold shadow-sm active:scale-[0.98] transition-all cursor-pointer border-0"
-                                    style={{ backgroundColor: tokens.primaryColor, color: '#FFFFFF' }}
-                                >
-                                    {tHajj('understoodBtn', language)}
-                                </button>
-                            </div>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
-
-            {/* Magnifier / Zoom Modal for Cards Text - Sliding Modal Bottom Sheet */}
+            {/* Magnifier / Zoom Modal - Unified Duas & Adhkar Bottom Sheet Style (without audio button) */}
             <AnimatePresence>
                 {zoomedCard && (
                     <div 
@@ -1591,73 +1302,325 @@ const HajjUmrah: FC<{ onBack: () => void, onNavigate: (page: string) => void, na
                             animate={{ y: 0, opacity: 1 }}
                             exit={{ y: '100%', opacity: 0 }}
                             transition={{ type: 'spring', damping: 28, stiffness: 280 }}
-                            className="w-full max-w-xl mx-auto rounded-t-[28px] flex flex-col max-h-[85vh] overflow-hidden relative shadow-2xl" 
-                            style={{ backgroundColor: tokens.cardBgColor, color: tokens.textColor }} 
+                            className="w-full max-w-xl mx-auto rounded-t-[28px] flex flex-col max-h-[88dvh] overflow-hidden relative shadow-2xl" 
+                            style={{ 
+                                backgroundColor: tokens.isDark ? tokens.cardBgColor : '#FFFFFF', 
+                                color: tokens.isDark ? tokens.textColor : '#000000',
+                                fontFamily: isEn ? 'sans-serif' : theme.font
+                            }} 
                             onClick={e => e.stopPropagation()}
                         >
-                            {/* Top Drag Handle without X button */}
+                            {/* Top Drag Handle & Category Pill without X or top ZoomIn buttons */}
                             <div className="pt-3 px-6 pb-2 shrink-0 flex flex-col items-center">
                                 <div className="w-12 h-1.5 rounded-full bg-slate-300 dark:bg-zinc-700 mb-2" />
                                 <div className="w-full flex items-center justify-center">
                                     <span 
-                                        className="px-3.5 py-1 rounded-full text-xs font-bold"
+                                        className="px-3.5 py-1 rounded-full text-xs font-bold text-center"
                                         style={{
                                             backgroundColor: hexToRgba(tokens.primaryColor, 0.1),
                                             color: tokens.primaryColor
                                         }}
                                     >
-                                        {zoomedCard.subtitle || (isEn ? "Hajj & Umrah" : "الحج والعمرة")}
+                                        {zoomedCard.category || zoomedCard.subtitle || (isEn ? "Hajj & Umrah Guide" : "دليل الحج والعمرة")}
                                     </span>
                                 </div>
+                                {/* Segmented Tabs for 2-Tab Lists (Pillars/Obligations & Sunnahs/Prohibitions) */}
+                                {zoomedCard.sections && zoomedCard.sections.length > 1 && (
+                                    <div
+                                        className="w-full flex p-1.5 rounded-2xl gap-1.5 mt-3 border-0"
+                                        style={{
+                                            backgroundColor: tokens.capsuleBg,
+                                            boxShadow: tokens.cardShadow
+                                        }}
+                                    >
+                                        {zoomedCard.sections.map((sec, idx) => {
+                                            const isActive = activeSectionIdx === idx;
+                                            return (
+                                                <button
+                                                    key={idx}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setActiveSectionIdx(idx);
+                                                        if (zoomScrollRef.current) zoomScrollRef.current.scrollTop = 0;
+                                                    }}
+                                                    className={`flex-1 py-2 px-3 rounded-xl font-bold transition-all cursor-pointer text-xs sm:text-sm border-0 ${isActive ? 'shadow-sm' : 'opacity-60'}`}
+                                                    style={{
+                                                        backgroundColor: isActive ? tokens.primaryColor : 'transparent',
+                                                        color: isActive ? '#FFFFFF' : tokens.textColor
+                                                    }}
+                                                >
+                                                    {sec.tabLabel}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                )}
                             </div>
 
-                            {/* Content Area */}
-                            <div className="overflow-y-auto flex-1 py-3 px-6 space-y-4 hide-scrollbar">
-                                {zoomedCard.title && (
-                                    <h3 className="text-base sm:text-lg font-bold mb-1 text-center" style={{ color: tokens.primaryColor }}>
-                                        {zoomedCard.title}
-                                    </h3>
+                            {/* Scrollable Content Area */}
+                            <div ref={zoomScrollRef} className="overflow-y-auto flex-1 min-h-0 px-6 py-3 space-y-4 hide-scrollbar">
+                                {zoomedCard.title && !(zoomedCard.sections && zoomedCard.sections.length > 0) && (
+                                    <div className="text-center space-y-1">
+                                        <h3 className="text-base sm:text-lg font-bold" style={{ color: tokens.primaryColor }}>
+                                            {zoomedCard.title}
+                                        </h3>
+                                        {zoomedCard.subtitle && zoomedCard.category && (
+                                            <p className="text-xs sm:text-sm opacity-75 font-medium" style={{ color: tokens.subtextColor }}>
+                                                {zoomedCard.subtitle}
+                                            </p>
+                                        )}
+                                    </div>
                                 )}
+
                                 {/* Special Duaa / Dhikr Mode with Next/Prev */}
                                 {zoomedCard.duaaItems && zoomedCard.duaaItems.length > 0 ? (
                                     <div className="space-y-4">
-                                        <div className="p-5 rounded-[18px] bg-emerald-500/10 border-0 text-start space-y-3">
-                                            {isEn ? (
-                                                <p className="leading-[2.2] font-medium text-emerald-950 dark:text-emerald-100" style={{ fontSize: `${zoomFontSize}px` }}>
-                                                    {getDuaaEnglish(zoomedCard.duaaItems[currentDuaaIdx])}
-                                                </p>
-                                            ) : (
-                                                <p className="leading-[2.3] font-amiri font-bold text-emerald-950 dark:text-emerald-100 text-center" style={{ fontSize: `${zoomFontSize + 4}px` }}>
-                                                    {zoomedCard.duaaItems[currentDuaaIdx]}
-                                                </p>
-                                            )}
-                                        </div>
+                                        {isEn ? (
+                                            <div 
+                                                className="leading-relaxed font-sans font-medium text-center my-4 select-none text-balance"
+                                                style={{ fontSize: `${zoomFontSize}px` }}
+                                                dir="ltr"
+                                            >
+                                                {getDuaaEnglish(zoomedCard.duaaItems[currentDuaaIdx])}
+                                            </div>
+                                        ) : (
+                                            <div 
+                                                className="leading-[2.4] font-amiri text-center select-none py-2"
+                                                style={{ fontSize: `${zoomFontSize + 4}px` }}
+                                                dir="rtl"
+                                            >
+                                                {zoomedCard.duaaItems[currentDuaaIdx]}
+                                            </div>
+                                        )}
                                     </div>
                                 ) : (
                                     <>
+                                        {/* Quranic Verse Callout */}
+                                        {(zoomedCard.quranAyah || zoomedCard.evidence || (zoomedCard.quranEvidence && zoomedCard.quranEvidence.length > 0)) && (
+                                            <div className="py-2 space-y-2 text-center">
+                                                {zoomedCard.title !== tHajj('quranEvidenceTitle', language) && (
+                                                    <div className="font-bold text-xs" style={{ color: tokens.primaryColor }}>
+                                                        <span>{tHajj('quranEvidenceSection', language)}</span>
+                                                    </div>
+                                                )}
+                                                {zoomedCard.quranAyah && (
+                                                    <p className={`leading-[2.2] ${isEn ? 'font-sans font-medium' : 'font-amiri font-bold'}`} style={{ color: tokens.isDark ? tokens.textColor : '#000000', fontSize: `${zoomFontSize}px` }}>
+                                                        {zoomedCard.quranAyah}
+                                                    </p>
+                                                )}
+                                                {zoomedCard.evidence && !zoomedCard.quranAyah && (
+                                                    <p className={`leading-[2.2] ${isEn ? 'font-sans font-medium' : 'font-amiri font-bold'}`} style={{ color: tokens.isDark ? tokens.textColor : '#000000', fontSize: `${zoomFontSize}px` }}>
+                                                        {zoomedCard.evidence}
+                                                    </p>
+                                                )}
+                                                {zoomedCard.quranEvidence && zoomedCard.quranEvidence.map((ev: string, idx: number) => (
+                                                    <p key={idx} className={`leading-[2.2] mt-2 ${isEn ? 'font-sans font-medium' : 'font-amiri font-bold'}`} style={{ color: tokens.isDark ? tokens.textColor : '#000000', fontSize: `${zoomFontSize}px` }}>
+                                                        {ev}
+                                                    </p>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {/* Hadith Callout */}
+                                        {(zoomedCard.hadith || (zoomedCard.sunnahEvidence && zoomedCard.sunnahEvidence.length > 0)) && (
+                                            <div className="py-2 space-y-2 text-center">
+                                                {zoomedCard.title !== tHajj('sunnahEvidenceTitle', language) && (
+                                                    <div className="font-bold text-xs" style={{ color: tokens.primaryColor }}>
+                                                        <span>{tHajj('sunnahEvidenceSection', language)}</span>
+                                                    </div>
+                                                )}
+                                                {zoomedCard.hadith && (
+                                                    <p className={`leading-[2.2] ${isEn ? 'font-sans font-medium' : 'font-amiri'}`} style={{ color: tokens.isDark ? tokens.textColor : '#000000', fontSize: `${Math.max(15, zoomFontSize - 1)}px` }}>
+                                                        {zoomedCard.hadith}
+                                                    </p>
+                                                )}
+                                                {zoomedCard.sunnahEvidence && zoomedCard.sunnahEvidence.map((ev: string, idx: number) => (
+                                                    <p key={idx} className={`leading-[2.2] mt-2 ${isEn ? 'font-sans font-medium' : 'font-amiri'}`} style={{ color: tokens.isDark ? tokens.textColor : '#000000', fontSize: `${Math.max(15, zoomFontSize - 1)}px` }}>
+                                                        {ev}
+                                                    </p>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {/* Fiqh Definition / Summary / Hady Ruling / Who Is It For */}
+                                        {(zoomedCard.definition || zoomedCard.description) && (
+                                            <div className="py-2 space-y-1.5 text-center">
+                                                <div className="font-bold text-xs" style={{ color: tokens.primaryColor }}>
+                                                    <span>{tHajj('fiqhDefSection', language)}</span>
+                                                </div>
+                                                <p className="leading-relaxed font-medium" style={{ color: tokens.isDark ? tokens.textColor : '#000000', fontSize: `${Math.max(14, zoomFontSize - 2)}px` }}>
+                                                    {zoomedCard.definition || zoomedCard.description}
+                                                </p>
+                                            </div>
+                                        )}
+
+                                        {zoomedCard.hadyRuling && (
+                                            <div className="py-2 space-y-1.5 text-center">
+                                                <div className="font-bold text-xs" style={{ color: tokens.primaryColor }}>
+                                                    <span>{isEn ? 'Hady (Sacrifice) Ruling' : 'حكم الهدي'}</span>
+                                                </div>
+                                                <p className="leading-relaxed font-medium" style={{ color: tokens.isDark ? tokens.textColor : '#000000', fontSize: `${Math.max(14, zoomFontSize - 2)}px` }}>
+                                                    {zoomedCard.hadyRuling}
+                                                </p>
+                                            </div>
+                                        )}
+
+                                        {zoomedCard.whoIsItFor && (
+                                            <div className="py-2 space-y-1.5 text-center">
+                                                <div className="font-bold text-xs" style={{ color: tokens.primaryColor }}>
+                                                    <span>{isEn ? 'Who Is It Recommended For?' : 'لمن يُشرع ويفضل؟'}</span>
+                                                </div>
+                                                <p className="leading-relaxed font-medium" style={{ color: tokens.isDark ? tokens.textColor : '#000000', fontSize: `${Math.max(14, zoomFontSize - 2)}px` }}>
+                                                    {zoomedCard.whoIsItFor}
+                                                </p>
+                                            </div>
+                                        )}
+
                                         {/* Primary Text */}
                                         {zoomedCard.text && (
                                             <div 
-                                                className="leading-[2.2] font-medium select-text" 
-                                                style={{ fontSize: `${zoomFontSize}px`, color: tokens.textColor }}
+                                                className="leading-[2.2] font-medium select-text text-center" 
+                                                style={{ fontSize: `${zoomFontSize}px`, color: tokens.isDark ? tokens.textColor : '#000000' }}
                                                 dangerouslySetInnerHTML={{ __html: zoomedCard.text.replaceAll('{{THEME_PALETTE_0}}', tokens.primaryColor) }}
                                             />
                                         )}
 
                                         {/* Points / Steps */}
                                         {(zoomedCard.points || zoomedCard.actions || zoomedCard.detailedSteps) && (
-                                            <ul className="space-y-2.5">
-                                                {(zoomedCard.points || zoomedCard.actions || zoomedCard.detailedSteps)!.map((point, i) => (
-                                                    <li key={i} className="flex gap-3 p-3.5 rounded-[14px] border-0" style={{ backgroundColor: tokens.isDark ? 'rgba(255, 255, 255, 0.04)' : '#F8F9FA' }}>
-                                                        <span className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs" 
-                                                              style={{ backgroundColor: tokens.primaryColor, color: '#FFFFFF' }}>
-                                                            {i + 1}
-                                                        </span>
-                                                        <div className="flex-1 leading-relaxed font-medium" style={{ fontSize: `${zoomFontSize}px`, color: tokens.textColor }} dangerouslySetInnerHTML={{ __html: point }} />
-                                                    </li>
-                                                ))}
-                                            </ul>
+                                            <div className="space-y-3 text-center">
+                                                {(zoomedCard.quranAyah || zoomedCard.hadith || zoomedCard.evidence || zoomedCard.definition || zoomedCard.quranEvidence?.length) && (
+                                                    <h4 className="font-bold text-xs mb-1.5" style={{ color: tokens.primaryColor }}>
+                                                        {tHajj('practicalStepsSection', language)}
+                                                    </h4>
+                                                )}
+                                                <ul className="space-y-3">
+                                                    {(zoomedCard.points || zoomedCard.actions || zoomedCard.detailedSteps)!.map((point, i) => (
+                                                        <li key={i} className="py-1.5 text-center space-y-1">
+                                                            <div className="leading-relaxed font-medium" style={{ fontSize: `${zoomFontSize}px`, color: tokens.isDark ? tokens.textColor : '#000000' }} dangerouslySetInnerHTML={{ __html: point }} />
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
                                         )}
+
+                                        {/* Sunan (if present) */}
+                                        {zoomedCard.sunan && zoomedCard.sunan.length > 0 && (
+                                            <div className="py-2 space-y-2 text-center">
+                                                <div className="font-bold text-xs" style={{ color: tokens.primaryColor }}>
+                                                    <span>{isEn ? 'Recommended Sunnahs' : 'السنن والآداب المستحبة'}</span>
+                                                </div>
+                                                <ul className="space-y-2">
+                                                    {zoomedCard.sunan.map((s, idx) => (
+                                                        <li key={idx} className="leading-relaxed font-medium text-center" style={{ color: tokens.isDark ? tokens.textColor : '#000000', fontSize: `${Math.max(14, zoomFontSize - 2)}px` }}>
+                                                            {s}
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
+
+                                        {/* Common Mistakes (if present) */}
+                                        {zoomedCard.mistakes && zoomedCard.mistakes.length > 0 && (
+                                            <div className="py-2 space-y-2 text-center">
+                                                <div className="font-bold text-xs" style={{ color: tokens.primaryColor }}>
+                                                    <span>{isEn ? 'Common Mistakes to Avoid' : 'أخطاء شائعة يُنبغي تجنبها'}</span>
+                                                </div>
+                                                <ul className="space-y-2">
+                                                    {zoomedCard.mistakes.map((m, idx) => (
+                                                        <li key={idx} className="leading-relaxed font-medium text-center" style={{ color: tokens.isDark ? tokens.textColor : '#000000', fontSize: `${Math.max(14, zoomFontSize - 2)}px` }}>
+                                                            {m}
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
+
+                                        {/* Virtues List (if present) */}
+                                        {zoomedCard.virtues && zoomedCard.virtues.length > 0 && (
+                                            <div className="space-y-4">
+                                                {zoomedCard.virtues.map((v, idx) => (
+                                                    <div
+                                                        key={idx}
+                                                        className={`text-center space-y-2 ${idx > 0 ? 'pt-4 border-t border-slate-100 dark:border-zinc-800' : ''}`}
+                                                    >
+                                                        <div className="space-y-0.5">
+                                                            <h4 className="font-bold text-sm sm:text-base" style={{ color: tokens.primaryColor }}>
+                                                                {v.title}
+                                                            </h4>
+                                                            <p className="text-[11px] opacity-65 font-mono" style={{ color: tokens.subtextColor }}>
+                                                                {v.source}
+                                                            </p>
+                                                        </div>
+                                                        <p
+                                                            className={`leading-[2.1] font-bold text-amber-800 dark:text-amber-300 ${isEn ? 'font-sans' : 'font-amiri'}`}
+                                                            style={{ fontSize: `${zoomFontSize}px` }}
+                                                        >
+                                                            {v.text}
+                                                        </p>
+                                                        <p
+                                                            className="leading-relaxed font-medium opacity-90"
+                                                            style={{ color: tokens.isDark ? tokens.textColor : '#000000', fontSize: `${Math.max(14, zoomFontSize - 2)}px` }}
+                                                        >
+                                                            {v.explanation}
+                                                        </p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {/* Tabbed Active Section (Pillars & Obligations / Sunnahs & Prohibitions) */}
+                                        {zoomedCard.sections && zoomedCard.sections.length > 0 && (() => {
+                                            const activeSec = zoomedCard.sections[activeSectionIdx] || zoomedCard.sections[0];
+                                            if (!activeSec) return null;
+                                            return (
+                                                <div className="space-y-3 text-center">
+                                                    <div className="space-y-1">
+                                                        <h4 className="font-bold text-sm sm:text-base" style={{ color: tokens.primaryColor }}>
+                                                            {activeSec.title}
+                                                        </h4>
+                                                        {activeSec.subtitle && (
+                                                            <p className="text-xs opacity-75 font-medium" style={{ color: tokens.subtextColor }}>
+                                                                {activeSec.subtitle}
+                                                            </p>
+                                                        )}
+                                                    </div>
+
+                                                    {activeSec.quranAyah && (
+                                                        <div className="py-1 space-y-1">
+                                                            <div className="font-bold text-xs" style={{ color: tokens.primaryColor }}>
+                                                                <span>{tHajj('quranEvidenceSection', language)}</span>
+                                                            </div>
+                                                            <p className={`leading-[2.1] ${isEn ? 'font-sans font-medium' : 'font-amiri font-bold'}`} style={{ color: tokens.isDark ? tokens.textColor : '#000000', fontSize: `${Math.max(16, zoomFontSize - 1)}px` }}>
+                                                                {activeSec.quranAyah}
+                                                            </p>
+                                                        </div>
+                                                    )}
+
+                                                    {activeSec.hadith && (
+                                                        <div className="py-1 space-y-1">
+                                                            <div className="font-bold text-xs" style={{ color: tokens.primaryColor }}>
+                                                                <span>{tHajj('sunnahEvidenceSection', language)}</span>
+                                                            </div>
+                                                            <p className={`leading-[2.1] ${isEn ? 'font-sans font-medium' : 'font-amiri'}`} style={{ color: tokens.isDark ? tokens.textColor : '#000000', fontSize: `${Math.max(15, zoomFontSize - 2)}px` }}>
+                                                                {activeSec.hadith}
+                                                            </p>
+                                                        </div>
+                                                    )}
+
+                                                    <ul className="space-y-2.5">
+                                                        {activeSec.points.map((point, pi) => (
+                                                            <li key={pi} className="py-1 text-center">
+                                                                <div
+                                                                    className="leading-relaxed font-medium"
+                                                                    style={{ fontSize: `${zoomFontSize}px`, color: tokens.isDark ? tokens.textColor : '#000000' }}
+                                                                    dangerouslySetInnerHTML={{ __html: point }}
+                                                                />
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                            );
+                                        })()}
                                     </>
                                 )}
 
@@ -1668,11 +1631,11 @@ const HajjUmrah: FC<{ onBack: () => void, onNavigate: (page: string) => void, na
                                 )}
                             </div>
 
-                            {/* Modal Footer with safe-area padding to avoid phone buttons */}
+                            {/* Action Bar (Share, Copy, Zoom, ChevronDown to hide — without Audio button) matching Duas & Adhkar ZoomModal */}
                             <div 
-                                className="mt-3 shrink-0 pt-3 border-t border-slate-100 dark:border-zinc-800 space-y-3"
+                                className="p-4 pt-3 modal-sheet-safe-bottom shrink-0 flex flex-col gap-3 border-t border-slate-100 dark:border-white/5"
                                 style={{
-                                    paddingBottom: 'calc(env(safe-area-inset-bottom, 16px) + 16px)'
+                                    backgroundColor: tokens.isDark ? tokens.cardBgColor : '#FFFFFF'
                                 }}
                             >
                                 {zoomedCard.duaaItems && zoomedCard.duaaItems.length > 1 && (
@@ -1707,45 +1670,57 @@ const HajjUmrah: FC<{ onBack: () => void, onNavigate: (page: string) => void, na
 
                                 {/* Action buttons row: Share, Copy, Zoom, ChevronDown to hide */}
                                 <div className="flex justify-center items-center gap-3 sm:gap-4">
-                                    {/* Share */}
+                                    {/* Share Button */}
                                     <button
                                         type="button"
                                         onClick={handleShareZoomText}
-                                        className="w-11 h-11 rounded-full flex items-center justify-center bg-slate-100 dark:bg-zinc-800 hover:scale-105 active:scale-95 transition-transform cursor-pointer border-0"
-                                        style={{ color: tokens.textColor }}
-                                        title={isEn ? "Share as Image" : "مشاركة كصورة"}
+                                        className="w-11 h-11 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border-0"
+                                        style={{
+                                            backgroundColor: tokens.isDark ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9',
+                                            color: tokens.textColor
+                                        }}
+                                        title={isEn ? "Share Image" : "مشاركة كصورة"}
                                     >
                                         <Share2 className="w-5 h-5" />
                                     </button>
 
-                                    {/* Copy */}
+                                    {/* Copy Button */}
                                     <button
                                         type="button"
                                         onClick={handleCopyZoomText}
-                                        className="w-11 h-11 rounded-full flex items-center justify-center bg-slate-100 dark:bg-zinc-800 hover:scale-105 active:scale-95 transition-transform cursor-pointer border-0"
-                                        style={{ color: copySuccess ? '#10B981' : tokens.textColor }}
+                                        className="w-11 h-11 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border-0"
+                                        style={{
+                                            backgroundColor: copySuccess ? '#10B981' : (tokens.isDark ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9'),
+                                            color: copySuccess ? '#FFFFFF' : tokens.textColor
+                                        }}
                                         title={isEn ? "Copy text" : "نسخ النص"}
                                     >
-                                        {copySuccess ? <Check className="w-5 h-5 text-emerald-500" /> : <Copy className="w-5 h-5" />}
+                                        {copySuccess ? <Check className="w-5 h-5 text-white" /> : <Copy className="w-5 h-5" />}
                                     </button>
 
-                                    {/* Zoom */}
+                                    {/* Zoom Button */}
                                     <button
                                         type="button"
                                         onClick={handleToggleZoomFontSize}
-                                        className="w-11 h-11 rounded-full flex items-center justify-center bg-slate-100 dark:bg-zinc-800 hover:scale-105 active:scale-95 transition-transform cursor-pointer border-0"
-                                        style={{ color: tokens.textColor }}
-                                        title={isEn ? "Enlarge font" : "تكبير الخط"}
+                                        className="w-11 h-11 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border-0"
+                                        style={{
+                                            backgroundColor: tokens.isDark ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9',
+                                            color: tokens.textColor
+                                        }}
+                                        title={isEn ? "Enlarge font size" : "تكبير حجم الخط"}
                                     >
                                         <ZoomIn className="w-5 h-5" />
                                     </button>
 
-                                    {/* ChevronDown to hide modal */}
+                                    {/* ChevronDown / Hide Modal Button */}
                                     <button
                                         type="button"
                                         onClick={closeZoomModal}
-                                        className="w-11 h-11 rounded-full flex items-center justify-center bg-slate-100 dark:bg-zinc-800 hover:scale-105 active:scale-95 transition-transform cursor-pointer border-0"
-                                        style={{ color: tokens.textColor }}
+                                        className="w-11 h-11 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border-0"
+                                        style={{
+                                            backgroundColor: tokens.isDark ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9',
+                                            color: tokens.textColor
+                                        }}
                                         title={isEn ? "Hide list" : "إخفاء القائمة"}
                                     >
                                         <ChevronDown className="w-5 h-5" />

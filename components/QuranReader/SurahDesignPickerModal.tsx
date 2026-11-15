@@ -2,6 +2,7 @@ import React, { useEffect, useRef, FC } from 'react';
 import { X } from 'lucide-react';
 import SurahHeader from './SurahHeader';
 import { useLanguage } from '../../context/LanguageContext';
+import { registerBackInterceptor } from '../../hooks/useBackButton';
 
 interface SurahDesignPickerModalProps {
     isOpen: boolean;
@@ -45,6 +46,16 @@ const SurahDesignPickerModal: FC<SurahDesignPickerModalProps> = ({
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [isOpen, onClose]);
 
+    useEffect(() => {
+        if (!isOpen) return;
+        const interceptor = () => {
+            onClose();
+            return true;
+        };
+        const unregister = registerBackInterceptor(interceptor);
+        return unregister;
+    }, [isOpen, onClose]);
+
     if (!isOpen) return null;
 
     return (
@@ -54,7 +65,7 @@ const SurahDesignPickerModal: FC<SurahDesignPickerModalProps> = ({
         >
             <div 
                 dir={dir}
-                className={`modal-skinned w-[86%] max-w-[320px] ${isLandscape ? 'max-h-[70vh]' : 'max-h-[50vh]'} rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-modal-enter border-0`}
+                className={`modal-skinned w-[86%] max-w-[320px] ${isLandscape ? 'max-h-[72dvh]' : 'max-h-[58dvh]'} rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-modal-enter border-0`}
                 style={{ 
                     backgroundColor: currentTheme?.modalBg || currentTheme?.bg || '#ffffff',
                     color: currentTheme?.modalText || currentTheme?.text || '#1f2937',
@@ -94,7 +105,7 @@ const SurahDesignPickerModal: FC<SurahDesignPickerModalProps> = ({
                 {/* Modal Body: Scrollable list of designs (without any name or model text) */}
                 <div 
                     ref={scrollContainerRef}
-                    className="flex-1 overflow-y-auto p-2.5 space-y-2.5 scroll-smooth scrollbar-hide"
+                    className="flex-1 min-h-0 overflow-y-auto p-2.5 space-y-2.5 scroll-smooth scrollbar-hide"
                 >
                     {designs.map((d) => {
                         const isSelected = currentDesign === d;

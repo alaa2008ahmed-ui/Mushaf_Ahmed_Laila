@@ -17,11 +17,11 @@ const SajdahCardModal: FC<{
     return (
         <div className={`fixed inset-0 z-[2000] bg-black/70 backdrop-blur-sm flex items-center justify-center ${isLandscape ? 'p-0' : 'p-4'} animate-fadeIn`} onClick={onClose}>
             <div 
-                className={`modal-skinned w-full ${isLandscape ? 'max-w-4xl h-full rounded-none max-h-screen' : 'max-w-md rounded-3xl max-h-[90vh]'} shadow-2xl flex flex-col border-0 overflow-hidden animate-modal-enter`} 
+                className={`modal-skinned w-full ${isLandscape ? 'max-w-4xl h-full rounded-none max-h-[100dvh]' : 'max-w-md rounded-3xl max-h-[90dvh]'} shadow-2xl flex flex-col border-0 overflow-hidden animate-modal-enter`} 
                 onClick={e => e.stopPropagation()}
                 style={{ fontFamily: currentTheme?.font, border: 'none', outline: 'none' }}
             >
-                <div className="p-5 overflow-y-auto text-right leading-relaxed space-y-4 text-sm flex-1 custom-scrollbar">
+                <div className="p-5 overflow-y-auto text-right leading-relaxed space-y-4 text-sm flex-1 min-h-0 custom-scrollbar">
                     <div>
                         <p className="font-black text-base mb-1" style={{ color: accentColor }}>1. تعريف سجود التلاوة</p>
                         <p className="mt-1">هو سجود يؤديه القارئ أو المستمع عند قراءة آية من آيات السجود في القرآن الكريم، تعظيماً لله تعالى وإظهاراً للعبودية. وقد ثبت في صحيح مسلم عن أبي هريرة رضي الله عنه قال: قال رسول الله ﷺ:</p>
@@ -98,7 +98,7 @@ const SajdahCardModal: FC<{
                         </ul>
                     </div>
                 </div>
-                <div className="p-4 border-0 themed-card-bg rounded-b-3xl">
+                <div className={`p-4 ${isLandscape ? 'modal-sheet-safe-bottom rounded-none' : 'rounded-b-3xl'} border-0 themed-card-bg`}>
                     <button 
                         onClick={onClose} 
                         className="w-full py-3.5 rounded-2xl font-bold transition-all active:scale-95 border-0 quran-raised-btn-selected shadow-md"

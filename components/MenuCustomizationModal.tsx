@@ -42,7 +42,7 @@ const MenuCustomizationModal: React.FC<MenuCustomizationModalProps> = ({ isOpen,
 
     return (
         <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm ${isLandscape ? 'p-0' : 'p-4'} fade-in`} dir={dir}>
-            <div className={`bg-white dark:bg-gray-800 ${isLandscape ? 'max-w-4xl h-full rounded-none' : 'max-w-md rounded-2xl max-h-[80vh]'} shadow-2xl w-full overflow-hidden flex flex-col`}>
+            <div className={`bg-white dark:bg-gray-800 ${isLandscape ? 'max-w-4xl h-full rounded-none' : 'max-w-md rounded-2xl max-h-[85dvh]'} shadow-2xl w-full overflow-hidden flex flex-col`}>
                 <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900/50">
                     <h3 className="text-lg font-bold text-gray-900 dark:text-white">
                         {language === 'en' ? 'Customize Main Menu' : 'تخصيص القائمة الرئيسية'}
@@ -54,7 +54,7 @@ const MenuCustomizationModal: React.FC<MenuCustomizationModalProps> = ({ isOpen,
                     </button>
                 </div>
                 
-                <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-2">
                     {allItems.map((item) => (
                         <div 
                             key={item.id}
@@ -83,7 +83,7 @@ const MenuCustomizationModal: React.FC<MenuCustomizationModalProps> = ({ isOpen,
                     ))}
                 </div>
 
-                <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
+                <div className={`p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 shrink-0 ${isLandscape ? 'modal-sheet-safe-bottom' : ''}`}>
                     <button 
                         onClick={handleSave}
                         className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow-lg transition-transform active:scale-95 cursor-pointer"

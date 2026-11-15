@@ -247,7 +247,7 @@ export const MultiTafseerModal: React.FC<MultiTafseerModalProps> = ({
         >
             <div 
                 className={`zoom-modal-sheet w-full max-w-xl mx-auto rounded-t-[32px] flex flex-col overflow-hidden relative shadow-2xl animate-modal-enter ${
-                    isLandscape ? 'max-h-[92vh]' : 'max-h-[88vh] sm:max-h-[85vh]'
+                    isLandscape ? 'max-h-[92dvh]' : 'max-h-[88dvh]'
                 }`}
                 style={{ 
                     backgroundColor: currentTheme?.modalBg || currentTheme?.bg || '#ffffff', 
@@ -289,7 +289,7 @@ export const MultiTafseerModal: React.FC<MultiTafseerModalProps> = ({
                 </div>
 
                 {/* Scrollable Content Area */}
-                <div className="overflow-y-auto custom-scrollbar flex-1 px-4 sm:px-6 py-2">
+                <div className="overflow-y-auto custom-scrollbar flex-1 min-h-0 px-4 sm:px-6 py-2">
                     {/* Display Ayah Text if available */}
                     {ayahText && (
                         <div 
@@ -408,10 +408,10 @@ export const MultiTafseerModal: React.FC<MultiTafseerModalProps> = ({
 
                 {/* Action Bar matching image (5 round action buttons in RTL: Audio on Right, Chevron on Left) */}
                 <div 
-                    className="p-4 pt-3.5 shrink-0 flex items-center justify-center gap-3 sm:gap-4 border-t border-slate-200/50 dark:border-white/10"
+                    data-toast-bottom-bar="true"
+                    className="px-4 pt-3.5 modal-sheet-safe-bottom shrink-0 flex items-center justify-center gap-3 sm:gap-4 border-t border-slate-200/50 dark:border-white/10"
                     dir="rtl"
                     style={{
-                        paddingBottom: 'calc(env(safe-area-inset-bottom, 16px) + 16px)',
                         backgroundColor: currentTheme?.modalBg || currentTheme?.cardBg || currentTheme?.bg || '#ffffff'
                     }}
                 >

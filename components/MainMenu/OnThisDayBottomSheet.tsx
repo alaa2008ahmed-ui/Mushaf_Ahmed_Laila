@@ -73,9 +73,10 @@ export const OnThisDayBottomSheet: React.FC<OnThisDayBottomSheetProps> = ({
 
   if (!isOpen || !event) return null;
 
-  const eventContent = language === 'en' 
+  const rawContent = language === 'en' 
     ? (event.textEn || getTranslatedEventText(event.text, event.year))
     : event.text;
+  const eventContent = (rawContent || '').replace(/[ \t]+/g, ' ').trim();
 
   const cleanTextToRead = eventContent.replace(/<[^>]*>/g, '').trim();
   const isPlaying = playingText === cleanTextToRead;
@@ -108,7 +109,7 @@ export const OnThisDayBottomSheet: React.FC<OnThisDayBottomSheetProps> = ({
           exit={{ y: '100%', opacity: 0 }}
           transition={{ type: 'spring', damping: 28, stiffness: 280 }}
           onClick={(e) => e.stopPropagation()}
-          className={`w-full max-w-lg mx-auto rounded-t-[28px] shadow-2xl flex flex-col max-h-[90vh] overflow-hidden relative ${
+          className={`w-full max-w-lg mx-auto rounded-t-[28px] shadow-2xl flex flex-col max-h-[90dvh] overflow-hidden relative ${
             isBlackTheme ? 'bg-[#18181b] border-t border-zinc-800 text-white' : 'bg-white text-slate-800'
           }`}
           style={{
@@ -163,7 +164,7 @@ export const OnThisDayBottomSheet: React.FC<OnThisDayBottomSheetProps> = ({
           </div>
 
           {/* 2. Scrollable Body Content */}
-          <div className="overflow-y-auto px-6 py-4 flex flex-col gap-5 flex-1 overscroll-contain">
+          <div className="overflow-y-auto px-6 py-4 flex flex-col gap-5 flex-1 min-h-0 overscroll-contain">
             
             <div className={`w-full py-3 px-4 rounded-2xl flex items-center justify-between ${
               isBlackTheme ? 'bg-zinc-800/80 border border-zinc-700/60' : 'bg-slate-50 border border-slate-100'
@@ -196,7 +197,7 @@ export const OnThisDayBottomSheet: React.FC<OnThisDayBottomSheetProps> = ({
                 : 'bg-[#FAF9F5] border border-stone-200/50'
             }`}>
               <p 
-                className={`font-bold font-hafs leading-[2.1] sm:leading-[2.2] tracking-wide text-justify ${
+                className={`font-bold font-hafs leading-[2.1] sm:leading-[2.2] tracking-wide text-center ${
                   isBlackTheme ? 'text-zinc-100' : 'text-slate-800'
                 }`}
                 style={{
@@ -229,14 +230,11 @@ export const OnThisDayBottomSheet: React.FC<OnThisDayBottomSheetProps> = ({
 
           {/* 3. Sticky Bottom 5 Action Buttons matching Supplications page */}
           <div 
-            className={`p-4 pt-3 shrink-0 flex items-center justify-center gap-3 sm:gap-4 border-t ${
+            className={`p-4 pt-3 modal-sheet-safe-bottom shrink-0 flex items-center justify-center gap-3 sm:gap-4 border-t ${
               isBlackTheme
                 ? 'bg-[#18181b] border-zinc-800'
                 : 'bg-white border-slate-100'
             }`}
-            style={{
-              paddingBottom: 'calc(env(safe-area-inset-bottom, 16px) + 16px)',
-            }}
           >
             {/* 1. Audio Button */}
             <button

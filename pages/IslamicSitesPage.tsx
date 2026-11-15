@@ -136,7 +136,7 @@ const IslamicSitesPage: React.FC<IslamicSitesPageProps> = ({ onBack, onNavigate 
 
     return (
         <div 
-            className="h-screen flex flex-col overflow-hidden" 
+            className="h-[100dvh] flex flex-col overflow-hidden" 
             dir={isEn ? 'ltr' : 'rtl'}
             style={{ backgroundColor: tokens.pageBgColor, color: tokens.textColor, fontFamily: theme.font }}
         >
@@ -190,7 +190,7 @@ const IslamicSitesPage: React.FC<IslamicSitesPageProps> = ({ onBack, onNavigate 
             </header>
 
             {/* Main Content Area */}
-            <main className="flex-1 overflow-y-auto hide-scrollbar px-4 pt-3 pb-8">
+            <main className="flex-1 min-h-0 overflow-y-auto hide-scrollbar px-4 pt-3 app-scroll-safe">
                 <AnimatePresence mode="wait">
                     {selectedSite ? (
                         /* Detail Page View for Selected Website - Modern Flat Surface */
@@ -321,7 +321,7 @@ const IslamicSitesPage: React.FC<IslamicSitesPageProps> = ({ onBack, onNavigate 
                                 </div>
 
                                 <div 
-                                    className={`leading-[2.2] text-sm sm:text-base p-4 rounded-[14px] border-0 ${isEn ? 'text-left' : 'text-justify'} whitespace-pre-line`}
+                                    className={`leading-[2.2] text-sm sm:text-base p-4 rounded-[14px] border-0 ${isEn ? 'text-left' : 'text-right'} whitespace-pre-line`}
                                     style={{ 
                                         backgroundColor: tokens.isDark ? 'rgba(255, 255, 255, 0.04)' : '#F8F9FA',
                                         color: tokens.textColor
@@ -511,8 +511,6 @@ const IslamicSitesPage: React.FC<IslamicSitesPageProps> = ({ onBack, onNavigate 
                                     </p>
                                 </div>
                             )}
-
-                            <div className="h-3 w-full pointer-events-none" aria-hidden="true" />
                         </motion.div>
                     )}
                 </AnimatePresence>
@@ -536,7 +534,8 @@ const IslamicSitesPage: React.FC<IslamicSitesPageProps> = ({ onBack, onNavigate 
                         initial={{ opacity: 0, y: 30, x: '-50%' }}
                         animate={{ opacity: 1, y: 0, x: '-50%' }}
                         exit={{ opacity: 0, y: 30, x: '-50%' }}
-                        className="fixed bottom-8 left-1/2 z-[200] bg-gray-900 text-white px-5 py-2.5 rounded-full shadow-2xl font-bold text-xs text-center whitespace-nowrap border-0"
+                        className="fixed left-1/2 z-[200] bg-gray-900 text-white px-5 py-2.5 rounded-full shadow-2xl font-bold text-xs text-center whitespace-nowrap border-0"
+                        style={{ bottom: 'calc(var(--app-bottom-clearance) + 1rem)' }}
                     >
                         {toastMessage}
                     </motion.div>

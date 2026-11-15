@@ -8,18 +8,35 @@
     <meta name="description" content="تطبيق إسلامي شامل يعمل بدون انترنت، يحتوي على القرآن الكريم، أذكار، تسبيح، مواقيت الصلاة، وقائمة تطبيقات متنوعة. مصمم ليكون رفيقك اليومي." />
     <meta property="og:title" content="مصحف أحمد و ليلى" />
     <meta property="og:description" content="تطبيق إسلامي شامل يعمل بدون انترنت، يحتوي على القرآن الكريم، أذكار، تسبيح، مواقيت الصلاة، وقائمة تطبيقات متنوعة. مصمم ليكون رفيقك اليومي." />
+    <meta name="theme-color" content="#FFFFFF" id="meta-theme-color" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" id="meta-apple-status-bar" />
     <link rel="icon" type="image/png" href="/app_icon.png" />
     <link rel="apple-touch-icon" href="/app_icon.png" />
     <script>
         window.__SPLASH_START_TS__ = Date.now();
         (function() {
             var splashSrc = '/splash.jpg';
+            var isNight = false;
             try {
+                var cachedSafeTop = localStorage.getItem('native_safe_top_css');
+                if (cachedSafeTop && /^\d+(\.\d+)?px$/.test(cachedSafeTop)) {
+                    document.documentElement.style.setProperty('--native-safe-top', cachedSafeTop);
+                }
+                var cachedSafeBottom = localStorage.getItem('native_safe_bottom_css');
+                if (cachedSafeBottom && /^\d+(\.\d+)?px$/.test(cachedSafeBottom)) {
+                    document.documentElement.style.setProperty('--native-safe-bottom', cachedSafeBottom);
+                }
+                isNight = localStorage.getItem('night_mode_active_modern') === 'true' || localStorage.getItem('night_mode_active') === 'true';
+                var themeMeta = document.getElementById('meta-theme-color');
+                if (themeMeta) themeMeta.setAttribute('content', isNight ? '#000000' : '#FFFFFF');
+                var appleMeta = document.getElementById('meta-apple-status-bar');
+                if (appleMeta) appleMeta.setAttribute('content', isNight ? 'black-translucent' : 'default');
+                document.documentElement.style.colorScheme = isNight ? 'dark' : 'light';
+
                 var direct = localStorage.getItem('current_splash_image');
                 if (direct) {
                     splashSrc = direct;
                 } else {
-                    var isNight = localStorage.getItem('night_mode_active_modern') === 'true' || localStorage.getItem('night_mode_active') === 'true';
                     var variant = localStorage.getItem('modern_home_theme_variant');
                     if (isNight) {
                         splashSrc = '/assets/splash/splash_night.jpg';
@@ -172,6 +189,15 @@
           --font-warsh: 'Amiri', serif;
           --font-default: var(--font-noto);
           --font-ui: var(--font-cairo);
+          --native-safe-top: 0px;
+          --native-safe-bottom: 0px;
+          --app-safe-top: max(env(safe-area-inset-top, 0px), var(--native-safe-top, 0px));
+          --app-safe-bottom: max(env(safe-area-inset-bottom, 0px), var(--native-safe-bottom, 0px));
+          --app-bottom-bar-height: 0px;
+          --app-bottom-clearance: var(--app-safe-bottom);
+          --app-scroll-gap: clamp(0.75rem, 1.8dvh, 1.125rem);
+          --app-scroll-safe-bottom: calc(var(--app-bottom-clearance) + var(--app-scroll-gap));
+          --app-modal-safe-bottom: calc(var(--app-safe-bottom) + var(--app-scroll-gap));
       }
       @keyframes fadeIn { from { opacity: 1; transform: translateY(0); } to { opacity: 1; transform: translateY(0); } }
       @keyframes fadeInPure { from { opacity: 1; } to { opacity: 1; } }
@@ -233,7 +259,7 @@
           color: var(--top-bar-text, var(--text-color, #ffffff)); 
           border-bottom: 2px solid var(--bottom-bar-border, #334155);
           position: sticky; top: 0; z-index: 40;
-          padding-top: env(safe-area-inset-top);
+          padding-top: var(--app-safe-top);
           min-height: 67px;
           display: flex;
           align-items: center;
@@ -299,12 +325,13 @@
       html.theme-black header:not(.quran-reader-header):not(.quran-context) svg[fill="none"] {
           fill: none !important;
       }
-      body.hide-top-bars .app-top-bar { display: none !important; }
+      body.hide-top-bars .app-top-bar:not(.settings-top-bar) { display: none !important; }
+      body.hide-top-bars .settings-top-bar { display: block !important; }
       
       /* When top bars are hidden in other pages */
       body.hide-top-bars:not(.quran-context) main:not(.absolute),
-      body.hide-top-bars:not(.quran-context) .app-top-bar + * {
-          padding-top: calc(env(safe-area-inset-top) + 0.5rem) !important;
+      body.hide-top-bars:not(.quran-context) .app-top-bar:not(.settings-top-bar) + * {
+          padding-top: calc(var(--app-safe-top) + 0.5rem) !important;
       }
 
       /* Home page layout has its dedicated header which already includes safe-area-inset-top */
@@ -358,7 +385,7 @@
           position: fixed; bottom: 0; left: 0; right: 0;
           background-color: var(--bottom-bar-bg, #1e293b);
           border-top: 1px solid var(--bottom-bar-border, #334155);
-          box-shadow: none; z-index: 50; padding: 0.5rem 1rem calc(0.5rem + env(safe-area-inset-bottom));
+          box-shadow: none; z-index: 50; padding: 0.5rem 1rem calc(0.5rem + var(--app-safe-bottom));
       }
       .app-bottom-bar__inner { max-width: 900px; margin: 0 auto; display: flex; justify-content: center; align-items: center; gap: 1rem; }
       .bar-button { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; font-weight: 700; font-size: 0.95rem; border-radius: 999px; padding: 0.75rem 1rem; transition: transform 0.15s ease, box-shadow 0.15s ease; box-shadow: 0 5px 15px -3px rgba(0,0,0,0.15); }
@@ -496,6 +523,10 @@
       body[data-zoom-modal="true"] #scroll-to-top-fab,
       body.modal-open #scroll-to-top-fab,
       body.qr-modal-active #scroll-to-top-fab,
+      body.settings-modal-open #scroll-to-top-fab,
+      body:has(#home-screen-settings-modal) #scroll-to-top-fab,
+      body.settings-modal-open #whatsapp-button-container,
+      body:has(#home-screen-settings-modal) #whatsapp-button-container,
       body:has(#unified-event-zoom-modal-backdrop) #scroll-to-top-fab,
       body:has(.zoom-modal-active) #scroll-to-top-fab,
       #unified-event-zoom-modal-backdrop ~ #scroll-to-top-fab {

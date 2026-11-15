@@ -694,7 +694,7 @@ public class PrayerAClassicWidgetProvider extends AppWidgetProvider {
                                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
                         );
                         long nextMinute = (System.currentTimeMillis() / 60000 + 1) * 60000;
-                        scheduleSafeAlarm(context, nextMinute, minPending);
+                        scheduleMinuteAlarm(context, nextMinute, minPending);
                     }
                 }
 
@@ -1326,6 +1326,28 @@ public class PrayerAClassicWidgetProvider extends AppWidgetProvider {
                 } else {
                     alarmManager.set(AlarmManager.RTC, triggerMillis, pendingIntent);
                 }
+            } catch (Exception ignored) {}
+        } catch (Exception ignored) {}
+    }
+
+    private static void scheduleMinuteAlarm(Context context, long triggerMillis, PendingIntent pendingIntent) {
+        AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+        if (alarmManager == null) return;
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                if (alarmManager.canScheduleExactAlarms()) {
+                    alarmManager.setExact(AlarmManager.RTC, triggerMillis, pendingIntent);
+                } else {
+                    alarmManager.set(AlarmManager.RTC, triggerMillis, pendingIntent);
+                }
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                alarmManager.setExact(AlarmManager.RTC, triggerMillis, pendingIntent);
+            } else {
+                alarmManager.set(AlarmManager.RTC, triggerMillis, pendingIntent);
+            }
+        } catch (SecurityException se) {
+            try {
+                alarmManager.set(AlarmManager.RTC, triggerMillis, pendingIntent);
             } catch (Exception ignored) {}
         } catch (Exception ignored) {}
     }

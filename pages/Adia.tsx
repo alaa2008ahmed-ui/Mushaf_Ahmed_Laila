@@ -295,7 +295,7 @@ function Adia({ onBack, onNavigate, navParams }: AdiaProps) {
 
     return (
         <div 
-            className="h-screen flex flex-col relative transition-colors" 
+            className="h-[100dvh] flex flex-col relative overflow-hidden transition-colors" 
             dir={isEn ? 'ltr' : 'rtl'}
             style={{ 
                 backgroundColor: isBlackTheme ? '#000000' : (theme.bgColor || (theme.isDark ? '#0F172A' : '#F5F7FA')) 
@@ -349,7 +349,7 @@ function Adia({ onBack, onNavigate, navParams }: AdiaProps) {
                 </div>
             </header>
 
-            <main ref={mainRef} className="w-full flex-1 overflow-y-auto px-4 pt-3 pb-3">
+            <main ref={mainRef} className="w-full flex-1 min-h-0 overflow-y-auto px-4 pt-3 app-scroll-safe-fab">
                 {/* Modern Borderless Search bar and View Mode Switch */}
                 <div className="mb-6 max-w-3xl mx-auto flex items-center gap-2.5 w-full" dir={isEn ? 'ltr' : 'rtl'}>
                     <div className="relative flex-1 rounded-2xl transition-all focus-within:ring-2 focus-within:ring-opacity-40 flex items-center overflow-hidden"
@@ -385,7 +385,7 @@ function Adia({ onBack, onNavigate, navParams }: AdiaProps) {
                 </div>
 
                 {/* Supplications Cards Grid/List */}
-                <div className={activeTab === 'grid' ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-3xl mx-auto pb-4" : "space-y-4 max-w-3xl mx-auto pb-4"}>
+                <div className={activeTab === 'grid' ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-3xl mx-auto" : "space-y-4 max-w-3xl mx-auto"}>
                     {filteredDuaa.length > 0 ? (
                         filteredDuaa.map((duaa) => {
                             const initialCount = duaa.count || 1;
@@ -556,7 +556,6 @@ function Adia({ onBack, onNavigate, navParams }: AdiaProps) {
                             <p>{isEn ? "No supplications match your search." : "لا توجد نتائج مطابقة لبحثك."}</p>
                         </div>
                     )}
-                    <div className="shrink-0 w-full h-14 col-span-full"></div>
                 </div>
             </main>
 
@@ -567,7 +566,8 @@ function Adia({ onBack, onNavigate, navParams }: AdiaProps) {
                         initial={{ opacity: 0, y: 50, x: '-50%' }}
                         animate={{ opacity: 1, y: 0, x: '-50%' }}
                         exit={{ opacity: 0, y: 50, x: '-50%' }}
-                        className="fixed bottom-8 left-1/2 z-[200] bg-gray-900/90 backdrop-blur text-white px-6 py-3 rounded-full shadow-2xl font-bold text-sm text-center whitespace-nowrap flex items-center gap-2 border border-white/10"
+                        className="fixed left-1/2 z-[200] bg-gray-900/90 backdrop-blur text-white px-6 py-3 rounded-full shadow-2xl font-bold text-sm text-center whitespace-nowrap flex items-center gap-2 border border-white/10"
+                        style={{ bottom: 'calc(var(--app-safe-bottom) + 1.25rem)' }}
                     >
                         <i className="fa-solid fa-check text-green-400"></i>
                         {toastMessage}
@@ -589,8 +589,7 @@ function Adia({ onBack, onNavigate, navParams }: AdiaProps) {
             {/* Floating Menu & Modern FAB */}
             <div 
                 ref={fabContainerRef} 
-                className={`fixed ${isEn ? 'left-5 items-start' : 'right-5 items-end'} ${isMenuOpen ? 'z-[1250]' : 'z-[90]'} flex flex-col`}
-                style={{ bottom: 'calc(env(safe-area-inset-bottom, 24px) + 32px)' }}
+                className={`fixed app-fab-bottom ${isEn ? 'left-5 items-start' : 'right-5 items-end'} ${isMenuOpen ? 'z-[1250]' : 'z-[90]'} flex flex-col`}
             >
                 <AnimatePresence>
                     {isMenuOpen && (

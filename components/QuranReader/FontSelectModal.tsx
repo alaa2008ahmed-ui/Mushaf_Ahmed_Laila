@@ -1,6 +1,7 @@
-import React, { FC } from 'react';
+import React, { FC, useEffect } from 'react';
 import { FONTS, ENGLISH_FONTS, FontItem, ReadingMode } from './constants';
 import { useLanguage } from '../../context/LanguageContext';
+import { registerBackInterceptor } from '../../hooks/useBackButton';
 
 const FONT_NAMES_EN: Record<string, string> = {
     "نسخ": "Naskh",
@@ -29,6 +30,17 @@ const FontSelectModal: FC<{
 }> = ({ isOpen, onClose, onSelect, currentFontId, isLandscape, readingMode }) => {
     const { language, dir } = useLanguage();
     const isEn = language === 'en';
+
+    useEffect(() => {
+        if (!isOpen) return;
+        const interceptor = () => {
+            onClose();
+            return true;
+        };
+        const unregister = registerBackInterceptor(interceptor);
+        return unregister;
+    }, [isOpen, onClose]);
+
     if (!isOpen) return null;
 
     const isTranslationMode = readingMode === 'translation';
@@ -44,7 +56,7 @@ const FontSelectModal: FC<{
         <div className={`fixed inset-0 z-[1200] bg-black/40 backdrop-blur-sm flex justify-center items-center ${isLandscape ? 'p-0' : 'p-4'} animate-fadeIn`} onClick={onClose}>
             <div 
                 dir={isTranslationMode ? 'ltr' : dir} 
-                className={`modal-skinned w-full ${isLandscape ? 'max-w-4xl h-full rounded-none max-h-screen' : 'max-w-md sm:max-w-2xl rounded-2xl max-h-[90vh]'} shadow-2xl flex flex-col animate-modal-enter overflow-hidden border-0`} 
+                className={`modal-skinned w-full ${isLandscape ? 'max-w-4xl h-full rounded-none max-h-[100dvh]' : 'max-w-md sm:max-w-2xl rounded-2xl max-h-[90dvh]'} shadow-2xl flex flex-col animate-modal-enter overflow-hidden border-0`} 
                 style={{ border: 'none', outline: 'none' }}
                 onClick={e => e.stopPropagation()}
             >
@@ -71,7 +83,9 @@ const FontSelectModal: FC<{
                 </div>
 
                 {/* Font list */}
-                <div className={`p-3.5 overflow-y-auto flex-1 grid ${isLandscape ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3' : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-2 gap-2.5'}`}>
+                <div 
+                    className={`p-3.5 ${isLandscape ? 'modal-sheet-safe-bottom' : ''} overflow-y-auto flex-1 min-h-0 grid ${isLandscape ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3' : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-2 gap-2.5'}`}
+                >
                     {fonts.map(f => {
                         const isSelected = isTranslationMode
                             ? (currentFontId === f.id || ((!currentFontId || currentFontId.startsWith('var(--font-')) && f.id === ENGLISH_FONTS[0].id))

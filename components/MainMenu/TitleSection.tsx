@@ -61,11 +61,11 @@ const TitleSection: React.FC<TitleSectionProps> = ({
                                 onCloseQuickMenu();
                             }
                         }}
-                        className={`sticky top-[env(safe-area-inset-top,0px)] ${isQuickMenuOpen ? 'z-[1150]' : 'z-30'} -mx-4 px-4 text-center select-none pt-1 pb-1 transition-colors duration-150 relative ${
+                        className={`sticky ${isQuickMenuOpen ? 'z-[1150]' : 'z-30'} -mx-4 px-4 text-center select-none pt-1 pb-1 transition-colors duration-150 relative ${
                             isSticky ? 'shadow-sm backdrop-blur-md' : ''
                         }`}
                         style={{
-                            top: 'env(safe-area-inset-top, 0px)',
+                            top: 'var(--app-safe-top, 0px)',
                             backgroundColor: stickyBgColor,
                         }}
                     >
@@ -74,7 +74,7 @@ const TitleSection: React.FC<TitleSectionProps> = ({
                             aria-hidden="true"
                             className="absolute bottom-full left-0 right-0 pointer-events-none transition-colors duration-150"
                             style={{
-                                height: 'calc(env(safe-area-inset-top, 0px) + 2px)',
+                                height: 'calc(var(--app-safe-top, 0px) + 2px)',
                                 backgroundColor: stickyBgColor,
                             }}
                         />

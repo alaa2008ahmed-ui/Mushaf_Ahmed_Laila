@@ -169,7 +169,7 @@ const ZakatCalculator: React.FC = () => {
     );
 
     return (
-        <div className="space-y-4 animate-fade-in pb-8" dir={isEn ? 'ltr' : 'rtl'}>
+        <div className="space-y-4 animate-fade-in" dir={isEn ? 'ltr' : 'rtl'}>
             {/* Header Actions */}
             <div id="zakat-header-actions" className="flex justify-between items-center mb-2">
                 <h2 className="text-lg sm:text-xl font-bold flex items-center gap-2" style={{ color: tokens.textColor }}>

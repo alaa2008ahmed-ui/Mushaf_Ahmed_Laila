@@ -94,12 +94,6 @@ const AutoFitText: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         debouncedAdjust();
         window.addEventListener('resize', debouncedAdjust);
 
-        let observer: ResizeObserver | null = null;
-        if (containerRef.current && typeof ResizeObserver !== 'undefined') {
-            observer = new ResizeObserver(debouncedAdjust);
-            observer.observe(containerRef.current);
-        }
-
         if (document.fonts && document.fonts.ready) {
             document.fonts.ready.then(debouncedAdjust).catch(() => {});
         }
@@ -107,9 +101,6 @@ const AutoFitText: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         return () => {
             cancelAnimationFrame(rafId);
             window.removeEventListener('resize', debouncedAdjust);
-            if (observer) {
-                observer.disconnect();
-            }
         };
     }, [children]);
 

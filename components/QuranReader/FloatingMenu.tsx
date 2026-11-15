@@ -1,5 +1,11 @@
 import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from "react";
 import {
+  getAppNotificationSettings,
+  saveAppNotificationSettings,
+  APP_NOTIFICATION_CHANGE_EVENT,
+  AppNotificationSettings,
+} from "../../utils/appNotificationSettings";
+import {
   Monitor,
   Smartphone,
   AppWindow,
@@ -85,6 +91,7 @@ import { normalizeArabic } from "../../utils/voiceParser";
 import { setupNotifications } from "../../utils/notifications";
 import { QuranSpotlightGuide, getQuranGuideSeen } from "./QuranSpotlightGuide";
 import { QURAN_SIDEBAR_STEPS } from "./quranGuideSteps";
+import { useShowPageGuides } from "../../utils/guideManager";
 import { syncClusterTheme, getClusterForLanguage } from "../../utils/quranClusterSync";
 
 interface FloatingMenuProps {
@@ -124,17 +131,6 @@ interface FloatingMenuProps {
 }
 
 const ALL_SHORTCUTS = [
-  {
-    id: "quran-download-parent",
-    label: "تحميل القرآن",
-    icon: <Download size={18} />,
-  },
-  {
-    id: "tafseer-download",
-    label: "تحميل التفسير",
-    icon: <Download size={18} />,
-  },
-  { id: "audio", label: "القراء", icon: <Headphones size={18} /> },
   { id: "font-type", label: "نوع الخط", icon: <Type size={18} /> },
   { id: "notification-settings", label: "الإشعارات", icon: <Bell size={18} /> },
   { id: "sajdah-list", label: "آيات السجدة", icon: <Compass size={18} /> },
@@ -146,9 +142,6 @@ const ALL_SHORTCUTS = [
 ];
 
 const DEFAULT_SHORTCUTS = [
-  "quran-download-parent",
-  "tafseer-download",
-  "audio",
   "font-type",
   "notification-settings",
   "sajdah-list",
@@ -184,6 +177,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
   const { applyPresetTheme: applyGlobalTheme } = useTheme();
   const { t, translateMenuItem, language, isRTL, formatNumber } = useLanguage();
   const isEn = language === 'en';
+  const showPageGuides = useShowPageGuides();
   const isDarkTheme = isDarkQuranTheme(currentTheme);
   const [selectedShortcuts, setSelectedShortcuts] = useState<string[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -578,10 +572,10 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
   }, [isFloatingMenuOpen, initialView, isLandscape]);
 
   useEffect(() => {
-    if (currentView !== "main" || isLandscape) {
+    if (currentView !== "main" || isLandscape || !showPageGuides) {
       setIsSidebarGuideOpen(false);
     }
-  }, [currentView, isLandscape]);
+  }, [currentView, isLandscape, showPageGuides]);
 
   useEffect(() => {
     const saved = localStorage.getItem("quran_menu_shortcuts");
@@ -1182,7 +1176,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                   ? "max-w-[85vw]"
                   : "w-[155px] max-w-[85vw]"
                 : "w-[200px] max-w-[85vw]"
-          } ${isLandscape ? "rounded-none" : isRTL ? "rounded-l-2xl" : "rounded-r-2xl"} shadow-2xl transition-all duration-300 ${isRTL ? "origin-top-right" : "origin-top-left"} flex flex-col pointer-events-auto h-full ${isFloatingMenuOpen ? "opacity-100 visible scale-100 translate-y-0" : "opacity-0 invisible scale-95 -translate-y-4"}`}
+          } ${isLandscape ? "rounded-none pt-[var(--logical-safe-top,0px)] pb-[var(--logical-safe-bottom,0px)]" : isRTL ? "rounded-l-2xl" : "rounded-r-2xl"} shadow-2xl transition-all duration-300 ${isRTL ? "origin-top-right" : "origin-top-left"} flex flex-col pointer-events-auto h-full ${isFloatingMenuOpen ? "opacity-100 visible scale-100 translate-y-0" : "opacity-0 invisible scale-95 -translate-y-4"}`}
           style={{
             ...(currentView === "themes" && mainSidebarWidth
               ? {
@@ -1228,7 +1222,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                 </button>
               </div>
 
-              <div className="flex-grow overflow-y-auto p-3 custom-scrollbar">
+              <div className="flex-grow min-h-0 overflow-y-auto p-3 custom-scrollbar">
                 <div className="flex flex-col gap-1.5">
                   {ALL_SHORTCUTS.map((shortcut) => {
                     const isSelected = tempShortcuts.includes(shortcut.id);
@@ -1317,7 +1311,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                 </div>
               </div>
 
-              <div className="flex-grow overflow-y-auto overflow-x-hidden p-2.5 custom-scrollbar flex flex-col justify-between">
+              <div className="flex-grow min-h-0 overflow-y-auto overflow-x-hidden p-2.5 custom-scrollbar flex flex-col justify-between">
                 <div className="space-y-4">
                   {/* Toggles Section */}
                   <div
@@ -1646,7 +1640,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                   </h3>
                 </div>
               </div>
-              <div className="flex-grow overflow-y-auto p-3 custom-scrollbar flex flex-col gap-2">
+              <div className="flex-grow min-h-0 overflow-y-auto p-3 custom-scrollbar flex flex-col gap-2">
                 <MenuItem
                   icon={<Download size={18} />}
                   label={isEn ? "Download Mushaf" : "تحميل المصحف"}
@@ -1709,7 +1703,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                   </h3>
                 </div>
               </div>
-              <div className="flex-grow overflow-y-auto p-3 custom-scrollbar flex flex-col justify-between">
+              <div className="flex-grow min-h-0 overflow-y-auto p-3 custom-scrollbar flex flex-col justify-between">
                 <div className="flex flex-col gap-2.5">
                   {/* Reciters view strictly filtered by readingMode */}
                   {(() => {
@@ -1877,7 +1871,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                   </h3>
                 </div>
               </div>
-              <div className="flex-grow overflow-y-auto p-3 custom-scrollbar flex flex-col justify-between">
+              <div className="flex-grow min-h-0 overflow-y-auto p-3 custom-scrollbar flex flex-col justify-between">
                 <div className="grid grid-cols-1 gap-2.5">
                   {(readingMode === "translation" ? ENGLISH_FONTS : FONTS).map((f) => {
                     const isTranslationMode = readingMode === "translation";
@@ -1970,7 +1964,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                   </h3>
                 </div>
               </div>
-              <div className="flex-grow overflow-y-auto p-3 custom-scrollbar flex flex-col justify-between">
+              <div className="flex-grow min-h-0 overflow-y-auto p-3 custom-scrollbar flex flex-col justify-between">
                 <NotificationSettingsContent
                   showToast={showToast}
                   currentTheme={currentTheme}
@@ -2026,7 +2020,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                   </h3>
                 </div>
               </div>
-              <div className="flex-grow overflow-y-auto p-3.5 custom-scrollbar">
+              <div className="flex-grow min-h-0 overflow-y-auto p-3.5 custom-scrollbar">
                 <div className="space-y-5">
                   {/* Tafsir Selection */}
                   <div className="space-y-2">
@@ -2230,7 +2224,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                   </h3>
                 </div>
               </div>
-              <div className="flex-grow overflow-y-auto p-3 custom-scrollbar">
+              <div className="flex-grow min-h-0 overflow-y-auto p-3 custom-scrollbar">
                 <ToolbarColorPickerContent
                   currentTheme={currentTheme}
                   isLandscape={isLandscape}
@@ -2285,7 +2279,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                   </h3>
                 </div>
               </div>
-              <div className="flex-grow overflow-y-auto p-3.5 custom-scrollbar">
+              <div className="flex-grow min-h-0 overflow-y-auto p-3.5 custom-scrollbar">
                 <div className="space-y-5">
                   {/* Reciter Selection */}
                   <div className="space-y-2">
@@ -2611,7 +2605,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                   </h3>
                 </div>
               </div>
-              <div className="flex-grow overflow-y-auto p-3 custom-scrollbar">
+              <div className="flex-grow min-h-0 overflow-y-auto p-3 custom-scrollbar">
                 {bookmarks.length === 0 ? (
                   <div
                     className="flex flex-col items-center justify-center h-full gap-2"
@@ -2706,7 +2700,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                   <span className="text-[10px] font-bold">{isEn ? "Sajdah Info" : "معلومات السجدة"}</span>
                 </button>
               </div>
-              <div className="flex-grow overflow-y-auto p-2.5 custom-scrollbar">
+              <div className="flex-grow min-h-0 overflow-y-auto p-2.5 custom-scrollbar">
                 <div className="space-y-2">
                   {SAJDAH_LOCATIONS.map((loc, idx) => {
                     const juzNum = (() => {
@@ -2995,13 +2989,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                       )}
                       label={translateMenuItem(shortcut.id, shortcut.label)}
                       onClick={() => {
-                        if (shortcut.id === "quran-download-parent") {
-                          setCurrentView("download_quran_menu");
-                        } else if (shortcut.id === "tafseer-download") {
-                          setCurrentView("download_tafseer");
-                        } else if (shortcut.id === "audio") {
-                          setCurrentView("audio");
-                        } else if (shortcut.id === "interface-customization") {
+                        if (shortcut.id === "interface-customization") {
                           setCurrentView("interface");
                         } else if (shortcut.id === "font-type") {
                           setCurrentView("font");
@@ -3032,7 +3020,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                   </React.Fragment>
                 ))}
               </MenuSection>
-              {!isLandscape && (
+              {!isLandscape && showPageGuides && (
                 <div className="pt-2 pb-1 px-1 flex items-center justify-around gap-2">
                   {onOpenMainGuide && (
                     <button
@@ -3077,7 +3065,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
               {isSidebarGuideOpen && (
                 <div
                   className="shrink-0 pointer-events-none transition-all duration-300"
-                  style={{ height: "45vh" }}
+                  style={{ height: "45dvh" }}
                 />
               )}
             </div>
@@ -3087,7 +3075,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
       <QuranSpotlightGuide
         guideKey="sidebar_menu_v2"
         steps={QURAN_SIDEBAR_STEPS}
-        isOpen={isSidebarGuideOpen && !isLandscape}
+        isOpen={isSidebarGuideOpen && !isLandscape && showPageGuides}
         onClose={() => setIsSidebarGuideOpen(false)}
         isEn={isEn}
       />
@@ -3106,25 +3094,15 @@ const NotificationSettingsContent: React.FC<{
   const { config, updateConfig } = usePrayerTimes();
   const [activeTab, setActiveTab] = useState<"app" | "phone">("app");
 
-  const [appSettings, setAppSettings] = useState(() => {
-    const saved = localStorage.getItem("notification_settings" + modeSuffix);
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        console.error("Error parsing notification settings", e);
-      }
-    }
-    return {
-      quarter: true,
-      juz: true,
-      sajda: true,
-      themes: true,
-      downloads: true,
-      bookmarks: true,
-      general: true,
-    };
-  });
+  const [appSettings, setAppSettings] = useState<AppNotificationSettings>(() =>
+    getAppNotificationSettings()
+  );
+
+  useEffect(() => {
+    const syncAppSettings = () => setAppSettings(getAppNotificationSettings());
+    window.addEventListener(APP_NOTIFICATION_CHANGE_EVENT, syncAppSettings);
+    return () => window.removeEventListener(APP_NOTIFICATION_CHANGE_EVENT, syncAppSettings);
+  }, []);
 
   const [phoneSettings, setPhoneSettings] = useState(() => {
     const saved = localStorage.getItem("phone_notifications_settings");
@@ -3145,14 +3123,10 @@ const NotificationSettingsContent: React.FC<{
     };
   });
 
-  const toggleAppSetting = (key: string) => {
+  const toggleAppSetting = (key: keyof AppNotificationSettings) => {
     const newSettings = { ...appSettings, [key]: !appSettings[key] };
     setAppSettings(newSettings);
-    localStorage.setItem(
-      "notification_settings" + modeSuffix,
-      JSON.stringify(newSettings),
-    );
-    window.dispatchEvent(new Event("notification-settings-change"));
+    saveAppNotificationSettings(newSettings);
 
     const labels: Record<string, string> = {
       quarter: isEn ? "Hizbs & Quarters Alerts" : "تنبيهات الأحزاب والأرباع",
@@ -3270,7 +3244,7 @@ const NotificationSettingsContent: React.FC<{
         </button>
       </div>
 
-      <div className="space-y-3 overflow-y-auto custom-scrollbar pr-1 pb-4">
+      <div className="space-y-3 overflow-y-auto custom-scrollbar pr-1 pb-1">
         {activeTab === "app" ? (
           <div className="space-y-2">
             {[
@@ -3309,13 +3283,15 @@ const NotificationSettingsContent: React.FC<{
                 label: isEn ? "General Alerts" : "تنبيهات عامة",
                 desc: isEn ? "Alerts for memorization, tests, and operations" : "تنبيهات الحفظ، الاختبارات، والعمليات الأخرى",
               },
-            ].map((item) => (
+            ].map((item) => {
+              const settingKey = item.id as keyof AppNotificationSettings;
+              return (
               <div
                 key={item.id}
-                onClick={() => toggleAppSetting(item.id)}
-                className={`flex items-center justify-between p-2.5 rounded-2xl quran-raised-card transition-all cursor-pointer border-0 ${appSettings[item.id] ? "shadow-sm" : "opacity-75"}`}
+                onClick={() => toggleAppSetting(settingKey)}
+                className={`flex items-center justify-between p-2.5 rounded-2xl quran-raised-card transition-all cursor-pointer border-0 ${appSettings[settingKey] ? "shadow-sm" : "opacity-75"}`}
                 style={{
-                  backgroundColor: appSettings[item.id]
+                  backgroundColor: appSettings[settingKey]
                     ? `${currentTheme.accent}15`
                     : (isDarkTheme ? (currentTheme?.cardBg || "rgba(255,255,255,0.06)") : "#ffffff"),
                   color: currentTheme.text,
@@ -3329,17 +3305,18 @@ const NotificationSettingsContent: React.FC<{
                 <div
                   className={`w-4 h-4 rounded-full flex items-center justify-center transition-colors flex-shrink-0 quran-raised-card`}
                   style={{
-                    backgroundColor: appSettings[item.id]
+                    backgroundColor: appSettings[settingKey]
                       ? currentTheme.accent
                       : `${currentTheme.text}20`,
-                    color: appSettings[item.id] ? "#ffffff" : currentTheme.text,
+                    color: appSettings[settingKey] ? "#ffffff" : currentTheme.text,
                     border: "none",
                   }}
                 >
-                  {appSettings[item.id] && <Check className="w-2.5 h-2.5" />}
+                  {appSettings[settingKey] && <Check className="w-2.5 h-2.5" />}
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <div className="space-y-4">

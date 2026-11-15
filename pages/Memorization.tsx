@@ -130,6 +130,38 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
     const [toast, setToast] = useState<{ show: boolean; message: string }>({ show: false, message: '' });
     const [showGuide, setShowGuide] = useState(false);
 
+    // Keep screen awake logic (Screen Wake Lock API) throughout Memorization page
+    useEffect(() => {
+        let wakeLock: any = null;
+
+        const requestWakeLock = async () => {
+            try {
+                if ('wakeLock' in navigator) {
+                    wakeLock = await (navigator as any).wakeLock.request('screen');
+                }
+            } catch (err) {
+                // Ignore wake lock error
+            }
+        };
+
+        requestWakeLock();
+
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                requestWakeLock();
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            if (wakeLock) {
+                wakeLock.release().catch(() => {});
+            }
+        };
+    }, []);
+
     const getMemorizationSteps = () => {
         switch (activeTab) {
             case 'setup':
@@ -313,7 +345,7 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
 
     return (
         <div 
-            className="h-screen flex flex-col" 
+            className="h-[100dvh] flex flex-col overflow-hidden" 
             dir={isEn ? 'ltr' : 'rtl'}
             style={{ 
                 fontFamily: theme.font, 
@@ -366,15 +398,72 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
             </header>
 
             <main 
-                className="flex-1 overflow-y-auto px-4 py-3 space-y-4 max-w-lg mx-auto w-full hide-scrollbar"
-                style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 2rem)' }}
+                className="flex-1 min-h-0 overflow-y-auto px-4 pt-3 app-scroll-safe space-y-4 max-w-lg mx-auto w-full hide-scrollbar"
             >
-                {/* 1. Memorization Dashboard Header */}
+                {/* 1. Modern 4-Tab Segmented Control (First element at top of page) */}
+                <div id="memorization-tabs-container" className="flex p-1.5 rounded-2xl bg-slate-200/60 dark:bg-zinc-800/60 gap-1 shadow-none">
+                    <button 
+                        onClick={() => setActiveTab('setup')}
+                        className={`flex-1 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center justify-center cursor-pointer border-0 ${
+                            activeTab === 'setup' ? 'shadow-sm text-white' : 'opacity-70 hover:opacity-100'
+                        }`}
+                        style={{ 
+                            backgroundColor: activeTab === 'setup' ? primaryColor : 'transparent',
+                            color: activeTab === 'setup' ? btnTextColor : undefined
+                        }}
+                    >
+                        <span>{isEn ? 'Setup' : 'إعداد الحفظ'}</span>
+                    </button>
+
+                    <button 
+                        onClick={() => setActiveTab('plans')}
+                        className={`flex-1 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center justify-center cursor-pointer border-0 ${
+                            activeTab === 'plans' ? 'shadow-sm text-white' : 'opacity-70 hover:opacity-100'
+                        }`}
+                        style={{ 
+                            backgroundColor: activeTab === 'plans' ? primaryColor : 'transparent',
+                            color: activeTab === 'plans' ? btnTextColor : undefined
+                        }}
+                    >
+                        <span>{isEn ? 'Plans' : 'الخطط'}</span>
+                    </button>
+
+                    <button 
+                        onClick={() => setActiveTab('review')}
+                        className={`flex-1 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1 cursor-pointer border-0 ${
+                            activeTab === 'review' ? 'shadow-sm text-white' : 'opacity-70 hover:opacity-100'
+                        }`}
+                        style={{ 
+                            backgroundColor: activeTab === 'review' ? primaryColor : 'transparent',
+                            color: activeTab === 'review' ? btnTextColor : undefined
+                        }}
+                    >
+                        <span>{isEn ? 'Review' : 'المراجعة'}</span>
+                        {stats.dueTodayCount > 0 && (
+                            <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+                        )}
+                    </button>
+
+                    <button 
+                        onClick={() => setActiveTab('quiz')}
+                        className={`flex-1 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center justify-center cursor-pointer border-0 ${
+                            activeTab === 'quiz' ? 'shadow-sm text-white' : 'opacity-70 hover:opacity-100'
+                        }`}
+                        style={{ 
+                            backgroundColor: activeTab === 'quiz' ? primaryColor : 'transparent',
+                            color: activeTab === 'quiz' ? btnTextColor : undefined
+                        }}
+                    >
+                        <span>{isEn ? 'Testing' : 'الاختبار'}</span>
+                    </button>
+                </div>
+
+                {/* 2. Memorization Dashboard Header (لوحة الإنجاز) */}
                 <div id="memorization-dashboard-container" className="p-4 rounded-3xl bg-white dark:bg-zinc-900 shadow-sm border border-slate-100 dark:border-zinc-800 space-y-3">
                     <div className="flex items-center justify-between">
                         <div>
                             <h3 className="font-bold text-sm">
-                                {isEn ? 'Your Memorization Journey' : 'لوحة إنجاز الحافظ'}
+                                {isEn ? 'Your Memorization Journey' : 'لوحة الإنجاز'}
                             </h3>
                             <p className="text-[11px] opacity-60">
                                 {isEn 
@@ -437,64 +526,6 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                             </div>
                         </div>
                     )}
-                </div>
-
-                {/* 2. Modern 4-Tab Segmented Control */}
-                <div id="memorization-tabs-container" className="flex p-1.5 rounded-2xl bg-slate-200/60 dark:bg-zinc-800/60 gap-1 shadow-none">
-                    <button 
-                        onClick={() => setActiveTab('setup')}
-                        className={`flex-1 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center justify-center cursor-pointer border-0 ${
-                            activeTab === 'setup' ? 'shadow-sm text-white' : 'opacity-70 hover:opacity-100'
-                        }`}
-                        style={{ 
-                            backgroundColor: activeTab === 'setup' ? primaryColor : 'transparent',
-                            color: activeTab === 'setup' ? btnTextColor : undefined
-                        }}
-                    >
-                        <span>{isEn ? 'Setup' : 'إعداد الحفظ'}</span>
-                    </button>
-
-                    <button 
-                        onClick={() => setActiveTab('plans')}
-                        className={`flex-1 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center justify-center cursor-pointer border-0 ${
-                            activeTab === 'plans' ? 'shadow-sm text-white' : 'opacity-70 hover:opacity-100'
-                        }`}
-                        style={{ 
-                            backgroundColor: activeTab === 'plans' ? primaryColor : 'transparent',
-                            color: activeTab === 'plans' ? btnTextColor : undefined
-                        }}
-                    >
-                        <span>{isEn ? 'Plans' : 'الخطط'}</span>
-                    </button>
-
-                    <button 
-                        onClick={() => setActiveTab('review')}
-                        className={`flex-1 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1 cursor-pointer border-0 ${
-                            activeTab === 'review' ? 'shadow-sm text-white' : 'opacity-70 hover:opacity-100'
-                        }`}
-                        style={{ 
-                            backgroundColor: activeTab === 'review' ? primaryColor : 'transparent',
-                            color: activeTab === 'review' ? btnTextColor : undefined
-                        }}
-                    >
-                        <span>{isEn ? 'Review' : 'المراجعة'}</span>
-                        {stats.dueTodayCount > 0 && (
-                            <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
-                        )}
-                    </button>
-
-                    <button 
-                        onClick={() => setActiveTab('quiz')}
-                        className={`flex-1 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center justify-center cursor-pointer border-0 ${
-                            activeTab === 'quiz' ? 'shadow-sm text-white' : 'opacity-70 hover:opacity-100'
-                        }`}
-                        style={{ 
-                            backgroundColor: activeTab === 'quiz' ? primaryColor : 'transparent',
-                            color: activeTab === 'quiz' ? btnTextColor : undefined
-                        }}
-                    >
-                        <span>{isEn ? 'Testing' : 'الاختبار'}</span>
-                    </button>
                 </div>
 
                 {/* TAB 1: SETUP (إعداد الحفظ والتحديد المرن) */}
@@ -666,28 +697,47 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                                     <span className="text-xs font-bold">{isEn ? 'Recitation Pause' : 'سكتة الترديد'}</span>
                                     <button 
                                         onClick={() => setActivePicker('pause')}
-                                        className="w-12 h-9 rounded-xl bg-white dark:bg-zinc-700 font-bold text-xs shadow-sm cursor-pointer border-0"
+                                        className="px-2.5 h-9 min-w-[3rem] rounded-xl bg-white dark:bg-zinc-700 font-bold text-xs shadow-sm cursor-pointer border-0"
                                     >
-                                        {pauseLength}s
+                                        {pauseLength === 0 ? (isEn ? '0 (Off)' : '0 (مستمر)') : `${pauseLength}s`}
                                     </button>
                                 </div>
 
-                                <div className="p-3 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 flex items-center justify-between">
+                                <div 
+                                    className="p-3 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 flex items-center justify-between cursor-pointer"
+                                    onClick={() => {
+                                        const nextVal = !linkedRepeat;
+                                        setLinkedRepeat(nextVal);
+                                        if (nextVal) setIsCumulative(false);
+                                    }}
+                                >
                                     <div className="flex flex-col">
                                         <span className="text-xs font-bold">{isEn ? 'Linked Repeat' : 'الربط بالسابقة'}</span>
-                                        <span className="text-[9px] opacity-60">{isEn ? 'Link verses' : 'تثبيت التسلسل'}</span>
+                                        <span className="text-[9px] opacity-60">{isEn ? 'Link with previous verse' : 'تثبيت التسلسل'}</span>
                                     </div>
                                     <input 
                                         type="checkbox"
                                         checked={linkedRepeat}
-                                        onChange={e => setLinkedRepeat(e.target.checked)}
+                                        onChange={e => {
+                                            const checked = e.target.checked;
+                                            setLinkedRepeat(checked);
+                                            if (checked) setIsCumulative(false);
+                                        }}
+                                        onClick={e => e.stopPropagation()}
                                         className="w-5 h-5 rounded accent-emerald-500 cursor-pointer"
                                     />
                                 </div>
                             </div>
 
                             {/* Cumulative 3x3 Loop Toggle */}
-                            <div className="p-3 rounded-2xl bg-amber-50/70 dark:bg-zinc-800/60 border border-amber-200/50 dark:border-zinc-700/60 flex items-center justify-between">
+                            <div 
+                                className="p-3 rounded-2xl bg-amber-50/70 dark:bg-zinc-800/60 border border-amber-200/50 dark:border-zinc-700/60 flex items-center justify-between cursor-pointer"
+                                onClick={() => {
+                                    const nextVal = !isCumulative;
+                                    setIsCumulative(nextVal);
+                                    if (nextVal) setLinkedRepeat(false);
+                                }}
+                            >
                                 <div>
                                     <div className="text-xs font-bold text-amber-900 dark:text-amber-200">
                                         {isEn ? 'Cumulative 3x3 Loop (Shanqiti)' : 'الحفظ التراكمي الشنقيطي (3×3)'}
@@ -699,18 +749,23 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                                 <input 
                                     type="checkbox"
                                     checked={isCumulative}
-                                    onChange={e => setIsCumulative(e.target.checked)}
+                                    onChange={e => {
+                                        const checked = e.target.checked;
+                                        setIsCumulative(checked);
+                                        if (checked) setLinkedRepeat(false);
+                                    }}
+                                    onClick={e => e.stopPropagation()}
                                     className="w-5 h-5 rounded accent-amber-500 cursor-pointer"
                                 />
                             </div>
                         </div>
 
                         {/* Start Button */}
-                        <div className="space-y-2 pt-1">
+                        <div className="space-y-3 pt-1">
                             <button
                                 id="btn-start-memorization"
                                 onClick={() => startMemorizationSession()}
-                                className="w-full py-4 rounded-2xl font-bold text-base shadow-xl flex items-center justify-center active:scale-95 transition-all cursor-pointer border-0"
+                                className="w-full py-4 min-h-[56px] rounded-2xl font-bold text-base shadow-xl flex items-center justify-center active:scale-95 transition-all cursor-pointer border-0"
                                 style={{ backgroundColor: primaryColor, color: btnTextColor }}
                             >
                                 <span>{isEn ? 'Start Quran Memorization Session' : 'بدء جلسة تحفيظ القرآن الكريم'}</span>
@@ -719,9 +774,12 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                             <button
                                 id="btn-download-reciters"
                                 onClick={() => setShowDownloadModal(true)}
-                                className="w-full py-3 rounded-2xl font-bold text-xs bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-zinc-700 transition-all border-0 cursor-pointer"
+                                className="w-full py-4 min-h-[52px] rounded-2xl font-bold text-sm bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-zinc-700 shadow-sm transition-all border-0 cursor-pointer active:scale-98"
                             >
-                                <span>{isEn ? 'Download Audio for Offline Memorization' : 'تحميل التلاوات للحفظ بدون إنترنت'}</span>
+                                <span className="flex items-center gap-2">
+                                    <Download size={18} />
+                                    <span>{isEn ? 'Download Audio for Offline Memorization' : 'تحميل التلاوات للحفظ بدون إنترنت'}</span>
+                                </span>
                             </button>
                         </div>
                     </div>
@@ -1067,7 +1125,6 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                     </div>
                 )}
 
-                <div className="h-8 shrink-0"></div>
             </main>
 
             {/* Custom Range / Ayah / Page Pickers Modal */}
@@ -1077,67 +1134,79 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                     onClick={() => setActivePicker(null)}
                 >
                     <div 
-                        className="w-full max-w-[320px] rounded-[2rem] p-4 shadow-2xl animate-modal-enter flex flex-col max-h-[75vh] bg-white dark:bg-zinc-900 border-0" 
+                        className="w-full max-w-[320px] rounded-[2rem] p-4 shadow-2xl animate-modal-enter flex flex-col max-h-[75dvh] bg-white dark:bg-zinc-900 border-0" 
                         onClick={e => e.stopPropagation()}
                     >
-                        <div className="flex-1 overflow-y-auto scrollbar-hide space-y-1.5 p-1 text-right" dir={isEn ? 'ltr' : 'rtl'}>
+                        <div className="flex-1 min-h-0 overflow-y-auto scrollbar-hide space-y-1.5 p-1 text-right" dir={isEn ? 'ltr' : 'rtl'}>
                             {/* Surah Picker */}
                             {(activePicker === 'fromSurah' || activePicker === 'toSurah') && (
-                                (isEn ? SURAH_NAMES_EN : SURAH_NAMES_AR).map((name, i) => {
-                                    const sNum = i + 1;
-                                    const isSelected = (activePicker === 'fromSurah' ? fromSurah : toSurah) === sNum;
-                                    return (
-                                        <button
-                                            key={i}
-                                            onClick={() => {
-                                                if (activePicker === 'fromSurah') {
-                                                    setFromSurah(sNum);
-                                                    setFromAyah(1);
-                                                    if (sNum > toSurah) {
+                                (isEn ? SURAH_NAMES_EN : SURAH_NAMES_AR)
+                                    .map((name, i) => ({ name, sNum: i + 1 }))
+                                    .filter(({ sNum }) => activePicker === 'fromSurah' || sNum >= fromSurah)
+                                    .map(({ name, sNum }) => {
+                                        const isSelected = (activePicker === 'fromSurah' ? fromSurah : toSurah) === sNum;
+                                        return (
+                                            <button
+                                                key={sNum}
+                                                onClick={() => {
+                                                    if (activePicker === 'fromSurah') {
+                                                        setFromSurah(sNum);
+                                                        setFromAyah(1);
                                                         setToSurah(sNum);
-                                                        setToAyah(1);
+                                                        setToAyah(getAyahsCount(sNum));
+                                                    } else {
+                                                        setToSurah(sNum);
+                                                        setToAyah(getAyahsCount(sNum));
                                                     }
-                                                } else {
-                                                    setToSurah(sNum);
-                                                    setToAyah(getAyahsCount(sNum));
-                                                }
-                                                setActivePicker(null);
-                                            }}
-                                            className={`w-full p-2.5 rounded-xl font-bold transition-all flex items-center justify-between cursor-pointer border-0 ${
-                                                isSelected ? 'bg-emerald-500 text-white shadow-sm' : 'hover:bg-slate-100 dark:hover:bg-zinc-800'
-                                            }`}
-                                        >
-                                            <span className="text-xs">{isEn ? name : `سورة ${name}`}</span>
-                                            <span className="text-[10px] opacity-60">{sNum}</span>
-                                        </button>
-                                    );
-                                })
+                                                    setActivePicker(null);
+                                                }}
+                                                className={`w-full p-2.5 rounded-xl font-bold transition-all flex items-center justify-between cursor-pointer border-0 ${
+                                                    isSelected ? 'bg-emerald-500 text-white shadow-sm' : 'hover:bg-slate-100 dark:hover:bg-zinc-800'
+                                                }`}
+                                            >
+                                                <span className="text-xs">{isEn ? name : `سورة ${name}`}</span>
+                                                <span className="text-[10px] opacity-60">{sNum}</span>
+                                            </button>
+                                        );
+                                    })
                             )}
 
                             {/* Ayah Picker */}
-                            {(activePicker === 'fromAyah' || activePicker === 'toAyah') && (
-                                <div className="grid grid-cols-4 gap-2">
-                                    {Array.from({ length: getAyahsCount(activePicker === 'fromAyah' ? fromSurah : toSurah) }).map((_, i) => {
-                                        const aNum = i + 1;
-                                        const isSelected = (activePicker === 'fromAyah' ? fromAyah : toAyah) === aNum;
-                                        return (
-                                            <button
-                                                key={i}
-                                                onClick={() => {
-                                                    if (activePicker === 'fromAyah') setFromAyah(aNum);
-                                                    else setToAyah(aNum);
-                                                    setActivePicker(null);
-                                                }}
-                                                className={`aspect-square flex items-center justify-center rounded-xl font-bold transition-all text-xs cursor-pointer border-0 ${
-                                                    isSelected ? 'bg-emerald-500 text-white shadow-sm' : 'bg-slate-100 dark:bg-zinc-800'
-                                                }`}
-                                            >
-                                                {aNum}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            )}
+                            {(activePicker === 'fromAyah' || activePicker === 'toAyah') && (() => {
+                                const targetSurah = activePicker === 'fromAyah' ? fromSurah : toSurah;
+                                const totalAyahs = getAyahsCount(targetSurah);
+                                const startAyah = (activePicker === 'toAyah' && fromSurah === toSurah) ? fromAyah : 1;
+                                const count = Math.max(0, totalAyahs - startAyah + 1);
+                                return (
+                                    <div className="grid grid-cols-4 gap-2">
+                                        {Array.from({ length: count }).map((_, i) => {
+                                            const aNum = startAyah + i;
+                                            const isSelected = (activePicker === 'fromAyah' ? fromAyah : toAyah) === aNum;
+                                            return (
+                                                <button
+                                                    key={aNum}
+                                                    onClick={() => {
+                                                        if (activePicker === 'fromAyah') {
+                                                            setFromAyah(aNum);
+                                                            if (fromSurah === toSurah && toAyah < aNum) {
+                                                                setToAyah(aNum);
+                                                            }
+                                                        } else {
+                                                            setToAyah(aNum);
+                                                        }
+                                                        setActivePicker(null);
+                                                    }}
+                                                    className={`aspect-square flex items-center justify-center rounded-xl font-bold transition-all text-xs cursor-pointer border-0 ${
+                                                        isSelected ? 'bg-emerald-500 text-white shadow-sm' : 'bg-slate-100 dark:bg-zinc-800'
+                                                    }`}
+                                                >
+                                                    {aNum}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                );
+                            })()}
 
                             {/* Page Picker (1 to 604) */}
                             {activePicker === 'page' && (
@@ -1182,25 +1251,49 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                             )}
 
                             {/* Number Pickers (Repeats, Pause) */}
-                            {(activePicker === 'range' || activePicker === 'ayah' || activePicker === 'pause') && (
+                            {activePicker === 'pause' && (
+                                <div className="grid grid-cols-2 gap-2.5">
+                                    {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((val) => {
+                                        const isSelected = pauseLength === val;
+                                        return (
+                                            <button
+                                                key={val}
+                                                onClick={() => {
+                                                    setPauseLength(val);
+                                                    setActivePicker(null);
+                                                }}
+                                                className={`py-3.5 flex items-center justify-center rounded-2xl font-bold transition-all text-sm border-0 cursor-pointer ${
+                                                    isSelected ? 'bg-emerald-500 text-white shadow-md' : 'bg-slate-100 dark:bg-zinc-800'
+                                                }`}
+                                            >
+                                                {val === 0 
+                                                    ? (isEn ? '0s (Continuous)' : '0 (مستمر بدون توقف)') 
+                                                    : `${val} ${isEn ? 'sec' : 'ثوانٍ'}`}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            )}
+
+                            {/* Range & Ayah Number Pickers */}
+                            {(activePicker === 'range' || activePicker === 'ayah') && (
                                 <div className="grid grid-cols-2 gap-2.5">
                                     {Array.from({ length: activePicker === 'ayah' ? 20 : 10 }).map((_, i) => {
                                         const val = i + 1;
-                                        const isSelected = (activePicker === 'range' ? rangeRepeat : activePicker === 'ayah' ? ayahRepeat : pauseLength) === val;
+                                        const isSelected = (activePicker === 'range' ? rangeRepeat : ayahRepeat) === val;
                                         return (
                                             <button
                                                 key={i}
                                                 onClick={() => {
                                                     if (activePicker === 'range') setRangeRepeat(val);
                                                     else if (activePicker === 'ayah') setAyahRepeat(val);
-                                                    else if (activePicker === 'pause') setPauseLength(val);
                                                     setActivePicker(null);
                                                 }}
                                                 className={`py-3.5 flex items-center justify-center rounded-2xl font-bold transition-all text-base border-0 cursor-pointer ${
                                                     isSelected ? 'bg-emerald-500 text-white shadow-md' : 'bg-slate-100 dark:bg-zinc-800'
                                                 }`}
                                             >
-                                                {val} {activePicker === 'pause' ? 's' : '×'}
+                                                {val}×
                                             </button>
                                         );
                                     })}

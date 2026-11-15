@@ -230,7 +230,7 @@ const HabitArchive: React.FC<HabitArchiveProps> = ({ onBack, onHome, onSelectDat
 
     return (
         <div 
-            className="h-screen h-[100dvh] max-h-screen max-h-[100dvh] flex flex-col relative overflow-hidden" 
+            className="h-[100dvh] max-h-[100dvh] flex flex-col relative overflow-hidden" 
             style={{ backgroundColor: tokens.pageBgColor, color: tokens.textColor }}
             dir={isEn ? 'ltr' : 'rtl'}
         >
@@ -274,7 +274,7 @@ const HabitArchive: React.FC<HabitArchiveProps> = ({ onBack, onHome, onSelectDat
             </header>
 
             <main 
-                className="flex-1 min-h-0 overflow-y-auto px-4 py-6 overscroll-contain"
+                className="flex-1 min-h-0 overflow-y-auto px-4 pt-6 app-scroll-safe overscroll-contain"
             >
                 {/* Tabs */}
                 <div 
@@ -329,7 +329,7 @@ const HabitArchive: React.FC<HabitArchiveProps> = ({ onBack, onHome, onSelectDat
                     )}
                 </div>
 
-                <div className="space-y-3 pb-8">
+                <div className="space-y-3">
                     {allDates.length === 0 && (
                         <div 
                             className="text-center p-8 opacity-70 text-sm font-bold dark:text-gray-300 rounded-2xl border-0"

@@ -29,6 +29,7 @@ interface OutdoorWeatherBadgeProps {
   compact?: boolean;
   isOpen?: boolean;
   onClose?: () => void;
+  hideTriggerButton?: boolean;
 }
 
 const PRAYER_KEYS = ['Fajr', 'Sunrise', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
@@ -61,7 +62,8 @@ export const OutdoorWeatherBadge: React.FC<OutdoorWeatherBadgeProps> = ({
   className = '',
   compact = false,
   isOpen,
-  onClose
+  onClose,
+  hideTriggerButton = false
 }) => {
   const { language, formatNumber } = useLanguage();
   const { isNightMode, themeKey, theme, homeThemeVariant } = useTheme();
@@ -377,10 +379,9 @@ export const OutdoorWeatherBadge: React.FC<OutdoorWeatherBadgeProps> = ({
         )}
 
         {/* Guidance & Explanation Box */}
-        <div className={`my-2 p-2.5 rounded-xl flex items-start gap-2 text-[10.5px] leading-relaxed border ${
+        <div className={`my-2 p-2.5 rounded-xl text-[10.5px] leading-relaxed border ${
           isDark ? 'bg-zinc-800/90 border-amber-500/30 text-amber-200' : 'bg-amber-50/90 border-amber-200 text-amber-950'
         }`}>
-          <Info className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
           <p className="font-medium">
             {isEn 
               ? `Guidance: Outdoor temperature forecast specifically for ${selectedPrayerName.en} at your location.`
@@ -390,17 +391,12 @@ export const OutdoorWeatherBadge: React.FC<OutdoorWeatherBadgeProps> = ({
 
         {/* Current Condition Card for Selected Prayer */}
         <div className={`my-2.5 p-3 rounded-xl flex items-center justify-between ${themeStyles.currentCardBg}`}>
-          <div className="flex items-center gap-2.5">
-            <div className={`p-1.5 rounded-lg ${themeStyles.iconBg}`}>
-              {renderWeatherIcon(selectedPrayerData.code, selectedPrayerData.temp, "w-5 h-5")}
-            </div>
-            <div>
-              <span className="text-xl font-black tabular-nums leading-none">
-                {formattedSelectedTemp}
-              </span>
-              <div className="text-[11px] font-semibold mt-0.5 opacity-90">
-                {isEn ? (selectedPrayerData.conditionEn || 'Mild') : (selectedPrayerData.conditionAr || 'معتدل')}
-              </div>
+          <div>
+            <span className="text-xl font-black tabular-nums leading-none">
+              {formattedSelectedTemp}
+            </span>
+            <div className="text-[11px] font-semibold mt-0.5 opacity-90">
+              {isEn ? (selectedPrayerData.conditionEn || 'Mild') : (selectedPrayerData.conditionAr || 'معتدل')}
             </div>
           </div>
 
@@ -418,8 +414,7 @@ export const OutdoorWeatherBadge: React.FC<OutdoorWeatherBadgeProps> = ({
         </div>
 
         {/* Mosque Walk Recommendation tailored for selected prayer */}
-        <div className={`mt-2.5 p-3 rounded-xl flex items-start gap-2 text-[11px] font-medium leading-relaxed ${themeStyles.adviceBg}`}>
-          <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
+        <div className={`mt-2.5 p-3 rounded-xl text-[11px] font-medium leading-relaxed ${themeStyles.adviceBg}`}>
           <p>
             {getSpecificPrayerAdvice(activePrayerTab, selectedPrayerData.temp)}
           </p>
@@ -428,6 +423,11 @@ export const OutdoorWeatherBadge: React.FC<OutdoorWeatherBadgeProps> = ({
     </div>,
     document.body
   ) : null;
+
+  // If used purely as a controlled modal or hideTriggerButton is set, do not render any trigger button
+  if (hideTriggerButton || isOpen !== undefined) {
+    return modalContent;
+  }
 
   const currentBadgeTemp = isEn 
     ? `${formatVal(activeWeather.currentTemp)}°C` 

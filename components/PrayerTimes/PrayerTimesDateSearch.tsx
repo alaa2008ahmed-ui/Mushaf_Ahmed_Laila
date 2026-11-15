@@ -1,5 +1,6 @@
 import React from 'react';
 import { useLanguage } from '../../context/LanguageContext';
+import { useTheme } from '../../context/ThemeContext';
 import { tPrayer } from '../../utils/prayerTimesTranslations';
 import { Search } from 'lucide-react';
 
@@ -13,6 +14,7 @@ interface PrayerTimesDateSearchProps {
     cardBorderColor?: string;
     isDefaultTheme?: boolean;
     isBlackTheme?: boolean;
+    onOpenCalculationSettings?: () => void;
 }
 
 const PrayerTimesDateSearch: React.FC<PrayerTimesDateSearchProps> = ({
@@ -20,12 +22,20 @@ const PrayerTimesDateSearch: React.FC<PrayerTimesDateSearchProps> = ({
     setSearchInput,
     handleManualSearch,
     primaryColor,
-    isBlackTheme
+    isBlackTheme,
+    onOpenCalculationSettings
 }) => {
     const { language, isRTL, dir } = useLanguage();
+    const { themeKey, homeThemeVariant, isNightMode } = useTheme();
+
+    const isGoldenTheme = !isNightMode && (
+        homeThemeVariant === 'gold' ||
+        themeKey === 'shiny_gold' ||
+        themeKey === 'gold'
+    );
 
     return (
-        <div id="prayer-date-search-container" dir={dir} className="flex items-center justify-center gap-2.5">
+        <div id="prayer-date-search-container" dir={dir} className="flex items-center justify-center gap-2">
             {/* Input Container */}
             <div 
                 id="search-input-container" 
@@ -57,7 +67,7 @@ const PrayerTimesDateSearch: React.FC<PrayerTimesDateSearchProps> = ({
             <button 
                 type="button"
                 onClick={handleManualSearch} 
-                className="text-xs sm:text-sm font-bold px-4 py-3 rounded-2xl shadow-sm active:scale-95 transition-all cursor-pointer shrink-0" 
+                className="text-xs sm:text-sm font-bold px-3.5 sm:px-4 py-3 rounded-2xl shadow-sm active:scale-95 transition-all cursor-pointer shrink-0" 
                 style={{ 
                     backgroundColor: primaryColor,
                     color: isBlackTheme ? '#000000' : '#FFFFFF',
@@ -69,6 +79,29 @@ const PrayerTimesDateSearch: React.FC<PrayerTimesDateSearchProps> = ({
             >
                 {tPrayer('searchBtn', language)}
             </button>
+
+            {/* Calculation Settings Button - Placed on the left of search button */}
+            {onOpenCalculationSettings && (
+                <button 
+                    type="button"
+                    onClick={onOpenCalculationSettings}
+                    className="text-xs sm:text-sm font-bold px-3.5 sm:px-4 py-3 rounded-2xl shadow-sm active:scale-95 transition-all cursor-pointer shrink-0"
+                    style={{ 
+                        backgroundColor: primaryColor,
+                        color: isBlackTheme ? '#000000' : '#FFFFFF',
+                        borderRadius: '16px',
+                        boxShadow: isBlackTheme 
+                            ? '0 4px 14px -2px rgba(255,255,255,0.2)' 
+                            : `0 4px 14px -2px ${primaryColor}40`
+                    }}
+                    title={language === 'en' ? 'Calculation & Fiqh Settings' : 'إعدادات طريقة الحساب والمذاهب الفقهية'}
+                    aria-label={language === 'en' ? 'Calculation & Fiqh Settings' : 'إعدادات طريقة الحساب والمذاهب الفقهية'}
+                >
+                    <span className="whitespace-nowrap">
+                        {language === 'en' ? 'Method' : 'الحساب'}
+                    </span>
+                </button>
+            )}
         </div>
     );
 };

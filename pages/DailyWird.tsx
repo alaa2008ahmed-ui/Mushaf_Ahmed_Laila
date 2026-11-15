@@ -2,11 +2,12 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { motion } from 'motion/react';
-import { CheckCircle, BookOpen, RotateCcw, Play, Settings, X, User, Plus, Trash2, ChevronDown, Edit2, Home, Check, Languages } from 'lucide-react';
+import { CheckCircle, RotateCcw, Play, Settings, X, User, Plus, Trash2, ChevronDown, Edit2, Home, Check, Languages } from 'lucide-react';
 import ThemePageLock from '../components/ThemePageLock';
 import ResetConfirmModal from '../components/DailyWird/ResetConfirmModal';
 import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/CommunitySpotlightGuide';
 import { DAILY_SETTINGS_STEPS, DAILY_PROGRESS_STEPS } from '../components/Community/communityTourSteps';
+import { useShowPageGuides } from '../utils/guideManager';
 import { syncDailyWirdNotifications, getWirdDayRange, JUZ_PAGE_BOUNDARIES } from '../utils/dailyWirdNotificationService';
 import { registerBackInterceptor } from '../hooks/useBackButton';
 import { Preferences } from '@capacitor/preferences';
@@ -100,10 +101,65 @@ function hexToRgba(hex: string, alpha: number = 1): string {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
+// Arabic ordinal adjective matching masculine genitive «اليومِ» (e.g. الأول، الثاني، ... العشرين، الثلاثين)
+function getArabicDayOrdinal(day: number): string {
+  const n = Math.max(1, Math.floor(day));
+  const units = [
+    '', 'الأول', 'الثاني', 'الثالث', 'الرابع', 'الخامس',
+    'السادس', 'السابع', 'الثامن', 'التاسع', 'العاشر'
+  ];
+  const teens = [
+    '', 'الحادي عشر', 'الثاني عشر', 'الثالث عشر', 'الرابع عشر', 'الخامس عشر',
+    'السادس عشر', 'السابع عشر', 'الثامن عشر', 'التاسع عشر'
+  ];
+  const decades = [
+    '', '', 'العشرين', 'الثلاثين', 'الأربعين', 'الخمسين',
+    'الستين', 'السبعين', 'الثمانين', 'التسعين'
+  ];
+  const compoundUnits = [
+    '', 'الحادي', 'الثاني', 'الثالث', 'الرابع', 'الخامس',
+    'السادس', 'السابع', 'الثامن', 'التاسع'
+  ];
+  const hundreds = [
+    '', 'المئة', 'المئتين', 'الثلاثمئة', 'الأربعمئة', 'الخمسمئة',
+    'الستمئة', 'السبعمئة', 'الثمانمئة', 'التسعمئة'
+  ];
+
+  if (n <= 10) return units[n];
+  if (n <= 19) return teens[n - 10];
+  if (n < 100) {
+    const u = n % 10;
+    const d = Math.floor(n / 10);
+    if (u === 0) return decades[d];
+    return `${compoundUnits[u]} و${decades[d]}`;
+  }
+  if (n < 1000) {
+    const h = Math.floor(n / 100);
+    const rem = n % 100;
+    if (rem === 0) return hundreds[h];
+    return `${hundreds[h]} و${getArabicDayOrdinal(rem)}`;
+  }
+  return toArabic(n);
+}
+
+function getEnglishOrdinal(day: number): string {
+  const n = Math.max(1, Math.floor(day));
+  const mod100 = n % 100;
+  if (mod100 >= 11 && mod100 <= 13) return `${n}th`;
+  switch (n % 10) {
+    case 1: return `${n}st`;
+    case 2: return `${n}nd`;
+    case 3: return `${n}rd`;
+    default: return `${n}th`;
+  }
+}
+
 const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, params?: any) => void }> = ({ onBack, onNavigate }) => {
+  const showPageGuides = useShowPageGuides();
   const { theme, themeKey } = useTheme();
   const { language } = useLanguage();
   const isEn = language === 'en';
+  const formatNum = (val: number | string) => (isEn ? String(val) : toArabic(val));
 
   const isBlackTheme = theme.bgColor === '#000000' || theme.name === 'أبيض وأسود' || themeKey === 'deep_black';
   const isBlackAndWhite = themeKey === 'deep_black' || theme.name === 'أبيض وأسود';
@@ -605,7 +661,7 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
           <input 
             type="text"
             inputMode="numeric"
-            value={tempValue}
+            value={isEn ? tempValue : toArabic(tempValue)}
             onFocus={() => {
               setTempValue('');
             }}
@@ -617,7 +673,7 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
             }}
             className="w-full bg-slate-100 dark:bg-zinc-800/80 rounded-2xl p-3.5 text-center text-2xl font-black border-0 focus:outline-none focus:ring-2 transition-all"
             style={{ color: primaryColor }}
-            placeholder={tempMode === 'days' ? '30' : '20'}
+            placeholder={formatNum(tempMode === 'days' ? '30' : '20')}
           />
         </div>
 
@@ -759,7 +815,7 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
               {isEn ? 'Completion Rate' : 'نسبة الإنجاز'}
             </span>
             <span className="font-black text-base" style={{ color: primaryColor }}>
-              {progress.toFixed(1)}%
+              {formatNum(progress.toFixed(1))}%
             </span>
           </div>
 
@@ -774,46 +830,66 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
           </div>
 
           <div className="flex justify-between items-center text-xs opacity-70 font-semibold pt-0.5">
-            <span>{isEn ? `Day ${settings.currentDay} of ${totalDays}` : `اليوم ${settings.currentDay} من ${totalDays}`}</span>
-            <span>{isEn ? `${settings.completedDays.length} days done` : `${settings.completedDays.length} يوم مكتمل`}</span>
+            <span>{isEn ? `Day ${settings.currentDay} of ${totalDays}` : `اليوم ${toArabic(settings.currentDay)} من ${toArabic(totalDays)}`}</span>
+            <span>{isEn ? `${settings.completedDays.length} days done` : `${toArabic(settings.completedDays.length)} يوم مكتمل`}</span>
           </div>
         </div>
 
         {/* Current Day's Reading Card */}
         <div 
           id="wird-today-card" 
-          className="app-page-card rounded-3xl p-5 bg-white dark:bg-zinc-900 border-0 text-center space-y-4"
+          className="app-page-card rounded-3xl p-4 sm:p-5 bg-white dark:bg-zinc-900 border-0 text-center space-y-3"
           style={{ color: 'var(--text-color)', border: 'none' }}
         >
-          <div id="wird-today-container">
-            <div className="flex items-center justify-center gap-2 mb-3">
-              <BookOpen size={18} style={{ color: primaryColor }} />
-              <h3 className="text-base font-bold" style={{ color: primaryColor }}>
-                {isEn ? `Today's Assigned Wird (${settings.currentDay})` : `ورد اليوم (${settings.currentDay})`}
+          <div id="wird-today-container" className="p-3.5 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border-0">
+            <div className="flex items-center justify-center mb-2.5">
+              <h3 className="text-sm font-bold" style={{ color: primaryColor }}>
+                {isEn
+                  ? `Today's Wird ${getEnglishOrdinal(settings.currentDay)} - ${settings.currentDay}`
+                  : `ورد اليوم ${getArabicDayOrdinal(settings.currentDay)} - ${toArabic(settings.currentDay)}`}
               </h3>
             </div>
             
-            <div className="flex justify-center items-center gap-3">
-              {hasPages ? (
-                <>
-                  <div className="p-3.5 rounded-2xl flex-1 bg-slate-100 dark:bg-zinc-800/80 border-0">
-                    <p className="text-[11px] opacity-70 mb-0.5 font-semibold">{isEn ? 'From Page' : 'من صفحة'}</p>
-                    <p className="text-2xl font-black" style={{ color: primaryColor }}>{startPage}</p>
-                  </div>
-                  <span className="text-xl opacity-30 font-bold">-</span>
-                  <div className="p-3.5 rounded-2xl flex-1 bg-slate-100 dark:bg-zinc-800/80 border-0">
-                    <p className="text-[11px] opacity-70 mb-0.5 font-semibold">{isEn ? 'To Page' : 'إلى صفحة'}</p>
-                    <p className="text-2xl font-black" style={{ color: primaryColor }}>{endPage}</p>
-                  </div>
-                </>
-              ) : (
-                <div className="p-4 rounded-2xl flex-1 bg-slate-100 dark:bg-zinc-800/80 border-0">
-                  <p className="text-base font-bold" style={{ color: primaryColor }}>
-                    {isEn ? 'You have completed all pages!' : 'لقد أكملت جميع الصفحات بارك الله فيك!'}
-                  </p>
-                </div>
-              )}
-            </div>
+            {hasPages ? (
+              <div className="grid grid-cols-2 gap-2.5 w-full">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const startDetails = getAyahDetails(startPage);
+                    handleOpenQuran(
+                      startPage,
+                      { s: startDetails.surahNumber, a: startDetails.ayahNumber },
+                      isEn ? 'translation' : 'mushaf'
+                    );
+                  }}
+                  className="wird-inner-raised rounded-2xl py-2 px-3 flex items-center justify-center gap-1.5 text-center bg-white dark:bg-zinc-900 text-black dark:text-white border-0 cursor-pointer"
+                >
+                  <span className="text-xs font-bold opacity-80">{isEn ? 'From Page' : 'من صفحة'}</span>
+                  <span className="text-sm font-black" style={{ color: primaryColor }}>{formatNum(startPage)}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const endDetails = getAyahDetails(endPage);
+                    handleOpenQuran(
+                      endPage,
+                      { s: endDetails.surahNumber, a: endDetails.ayahNumber },
+                      isEn ? 'translation' : 'mushaf'
+                    );
+                  }}
+                  className="wird-inner-raised rounded-2xl py-2 px-3 flex items-center justify-center gap-1.5 text-center bg-white dark:bg-zinc-900 text-black dark:text-white border-0 cursor-pointer"
+                >
+                  <span className="text-xs font-bold opacity-80">{isEn ? 'To Page' : 'إلى صفحة'}</span>
+                  <span className="text-sm font-black" style={{ color: primaryColor }}>{formatNum(endPage)}</span>
+                </button>
+              </div>
+            ) : (
+              <div className="p-3 rounded-2xl bg-white dark:bg-zinc-900 border-0">
+                <p className="text-sm font-bold" style={{ color: primaryColor }}>
+                  {isEn ? 'You have completed all pages!' : 'لقد أكملت جميع الصفحات بارك الله فيك!'}
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Current Reading Position Card (4 Details Grid) */}
@@ -826,18 +902,16 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
                   isEn ? 'translation' : 'mushaf'
                 );
               }}
-              className="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border-0 cursor-pointer transition-all hover:opacity-95"
+              className="p-3.5 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border-0 cursor-pointer transition-all hover:opacity-95"
             >
-              <div className="text-xs font-bold opacity-60 mb-2.5 text-center">
+              <div className="text-xs font-bold opacity-60 mb-2 text-center">
                 {isEn ? 'Current Reading Position' : 'موضع القراءة الحالي'}
               </div>
               <div className="grid grid-cols-2 gap-2.5 w-full">
                 {/* اسم السورة */}
                 <div 
-                  className="rounded-2xl py-2.5 px-3 flex flex-col items-center justify-center text-center shadow-xs"
-                  style={{ backgroundColor: primaryColor, color: '#ffffff' }}
+                  className="wird-inner-raised rounded-2xl py-2 px-3 flex items-center justify-center text-center bg-white dark:bg-zinc-900 text-black dark:text-white border-0"
                 >
-                  <span className="text-[11px] opacity-90 font-medium mb-0.5">{isEn ? 'Surah Name' : 'اسم السورة'}</span>
                   <span className="font-extrabold text-sm truncate max-w-full">
                     {isEn ? ayahDetails.surahNameEn : `سورة ${ayahDetails.surahNameAr}`}
                   </span>
@@ -845,34 +919,28 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
 
                 {/* رقم الآية */}
                 <div 
-                  className="rounded-2xl py-2.5 px-3 flex flex-col items-center justify-center text-center shadow-xs"
-                  style={{ backgroundColor: primaryColor, color: '#ffffff' }}
+                  className="wird-inner-raised rounded-2xl py-2 px-3 flex items-center justify-center text-center bg-white dark:bg-zinc-900 text-black dark:text-white border-0"
                 >
-                  <span className="text-[11px] opacity-90 font-medium mb-0.5">{isEn ? 'Ayah Number' : 'رقم الآية'}</span>
-                  <span className="font-black text-sm">
-                    {isEn ? ayahDetails.ayahNumber : toArabic(ayahDetails.ayahNumber)}
+                  <span className="font-extrabold text-sm">
+                    {isEn ? `Ayah ${ayahDetails.ayahNumber}` : `الآية ${toArabic(ayahDetails.ayahNumber)}`}
                   </span>
                 </div>
 
                 {/* رقم الجزء */}
                 <div 
-                  className="rounded-2xl py-2.5 px-3 flex flex-col items-center justify-center text-center shadow-xs"
-                  style={{ backgroundColor: primaryColor, color: '#ffffff' }}
+                  className="wird-inner-raised rounded-2xl py-2 px-3 flex items-center justify-center text-center bg-white dark:bg-zinc-900 text-black dark:text-white border-0"
                 >
-                  <span className="text-[11px] opacity-90 font-medium mb-0.5">{isEn ? 'Juz Number' : 'رقم الجزء'}</span>
-                  <span className="font-black text-sm">
-                    {isEn ? ayahDetails.juzNumber : toArabic(ayahDetails.juzNumber)}
+                  <span className="font-extrabold text-sm">
+                    {isEn ? `Juz ${ayahDetails.juzNumber}` : `الجزء ${toArabic(ayahDetails.juzNumber)}`}
                   </span>
                 </div>
 
                 {/* رقم الصفحة */}
                 <div 
-                  className="rounded-2xl py-2.5 px-3 flex flex-col items-center justify-center text-center shadow-xs"
-                  style={{ backgroundColor: primaryColor, color: '#ffffff' }}
+                  className="wird-inner-raised rounded-2xl py-2 px-3 flex items-center justify-center text-center bg-white dark:bg-zinc-900 text-black dark:text-white border-0"
                 >
-                  <span className="text-[11px] opacity-90 font-medium mb-0.5">{isEn ? 'Page Number' : 'رقم الصفحة'}</span>
-                  <span className="font-black text-sm">
-                    {isEn ? ayahDetails.pageNumber : toArabic(ayahDetails.pageNumber)}
+                  <span className="font-extrabold text-sm">
+                    {isEn ? `Page ${ayahDetails.pageNumber}` : `الصفحة ${toArabic(ayahDetails.pageNumber)}`}
                   </span>
                 </div>
               </div>
@@ -1170,7 +1238,7 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
 
   return (
     <div 
-      className="h-screen flex flex-col" 
+      className="h-[100dvh] flex flex-col overflow-hidden" 
       dir={isEn ? 'ltr' : 'rtl'} 
       style={{ 
         fontFamily: theme.font, 
@@ -1181,7 +1249,7 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
       <header className="app-top-bar shrink-0 relative z-10" style={{ backgroundColor: 'var(--qr-bar-bg)', borderBottom: '1px solid var(--qr-bar-border)' }}>
         <div className="app-top-bar__inner">
           <div className="relative flex items-center justify-center w-full min-h-[44px]">
-            {/* Back button & Notification toggle button */}
+            {/* Back button */}
             <div className={`absolute ${isEn ? 'left-0' : 'right-0'} flex items-center gap-1.5`}>
               <button
                 onClick={handleHomeClick}
@@ -1191,50 +1259,6 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
               >
                 <i className={`fa-solid ${isEn ? 'fa-arrow-left' : 'fa-arrow-right'} text-xl`}></i>
               </button>
-              {!showSettings && settings && (
-                <button
-                  id="wird-notifications-toggle-btn"
-                  type="button"
-                  onClick={() => {
-                    if (!settings) return;
-                    const next = settings.reminderEnabled === false;
-                    const updated = {
-                      ...settings,
-                      reminderEnabled: next,
-                      reminderTime: settings.reminderTime || '10:00'
-                    };
-                    const newProfiles = allSettings.map(p => p.id === settings.id ? updated : p);
-                    saveAllSettings(newProfiles, settings.id);
-                    syncDailyWirdNotifications(language);
-                    if (typeof navigator !== 'undefined' && navigator.vibrate) {
-                      try { navigator.vibrate(30); } catch {}
-                    }
-                  }}
-                  className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
-                  title={
-                    isEn 
-                      ? (settings?.reminderEnabled !== false ? 'Daily Wird Notifications: Enabled (Click to disable)' : 'Daily Wird Notifications: Disabled (Click to enable)') 
-                      : (settings?.reminderEnabled !== false ? 'تنبيهات الورد اليومي: مفعّل (اضغط للتعطيل)' : 'تنبيهات الورد اليومي: معطّل (اضغط للتفعيل)')
-                  }
-                  aria-label={
-                    isEn 
-                      ? (settings?.reminderEnabled !== false ? 'Daily Wird Notifications: Enabled' : 'Daily Wird Notifications: Disabled') 
-                      : (settings?.reminderEnabled !== false ? 'تنبيهات الورد اليومي: مفعّل' : 'تنبيهات الورد اليومي: معطّل')
-                  }
-                >
-                  <div className={`w-[19px] h-[19px] rounded-full border-[1.5px] border-white/90 dark:border-white/80 shadow-xs transition-all duration-300 flex items-center justify-center ${
-                    settings?.reminderEnabled !== false 
-                      ? 'bg-gradient-to-tr from-emerald-600 via-emerald-500 to-emerald-400 text-white shadow-emerald-500/30 ring-1.5 ring-emerald-500/25' 
-                      : 'bg-gradient-to-tr from-red-600 via-red-500 to-rose-400 text-white shadow-red-500/30 ring-1.5 ring-red-500/25'
-                  }`}>
-                    {settings?.reminderEnabled !== false ? (
-                      <Check className="w-2.5 h-2.5 stroke-[3]" />
-                    ) : (
-                      <span className="w-1.5 h-0.5 bg-white/95 rounded-full" />
-                    )}
-                  </div>
-                </button>
-              )}
             </div>
 
             {/* Title in center */}
@@ -1246,16 +1270,18 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
 
             {/* Home / Page Lock / Guide icons */}
             <div className={`absolute ${isEn ? 'right-0' : 'left-0'} flex items-center gap-1`}>
-              <button
-                type="button"
-                onClick={handleOpenGuide}
-                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
-                style={{ color: 'var(--qr-bar-text, var(--top-bar-text, inherit))' }}
-                title={isEn ? "Daily Wird Guide" : "دليل الورد اليومي"}
-                aria-label={isEn ? "Daily Wird Guide" : "دليل الورد اليومي"}
-              >
-                <i className="fa-solid fa-circle-question text-lg"></i>
-              </button>
+              {showPageGuides && (
+                <button
+                  type="button"
+                  onClick={handleOpenGuide}
+                  className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                  style={{ color: 'var(--qr-bar-text, var(--top-bar-text, inherit))' }}
+                  title={isEn ? "Daily Wird Guide" : "دليل الورد اليومي"}
+                  aria-label={isEn ? "Daily Wird Guide" : "دليل الورد اليومي"}
+                >
+                  <i className="fa-solid fa-circle-question text-lg"></i>
+                </button>
+              )}
               <ThemePageLock />
               <button
                 onClick={() => onNavigate('home')}
@@ -1270,12 +1296,11 @@ const DailyWird: React.FC<{ onBack: () => void; onNavigate: (page: string, param
         </div>
       </header>
 
-      <main className="flex-1 min-h-0 overflow-y-auto px-4 pt-3 pb-6 flex flex-col items-center justify-start">
-        <div className="w-full max-w-md pb-6 space-y-3">
+      <main className="flex-1 min-h-0 overflow-y-auto px-4 pt-3 app-scroll-safe">
+        <div className="w-full max-w-md mx-auto space-y-3">
           {!showSettings && renderProfileSelector()}
           {showSettings || !settings ? renderSettings() : renderProgress()}
         </div>
-        <div className="shrink-0 w-full h-6"></div>
       </main>
 
       {renderDeleteConfirmModal()}

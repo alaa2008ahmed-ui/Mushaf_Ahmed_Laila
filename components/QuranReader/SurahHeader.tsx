@@ -29,36 +29,61 @@ const SurahHeader: React.FC<SurahHeaderProps> = ({
 }) => {
     const { language } = useLanguage();
     const isEn = (language === 'en' || isTranslationMode) && !isBilingualMode;
-    const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+    const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const touchStartPos = useRef<{ x: number; y: number } | null>(null);
+    const lastTouchTimeRef = useRef<number>(0);
 
-    const handleTouchStart = () => {
-        if (onLongPress) {
-            longPressTimer.current = setTimeout(() => {
-                onLongPress();
-            }, 600);
-        }
-    };
-
-    const handleTouchEnd = () => {
+    const clearLongPressTimer = () => {
         if (longPressTimer.current) {
             clearTimeout(longPressTimer.current);
             longPressTimer.current = null;
         }
     };
 
-    const handleMouseDown = () => {
+    const handleTouchStart = (e: React.TouchEvent) => {
+        lastTouchTimeRef.current = Date.now();
+        clearLongPressTimer();
+        if (e.touches && e.touches[0]) {
+            touchStartPos.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        }
         if (onLongPress) {
             longPressTimer.current = setTimeout(() => {
+                longPressTimer.current = null;
+                onLongPress();
+            }, 600);
+        }
+    };
+
+    const handleTouchMove = (e: React.TouchEvent) => {
+        if (!touchStartPos.current || !e.touches || !e.touches[0]) {
+            clearLongPressTimer();
+            return;
+        }
+        const dx = Math.abs(e.touches[0].clientX - touchStartPos.current.x);
+        const dy = Math.abs(e.touches[0].clientY - touchStartPos.current.y);
+        if (dx > 10 || dy > 10) {
+            clearLongPressTimer();
+        }
+    };
+
+    const handleTouchEnd = () => {
+        touchStartPos.current = null;
+        clearLongPressTimer();
+    };
+
+    const handleMouseDown = (e: React.MouseEvent) => {
+        if (e.button !== 0 || Date.now() - lastTouchTimeRef.current < 800) return;
+        clearLongPressTimer();
+        if (onLongPress) {
+            longPressTimer.current = setTimeout(() => {
+                longPressTimer.current = null;
                 onLongPress();
             }, 600);
         }
     };
 
     const handleMouseUp = () => {
-        if (longPressTimer.current) {
-            clearTimeout(longPressTimer.current);
-            longPressTimer.current = null;
-        }
+        clearLongPressTimer();
     };
 
     const numericDesign = Number(design) || 1;
@@ -418,8 +443,10 @@ const SurahHeader: React.FC<SurahHeaderProps> = ({
              onMouseUp={handleMouseUp}
              onMouseLeave={handleMouseUp}
              onTouchStart={handleTouchStart}
+             onTouchMove={handleTouchMove}
              onTouchEnd={handleTouchEnd}
-             onTouchCancel={handleTouchEnd}>
+             onTouchCancel={handleTouchEnd}
+             onContextMenu={(e) => { if (onLongPress) e.preventDefault(); }}>
             {renderDesign()}
         </div>
     );

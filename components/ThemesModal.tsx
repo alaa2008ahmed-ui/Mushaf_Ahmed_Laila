@@ -3,6 +3,7 @@ import React, { useRef, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { presetThemes } from '../context/themes';
+import { showGlobalAppToast } from '../utils/appNotificationSettings';
 
 const englishThemeNames: { [key: string]: string } = {
     black_gold: 'Black & Gold',
@@ -99,6 +100,8 @@ function ThemeSelector({ onClose, isLandscape }: { onClose: () => void, isLandsc
         } else if (key === 'shiny_gold' || key === 'default' || key === 'black_gold') {
             setHomeThemeVariant('gold');
         }
+        const themeName = isEn ? (englishThemeNames[key] || presetThemes[key]?.name || key) : (presetThemes[key]?.name || key);
+        showGlobalAppToast(isEn ? `Theme: ${themeName}` : `ثيم: ${themeName}`);
         onClose();
     };
 
@@ -107,11 +110,11 @@ function ThemeSelector({ onClose, isLandscape }: { onClose: () => void, isLandsc
     return (
         <div 
             ref={wrapperRef} 
-            className={`theme-selector-container fixed ${isLandscape ? 'inset-0 flex items-center justify-center p-0' : 'bottom-[calc(85px+env(safe-area-inset-bottom,0px))] inset-x-0 mx-auto w-[95%] max-w-md p-0'} z-[100]`}
+            className={`theme-selector-container fixed ${isLandscape ? 'inset-0 flex items-center justify-center p-0' : 'bottom-[calc(var(--app-bottom-clearance,5.25rem)+0.5rem)] inset-x-0 mx-auto w-[95%] max-w-md p-0'} z-[100]`}
             dir={isEn ? 'ltr' : 'rtl'}
         >
             <div 
-                className={`themed-card p-4 ${isLandscape ? 'w-full max-w-4xl h-full rounded-none' : 'rounded-3xl'} shadow-2xl backdrop-blur-md flex flex-col justify-center border-2`} 
+                className={`themed-card p-4 ${isLandscape ? 'w-full max-w-4xl h-full rounded-none overflow-y-auto modal-sheet-safe-bottom' : 'rounded-3xl'} shadow-2xl backdrop-blur-md flex flex-col justify-center border-2`} 
                 style={{ 
                     backgroundColor: isBlackTheme ? '#0a0a0c' : '#FFFFFF', 
                     color: isBlackTheme ? '#FFFFFF' : '#0f172a',
@@ -227,7 +230,7 @@ function ThemeSelector({ onClose, isLandscape }: { onClose: () => void, isLandsc
 
                     <div className="h-[1px] w-full mb-3 opacity-20 bg-slate-400 dark:bg-slate-600"></div>
 
-                    <div className={`flex flex-wrap gap-2 justify-center ${isLandscape ? 'max-h-[50vh]' : 'max-h-[160px]'} overflow-y-auto hide-scrollbar pb-2`}>
+                    <div className={`flex flex-wrap gap-2 justify-center ${isLandscape ? 'max-h-[50dvh]' : 'max-h-[160px]'} overflow-y-auto hide-scrollbar pb-2`}>
                         {Object.entries(presetThemes).map(([key, themeOption]) => {
                             const isThemeOptionBlack = key === 'deep_black' || themeOption.bgColor === '#000000';
                             const isSelected = themeKey === key;

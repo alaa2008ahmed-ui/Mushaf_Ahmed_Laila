@@ -271,7 +271,7 @@ public class PrayerSinglePrayerWidgetProvider extends AppWidgetProvider {
                     PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
             );
             long nextMinute = (System.currentTimeMillis() / 60000 + 1) * 60000;
-            scheduleSafeAlarm(context, nextMinute, minPending);
+            scheduleMinuteAlarm(context, nextMinute, minPending);
         } else {
             views.setChronometer(R.id.widget_single_countdown, android.os.SystemClock.elapsedRealtime(), "00:00:00", false);
         }
@@ -397,5 +397,32 @@ public class PrayerSinglePrayerWidgetProvider extends AppWidgetProvider {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private static void scheduleMinuteAlarm(Context context, long triggerAtMillis, PendingIntent pendingIntent) {
+        if (context == null || pendingIntent == null || triggerAtMillis <= System.currentTimeMillis()) return;
+        try {
+            AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+            if (am != null) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    if (am.canScheduleExactAlarms()) {
+                        am.setExact(AlarmManager.RTC, triggerAtMillis, pendingIntent);
+                    } else {
+                        am.set(AlarmManager.RTC, triggerAtMillis, pendingIntent);
+                    }
+                } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                    am.setExact(AlarmManager.RTC, triggerAtMillis, pendingIntent);
+                } else {
+                    am.set(AlarmManager.RTC, triggerAtMillis, pendingIntent);
+                }
+            }
+        } catch (SecurityException se) {
+            try {
+                AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+                if (am != null) {
+                    am.set(AlarmManager.RTC, triggerAtMillis, pendingIntent);
+                }
+            } catch (Exception ignored) {}
+        } catch (Exception ignored) {}
     }
 }

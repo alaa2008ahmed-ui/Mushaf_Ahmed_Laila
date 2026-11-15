@@ -8,6 +8,7 @@ import moment from 'moment-hijri';
 import { useHabitTracker, DailyRecord, HabitCategory, defaultRecord, CustomHabit } from '../hooks/useHabitTracker';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useShowPageGuides } from '../utils/guideManager';
 import ThemePageLock from '../components/ThemePageLock';
 import { registerBackInterceptor } from '../hooks/useBackButton';
 import { LocalNotifications } from '@capacitor/local-notifications';
@@ -70,6 +71,7 @@ const ProgressRing = ({ progress, size = 100, strokeWidth = 8, color }: { progre
 };
 
 const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack, onNavigate }) => {
+  const showPageGuides = useShowPageGuides();
   const { theme, themeKey } = useTheme();
   const tokens = getModernFlatTokens(theme, themeKey);
   const { language } = useLanguage();
@@ -226,7 +228,7 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack, onNavigate }) => {
         titleEl.style.fontSize = `${targetSize}px`;
       }
     }
-    setAchievementTitleSize(targetSize);
+    setAchievementTitleSize(prev => (Math.abs(prev - targetSize) >= 0.25 ? targetSize : prev));
   }, [selectedDate, isEn, isSelectedToday, scoreBreakdown.totalEarned, scoreBreakdown.totalAvailable]);
 
   useLayoutEffect(() => {
@@ -234,17 +236,11 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack, onNavigate }) => {
   }, [fitAchievementHeaderRow, viewMode]);
 
   useEffect(() => {
-    const rowEl = achievementHeaderRowRef.current;
-    if (!rowEl) return;
-
-    let ro: ResizeObserver | null = null;
-    if (typeof ResizeObserver !== 'undefined') {
-      ro = new ResizeObserver(() => fitAchievementHeaderRow());
-      ro.observe(rowEl);
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(fitAchievementHeaderRow).catch(() => {});
     }
     window.addEventListener('resize', fitAchievementHeaderRow);
     return () => {
-      if (ro) ro.disconnect();
       window.removeEventListener('resize', fitAchievementHeaderRow);
     };
   }, [fitAchievementHeaderRow, viewMode]);
@@ -659,7 +655,7 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack, onNavigate }) => {
   }
 
   return (
-    <div className="h-screen flex flex-col relative overflow-hidden" style={{ backgroundColor: tokens.pageBgColor, color: tokens.textColor, fontFamily: theme.font }} dir={isEn ? 'ltr' : 'rtl'}>
+    <div className="h-[100dvh] flex flex-col relative overflow-hidden" style={{ backgroundColor: tokens.pageBgColor, color: tokens.textColor, fontFamily: theme.font }} dir={isEn ? 'ltr' : 'rtl'}>
       <header className="app-top-bar shrink-0">
           <div className="app-top-bar__inner">
               <div className="relative flex items-center justify-center w-full min-h-[44px]">
@@ -672,37 +668,6 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack, onNavigate }) => {
                             >
                                 <i className={`fa-solid ${isEn ? 'fa-arrow-left' : 'fa-arrow-right'} text-xl`}></i>
                             </button>
-                            
-                            <button
-                                id="habit-auto-sync-btn"
-                                type="button"
-                                onClick={() => {
-                                    const next = !autoSyncEnabled;
-                                    setAutoSyncEnabled(next);
-                                    if (typeof navigator !== 'undefined' && navigator.vibrate) {
-                                        try { navigator.vibrate(30); } catch {}
-                                    }
-                                    showTrackerToast(
-                                        next 
-                                            ? (isEn ? 'Auto-Sync enabled ⚡' : 'تم تفعيل الربط التلقائي للعبادات ⚡') 
-                                            : (isEn ? 'Auto-Sync disabled 🔒' : 'تم تعطيل الربط التلقائي للعبادات 🔒')
-                                    );
-                                }}
-                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/5 dark:hover:bg-white/5 active:scale-90 cursor-pointer border-0"
-                                title={
-                                    isEn 
-                                        ? (autoSyncEnabled ? 'Auto-Sync Worship: Enabled (Click to disable)' : 'Auto-Sync Worship: Disabled (Click to enable)') 
-                                        : (autoSyncEnabled ? 'الربط التلقائي للعبادات: مفعّل (اضغط للتعطيل)' : 'الربط التلقائي للعبادات: معطّل (اضغط للتفعيل)')
-                                }
-                            >
-                                <div className={`w-[20px] h-[20px] rounded-full border-[1.5px] border-white/90 shadow-xs transition-all flex items-center justify-center ${
-                                    autoSyncEnabled 
-                                        ? 'bg-emerald-500 text-white' 
-                                        : 'bg-red-500 text-white'
-                                }`}>
-                                    {autoSyncEnabled ? <Check className="w-3 h-3 stroke-[3]" /> : <span className="w-1.5 h-0.5 bg-white rounded-full" />}
-                                </div>
-                            </button>
                         </div>
 
                         {/* Title */}
@@ -714,16 +679,18 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack, onNavigate }) => {
 
                         {/* Home & Guide */}
                         <div className={`absolute ${isEn ? 'right-0' : 'left-0'} flex items-center gap-1.5`}>
-                            <button
-                                type="button"
-                                onClick={() => setShowGuide(true)}
-                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/5 dark:hover:bg-white/5 active:scale-90 cursor-pointer border-0"
-                                style={{ color: 'var(--top-bar-text, inherit)' }}
-                                title={isEn ? "Worship Mentor Guide" : "دليل وشرح مربي العبادات"}
-                                aria-label={isEn ? "Worship Mentor Guide" : "دليل وشرح مربي العبادات"}
-                            >
-                                <i className="fa-solid fa-circle-question text-lg"></i>
-                            </button>
+                            {showPageGuides && (
+                                <button
+                                    type="button"
+                                    onClick={() => setShowGuide(true)}
+                                    className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/5 dark:hover:bg-white/5 active:scale-90 cursor-pointer border-0"
+                                    style={{ color: 'var(--top-bar-text, inherit)' }}
+                                    title={isEn ? "Worship Mentor Guide" : "دليل وشرح مربي العبادات"}
+                                    aria-label={isEn ? "Worship Mentor Guide" : "دليل وشرح مربي العبادات"}
+                                >
+                                    <i className="fa-solid fa-circle-question text-lg"></i>
+                                </button>
+                            )}
                             <ThemePageLock />
                             <button
                                 onClick={() => onNavigate('home')}
@@ -739,7 +706,7 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack, onNavigate }) => {
       </header>
 
       {/* Content */}
-      <main className="w-full flex-1 min-h-0 overflow-y-auto px-4 pt-3 pb-8 hide-scrollbar">
+      <main className="w-full flex-1 min-h-0 overflow-y-auto px-4 pt-3 app-scroll-safe hide-scrollbar">
         
         {/* Past Day Notice Banner */}
         {!isSelectedToday && (
@@ -1085,7 +1052,7 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack, onNavigate }) => {
         </div>
 
         {/* Footer Sentence */}
-        <div className="text-center pb-2 pt-4 px-6 border-t border-slate-100 dark:border-zinc-800">
+        <div className="text-center pt-4 px-6 border-t border-slate-100 dark:border-zinc-800">
            <p className="text-sm font-semibold opacity-70 leading-relaxed font-amiri" style={{ color: tokens.subtextColor }}>
             {isEn ? "Your consistency in worship is the greatest gift to you and to the spirits of Ahmed and Laila." : "استمرارك في العبادة هو أعظم هدية لك ولروح أحمد وليلى"}
            </p>
@@ -1195,7 +1162,7 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ onBack, onNavigate }) => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
-            className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-gray-900/90 text-white text-xs font-semibold py-2 px-4 rounded-full shadow-lg z-50 pointer-events-none border-0"
+            className="fixed bottom-[calc(var(--app-bottom-clearance,5.25rem)+1rem)] left-1/2 -translate-x-1/2 bg-gray-900/90 text-white text-xs font-semibold py-2 px-4 rounded-full shadow-lg z-50 pointer-events-none border-0"
           >
             {trackerToast}
           </motion.div>

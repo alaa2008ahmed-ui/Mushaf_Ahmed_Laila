@@ -241,7 +241,7 @@ interface AyahTickerBarProps {
   onNavigate?: () => void;
 }
 
-const AyahTickerBar: React.FC<AyahTickerBarProps> = ({
+const AyahTickerBar: React.FC<AyahTickerBarProps> = React.memo(({
   text,
   ayahNum,
   isEn,
@@ -263,24 +263,22 @@ const AyahTickerBar: React.FC<AyahTickerBarProps> = ({
   useEffect(() => {
     const measure = () => {
       if (singleItemRef.current) {
-        const w = singleItemRef.current.getBoundingClientRect().width;
+        const w = Math.round(singleItemRef.current.getBoundingClientRect().width);
         if (w > 0) {
-          setSingleWidth(w);
+          setSingleWidth(prev => (Math.abs(prev - w) >= 1 ? w : prev));
         }
       }
     };
 
     measure();
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(measure).catch(() => {});
+    }
     const handleResize = () => measure();
     window.addEventListener('resize', handleResize);
 
-    const resizeObserver = new ResizeObserver(() => measure());
-    if (singleItemRef.current) resizeObserver.observe(singleItemRef.current);
-    if (containerRef.current) resizeObserver.observe(containerRef.current);
-
     return () => {
       window.removeEventListener('resize', handleResize);
-      resizeObserver.disconnect();
     };
   }, [displayText, isEn]);
 
@@ -301,6 +299,8 @@ const AyahTickerBar: React.FC<AyahTickerBarProps> = ({
       onClick={onNavigate}
       className="w-full overflow-hidden relative py-1.5 px-2.5 rounded-xl mt-2.5 flex items-center cursor-pointer select-none group"
       style={{
+        minHeight: '34px',
+        contain: 'layout paint',
         background: (isNightMode || isBlackTheme)
           ? 'linear-gradient(180deg, #1c1a24 0%, #131218 100%)'
           : 'linear-gradient(180deg, rgba(254, 249, 195, 0.7) 0%, rgba(253, 230, 138, 0.85) 100%)',
@@ -316,7 +316,7 @@ const AyahTickerBar: React.FC<AyahTickerBarProps> = ({
       <motion.div
         key={`ayah-ticker-loop-${displayText}-${isEn}-${stepWidth}`}
         className="flex items-center whitespace-nowrap shrink-0"
-        style={{ gap: `${GAP_PX}px` }}
+        style={{ gap: `${GAP_PX}px`, willChange: 'transform' }}
         animate={{ x: xAnimation }}
         transition={{
           duration,
@@ -345,7 +345,250 @@ const AyahTickerBar: React.FC<AyahTickerBarProps> = ({
       </motion.div>
     </div>
   );
+});
+
+interface IsolatedHomePrayerCountdownProps {
+  times: Record<string, string>;
+  config: any;
+  isEn: boolean;
+  isNightMode: boolean;
+  isBlackTheme: boolean;
+  isSkyTheme: boolean;
+  isEmeraldTheme: boolean;
+  isBurgundyTheme: boolean;
+  formatNumber: (n: number | string) => string;
+  onOpenPrayerTimes: () => void;
+}
+
+const getCityNowDate = () => {
+  const cityTimezone = typeof localStorage !== 'undefined' ? localStorage.getItem('grandLocationTimezone') : null;
+  let current = new Date();
+  if (cityTimezone) {
+    try {
+      const cityTimeStr = current.toLocaleString('en-US', { timeZone: cityTimezone });
+      current = new Date(cityTimeStr);
+    } catch {}
+  }
+  return current;
 };
+
+const IsolatedHomePrayerCountdown: React.FC<IsolatedHomePrayerCountdownProps> = React.memo(({
+  times,
+  config,
+  isEn,
+  isNightMode,
+  isBlackTheme,
+  isSkyTheme,
+  isEmeraldTheme,
+  isBurgundyTheme,
+  formatNumber,
+  onOpenPrayerTimes,
+}) => {
+  const [nowDate, setNowDate] = useState<Date>(() => getCityNowDate());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNowDate(getCityNowDate());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const getPrayerDateTime = (key: string, baseDate: Date) => {
+    let rawTime = times?.[key];
+    if (!rawTime || rawTime.includes('--')) {
+      const fallbackComputed = computeTimesSync(config.location, baseDate, isEn);
+      if (fallbackComputed?.timings && (fallbackComputed.timings as any)[key]) {
+        rawTime = (fallbackComputed.timings as any)[key];
+      }
+    }
+    if (!rawTime || rawTime.includes('--')) return null;
+
+    const supportsDST = checkSupportsDST(config.location?.combinedCode, config.location?.fullCountry);
+    const isSummerTimeActive = config.isSummerTime && supportsDST;
+    const totalOffset = (config.prayerOffsets?.[key] || 0) + (isSummerTimeActive ? 60 : 0);
+    const adjustedTime = applyOffset(rawTime, totalOffset);
+    if (!adjustedTime || adjustedTime.includes('--')) return null;
+    const [hours, minutes] = adjustedTime.split(':').map(Number);
+    const date = new Date(baseDate);
+    date.setHours(hours, minutes, 0, 0);
+    return date;
+  };
+
+  const formatTime12 = (date: Date | null) => {
+    if (!date) return isEn ? '--:--' : formatNumber('--:--');
+    let h = date.getHours();
+    const m = date.getMinutes().toString().padStart(2, '0');
+    const isPM = h >= 12;
+    h = h % 12 || 12;
+    const hStr = h.toString().padStart(2, '0');
+    if (isEn) {
+      return `${hStr}:${m} ${isPM ? 'PM' : 'AM'}`;
+    }
+    const formattedDigits = formatNumber(`${hStr}:${m}`);
+    return `${formattedDigits} ${isPM ? 'م' : 'ص'}`;
+  };
+
+  const today = new Date(nowDate);
+  let fajrToday = getPrayerDateTime('Fajr', today);
+  let dhuhrToday = getPrayerDateTime('Dhuhr', today);
+  let asrToday = getPrayerDateTime('Asr', today);
+  let maghribToday = getPrayerDateTime('Maghrib', today);
+  let ishaToday = getPrayerDateTime('Isha', today);
+
+  if (!fajrToday || !dhuhrToday || !asrToday || !maghribToday || !ishaToday) {
+    const fallbackLoc = config.location?.lat ? config.location : { lat: 21.4225, lng: 39.8262, city: 'Makkah', cityNameAr: 'مكة المكرمة' };
+    const computed = computeTimesSync(fallbackLoc, today, isEn);
+    if (computed?.timings) {
+      const parsePrayerTime = (timeStr: string) => {
+        const [h, m] = timeStr.split(':').map(Number);
+        const d = new Date(today);
+        d.setHours(h, m, 0, 0);
+        return d;
+      };
+      fajrToday = parsePrayerTime(computed.timings.Fajr);
+      dhuhrToday = parsePrayerTime(computed.timings.Dhuhr);
+      asrToday = parsePrayerTime(computed.timings.Asr);
+      maghribToday = parsePrayerTime(computed.timings.Maghrib);
+      ishaToday = parsePrayerTime(computed.timings.Isha);
+    }
+  }
+
+  let prayerData = {
+    nextName: isEn ? 'Dhuhr' : 'الظهر',
+    nextTimeStr: '--:--',
+    prevName: isEn ? 'Fajr' : 'الفجر',
+    prevTimeStr: '--:--',
+    countdownStr: '--:--:--',
+    progressPercent: 0,
+  };
+
+  if (fajrToday && dhuhrToday && asrToday && maghribToday && ishaToday) {
+    let prevName = 'الفجر';
+    let prevDate = fajrToday;
+    let nextName = 'الظهر';
+    let nextDate = dhuhrToday;
+
+    if (nowDate < fajrToday) {
+      const ishaYesterday = new Date(ishaToday);
+      ishaYesterday.setDate(ishaYesterday.getDate() - 1);
+      prevName = isEn ? 'Isha' : 'العشاء';
+      prevDate = ishaYesterday;
+      nextName = isEn ? 'Fajr' : 'الفجر';
+      nextDate = fajrToday;
+    } else if (nowDate >= fajrToday && nowDate < dhuhrToday) {
+      prevName = isEn ? 'Fajr' : 'الفجر';
+      prevDate = fajrToday;
+      nextName = isEn ? 'Dhuhr' : 'الظهر';
+      nextDate = dhuhrToday;
+    } else if (nowDate >= dhuhrToday && nowDate < asrToday) {
+      prevName = isEn ? 'Dhuhr' : 'الظهر';
+      prevDate = dhuhrToday;
+      nextName = isEn ? 'Asr' : 'العصر';
+      nextDate = asrToday;
+    } else if (nowDate >= asrToday && nowDate < maghribToday) {
+      prevName = isEn ? 'Asr' : 'العصر';
+      prevDate = asrToday;
+      nextName = isEn ? 'Maghrib' : 'المغرب';
+      nextDate = maghribToday;
+    } else if (nowDate >= maghribToday && nowDate < ishaToday) {
+      prevName = isEn ? 'Maghrib' : 'المغرب';
+      prevDate = maghribToday;
+      nextName = isEn ? 'Isha' : 'العشاء';
+      nextDate = ishaToday;
+    } else {
+      const fajrTomorrow = new Date(fajrToday);
+      fajrTomorrow.setDate(fajrTomorrow.getDate() + 1);
+      prevName = isEn ? 'Isha' : 'العشاء';
+      prevDate = ishaToday;
+      nextName = isEn ? 'Fajr' : 'الفجر';
+      nextDate = fajrTomorrow;
+    }
+
+    const totalDuration = nextDate.getTime() - prevDate.getTime();
+    const elapsed = Math.max(0, nowDate.getTime() - prevDate.getTime());
+    const progressPercent = totalDuration > 0
+      ? Math.min(100, Math.max(0, (elapsed / totalDuration) * 100))
+      : 0;
+
+    const diffMs = Math.max(0, nextDate.getTime() - nowDate.getTime());
+    const h = Math.floor(diffMs / 3600000);
+    const m = Math.floor((diffMs % 3600000) / 60000);
+    const s = Math.floor((diffMs % 60000) / 1000);
+    const countdownStr = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+
+    prayerData = {
+      nextName,
+      nextTimeStr: formatTime12(nextDate),
+      prevName,
+      prevTimeStr: formatTime12(prevDate),
+      countdownStr,
+      progressPercent: Math.round(progressPercent),
+    };
+  }
+
+  return (
+    <div id="home-prayer-countdown-section" className="w-full" style={{ contain: 'layout style' }}>
+      <div
+        onClick={onOpenPrayerTimes}
+        className="flex items-end justify-between cursor-pointer py-1"
+        title={isEn ? 'Click to open full Prayer Times' : 'انقر لعرض مواقيت الصلاة'}
+      >
+        <div className="flex flex-col text-start">
+          <span className="text-[11px] font-semibold text-amber-900/85">
+            {isEn ? (
+              <>
+                Time to <span className="gold-accent-text font-extrabold">{prayerData.nextName}</span> Adhan
+              </>
+            ) : (
+              <>
+                الوقت المتبقي لأذان <span className="gold-accent-text font-extrabold">{prayerData.nextName}</span>
+              </>
+            )}
+          </span>
+          <span
+            className="text-3xl sm:text-4xl font-cairo font-black tracking-tight text-[#451A03] tabular-nums leading-tight min-h-[2.25rem]"
+            style={{ textShadow: (isNightMode || isBlackTheme) ? 'none' : '0 1px 1px rgba(255,255,255,0.8)' }}
+          >
+            {isEn ? prayerData.countdownStr : formatNumber(prayerData.countdownStr)}
+          </span>
+        </div>
+        <div className="flex flex-col text-end">
+          <span className="text-[11px] font-semibold text-amber-900/85">
+            {isEn ? 'Adhan Time' : 'موعد الأذان'}
+          </span>
+          <span className="text-xl sm:text-2xl font-black text-[#5B2605] tabular-nums leading-tight">
+            {prayerData.nextTimeStr}
+          </span>
+        </div>
+      </div>
+
+      <div
+        onClick={onOpenPrayerTimes}
+        className="w-full mt-3 cursor-pointer"
+      >
+        <div className={`w-full h-2.5 rounded-full p-0.5 overflow-hidden ${(isNightMode || isBlackTheme) ? 'bg-[#0e0e13] shadow-[inset_0_2px_4px_rgba(0,0,0,0.85),0_1px_0_rgba(255,255,255,0.08)]' : 'bg-black/[0.08] shadow-[inset_0_1px_2px_rgba(0,0,0,0.15)]'}`}>
+          <div
+            className={`h-full rounded-full shadow-sm transition-all duration-1000 ease-out ${
+              isBurgundyTheme
+                ? 'bg-gradient-to-r from-rose-900 via-rose-800 to-rose-950'
+                : isSkyTheme
+                  ? 'bg-gradient-to-r from-sky-800 via-sky-700 to-sky-900'
+                  : isEmeraldTheme
+                    ? 'bg-gradient-to-r from-emerald-800 via-emerald-700 to-emerald-900'
+                    : 'bg-gradient-to-r from-amber-600 via-yellow-500 to-amber-500'
+            }`}
+            style={{ width: `${prayerData.progressPercent}%` }}
+          />
+        </div>
+        <div className="flex items-center justify-between text-xs sm:text-[13px] font-bold text-amber-900/95 mt-1.5 px-0.5 whitespace-nowrap">
+          <span className="tabular-nums">{prayerData.prevName} {prayerData.prevTimeStr}</span>
+          <span className="text-amber-950 font-extrabold tabular-nums gold-accent-text">{isEn ? prayerData.progressPercent : formatNumber(prayerData.progressPercent)}%</span>
+          <span className="tabular-nums">{prayerData.nextName} {prayerData.nextTimeStr}</span>
+        </div>
+      </div>
+    </div>
+  );
+});
 
 export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
   onNavigate,
@@ -734,21 +977,32 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
     return unregister;
   }, [showQrModal]);
 
-  // Live timer for countdown
-  const [nowDate, setNowDate] = useState(() => new Date());
+  // Coarse day/hour state so ModernHomeView only re-renders on day or morning/evening transitions (not every second)
+  const [timeWindow, setTimeWindow] = useState(() => {
+    const current = getCityNowDate();
+    const h = current.getHours();
+    return {
+      date: current,
+      dayKey: `${current.getFullYear()}-${current.getMonth()}-${current.getDate()}`,
+      isMorning: h >= 3 && h < 15,
+    };
+  });
+
   useEffect(() => {
-    const timer = setInterval(() => {
-      const cityTimezone = typeof localStorage !== 'undefined' ? localStorage.getItem('grandLocationTimezone') : null;
-      let current = new Date();
-      if (cityTimezone) {
-        try {
-          const cityTimeStr = current.toLocaleString('en-US', { timeZone: cityTimezone });
-          current = new Date(cityTimeStr);
-        } catch {}
-      }
-      setNowDate(current);
-    }, 1000);
-    return () => clearInterval(timer);
+    const syncTimeWindow = () => {
+      const current = getCityNowDate();
+      const h = current.getHours();
+      const nextDayKey = `${current.getFullYear()}-${current.getMonth()}-${current.getDate()}`;
+      const nextIsMorning = h >= 3 && h < 15;
+      setTimeWindow(prev => {
+        if (prev.dayKey === nextDayKey && prev.isMorning === nextIsMorning) {
+          return prev;
+        }
+        return { date: current, dayKey: nextDayKey, isMorning: nextIsMorning };
+      });
+    };
+    const interval = setInterval(syncTimeWindow, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   // Dynamic today string for habits & auto-update at 12:00 AM midnight
@@ -790,11 +1044,11 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
 
   // التاريخ الهجري لليوم (عربي / إنجليزي) للبطاقة الأولى عبر محرك أم القرى الموحّد
   const todayHijriDisplay = useMemo(() => {
-    const { day, month, year } = getAccurateHijriDate(nowDate);
+    const { day, month, year } = getAccurateHijriDate(timeWindow.date);
     return isEn
       ? `${day} ${HIJRI_MONTHS_EN[month - 1] || ''} ${year} AH`
       : `${formatNumber(day)} ${HIJRI_MONTHS_AR[month - 1] || ''} ${formatNumber(year)} هـ`;
-  }, [nowDate.getFullYear(), nowDate.getMonth(), nowDate.getDate(), isEn, formatNumber]);
+  }, [timeWindow.dayKey, timeWindow.date, isEn, formatNumber]);
 
   // حالة تقدم الورد القرآني اليومي لبطاقة مربي الصلوات الخمس
   const [activeWird, setActiveWird] = useState<WirdProfile | null>(() => getActiveWirdProfile());
@@ -823,7 +1077,7 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
     }
 
     const totalDays = getWirdTotalDays(activeWird);
-    const todayIsoLocal = moment(nowDate).format('YYYY-MM-DD');
+    const todayIsoLocal = moment(timeWindow.date).format('YYYY-MM-DD');
     const todayIsoUtc = new Date().toISOString().split('T')[0];
     const isKhatmaCompleted = (activeWird.completedDays?.length || 0) >= totalDays;
     const isTodayCompleted =
@@ -873,7 +1127,7 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
         ? `${remainingPages} ${remainingPages === 1 ? 'page' : 'pages'} left`
         : arPagesText
     };
-  }, [activeWird, nowDate.getFullYear(), nowDate.getMonth(), nowDate.getDate(), isEn, formatNumber]);
+  }, [activeWird, timeWindow.dayKey, timeWindow.date, isEn, formatNumber]);
 
   // English Quran Translation Data State
   const [enQuranData, setEnQuranData] = useState<QuranEnglishSurah[] | null>(() => getCachedQuranEnglishTranslation());
@@ -991,212 +1245,29 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
     return ayahObj?.text || (isEn ? 'In the name of Allah, the Entirely Merciful, the Especially Merciful' : 'بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ');
   }, [lastReadQuran.surah, lastReadQuran.ayah, isEn, enQuranData]);
 
-  // Prayer Calculation logic
-  const getPrayerDateTime = (key: string, baseDate: Date) => {
-    let rawTime = times?.[key];
-    if (!rawTime || rawTime.includes('--')) {
-      const fallbackComputed = computeTimesSync(config.location, baseDate, isEn);
-      if (fallbackComputed?.timings && (fallbackComputed.timings as any)[key]) {
-        rawTime = (fallbackComputed.timings as any)[key];
-      }
-    }
-    if (!rawTime || rawTime.includes('--')) return null;
-
-    const supportsDST = checkSupportsDST(config.location?.combinedCode, config.location?.fullCountry);
-    const isSummerTimeActive = config.isSummerTime && supportsDST;
-    const totalOffset = (config.prayerOffsets?.[key] || 0) + (isSummerTimeActive ? 60 : 0);
-    const adjustedTime = applyOffset(rawTime, totalOffset);
-    if (!adjustedTime || adjustedTime.includes('--')) return null;
-    const [hours, minutes] = adjustedTime.split(':').map(Number);
-    const date = new Date(baseDate);
-    date.setHours(hours, minutes, 0, 0);
-    return date;
-  };
-
-  const formatTime12 = (date: Date | null) => {
-    if (!date) return isEn ? '--:--' : formatNumber('--:--');
-    let h = date.getHours();
-    const m = date.getMinutes().toString().padStart(2, '0');
-    const isPM = h >= 12;
-    h = h % 12 || 12;
-    const hStr = h.toString().padStart(2, '0');
-    if (isEn) {
-      return `${hStr}:${m} ${isPM ? 'PM' : 'AM'}`;
-    }
-    const formattedDigits = formatNumber(`${hStr}:${m}`);
-    return `${formattedDigits} ${isPM ? 'م' : 'ص'}`;
-  };
-
-  const prayerCalc = () => {
-    const today = new Date(nowDate);
-    let fajrToday = getPrayerDateTime('Fajr', today);
-    let dhuhrToday = getPrayerDateTime('Dhuhr', today);
-    let asrToday = getPrayerDateTime('Asr', today);
-    let maghribToday = getPrayerDateTime('Maghrib', today);
-    let ishaToday = getPrayerDateTime('Isha', today);
-
-    // If any prayer is still null, calculate immediately from coordinates using computeTimesSync
-    if (!fajrToday || !dhuhrToday || !asrToday || !maghribToday || !ishaToday) {
-      const fallbackLoc = config.location?.lat ? config.location : { lat: 21.4225, lng: 39.8262, city: 'Makkah', cityNameAr: 'مكة المكرمة' };
-      const computed = computeTimesSync(fallbackLoc, today, isEn);
-      if (computed?.timings) {
-        const parsePrayerTime = (timeStr: string) => {
-          const [h, m] = timeStr.split(':').map(Number);
-          const d = new Date(today);
-          d.setHours(h, m, 0, 0);
-          return d;
-        };
-        fajrToday = parsePrayerTime(computed.timings.Fajr);
-        dhuhrToday = parsePrayerTime(computed.timings.Dhuhr);
-        asrToday = parsePrayerTime(computed.timings.Asr);
-        maghribToday = parsePrayerTime(computed.timings.Maghrib);
-        ishaToday = parsePrayerTime(computed.timings.Isha);
-      }
-    }
-
-    const rawCityName = isEn 
-      ? ((config.location as any)?.cityGovEn || (config.location as any)?.city || config.location?.cityGov || 'Current Location') 
+  const cityDisplayName = useMemo(() => {
+    const rawCityName = isEn
+      ? ((config.location as any)?.cityGovEn || (config.location as any)?.city || config.location?.cityGov || 'Current Location')
       : ((config.location as any)?.cityGovAr || (config.location as any)?.cityNameAr || (config.location as any)?.city || config.location?.cityGov || 'موقعي الحالي');
-    const cityName = getLocalizedLocationName(rawCityName, isEn ? 'en' : 'ar');
+    return getLocalizedLocationName(rawCityName, isEn ? 'en' : 'ar');
+  }, [config.location, isEn]);
 
-    if (!fajrToday || !dhuhrToday || !asrToday || !maghribToday || !ishaToday) {
-      return {
-        nextKey: 'dhuhr' as const,
-        nextName: isEn ? 'Dhuhr' : 'الظهر',
-        nextTimeStr: '--:--',
-        prevName: isEn ? 'Fajr' : 'الفجر',
-        prevTimeStr: '--:--',
-        countdownStr: '--:--:--',
-        progressPercent: 0,
-        cityName
-      };
-    }
+  const handleOpenQuranFromCard = useCallback(() => {
+    onNavigate('quran', {
+      from: 'modern_home',
+      surah: lastReadQuran.surah,
+      ayah: lastReadQuran.ayah,
+      page: lastReadQuran.page,
+      ...(isEn ? { readingMode: 'translation' } : {}),
+    });
+  }, [onNavigate, lastReadQuran.surah, lastReadQuran.ayah, lastReadQuran.page, isEn]);
 
-    let prevName = 'الفجر';
-    let prevDate = fajrToday;
-    let nextName = 'الظهر';
-    let nextDate = dhuhrToday;
-    let nextKey: 'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha' = 'dhuhr';
-
-    if (nowDate < fajrToday) {
-      const ishaYesterday = new Date(ishaToday);
-      ishaYesterday.setDate(ishaYesterday.getDate() - 1);
-      prevName = isEn ? 'Isha' : 'العشاء';
-      prevDate = ishaYesterday;
-      nextName = isEn ? 'Fajr' : 'الفجر';
-      nextDate = fajrToday;
-      nextKey = 'fajr';
-    } else if (nowDate >= fajrToday && nowDate < dhuhrToday) {
-      prevName = isEn ? 'Fajr' : 'الفجر';
-      prevDate = fajrToday;
-      nextName = isEn ? 'Dhuhr' : 'الظهر';
-      nextDate = dhuhrToday;
-      nextKey = 'dhuhr';
-    } else if (nowDate >= dhuhrToday && nowDate < asrToday) {
-      prevName = isEn ? 'Dhuhr' : 'الظهر';
-      prevDate = dhuhrToday;
-      nextName = isEn ? 'Asr' : 'العصر';
-      nextDate = asrToday;
-      nextKey = 'asr';
-    } else if (nowDate >= asrToday && nowDate < maghribToday) {
-      prevName = isEn ? 'Asr' : 'العصر';
-      prevDate = asrToday;
-      nextName = isEn ? 'Maghrib' : 'المغرب';
-      nextDate = maghribToday;
-      nextKey = 'maghrib';
-    } else if (nowDate >= maghribToday && nowDate < ishaToday) {
-      prevName = isEn ? 'Maghrib' : 'المغرب';
-      prevDate = maghribToday;
-      nextName = isEn ? 'Isha' : 'العشاء';
-      nextDate = ishaToday;
-      nextKey = 'isha';
-    } else {
-      const fajrTomorrow = new Date(fajrToday);
-      fajrTomorrow.setDate(fajrTomorrow.getDate() + 1);
-      prevName = isEn ? 'Isha' : 'العشاء';
-      prevDate = ishaToday;
-      nextName = isEn ? 'Fajr' : 'الفجر';
-      nextDate = fajrTomorrow;
-      nextKey = 'fajr';
-    }
-
-    const totalDuration = nextDate.getTime() - prevDate.getTime();
-    const elapsed = Math.max(0, nowDate.getTime() - prevDate.getTime());
-    const progressPercent = totalDuration > 0
-      ? Math.min(100, Math.max(0, (elapsed / totalDuration) * 100))
-      : 0;
-
-    const diffMs = Math.max(0, nextDate.getTime() - nowDate.getTime());
-    const h = Math.floor(diffMs / 3600000);
-    const m = Math.floor((diffMs % 3600000) / 60000);
-    const s = Math.floor((diffMs % 60000) / 1000);
-    const countdownStr = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-
-    return {
-      nextKey,
-      nextName,
-      nextTimeStr: formatTime12(nextDate),
-      prevName,
-      prevTimeStr: formatTime12(prevDate),
-      countdownStr,
-      progressPercent: Math.round(progressPercent),
-      cityName
-    };
-  };
-
-  const prayerData = prayerCalc();
-
-  // Dynamic prayer themes for "الصلاة القادمة"
-  const prayerVisual = useMemo(() => {
-    switch (prayerData.nextKey) {
-      case 'fajr':
-        return {
-          icon: Moon,
-          badgeBg: 'golden-3d-inset text-amber-950 font-bold border-amber-300/80',
-          textColor: 'text-[#451A03]',
-          progressBar: 'bg-gradient-to-r from-amber-600 via-yellow-500 to-amber-500',
-          pinColor: 'text-amber-800',
-        };
-      case 'dhuhr':
-        return {
-          icon: Sun,
-          badgeBg: 'golden-3d-inset text-amber-950 font-bold border-amber-300/80',
-          textColor: 'text-[#451A03]',
-          progressBar: 'bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-600',
-          pinColor: 'text-amber-800',
-        };
-      case 'asr':
-        return {
-          icon: CloudSun,
-          badgeBg: 'golden-3d-inset text-amber-950 font-bold border-amber-300/80',
-          textColor: 'text-[#451A03]',
-          progressBar: 'bg-gradient-to-r from-amber-600 via-yellow-500 to-amber-600',
-          pinColor: 'text-amber-800',
-        };
-      case 'maghrib':
-        return {
-          icon: Sunset,
-          badgeBg: 'golden-3d-inset text-amber-950 font-bold border-amber-300/80',
-          textColor: 'text-[#451A03]',
-          progressBar: 'bg-gradient-to-r from-amber-600 via-orange-500 to-yellow-500',
-          pinColor: 'text-amber-800',
-        };
-      case 'isha':
-      default:
-        return {
-          icon: Moon,
-          badgeBg: 'golden-3d-inset text-amber-950 font-bold border-amber-300/80',
-          textColor: 'text-[#451A03]',
-          progressBar: 'bg-gradient-to-r from-amber-600 via-yellow-500 to-amber-600',
-          pinColor: 'text-amber-800',
-        };
-    }
-  }, [prayerData.nextKey]);
-  const PrayerIcon = prayerVisual.icon;
+  const handleOpenPrayerTimes = useCallback(() => {
+    onNavigate('prayer-times');
+  }, [onNavigate]);
 
   // Morning / Evening Athkar logic: morning/daytime is from 03:00 to 15:00, evening is from 15:00 onwards
-  const currentHour = nowDate.getHours();
-  const isMorning = currentHour >= 3 && currentHour < 15;
+  const isMorning = timeWindow.isMorning;
 
   // Toggle habit directly from the 5 prayers row
   const handleTogglePrayer = (e: React.MouseEvent, key: 'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha') => {
@@ -1605,7 +1676,7 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
           isNightMode={isNightMode}
           isBlackTheme={isBlackTheme}
           formatNumber={formatNumber}
-          onNavigate={() => onNavigate('quran', { from: 'modern_home', surah: lastReadQuran.surah, ayah: lastReadQuran.ayah, page: lastReadQuran.page, ...(isEn ? { readingMode: 'translation' } : {}) })}
+          onNavigate={handleOpenQuranFromCard}
         />
       </div>
   );
@@ -1640,7 +1711,7 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
                 className="inline-flex items-center text-xs font-bold text-amber-950 hover:text-amber-800 active:scale-95 transition-all cursor-pointer bg-transparent border-none p-0 outline-none max-w-full leading-snug text-start"
                 title={isEn ? 'Click to refresh location automatically' : 'انقر لتحديث الموقع تلقائياً'}
               >
-                <span className="truncate">{prayerData.cityName}</span>
+                <span className="truncate">{cityDisplayName}</span>
               </button>
               <OutdoorWeatherBadge 
                 lat={config.location?.lat} 
@@ -1674,66 +1745,19 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
           </button>
         </div>
 
-        {/* العد التنازلي وموعد الأذان وشريط التقدم */}
-        <div id="home-prayer-countdown-section" className="w-full">
-          {/* العد التنازلي وموعد الأذان مع ذكر اسم الصلاة القادمة صراحةً */}
-          <div 
-            onClick={() => onNavigate('prayer-times')}
-            className="flex items-end justify-between cursor-pointer py-1"
-            title={isEn ? 'Click to open full Prayer Times' : 'انقر لعرض مواقيت الصلاة'}
-          >
-            <div className="flex flex-col text-start">
-              <span className="text-[11px] font-semibold text-amber-900/85">
-                {isEn ? (
-                  <>
-                    Time to <span className="gold-accent-text font-extrabold">{prayerData.nextName}</span> Adhan
-                  </>
-                ) : (
-                  <>
-                    الوقت المتبقي لأذان <span className="gold-accent-text font-extrabold">{prayerData.nextName}</span>
-                  </>
-                )}
-              </span>
-              <span className="text-3xl sm:text-4xl font-cairo font-black tracking-tight text-[#451A03] tabular-nums" style={{ textShadow: (isNightMode || isBlackTheme) ? 'none' : '0 1px 1px rgba(255,255,255,0.8)' }}>
-                {isEn ? prayerData.countdownStr : formatNumber(prayerData.countdownStr)}
-              </span>
-            </div>
-            <div className="flex flex-col text-end">
-              <span className="text-[11px] font-semibold text-amber-900/85">
-                {isEn ? 'Adhan Time' : 'موعد الأذان'}
-              </span>
-              <span className="text-xl sm:text-2xl font-black text-[#5B2605] tabular-nums">
-                {prayerData.nextTimeStr}
-              </span>
-            </div>
-          </div>
-
-          {/* شريط التقدم */}
-          <div 
-            onClick={() => onNavigate('prayer-times')}
-            className="w-full mt-3 cursor-pointer"
-          >
-            <div className={`w-full h-2.5 rounded-full p-0.5 overflow-hidden ${(isNightMode || isBlackTheme) ? 'bg-[#0e0e13] shadow-[inset_0_2px_4px_rgba(0,0,0,0.85),0_1px_0_rgba(255,255,255,0.08)]' : 'bg-black/[0.08] shadow-[inset_0_1px_2px_rgba(0,0,0,0.15)]'}`}>
-              <div 
-                className={`h-full rounded-full shadow-sm transition-all duration-1000 ease-out ${
-                  isBurgundyTheme
-                    ? 'bg-gradient-to-r from-rose-900 via-rose-800 to-rose-950'
-                    : isSkyTheme 
-                      ? 'bg-gradient-to-r from-sky-800 via-sky-700 to-sky-900' 
-                      : isEmeraldTheme 
-                        ? 'bg-gradient-to-r from-emerald-800 via-emerald-700 to-emerald-900' 
-                        : 'bg-gradient-to-r from-amber-600 via-yellow-500 to-amber-500'
-                }`}
-                style={{ width: `${prayerData.progressPercent}%` }}
-              />
-            </div>
-            <div className="flex items-center justify-between text-xs sm:text-[13px] font-bold text-amber-900/95 mt-1.5 px-0.5 whitespace-nowrap">
-              <span className="tabular-nums">{prayerData.prevName} {prayerData.prevTimeStr}</span>
-              <span className="text-amber-950 font-extrabold tabular-nums gold-accent-text">{isEn ? prayerData.progressPercent : formatNumber(prayerData.progressPercent)}%</span>
-              <span className="tabular-nums">{prayerData.nextName} {prayerData.nextTimeStr}</span>
-            </div>
-          </div>
-        </div>
+        {/* العد التنازلي وموعد الأذان وشريط التقدم (معزول لتحديث الثواني دون إعادة بناء الصفحة) */}
+        <IsolatedHomePrayerCountdown
+          times={times}
+          config={config}
+          isEn={isEn}
+          isNightMode={isNightMode}
+          isBlackTheme={isBlackTheme}
+          isSkyTheme={isSkyTheme}
+          isEmeraldTheme={isEmeraldTheme}
+          isBurgundyTheme={isBurgundyTheme}
+          formatNumber={formatNumber}
+          onOpenPrayerTimes={handleOpenPrayerTimes}
+        />
       </div>
   );
 
@@ -2770,7 +2794,14 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
               <span className={`text-xs sm:text-sm font-bold font-cairo ${isNightMode || isBlackTheme ? 'text-white' : 'text-[#451A03]'}`}>
                 {translateEventName(currentOccasion.name)}
               </span>
-              <p className={`text-xs sm:text-sm font-medium leading-relaxed ${isNightMode || isBlackTheme ? 'text-white' : 'text-amber-900/90'}`}>
+              {(currentOccasion.historicalYearAr || currentOccasion.historicalYearEn) && (
+                <span className={`text-[11px] sm:text-xs font-extrabold ${isNightMode || isBlackTheme ? 'text-amber-300' : 'text-amber-900'}`}>
+                  {isEn
+                    ? `Historical Event Date: ${currentOccasion.historicalYearEn || currentOccasion.historicalYearAr}`
+                    : `تاريخ الحدث الأصلي: ${currentOccasion.historicalYearAr}`}
+                </span>
+              )}
+              <p className={`text-xs sm:text-sm font-medium leading-relaxed ${isNightMode || isBlackTheme ? 'text-white/90' : 'text-amber-950/80'}`}>
                 {currentOccasion.dateStr} • {currentOccasion.gregorianDateStr}
               </p>
             </div>
@@ -2882,6 +2913,7 @@ export const ModernHomeView: React.FC<ModernHomeViewProps> = ({
           source={isEn ? currentWisdom.authorEn : currentWisdom.authorAr}
           setToastMessage={setToastMessage}
           isGolden={true}
+          onNextEvent={() => setWisdomIndex(prev => (prev + 1) % ISLAMIC_WISDOMS.length)}
         />
       )}
     </>
@@ -3244,6 +3276,7 @@ const ReorderableCardItem: React.FC<ReorderableCardItemProps> = ({
 
   return (
     <Reorder.Item
+      id={`modern-card-container-${cardId}`}
       value={cardId}
       dragListener={false}
       dragControls={dragControls}

@@ -3,6 +3,7 @@ import { READERS, ReaderItem, ReadingMode, getReadersForMode, isEnglishReader } 
 import { Search } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { getReciterDisplayName, tListen } from '../../utils/listenQuranTranslations';
+import { registerBackInterceptor } from '../../hooks/useBackButton';
 
 interface ReciterSelectModalProps {
     onClose: () => void;
@@ -60,6 +61,15 @@ const ReciterSelectModal: React.FC<ReciterSelectModalProps> = ({
     const selectedRef = useRef<HTMLButtonElement>(null);
     const listContainerRef = useRef<HTMLDivElement>(null);
     const floatingTimerRef = useRef<any>(null);
+
+    useEffect(() => {
+        const interceptor = () => {
+            onClose();
+            return true;
+        };
+        const unregister = registerBackInterceptor(interceptor);
+        return unregister;
+    }, [onClose]);
 
     const isBlackTheme = useMemo(() => {
         try {
@@ -172,7 +182,7 @@ const ReciterSelectModal: React.FC<ReciterSelectModalProps> = ({
 
     return (
         <div className={`fixed inset-0 bg-black/30 backdrop-blur-sm z-[1200] flex items-center justify-center ${isLandscape ? 'p-0' : 'p-3 sm:p-4'} animate-fadeIn`} onClick={handleClose}>
-            <div dir={dir} className={`modal-skinned w-full ${isLandscape ? 'max-w-4xl h-full rounded-none max-h-screen' : 'max-w-md sm:max-w-2xl rounded-2xl max-h-[85vh]'} shadow-2xl overflow-hidden flex flex-col animate-modal-enter relative`} onClick={e => e.stopPropagation()}>
+            <div dir={dir} className={`modal-skinned w-full ${isLandscape ? 'max-w-4xl h-full rounded-none max-h-[100dvh]' : 'max-w-md sm:max-w-2xl rounded-2xl max-h-[88dvh]'} shadow-2xl overflow-hidden flex flex-col animate-modal-enter relative`} onClick={e => e.stopPropagation()}>
                 {/* Header with Title and Search */}
                 {(!hideHeader || !isSingleReciterMode) && (
                     <div className="p-3 border-b flex flex-col gap-2 shrink-0" style={{ borderColor: 'var(--qr-card-border)' }}>
@@ -216,7 +226,7 @@ const ReciterSelectModal: React.FC<ReciterSelectModalProps> = ({
                     {/* Scrollable Reciters Area */}
                     <div 
                         ref={listContainerRef} 
-                        className={`overflow-y-auto flex-1 p-3 ${!isSingleReciterMode ? 'pr-8 sm:pr-9 pl-3' : ''}`}
+                        className={`overflow-y-auto flex-1 min-h-0 p-3 ${isLandscape ? 'modal-sheet-safe-bottom' : ''} ${!isSingleReciterMode ? 'pr-8 sm:pr-9 pl-3' : ''}`}
                     >
                         {isSingleReciterMode ? (
                             <div className="flex flex-col items-center justify-center h-full p-4">

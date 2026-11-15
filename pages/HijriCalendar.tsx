@@ -516,7 +516,7 @@ function HijriCalendar({ onBack, onNavigate }: { onBack: () => void; onNavigate:
     };
 
     return (
-        <div className="h-screen flex flex-col bg-transparent font-sans overflow-hidden" dir={dir}>
+        <div className="h-[100dvh] flex flex-col bg-transparent font-sans overflow-hidden" dir={dir}>
             {/* Top Bar */}
             <header className="app-top-bar shrink-0">
                 <div className="app-top-bar__inner">
@@ -566,7 +566,7 @@ function HijriCalendar({ onBack, onNavigate }: { onBack: () => void; onNavigate:
                 </div>
             </header>
 
-            <main className="flex-1 overflow-y-auto px-3 sm:px-4 pt-3 pb-8">
+            <main className="flex-1 min-h-0 overflow-y-auto px-3 sm:px-4 pt-3 app-scroll-safe">
                 <div className="w-full max-w-lg mx-auto space-y-3.5">
                     
                     {/* Modern Segmented Control / Chips for Tabs (Zero solid black border, dynamic theming) */}
@@ -920,7 +920,7 @@ function HijriCalendar({ onBack, onNavigate }: { onBack: () => void; onNavigate:
                                         </span>
                                     </div>
                                     <p 
-                                        className={`leading-relaxed text-slate-700 dark:text-slate-300 text-justify ${
+                                        className={`leading-relaxed text-slate-700 dark:text-slate-300 text-center ${
                                             language === 'ar' ? 'font-amiri border-r-2 pr-4' : 'font-sans border-l-2 pl-4'
                                         }`} 
                                         style={{ 
@@ -928,7 +928,7 @@ function HijriCalendar({ onBack, onNavigate }: { onBack: () => void; onNavigate:
                                             fontSize: `${1.0 * historyFontSize}rem`
                                         }}
                                     >
-                                        {language === 'en' ? historicalEvent.descriptionEn : historicalEvent.descriptionAr}
+                                        {(language === 'en' ? historicalEvent.descriptionEn : historicalEvent.descriptionAr)?.replace(/[ \t]+/g, ' ').trim()}
                                     </p>
                                 </motion.div>
                             )}
@@ -947,7 +947,7 @@ function HijriCalendar({ onBack, onNavigate }: { onBack: () => void; onNavigate:
                         initial={{ opacity: 0, y: 50, x: '-50%' }}
                         animate={{ opacity: 1, y: 0, x: '-50%' }}
                         exit={{ opacity: 0, y: 50, x: '-50%' }}
-                        className="fixed bottom-8 left-1/2 z-[200] bg-slate-900 text-white px-6 py-3 rounded-full shadow-lg font-bold text-sm text-center whitespace-nowrap"
+                        className="fixed bottom-[calc(var(--app-bottom-clearance,0px)+1rem)] left-1/2 z-[200] bg-slate-900 text-white px-6 py-3 rounded-full shadow-lg font-bold text-sm text-center whitespace-nowrap"
                     >
                         {toastMessage}
                     </motion.div>
@@ -988,14 +988,14 @@ function HijriCalendar({ onBack, onNavigate }: { onBack: () => void; onNavigate:
                     dir={dir}
                 >
                     <div 
-                        className="bg-white dark:bg-slate-900 w-full max-w-[290px] rounded-3xl shadow-2xl flex flex-col max-h-[460px] overflow-hidden border border-slate-100 dark:border-white/10"
+                        className="bg-white dark:bg-slate-900 w-full max-w-[290px] rounded-3xl shadow-2xl flex flex-col max-h-[72dvh] overflow-hidden border border-slate-100 dark:border-white/10"
                         onClick={e => e.stopPropagation()}
                     >
                         <div className="p-4 border-b border-slate-100 dark:border-white/5 text-center shrink-0 bg-slate-50/50 dark:bg-white/[0.02]">
                             <h3 className="text-sm font-black" style={{ color: primaryColor }}>{pickerConfig.title}</h3>
                         </div>
 
-                        <div ref={scrollRef} className="flex-1 overflow-y-auto px-3.5 py-3 space-y-1 hide-scrollbar">
+                        <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto px-3.5 py-3 space-y-1 hide-scrollbar">
                             {pickerConfig.options.map((opt, i) => {
                                 const currentValue = pickerConfig.type === 'calendarMonth' ? viewDate.getMonth() 
                                                     : pickerConfig.type === 'calendarYear' ? viewDate.getFullYear()

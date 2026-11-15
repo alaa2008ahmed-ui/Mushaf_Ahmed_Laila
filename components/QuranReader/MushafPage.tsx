@@ -242,7 +242,7 @@ const MushafPage: React.FC<MushafPageProps> = React.memo(({ pageNum, pageData, h
                     return (
                         <React.Fragment key={id}>
                             {showHeader && ( 
-                                <div className="surah-header-container-wrapper my-2 sm:my-3 block w-full select-none" onClick={() => onSurahHeaderLongPress && onSurahHeaderLongPress()}> 
+                                <div className="surah-header-container-wrapper my-2 sm:my-3 block w-full select-none"> 
                                     <SurahHeader 
                                         surahNumber={ayah.sNum}
                                         surahName={ayah.sName ? ayah.sName.replace(/سورة|سُورَةُ|سُورَة/g, '').trim() : (SURAH_NAMES_AR[ayah.sNum - 1] || '')}
@@ -335,20 +335,16 @@ const MushafPage: React.FC<MushafPageProps> = React.memo(({ pageNum, pageData, h
                                      const digitCount = String(ayah.numberInSurah).length;
                                      const isHighlighted = highlightedAyahId === id;
                                      const themeId = currentTheme?.id;
-                                     const bracketColor = isHighlighted
-                                         ? (settings?.highlightTextColor || currentTheme?.highlightText || currentTheme?.accent || '#d97706')
-                                         : (themeId === 'deep_black'
-                                             ? (currentTheme?.verseBracket || '#fbbf24')
-                                             : (themeId === 'gold'
-                                                 ? (currentTheme?.verseBracket || '#d4af37')
-                                                 : (currentTheme?.verseBracket || currentTheme?.accent || '#d97706')));
-                                     const numColor = isHighlighted
-                                         ? (settings?.highlightTextColor || currentTheme?.highlightText || currentTheme?.accent || '#d97706')
-                                         : (themeId === 'deep_black'
-                                             ? (currentTheme?.verseNumber || '#38bdf8')
-                                             : (themeId === 'gold'
-                                                 ? (currentTheme?.verseNumber || '#b91c1c')
-                                                 : (currentTheme?.verseNumber || currentTheme?.accent || '#1d4ed8')));
+                                     const bracketColor = currentTheme?.verseBracket || (
+                                         themeId === 'deep_black' 
+                                             ? '#fbbf24' 
+                                             : (themeId === 'gold' ? '#d4af37' : '#059669')
+                                     );
+                                     const numColor = currentTheme?.verseNumber || (
+                                         themeId === 'deep_black' 
+                                             ? '#38bdf8' 
+                                             : '#b91c1c'
+                                     );
 
                                      return (
                                          <span className={`verse-container verse-digits-${digitCount} ${isHighlighted ? 'highlighted' : ''}`} 

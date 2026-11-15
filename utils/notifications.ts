@@ -8,6 +8,7 @@ import { PhoneNotificationSettings } from '../hooks/useNotificationSettings';
 import { syncDailyWirdNotifications, ensureWirdNotificationChannel } from './dailyWirdNotificationService';
 import { updateNativeAlertsGroupSummary } from './silentMode';
 import { getActiveNotificationTone, getActiveNotificationSoundFileName, getActiveNotificationSoundPath } from './prayerTimesUtils';
+import { ensureNotificationPermission } from './permissionHelper';
 
 // Android status bar notification icon: Holy Quran on Rehal (Stand)
 export const NOTIFICATION_STATUS_BAR_ICON = 'ic_stat_name';
@@ -79,10 +80,10 @@ export const setupNotifications = async (settings?: PhoneNotificationSettings, l
   const isEn = lang === 'en';
 
   try {
-    // Request permissions
-    const permStatus = await LocalNotifications.requestPermissions();
-    if (permStatus.display !== 'granted') {
-      console.log('Notification permission not granted');
+    // Only check/request permissions cleanly (never prompts during splash or language screen)
+    const hasPermission = await ensureNotificationPermission(false);
+    if (!hasPermission) {
+      console.log('Notification permission not granted or waiting for main app');
       return;
     }
 

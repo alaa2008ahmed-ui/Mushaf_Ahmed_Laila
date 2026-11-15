@@ -3,8 +3,8 @@ export type Language = 'ar' | 'en';
 export const TASBEEH_STRINGS: Record<string, { ar: string; en: string }> = {
   // Top bar
   title: {
-    ar: 'السبحة الإلكترونية',
-    en: 'Electronic Tasbeeh'
+    ar: 'التسبيح',
+    en: 'Tasbeeh'
   },
   subtitle: {
     ar: 'أضف أذكارك الخاصة وتتبع تسبيحك بدقة',
@@ -300,12 +300,12 @@ export const TASBEEH_STRINGS: Record<string, { ar: string; en: string }> = {
     en: 'Tasbeeh Analytics'
   },
   weeklyTab: {
-    ar: 'أسبوعي (آخر ٧ أيام)',
-    en: 'Weekly (Last 7 Days)'
+    ar: 'أسبوعي',
+    en: 'Weekly'
   },
   monthlyTab: {
-    ar: 'شهري (آخر ٣٠ يوماً)',
-    en: 'Monthly (Last 30 Days)'
+    ar: 'شهري',
+    en: 'Monthly'
   },
   totalSummary: {
     ar: 'الإجمالي',

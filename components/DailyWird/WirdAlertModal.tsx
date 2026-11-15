@@ -79,7 +79,7 @@ export const WirdAlertModal: React.FC<WirdAlertModalProps> = ({
       dir={dir}
     >
       <div
-        className="w-full max-w-md rounded-3xl bg-white dark:bg-gray-900 border-2 border-emerald-500/80 shadow-2xl overflow-hidden p-6 relative flex flex-col items-center text-center animate-scaleUp"
+        className="w-full max-w-md max-h-[90dvh] overflow-y-auto rounded-3xl bg-white dark:bg-gray-900 border-2 border-emerald-500/80 shadow-2xl p-6 relative flex flex-col items-center text-center animate-scaleUp"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close X button */}

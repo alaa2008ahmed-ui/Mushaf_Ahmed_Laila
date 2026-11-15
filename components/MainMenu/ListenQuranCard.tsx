@@ -1,24 +1,21 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Play, 
-  Pause, 
-  BookOpen, 
-  ChevronLeft, 
+import React, { useEffect, useMemo } from 'react';
+import {
+  ChevronLeft,
   ChevronRight,
   SkipBack,
   SkipForward
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTheme } from '../../context/ThemeContext';
-import { RECITERS, SURAH_LIST } from '../../data/listenQuranData';
+import { RECITERS } from '../../data/listenQuranData';
 import { getReciterDisplayName, getSurahDisplayName, formatListenTime } from '../../utils/listenQuranTranslations';
+import { estimateCurrentAyahAndJuz } from '../../utils/listenQuranUtils';
 import { SURAH_INFO } from '../QuranReader/constants';
+import { useListenQuranStore } from '../../hooks/useListenQuranStore';
 
 interface ListenQuranCardProps {
   onNavigate: (pageId: string, params?: any) => void;
 }
-
-const STORAGE_KEY = 'listen_quran_state_v7';
 
 export const ListenQuranCard: React.FC<ListenQuranCardProps> = ({ onNavigate }) => {
   const { language, isRTL, dir, formatNumber } = useLanguage();
@@ -29,142 +26,67 @@ export const ListenQuranCard: React.FC<ListenQuranCardProps> = ({ onNavigate }) 
   const isDark = isNightMode || isBlackTheme;
   const primaryColor = isDark ? '#10b981' : (theme.palette?.[0] || '#059669');
 
-  const [reciterId, setReciterId] = useState<string>(RECITERS[0].id);
-  const [surahNumber, setSurahNumber] = useState<number>(1);
-  const [isPlaying, setIsPlaying] = useState<boolean>(false);
-  const [progress, setProgress] = useState<number>(0);
-  const [currentTime, setCurrentTime] = useState<number>(0);
-  const [duration, setDuration] = useState<number>(0);
+  const {
+    reciterId,
+    surahNumber,
+    isPlaying,
+    isLoading,
+    currentTime,
+    duration,
+    initAudio,
+    fetchReciterSurahs,
+    togglePlay,
+    nextSurah,
+    prevSurah,
+  } = useListenQuranStore();
 
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-
-  // Load saved reciter and surah from localStorage
   useEffect(() => {
-    const loadState = () => {
-      try {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (parsed.savedReciterId) setReciterId(parsed.savedReciterId);
-          if (parsed.savedSurahNumber) setSurahNumber(parsed.savedSurahNumber);
-        }
-      } catch (e) {}
-    };
+    initAudio();
+    fetchReciterSurahs();
+  }, [initAudio, fetchReciterSurahs]);
 
-    loadState();
-    window.addEventListener('storage', loadState);
-    return () => window.removeEventListener('storage', loadState);
-  }, []);
-
-  // Save current selection to localStorage
-  const saveState = (newSurahNumber: number) => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      const parsed = saved ? JSON.parse(saved) : {};
-      parsed.savedReciterId = reciterId;
-      parsed.savedSurahNumber = newSurahNumber;
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
-    } catch (e) {}
-  };
-
-  // Compute Audio URL
   const currentReciter = RECITERS.find(r => r.id === reciterId) || RECITERS[0];
   const reciterName = getReciterDisplayName(currentReciter.id, currentReciter.name, language);
   const surahName = getSurahDisplayName(surahNumber, language);
-  const totalAyahs = SURAH_INFO[surahNumber]?.ayahs || 7;
+  const surahMeta = SURAH_INFO[surahNumber] || { ayahs: 7, type: 'مكية' };
+  const totalAyahs = surahMeta.ayahs;
+  const revelationType = isEn
+    ? (surahMeta.type === 'مدنية' ? 'Medinan' : 'Meccan')
+    : surahMeta.type;
 
-  // Calculate current Ayah dynamically based on playback time/progress
-  const currentAyah = duration > 0 && currentTime > 0
-    ? Math.min(totalAyahs, Math.max(1, Math.ceil((currentTime / duration) * totalAyahs)))
-    : 1;
+  const displayFullSurahName = isEn
+    ? (surahName.toLowerCase().startsWith('surah') ? surahName : `Surah ${surahName}`)
+    : (surahName.startsWith('سورة') ? surahName : `سورة ${surahName}`);
 
-  const surahFormatted = String(surahNumber).padStart(3, '0');
-  const baseUrl = reciterId.endsWith('/') ? reciterId.slice(0, -1) : reciterId;
-  const audioUrl = `${baseUrl}/${surahFormatted}.mp3`;
+  const { ayahNumber: currentAyah, juzNumber: currentJuz } = useMemo(
+    () => estimateCurrentAyahAndJuz(surahNumber, currentTime, duration),
+    [surahNumber, currentTime, duration]
+  );
 
-  // Attach audio handlers
-  const setupAudio = (url: string, autoPlay: boolean = false) => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.src = '';
-    }
+  // Subtitle: الآية الحالية، رقم السورة، عدد الآيات، الجزء الحالي قبل مكية/مدنية
+  const surahSubtitle = (isPlaying || currentTime > 0)
+    ? (isEn
+        ? `Ayah ${formatNumber(currentAyah)}/${formatNumber(totalAyahs)} • No. ${formatNumber(surahNumber)} • Juz ${formatNumber(currentJuz)} • ${revelationType}`
+        : `الآية (${formatNumber(currentAyah)}) • سورة رقم ${formatNumber(surahNumber)} • ${formatNumber(totalAyahs)} ${totalAyahs <= 10 ? 'آيات' : 'آية'} • الجزء ${formatNumber(currentJuz)} • ${revelationType}`)
+    : (isEn
+        ? `Surah No. ${formatNumber(surahNumber)} • ${formatNumber(totalAyahs)} Verses • Juz ${formatNumber(currentJuz)} • ${revelationType}`
+        : `سورة رقم ${formatNumber(surahNumber)} • ${formatNumber(totalAyahs)} ${totalAyahs <= 10 ? 'آيات' : 'آية'} • الجزء ${formatNumber(currentJuz)} • ${revelationType}`);
 
-    const audio = new Audio(url);
-    audioRef.current = audio;
-
-    audio.ontimeupdate = () => {
-      if (audio.duration) {
-        setProgress((audio.currentTime / audio.duration) * 100);
-        setCurrentTime(audio.currentTime);
-        setDuration(audio.duration);
-      }
-    };
-
-    audio.onloadedmetadata = () => {
-      if (audio.duration) setDuration(audio.duration);
-    };
-
-    audio.onended = () => {
-      setIsPlaying(false);
-      setProgress(0);
-      setCurrentTime(0);
-    };
-
-    if (autoPlay) {
-      audio.play().then(() => {
-        setIsPlaying(true);
-      }).catch(err => {
-        console.warn('Audio autoPlay error in card:', err);
-        setIsPlaying(false);
-      });
-    }
-  };
+  const progress = duration > 0 ? Math.min(100, Math.max(0, (currentTime / duration) * 100)) : 0;
 
   const handleTogglePlay = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!audioRef.current || audioRef.current.src !== audioUrl) {
-      setupAudio(audioUrl, true);
-      return;
-    }
-
-    if (isPlaying) {
-      audioRef.current.pause();
-      setIsPlaying(false);
-    } else {
-      audioRef.current.play().then(() => {
-        setIsPlaying(true);
-      }).catch(err => {
-        console.warn('Audio play error in card:', err);
-      });
-    }
+    togglePlay();
   };
 
   const handleNextSurah = (e: React.MouseEvent) => {
     e.stopPropagation();
-    const nextSurah = surahNumber >= 114 ? 1 : surahNumber + 1;
-    setSurahNumber(nextSurah);
-    saveState(nextSurah);
-    setProgress(0);
-    setCurrentTime(0);
-    setDuration(0);
-
-    const nextFormatted = String(nextSurah).padStart(3, '0');
-    const nextUrl = `${baseUrl}/${nextFormatted}.mp3`;
-    setupAudio(nextUrl, isPlaying);
+    nextSurah();
   };
 
   const handlePrevSurah = (e: React.MouseEvent) => {
     e.stopPropagation();
-    const prevSurah = surahNumber <= 1 ? 114 : surahNumber - 1;
-    setSurahNumber(prevSurah);
-    saveState(prevSurah);
-    setProgress(0);
-    setCurrentTime(0);
-    setDuration(0);
-
-    const prevFormatted = String(prevSurah).padStart(3, '0');
-    const prevUrl = `${baseUrl}/${prevFormatted}.mp3`;
-    setupAudio(prevUrl, isPlaying);
+    prevSurah();
   };
 
   const handleOpenPlayer = (e: React.MouseEvent) => {
@@ -172,14 +94,7 @@ export const ListenQuranCard: React.FC<ListenQuranCardProps> = ({ onNavigate }) 
     onNavigate('listen', { reciterId, surahNumber });
   };
 
-  useEffect(() => {
-    return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
-    };
-  }, []);
+  const showProgressRow = isPlaying || currentTime > 0 || duration > 0 || progress > 0;
 
   return (
     <div
@@ -188,13 +103,13 @@ export const ListenQuranCard: React.FC<ListenQuranCardProps> = ({ onNavigate }) 
       className="w-full golden-3d-card p-4 sm:p-5 select-none transition-all duration-300 relative"
     >
       {/* Header Row */}
-      <div className="flex items-center justify-between w-full mb-3">
+      <div className="flex items-center justify-between w-full mb-3 gap-2">
         <div className="flex items-center gap-2.5 min-w-0">
           <div className="flex flex-col text-start min-w-0">
             <span className="card-header-title text-xs sm:text-sm font-black truncate font-cairo" style={{ color: (isDark) ? '#FFFFFF' : '#451A03' }}>
               {isEn ? 'Audio Quran Recitation' : 'الاستماع للقرآن'}
             </span>
-            <span className="text-xs font-medium leading-tight opacity-80 mt-0.5 truncate" style={{ color: (isDark) ? '#FDE68A' : '#5B2605' }}>
+            <span className="text-xs font-bold leading-tight mt-0.5 truncate" style={{ color: (isDark) ? '#FDE68A' : '#5B2605' }}>
               {reciterName}
             </span>
           </div>
@@ -220,7 +135,9 @@ export const ListenQuranCard: React.FC<ListenQuranCardProps> = ({ onNavigate }) 
               className={`text-[11px] font-extrabold ${isDark ? 'text-black' : 'text-white'}`}
               style={{ color: isDark ? '#000000' : '#ffffff', WebkitTextFillColor: isDark ? '#000000' : '#ffffff' }}
             >
-              {isPlaying ? (isEn ? 'Pause' : 'إيقاف مؤقت') : (isEn ? 'Play' : 'تشغيل')}
+              {isPlaying
+                ? (isEn ? 'Pause' : 'إيقاف مؤقت')
+                : (isLoading && !isPlaying ? (isEn ? 'Loading...' : 'جاري التحميل...') : (isEn ? 'Play' : 'تشغيل'))}
             </span>
           </button>
 
@@ -259,50 +176,24 @@ export const ListenQuranCard: React.FC<ListenQuranCardProps> = ({ onNavigate }) 
         </div>
       </div>
 
-      {/* Surah Details Banner & Inner Controls (Time in Center when playing, Prev/Next buttons pinned to Left) */}
-      <div className={`p-3 rounded-xl flex items-center justify-between border relative min-h-[58px] ${
+      {/* Surah Details Banner & Inner Controls (Flex layout without overlapping absolute elements) */}
+      <div className={`p-3 rounded-xl flex items-center justify-between gap-3 border min-h-[58px] ${
         isDark ? 'bg-zinc-800/80 border-zinc-700/80' : 'bg-white/60 border-amber-200/60'
       }`}>
-        {/* Right side (RTL): Surah Name & Dynamic Ayah / Surah number */}
-        <div className="flex items-center gap-2 min-w-0 z-10">
-          <div className="p-1.5 rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 shrink-0">
-            <BookOpen className="w-4 h-4" />
-          </div>
-          <div className="flex flex-col text-start min-w-0">
-            <span className="text-xs font-bold leading-snug truncate" style={{ color: (isDark) ? '#FFFFFF' : '#451A03' }}>
-              {surahName}
-            </span>
-            <span className="text-[10px] opacity-80 font-medium truncate" style={{ color: (isDark) ? '#A1A1AA' : '#78350F' }}>
-              {(isPlaying || currentTime > 0) ? (
-                isEn ? `الآية رقم (${formatNumber(currentAyah)})` : `الآية رقم (${formatNumber(currentAyah)})`
-              ) : (
-                isEn ? `Surah No. ${formatNumber(surahNumber)}` : `سورة رقم ${formatNumber(surahNumber)}`
-              )}
-            </span>
-          </div>
+        {/* Right side (RTL): Surah Name & Dynamic Ayah / Juz / Surah metadata */}
+        <div className="flex flex-col text-start min-w-0 flex-1">
+          <span className="text-xs sm:text-[13px] font-bold leading-snug truncate" style={{ color: (isDark) ? '#FFFFFF' : '#451A03' }}>
+            {displayFullSurahName}
+          </span>
+          <span className="text-[10px] sm:text-[11px] font-bold leading-snug break-words" style={{ color: (isDark) ? '#A1A1AA' : '#78350F' }}>
+            {surahSubtitle}
+          </span>
         </div>
 
-        {/* Center: Enlarged Time Counter when playing or paused */}
-        {(isPlaying || currentTime > 0 || duration > 0) && (
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center z-10 pointer-events-none">
-            <div 
-              className="flex items-center justify-center text-xs sm:text-[13px] font-mono font-black px-2.5 py-1 rounded-lg dir-ltr shrink-0 shadow-2xs"
-              style={{
-                backgroundColor: isDark ? 'rgba(16, 185, 129, 0.2)' : `${primaryColor}15`,
-                color: primaryColor
-              }}
-            >
-              <span className="tracking-tight">
-                {formatListenTime(currentTime, language)} / {formatListenTime(duration, language)}
-              </span>
-            </div>
-          </div>
-        )}
-
         {/* Left side (RTL): Navigation Buttons (Left = Next Surah |◀, Right = Previous Surah ▶|) */}
-        <div 
-          dir="ltr" 
-          className="surah-nav-buttons flex items-center gap-1.5 sm:gap-2 shrink-0 z-10 border-0 border-none outline-none ring-0 shadow-none bg-transparent p-0 m-0"
+        <div
+          dir="ltr"
+          className="surah-nav-buttons flex items-center gap-1.5 sm:gap-2 shrink-0 border-0 border-none outline-none ring-0 shadow-none bg-transparent p-0 m-0"
           style={{ border: 'none', outline: 'none', boxShadow: 'none', background: 'transparent' }}
         >
           {/* 1. Next Surah Button on the LEFT (Points LEFT |◀) */}
@@ -363,14 +254,25 @@ export const ListenQuranCard: React.FC<ListenQuranCardProps> = ({ onNavigate }) 
         </div>
       </div>
 
-      {/* Progress Bar (when playing or paused with progress) */}
-      {(isPlaying || progress > 0) && (
-        <div className="w-full mt-2.5">
-          <div className="w-full h-1.5 rounded-full overflow-hidden bg-slate-200 dark:bg-zinc-700">
+      {/* Progress Bar & Time Counter Row (cleanly separated, never overlaps text) */}
+      {showProgressRow && (
+        <div className="w-full mt-2.5 flex items-center gap-2.5">
+          <div className="flex-1 min-w-0 h-1.5 rounded-full overflow-hidden bg-slate-200 dark:bg-zinc-700">
             <div
               className="h-full rounded-full transition-all duration-300"
               style={{ width: `${progress}%`, backgroundColor: primaryColor }}
             />
+          </div>
+          <div
+            className="flex items-center justify-center text-[11px] sm:text-xs font-mono font-black px-2.5 py-0.5 rounded-lg dir-ltr shrink-0 shadow-2xs"
+            style={{
+              backgroundColor: isDark ? 'rgba(16, 185, 129, 0.2)' : `${primaryColor}15`,
+              color: primaryColor
+            }}
+          >
+            <span className="tracking-tight whitespace-nowrap">
+              {formatListenTime(currentTime, language)} / {formatListenTime(duration, language)}
+            </span>
           </div>
         </div>
       )}
@@ -379,4 +281,3 @@ export const ListenQuranCard: React.FC<ListenQuranCardProps> = ({ onNavigate }) 
 };
 
 export default ListenQuranCard;
-

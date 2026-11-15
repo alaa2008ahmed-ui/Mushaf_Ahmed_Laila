@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTheme } from '../../context/ThemeContext';
+import { useShowPageGuides } from '../../utils/guideManager';
 
 export interface SpotlightStep {
   id: string;
@@ -159,6 +160,7 @@ export const CommunitySpotlightGuide: React.FC<CommunitySpotlightGuideProps> = (
   isEn = false,
   onStepChange
 }) => {
+  const showPageGuides = useShowPageGuides();
   const { language, formatNumber } = useLanguage();
   const { isNightMode, homeThemeVariant } = useTheme();
   const effectiveIsEn = isEn || language === 'en';
@@ -407,7 +409,7 @@ export const CommunitySpotlightGuide: React.FC<CommunitySpotlightGuideProps> = (
     };
   }, [isOpen, step, currentStepIndex, updateRect, scrollToTarget]);
 
-  if (!isOpen || !step) return null;
+  if (!showPageGuides || !isOpen || !step) return null;
 
   const isFirstStep = currentStepIndex === 0;
   const isLastStep = currentStepIndex === steps.length - 1;

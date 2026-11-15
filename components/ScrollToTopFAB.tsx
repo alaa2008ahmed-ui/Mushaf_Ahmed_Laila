@@ -133,6 +133,8 @@ export const ScrollToTopFAB: React.FC<ScrollToTopFABProps> = ({
         document.body.classList.contains('qr-modal-active') ||
         document.body.classList.contains('zoom-modal-active') ||
         document.body.classList.contains('modal-open') ||
+        document.body.classList.contains('settings-modal-open') ||
+        document.getElementById('home-screen-settings-modal') ||
         document.getElementById('share-app-qr-modal') ||
         document.getElementById('unified-event-zoom-modal-backdrop') ||
         document.querySelector('.fixed.inset-0.bg-black\\/65') ||
@@ -365,6 +367,8 @@ export const ScrollToTopFAB: React.FC<ScrollToTopFABProps> = ({
     document.body.classList.contains('qr-modal-active') ||
     document.body.classList.contains('zoom-modal-active') ||
     document.body.classList.contains('modal-open') ||
+    document.body.classList.contains('settings-modal-open') ||
+    Boolean(document.getElementById('home-screen-settings-modal')) ||
     Boolean(document.getElementById('share-app-qr-modal')) ||
     Boolean(document.getElementById('unified-event-zoom-modal-backdrop')) ||
     Boolean(document.querySelector('.fixed.inset-0.bg-black\\/65')) ||
@@ -511,7 +515,7 @@ export const ScrollToTopFAB: React.FC<ScrollToTopFABProps> = ({
   // In Edit Mode, force visibility so user can drag it easily anywhere
   const isVisibleInDOM = editMode || visible;
 
-  // Custom positioning style if user moved it, otherwise default fixed CSS classes
+  // Custom positioning style if user moved it, otherwise default dynamic safe-area bottom offset
   const containerStyle: React.CSSProperties = customPos ? {
     position: 'fixed',
     left: `${customPos.x}px`,
@@ -520,12 +524,13 @@ export const ScrollToTopFAB: React.FC<ScrollToTopFABProps> = ({
     bottom: 'auto',
     touchAction: editMode ? 'none' : 'auto',
   } : {
+    bottom: 'calc(var(--app-bottom-clearance) + clamp(1rem, 2.5dvh, 1.5rem))',
     touchAction: editMode ? 'none' : 'auto',
   };
 
   const positionClasses = customPos 
     ? '' 
-    : 'fixed bottom-20 start-5 sm:bottom-24 sm:start-8';
+    : 'fixed start-5 sm:start-8';
 
   const buttonElement = (
     <div

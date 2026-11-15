@@ -43,7 +43,7 @@ const AutoScrollSettingsModal: FC<AutoScrollSettingsModalProps> = ({
     return (
         <div className={`fixed inset-0 z-[1200] bg-black/30 backdrop-blur-sm flex items-center justify-center ${isLandscape ? 'p-0' : 'p-4'} animate-fadeIn`} onClick={onClose} dir={isEn ? "ltr" : "rtl"}>
             <div 
-                className={`modal-skinned w-full ${isLandscape ? 'max-w-xl max-h-[90vh] rounded-3xl' : 'max-w-sm sm:max-w-2xl rounded-3xl max-h-[85vh]'} shadow-2xl flex flex-col border-none animate-modal-enter overflow-hidden`} 
+                className={`modal-skinned w-full ${isLandscape ? 'max-w-xl max-h-[90dvh] rounded-3xl' : 'max-w-sm sm:max-w-2xl rounded-3xl max-h-[88dvh]'} shadow-2xl flex flex-col border-none animate-modal-enter overflow-hidden`} 
                 style={{
                     backgroundColor: currentTheme?.modalBg || currentTheme?.bg || '#ffffff',
                     color: currentTheme?.modalText || currentTheme?.text || '#000000'
@@ -72,7 +72,7 @@ const AutoScrollSettingsModal: FC<AutoScrollSettingsModalProps> = ({
                     </div>
                 </div>
 
-                <div className={`p-3.5 pt-1 overflow-y-auto flex-1 grid ${isLandscape ? 'grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-2.5' : 'grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2.5'}`}>
+                <div className={`p-3.5 pt-1 overflow-y-auto flex-1 min-h-0 grid ${isLandscape ? 'grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-2.5' : 'grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2.5'}`}>
                     {options.map(m => {
                         const isSelected = currentMinutes === m;
                         return (

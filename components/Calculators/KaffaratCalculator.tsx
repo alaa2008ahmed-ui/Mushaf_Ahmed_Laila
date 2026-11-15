@@ -24,7 +24,7 @@ const KaffaratCalculator: React.FC<{ cardBorderColor?: string }> = () => {
     const yaminTotal = (parseFloat(yaminFeedingCost) || 0) * 10;
 
     return (
-        <div className="space-y-4 animate-fade-in pb-8" dir={isEn ? 'ltr' : 'rtl'}>
+        <div className="space-y-4 animate-fade-in" dir={isEn ? 'ltr' : 'rtl'}>
             {/* Header Actions */}
             <div id="kaffarat-header-actions" className="flex justify-between items-center mb-2">
                 <h2 className="text-lg sm:text-xl font-bold flex items-center gap-2" style={{ color: tokens.textColor }}>

@@ -1,8 +1,8 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import ThemePageLock from '../components/ThemePageLock';
-import { usePrayerTimes } from '../context/PrayerTimesContext';
-import { Coordinates, CalculationMethod, PrayerTimes as AdhanPrayerTimes } from 'adhan';
+import { usePrayerTimes, getCalculationParams } from '../context/PrayerTimesContext';
+import { Coordinates, PrayerTimes as AdhanPrayerTimes } from 'adhan';
 import moment from 'moment-hijri';
 import { formatTime12_clean, applyOffset } from '../utils/prayerTimesUtils';
 import jsPDF from 'jspdf';
@@ -25,28 +25,6 @@ import {
     GREGORIAN_MONTHS_EN,
     toEnglishDigits
 } from '../utils/prayerTimesTranslations';
-
-const getCalculationParams = (country: string, code: string) => {
-    let params = CalculationMethod.MuslimWorldLeague();
-    if (code.startsWith('+20') || country.includes('مصر')) {
-        params = CalculationMethod.Egyptian();
-    } else if (code.startsWith('+966') || country.includes('السعودية')) {
-        params = CalculationMethod.UmmAlQura();
-    } else if (code.startsWith('+971') || country.includes('الإمارات')) {
-        params = CalculationMethod.Dubai();
-    } else if (code.startsWith('+965') || country.includes('الكويت')) {
-        params = CalculationMethod.Kuwait();
-    } else if (code.startsWith('+974') || country.includes('قطر')) {
-        params = CalculationMethod.Qatar();
-    } else if (code.startsWith('+1') || country.includes('أمريكا') || country.includes('كندا')) {
-        params = CalculationMethod.NorthAmerica();
-    } else if (code.startsWith('+90') || country.includes('تركيا')) {
-        params = CalculationMethod.Turkey();
-    } else if (code.startsWith('+92') || country.includes('باكستان')) {
-        params = CalculationMethod.Karachi();
-    }
-    return params;
-};
 
 const toArabicDigits = (val: string | number): string => {
     if (val === null || val === undefined) return '';
@@ -115,7 +93,6 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
     const monthData = useMemo(() => {
         const data = [];
         const coordinates = new Coordinates(config.location.lat, config.location.lng);
-        const params = getCalculationParams(config.location.fullCountry, config.location.combinedCode);
         const isAr = language === 'ar';
 
         let daysInMonth = 30;
@@ -133,7 +110,8 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
                 date = moment().year(viewDate.year()).month(viewDate.month()).date(day).toDate();
             }
             
-            const prayerTimes = new AdhanPrayerTimes(coordinates, date, params);
+            const { params: dayParams } = getCalculationParams(date, config.location, config);
+            const prayerTimes = new AdhanPrayerTimes(coordinates, date, dayParams);
             
             const formatTime = (d: Date) => {
                 return d.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
@@ -485,13 +463,12 @@ export default function MonthlyPrayerTimes({ onBack, onNavigate }: { onBack: () 
 
             {/* Table */}
             <main 
-                className="flex-1 flex flex-col overflow-hidden px-2 pt-1 pb-8 sm:pb-10" 
-                style={{ paddingBottom: 'calc(max(env(safe-area-inset-bottom, 0px), 18px) + 2rem)' }}
+                className="flex-1 min-h-0 flex flex-col overflow-hidden px-2 pt-1 app-scroll-safe" 
                 dir={dir}
             >
                 <div 
                     id="monthly-table-container"
-                    className="max-w-4xl w-full mx-auto overflow-auto rounded-xl shadow-sm mb-1 bg-white" 
+                    className="max-w-4xl w-full min-h-0 mx-auto overflow-auto rounded-xl shadow-sm bg-white" 
                     style={{ 
                         border: `2px solid ${tableBorderColor}`, 
                         borderColor: tableBorderColor,

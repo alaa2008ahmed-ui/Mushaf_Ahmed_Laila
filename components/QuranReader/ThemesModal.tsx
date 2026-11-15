@@ -111,7 +111,7 @@ const ThemesModal: React.FC<ThemesModalProps> = ({ onClose, showToast, isLandsca
                 <div className="flex-1 w-full flex flex-col overflow-hidden" style={{ color: activeTheme.text || '#000000' }}>
                     
                     {/* Full Screen Modal Header */}
-                    <div className="p-3.5 border-0 flex items-center justify-center shrink-0" style={{ backgroundColor: activeTheme.bg || '#ffffff' }}>
+                    <div className="p-3.5 border-0 flex items-center justify-center shrink-0" style={{ backgroundColor: activeTheme.bg || '#ffffff', paddingTop: 'calc(0.875rem + var(--app-safe-top, 0px))' }}>
                         <h3 className="text-sm sm:text-base font-black tracking-wide" style={{ color: activeTheme.text }}>
                             {isEn ? 'Choose Theme' : 'اختر الثيم'}
                         </h3>
@@ -137,7 +137,7 @@ const ThemesModal: React.FC<ThemesModalProps> = ({ onClose, showToast, isLandsca
                         <span className="whitespace-nowrap">{isEn ? 'Lock Highlight Color' : 'قفل لون التحديد'}</span>
                     </button>
                 </div>
-                <div className={`overflow-y-auto p-4 grid ${isLandscape ? 'grid-cols-3 sm:grid-cols-4' : 'grid-cols-2'} gap-3.5 flex-1 scrollbar-hide`} style={{ backgroundColor: activeTheme.bg }}>
+                <div className={`overflow-y-auto p-4 grid ${isLandscape ? 'grid-cols-3 sm:grid-cols-4' : 'grid-cols-2'} gap-3.5 flex-1 min-h-0 scrollbar-hide`} style={{ backgroundColor: activeTheme.bg }}>
                     {LIGHT_THEME_IDS.map((key) => {
                         const t = THEMES[key as keyof typeof THEMES];
                         if (!t) return null;
@@ -216,10 +216,10 @@ const ThemesModal: React.FC<ThemesModalProps> = ({ onClose, showToast, isLandsca
                     })}
                 </div>
                 <div 
-                    className="p-3 border-0 flex gap-2 shrink-0 z-10" 
+                    data-toast-bottom-bar="true"
+                    className="px-3 pt-3 modal-sheet-safe-bottom border-0 flex gap-2 shrink-0 z-10" 
                     style={{ 
-                        backgroundColor: activeTheme.bg || '#ffffff',
-                        paddingBottom: 'calc(max(env(safe-area-inset-bottom, 0px), 56px) + 0.75rem)'
+                        backgroundColor: activeTheme.bg || '#ffffff'
                     }}
                 >
                     <button 

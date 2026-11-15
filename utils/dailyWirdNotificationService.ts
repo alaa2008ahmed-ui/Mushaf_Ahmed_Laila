@@ -3,6 +3,7 @@ import { Capacitor, registerPlugin } from '@capacitor/core';
 import { Preferences } from '@capacitor/preferences';
 import { playNotificationSound, getActiveNotificationSoundFileName, getActiveNotificationSoundPath } from './prayerTimesUtils';
 import { updateNativeAlertsGroupSummary } from './silentMode';
+import { ensureNotificationPermission } from './permissionHelper';
 
 // Android status bar notification icon: Holy Quran on Rehal (Stand)
 export const WIRD_NOTIFICATION_ICON = 'ic_stat_name';
@@ -443,9 +444,9 @@ export const syncDailyWirdNotifications = async (langOverride?: 'ar' | 'en') => 
 
   const lang = langOverride || getCurrentAppLanguage();
   try {
-    // 1. Explicitly request notification permissions (ensures Android 13+ prompt appears)
-    const permStatus = await LocalNotifications.requestPermissions();
-    if (permStatus.display !== 'granted') {
+    // 1. Check/request notification permissions cleanly (never prompts during splash or language screen)
+    const hasPermission = await ensureNotificationPermission(false);
+    if (!hasPermission) {
       console.log('[DailyWird] Notification permission not granted yet by user.');
       return;
     }

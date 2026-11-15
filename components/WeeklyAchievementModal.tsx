@@ -548,7 +548,7 @@ export const WeeklyAchievementModal: React.FC<WeeklyAchievementModalProps> = ({
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className="w-full max-w-lg bg-white dark:bg-gray-900 rounded-3xl shadow-2xl border overflow-hidden flex flex-col max-h-[92vh]"
+        className="w-full max-w-lg bg-white dark:bg-gray-900 rounded-3xl shadow-2xl border overflow-hidden flex flex-col max-h-[92dvh]"
         style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
       >
         {/* Modal Top Bar */}
@@ -597,7 +597,7 @@ export const WeeklyAchievementModal: React.FC<WeeklyAchievementModalProps> = ({
         </div>
 
         {/* Scrollable Preview Area */}
-        <div className="flex-1 overflow-y-auto px-5 py-3 overscroll-contain">
+        <div className="flex-1 min-h-0 overflow-y-auto px-5 py-3 overscroll-contain">
           {/* Visual Card */}
           <div
             ref={cardRef}

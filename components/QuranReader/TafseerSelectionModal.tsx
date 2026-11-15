@@ -1,8 +1,9 @@
-import React, { FC } from 'react';
+import React, { FC, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { TAFSEERS, getTafseerDisplayName } from './constants';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { registerBackInterceptor } from '../../hooks/useBackButton';
 
 const extractColor = (val?: string, fallback = '#3b82f6'): string => {
     if (!val) return fallback;
@@ -24,6 +25,17 @@ const TafseerSelectionModal: FC<{
     const { theme } = useTheme();
     const { language, dir } = useLanguage();
     const isEn = language === 'en';
+
+    useEffect(() => {
+        if (!isOpen) return;
+        const interceptor = () => {
+            onClose();
+            return true;
+        };
+        const unregister = registerBackInterceptor(interceptor);
+        return unregister;
+    }, [isOpen, onClose]);
+
     if (!isOpen) return null;
 
     const themeBorderColor = currentTheme?.id === 'deep_black'
@@ -35,7 +47,7 @@ const TafseerSelectionModal: FC<{
 
     return (
         <div className={`fixed inset-0 z-[1200] bg-black/40 backdrop-blur-sm flex items-center justify-center ${isLandscape ? 'p-2' : 'p-4'} animate-fadeIn`} onClick={onClose}>
-            <div dir={dir} className={`modal-skinned w-full ${isLandscape ? 'max-w-[320px] max-h-[90vh] rounded-2xl' : 'max-w-[300px] rounded-3xl max-h-[80vh]'} shadow-2xl flex flex-col overflow-hidden animate-modal-enter border-0`} 
+            <div dir={dir} className={`modal-skinned w-full ${isLandscape ? 'max-w-[320px] max-h-[90dvh] rounded-2xl' : 'max-w-[300px] rounded-3xl max-h-[85dvh]'} shadow-2xl flex flex-col overflow-hidden animate-modal-enter border-0`} 
                 style={{ 
                     fontFamily: currentTheme?.font,
                     backgroundColor: currentTheme?.modalBg || 'var(--qr-modal-bg, #FFF)', 
@@ -66,7 +78,9 @@ const TafseerSelectionModal: FC<{
                     </div>
                 </div>
 
-                <div className={`${isLandscape ? 'p-3 pt-2.5 gap-2.5' : 'p-4 pt-3 gap-3'} overflow-y-auto flex-1 flex flex-col`}>
+                <div 
+                    className={`${isLandscape ? 'p-3 pt-2.5 gap-2.5' : 'p-4 pt-3 gap-3'} overflow-y-auto flex-1 min-h-0 flex flex-col`}
+                >
                     {TAFSEERS.map(t => {
                         const isSelected = currentTafseerId === t.id;
                         return (

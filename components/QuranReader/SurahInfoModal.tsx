@@ -43,7 +43,7 @@ const SurahInfoModal: React.FC<SurahInfoModalProps> = ({ surahName, surahNumber,
   return (
     <div className="fixed inset-0 z-[1300] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={onClose}>
       <div 
-        className="modal-skinned w-full max-w-2xl max-h-[85vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col border-0 animate-modal-enter"
+        className="modal-skinned w-full max-w-2xl max-h-[88dvh] rounded-3xl shadow-2xl overflow-hidden flex flex-col border-0 animate-modal-enter"
         style={{ border: 'none', outline: 'none' }}
         onClick={e => e.stopPropagation()}
         dir={isEnglishMode ? "ltr" : "rtl"}
@@ -75,7 +75,7 @@ const SurahInfoModal: React.FC<SurahInfoModalProps> = ({ surahName, surahNumber,
         </div>
 
         {/* Content */}
-        <div className={`flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar ${isEnglishMode ? 'text-left' : 'text-right'} theme-card-bg`}>
+        <div className={`flex-1 min-h-0 overflow-y-auto p-6 space-y-6 custom-scrollbar ${isEnglishMode ? 'text-left' : 'text-right'} theme-card-bg`}>
           
           {/* Metadata Section - Grid */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 lg:gap-4">

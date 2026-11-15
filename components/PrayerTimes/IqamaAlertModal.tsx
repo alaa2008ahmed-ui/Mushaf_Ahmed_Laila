@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Volume2, Check, X } from 'lucide-react';
-import { playNotificationSound, getActiveNotificationSoundPath } from '../../utils/prayerTimesUtils';
+import { playNotificationSound } from '../../utils/prayerTimesUtils';
 import { useLanguage } from '../../context/LanguageContext';
 import { tPrayer, getPrayerDisplayName } from '../../utils/prayerTimesTranslations';
 
@@ -20,18 +20,12 @@ export const IqamaAlertModal: React.FC<IqamaAlertModalProps> = ({ alert, onDismi
     if (!alert) return null;
 
     useEffect(() => {
-        // Automatically play the chosen notification sound when Iqama alert modal appears
-        const sound = getActiveNotificationSoundPath();
-        if (sound && sound !== 'none') {
-            playNotificationSound(sound, true);
-        }
+        // Automatically play the water droplet alert tone when Iqama alert modal appears
+        playNotificationSound('/assets/audio/notif_droplet.wav', true);
     }, [alert.prayerKey, alert.timeStr]);
 
     const handleReplay = () => {
-        const sound = getActiveNotificationSoundPath();
-        if (sound && sound !== 'none') {
-            playNotificationSound(sound, true);
-        }
+        playNotificationSound('/assets/audio/notif_droplet.wav', true);
     };
 
     const localizedPrayerName = getPrayerDisplayName(alert.prayerKey, language);

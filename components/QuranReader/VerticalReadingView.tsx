@@ -699,20 +699,16 @@ const VerticalReadingView: React.FC<VerticalReadingViewProps> = React.memo(({
                         {(() => {
                             const digitCount = String(item.ayahNumber).length;
                             const themeId = currentTheme?.id;
-                            const bracketColor = isHighlighted 
-                                ? (settings.highlightTextColor || currentTheme.highlightText || currentTheme.accent || '#f59e0b') 
-                                : (themeId === 'deep_black' 
-                                    ? (currentTheme?.verseBracket || '#fbbf24') 
-                                    : (themeId === 'gold' 
-                                        ? (currentTheme?.verseBracket || '#d4af37') 
-                                        : (currentTheme?.verseBracket || currentTheme?.accent || '#d97706')));
-                            const numColor = isHighlighted 
-                                ? (settings.highlightTextColor || currentTheme.highlightText || currentTheme.accent || '#f59e0b') 
-                                : (themeId === 'deep_black' 
-                                    ? (currentTheme?.verseNumber || '#38bdf8') 
-                                    : (themeId === 'gold' 
-                                        ? (currentTheme?.verseNumber || '#b91c1c') 
-                                        : (currentTheme?.verseNumber || currentTheme?.accent || '#1d4ed8')));
+                            const bracketColor = currentTheme?.verseBracket || (
+                                themeId === 'deep_black' 
+                                    ? '#fbbf24' 
+                                    : (themeId === 'gold' ? '#d4af37' : '#059669')
+                            );
+                            const numColor = currentTheme?.verseNumber || (
+                                themeId === 'deep_black' 
+                                    ? '#38bdf8' 
+                                    : '#b91c1c'
+                            );
 
                             return (
                                 <span className={`verse-container verse-digits-${digitCount} ${isHighlighted ? 'highlighted' : ''} cursor-pointer active:scale-95 transition-transform`}
@@ -845,7 +841,7 @@ const VerticalReadingView: React.FC<VerticalReadingViewProps> = React.memo(({
 
     return (
         <div 
-            className={`w-full min-h-full ${isLandscape ? (!isLandscapeUIHidden ? 'pt-[calc(48px+var(--logical-safe-top))] pb-[calc(56px+var(--logical-safe-bottom))]' : 'pt-2 pb-8') : ''}`} 
+            className={`w-full min-h-full ${isLandscape ? (!isLandscapeUIHidden ? 'pt-[calc(48px+var(--logical-safe-top))] pb-[calc(56px+var(--logical-safe-bottom))]' : 'pt-2 pb-[calc(0.75rem+var(--logical-safe-bottom))]') : ''}`} 
             style={{ direction: readingMode === 'translation' ? 'ltr' : 'rtl', backgroundColor: settings.bgColor || currentTheme.bg || '#ffffff' }}
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
@@ -882,7 +878,7 @@ const VerticalReadingView: React.FC<VerticalReadingViewProps> = React.memo(({
                     }}
                     initialTopMostItemIndex={{ index: initialIndex, align: 'center' }}
                     overscan={200} // Pre-render items for smoother experience
-                    className="scrollbar-hide pb-8"
+                    className="scrollbar-hide"
                     itemContent={(index, item) => renderItem(index, item)}
                     rangeChanged={(range) => {
                         const centerIndex = Math.round((range.startIndex + range.endIndex) / 2);

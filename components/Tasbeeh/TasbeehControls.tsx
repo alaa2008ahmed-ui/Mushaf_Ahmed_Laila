@@ -53,34 +53,20 @@ const TasbeehControls: React.FC<TasbeehControlsProps> = ({
                                 {displayPhrase || (language === 'ar' ? 'سبحان الله' : 'Subhan Allah')}
                             </span>
                         </div>
-                        <div 
-                            className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-xs font-bold transition-transform group-hover:scale-105"
-                            style={{ backgroundColor: `${primaryColor}14`, color: primaryColor }}
-                        >
-                            <i className="fa-solid fa-repeat"></i>
-                        </div>
                     </div>
                 </button>
             </motion.div>
 
             {/* Quick Action Buttons Grid - Pure White Cards with Soft Drop Shadow & Zero Hard Borders */}
-            <div className="grid grid-cols-4 gap-2.5 h-16">
+            <div className="grid grid-cols-4 gap-2.5 h-12">
                  {/* 1. Add Dhikr */}
                  <motion.button 
                     whileTap={{ scale: 0.95 }} 
                     type="button"
                     onClick={() => setModals((p: any) => ({...p, add: true}))} 
-                    className="flex flex-col items-center justify-center py-1.5 px-1 font-bold rounded-2xl bg-white dark:bg-[#1E293B] text-[10px] sm:text-xs shadow-[0_4px_16px_-2px_rgba(0,0,0,0.05)] hover:shadow-md border border-slate-100/80 dark:border-white/5 h-full transition-all cursor-pointer group active:scale-95" 
+                    className="flex items-center justify-center py-2 px-1.5 font-bold rounded-2xl bg-white dark:bg-[#1E293B] text-xs sm:text-sm shadow-[0_4px_16px_-2px_rgba(0,0,0,0.05)] hover:shadow-md border border-slate-100/80 dark:border-white/5 h-full transition-all cursor-pointer group active:scale-95" 
                     style={{ color: textColor }}
                  >
-                     <div 
-                         className="w-7 h-7 rounded-full flex items-center justify-center mb-1 transition-transform group-hover:scale-110"
-                         style={{ backgroundColor: `${primaryColor}14`, color: primaryColor }}
-                     >
-                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.4" d="M12 4v16m8-8H4" />
-                         </svg>
-                     </div>
                      <span className="truncate max-w-full font-bold">
                          {tTasbeeh('addBtn', language)}
                      </span>
@@ -91,17 +77,9 @@ const TasbeehControls: React.FC<TasbeehControlsProps> = ({
                     whileTap={{ scale: 0.95 }} 
                     type="button"
                     onClick={() => setModals((p: any) => ({...p, delete: true}))} 
-                    className="flex flex-col items-center justify-center py-1.5 px-1 font-bold rounded-2xl bg-white dark:bg-[#1E293B] text-[10px] sm:text-xs shadow-[0_4px_16px_-2px_rgba(0,0,0,0.05)] hover:shadow-md border border-slate-100/80 dark:border-white/5 h-full transition-all cursor-pointer group active:scale-95" 
+                    className="flex items-center justify-center py-2 px-1.5 font-bold rounded-2xl bg-white dark:bg-[#1E293B] text-xs sm:text-sm shadow-[0_4px_16px_-2px_rgba(0,0,0,0.05)] hover:shadow-md border border-slate-100/80 dark:border-white/5 h-full transition-all cursor-pointer group active:scale-95" 
                     style={{ color: textColor }}
                  >
-                     <div 
-                         className="w-7 h-7 rounded-full flex items-center justify-center mb-1 transition-transform group-hover:scale-110"
-                         style={{ backgroundColor: `${primaryColor}14`, color: primaryColor }}
-                     >
-                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                         </svg>
-                     </div>
                      <span className="truncate max-w-full font-bold">
                          {tTasbeeh('deleteBtn', language)}
                      </span>
@@ -112,17 +90,9 @@ const TasbeehControls: React.FC<TasbeehControlsProps> = ({
                     whileTap={{ scale: 0.95 }} 
                     type="button"
                     onClick={() => setModals((p: any) => ({...p, color: true}))} 
-                    className="flex flex-col items-center justify-center py-1.5 px-1 font-bold rounded-2xl bg-white dark:bg-[#1E293B] text-[10px] sm:text-xs shadow-[0_4px_16px_-2px_rgba(0,0,0,0.05)] hover:shadow-md border border-slate-100/80 dark:border-white/5 h-full transition-all cursor-pointer group active:scale-95" 
+                    className="flex items-center justify-center py-2 px-1.5 font-bold rounded-2xl bg-white dark:bg-[#1E293B] text-xs sm:text-sm shadow-[0_4px_16px_-2px_rgba(0,0,0,0.05)] hover:shadow-md border border-slate-100/80 dark:border-white/5 h-full transition-all cursor-pointer group active:scale-95" 
                     style={{ color: textColor }}
                  >
-                     <div 
-                         className="w-7 h-7 rounded-full flex items-center justify-center mb-1 transition-transform group-hover:scale-110"
-                         style={{ backgroundColor: `${primaryColor}14`, color: primaryColor }}
-                     >
-                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
-                         </svg>
-                     </div>
                      <span className="truncate max-w-full font-bold">
                          {tTasbeeh('colorBtn', language)}
                      </span>
@@ -133,17 +103,9 @@ const TasbeehControls: React.FC<TasbeehControlsProps> = ({
                     whileTap={{ scale: 0.95 }} 
                     type="button"
                     onClick={() => setModals((p: any) => ({...p, skins: true}))} 
-                    className="flex flex-col items-center justify-center py-1.5 px-1 font-bold rounded-2xl bg-white dark:bg-[#1E293B] text-[10px] sm:text-xs shadow-[0_4px_16px_-2px_rgba(0,0,0,0.05)] hover:shadow-md border border-slate-100/80 dark:border-white/5 h-full transition-all cursor-pointer group active:scale-95" 
+                    className="flex items-center justify-center py-2 px-1.5 font-bold rounded-2xl bg-white dark:bg-[#1E293B] text-xs sm:text-sm shadow-[0_4px_16px_-2px_rgba(0,0,0,0.05)] hover:shadow-md border border-slate-100/80 dark:border-white/5 h-full transition-all cursor-pointer group active:scale-95" 
                     style={{ color: textColor }}
                  >
-                     <div 
-                         className="w-7 h-7 rounded-full flex items-center justify-center mb-1 transition-transform group-hover:scale-110"
-                         style={{ backgroundColor: `${primaryColor}14`, color: primaryColor }}
-                     >
-                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                         </svg>
-                     </div>
                      <span className="truncate max-w-full font-bold">
                          {tTasbeeh('skinBtn', language)}
                      </span>

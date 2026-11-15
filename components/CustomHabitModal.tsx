@@ -7,6 +7,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { CommunitySpotlightGuide, getGuideSeen } from './Community/CommunitySpotlightGuide';
 import { CUSTOM_HABIT_MODAL_STEPS } from './Community/communityTourSteps';
 import { getModernFlatTokens, hexToRgba } from '../utils/flatDesignTokens';
+import { useShowPageGuides } from '../utils/guideManager';
 
 interface CustomHabitModalProps {
   hexColor: string;
@@ -25,6 +26,7 @@ export const CustomHabitModal: React.FC<CustomHabitModalProps> = ({
   onAdded,
   onNavigate
 }) => {
+  const showPageGuides = useShowPageGuides();
   const { theme, themeKey } = useTheme();
   const tokens = getModernFlatTokens(theme, themeKey);
   const { language } = useLanguage();
@@ -107,7 +109,7 @@ export const CustomHabitModal: React.FC<CustomHabitModalProps> = ({
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: '100%', opacity: 0 }}
         transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-        className="w-full max-w-lg rounded-t-[28px] sm:rounded-[24px] overflow-hidden flex flex-col max-h-[90vh] shadow-2xl border-0"
+        className="w-full max-w-lg rounded-t-[28px] sm:rounded-[24px] overflow-hidden flex flex-col max-h-[90dvh] shadow-2xl border-0"
         style={{ 
           backgroundColor: tokens.cardBgColor, 
           color: tokens.textColor,
@@ -127,14 +129,16 @@ export const CustomHabitModal: React.FC<CustomHabitModalProps> = ({
           </h2>
 
           <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() => setShowGuide(true)}
-              className="w-9 h-9 rounded-full flex items-center justify-center transition-all hover:bg-black/5 dark:hover:bg-white/5 active:scale-90 cursor-pointer border-0"
-              title={isEn ? "Guide" : "دليل الإضافة"}
-            >
-              <HelpCircle size={18} style={{ color: tokens.textColor }} />
-            </button>
+            {showPageGuides && (
+              <button
+                type="button"
+                onClick={() => setShowGuide(true)}
+                className="w-9 h-9 rounded-full flex items-center justify-center transition-all hover:bg-black/5 dark:hover:bg-white/5 active:scale-90 cursor-pointer border-0"
+                title={isEn ? "Guide" : "دليل الإضافة"}
+              >
+                <HelpCircle size={18} style={{ color: tokens.textColor }} />
+              </button>
+            )}
             <button
               type="button"
               onClick={onClose}
@@ -146,8 +150,8 @@ export const CustomHabitModal: React.FC<CustomHabitModalProps> = ({
         </div>
 
         {/* Scrollable Form Body */}
-        <main className="flex-1 overflow-y-auto px-5 py-4 hide-scrollbar">
-          <form onSubmit={handleSave} className="space-y-4">
+        <main className="flex-1 min-h-0 overflow-y-auto px-5 pt-4 pb-6 hide-scrollbar">
+          <form id="custom-habit-form" onSubmit={handleSave} className="space-y-4">
             
             {/* Title Input - Flat Surface */}
             <div 
@@ -314,30 +318,36 @@ export const CustomHabitModal: React.FC<CustomHabitModalProps> = ({
                 </div>
               )}
             </div>
-
-            {/* Action Buttons */}
-            <div className="pt-2 flex gap-2.5">
-              <motion.button
-                id="custom-habit-save-btn"
-                whileTap={{ scale: 0.98 }}
-                type="submit"
-                className="flex-1 py-3.5 px-4 rounded-xl font-bold text-sm shadow-sm flex items-center justify-center gap-2 text-white cursor-pointer border-0"
-                style={{ backgroundColor: tokens.primaryColor }}
-              >
-                <Plus className="w-4 h-4" />
-                <span>{isEn ? 'Add Habit' : 'إضافة العبادة للطاعات 🌿'}</span>
-              </motion.button>
-              <button
-                type="button"
-                onClick={onClose}
-                className="py-3.5 px-5 rounded-xl font-bold text-sm bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 transition-colors cursor-pointer border-0"
-                style={{ color: tokens.textColor }}
-              >
-                {isEn ? 'Cancel' : 'إلغاء'}
-              </button>
-            </div>
           </form>
         </main>
+
+        {/* Action Buttons Footer elevated clearly above phone bottom navigation bar */}
+        <div
+          className="px-5 pt-3 modal-sheet-safe-bottom shrink-0 border-t border-slate-100 dark:border-zinc-800 flex gap-2.5"
+          style={{
+            backgroundColor: tokens.cardBgColor
+          }}
+        >
+          <motion.button
+            id="custom-habit-save-btn"
+            whileTap={{ scale: 0.98 }}
+            type="submit"
+            form="custom-habit-form"
+            className="flex-1 py-3.5 px-4 rounded-xl font-bold text-sm shadow-sm flex items-center justify-center gap-2 text-white cursor-pointer border-0"
+            style={{ backgroundColor: tokens.primaryColor }}
+          >
+            <Plus className="w-4 h-4" />
+            <span>{isEn ? 'Add Habit' : 'إضافة العبادة للطاعات 🌿'}</span>
+          </motion.button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="py-3.5 px-5 rounded-xl font-bold text-sm bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 transition-colors cursor-pointer border-0"
+            style={{ color: tokens.textColor }}
+          >
+            {isEn ? 'Cancel' : 'إلغاء'}
+          </button>
+        </div>
 
         <CommunitySpotlightGuide
           guideKey="custom_habit_modal_spotlight"

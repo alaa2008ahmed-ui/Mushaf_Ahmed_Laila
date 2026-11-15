@@ -16,6 +16,7 @@ import QuranDownload from '../pages/QuranDownload';
 import Calculators from '../pages/Calculators';
 import VoiceControlPage from '../pages/VoiceControlPage';
 import MonthlyPrayerTimes from '../pages/MonthlyPrayerTimes';
+import PrayerCalculationSettings from '../pages/PrayerCalculationSettings';
 import DailyWird from '../pages/DailyWird';
 import Memorization from '../pages/Memorization';
 import MemorizationSession from '../pages/MemorizationSession';
@@ -65,6 +66,10 @@ const AppRouter: React.FC<AppRouterProps> = ({ page, onBack, onNavigate, onOpenT
         return <PrayerTimes onBack={onBack} onNavigate={onNavigate} />;
       case 'monthly-prayer-times':
         return <MonthlyPrayerTimes onBack={onBack} onNavigate={onNavigate} />;
+      case 'prayer-calculation-settings':
+      case 'prayer-calculation':
+      case 'calculation-settings':
+        return <PrayerCalculationSettings onBack={onBack} onNavigate={onNavigate} />;
       case 'qibla':
         return <Qibla onBack={onBack} onNavigate={onNavigate} />;
       case 'sabah-masaa':

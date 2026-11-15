@@ -21,6 +21,7 @@ interface NotificationToneSelectorProps {
     isDefaultTheme?: boolean;
     isBlackTheme?: boolean;
     hideLabel?: boolean;
+    hidePreviewButton?: boolean;
 }
 
 const NotificationToneSelector: React.FC<NotificationToneSelectorProps> = ({
@@ -31,7 +32,8 @@ const NotificationToneSelector: React.FC<NotificationToneSelectorProps> = ({
     cardBorderColor,
     isDefaultTheme,
     isBlackTheme,
-    hideLabel = false
+    hideLabel = false,
+    hidePreviewButton = false
 }) => {
     const { language, dir } = useLanguage();
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -189,7 +191,6 @@ const NotificationToneSelector: React.FC<NotificationToneSelectorProps> = ({
                     }}
                 >
                     <div className="flex items-center gap-2.5 min-w-0">
-                        <Bell className="w-4 h-4 shrink-0" style={{ color: isBlackTheme ? '#FFFFFF' : primaryColor }} />
                         <span className="truncate">{getToneDisplayName(selectedName, language)}</span>
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0 opacity-70">
@@ -201,7 +202,7 @@ const NotificationToneSelector: React.FC<NotificationToneSelectorProps> = ({
                 </button>
 
                 {/* Live Preview Button for Selected Tone */}
-                {currentPlayableSource && (
+                {!hidePreviewButton && currentPlayableSource && (
                     <button
                         type="button"
                         onClick={(e) => handleTogglePreview(currentPlayableSource, e)}
@@ -251,7 +252,7 @@ const NotificationToneSelector: React.FC<NotificationToneSelectorProps> = ({
                     dir={dir}
                 >
                     <div 
-                        className="rounded-[2.5rem] w-full max-w-xs sm:max-w-sm max-h-[85vh] flex flex-col p-5 sm:p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150"
+                        className="rounded-[2.5rem] w-full max-w-xs sm:max-w-sm max-h-[88dvh] flex flex-col p-5 sm:p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150"
                         style={{ 
                             backgroundColor: isBlackTheme ? '#000000' : 'var(--modal-bg, #ffffff)', 
                             color: isBlackTheme ? '#ffffff' : 'var(--modal-text, #000000)',
@@ -283,7 +284,7 @@ const NotificationToneSelector: React.FC<NotificationToneSelectorProps> = ({
                         </div>
 
                         {/* Tone List as Rounded Framed Items with Direct Audition */}
-                        <div className="space-y-2 overflow-y-auto max-h-[62vh] py-1 px-1 no-scrollbar">
+                        <div className="space-y-2 overflow-y-auto flex-1 min-h-0 max-h-[62dvh] py-1 px-1 no-scrollbar">
                             {optionsList.map((option) => {
                                 const isSelected = selectedId === option.id;
                                 const isPlayable = option.id !== 'none' && !!option.path;

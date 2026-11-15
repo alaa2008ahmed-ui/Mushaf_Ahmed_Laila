@@ -297,23 +297,20 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
     });
     
     useEffect(() => {
-        const numSurahs = new Set(quranResults.map(r => r.surah)).size;
-        if (numSurahs > 0 && numSurahs <= 5) {
-            const initialExpanded: Record<number, boolean> = {};
-            new Set(quranResults.map(r => r.surah)).forEach(sNum => initialExpanded[sNum as number] = true);
-            setExpandedSurahs(initialExpanded);
-        } else if (numSurahs > 0) {
-            const initialExpanded: Record<number, boolean> = {};
-            const firstSurah = Array.from(new Set(quranResults.map(r => r.surah)))[0] as number;
-            initialExpanded[firstSurah] = true;
-            setExpandedSurahs(initialExpanded);
-        } else {
-            setExpandedSurahs({});
-        }
+        // جميع السور تكون مغلقة افتراضياً عند ظهور نتائج البحث
+        setExpandedSurahs({});
     }, [quranResults]);
 
     const toggleSurah = (surahNum: number) => {
-        setExpandedSurahs(prev => ({ ...prev, [surahNum]: !prev[surahNum] }));
+        setExpandedSurahs(prev => {
+            const isCurrentlyOpen = Boolean(prev[surahNum]);
+            // عند فتح سورة جديدة يتم إغلاق السورة السابقة تلقائياً (إظهار سورة واحدة فقط في كل مرة)
+            if (isCurrentlyOpen) {
+                return {};
+            } else {
+                return { [surahNum]: true };
+            }
+        });
     };
     
     const searchTimeoutRef = useRef<any>(null);
@@ -331,7 +328,8 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
         if (!text) return '';
         let normalized = stripTajweedTags(text);
         return normalized
-            .replace(/[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06ED\u0640]/g, "")
+            .replace(/\u0670/g, "ا")
+            .replace(/[\u0610-\u061A\u064B-\u065F\u06D6-\u06ED\u0640]/g, "")
             .replace(/\u06E6/g, "ي")
             .replace(/\u06E5/g, "و")
             .replace(/[أإآٱ]/g, "ا")
@@ -370,25 +368,67 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
         setIsSearching(true);
 
         const hasLatinChars = /[a-zA-Z]/.test(q);
-        const isEnglishSearch = isEn || hasLatinChars;
+        const hasArabicChars = /[\u0600-\u06FF]/.test(q);
+
+        // Strict language enforcement:
+        // - In Arabic mode (!isEn): searching with English/Latin text must result in NOTHING (0 results).
+        // - In English mode (isEn): searching with Arabic text must result in NOTHING (0 results).
+        if ((!isEn && hasLatinChars) || (isEn && hasArabicChars)) {
+            setQuranResults([]);
+            setAthkarResults([]);
+            setSalahAthkarResults([]);
+            setDuaResults([]);
+            setRuqyahResults([]);
+            setHisnResults([]);
+            setNawawiResults([]);
+            setAsmaulHusnaResults([]);
+            setSeerahResults([]);
+            setHajjUmrahResults([]);
+            setTenPromisedResults([]);
+            setDivineMiraclesResults([]);
+            setIsSearching(false);
+
+            searchCache.query = q;
+            searchCache.quranResults = [];
+            searchCache.athkarResults = [];
+            searchCache.salahAthkarResults = [];
+            searchCache.duaResults = [];
+            searchCache.ruqyahResults = [];
+            searchCache.hisnResults = [];
+            searchCache.nawawiResults = [];
+            searchCache.asmaulHusnaResults = [];
+            searchCache.seerahResults = [];
+            searchCache.hajjUmrahResults = [];
+            searchCache.tenPromisedResults = [];
+            searchCache.divineMiraclesResults = [];
+            return;
+        }
 
         // Ensure English Quran translation is loaded if needed
         let enQuranData = getCachedQuranEnglishTranslation();
-        if (!enQuranData) {
+        if (isEn && !enQuranData) {
             enQuranData = await loadQuranEnglishTranslation();
         }
 
         const normQ = normalizeArabic(q);
-        
         const normQNoSpaces = normQ.replace(/\s+/g, '');
         
-        // Regex for Quran Arabic text
-        const gap = '[\\u0610-\\u061A\\u064B-\\u065F\\u0670\\u06D6-\\u06ED\\u0640\\s]*';
-        const highlightPattern = normQ.split('').map(c => (
-            c === 'ا' ? '[أإآٱا]' : 
-            (c === 'ه' ? '[هة]' : 
-            (c === 'ي' ? '[يى]' : c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
-        )).join(gap);
+        // Regex for Quran Arabic text with strict word boundary separation:
+        // innerGap: diacritics/tashkeel/dagger-alif within a word (NO whitespace permitted)
+        // wordGap: whitespace + diacritics between words
+        const innerGap = '[\\u0610-\\u061A\\u064B-\\u065F\\u0670\\u06D6-\\u06ED\\u0640]*';
+        const wordGap = '[\\s\\u0610-\\u061A\\u064B-\\u065F\\u0670\\u06D6-\\u06ED\\u0640]+';
+
+        const wordsAr = normQ.split(/\s+/).filter(Boolean);
+        const wordPatterns = wordsAr.map(w => {
+            return w.split('').map(c => (
+                c === 'ا' ? '[أإآٱا\\u0670]' : 
+                (c === 'ه' ? '[هة]' : 
+                (c === 'ي' ? '[يى]' : c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
+            )).join(innerGap);
+        });
+
+        const highlightPattern = wordPatterns.join(wordGap);
         
         let arabicRegex: RegExp | null = null;
         try {
@@ -423,17 +463,18 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
             const normText = normalizeArabic(text);
             if (!normText) return false;
 
+            // 1. Direct match on normalized text (preserves word boundaries and spaces)
             if (normText.includes(normQ)) return true;
 
-            const normTextNoSpaces = normText.replace(/\s+/g, '');
-            if (normQNoSpaces.length >= 2 && normTextNoSpaces.includes(normQNoSpaces)) return true;
+            // 2. Exact word boundary regex match (handles Uthmani diacritics / dagger alif)
+            if (arabicRegex) {
+                const freshRegex = new RegExp(arabicRegex.source, 'gi');
+                if (freshRegex.test(text)) return true;
+            }
 
-            if (searchWordsAr.length > 0) {
-                return searchWordsAr.every(word => {
-                    if (normText.includes(word)) return true;
-                    const wNoSpace = word.replace(/\s+/g, '');
-                    return wNoSpace.length > 1 && normTextNoSpaces.includes(wNoSpace);
-                });
+            // 3. Multi-word phrase search: ensure every query word exists in normalized target text
+            if (searchWordsAr.length > 1) {
+                return searchWordsAr.every(word => normText.includes(word));
             }
 
             return false;
@@ -446,35 +487,56 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
         };
 
         const matchItem = (arText: string, enText?: string, arExtra?: string, enExtra?: string) => {
-            if (hasLatinChars) {
-                return matchEnglish(enText || '') || matchEnglish(enExtra || '');
-            }
             if (isEn) {
-                return (
-                    matchEnglish(enText || '') || 
-                    matchEnglish(enExtra || '') || 
-                    matchArabic(arText) || 
-                    (arExtra ? matchArabic(arExtra) : false)
-                );
+                return matchEnglish(enText || '') || matchEnglish(enExtra || '');
             }
             return matchArabic(arText) || (arExtra ? matchArabic(arExtra) : false);
         };
 
-        const activeHighlightRegex = hasLatinChars || isEn ? englishRegex : arabicRegex;
+        const activeHighlightRegex = isEn ? englishRegex : arabicRegex;
 
         // 1. Search Quran
         const foundQuran: any[] = [];
         const seenAyahKeys = new Set<string>();
 
-        if (hasLatinChars && enQuranData && enQuranData.length > 0) {
-            const enResults = searchQuranEnglish(q, enQuranData, quranData);
-            enResults.forEach(item => {
-                const key = `${item.surah}:${item.ayah}`;
-                if (!seenAyahKeys.has(key)) {
-                    seenAyahKeys.add(key);
-                    foundQuran.push(item);
+        if (isEn) {
+            if (enQuranData && enQuranData.length > 0) {
+                const enResults = searchQuranEnglish(q, enQuranData, quranData);
+                enResults.forEach(item => {
+                    const key = `${item.surah}:${item.ayah}`;
+                    if (!seenAyahKeys.has(key)) {
+                        seenAyahKeys.add(key);
+                        foundQuran.push(item);
+                    }
+                });
+            }
+            if (isNumberSearch) {
+                for (let sIdx = 0; sIdx < quranData.surahs.length; sIdx++) {
+                    const surah = quranData.surahs[sIdx];
+                    for (let aIdx = 0; aIdx < surah.ayahs.length; aIdx++) {
+                        const ayah = surah.ayahs[aIdx];
+                        const key = `${surah.number}:${ayah.numberInSurah}`;
+                        if (ayah.numberInSurah === searchNum && !seenAyahKeys.has(key)) {
+                            const enVerse = enQuranData?.[sIdx]?.verses?.[aIdx];
+                            const enTransText = enVerse?.translation || '';
+                            const surahNameEn = SURAH_NAMES_EN[surah.number - 1] || surah.name;
+                            seenAyahKeys.add(key);
+                            foundQuran.push({ 
+                                type: 'quran',
+                                text: fixQuranText(ayah.text), 
+                                textEn: enTransText,
+                                surah: surah.number, 
+                                surahName: surah.name, 
+                                surahNameEn,
+                                ayah: ayah.numberInSurah, 
+                                page: ayah.page,
+                                juz: ayah.juz,
+                                highlightRegex: null
+                            });
+                        }
+                    }
                 }
-            });
+            }
         } else {
             if (arabicRegex || isNumberSearch) {
                 for (let sIdx = 0; sIdx < quranData.surahs.length; sIdx++) {
@@ -514,23 +576,12 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                                     ayah: ayah.numberInSurah, 
                                     page: ayah.page,
                                     juz: ayah.juz,
-                                    highlightRegex: isEnglishSearch && enTransText ? englishRegex : arabicRegex
+                                    highlightRegex: arabicRegex
                                 });
                             }
                         }
                     }
                 }
-            }
-
-            if (isEn && !isNumberSearch && enQuranData && enQuranData.length > 0) {
-                const enExtra = searchQuranEnglish(q, enQuranData, quranData);
-                enExtra.forEach(item => {
-                    const key = `${item.surah}:${item.ayah}`;
-                    if (!seenAyahKeys.has(key)) {
-                        seenAyahKeys.add(key);
-                        foundQuran.push(item);
-                    }
-                });
             }
         }
 
@@ -660,17 +711,19 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
 
         // 7. Search Nawawi
         const foundNawawi: any[] = [];
-        NAWAWI_DATA.forEach((item) => {
-            if (matchArabic(item.hadith) || matchArabic(item.title) || (hasLatinChars && matchEnglish(item.title))) {
-                foundNawawi.push({ 
-                    type: 'nawawi', 
-                    hadith: item.hadith, 
-                    title: item.title, 
-                    id: item.id,
-                    highlightRegex: arabicRegex
-                });
-            }
-        });
+        if (!isEn) {
+            NAWAWI_DATA.forEach((item) => {
+                if (matchArabic(item.hadith) || matchArabic(item.title)) {
+                    foundNawawi.push({ 
+                        type: 'nawawi', 
+                        hadith: item.hadith, 
+                        title: item.title, 
+                        id: item.id,
+                        highlightRegex: arabicRegex
+                    });
+                }
+            });
+        }
 
         // 8. Search Asmaul Husna
         const foundAsmaulHusna: any[] = [];
@@ -692,65 +745,69 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
 
         // 9. Search Prophetic Seerah
         const foundSeerah: any[] = [];
-        PROPHETIC_SEERAH_DATA.forEach((item) => {
-            if (matchItem(item.title, '', item.summary, '') || matchArabic(item.details) || (item.badge && matchArabic(item.badge))) {
-                foundSeerah.push({
-                    type: 'seerah',
-                    kind: 'milestone',
-                    title: item.title,
-                    eraLabel: item.eraLabel,
-                    yearGregorian: item.yearGregorian,
-                    summary: item.summary,
-                    details: item.details,
-                    id: item.id,
-                    highlightRegex: activeHighlightRegex
-                });
-            }
-        });
-        PROPHETIC_STANCES_DATA.forEach((item) => {
-            if (matchItem(item.title, '', item.situation, '') || matchArabic(item.quote) || matchArabic(item.moralLesson)) {
-                foundSeerah.push({
-                    type: 'seerah',
-                    kind: 'stance',
-                    title: item.title,
-                    category: item.category,
-                    situation: item.situation,
-                    quote: item.quote,
-                    id: item.id,
-                    highlightRegex: activeHighlightRegex
-                });
-            }
-        });
+        if (!isEn) {
+            PROPHETIC_SEERAH_DATA.forEach((item) => {
+                if (matchArabic(item.title) || matchArabic(item.summary) || matchArabic(item.details) || (item.badge && matchArabic(item.badge))) {
+                    foundSeerah.push({
+                        type: 'seerah',
+                        kind: 'milestone',
+                        title: item.title,
+                        eraLabel: item.eraLabel,
+                        yearGregorian: item.yearGregorian,
+                        summary: item.summary,
+                        details: item.details,
+                        id: item.id,
+                        highlightRegex: activeHighlightRegex
+                    });
+                }
+            });
+            PROPHETIC_STANCES_DATA.forEach((item) => {
+                if (matchArabic(item.title) || matchArabic(item.situation) || matchArabic(item.quote) || matchArabic(item.moralLesson)) {
+                    foundSeerah.push({
+                        type: 'seerah',
+                        kind: 'stance',
+                        title: item.title,
+                        category: item.category,
+                        situation: item.situation,
+                        quote: item.quote,
+                        id: item.id,
+                        highlightRegex: activeHighlightRegex
+                    });
+                }
+            });
+        }
 
         // 10. Search Hajj & Umrah
         const foundHajjUmrah: any[] = [];
-        umrahVirtues.forEach((v, idx) => {
-            if (matchItem(v.title, '', v.text, '') || matchArabic(v.explanation)) {
-                foundHajjUmrah.push({
-                    type: 'hajjUmrah',
-                    kind: 'virtue',
-                    title: v.title,
-                    text: v.text,
-                    explanation: v.explanation,
-                    id: `v_${idx}`,
-                    highlightRegex: activeHighlightRegex
-                });
-            }
-        });
-        umrahSteps.forEach((s) => {
-            if (matchItem(s.title, '', s.subtitle, '') || matchArabic(s.quranAyah) || matchArabic(s.hadith)) {
-                foundHajjUmrah.push({
-                    type: 'hajjUmrah',
-                    kind: 'step',
-                    title: s.title,
-                    subtitle: s.subtitle,
-                    quranAyah: s.quranAyah,
-                    hadith: s.hadith,
-                    id: s.title,
-                    highlightRegex: activeHighlightRegex
-                });
-            }
-        });
+        if (!isEn) {
+            umrahVirtues.forEach((v, idx) => {
+                if (matchArabic(v.title) || matchArabic(v.text) || matchArabic(v.explanation)) {
+                    foundHajjUmrah.push({
+                        type: 'hajjUmrah',
+                        kind: 'virtue',
+                        title: v.title,
+                        text: v.text,
+                        explanation: v.explanation,
+                        id: `v_${idx}`,
+                        highlightRegex: activeHighlightRegex
+                    });
+                }
+            });
+            umrahSteps.forEach((s) => {
+                if (matchArabic(s.title) || matchArabic(s.subtitle) || matchArabic(s.quranAyah) || matchArabic(s.hadith)) {
+                    foundHajjUmrah.push({
+                        type: 'hajjUmrah',
+                        kind: 'step',
+                        title: s.title,
+                        subtitle: s.subtitle,
+                        quranAyah: s.quranAyah,
+                        hadith: s.hadith,
+                        id: s.title,
+                        highlightRegex: activeHighlightRegex
+                    });
+                }
+            });
+        }
 
         // 11. Search Ten Promised Paradise
         const foundTenPromised: any[] = [];
@@ -1002,8 +1059,40 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
         }, {} as Record<number, { surahName: string, surahNameEn?: string, ayahs: any[] }>);
         const sortedQuranSurahs = Object.keys(groupedQuran).map(Number).sort((a, b) => a - b);
 
+        const normQ = normalizeArabic(query);
+        const innerGap = '[\\u0610-\\u061A\\u064B-\\u065F\\u0670\\u06D6-\\u06ED\\u0640]*';
+        const wordGap = '[\\s\\u0610-\\u061A\\u064B-\\u065F\\u0670\\u06D6-\\u06ED\\u0640]+';
+        const wordsAr = normQ.split(/\s+/).filter(Boolean);
+        const wordPatterns = wordsAr.map(w => {
+            return w.split('').map(c => (
+                c === 'ا' ? '[أإآٱا\\u0670]' : 
+                (c === 'ه' ? '[هة]' : 
+                (c === 'ي' ? '[يى]' : c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
+            )).join(innerGap);
+        });
+        const highlightPattern = wordPatterns.join(wordGap);
+        let activeRegex: RegExp | null = null;
+        try {
+            if (isEn) {
+                const englishWords = query.toLowerCase().split(/\s+/).map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).filter(Boolean);
+                if (englishWords.length > 0) activeRegex = new RegExp(`(${englishWords.join('|')})`, 'gi');
+            } else if (highlightPattern) {
+                activeRegex = new RegExp(highlightPattern, 'gi');
+            }
+        } catch (e) {
+            activeRegex = null;
+        }
+
+        const totalQuranWordOccurrences = quranResults.reduce((acc, item) => {
+            if (item.text && activeRegex) {
+                const matches = item.text.match(activeRegex);
+                return acc + (matches ? matches.length : 1);
+            }
+            return acc + 1;
+        }, 0);
+
         return (
-            <div className="space-y-4 pb-20">
+            <div className="space-y-4">
                 {/* 1. Quran Results */}
                 {showQuran && quranResults.length > 0 && (
                     <div className="space-y-3">
@@ -1020,7 +1109,15 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                                     </h4>
                                     <div className="flex items-center gap-2">
                                         <span className="text-xs font-bold px-2.5 py-0.5 rounded-full quran-raised-card border-0" style={{ backgroundColor: theme.accent || theme.palette[0], color: accentBadgeText, border: 'none' }}>
-                                            {isEn ? quranResults.length : toArabic(quranResults.length)}
+                                            {isEn ? (
+                                                totalQuranWordOccurrences > quranResults.length
+                                                    ? `${quranResults.length} Ayahs (${totalQuranWordOccurrences} matches)`
+                                                    : `${quranResults.length} Ayahs`
+                                            ) : (
+                                                totalQuranWordOccurrences > quranResults.length
+                                                    ? `${toArabic(quranResults.length)} آية (وردت ${toArabic(totalQuranWordOccurrences)} مرة)`
+                                                    : `${toArabic(quranResults.length)} آية`
+                                            )}
                                         </span>
                                         <ChevronLeft className={`w-5 h-5 transition-transform quran-3d-icon ${expandedCategories.quran ? (isEn ? 'rotate-90' : '-rotate-90') : (isEn ? 'rotate-180' : '')}`} />
                                     </div>
@@ -1030,9 +1127,19 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                                         {sortedQuranSurahs.map(surahNum => {
                                             const group = groupedQuran[surahNum];
                                             const isExpanded = expandedSurahs[surahNum];
+                                            const rawArSurahName = (group.surahName || '').trim();
                                             const surahDisplayName = isEn 
-                                                ? `Surah ${group.surahNameEn || SURAH_NAMES_EN[surahNum - 1] || group.surahName}` 
-                                                : `سورة ${group.surahName}`;
+                                                ? `Surah ${group.surahNameEn || SURAH_NAMES_EN[surahNum - 1] || rawArSurahName}` 
+                                                : (rawArSurahName.startsWith('سورة') || rawArSurahName.startsWith('سُورَة')
+                                                    ? rawArSurahName
+                                                    : `سورة ${rawArSurahName}`);
+                                            const surahWordOccurrences = group.ayahs.reduce((acc: number, item: any) => {
+                                                if (item.text && activeRegex) {
+                                                    const matches = item.text.match(activeRegex);
+                                                    return acc + (matches ? matches.length : 1);
+                                                }
+                                                return acc + 1;
+                                            }, 0);
                                             return (
                                                 <div key={surahNum} className="rounded-2xl quran-raised-card overflow-hidden border-0 mb-2" style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.04)' : '#ffffff', border: 'none' }}>
                                                     <button 
@@ -1045,7 +1152,15 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                                                         </h4>
                                                         <div className="flex items-center gap-2">
                                                             <span className="text-xs font-bold px-2 py-0.5 rounded-full quran-raised-card border-0" style={{ backgroundColor: theme.accent || theme.palette[0], color: accentBadgeText, border: 'none' }}>
-                                                                {isEn ? group.ayahs.length : toArabic(group.ayahs.length)}
+                                                                {isEn ? (
+                                                                    surahWordOccurrences > group.ayahs.length
+                                                                        ? `${group.ayahs.length} Ayahs (${surahWordOccurrences} matches)`
+                                                                        : `${group.ayahs.length} Ayahs`
+                                                                ) : (
+                                                                    surahWordOccurrences > group.ayahs.length
+                                                                        ? `${toArabic(group.ayahs.length)} آية (وردت ${toArabic(surahWordOccurrences)} مرة)`
+                                                                        : `${toArabic(group.ayahs.length)} آية`
+                                                                )}
                                                             </span>
                                                             <ChevronLeft className={`w-4 h-4 transition-transform quran-3d-icon ${isExpanded ? (isEn ? 'rotate-90' : '-rotate-90') : (isEn ? 'rotate-180' : '')}`} />
                                                         </div>
@@ -1098,15 +1213,33 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                                         <BookOpen className="w-4 h-4 quran-3d-icon" />
                                     </span>
                                     <h3 className="font-bold text-sm opacity-90" style={{ color: theme.textColor }}>
-                                        {isEn ? `The Holy Quran (${quranResults.length})` : `القرآن الكريم (${toArabic(quranResults.length)})`}
+                                        {isEn ? (
+                                            totalQuranWordOccurrences > quranResults.length
+                                                ? `The Holy Quran (${quranResults.length} Ayahs - ${totalQuranWordOccurrences} matches)`
+                                                : `The Holy Quran (${quranResults.length} Ayahs)`
+                                        ) : (
+                                            totalQuranWordOccurrences > quranResults.length
+                                                ? `القرآن الكريم (${toArabic(quranResults.length)} آية - وردت ${toArabic(totalQuranWordOccurrences)} مرة)`
+                                                : `القرآن الكريم (${toArabic(quranResults.length)} آية)`
+                                        )}
                                     </h3>
                                 </div>
                                 {sortedQuranSurahs.map(surahNum => {
                                     const group = groupedQuran[surahNum];
                                     const isExpanded = expandedSurahs[surahNum];
+                                    const rawArSurahName = (group.surahName || '').trim();
                                     const surahDisplayName = isEn 
-                                        ? `Surah ${group.surahNameEn || SURAH_NAMES_EN[surahNum - 1] || group.surahName}` 
-                                        : `سورة ${group.surahName}`;
+                                        ? `Surah ${group.surahNameEn || SURAH_NAMES_EN[surahNum - 1] || rawArSurahName}` 
+                                        : (rawArSurahName.startsWith('سورة') || rawArSurahName.startsWith('سُورَة')
+                                            ? rawArSurahName
+                                            : `سورة ${rawArSurahName}`);
+                                    const surahWordOccurrences = group.ayahs.reduce((acc: number, item: any) => {
+                                        if (item.text && activeRegex) {
+                                            const matches = item.text.match(activeRegex);
+                                            return acc + (matches ? matches.length : 1);
+                                        }
+                                        return acc + 1;
+                                    }, 0);
                                     return (
                                         <div key={surahNum} className="mb-2.5 rounded-2xl quran-raised-card overflow-hidden border-0" style={{ backgroundColor: theme.isDark ? 'rgba(255,255,255,0.04)' : '#ffffff', border: 'none' }}>
                                             <button 
@@ -1119,7 +1252,15 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
                                                 </h4>
                                                 <div className="flex items-center gap-2">
                                                     <span className="text-xs font-bold px-2.5 py-0.5 rounded-full quran-raised-card border-0" style={{ backgroundColor: theme.accent || theme.palette[0], color: accentBadgeText, border: 'none' }}>
-                                                        {isEn ? group.ayahs.length : toArabic(group.ayahs.length)}
+                                                        {isEn ? (
+                                                            surahWordOccurrences > group.ayahs.length
+                                                                ? `${group.ayahs.length} Ayahs (${surahWordOccurrences} matches)`
+                                                                : `${group.ayahs.length} Ayahs`
+                                                        ) : (
+                                                            surahWordOccurrences > group.ayahs.length
+                                                                ? `${toArabic(group.ayahs.length)} آية (وردت ${toArabic(surahWordOccurrences)} مرة)`
+                                                                : `${toArabic(group.ayahs.length)} آية`
+                                                        )}
                                                     </span>
                                                     <ChevronLeft className={`w-4 h-4 transition-transform quran-3d-icon ${isExpanded ? (isEn ? 'rotate-90' : '-rotate-90') : (isEn ? 'rotate-180' : '')}`} />
                                                 </div>
@@ -2013,7 +2154,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
             >
                 
                 {/* Full Screen Modal Header */}
-                <div className="px-4 pb-2 pt-3 flex items-center justify-center shrink-0 border-0" style={{ backgroundColor: theme.bgColor, paddingTop: 'calc(0.75rem + env(safe-area-inset-top))' }}>
+                <div className="px-4 pb-2 pt-3 flex items-center justify-center shrink-0 border-0" style={{ backgroundColor: theme.bgColor, paddingTop: 'calc(0.75rem + var(--app-safe-top))' }}>
                     <div className="w-full flex items-center justify-center relative">
                         <button 
                             onClick={handleBack} 
@@ -2167,11 +2308,10 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ onBack, onNavigate, navPara
 
                 {/* Content */}
                 <div 
-                    className="flex-1 overflow-y-auto px-4 py-2" 
+                    className="flex-1 min-h-0 overflow-y-auto px-4 py-2 app-scroll-safe" 
                     dir={isEn ? "ltr" : "rtl"} 
                     style={{ 
-                        backgroundColor: theme.bgColor,
-                        paddingBottom: 'calc(max(env(safe-area-inset-bottom, 0px), 24px) + 1rem)'
+                        backgroundColor: theme.bgColor
                     }}
                 >
                     {renderResults()}

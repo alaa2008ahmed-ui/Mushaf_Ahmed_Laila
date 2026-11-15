@@ -21,6 +21,7 @@ import { useTheme, restoreHomeThemeDOMInstantly } from './context/ThemeContext';
 import { normalizeArabic } from './utils/voiceParser';
 import { usePrayerTimes } from './context/PrayerTimesContext';
 import { setupNotifications } from './utils/notifications';
+import { setMainAppEntered, ensureNotificationPermission } from './utils/permissionHelper';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { Preferences } from '@capacitor/preferences';
 import { Capacitor } from '@capacitor/core';
@@ -45,6 +46,9 @@ import {
 } from './utils/dailyWirdNotificationService';
 import { getPendingShortcutInfo, markNativeShortcutConsumed, updateNativeAlertsGroupSummary } from './utils/silentMode';
 import ScrollToTopFAB from './components/ScrollToTopFAB';
+import GlobalAppToast from './components/Common/GlobalAppToast';
+import FloatingListenButton from './components/Listen/FloatingListenButton';
+import { useListenQuranStore } from './hooks/useListenQuranStore';
 
 // --- Main App Component ---
 function App() {
@@ -283,7 +287,7 @@ function App() {
 
     const validPages = [
       'home', 'quran', 'quran-landscape', 'quran-download', 'salah-adhkar', 'calendar', 'listen', 'tasbeeh', 
-      'hajj-umrah', 'hisn-muslim', 'prayer-times', 'monthly-prayer-times', 'qibla', 
+      'hajj-umrah', 'hisn-muslim', 'prayer-times', 'monthly-prayer-times', 'prayer-calculation-settings', 'prayer-calculation', 'calculation-settings', 'qibla', 
       'sabah-masaa', 'adia', 'nawawi', 'calculators', 'voice-control', 'daily-wird', 'memorization',
       'memorization-session', 'memorization-studio',
       'phone-notifications', 'search', 'asmaul-husna', 'habit-tracker', 'others', 'islamic-sites',
@@ -325,8 +329,8 @@ function App() {
           return [...prev, pageId];
         }
 
-        // 2. Monthly Prayer Times inside Prayer Times
-        if (pageId === 'monthly-prayer-times') {
+        // 2. Monthly Prayer Times & Prayer Calculation Settings inside Prayer Times
+        if (pageId === 'monthly-prayer-times' || pageId === 'prayer-calculation-settings' || pageId === 'prayer-calculation' || pageId === 'calculation-settings') {
           const prayerIdx = prev.lastIndexOf('prayer-times');
           if (prayerIdx !== -1) {
             return [...prev.slice(0, prayerIdx + 1), pageId];
@@ -420,8 +424,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    setupNotifications();
-
+    // Notification listeners only on mount (permission prompt & scheduling are deferred until entering Home Page)
     let actionListener: any = null;
     let receivedListener: any = null;
     if (Capacitor.isNativePlatform()) {
@@ -800,6 +803,30 @@ function AppContent({
   const { activeIqamaAlert, dismissIqamaAlert, activeAdhanAlert, dismissAdhanAlert } = usePrayerTimes();
   const [activeWirdAlert, setActiveWirdAlert] = useState<WirdAlertData | null>(null);
 
+  // Trigger notification permission prompt & scheduling ONLY after entering the Main App / Home Page
+  // (guarantees Splash screen and Language Selection screen appear cleanly without OS popup interruption)
+  useEffect(() => {
+    let isMounted = true;
+    const timer = window.setTimeout(async () => {
+      if (!isMounted) return;
+      setMainAppEntered(true);
+
+      const granted = await ensureNotificationPermission(true);
+      if (!isMounted) return;
+
+      window.dispatchEvent(new CustomEvent('notification-permission-resolved', { detail: { granted } }));
+      if (granted) {
+        setupNotifications().catch(() => {});
+      }
+    }, 450);
+
+    return () => {
+      isMounted = false;
+      window.clearTimeout(timer);
+      setMainAppEntered(false);
+    };
+  }, []);
+
   useEffect(() => {
     // Only listen for in-app modal alert on web/browser (never in native APK)
     if (Capacitor.isNativePlatform()) return;
@@ -853,6 +880,7 @@ function AppContent({
 
   useEffect(() => {
     setVoicePage(page);
+    useListenQuranStore.getState().setAppPage(page);
   }, [page, setVoicePage]);
 
   useWakeLock();
@@ -880,6 +908,7 @@ function AppContent({
   }, []);
 
   const handleConfirmExit = () => {
+    useListenQuranStore.getState().endSessionOnAppClose();
     CapacitorApp.exitApp();
   };
   
@@ -894,7 +923,7 @@ function AppContent({
   const closeThemeSelector = () => setIsThemeSelectorOpen(false);
 
   return (
-    <div className="relative min-h-screen">
+    <div className="relative min-h-[100dvh]">
       <AppRouter 
         page={page} 
         onBack={navigateBack} 
@@ -999,6 +1028,8 @@ function AppContent({
         currentPage={history[history.length - 1]} 
         isSplashActive={isSplashActive}
       />
+      <FloatingListenButton isSplashActive={isSplashActive} />
+      <GlobalAppToast />
     </div>
   );
 }

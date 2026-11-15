@@ -1,30 +1,51 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { READERS, TAFSEERS, THEMES, DEFAULT_SETTINGS, toArabic, isDarkQuranTheme, ReadingMode, getReadersForMode, getValidReaderForMode, ENGLISH_FONTS, getTafseerDisplayName, WORD_HIGHLIGHT_COLOR_OPTIONS, getEffectiveWordHighlightColor } from './constants';
 import { getQuranThemeIdForLayout } from '../../utils/quranThemeHelper';
-import { ChevronDown, ChevronUp } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
+import { useTheme } from '../../context/ThemeContext';
 import { getReciterDisplayName } from '../../utils/listenQuranTranslations';
 
 import SurahHeader from './SurahHeader';
 import { getClusterForLanguage, syncClusterSettings } from '../../utils/quranClusterSync';
+import { registerBackInterceptor } from '../../hooks/useBackButton';
 
 interface SettingsModalProps {
     onClose: () => void;
-    onOpenModal: (modalName: string, params?: any) => void;
-    showToast: (msg: string) => void;
-    isLandscape: boolean;
-    readingMode: string;
-    modeSuffix: string;
+    onOpenModal?: (modalName: string, params?: any) => void;
+    showToast?: (msg: string) => void;
+    isLandscape?: boolean;
+    readingMode?: string;
+    modeSuffix?: string;
 }
 
-const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, showToast, isLandscape, readingMode, modeSuffix }) => {
+const SettingsModal: React.FC<SettingsModalProps> = ({ 
+    onClose, 
+    onOpenModal = () => {}, 
+    showToast = () => {}, 
+    isLandscape = false, 
+    readingMode = 'mushaf', 
+    modeSuffix = '' 
+}) => {
     const { language } = useLanguage();
+    const { theme, themeKey, isNightMode, homeThemeVariant } = useTheme();
     const isEn = language === 'en';
     const [isClosing, setIsClosing] = useState(false);
 
+    const onCloseRef = useRef(onClose);
+    onCloseRef.current = onClose;
+
     const handleClose = () => {
-        onClose();
+        onCloseRef.current();
     };
+
+    useEffect(() => {
+        const interceptor = () => {
+            onCloseRef.current();
+            return true;
+        };
+        const unregister = registerBackInterceptor(interceptor);
+        return unregister;
+    }, []);
 
     const formatFontSize = (val: any) => {
         const num = parseFloat(val);
@@ -153,16 +174,75 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, sho
     };
 
     const currentTheme = modalTheme || THEMES[settings.theme as keyof typeof THEMES] || Object.values(THEMES)[0];
-    const isDarkTheme = isDarkQuranTheme(currentTheme);
+    const isBlackTheme = isNightMode || themeKey === 'deep_black' || theme?.bgColor === '#000000' || theme?.name === 'اسود' || theme?.name === 'black';
+    const isDarkTheme = isDarkQuranTheme(currentTheme) || isBlackTheme;
+
+    const pageBgColor = isBlackTheme
+        ? '#000000'
+        : (theme?.bgColor && theme.bgColor.toLowerCase() !== '#ffffff'
+            ? theme.bgColor
+            : (homeThemeVariant === 'sky'
+                ? '#F0F9FF'
+                : (homeThemeVariant === 'emerald'
+                    ? '#F0FDF4'
+                    : (homeThemeVariant === 'burgundy'
+                        ? '#FFF1F2'
+                        : '#FEF9C3'))));
+
+    const resolvedPageBg = (!modeSuffix || !currentTheme.bg || currentTheme.bg.toLowerCase() === '#ffffff')
+        ? pageBgColor
+        : currentTheme.bg;
 
     return (
-        <div className="fixed z-[1200] bg-black/40 backdrop-blur-sm flex items-center justify-center overflow-hidden" style={{ top: 0, bottom: 0, left: 0, right: 0 }} dir={isEn ? "ltr" : "rtl"} onClick={handleClose}>
-            <div className="w-full h-full flex flex-col overflow-hidden shadow-2xl border-0" style={{ backgroundColor: currentTheme.bg || '#ffffff', border: 'none', outline: 'none' }} onClick={e => e.stopPropagation()}>
-                <div className="flex-1 w-full flex flex-col overflow-hidden" style={{ color: currentTheme.text || '#000000' }}>
-                    <div 
-                        className={`p-3 overflow-y-auto text-center flex-1 scrollbar-hide ${isLandscape ? 'grid grid-cols-2 gap-x-6 gap-y-3' : 'space-y-3'}`}
-                        style={{ paddingTop: 'calc(0.75rem + env(safe-area-inset-top))' }}
-                    >
+        <div 
+            className="fixed inset-0 z-[1200] flex flex-col font-cairo select-none overflow-hidden animate-fadeIn" 
+            dir={isEn ? "ltr" : "rtl"} 
+            style={{ backgroundColor: resolvedPageBg }}
+        >
+            {/* Standard Page Header - Identical to Adia and all pages */}
+            <header className="app-top-bar settings-top-bar shrink-0 w-full" dir={isEn ? 'ltr' : 'rtl'} style={{ display: 'block' }}>
+                <div className="app-top-bar__inner">
+                    <div className="relative flex items-center justify-center w-full min-h-[44px]">
+                        {/* Back button */}
+                        <div className={`absolute ${isEn ? 'left-0' : 'right-0'} flex items-center`}>
+                            <button
+                                type="button"
+                                onClick={handleClose}
+                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                title={isEn ? "Go Back" : "رجوع للخلف"}
+                                aria-label={isEn ? "Go Back" : "رجوع للخلف"}
+                            >
+                                <i className={`fa-solid ${isEn ? 'fa-arrow-left' : 'fa-arrow-right'} text-xl`}></i>
+                            </button>
+                        </div>
+
+                        {/* Title in center */}
+                        <div className="text-center px-12 min-w-0">
+                            <h1 className="app-top-bar__title text-lg sm:text-xl font-kufi truncate">
+                                {isEn ? 'Quran Page Settings' : 'إعدادات صفحة القرآن'}
+                            </h1>
+                        </div>
+
+                        {/* Home button */}
+                        <div className={`absolute ${isEn ? 'right-0' : 'left-0'} flex items-center gap-1`}>
+                            <button
+                                type="button"
+                                onClick={handleClose}
+                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                title={isEn ? "Home" : "الصفحة الرئيسية"}
+                                aria-label={isEn ? "Home" : "الصفحة الرئيسية"}
+                            >
+                                <i className="fa-solid fa-house text-xl"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <div className="flex-1 min-h-0 w-full flex flex-col overflow-hidden max-w-2xl mx-auto" style={{ color: isBlackTheme ? '#ffffff' : (currentTheme.text || '#000000') }}>
+                <div 
+                    className={`p-3 sm:p-4 overflow-y-auto text-center flex-1 min-h-0 app-scroll-safe scrollbar-hide ${isLandscape ? 'grid grid-cols-2 gap-x-6 gap-y-3' : 'space-y-3'}`}
+                >
                     {/* حجم الخط: صف كامل مستقل */}
                     <div id="font-size-row" className={`${isLandscape ? 'col-span-2' : ''} p-3 rounded-2xl quran-raised-card border-0`} style={{ backgroundColor: isDarkTheme ? (currentTheme?.cardBg || 'rgba(255,255,255,0.05)') : '#ffffff' }}>
                         <div id="font-size-section" className="w-full flex flex-col justify-center">
@@ -176,7 +256,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, sho
                                 max="4.5" 
                                 step="0.05" 
                                 value={parseFloat(formatFontSize(settings.fontSize))} 
-                                onChange={(e) => updateSetting('fontSize', parseFloat(parseFloat(e.target.value).toFixed(2)))} 
+                                onChange={(e) => {
+                                    const val = parseFloat(parseFloat(e.target.value).toFixed(2));
+                                    updateSetting('fontSize', val);
+                                    showToast(isEn ? `Font size: ${val}` : `حجم الخط: ${val}`);
+                                }} 
                                 className="w-full h-2 bg-gray-300 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer" 
                                 style={{ accentColor: currentTheme?.id === 'deep_black' ? '#ffffff' : (currentTheme?.accent || 'var(--qr-accent)') }} 
                             />
@@ -192,7 +276,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, sho
                             <div className="grid grid-cols-12 gap-2 items-center">
                                 <button 
                                     id="font-weight-btn" 
-                                    onClick={() => updateSetting('isBold', !settings.isBold)} 
+                                    onClick={() => {
+                                        const nextBold = !settings.isBold;
+                                        updateSetting('isBold', nextBold);
+                                        showToast(nextBold ? (isEn ? 'Bold font enabled' : 'تم تفعيل سماكة الخط') : (isEn ? 'Bold font disabled' : 'تم إيقاف سماكة الخط'));
+                                    }} 
                                     className={`col-span-4 p-1.5 text-xs h-9 rounded-xl flex justify-center items-center font-bold transition-all border-0 cursor-pointer ${settings.isBold ? 'quran-raised-btn-selected text-white' : 'quran-raised-btn'}`} 
                                     style={{ 
                                         backgroundColor: settings.isBold ? (currentTheme?.accent || '#10b981') : (isDarkTheme ? (currentTheme?.btnBg || 'rgba(255,255,255,0.08)') : '#ffffff'),
@@ -205,15 +293,14 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, sho
                                 <button 
                                     id="font-family-btn" 
                                     onClick={() => onOpenModal('font-modal')} 
-                                    className="col-span-8 p-1.5 text-xs h-9 rounded-xl quran-raised-btn flex justify-between items-center px-3 font-bold border-0 cursor-pointer"
+                                    className="col-span-8 p-1.5 text-xs h-9 rounded-xl quran-raised-btn flex justify-center items-center px-3 font-bold border-0 cursor-pointer"
                                     style={{ 
                                         backgroundColor: isDarkTheme ? (currentTheme?.btnBg || 'rgba(255,255,255,0.08)') : '#ffffff',
                                         color: currentTheme?.text,
                                         border: 'none',
                                     }}
                                 >
-                                    <span className="truncate">{getFontName(settings.fontFamily)}</span>
-                                    <i className="fa-solid fa-chevron-left opacity-50 shrink-0 text-[10px] quran-3d-icon"></i>
+                                    <span className="truncate text-center">{getFontName(settings.fontFamily)}</span>
                                 </button>
                             </div>
                         </div>
@@ -279,7 +366,13 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, sho
                                     {PREDEFINED_COLORS.map(c => (
                                         <button
                                             key={c}
-                                            onClick={() => updateSetting(activeColorField, c)}
+                                            onClick={() => {
+                                                updateSetting(activeColorField, c);
+                                                const fieldAr: Record<string, string> = { textColor: 'لون النص', bgColor: 'لون الخلفية', highlightTextColor: 'لون التحديد' };
+                                                const fieldEn: Record<string, string> = { textColor: 'Text Color', bgColor: 'Background Color', highlightTextColor: 'Highlight Color' };
+                                                const fieldName = isEn ? fieldEn[activeColorField] : fieldAr[activeColorField];
+                                                showToast(isEn ? `${fieldName} updated` : `تم تغيير ${fieldName}`);
+                                            }}
                                             className={`h-7 rounded-xl quran-raised-btn border-0 transition-transform ${settings[activeColorField] === c ? 'ring-2 ring-emerald-500 scale-110' : ''}`}
                                             style={{ ...renderCheckerboard(c), border: 'none' }}
                                             title={c}
@@ -296,40 +389,38 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, sho
                             <label className="text-xs font-bold block opacity-80 mb-1.5">{isEn ? "Reciter" : "القارئ"}</label>
                             <button 
                                 onClick={() => onOpenModal('reciter-modal')} 
-                                className="w-full p-2.5 text-xs h-9 rounded-xl quran-raised-btn flex justify-between items-center px-3 font-bold border-0"
+                                className="w-full p-2.5 text-xs h-9 rounded-xl quran-raised-btn flex justify-center items-center px-3 font-bold border-0"
                                 style={{ 
                                     backgroundColor: isDarkTheme ? (currentTheme?.btnBg || 'rgba(255,255,255,0.08)') : '#ffffff', 
                                     color: isDarkTheme ? (currentTheme?.btnText || currentTheme?.text || '#ffffff') : currentTheme?.text, 
                                     border: isDarkTheme ? '1px solid rgba(255,255,255,0.12)' : 'none' 
                                 }}
                             >
-                                <span className="truncate">{getReaderName(settings.reader)}</span>
-                                <i className="fa-solid fa-chevron-left opacity-50 shrink-0 text-[10px] quran-3d-icon"></i>
+                                <span className="truncate text-center">{getReaderName(settings.reader)}</span>
                             </button>
                         </div>
                         <div id="tafseer-section" className={`flex flex-col ${isEn ? 'text-left' : 'text-right'}`}>
                             <label className="text-xs font-bold block opacity-80 mb-1.5">{isEn ? "Tafseer" : "التفسير"}</label>
                             <button 
                                 onClick={() => onOpenModal('tafseer-selection-modal')} 
-                                className="w-full p-2.5 text-xs h-9 rounded-xl quran-raised-btn flex justify-between items-center px-3 font-bold border-0"
+                                className="w-full p-2.5 text-xs h-9 rounded-xl quran-raised-btn flex justify-center items-center px-3 font-bold border-0"
                                 style={{ 
                                     backgroundColor: isDarkTheme ? (currentTheme?.btnBg || 'rgba(255,255,255,0.08)') : '#ffffff', 
                                     color: isDarkTheme ? (currentTheme?.btnText || currentTheme?.text || '#ffffff') : currentTheme?.text, 
                                     border: isDarkTheme ? '1px solid rgba(255,255,255,0.12)' : 'none' 
                                 }}
                             >
-                                <span className="truncate">{getTafseerName(settings.tafseer)}</span>
-                                <i className="fa-solid fa-chevron-left opacity-50 shrink-0 text-[10px] quran-3d-icon"></i>
+                                <span className="truncate text-center">{getTafseerName(settings.tafseer)}</span>
                             </button>
                         </div>
                     </div>
 
-                    {/* وضع بطاقتي تكرار الآية والإشعارات في صف واحد */}
-                    <div id="repeat-and-notifications-row" className="grid grid-cols-2 gap-2.5 py-0.5">
+                    {/* بطاقة تكرار الآية بعرض كامل الصف */}
+                    <div id="repeat-and-notifications-row" className={`${isLandscape ? 'col-span-2' : ''} py-0.5`}>
                         {/* تكرار الآية */}
-                        <div id="ayah-repeat-section" className="flex flex-col text-right">
+                        <div id="ayah-repeat-section" className={`flex flex-col ${isEn ? 'text-left' : 'text-right'} w-full`}>
                             <label className="text-xs font-bold opacity-80 mb-1.5 truncate">{isEn ? "Ayah Repeat" : "تكرار الآية"}</label>
-                            <div className="h-9 flex items-center justify-around px-2 rounded-xl quran-raised-card border-0" style={{ backgroundColor: isDarkTheme ? (currentTheme?.btnBg || 'rgba(255,255,255,0.06)') : '#ffffff', border: 'none' }}>
+                            <div className="h-10 flex items-center justify-around px-3 rounded-xl quran-raised-card border-0 w-full" style={{ backgroundColor: isDarkTheme ? (currentTheme?.btnBg || 'rgba(255,255,255,0.06)') : '#ffffff', border: 'none' }}>
                                 {[1, 2, 3, 4, 5].map(num => (
                                     <button
                                         key={num}
@@ -338,8 +429,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, sho
                                             e.stopPropagation();
                                             e.preventDefault();
                                             updateSetting('ayahRepeatCount', num);
+                                            showToast(isEn ? `Ayah repeat: ${num}` : `تكرار الآية: ${toArabic(num)} ${num === 1 ? 'مرة' : 'مرات'}`);
                                         }}
-                                        className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold transition-all border-0 ${
+                                        className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all border-0 ${
                                             settings.ayahRepeatCount === num 
                                             ? 'quran-raised-btn-selected text-white font-black' 
                                             : 'quran-raised-btn opacity-70 hover:opacity-100'
@@ -351,22 +443,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, sho
                                     </button>
                                 ))}
                             </div>
-                        </div>
-
-                        {/* الإشعارات */}
-                        <div id="notifications-section" className="flex flex-col text-right">
-                            <label className="text-xs font-bold opacity-80 mb-1.5 truncate">{isEn ? "Notifications" : "الإشعارات"}</label>
-                            <button 
-                                onClick={() => onOpenModal('notification-settings-modal', { tab: 'phone' })} 
-                                className="w-full p-2.5 text-xs h-9 rounded-xl quran-raised-btn flex justify-between items-center px-3 font-bold border-0"
-                                style={{ backgroundColor: isDarkTheme ? (currentTheme?.btnBg || 'rgba(255,255,255,0.06)') : '#ffffff', color: currentTheme?.text, border: 'none' }}
-                            >
-                                <span className="flex items-center gap-1.5 truncate">
-                                    <i className="fa-solid fa-bell text-[11px] quran-3d-icon" style={{ color: currentTheme?.id === 'deep_black' ? '#ffffff' : (currentTheme?.accent || '#10b981') }}></i>
-                                    <span className="truncate">{isEn ? "Settings" : "إعدادات التنبيه"}</span>
-                                </span>
-                                <i className="fa-solid fa-chevron-left opacity-50 shrink-0 text-[10px] quran-3d-icon"></i>
-                            </button>
                         </div>
                     </div>
 
@@ -405,11 +481,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, sho
                             <label className="text-xs font-bold opacity-80 mb-1.5">{isEn ? "Scroll Speed" : "سرعة التمرير"}</label>
                             <button 
                                 onClick={() => onOpenModal('scroll-speed-modal')} 
-                                className="w-full p-2.5 text-xs h-9 rounded-xl quran-raised-btn flex justify-between items-center px-3 font-bold border-0"
+                                className="w-full p-2.5 text-xs h-9 rounded-xl quran-raised-btn flex justify-center items-center px-3 font-bold border-0"
                                 style={{ backgroundColor: isDarkTheme ? (currentTheme?.btnBg || 'rgba(255,255,255,0.06)') : '#ffffff', color: currentTheme?.text, border: 'none' }}
                             >
-                                <span>{settings.scrollMinutes} {isEn ? "min" : "دقيقة"}</span>
-                                <i className="fa-solid fa-chevron-left opacity-50 shrink-0 text-[10px] quran-3d-icon"></i>
+                                <span className="truncate text-center">{settings.scrollMinutes} {isEn ? "min" : "دقيقة"}</span>
                             </button>
                         </div>
 
@@ -471,7 +546,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, sho
                                                 type="checkbox" 
                                                 id="word-highlight-toggle" 
                                                 checked={!!settings.wordHighlightEnabled} 
-                                                onChange={(e) => updateSetting('wordHighlightEnabled', e.target.checked)} 
+                                                onChange={(e) => {
+                                                    const checked = e.target.checked;
+                                                    updateSetting('wordHighlightEnabled', checked);
+                                                    showToast(checked ? (isEn ? 'Word highlight enabled' : 'تم تفعيل تظليل كلمة بكلمة') : (isEn ? 'Word highlight disabled' : 'تم تعطيل تظليل كلمة بكلمة'));
+                                                }} 
                                                 className="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-2 appearance-none cursor-pointer"
                                             />
                                             <label 
@@ -505,7 +584,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, sho
                                                         <button
                                                             key={opt.id}
                                                             type="button"
-                                                            onClick={() => updateSetting('wordHighlightColor', opt.id)}
+                                                            onClick={() => {
+                                                                updateSetting('wordHighlightColor', opt.id);
+                                                                showToast(isEn ? 'Spoken word color updated' : 'تم تغيير لون الكلمة المنطوقة');
+                                                            }}
                                                             className={`w-6 h-6 rounded-full flex items-center justify-center transition-all cursor-pointer ${
                                                                 isSelected ? 'scale-110 shadow-md ring-2 ring-offset-2 ring-emerald-500' : 'opacity-85 hover:opacity-100 hover:scale-105'
                                                             }`}
@@ -570,42 +652,30 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onOpenModal, sho
                             <div className="grid grid-cols-2 gap-2.5">
                                 <button 
                                     id="quran-download-btn" 
-                                    onClick={() => { onOpenModal('quran-download-modal'); }} 
-                                    className="text-xs h-9 w-full text-right px-3 flex items-center justify-between rounded-xl quran-raised-btn font-bold border-0"
+                                    onClick={() => { 
+                                        onOpenModal('quran-download-modal'); 
+                                        showToast(isEn ? 'Quran downloads page' : 'تحميل القرآن الكريم');
+                                    }} 
+                                    className="text-xs h-9 w-full text-center px-3 flex items-center justify-center rounded-xl quran-raised-btn font-bold border-0"
                                     style={{ backgroundColor: isDarkTheme ? (currentTheme?.btnBg || 'rgba(255,255,255,0.06)') : '#ffffff', color: currentTheme?.text, border: 'none' }}
                                 >
-                                    <span className="truncate">{isEn ? "Download Quran" : "تحميل القرآن الكريم"}</span>
-                                    <i className="fa-solid fa-chevron-left opacity-50 text-xs shrink-0 quran-3d-icon"></i>
+                                    <span className="truncate text-center">{isEn ? "Download Quran" : "تحميل القرآن الكريم"}</span>
                                 </button>
                                 
                                 <button 
                                     id="tafseer-download-btn" 
-                                    onClick={() => { onOpenModal('tafsir-download-modal'); }} 
-                                    className="text-xs h-9 w-full text-right px-3 flex items-center justify-between rounded-xl quran-raised-btn font-bold border-0"
+                                    onClick={() => { 
+                                        onOpenModal('tafsir-download-modal'); 
+                                        showToast(isEn ? 'Tafseer downloads page' : 'تحميل التفسير');
+                                    }} 
+                                    className="text-xs h-9 w-full text-center px-3 flex items-center justify-center rounded-xl quran-raised-btn font-bold border-0"
                                     style={{ backgroundColor: isDarkTheme ? (currentTheme?.btnBg || 'rgba(255,255,255,0.06)') : '#ffffff', color: currentTheme?.text, border: 'none' }}
                                 >
-                                    <span className="truncate">{isEn ? "Download Tafseer" : "تحميل التفسير"}</span>
-                                    <i className="fa-solid fa-chevron-left opacity-50 text-xs shrink-0 quran-3d-icon"></i>
+                                    <span className="truncate text-center">{isEn ? "Download Tafseer" : "تحميل التفسير"}</span>
                                 </button>
                             </div>
                         </div>
                     </div>
-                </div>
-                </div>
-                <div 
-                    className="p-3.5 flex gap-2 shrink-0 z-10" 
-                    style={{ 
-                        backgroundColor: currentTheme.bg,
-                        paddingBottom: 'calc(max(env(safe-area-inset-bottom, 0px), 56px) + 0.75rem)'
-                    }}
-                >
-                    <button
-                        onClick={handleClose}
-                        className="flex-1 py-3.5 rounded-2xl text-xs font-bold w-full transition-all quran-raised-btn border-0"
-                        style={{ backgroundColor: currentTheme.btnBg || (currentTheme.text === '#ffffff' ? 'rgba(255,255,255,0.08)' : '#ffffff'), color: currentTheme.btnText || currentTheme.text, border: 'none' }}
-                    >
-                        {isEn ? "Back" : "رجوع"}
-                    </button>
                 </div>
             </div>
         </div>

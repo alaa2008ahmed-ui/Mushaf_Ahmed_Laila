@@ -3,6 +3,7 @@ import ThemePageLock from '../ThemePageLock';
 import { useLanguage } from '../../context/LanguageContext';
 import { tPrayer, getLocalizedLocationName } from '../../utils/prayerTimesTranslations';
 import { HelpCircle } from 'lucide-react';
+import { useShowPageGuides } from '../../utils/guideManager';
 
 import { useTheme } from '../../context/ThemeContext';
 
@@ -71,12 +72,12 @@ const PrayerTimesHeader: React.FC<PrayerTimesHeaderProps> = ({
     onHome,
     onOpenGuide
 }) => {
+    const showPageGuides = useShowPageGuides();
     const { theme, themeKey, isNightMode, homeThemeVariant } = useTheme();
     const { language, isRTL, dir } = useLanguage();
     const centerContainerRef = useRef<HTMLDivElement>(null);
     const titleRef = useRef<HTMLHeadingElement>(null);
     const subtitleRef = useRef<HTMLDivElement>(null);
-    const lastWidthRef = useRef<number>(0);
 
     const isGoldenTheme = !isNightMode && (
         homeThemeVariant === 'gold' ||
@@ -171,29 +172,13 @@ const PrayerTimesHeader: React.FC<PrayerTimesHeaderProps> = ({
     }, [fitTexts]);
 
     useEffect(() => {
-        const container = centerContainerRef.current;
-        if (!container) return;
-
-        let resizeObserver: ResizeObserver | null = null;
-        if (typeof ResizeObserver !== 'undefined') {
-            resizeObserver = new ResizeObserver((entries) => {
-                for (const entry of entries) {
-                    const width = entry.contentRect.width;
-                    // Only re-run if width genuinely changed by at least 2px to avoid oscillation
-                    if (Math.abs(width - lastWidthRef.current) >= 2) {
-                        lastWidthRef.current = width;
-                        fitTexts();
-                    }
-                }
-            });
-            resizeObserver.observe(container);
+        if (document.fonts && document.fonts.ready) {
+            document.fonts.ready.then(fitTexts).catch(() => {});
         }
-
         const handleResize = () => fitTexts();
         window.addEventListener('resize', handleResize);
 
         return () => {
-            if (resizeObserver) resizeObserver.disconnect();
             window.removeEventListener('resize', handleResize);
         };
     }, [fitTexts]);
@@ -262,7 +247,7 @@ const PrayerTimesHeader: React.FC<PrayerTimesHeaderProps> = ({
 
                     {/* أيقونات الدليل والإعدادات والصفحة الرئيسية - مدمجة بحجم متناسق */}
                     <div className="flex items-center gap-0.5 sm:gap-1 shrink-0 z-10" style={{ color: headerTextColor }}>
-                        {onOpenGuide && (
+                        {onOpenGuide && showPageGuides && (
                             <button
                                 type="button"
                                 onClick={onOpenGuide}

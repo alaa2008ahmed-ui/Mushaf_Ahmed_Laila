@@ -3,6 +3,7 @@ import { App as CapacitorApp } from '@capacitor/app';
 import { parseVoiceCommand, normalizeArabic } from '../utils/voiceParser';
 import { SURAH_NAMES_AR } from '../components/QuranReader/constants';
 import { requestMicrophonePermission } from '../utils/permissionHelper';
+import { acquireListenInterruption, releaseListenInterruption } from '../utils/listenAudioCoordinator';
 
 export interface VoiceCommand {
     id: string;
@@ -446,6 +447,18 @@ export const VoiceControlProvider: React.FC<{ children: React.ReactNode, onActio
             stopRecognition();
         }
     }, [isEnabled, startRecognition, stopRecognition]);
+
+    // Pause ListenQuran playback while voice control microphone is actively listening
+    useEffect(() => {
+        if (isListening) {
+            acquireListenInterruption('voice-control-mic');
+        } else {
+            releaseListenInterruption('voice-control-mic');
+        }
+        return () => {
+            releaseListenInterruption('voice-control-mic');
+        };
+    }, [isListening]);
 
     // Pause recognition when app goes to background without clearing user preference
     const wasEnabledBeforeBackgroundRef = useRef(false);

@@ -481,7 +481,6 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
     const [customText, setCustomText] = useState('');
     const [isSharing, setIsSharing] = useState(false);
     const [isCopying, setIsCopying] = useState(false);
-    const [showCopySuccess, setShowCopySuccess] = useState(false);
     const [explanationData, setExplanationData] = useState<any>(null);
     const [appSettings, setAppSettings] = useState<any>(null);
     const previewRef = useRef<HTMLDivElement>(null);
@@ -500,6 +499,14 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
             return () => clearTimeout(timer);
         }
     }, [rangeSelectorOpen]);
+
+    useEffect(() => {
+        if (isOpen && currentAyah?.a) {
+            setFromAyah(currentAyah.a);
+            setToAyah(currentAyah.a);
+            setSelectedAyahs([currentAyah]);
+        }
+    }, [isOpen, currentAyah?.s, currentAyah?.a]);
 
     useEffect(() => {
         const saved = localStorage.getItem('quran_settings');
@@ -1432,7 +1439,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
         
         try {
             await navigator.clipboard.writeText(fullText);
-            setShowCopySuccess(true);
+            showToast?.("تم نسخ نص الآيات بنجاح إلى الحافظة");
         } catch (err) {
             console.error('Failed to copy text: ', err);
             showToast?.("فشل نسخ النص");
@@ -1770,7 +1777,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                 <div className="flex-1 w-full flex flex-col overflow-hidden" style={{ color: currentTheme.text || '#000000' }}>
                     
                     {/* Full Screen Modal Header */}
-                    <div className="p-3 border-b flex items-center justify-center shrink-0" style={{ backgroundColor: currentTheme.bg || '#ffffff', borderColor: currentTheme.text === '#ffffff' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)', paddingTop: 'calc(0.75rem + env(safe-area-inset-top))' }}>
+                    <div className="p-3 border-b flex items-center justify-center shrink-0" style={{ backgroundColor: currentTheme.bg || '#ffffff', borderColor: currentTheme.text === '#ffffff' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)', paddingTop: 'calc(0.75rem + var(--app-safe-top, 0px))' }}>
                         <h3 className="text-sm font-bold" style={{ color: currentTheme.text }}>خيارات المشاركة</h3>
                     </div>
 
@@ -1819,7 +1826,7 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
 
                     {/* Scrollable Content */}
                     {/* Scrollable Content */}
-                    <div className={`p-4 overflow-y-auto flex-1 flex flex-col items-center ${shareType === 'image' ? 'justify-center' : ''}`}>
+                    <div className={`p-4 overflow-y-auto flex-1 min-h-0 flex flex-col items-center ${shareType === 'image' ? 'justify-center' : ''}`}>
                         {/* Multi-page switcher when ayahs are split across images */}
                         {shareType === 'image' && pageChunks.length > 1 && (
                             <div className="flex items-center justify-between w-full max-w-[380px] mb-3 px-3 py-1.5 rounded-xl border-none shadow-md transition-all" style={{ backgroundColor: currentTheme.text === '#ffffff' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.03)' }}>
@@ -2331,11 +2338,11 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
 
                     {/* Footer */}
                     <div 
-                        className="p-3 border-t flex gap-2 shrink-0 z-10" 
+                        data-toast-bottom-bar="true"
+                        className="px-3 pt-3 modal-sheet-safe-bottom border-t flex gap-2 shrink-0 z-10" 
                         style={{ 
                             backgroundColor: currentTheme.bg, 
-                            borderColor: currentTheme.text === '#ffffff' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
-                            paddingBottom: 'calc(max(env(safe-area-inset-bottom, 0px), 56px) + 0.75rem)'
+                            borderColor: currentTheme.text === '#ffffff' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)'
                         }}
                     >
                         <button
@@ -2422,28 +2429,6 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                 </div>
             </div>
 
-            {showCopySuccess && (
-                <div className="fixed inset-0 z-[200] bg-black/60 flex items-center justify-center px-4 animate-fadeIn" onClick={() => setShowCopySuccess(false)}>
-                    <div className="modal-skinned w-full max-w-xs rounded-2xl overflow-hidden shadow-2xl animate-scaleIn" onClick={e => e.stopPropagation()}>
-                        <div className="p-4 flex flex-col items-center text-center gap-4">
-                            <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center text-green-600">
-                                <i className="fa-solid fa-check text-3xl"></i>
-                            </div>
-                            <div>
-                                <h3 className="text-lg font-bold text-gray-900 mb-1">تم النسخ!</h3>
-                                <p className="text-sm text-gray-600">تم نسخ نص الآيات بنجاح إلى الحافظة</p>
-                            </div>
-                            <button 
-                                onClick={() => setShowCopySuccess(false)}
-                                className="w-full py-3 rounded-xl font-bold text-white transition-all active:scale-95 border-none quran-raised-btn quran-raised-btn-selected"
-                                style={{ backgroundColor: currentTheme.accent || '#16a34a' }}
-                            >
-                                موافق
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
 
             {/* Ayah Range Selection Overlay */}
             {rangeSelectorOpen && (
@@ -2457,11 +2442,11 @@ const ShareAyahModal: React.FC<ShareAyahModalProps> = ({
                     }}
                 >
                     <div 
-                        className="w-[85%] max-w-[280px] flex flex-col max-h-[60vh] overflow-hidden rounded-2xl p-2.5 border-none shadow-2xl modal-skinned" 
+                        className="w-[85%] max-w-[280px] flex flex-col max-h-[60dvh] overflow-hidden rounded-2xl p-2.5 border-none shadow-2xl modal-skinned" 
                         style={{ backgroundColor: currentTheme.bg || '#ffffff' }} 
                         onClick={e => e.stopPropagation()}
                     >
-                        <div className="flex-1 overflow-y-auto px-1 py-1 space-y-2">
+                        <div className="flex-1 min-h-0 overflow-y-auto px-1 py-1 space-y-2">
                             {quranData.surahs[currentAyah.s - 1].ayahs.map((ay: any) => {
                                 const val = ay.numberInSurah;
                                 const isSelected = rangeSelectorOpen === 'from' ? fromAyah === val : toAyah === val;

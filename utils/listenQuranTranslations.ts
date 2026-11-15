@@ -329,6 +329,22 @@ export const LISTEN_QURAN_STRINGS: Record<string, { ar: string; en: string }> = 
     ar: 'تفعيل الانتقال للسورة التالية تلقائياً',
     en: 'Auto-play next Surah'
   },
+  playbackSpeed: {
+    ar: 'سرعة التلاوة',
+    en: 'Playback Speed'
+  },
+  slowerSpeeds: {
+    ar: 'بطيء',
+    en: 'Slower'
+  },
+  fasterSpeeds: {
+    ar: 'أسرع',
+    en: 'Faster'
+  },
+  normalSpeed: {
+    ar: 'السرعة العادية',
+    en: 'Normal'
+  },
 
   // Sleep Timer Card
   sleepTimer: {

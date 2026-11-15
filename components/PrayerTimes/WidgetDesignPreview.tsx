@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useLanguage } from '../../context/LanguageContext';
-import { usePrayerTimes } from '../../context/PrayerTimesContext';
+import { usePrayerTimes, usePrayerCountdown } from '../../context/PrayerTimesContext';
 import { useTheme } from '../../context/ThemeContext';
 import {
     WidgetStyleType,
@@ -24,7 +24,8 @@ interface WidgetDesignPreviewProps {
 export const WidgetDesignPreview: React.FC<WidgetDesignPreviewProps> = ({ onClose }) => {
     const { language, isRTL } = useLanguage();
     const isEn = language === 'en';
-    const { times, dates, nextPrayer, countdown } = usePrayerTimes();
+    const { times, dates, nextPrayer } = usePrayerTimes();
+    const countdown = usePrayerCountdown();
     const { theme, themeKey } = useTheme();
 
     const [selectedStyle, setSelectedStyle] = useState<WidgetStyleType>('classic');
@@ -896,7 +897,7 @@ export const WidgetDesignPreview: React.FC<WidgetDesignPreviewProps> = ({ onClos
 
             {/* Toast feedback */}
             {isSavedToast && (
-                <div className="fixed bottom-6 start-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl bg-emerald-600 text-white text-xs font-bold shadow-2xl flex items-center gap-2 animate-bounce">
+                <div className="fixed bottom-[calc(5.75rem+var(--app-safe-bottom,0px))] start-1/2 -translate-x-1/2 z-[99999999] px-4 py-2.5 rounded-2xl bg-emerald-600 text-white text-xs font-bold shadow-2xl flex items-center gap-2 animate-bounce">
                     <Check className="w-4 h-4" />
                     <span>{isEn ? 'Widget settings & customization saved & synchronized!' : 'تم حفظ إعدادات التصميم بنجاح ومزامنته مع هاتفك! ✨'}</span>
                 </div>
@@ -908,7 +909,7 @@ export const WidgetDesignPreview: React.FC<WidgetDesignPreviewProps> = ({ onClos
         return (
             <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[1300] flex items-center justify-center p-3 sm:p-5 animate-fadeIn" onClick={onClose}>
                 <div 
-                    className="bg-white dark:bg-zinc-900 text-slate-800 dark:text-slate-100 rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6 shadow-2xl border border-black/10 dark:border-white/10"
+                    className="bg-white dark:bg-zinc-900 text-slate-800 dark:text-slate-100 rounded-3xl w-full max-w-2xl max-h-[90dvh] overflow-y-auto p-4 sm:p-6 shadow-2xl border border-black/10 dark:border-white/10"
                     onClick={e => e.stopPropagation()}
                 >
                     {content}

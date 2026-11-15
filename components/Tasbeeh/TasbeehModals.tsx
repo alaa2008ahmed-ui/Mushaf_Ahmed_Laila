@@ -146,7 +146,7 @@ const TasbeehModals: React.FC<TasbeehModalsProps> = ({
 
             {/* Select Phrase Modal */}
             <ModalWrapper isOpen={modals.phrase} onClose={() => setModals((p: any) => ({...p, phrase: false}))} noStyles={true}>
-                <div className="overflow-y-auto max-h-[60vh] bg-white dark:bg-[#1E293B] text-slate-800 dark:text-white shadow-2xl rounded-2xl border border-slate-100 dark:border-white/10 custom-scrollbar">
+                <div className="overflow-y-auto max-h-[60dvh] bg-white dark:bg-[#1E293B] text-slate-800 dark:text-white shadow-2xl rounded-2xl border border-slate-100 dark:border-white/10 custom-scrollbar">
                     {phrases.map((p) => (
                         <button 
                              key={p.id} 

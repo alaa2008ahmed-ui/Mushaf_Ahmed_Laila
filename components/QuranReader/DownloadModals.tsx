@@ -6,6 +6,7 @@ import { SURAH_LIST } from '../../data/listenQuranData';
 import { normalizeArabic } from '../../utils/voiceParser';
 import { getAvailableSurahsForReader, getSurahsForJuz } from '../../utils/listenQuranUtils';
 import { getReciterDisplayName, getSurahDisplayName, formatListenNumber } from '../../utils/listenQuranTranslations';
+import { registerBackInterceptor } from '../../hooks/useBackButton';
 
 interface DownloadModalProps {
     onClose: () => void;
@@ -16,6 +17,9 @@ interface DownloadModalProps {
     readersList?: { id: string, name: string }[];
     initialReaderId?: string;
     getAvailableSurahs?: (readerId: string) => number[];
+    zIndexClass?: string;
+    title?: string;
+    isFromHomeScreenSettings?: boolean;
 }
 
 // --- Helper Functions ---
@@ -188,7 +192,10 @@ export const QuranDownloadModal: React.FC<DownloadModalProps> = ({
     mode = 'ayah', 
     readersList = READERS,
     initialReaderId,
-    getAvailableSurahs
+    getAvailableSurahs,
+    zIndexClass = 'z-[1200]',
+    title,
+    isFromHomeScreenSettings = false
 }) => {
     const { theme, themeKey } = useTheme();
     const { language, isRTL, dir } = useLanguage();
@@ -208,6 +215,15 @@ export const QuranDownloadModal: React.FC<DownloadModalProps> = ({
             setSelectedReader(initialReaderId);
         }
     }, [initialReaderId]);
+
+    useEffect(() => {
+        const interceptor = () => {
+            onClose();
+            return true;
+        };
+        const unregister = registerBackInterceptor(interceptor);
+        return unregister;
+    }, [onClose]);
 
     const selectedReaderObj = useMemo(() => {
         return readersList.find(r => r.id === selectedReader);
@@ -704,10 +720,53 @@ export const QuranDownloadModal: React.FC<DownloadModalProps> = ({
         '--qr-header-text': theme.headerText || theme.text || '#000000',
     } as React.CSSProperties;
 
+    const isEn = language === 'en';
+
     return (
-        <div style={modalStyle} className={`fixed inset-0 bg-black/40 backdrop-blur-sm z-[1200] flex items-center justify-center ${isLandscape ? 'p-0' : 'p-4'} animate-fadeIn`} onClick={onClose}>
-            <div dir={dir} className={`modal-skinned w-full ${isLandscape ? 'max-w-4xl h-full rounded-none max-h-screen' : 'max-w-md rounded-2xl max-h-[90vh]'} shadow-2xl overflow-hidden flex flex-col border-0`} onClick={e => e.stopPropagation()} style={{ backgroundColor: 'var(--qr-bg)', color: 'var(--qr-text)', border: 'none', outline: 'none' }}>
-                <div className="p-4 space-y-4 overflow-y-auto text-center flex-1">
+        <div
+            style={{ ...modalStyle, backgroundColor: 'var(--qr-bg)', color: 'var(--qr-text)' }}
+            dir={dir}
+            className={`fixed inset-0 ${zIndexClass} flex flex-col font-cairo select-none overflow-hidden animate-fadeIn`}
+        >
+            {/* Standard Page Header */}
+            <header className="app-top-bar settings-top-bar shrink-0 w-full" dir={dir}>
+                <div className="app-top-bar__inner">
+                    <div className="relative flex items-center justify-center w-full min-h-[44px]">
+                        <div className={`absolute ${isEn ? 'left-0' : 'right-0'} flex items-center`}>
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                title={isEn ? 'Go Back' : 'رجوع للخلف'}
+                                aria-label={isEn ? 'Go Back' : 'رجوع للخلف'}
+                            >
+                                <i className={`fa-solid ${isEn ? 'fa-arrow-left' : 'fa-arrow-right'} text-xl`}></i>
+                            </button>
+                        </div>
+
+                        <div className="text-center px-12 min-w-0">
+                            <h1 className="app-top-bar__title text-lg sm:text-xl font-kufi truncate">
+                                {title || (isEn ? 'Downloads' : 'التحميلات')}
+                            </h1>
+                        </div>
+
+                        <div className={`absolute ${isEn ? 'right-0' : 'left-0'} flex items-center gap-1`}>
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                title={isEn ? 'Close' : 'إغلاق'}
+                                aria-label={isEn ? 'Close' : 'إغلاق'}
+                            >
+                                <i className="fa-solid fa-house text-xl"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <div className="flex-1 min-h-0 w-full overflow-y-auto app-scroll-safe">
+                <div className="p-4 space-y-4 text-center max-w-2xl mx-auto w-full">
                     <div className="space-y-4">
                         <div className={isRTL ? "text-right" : "text-left"}>
                             <div className="flex justify-between items-center mb-1.5" dir={dir}>
@@ -731,7 +790,7 @@ export const QuranDownloadModal: React.FC<DownloadModalProps> = ({
                                     onChange={(e) => setReaderSearch(e.target.value)}
                                     placeholder={language === 'en' ? 'Search reciters...' : 'ابحث عن قارئ...'}
                                     className={`w-full py-2 ${isRTL ? 'pr-8 pl-3 text-right' : 'pl-8 pr-3 text-left'} text-xs rounded-xl quran-raised-card outline-none border-0`}
-                                    style={{ border: 'none', outline: 'none' }}
+                                    style={{ backgroundColor: '#ffffff', color: '#0f172a', border: 'none', outline: 'none' }}
                                     dir={dir}
                                 />
                                 <i className={`fa-solid fa-magnifying-glass absolute ${isRTL ? 'right-2.5' : 'left-2.5'} top-3 text-xs opacity-50`}></i>
@@ -745,7 +804,7 @@ export const QuranDownloadModal: React.FC<DownloadModalProps> = ({
                                 )}
                             </div>
 
-                            <div className={`grid ${isLandscape ? 'grid-cols-4 sm:grid-cols-5 md:grid-cols-6' : 'grid-cols-2 sm:grid-cols-3'} gap-2 ${isLandscape ? 'max-h-40' : 'max-h-48'} overflow-y-auto p-2.5 rounded-2xl quran-raised-card custom-scrollbar border-0`} style={{ border: 'none' }} dir={dir}>
+                            <div className={`grid ${isLandscape ? 'grid-cols-4 sm:grid-cols-5 md:grid-cols-6' : 'grid-cols-2 sm:grid-cols-3'} gap-2 ${isLandscape ? (isFromHomeScreenSettings ? 'max-h-52' : 'max-h-40') : (isFromHomeScreenSettings ? 'max-h-72 sm:max-h-80' : 'max-h-48')} overflow-y-auto p-2.5 rounded-2xl quran-raised-card custom-scrollbar border-0`} style={{ border: 'none' }} dir={dir}>
                                 {filteredReaders.map(r => {
                                     const isSelected = selectedReader === r.id;
                                     return (
@@ -754,8 +813,8 @@ export const QuranDownloadModal: React.FC<DownloadModalProps> = ({
                                             onClick={() => handleSelectReader(r.id)}
                                             className={`text-[10px] sm:text-xs p-2.5 rounded-xl transition-all font-bold cursor-pointer truncate ${isSelected ? 'quran-raised-btn-selected shadow-md' : 'quran-raised-btn'}`}
                                             style={{ 
-                                                backgroundColor: isSelected ? 'var(--qr-accent)' : undefined,
-                                                color: isSelected ? 'var(--qr-accent-text, #fff)' : theme.textColor,
+                                                backgroundColor: isSelected ? 'var(--qr-accent)' : '#ffffff',
+                                                color: isSelected ? 'var(--qr-accent-text, #fff)' : '#0f172a',
                                                 border: 'none'
                                             }}
                                             title={getReciterDisplayName(r.name, language)}
@@ -768,7 +827,7 @@ export const QuranDownloadModal: React.FC<DownloadModalProps> = ({
 
                             {/* Informational banner when reciter has incomplete mushaf */}
                             {selectedReaderObj && availableSurahsList.length < 114 && (
-                                <div className={`flex items-start gap-2 p-3 rounded-2xl quran-raised-card ${isDeepBlack ? 'text-white' : 'text-amber-700 dark:text-amber-300'} text-[11px] ${isRTL ? 'text-right' : 'text-left'} mt-2 animate-fadeIn border-0`} style={{ border: 'none' }} dir={dir}>
+                                <div className={`flex items-start gap-2 p-3 rounded-2xl quran-raised-card text-amber-700 text-[11px] ${isRTL ? 'text-right' : 'text-left'} mt-2 animate-fadeIn border-0`} style={{ backgroundColor: '#ffffff', border: 'none' }} dir={dir}>
                                     <i className={`fa-solid fa-triangle-exclamation shrink-0 ${isDeepBlack ? 'text-white' : 'text-amber-500'} text-xs mt-0.5 quran-3d-icon`}></i>
                                     <div>
                                         <span className="font-bold">
@@ -799,13 +858,13 @@ export const QuranDownloadModal: React.FC<DownloadModalProps> = ({
                                     </span>
                                 )}
                             </div>
-                            <div className={`grid ${isLandscape ? 'grid-cols-4 sm:grid-cols-5 md:grid-cols-6' : 'grid-cols-2 sm:grid-cols-3'} gap-2 ${isLandscape ? 'max-h-32' : 'max-h-40'} overflow-y-auto p-2.5 rounded-2xl quran-raised-card custom-scrollbar border-0`} style={{ border: 'none' }} dir={dir}>
+                            <div className={`grid ${isLandscape ? 'grid-cols-4 sm:grid-cols-5 md:grid-cols-6' : 'grid-cols-2 sm:grid-cols-3'} gap-2 ${isLandscape ? (isFromHomeScreenSettings ? 'max-h-44' : 'max-h-32') : (isFromHomeScreenSettings ? 'max-h-64 sm:max-h-72' : 'max-h-40')} overflow-y-auto p-2.5 rounded-2xl quran-raised-card custom-scrollbar border-0`} style={{ border: 'none' }} dir={dir}>
                                 <button 
                                     onClick={() => toggleSurah('all')}
                                     className={`text-[10px] sm:text-xs p-2.5 rounded-xl transition-all font-bold flex items-center justify-center gap-1 cursor-pointer ${selectedSurahs.includes('all') ? 'quran-raised-btn-selected shadow-md' : 'quran-raised-btn'}`}
                                     style={{
-                                        backgroundColor: selectedSurahs.includes('all') ? 'var(--qr-accent)' : (isAllSurahsDownloaded ? 'color-mix(in srgb, var(--qr-accent) 20%, transparent)' : undefined),
-                                        color: selectedSurahs.includes('all') ? 'var(--qr-accent-text, #fff)' : (isAllSurahsDownloaded ? fgAccent : theme.textColor),
+                                        backgroundColor: selectedSurahs.includes('all') ? 'var(--qr-accent)' : (isAllSurahsDownloaded ? 'color-mix(in srgb, var(--qr-accent) 18%, #ffffff)' : '#ffffff'),
+                                        color: selectedSurahs.includes('all') ? 'var(--qr-accent-text, #fff)' : (isAllSurahsDownloaded ? fgAccent : '#0f172a'),
                                         border: 'none'
                                     }}
                                 >
@@ -826,8 +885,8 @@ export const QuranDownloadModal: React.FC<DownloadModalProps> = ({
                                             onClick={() => toggleSurah(s.number.toString())}
                                             className={`text-[10px] sm:text-xs p-2.5 rounded-xl transition-all font-bold flex items-center justify-center gap-1 cursor-pointer truncate ${isSelected ? 'quran-raised-btn-selected shadow-md' : 'quran-raised-btn'}`}
                                             style={{
-                                                backgroundColor: isSelected ? 'var(--qr-accent)' : (isDownloaded ? 'color-mix(in srgb, var(--qr-accent) 20%, transparent)' : undefined),
-                                                color: isSelected ? 'var(--qr-accent-text, #fff)' : (isDownloaded ? fgAccent : theme.textColor),
+                                                backgroundColor: isSelected ? 'var(--qr-accent)' : (isDownloaded ? 'color-mix(in srgb, var(--qr-accent) 18%, #ffffff)' : '#ffffff'),
+                                                color: isSelected ? 'var(--qr-accent-text, #fff)' : (isDownloaded ? fgAccent : '#0f172a'),
                                                 border: 'none'
                                             }}
                                             title={surahNameDisplay}
@@ -853,7 +912,7 @@ export const QuranDownloadModal: React.FC<DownloadModalProps> = ({
                                     </span>
                                 )}
                             </div>
-                            <div className={`grid ${isLandscape ? 'grid-cols-4 sm:grid-cols-5 md:grid-cols-6' : 'grid-cols-2 sm:grid-cols-3'} gap-2 ${isLandscape ? 'max-h-32' : 'max-h-40'} overflow-y-auto p-2.5 rounded-2xl quran-raised-card custom-scrollbar border-0`} style={{ border: 'none' }} dir={dir}>
+                            <div className={`grid ${isLandscape ? 'grid-cols-4 sm:grid-cols-5 md:grid-cols-6' : 'grid-cols-2 sm:grid-cols-3'} gap-2 ${isLandscape ? (isFromHomeScreenSettings ? 'max-h-44' : 'max-h-32') : (isFromHomeScreenSettings ? 'max-h-64 sm:max-h-72' : 'max-h-40')} overflow-y-auto p-2.5 rounded-2xl quran-raised-card custom-scrollbar border-0`} style={{ border: 'none' }} dir={dir}>
                                 {Array.from({length: 30}, (_, i) => i + 1).map(juzNum => {
                                     const isDownloaded = downloadedJuzs.includes(juzNum.toString());
                                     const isSelected = selectedJuzs.includes(juzNum.toString());
@@ -877,8 +936,8 @@ export const QuranDownloadModal: React.FC<DownloadModalProps> = ({
                                             }}
                                             className={`text-[10px] sm:text-xs p-2.5 rounded-xl transition-all font-bold flex flex-col items-center justify-center gap-0.5 cursor-pointer ${isSelected ? 'quran-raised-btn-selected shadow-md' : (isUnavailable ? 'opacity-40 cursor-not-allowed quran-raised-card' : 'quran-raised-btn')}`}
                                             style={{
-                                                backgroundColor: isSelected ? 'var(--qr-accent)' : (isDownloaded ? 'color-mix(in srgb, var(--qr-accent) 20%, transparent)' : undefined),
-                                                color: isSelected ? 'var(--qr-accent-text, #fff)' : (isDownloaded ? fgAccent : theme.textColor),
+                                                backgroundColor: isSelected ? 'var(--qr-accent)' : (isDownloaded ? 'color-mix(in srgb, var(--qr-accent) 18%, #ffffff)' : '#ffffff'),
+                                                color: isSelected ? 'var(--qr-accent-text, #fff)' : (isDownloaded ? fgAccent : '#0f172a'),
                                                 border: 'none'
                                             }}
                                         >
@@ -966,21 +1025,20 @@ export const QuranDownloadModal: React.FC<DownloadModalProps> = ({
                         )}
                     </div>
                 </div>
-                <div className="p-3.5 text-center flex-none">
-                    <button 
-                        onClick={onClose} 
-                        style={{ backgroundColor: 'var(--qr-accent)', color: 'var(--qr-accent-text, #fff)', border: 'none' }}
-                        className="quran-raised-btn-selected font-bold py-2.5 px-8 rounded-xl shadow-lg text-sm w-full cursor-pointer border-0"
-                    >
-                        {language === 'en' ? 'Close' : 'إغلاق'}
-                    </button>
-                </div>
             </div>
         </div>
     );
 };
 
-export const TafsirDownloadModal: React.FC<DownloadModalProps> = ({ onClose, quranData, showToast, isLandscape }) => {
+export const TafsirDownloadModal: React.FC<DownloadModalProps> = ({ 
+    onClose, 
+    quranData, 
+    showToast, 
+    isLandscape, 
+    zIndexClass = 'z-[1200]', 
+    title,
+    isFromHomeScreenSettings = false 
+}) => {
     const { theme, themeKey } = useTheme();
     const { language, isRTL, dir } = useLanguage();
     const isEn = language === 'en';
@@ -993,6 +1051,15 @@ export const TafsirDownloadModal: React.FC<DownloadModalProps> = ({ onClose, qur
     const [progress, setProgress] = useState(0);
     const [status, setStatus] = useState('');
     const abortControllerRef = useRef<AbortController | null>(null);
+
+    useEffect(() => {
+        const interceptor = () => {
+            onClose();
+            return true;
+        };
+        const unregister = registerBackInterceptor(interceptor);
+        return unregister;
+    }, [onClose]);
 
     const checkDownloads = useCallback(async () => {
         if (!selectedTafsir || !quranData) {
@@ -1212,13 +1279,54 @@ export const TafsirDownloadModal: React.FC<DownloadModalProps> = ({ onClose, qur
      } as React.CSSProperties;
 
     return (
-        <div style={modalStyle} className={`fixed inset-0 bg-black/40 backdrop-blur-sm z-[1200] flex items-center justify-center ${isLandscape ? 'p-0' : 'p-4'} animate-fadeIn`} onClick={onClose}>
-            <div dir={dir} className={`modal-skinned w-full ${isLandscape ? 'max-w-4xl h-full rounded-none max-h-screen' : 'max-w-md rounded-2xl max-h-[90vh]'} shadow-2xl overflow-hidden flex flex-col border-0`} onClick={e => e.stopPropagation()} style={{ backgroundColor: 'var(--qr-bg)', color: 'var(--qr-text)', border: 'none', outline: 'none' }}>
-                <div className="p-4 space-y-4 overflow-y-auto text-center flex-1">
+        <div
+            style={{ ...modalStyle, backgroundColor: 'var(--qr-bg)', color: 'var(--qr-text)' }}
+            dir={dir}
+            className={`fixed inset-0 ${zIndexClass} flex flex-col font-cairo select-none overflow-hidden animate-fadeIn`}
+        >
+            {/* Standard Page Header */}
+            <header className="app-top-bar settings-top-bar shrink-0 w-full" dir={dir}>
+                <div className="app-top-bar__inner">
+                    <div className="relative flex items-center justify-center w-full min-h-[44px]">
+                        <div className={`absolute ${isEn ? 'left-0' : 'right-0'} flex items-center`}>
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                title={isEn ? 'Go Back' : 'رجوع للخلف'}
+                                aria-label={isEn ? 'Go Back' : 'رجوع للخلف'}
+                            >
+                                <i className={`fa-solid ${isEn ? 'fa-arrow-left' : 'fa-arrow-right'} text-xl`}></i>
+                            </button>
+                        </div>
+
+                        <div className="text-center px-12 min-w-0">
+                            <h1 className="app-top-bar__title text-lg sm:text-xl font-kufi truncate">
+                                {title || (isEn ? 'Download Tafseers' : 'تحميل التفاسير')}
+                            </h1>
+                        </div>
+
+                        <div className={`absolute ${isEn ? 'right-0' : 'left-0'} flex items-center gap-1`}>
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                title={isEn ? 'Close' : 'إغلاق'}
+                                aria-label={isEn ? 'Close' : 'إغلاق'}
+                            >
+                                <i className="fa-solid fa-house text-xl"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <div className="flex-1 min-h-0 w-full overflow-y-auto app-scroll-safe">
+                <div className="p-4 space-y-4 text-center max-w-2xl mx-auto w-full">
                     <div className="space-y-4">
                         <div className={isRTL ? "text-right" : "text-left"}>
                             <label className="text-xs font-bold opacity-70 block mb-2">{isEn ? 'Select Tafseer' : 'اختر التفسير'}</label>
-                            <div className={`grid ${isLandscape ? 'grid-cols-4 sm:grid-cols-5 md:grid-cols-6' : 'grid-cols-2 sm:grid-cols-3'} gap-2 ${isLandscape ? 'max-h-40' : 'max-h-60'} overflow-y-auto p-2.5 rounded-2xl quran-raised-card custom-scrollbar border-0`} style={{ border: 'none' }} dir={dir}>
+                            <div className={`grid ${isLandscape ? 'grid-cols-4 sm:grid-cols-5 md:grid-cols-6' : 'grid-cols-2 sm:grid-cols-3'} gap-2 ${isLandscape ? (isFromHomeScreenSettings ? 'max-h-52' : 'max-h-40') : (isFromHomeScreenSettings ? 'max-h-80 sm:max-h-96' : 'max-h-60')} overflow-y-auto p-2.5 rounded-2xl quran-raised-card custom-scrollbar border-0`} style={{ border: 'none' }} dir={dir}>
                                 {TAFSEERS.filter(t => t.id !== 'ar.jalalayn').map(t => {
                                     const isSelected = selectedTafsir === t.id;
                                     const tafseerName = getTafseerDisplayName(t.id, isEn ? 'en' : 'ar');
@@ -1228,8 +1336,8 @@ export const TafsirDownloadModal: React.FC<DownloadModalProps> = ({ onClose, qur
                                             onClick={() => setSelectedTafsir(t.id)}
                                             className={`text-[10px] sm:text-xs p-2.5 rounded-xl transition-all font-bold cursor-pointer ${isSelected ? 'quran-raised-btn-selected shadow-md' : 'quran-raised-btn'}`}
                                             style={{
-                                                backgroundColor: isSelected ? 'var(--qr-accent)' : undefined,
-                                                color: isSelected ? 'var(--qr-accent-text, #fff)' : theme.textColor,
+                                                backgroundColor: isSelected ? 'var(--qr-accent)' : '#ffffff',
+                                                color: isSelected ? 'var(--qr-accent-text, #fff)' : '#0f172a',
                                                 border: 'none'
                                             }}
                                             title={tafseerName}
@@ -1243,13 +1351,13 @@ export const TafsirDownloadModal: React.FC<DownloadModalProps> = ({ onClose, qur
 
                         <div className={isRTL ? "text-right" : "text-left"}>
                             <label className="text-xs font-bold opacity-70 block mb-2">{isEn ? 'Select Surahs (Multiple selection allowed)' : 'اختر السور (يمكنك اختيار أكثر من سورة)'}</label>
-                            <div className={`grid ${isLandscape ? 'grid-cols-4 sm:grid-cols-5 md:grid-cols-6' : 'grid-cols-2 sm:grid-cols-3'} gap-2 ${isLandscape ? 'max-h-32' : 'max-h-40'} overflow-y-auto p-2.5 rounded-2xl quran-raised-card custom-scrollbar border-0`} style={{ border: 'none' }} dir={dir}>
+                            <div className={`grid ${isLandscape ? 'grid-cols-4 sm:grid-cols-5 md:grid-cols-6' : 'grid-cols-2 sm:grid-cols-3'} gap-2 ${isLandscape ? (isFromHomeScreenSettings ? 'max-h-44' : 'max-h-32') : (isFromHomeScreenSettings ? 'max-h-64 sm:max-h-72' : 'max-h-40')} overflow-y-auto p-2.5 rounded-2xl quran-raised-card custom-scrollbar border-0`} style={{ border: 'none' }} dir={dir}>
                                 <button 
                                     onClick={() => toggleSurah('all')}
                                     className={`text-[10px] sm:text-xs p-2.5 rounded-xl transition-all font-bold flex items-center justify-center gap-1 cursor-pointer ${selectedSurahs.includes('all') ? 'quran-raised-btn-selected shadow-md' : 'quran-raised-btn'}`}
                                     style={{
-                                        backgroundColor: selectedSurahs.includes('all') ? 'var(--qr-accent)' : (downloadedSurahs.length === 114 ? 'color-mix(in srgb, var(--qr-accent) 20%, transparent)' : undefined),
-                                        color: selectedSurahs.includes('all') ? 'var(--qr-accent-text, #fff)' : (downloadedSurahs.length === 114 ? fgAccent : theme.textColor),
+                                        backgroundColor: selectedSurahs.includes('all') ? 'var(--qr-accent)' : (downloadedSurahs.length === 114 ? 'color-mix(in srgb, var(--qr-accent) 18%, #ffffff)' : '#ffffff'),
+                                        color: selectedSurahs.includes('all') ? 'var(--qr-accent-text, #fff)' : (downloadedSurahs.length === 114 ? fgAccent : '#0f172a'),
                                         border: 'none'
                                     }}
                                 >
@@ -1266,8 +1374,8 @@ export const TafsirDownloadModal: React.FC<DownloadModalProps> = ({ onClose, qur
                                             onClick={() => toggleSurah(s.number.toString())}
                                             className={`text-[10px] sm:text-xs p-2.5 rounded-xl transition-all font-bold flex items-center justify-center gap-1 cursor-pointer truncate ${isSelected ? 'quran-raised-btn-selected shadow-md' : 'quran-raised-btn'}`}
                                             style={{
-                                                backgroundColor: isSelected ? 'var(--qr-accent)' : (isDownloaded ? 'color-mix(in srgb, var(--qr-accent) 20%, transparent)' : undefined),
-                                                color: isSelected ? 'var(--qr-accent-text, #fff)' : (isDownloaded ? fgAccent : theme.textColor),
+                                                backgroundColor: isSelected ? 'var(--qr-accent)' : (isDownloaded ? 'color-mix(in srgb, var(--qr-accent) 18%, #ffffff)' : '#ffffff'),
+                                                color: isSelected ? 'var(--qr-accent-text, #fff)' : (isDownloaded ? fgAccent : '#0f172a'),
                                                 border: 'none'
                                             }}
                                             title={surahNameDisplay}
@@ -1282,7 +1390,7 @@ export const TafsirDownloadModal: React.FC<DownloadModalProps> = ({ onClose, qur
 
                         <div className={isRTL ? "text-right" : "text-left"}>
                             <label className="text-xs font-bold opacity-70 block mb-2">{isEn ? 'Select Juzs (Multiple selection allowed)' : 'اختر الأجزاء (يمكنك اختيار أكثر من جزء)'}</label>
-                            <div className={`grid ${isLandscape ? 'grid-cols-4 sm:grid-cols-5 md:grid-cols-6' : 'grid-cols-2 sm:grid-cols-3'} gap-2 ${isLandscape ? 'max-h-32' : 'max-h-40'} overflow-y-auto p-2.5 rounded-2xl quran-raised-card custom-scrollbar border-0`} style={{ border: 'none' }} dir={dir}>
+                            <div className={`grid ${isLandscape ? 'grid-cols-4 sm:grid-cols-5 md:grid-cols-6' : 'grid-cols-2 sm:grid-cols-3'} gap-2 ${isLandscape ? (isFromHomeScreenSettings ? 'max-h-44' : 'max-h-32') : (isFromHomeScreenSettings ? 'max-h-64 sm:max-h-72' : 'max-h-40')} overflow-y-auto p-2.5 rounded-2xl quran-raised-card custom-scrollbar border-0`} style={{ border: 'none' }} dir={dir}>
                                 {Array.from({length: 30}, (_, i) => i + 1).map(juzNum => {
                                     const isDownloaded = downloadedJuzs.includes(juzNum.toString());
                                     const isSelected = selectedJuzs.includes(juzNum.toString());
@@ -1292,8 +1400,8 @@ export const TafsirDownloadModal: React.FC<DownloadModalProps> = ({ onClose, qur
                                             onClick={() => toggleJuz(juzNum.toString())}
                                             className={`text-[10px] sm:text-xs p-2.5 rounded-xl transition-all font-bold flex items-center justify-center gap-1 cursor-pointer ${isSelected ? 'quran-raised-btn-selected shadow-md' : 'quran-raised-btn'}`}
                                             style={{
-                                                backgroundColor: isSelected ? 'var(--qr-accent)' : (isDownloaded ? 'color-mix(in srgb, var(--qr-accent) 20%, transparent)' : undefined),
-                                                color: isSelected ? 'var(--qr-accent-text, #fff)' : (isDownloaded ? fgAccent : theme.textColor),
+                                                backgroundColor: isSelected ? 'var(--qr-accent)' : (isDownloaded ? 'color-mix(in srgb, var(--qr-accent) 18%, #ffffff)' : '#ffffff'),
+                                                color: isSelected ? 'var(--qr-accent-text, #fff)' : (isDownloaded ? fgAccent : '#0f172a'),
                                                 border: 'none'
                                             }}
                                         >
@@ -1351,15 +1459,6 @@ export const TafsirDownloadModal: React.FC<DownloadModalProps> = ({ onClose, qur
                             </div>
                         )}
                     </div>
-                </div>
-                <div className="p-3.5 text-center flex-none">
-                    <button 
-                        onClick={onClose} 
-                        style={{ backgroundColor: 'var(--qr-accent)', color: 'var(--qr-accent-text, #fff)', border: 'none' }}
-                        className="quran-raised-btn-selected font-bold py-2.5 px-8 rounded-xl shadow-lg text-sm w-full cursor-pointer border-0"
-                    >
-                        {isEn ? 'Close' : 'إغلاق'}
-                    </button>
                 </div>
             </div>
         </div>
