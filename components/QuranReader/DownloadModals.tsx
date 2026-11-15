@@ -6,6 +6,7 @@ import { SURAH_LIST } from '../../data/listenQuranData';
 import { normalizeArabic } from '../../utils/voiceParser';
 import { getAvailableSurahsForReader, getSurahsForJuz } from '../../utils/listenQuranUtils';
 import { getReciterDisplayName, getSurahDisplayName, formatListenNumber } from '../../utils/listenQuranTranslations';
+import { registerBackInterceptor } from '../../hooks/useBackButton';
 
 interface DownloadModalProps {
     onClose: () => void;
@@ -16,6 +17,9 @@ interface DownloadModalProps {
     readersList?: { id: string, name: string }[];
     initialReaderId?: string;
     getAvailableSurahs?: (readerId: string) => number[];
+    zIndexClass?: string;
+    title?: string;
+    isFromHomeScreenSettings?: boolean;
 }
 
 // --- Helper Functions ---
@@ -188,9 +192,12 @@ export const QuranDownloadModal: React.FC<DownloadModalProps> = ({
     mode = 'ayah', 
     readersList = READERS,
     initialReaderId,
-    getAvailableSurahs
+    getAvailableSurahs,
+    zIndexClass = 'z-[1200]',
+    title,
+    isFromHomeScreenSettings = false
 }) => {
-    const { theme, themeKey } = useTheme();
+    const { theme, themeKey, isNightMode, homeThemeVariant } = useTheme();
     const { language, isRTL, dir } = useLanguage();
     const [selectedReader, setSelectedReader] = useState(initialReaderId || readersList[0]?.id || '');
     const [readerSearch, setReaderSearch] = useState('');
@@ -208,6 +215,15 @@ export const QuranDownloadModal: React.FC<DownloadModalProps> = ({
             setSelectedReader(initialReaderId);
         }
     }, [initialReaderId]);
+
+    useEffect(() => {
+        const interceptor = () => {
+            onClose();
+            return true;
+        };
+        const unregister = registerBackInterceptor(interceptor);
+        return unregister;
+    }, [onClose]);
 
     const selectedReaderObj = useMemo(() => {
         return readersList.find(r => r.id === selectedReader);
@@ -686,33 +702,113 @@ export const QuranDownloadModal: React.FC<DownloadModalProps> = ({
         return () => window.removeEventListener('voice-command', handleVoiceCommand);
     }, [selectedReader, selectedSurahs, selectedJuzs, isDownloading, toggleSurah, toggleJuz, downloadSelected, stopDownload, onClose]);
 
-    const isDark = !theme.bgColor || 
-        ['#191D3A', '#0C0A09', '#000000', '#4C1D95', '#7C2D12', '#1E40AF', '#1E1B4B', '#1C1917', '#0B0F19', '#3E2723', '#450A0A', '#064E3B', '#0F766E', '#155E75', '#581C87', '#0F172A', '#2E1065', '#0B0F19', '#022C22'].includes(theme.bgColor.toUpperCase());
+    const isDark = isNightMode || Boolean(theme.isDark) || themeKey === 'deep_black' || !theme.bgColor || 
+        ['#191D3A', '#0C0A09', '#000000', '#4C1D95', '#7C2D12', '#1E40AF', '#1E1B4B', '#1C1917', '#0B0F19', '#3E2723', '#450A0A', '#064E3B', '#0F766E', '#155E75', '#581C87', '#0F172A', '#2E1065', '#022C22'].includes(theme.bgColor.toUpperCase());
+
+    const isDeepBlack = isNightMode || themeKey === 'deep_black' || (theme.bg || theme.bgColor || '').toLowerCase() === '#000000';
+    const fgAccent = isDeepBlack ? '#ffffff' : 'var(--qr-accent)';
+
+    const resolvedBg = isDeepBlack
+        ? '#000000'
+        : (theme.bg || (theme.bgColor && theme.bgColor.toLowerCase() !== '#ffffff'
+            ? theme.bgColor
+            : (homeThemeVariant === 'sky'
+                ? '#F0F9FF'
+                : (homeThemeVariant === 'emerald'
+                    ? '#F0FDF4'
+                    : (homeThemeVariant === 'burgundy'
+                        ? '#FFF1F2'
+                        : (isDark ? '#0f172a' : '#FEF9C3'))))));
+
+    let resolvedAccent = isDeepBlack
+        ? '#ffffff'
+        : (isFromHomeScreenSettings
+            ? (homeThemeVariant === 'sky'
+                ? '#0284c7'
+                : homeThemeVariant === 'emerald'
+                    ? '#047857'
+                    : homeThemeVariant === 'burgundy'
+                        ? '#881337'
+                        : (theme.accent || theme.palette?.[0] || '#ca8a04'))
+            : (theme.accent || theme.palette?.[0] || '#ca8a04'));
+    if (resolvedAccent.toLowerCase() === '#000000' && isDark) {
+        resolvedAccent = '#ffffff';
+    }
+    const resolvedAccentText = isDeepBlack ? '#000000' : (theme.accentText === '#000000' && resolvedAccent !== '#ffffff' ? '#ffffff' : (theme.accentText || '#ffffff'));
+
+    const cardSurfaceBg = isDark ? '#1a1a22' : '#ffffff';
+    const cardTextColor = isDark ? '#ffffff' : '#0f172a';
+    const containerSurfaceBg = isDark ? '#111116' : 'rgba(255, 255, 255, 0.55)';
 
     const modalStyle = {
-        '--qr-bg': theme.bg || theme.bgColor || '#ffffff',
-        '--qr-text': theme.text || theme.textColor || '#000000',
-        '--qr-card-bg': theme.cardBg || (isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.5)'),
-        '--qr-card-text': theme.cardText || theme.text || theme.textColor || '#000000',
-        '--qr-card-border': theme.cardBorder || (isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.07)'),
-        '--qr-modal-bg': theme.modalBg || theme.bg || theme.bgColor || '#ffffff',
-        '--qr-modal-text': theme.modalText || theme.text || theme.textColor || '#000000',
-        '--qr-header-bg': theme.headerBg || theme.bg || '#ffffff',
-        '--qr-header-text': theme.headerText || theme.text || '#000000',
+        '--qr-bg': resolvedBg,
+        '--qr-text': isDark ? '#ffffff' : (theme.text || theme.textColor || '#000000'),
+        '--qr-card-bg': cardSurfaceBg,
+        '--qr-card-text': cardTextColor,
+        '--qr-card-border': isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.07)',
+        '--qr-modal-bg': resolvedBg,
+        '--qr-modal-text': isDark ? '#ffffff' : (theme.modalText || theme.text || theme.textColor || '#000000'),
+        '--qr-header-bg': theme.headerBg || resolvedBg,
+        '--qr-header-text': isDark ? '#ffffff' : (theme.headerText || theme.text || '#000000'),
+        '--qr-accent': resolvedAccent,
+        '--qr-accent-text': resolvedAccentText,
     } as React.CSSProperties;
 
+    const isEn = language === 'en';
+
     return (
-        <div style={modalStyle} className={`fixed inset-0 bg-black/40 backdrop-blur-sm z-[1200] flex items-center justify-center ${isLandscape ? 'p-0' : 'p-4'} animate-fadeIn`} onClick={onClose}>
-            <div dir={dir} className={`modal-skinned w-full ${isLandscape ? 'max-w-4xl h-full rounded-none max-h-screen' : 'max-w-md rounded-2xl max-h-[90vh]'} shadow-2xl overflow-hidden flex flex-col border-0`} onClick={e => e.stopPropagation()} style={{ backgroundColor: 'var(--qr-bg)', color: 'var(--qr-text)', border: 'none', outline: 'none' }}>
-                <div className="p-4 space-y-4 overflow-y-auto text-center flex-1">
+        <div
+            style={{ ...modalStyle, backgroundColor: 'var(--qr-bg)', color: 'var(--qr-text)' }}
+            dir={dir}
+            className={`fixed inset-0 ${zIndexClass} flex flex-col font-cairo select-none overflow-hidden animate-fadeIn settings-3d-adia-scope ${isDark ? 'settings-3d-dark' : ''}`}
+        >
+            {/* Standard Page Header */}
+            <header className="app-top-bar settings-top-bar shrink-0 w-full" dir={dir}>
+                <div className="app-top-bar__inner">
+                    <div className="relative flex items-center justify-center w-full min-h-[44px]">
+                        <div className={`absolute ${isEn ? 'left-0' : 'right-0'} flex items-center`}>
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                title={isEn ? 'Go Back' : 'رجوع للخلف'}
+                                aria-label={isEn ? 'Go Back' : 'رجوع للخلف'}
+                            >
+                                <i className={`fa-solid ${isEn ? 'fa-arrow-left' : 'fa-arrow-right'} text-xl`}></i>
+                            </button>
+                        </div>
+
+                        <div className="text-center px-12 min-w-0">
+                            <h1 className="app-top-bar__title text-lg sm:text-xl font-kufi truncate">
+                                {title || (isEn ? 'Downloads' : 'التحميلات')}
+                            </h1>
+                        </div>
+
+                        <div className={`absolute ${isEn ? 'right-0' : 'left-0'} flex items-center gap-1`}>
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                title={isEn ? 'Close' : 'إغلاق'}
+                                aria-label={isEn ? 'Close' : 'إغلاق'}
+                            >
+                                <i className="fa-solid fa-house text-xl"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <div className="flex-1 min-h-0 w-full overflow-y-auto app-scroll-safe">
+                <div className="p-4 space-y-4 text-center max-w-2xl mx-auto w-full">
                     <div className="space-y-4">
                         <div className={isRTL ? "text-right" : "text-left"}>
                             <div className="flex justify-between items-center mb-1.5" dir={dir}>
-                                <label className="text-xs font-bold opacity-70">
+                                <label className="text-xs font-bold opacity-75">
                                     {language === 'en' ? 'Select Reciter' : 'اختر القارئ'}
                                 </label>
                                 {selectedReaderObj && (
-                                    <span className="text-[10px] font-bold" style={{ color: 'var(--qr-accent)' }}>
+                                    <span className="text-[10px] font-bold" style={{ color: fgAccent }}>
                                         {availableSurahsList.length < 114 
                                             ? (language === 'en' ? `(Available: ${formatListenNumber(availableSurahsList.length, language)} Surahs)` : `(متوفر: ${formatListenNumber(availableSurahsList.length, language)} سورة)`) 
                                             : (language === 'en' ? '(Complete Qur\'an)' : '(المصحف كامل)')}
@@ -721,38 +817,39 @@ export const QuranDownloadModal: React.FC<DownloadModalProps> = ({
                             </div>
                             
                             {/* Reader search input */}
-                            <div className="relative mb-2">
+                            <div className="relative mb-2.5">
                                 <input
                                     type="text"
                                     value={readerSearch}
                                     onChange={(e) => setReaderSearch(e.target.value)}
                                     placeholder={language === 'en' ? 'Search reciters...' : 'ابحث عن قارئ...'}
-                                    className={`w-full py-2 ${isRTL ? 'pr-8 pl-3 text-right' : 'pl-8 pr-3 text-left'} text-xs rounded-xl quran-raised-card outline-none border-0`}
-                                    style={{ border: 'none', outline: 'none' }}
+                                    className={`w-full py-2.5 ${isRTL ? 'pr-9 pl-3 text-right' : 'pl-9 pr-3 text-left'} text-xs font-bold rounded-2xl app-page-card quran-raised-card outline-none border-0`}
+                                    style={{ backgroundColor: cardSurfaceBg, color: cardTextColor, border: 'none', outline: 'none' }}
                                     dir={dir}
                                 />
-                                <i className={`fa-solid fa-magnifying-glass absolute ${isRTL ? 'right-2.5' : 'left-2.5'} top-3 text-xs opacity-50`}></i>
+                                <i className={`fa-solid fa-magnifying-glass absolute ${isRTL ? 'right-3' : 'left-3'} top-3.5 text-xs opacity-55`} style={{ color: cardTextColor }}></i>
                                 {readerSearch && (
                                     <button 
                                         onClick={() => setReaderSearch('')} 
-                                        className={`absolute ${isRTL ? 'left-2.5' : 'right-2.5'} top-2.5 text-xs opacity-50 hover:opacity-100 cursor-pointer`}
+                                        className={`absolute ${isRTL ? 'left-3' : 'right-3'} top-3 text-xs opacity-60 hover:opacity-100 cursor-pointer`}
+                                        style={{ color: cardTextColor }}
                                     >
                                         <i className="fa-solid fa-xmark"></i>
                                     </button>
                                 )}
                             </div>
 
-                            <div className={`grid ${isLandscape ? 'grid-cols-4 sm:grid-cols-5 md:grid-cols-6' : 'grid-cols-2 sm:grid-cols-3'} gap-2 ${isLandscape ? 'max-h-40' : 'max-h-48'} overflow-y-auto p-2.5 rounded-2xl quran-raised-card custom-scrollbar border-0`} style={{ border: 'none' }} dir={dir}>
+                            <div className={`grid ${isLandscape ? 'grid-cols-4 sm:grid-cols-5 md:grid-cols-6' : 'grid-cols-2 sm:grid-cols-3'} gap-2.5 ${isLandscape ? (isFromHomeScreenSettings ? 'max-h-56' : 'max-h-44') : (isFromHomeScreenSettings ? 'max-h-72 sm:max-h-80' : 'max-h-52')} overflow-y-auto p-3 rounded-2xl app-page-card quran-raised-card custom-scrollbar border-0`} style={{ backgroundColor: containerSurfaceBg, border: 'none' }} dir={dir}>
                                 {filteredReaders.map(r => {
                                     const isSelected = selectedReader === r.id;
                                     return (
                                         <button 
-                                            key={r.id}
+                                            key={r.id} 
                                             onClick={() => handleSelectReader(r.id)}
-                                            className={`text-[10px] sm:text-xs p-2.5 rounded-xl transition-all font-bold cursor-pointer truncate ${isSelected ? 'quran-raised-btn-selected shadow-md' : 'quran-raised-btn'}`}
+                                            className={`text-[10px] sm:text-xs p-2.5 rounded-2xl transition-all font-bold cursor-pointer truncate app-page-card ${isSelected ? 'quran-raised-btn quran-raised-btn-selected' : 'quran-raised-btn'}`}
                                             style={{ 
-                                                backgroundColor: isSelected ? 'var(--qr-accent)' : undefined,
-                                                color: isSelected ? 'var(--qr-accent-text, #fff)' : theme.textColor,
+                                                backgroundColor: isSelected ? 'var(--qr-accent)' : cardSurfaceBg,
+                                                color: isSelected ? 'var(--qr-accent-text, #fff)' : cardTextColor,
                                                 border: 'none'
                                             }}
                                             title={getReciterDisplayName(r.name, language)}
@@ -765,8 +862,8 @@ export const QuranDownloadModal: React.FC<DownloadModalProps> = ({
 
                             {/* Informational banner when reciter has incomplete mushaf */}
                             {selectedReaderObj && availableSurahsList.length < 114 && (
-                                <div className={`flex items-start gap-2 p-3 rounded-2xl quran-raised-card text-amber-700 dark:text-amber-300 text-[11px] ${isRTL ? 'text-right' : 'text-left'} mt-2 animate-fadeIn border-0`} style={{ border: 'none' }} dir={dir}>
-                                    <i className="fa-solid fa-triangle-exclamation shrink-0 text-amber-500 text-xs mt-0.5 quran-3d-icon"></i>
+                                <div className={`flex items-start gap-2 p-3 rounded-2xl app-page-card quran-raised-card text-amber-700 dark:text-amber-300 text-[11px] ${isRTL ? 'text-right' : 'text-left'} mt-2.5 animate-fadeIn border-0`} style={{ backgroundColor: cardSurfaceBg, border: 'none' }} dir={dir}>
+                                    <i className={`fa-solid fa-triangle-exclamation shrink-0 ${isDeepBlack ? 'text-white' : 'text-amber-500'} text-xs mt-0.5 quran-3d-icon`}></i>
                                     <div>
                                         <span className="font-bold">
                                             {language === 'en' 
@@ -785,7 +882,7 @@ export const QuranDownloadModal: React.FC<DownloadModalProps> = ({
 
                         <div className={isRTL ? "text-right" : "text-left"}>
                             <div className="flex justify-between items-center mb-2" dir={dir}>
-                                <label className="text-xs font-bold opacity-70">
+                                <label className="text-xs font-bold opacity-75">
                                     {language === 'en' 
                                         ? (availableSurahsList.length < 114 ? `Select Surahs (Available: ${formatListenNumber(availableSurahsList.length, language)})` : 'Select Surahs (Multiple selection allowed)')
                                         : (availableSurahsList.length < 114 ? `اختر السور (المتاح لهذا القارئ: ${formatListenNumber(availableSurahsList.length, language)} سورة فقط)` : 'اختر السور (يمكنك اختيار أكثر من سورة)')}
@@ -796,13 +893,13 @@ export const QuranDownloadModal: React.FC<DownloadModalProps> = ({
                                     </span>
                                 )}
                             </div>
-                            <div className={`grid ${isLandscape ? 'grid-cols-4 sm:grid-cols-5 md:grid-cols-6' : 'grid-cols-2 sm:grid-cols-3'} gap-2 ${isLandscape ? 'max-h-32' : 'max-h-40'} overflow-y-auto p-2.5 rounded-2xl quran-raised-card custom-scrollbar border-0`} style={{ border: 'none' }} dir={dir}>
+                            <div className={`grid ${isLandscape ? 'grid-cols-4 sm:grid-cols-5 md:grid-cols-6' : 'grid-cols-2 sm:grid-cols-3'} gap-2.5 ${isLandscape ? (isFromHomeScreenSettings ? 'max-h-48' : 'max-h-36') : (isFromHomeScreenSettings ? 'max-h-64 sm:max-h-72' : 'max-h-44')} overflow-y-auto p-3 rounded-2xl app-page-card quran-raised-card custom-scrollbar border-0`} style={{ backgroundColor: containerSurfaceBg, border: 'none' }} dir={dir}>
                                 <button 
                                     onClick={() => toggleSurah('all')}
-                                    className={`text-[10px] sm:text-xs p-2.5 rounded-xl transition-all font-bold flex items-center justify-center gap-1 cursor-pointer ${selectedSurahs.includes('all') ? 'quran-raised-btn-selected shadow-md' : 'quran-raised-btn'}`}
+                                    className={`text-[10px] sm:text-xs p-2.5 rounded-2xl transition-all font-bold flex items-center justify-center gap-1 cursor-pointer app-page-card ${selectedSurahs.includes('all') ? 'quran-raised-btn quran-raised-btn-selected' : 'quran-raised-btn'}`}
                                     style={{
-                                        backgroundColor: selectedSurahs.includes('all') ? 'var(--qr-accent)' : (isAllSurahsDownloaded ? 'color-mix(in srgb, var(--qr-accent) 20%, transparent)' : undefined),
-                                        color: selectedSurahs.includes('all') ? 'var(--qr-accent-text, #fff)' : (isAllSurahsDownloaded ? 'var(--qr-accent)' : theme.textColor),
+                                        backgroundColor: selectedSurahs.includes('all') ? 'var(--qr-accent)' : (isAllSurahsDownloaded ? `color-mix(in srgb, var(--qr-accent) 18%, ${cardSurfaceBg})` : cardSurfaceBg),
+                                        color: selectedSurahs.includes('all') ? 'var(--qr-accent-text, #fff)' : (isAllSurahsDownloaded ? fgAccent : cardTextColor),
                                         border: 'none'
                                     }}
                                 >
@@ -821,10 +918,10 @@ export const QuranDownloadModal: React.FC<DownloadModalProps> = ({
                                         <button 
                                             key={s.number} 
                                             onClick={() => toggleSurah(s.number.toString())}
-                                            className={`text-[10px] sm:text-xs p-2.5 rounded-xl transition-all font-bold flex items-center justify-center gap-1 cursor-pointer truncate ${isSelected ? 'quran-raised-btn-selected shadow-md' : 'quran-raised-btn'}`}
+                                            className={`text-[10px] sm:text-xs p-2.5 rounded-2xl transition-all font-bold flex items-center justify-center gap-1 cursor-pointer truncate app-page-card ${isSelected ? 'quran-raised-btn quran-raised-btn-selected' : 'quran-raised-btn'}`}
                                             style={{
-                                                backgroundColor: isSelected ? 'var(--qr-accent)' : (isDownloaded ? 'color-mix(in srgb, var(--qr-accent) 20%, transparent)' : undefined),
-                                                color: isSelected ? 'var(--qr-accent-text, #fff)' : (isDownloaded ? 'var(--qr-accent)' : theme.textColor),
+                                                backgroundColor: isSelected ? 'var(--qr-accent)' : (isDownloaded ? `color-mix(in srgb, var(--qr-accent) 18%, ${cardSurfaceBg})` : cardSurfaceBg),
+                                                color: isSelected ? 'var(--qr-accent-text, #fff)' : (isDownloaded ? fgAccent : cardTextColor),
                                                 border: 'none'
                                             }}
                                             title={surahNameDisplay}
@@ -839,7 +936,7 @@ export const QuranDownloadModal: React.FC<DownloadModalProps> = ({
 
                         <div className={isRTL ? "text-right" : "text-left"}>
                             <div className="flex justify-between items-center mb-2" dir={dir}>
-                                <label className="text-xs font-bold opacity-70">
+                                <label className="text-xs font-bold opacity-75">
                                     {language === 'en'
                                         ? (availableSurahsList.length < 114 ? 'Select Juzs (Adjusted to available surahs only)' : 'Select Juzs (Multiple selection allowed)')
                                         : (availableSurahsList.length < 114 ? 'اختر الأجزاء (يتم تعديل كل جزء ليشمل السور المتوفرة فقط)' : 'اختر الأجزاء (يمكنك اختيار أكثر من جزء)')}
@@ -850,7 +947,7 @@ export const QuranDownloadModal: React.FC<DownloadModalProps> = ({
                                     </span>
                                 )}
                             </div>
-                            <div className={`grid ${isLandscape ? 'grid-cols-4 sm:grid-cols-5 md:grid-cols-6' : 'grid-cols-2 sm:grid-cols-3'} gap-2 ${isLandscape ? 'max-h-32' : 'max-h-40'} overflow-y-auto p-2.5 rounded-2xl quran-raised-card custom-scrollbar border-0`} style={{ border: 'none' }} dir={dir}>
+                            <div className={`grid ${isLandscape ? 'grid-cols-4 sm:grid-cols-5 md:grid-cols-6' : 'grid-cols-2 sm:grid-cols-3'} gap-2.5 ${isLandscape ? (isFromHomeScreenSettings ? 'max-h-48' : 'max-h-36') : (isFromHomeScreenSettings ? 'max-h-64 sm:max-h-72' : 'max-h-44')} overflow-y-auto p-3 rounded-2xl app-page-card quran-raised-card custom-scrollbar border-0`} style={{ backgroundColor: containerSurfaceBg, border: 'none' }} dir={dir}>
                                 {Array.from({length: 30}, (_, i) => i + 1).map(juzNum => {
                                     const isDownloaded = downloadedJuzs.includes(juzNum.toString());
                                     const isSelected = selectedJuzs.includes(juzNum.toString());
@@ -872,10 +969,10 @@ export const QuranDownloadModal: React.FC<DownloadModalProps> = ({
                                                         : `تم تعديل الجزء ${juzNum} ليشمل ${availableInThisJuz.length} سورة متوفرة فقط لهذا القارئ`);
                                                 }
                                             }}
-                                            className={`text-[10px] sm:text-xs p-2.5 rounded-xl transition-all font-bold flex flex-col items-center justify-center gap-0.5 cursor-pointer ${isSelected ? 'quran-raised-btn-selected shadow-md' : (isUnavailable ? 'opacity-40 cursor-not-allowed quran-raised-card' : 'quran-raised-btn')}`}
+                                            className={`text-[10px] sm:text-xs p-2.5 rounded-2xl transition-all font-bold flex flex-col items-center justify-center gap-0.5 cursor-pointer app-page-card ${isSelected ? 'quran-raised-btn quran-raised-btn-selected' : (isUnavailable ? 'opacity-40 cursor-not-allowed quran-raised-card' : 'quran-raised-btn')}`}
                                             style={{
-                                                backgroundColor: isSelected ? 'var(--qr-accent)' : (isDownloaded ? 'color-mix(in srgb, var(--qr-accent) 20%, transparent)' : undefined),
-                                                color: isSelected ? 'var(--qr-accent-text, #fff)' : (isDownloaded ? 'var(--qr-accent)' : theme.textColor),
+                                                backgroundColor: isSelected ? 'var(--qr-accent)' : (isDownloaded ? `color-mix(in srgb, var(--qr-accent) 18%, ${cardSurfaceBg})` : cardSurfaceBg),
+                                                color: isSelected ? 'var(--qr-accent-text, #fff)' : (isDownloaded ? fgAccent : cardTextColor),
                                                 border: 'none'
                                             }}
                                         >
@@ -888,7 +985,7 @@ export const QuranDownloadModal: React.FC<DownloadModalProps> = ({
                                                     {language === 'en' ? 'Unavailable' : 'غير متوفر'}
                                                 </span>
                                             ) : isPartialJuz ? (
-                                                <span className="text-[9px] text-amber-500 dark:text-amber-400 font-normal">
+                                                <span className={`text-[9px] ${isDeepBlack ? 'text-white/80' : 'text-amber-500 dark:text-amber-400'} font-normal`}>
                                                     {language === 'en' ? `(${formatListenNumber(availableInThisJuz.length, language)} available)` : `(${formatListenNumber(availableInThisJuz.length, language)} سورة متوفرة)`}
                                                 </span>
                                             ) : null}
@@ -907,22 +1004,22 @@ export const QuranDownloadModal: React.FC<DownloadModalProps> = ({
                                         ...selectedSurahs, 
                                         ...(mode === 'surah'
                                             ? selectedJuzs.flatMap(j => getSurahsForJuz(parseInt(j)).filter(s => availableSurahNumbers.includes(s)).map(String))
-                                            : selectedJuzs.flatMap(j => getAyahsForJuz(parseInt(j), quranData).map(a => a.surah.toString())))
+                                            : selectedJuzs.flatMap(j => getAyahsForJuz(parseInt(j), { surahs: baseSurahsList }).map(a => a.surah.toString())))
                                     ];
                                     if (allSelection.length === 0) return false;
                                     return allSelection.every(s => downloadedSurahs.includes(s));
                                 })()} 
-                                className={`w-full py-3.5 rounded-xl shadow-lg font-bold text-sm cursor-pointer border-0 ${(!selectedReader || (selectedSurahs.length === 0 && selectedJuzs.length === 0) || (() => {
+                                className={`w-full py-3.5 rounded-2xl shadow-lg font-bold text-sm cursor-pointer border-0 app-page-card ${(!selectedReader || (selectedSurahs.length === 0 && selectedJuzs.length === 0) || (() => {
                                     if (selectedSurahs.includes('all')) return isAllSurahsDownloaded;
                                     const allSelection = [
                                         ...selectedSurahs, 
                                         ...(mode === 'surah'
                                             ? selectedJuzs.flatMap(j => getSurahsForJuz(parseInt(j)).filter(s => availableSurahNumbers.includes(s)).map(String))
-                                            : selectedJuzs.flatMap(j => getAyahsForJuz(parseInt(j), quranData).map(a => a.surah.toString())))
+                                            : selectedJuzs.flatMap(j => getAyahsForJuz(parseInt(j), { surahs: baseSurahsList }).map(a => a.surah.toString())))
                                     ];
                                     if (allSelection.length === 0) return false;
                                     return allSelection.every(s => downloadedSurahs.includes(s));
-                                })()) ? 'opacity-50 cursor-not-allowed grayscale quran-raised-card' : 'quran-raised-btn-selected'}`}
+                                })()) ? 'opacity-50 cursor-not-allowed grayscale quran-raised-card' : 'quran-raised-btn quran-raised-btn-selected'}`}
                                 style={{
                                     backgroundColor: 'var(--qr-accent)',
                                     color: 'var(--qr-accent-text, #fff)',
@@ -938,14 +1035,14 @@ export const QuranDownloadModal: React.FC<DownloadModalProps> = ({
                                         ...selectedSurahs, 
                                         ...(mode === 'surah'
                                             ? selectedJuzs.flatMap(j => getSurahsForJuz(parseInt(j)).filter(s => availableSurahNumbers.includes(s)).map(String))
-                                            : selectedJuzs.flatMap(j => getAyahsForJuz(parseInt(j), quranData).map(a => a.surah.toString())))
+                                            : selectedJuzs.flatMap(j => getAyahsForJuz(parseInt(j), { surahs: baseSurahsList }).map(a => a.surah.toString())))
                                     ];
                                     if (allSelection.length > 0 && allSelection.every(s => downloadedSurahs.includes(s))) return dldText;
                                     return dlText;
                                 })()}
                             </button>
                         ) : (
-                            <div className="mt-2 p-3.5 rounded-2xl quran-raised-card border-0" style={{ border: 'none' }}>
+                            <div className="mt-2 p-3.5 rounded-2xl app-page-card quran-raised-card border-0" style={{ backgroundColor: cardSurfaceBg, border: 'none' }}>
                                 <div className="flex items-center justify-between text-xs font-bold mb-2" dir={dir}>
                                     <span className={`truncate ${isRTL ? 'text-right' : 'text-left'}`}>{status}</span>
                                     <span className="shrink-0">{formatListenNumber(Math.round(progress), language)}%</span>
@@ -956,29 +1053,28 @@ export const QuranDownloadModal: React.FC<DownloadModalProps> = ({
                                 <div className="text-[10px] opacity-70 mt-2 text-center">
                                     {language === 'en' ? 'Downloading available Surahs for this reciter only' : 'جاري تحميل السور المتوفرة للقارئ فقط'}
                                 </div>
-                                <button onClick={stopDownload} className="w-full mt-3 quran-raised-btn bg-red-500 hover:bg-red-600 text-white py-2.5 rounded-xl shadow font-bold text-xs transition-colors cursor-pointer border-0" style={{ border: 'none' }}>
+                                <button onClick={stopDownload} className="w-full mt-3 app-page-card quran-raised-btn bg-red-500 hover:bg-red-600 text-white py-2.5 rounded-2xl shadow font-bold text-xs transition-colors cursor-pointer border-0" style={{ border: 'none' }}>
                                     {language === 'en' ? 'Stop Download' : 'إيقاف التحميل'}
                                 </button>
                             </div>
                         )}
                     </div>
                 </div>
-                <div className="p-3.5 text-center flex-none">
-                    <button 
-                        onClick={onClose} 
-                        style={{ backgroundColor: 'var(--qr-accent)', color: 'var(--qr-accent-text, #fff)', border: 'none' }}
-                        className="quran-raised-btn-selected font-bold py-2.5 px-8 rounded-xl shadow-lg text-sm w-full cursor-pointer border-0"
-                    >
-                        {language === 'en' ? 'Close' : 'إغلاق'}
-                    </button>
-                </div>
             </div>
         </div>
     );
 };
 
-export const TafsirDownloadModal: React.FC<DownloadModalProps> = ({ onClose, quranData, showToast, isLandscape }) => {
-    const { theme, themeKey } = useTheme();
+export const TafsirDownloadModal: React.FC<DownloadModalProps> = ({ 
+    onClose, 
+    quranData, 
+    showToast, 
+    isLandscape, 
+    zIndexClass = 'z-[1200]', 
+    title,
+    isFromHomeScreenSettings = false 
+}) => {
+    const { theme, themeKey, isNightMode, homeThemeVariant } = useTheme();
     const { language, isRTL, dir } = useLanguage();
     const isEn = language === 'en';
     const [selectedTafsir, setSelectedTafsir] = useState('');
@@ -991,8 +1087,31 @@ export const TafsirDownloadModal: React.FC<DownloadModalProps> = ({ onClose, qur
     const [status, setStatus] = useState('');
     const abortControllerRef = useRef<AbortController | null>(null);
 
+    const baseSurahsList = useMemo(() => {
+        if (quranData?.surahs && quranData.surahs.length >= 114) {
+            return quranData.surahs;
+        }
+        return SURAH_LIST.map(s => ({
+            number: s.number,
+            name: s.name,
+            revelationType: SURAH_INFO[s.number]?.type === 'مكية' ? 'Meccan' : 'Medinan',
+            ayahs: new Array(SURAH_INFO[s.number]?.ayahs || 0)
+        }));
+    }, [quranData]);
+
+    const resolvedQuranData = useMemo(() => ({ surahs: baseSurahsList }), [baseSurahsList]);
+
+    useEffect(() => {
+        const interceptor = () => {
+            onClose();
+            return true;
+        };
+        const unregister = registerBackInterceptor(interceptor);
+        return unregister;
+    }, [onClose]);
+
     const checkDownloads = useCallback(async () => {
-        if (!selectedTafsir || !quranData) {
+        if (!selectedTafsir) {
             setDownloadedSurahs([]);
             setDownloadedJuzs([]);
             return;
@@ -1002,7 +1121,7 @@ export const TafsirDownloadModal: React.FC<DownloadModalProps> = ({ onClose, qur
             const downloadedSet = new Set(downloadedFiles.map((f: any) => f.fileName));
 
             const dSurahs: string[] = [];
-            for (const surah of quranData.surahs) {
+            for (const surah of baseSurahsList) {
                 if (downloadedSet.has(`${selectedTafsir}_${surah.number}_tafsir.json`)) {
                     dSurahs.push(surah.number.toString());
                 }
@@ -1010,7 +1129,7 @@ export const TafsirDownloadModal: React.FC<DownloadModalProps> = ({ onClose, qur
 
             const dJuzs: string[] = [];
             for (let j = 1; j <= 30; j++) {
-                const ayahs = getAyahsForJuz(j, quranData);
+                const ayahs = getAyahsForJuz(j, resolvedQuranData);
                 const surahsInJuz = new Set(ayahs.map(a => a.surah));
                 let allSurahsDownloaded = true;
                 for (const s of surahsInJuz) {
@@ -1083,7 +1202,7 @@ export const TafsirDownloadModal: React.FC<DownloadModalProps> = ({ onClose, qur
             } else {
                 selectedSurahs.forEach(s => surahsToDownload.add(parseInt(s)));
                 selectedJuzs.forEach(j => {
-                    const ayahs = getAyahsForJuz(parseInt(j), quranData);
+                    const ayahs = getAyahsForJuz(parseInt(j), resolvedQuranData);
                     ayahs.forEach(a => surahsToDownload.add(a.surah));
                 });
             }
@@ -1190,40 +1309,118 @@ export const TafsirDownloadModal: React.FC<DownloadModalProps> = ({ onClose, qur
         return () => window.removeEventListener('voice-command', handleVoiceCommand);
     }, [selectedTafsir, selectedSurahs, selectedJuzs, isDownloading, toggleSurah, toggleJuz, downloadSelected, stopDownload, onClose, isEn]);
 
-    const isDark = !theme.bgColor || 
-        ['#191D3A', '#0C0A09', '#000000', '#4C1D95', '#7C2D12', '#1E40AF', '#1E1B4B', '#1C1917', '#0B0F19', '#3E2723', '#450A0A', '#064E3B', '#0F766E', '#155E75', '#581C87', '#0F172A', '#2E1065', '#0B0F19', '#022C22'].includes(theme.bgColor.toUpperCase());
+    const isDark = isNightMode || Boolean(theme.isDark) || themeKey === 'deep_black' || !theme.bgColor || 
+        ['#191D3A', '#0C0A09', '#000000', '#4C1D95', '#7C2D12', '#1E40AF', '#1E1B4B', '#1C1917', '#0B0F19', '#3E2723', '#450A0A', '#064E3B', '#0F766E', '#155E75', '#581C87', '#0F172A', '#2E1065', '#022C22'].includes(theme.bgColor.toUpperCase());
+
+    const isDeepBlack = isNightMode || themeKey === 'deep_black' || (theme.bg || theme.bgColor || '').toLowerCase() === '#000000';
+    const fgAccent = isDeepBlack ? '#ffffff' : 'var(--qr-accent)';
+
+    const resolvedBg = isDeepBlack
+        ? '#000000'
+        : (theme.bg || (theme.bgColor && theme.bgColor.toLowerCase() !== '#ffffff'
+            ? theme.bgColor
+            : (homeThemeVariant === 'sky'
+                ? '#F0F9FF'
+                : (homeThemeVariant === 'emerald'
+                    ? '#F0FDF4'
+                    : (homeThemeVariant === 'burgundy'
+                        ? '#FFF1F2'
+                        : (isDark ? '#0f172a' : '#FEF9C3'))))));
+
+    let resolvedAccent = isDeepBlack
+        ? '#ffffff'
+        : (isFromHomeScreenSettings
+            ? (homeThemeVariant === 'sky'
+                ? '#0284c7'
+                : homeThemeVariant === 'emerald'
+                    ? '#047857'
+                    : homeThemeVariant === 'burgundy'
+                        ? '#881337'
+                        : (theme.accent || theme.palette?.[0] || '#ca8a04'))
+            : (theme.accent || theme.palette?.[0] || '#ca8a04'));
+    if (resolvedAccent.toLowerCase() === '#000000' && isDark) {
+        resolvedAccent = '#ffffff';
+    }
+    const resolvedAccentText = isDeepBlack ? '#000000' : (theme.accentText === '#000000' && resolvedAccent !== '#ffffff' ? '#ffffff' : (theme.accentText || '#ffffff'));
+
+    const cardSurfaceBg = isDark ? '#1a1a22' : '#ffffff';
+    const cardTextColor = isDark ? '#ffffff' : '#0f172a';
+    const containerSurfaceBg = isDark ? '#111116' : 'rgba(255, 255, 255, 0.55)';
 
     const modalStyle = {
-        '--qr-bg': theme.bg || theme.bgColor || '#ffffff',
-        '--qr-text': theme.text || theme.textColor || '#000000',
-        '--qr-card-bg': theme.cardBg || (isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.5)'),
-        '--qr-card-text': theme.cardText || theme.text || theme.textColor || '#000000',
-        '--qr-card-border': theme.cardBorder || (isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.07)'),
-        '--qr-modal-bg': theme.modalBg || theme.bg || theme.bgColor || '#ffffff',
-        '--qr-modal-text': theme.modalText || theme.text || theme.textColor || '#000000',
-        '--qr-header-bg': theme.headerBg || theme.bg || '#ffffff',
-        '--qr-header-text': theme.headerText || theme.text || '#000000',
+        '--qr-bg': resolvedBg,
+        '--qr-text': isDark ? '#ffffff' : (theme.text || theme.textColor || '#000000'),
+        '--qr-card-bg': cardSurfaceBg,
+        '--qr-card-text': cardTextColor,
+        '--qr-card-border': isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.07)',
+        '--qr-modal-bg': resolvedBg,
+        '--qr-modal-text': isDark ? '#ffffff' : (theme.modalText || theme.text || theme.textColor || '#000000'),
+        '--qr-header-bg': theme.headerBg || resolvedBg,
+        '--qr-header-text': isDark ? '#ffffff' : (theme.headerText || theme.text || '#000000'),
+        '--qr-accent': resolvedAccent,
+        '--qr-accent-text': resolvedAccentText,
      } as React.CSSProperties;
 
     return (
-        <div style={modalStyle} className={`fixed inset-0 bg-black/40 backdrop-blur-sm z-[1200] flex items-center justify-center ${isLandscape ? 'p-0' : 'p-4'} animate-fadeIn`} onClick={onClose}>
-            <div dir={dir} className={`modal-skinned w-full ${isLandscape ? 'max-w-4xl h-full rounded-none max-h-screen' : 'max-w-md rounded-2xl max-h-[90vh]'} shadow-2xl overflow-hidden flex flex-col border-0`} onClick={e => e.stopPropagation()} style={{ backgroundColor: 'var(--qr-bg)', color: 'var(--qr-text)', border: 'none', outline: 'none' }}>
-                <div className="p-4 space-y-4 overflow-y-auto text-center flex-1">
+        <div
+            style={{ ...modalStyle, backgroundColor: 'var(--qr-bg)', color: 'var(--qr-text)' }}
+            dir={dir}
+            className={`fixed inset-0 ${zIndexClass} flex flex-col font-cairo select-none overflow-hidden animate-fadeIn settings-3d-adia-scope ${isDark ? 'settings-3d-dark' : ''}`}
+        >
+            {/* Standard Page Header */}
+            <header className="app-top-bar settings-top-bar shrink-0 w-full" dir={dir}>
+                <div className="app-top-bar__inner">
+                    <div className="relative flex items-center justify-center w-full min-h-[44px]">
+                        <div className={`absolute ${isEn ? 'left-0' : 'right-0'} flex items-center`}>
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                title={isEn ? 'Go Back' : 'رجوع للخلف'}
+                                aria-label={isEn ? 'Go Back' : 'رجوع للخلف'}
+                            >
+                                <i className={`fa-solid ${isEn ? 'fa-arrow-left' : 'fa-arrow-right'} text-xl`}></i>
+                            </button>
+                        </div>
+
+                        <div className="text-center px-12 min-w-0">
+                            <h1 className="app-top-bar__title text-lg sm:text-xl font-kufi truncate">
+                                {title || (isEn ? 'Download Tafseers' : 'تحميل التفاسير')}
+                            </h1>
+                        </div>
+
+                        <div className={`absolute ${isEn ? 'right-0' : 'left-0'} flex items-center gap-1`}>
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
+                                title={isEn ? 'Close' : 'إغلاق'}
+                                aria-label={isEn ? 'Close' : 'إغلاق'}
+                            >
+                                <i className="fa-solid fa-house text-xl"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <div className="flex-1 min-h-0 w-full overflow-y-auto app-scroll-safe">
+                <div className="p-4 space-y-4 text-center max-w-2xl mx-auto w-full">
                     <div className="space-y-4">
                         <div className={isRTL ? "text-right" : "text-left"}>
-                            <label className="text-xs font-bold opacity-70 block mb-2">{isEn ? 'Select Tafseer' : 'اختر التفسير'}</label>
-                            <div className={`grid ${isLandscape ? 'grid-cols-4 sm:grid-cols-5 md:grid-cols-6' : 'grid-cols-2 sm:grid-cols-3'} gap-2 ${isLandscape ? 'max-h-40' : 'max-h-60'} overflow-y-auto p-2.5 rounded-2xl quran-raised-card custom-scrollbar border-0`} style={{ border: 'none' }} dir={dir}>
+                            <label className="text-xs font-bold opacity-75 block mb-2">{isEn ? 'Select Tafseer' : 'اختر التفسير'}</label>
+                            <div className={`grid ${isLandscape ? 'grid-cols-4 sm:grid-cols-5 md:grid-cols-6' : 'grid-cols-2 sm:grid-cols-3'} gap-2.5 ${isLandscape ? (isFromHomeScreenSettings ? 'max-h-56' : 'max-h-44') : (isFromHomeScreenSettings ? 'max-h-80 sm:max-h-96' : 'max-h-60')} overflow-y-auto p-3 rounded-2xl app-page-card quran-raised-card custom-scrollbar border-0`} style={{ backgroundColor: containerSurfaceBg, border: 'none' }} dir={dir}>
                                 {TAFSEERS.filter(t => t.id !== 'ar.jalalayn').map(t => {
                                     const isSelected = selectedTafsir === t.id;
                                     const tafseerName = getTafseerDisplayName(t.id, isEn ? 'en' : 'ar');
                                     return (
                                         <button 
-                                            key={t.id}
+                                            key={t.id} 
                                             onClick={() => setSelectedTafsir(t.id)}
-                                            className={`text-[10px] sm:text-xs p-2.5 rounded-xl transition-all font-bold cursor-pointer ${isSelected ? 'quran-raised-btn-selected shadow-md' : 'quran-raised-btn'}`}
+                                            className={`text-[10px] sm:text-xs p-2.5 rounded-2xl transition-all font-bold cursor-pointer app-page-card ${isSelected ? 'quran-raised-btn quran-raised-btn-selected' : 'quran-raised-btn'}`}
                                             style={{
-                                                backgroundColor: isSelected ? 'var(--qr-accent)' : undefined,
-                                                color: isSelected ? 'var(--qr-accent-text, #fff)' : theme.textColor,
+                                                backgroundColor: isSelected ? 'var(--qr-accent)' : cardSurfaceBg,
+                                                color: isSelected ? 'var(--qr-accent-text, #fff)' : cardTextColor,
                                                 border: 'none'
                                             }}
                                             title={tafseerName}
@@ -1236,32 +1433,32 @@ export const TafsirDownloadModal: React.FC<DownloadModalProps> = ({ onClose, qur
                         </div>
 
                         <div className={isRTL ? "text-right" : "text-left"}>
-                            <label className="text-xs font-bold opacity-70 block mb-2">{isEn ? 'Select Surahs (Multiple selection allowed)' : 'اختر السور (يمكنك اختيار أكثر من سورة)'}</label>
-                            <div className={`grid ${isLandscape ? 'grid-cols-4 sm:grid-cols-5 md:grid-cols-6' : 'grid-cols-2 sm:grid-cols-3'} gap-2 ${isLandscape ? 'max-h-32' : 'max-h-40'} overflow-y-auto p-2.5 rounded-2xl quran-raised-card custom-scrollbar border-0`} style={{ border: 'none' }} dir={dir}>
+                            <label className="text-xs font-bold opacity-75 block mb-2">{isEn ? 'Select Surahs (Multiple selection allowed)' : 'اختر السور (يمكنك اختيار أكثر من سورة)'}</label>
+                            <div className={`grid ${isLandscape ? 'grid-cols-4 sm:grid-cols-5 md:grid-cols-6' : 'grid-cols-2 sm:grid-cols-3'} gap-2.5 ${isLandscape ? (isFromHomeScreenSettings ? 'max-h-48' : 'max-h-36') : (isFromHomeScreenSettings ? 'max-h-64 sm:max-h-72' : 'max-h-44')} overflow-y-auto p-3 rounded-2xl app-page-card quran-raised-card custom-scrollbar border-0`} style={{ backgroundColor: containerSurfaceBg, border: 'none' }} dir={dir}>
                                 <button 
                                     onClick={() => toggleSurah('all')}
-                                    className={`text-[10px] sm:text-xs p-2.5 rounded-xl transition-all font-bold flex items-center justify-center gap-1 cursor-pointer ${selectedSurahs.includes('all') ? 'quran-raised-btn-selected shadow-md' : 'quran-raised-btn'}`}
+                                    className={`text-[10px] sm:text-xs p-2.5 rounded-2xl transition-all font-bold flex items-center justify-center gap-1 cursor-pointer app-page-card ${selectedSurahs.includes('all') ? 'quran-raised-btn quran-raised-btn-selected' : 'quran-raised-btn'}`}
                                     style={{
-                                        backgroundColor: selectedSurahs.includes('all') ? 'var(--qr-accent)' : (downloadedSurahs.length === 114 ? 'color-mix(in srgb, var(--qr-accent) 20%, transparent)' : undefined),
-                                        color: selectedSurahs.includes('all') ? 'var(--qr-accent-text, #fff)' : (downloadedSurahs.length === 114 ? 'var(--qr-accent)' : theme.textColor),
+                                        backgroundColor: selectedSurahs.includes('all') ? 'var(--qr-accent)' : (downloadedSurahs.length === 114 ? `color-mix(in srgb, var(--qr-accent) 18%, ${cardSurfaceBg})` : cardSurfaceBg),
+                                        color: selectedSurahs.includes('all') ? 'var(--qr-accent-text, #fff)' : (downloadedSurahs.length === 114 ? fgAccent : cardTextColor),
                                         border: 'none'
                                     }}
                                 >
                                     {downloadedSurahs.length === 114 && <i className="fa-solid fa-check text-[10px] quran-3d-icon"></i>}
                                     <span>{isEn ? 'Select All' : 'تحديد الكل'}</span>
                                 </button>
-                                {quranData?.surahs.map((s: any) => {
+                                {baseSurahsList.map((s: any) => {
                                     const isDownloaded = downloadedSurahs.includes(s.number.toString());
                                     const isSelected = selectedSurahs.includes(s.number.toString()) || selectedSurahs.includes('all');
                                     const surahNameDisplay = isEn ? getSurahDisplayName(s.number, 'en') : s.name.replace('سورة', '').trim();
                                     return (
                                         <button 
-                                            key={s.number}
+                                            key={s.number} 
                                             onClick={() => toggleSurah(s.number.toString())}
-                                            className={`text-[10px] sm:text-xs p-2.5 rounded-xl transition-all font-bold flex items-center justify-center gap-1 cursor-pointer truncate ${isSelected ? 'quran-raised-btn-selected shadow-md' : 'quran-raised-btn'}`}
+                                            className={`text-[10px] sm:text-xs p-2.5 rounded-2xl transition-all font-bold flex items-center justify-center gap-1 cursor-pointer truncate app-page-card ${isSelected ? 'quran-raised-btn quran-raised-btn-selected' : 'quran-raised-btn'}`}
                                             style={{
-                                                backgroundColor: isSelected ? 'var(--qr-accent)' : (isDownloaded ? 'color-mix(in srgb, var(--qr-accent) 20%, transparent)' : undefined),
-                                                color: isSelected ? 'var(--qr-accent-text, #fff)' : (isDownloaded ? 'var(--qr-accent)' : theme.textColor),
+                                                backgroundColor: isSelected ? 'var(--qr-accent)' : (isDownloaded ? `color-mix(in srgb, var(--qr-accent) 18%, ${cardSurfaceBg})` : cardSurfaceBg),
+                                                color: isSelected ? 'var(--qr-accent-text, #fff)' : (isDownloaded ? fgAccent : cardTextColor),
                                                 border: 'none'
                                             }}
                                             title={surahNameDisplay}
@@ -1275,19 +1472,19 @@ export const TafsirDownloadModal: React.FC<DownloadModalProps> = ({ onClose, qur
                         </div>
 
                         <div className={isRTL ? "text-right" : "text-left"}>
-                            <label className="text-xs font-bold opacity-70 block mb-2">{isEn ? 'Select Juzs (Multiple selection allowed)' : 'اختر الأجزاء (يمكنك اختيار أكثر من جزء)'}</label>
-                            <div className={`grid ${isLandscape ? 'grid-cols-4 sm:grid-cols-5 md:grid-cols-6' : 'grid-cols-2 sm:grid-cols-3'} gap-2 ${isLandscape ? 'max-h-32' : 'max-h-40'} overflow-y-auto p-2.5 rounded-2xl quran-raised-card custom-scrollbar border-0`} style={{ border: 'none' }} dir={dir}>
+                            <label className="text-xs font-bold opacity-75 block mb-2">{isEn ? 'Select Juzs (Multiple selection allowed)' : 'اختر الأجزاء (يمكنك اختيار أكثر من جزء)'}</label>
+                            <div className={`grid ${isLandscape ? 'grid-cols-4 sm:grid-cols-5 md:grid-cols-6' : 'grid-cols-2 sm:grid-cols-3'} gap-2.5 ${isLandscape ? (isFromHomeScreenSettings ? 'max-h-48' : 'max-h-36') : (isFromHomeScreenSettings ? 'max-h-64 sm:max-h-72' : 'max-h-44')} overflow-y-auto p-3 rounded-2xl app-page-card quran-raised-card custom-scrollbar border-0`} style={{ backgroundColor: containerSurfaceBg, border: 'none' }} dir={dir}>
                                 {Array.from({length: 30}, (_, i) => i + 1).map(juzNum => {
                                     const isDownloaded = downloadedJuzs.includes(juzNum.toString());
                                     const isSelected = selectedJuzs.includes(juzNum.toString());
                                     return (
                                         <button 
-                                            key={juzNum}
+                                            key={juzNum} 
                                             onClick={() => toggleJuz(juzNum.toString())}
-                                            className={`text-[10px] sm:text-xs p-2.5 rounded-xl transition-all font-bold flex items-center justify-center gap-1 cursor-pointer ${isSelected ? 'quran-raised-btn-selected shadow-md' : 'quran-raised-btn'}`}
+                                            className={`text-[10px] sm:text-xs p-2.5 rounded-2xl transition-all font-bold flex items-center justify-center gap-1 cursor-pointer app-page-card ${isSelected ? 'quran-raised-btn quran-raised-btn-selected' : 'quran-raised-btn'}`}
                                             style={{
-                                                backgroundColor: isSelected ? 'var(--qr-accent)' : (isDownloaded ? 'color-mix(in srgb, var(--qr-accent) 20%, transparent)' : undefined),
-                                                color: isSelected ? 'var(--qr-accent-text, #fff)' : (isDownloaded ? 'var(--qr-accent)' : theme.textColor),
+                                                backgroundColor: isSelected ? 'var(--qr-accent)' : (isDownloaded ? `color-mix(in srgb, var(--qr-accent) 18%, ${cardSurfaceBg})` : cardSurfaceBg),
+                                                color: isSelected ? 'var(--qr-accent-text, #fff)' : (isDownloaded ? fgAccent : cardTextColor),
                                                 border: 'none'
                                             }}
                                         >
@@ -1304,18 +1501,18 @@ export const TafsirDownloadModal: React.FC<DownloadModalProps> = ({ onClose, qur
                                 onClick={downloadSelected} 
                                 disabled={!selectedTafsir || (selectedSurahs.length === 0 && selectedJuzs.length === 0) || (() => {
                                     if (selectedSurahs.includes('all')) return downloadedSurahs.length === 114;
-                                    const surahsFromJuz = selectedJuzs.flatMap(j => Array.from(new Set(getAyahsForJuz(parseInt(j), quranData).map(a => a.surah.toString()))));
+                                    const surahsFromJuz = selectedJuzs.flatMap(j => Array.from(new Set(getAyahsForJuz(parseInt(j), resolvedQuranData).map(a => a.surah.toString()))));
                                     const allSelection = Array.from(new Set([...selectedSurahs.filter(s => s !== 'all'), ...surahsFromJuz]));
                                     if (allSelection.length === 0) return false;
                                     return allSelection.every(s => downloadedSurahs.includes(s));
                                 })()} 
-                                className={`w-full py-3.5 rounded-xl shadow-lg font-bold text-sm cursor-pointer border-0 ${(!selectedTafsir || (selectedSurahs.length === 0 && selectedJuzs.length === 0) || (() => {
+                                className={`w-full py-3.5 rounded-2xl shadow-lg font-bold text-sm cursor-pointer border-0 app-page-card ${(!selectedTafsir || (selectedSurahs.length === 0 && selectedJuzs.length === 0) || (() => {
                                     if (selectedSurahs.includes('all')) return downloadedSurahs.length === 114;
-                                    const surahsFromJuz = selectedJuzs.flatMap(j => Array.from(new Set(getAyahsForJuz(parseInt(j), quranData).map(a => a.surah.toString()))));
+                                    const surahsFromJuz = selectedJuzs.flatMap(j => Array.from(new Set(getAyahsForJuz(parseInt(j), resolvedQuranData).map(a => a.surah.toString()))));
                                     const allSelection = Array.from(new Set([...selectedSurahs.filter(s => s !== 'all'), ...surahsFromJuz]));
                                     if (allSelection.length === 0) return false;
                                     return allSelection.every(s => downloadedSurahs.includes(s));
-                                })()) ? 'opacity-50 cursor-not-allowed grayscale quran-raised-card' : 'quran-raised-btn-selected'}`}
+                                })()) ? 'opacity-50 cursor-not-allowed grayscale quran-raised-card' : 'quran-raised-btn quran-raised-btn-selected'}`}
                                 style={{
                                     backgroundColor: 'var(--qr-accent)',
                                     color: 'var(--qr-accent-text, #fff)',
@@ -1327,33 +1524,24 @@ export const TafsirDownloadModal: React.FC<DownloadModalProps> = ({ onClose, qur
                                     const dldText = isEn ? 'Downloaded' : 'محمل';
                                     if (!selectedTafsir || (selectedSurahs.length === 0 && selectedJuzs.length === 0)) return dlText;
                                     if (selectedSurahs.includes('all')) return downloadedSurahs.length === 114 ? dldText : dlText;
-                                    const surahsFromJuz = selectedJuzs.flatMap(j => Array.from(new Set(getAyahsForJuz(parseInt(j), quranData).map(a => a.surah.toString()))));
+                                    const surahsFromJuz = selectedJuzs.flatMap(j => Array.from(new Set(getAyahsForJuz(parseInt(j), resolvedQuranData).map(a => a.surah.toString()))));
                                     const allSelection = Array.from(new Set([...selectedSurahs.filter(s => s !== 'all'), ...surahsFromJuz]));
                                     if (allSelection.length > 0 && allSelection.every(s => downloadedSurahs.includes(s))) return dldText;
                                     return dlText;
                                 })()}
                             </button>
                         ) : (
-                            <div className="mt-2 p-3.5 rounded-2xl quran-raised-card border-0" style={{ border: 'none' }}>
+                            <div className="mt-2 p-3.5 rounded-2xl app-page-card quran-raised-card border-0" style={{ backgroundColor: cardSurfaceBg, border: 'none' }}>
                                 <div className="text-xs font-bold mb-2">{status}</div>
                                 <div className="w-full bg-black/10 dark:bg-white/10 rounded-full h-2.5 overflow-hidden">
                                     <div className="h-full rounded-full transition-all duration-300" style={{ width: `${progress}%`, backgroundColor: 'var(--qr-accent)' }}></div>
                                 </div>
-                                <button onClick={stopDownload} className="w-full mt-3 quran-raised-btn bg-red-500 hover:bg-red-600 text-white py-2.5 rounded-xl shadow font-bold text-xs cursor-pointer border-0" style={{ border: 'none' }}>
+                                <button onClick={stopDownload} className="w-full mt-3 app-page-card quran-raised-btn bg-red-500 hover:bg-red-600 text-white py-2.5 rounded-2xl shadow font-bold text-xs cursor-pointer border-0" style={{ border: 'none' }}>
                                     {isEn ? 'Stop Download' : 'إيقاف التحميل'}
                                 </button>
                             </div>
                         )}
                     </div>
-                </div>
-                <div className="p-3.5 text-center flex-none">
-                    <button 
-                        onClick={onClose} 
-                        style={{ backgroundColor: 'var(--qr-accent)', color: 'var(--qr-accent-text, #fff)', border: 'none' }}
-                        className="quran-raised-btn-selected font-bold py-2.5 px-8 rounded-xl shadow-lg text-sm w-full cursor-pointer border-0"
-                    >
-                        {isEn ? 'Close' : 'إغلاق'}
-                    </button>
                 </div>
             </div>
         </div>

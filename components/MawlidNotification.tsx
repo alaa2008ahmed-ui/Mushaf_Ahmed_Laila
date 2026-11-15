@@ -266,7 +266,7 @@ const MawlidNotification: React.FC = () => {
                         animate={{ scale: 1, opacity: 1, y: 0 }}
                         exit={{ scale: 0.88, opacity: 0, y: 24 }}
                         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                        className="relative w-full max-w-md overflow-hidden rounded-3xl shadow-2xl border"
+                        className="relative w-full max-w-md max-h-[90dvh] overflow-y-auto overflow-x-hidden rounded-3xl shadow-2xl border"
                         style={{ 
                             backgroundColor: isBlackTheme ? '#0f0f11' : (theme.cardBg || '#ffffff'), 
                             color: isBlackTheme ? '#ffffff' : theme.textColor,

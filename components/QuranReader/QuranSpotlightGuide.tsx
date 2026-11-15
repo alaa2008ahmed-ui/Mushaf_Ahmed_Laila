@@ -35,12 +35,8 @@ interface QuranSpotlightGuideProps {
   onStepChange?: (stepIndex: number, step: QuranGuideStep) => void;
 }
 
-export const getQuranGuideSeen = (guideKey: string): boolean => {
-  try {
-    return localStorage.getItem(`quran_guide_seen_${guideKey}`) === 'true';
-  } catch (e) {
-    return false;
-  }
+export const getQuranGuideSeen = (_guideKey: string): boolean => {
+  return true; // Guides never open automatically on first launch; they only work when pressing the guide button
 };
 
 export const setQuranGuideSeen = (guideKey: string): void => {
@@ -202,25 +198,53 @@ export const QuranSpotlightGuide: React.FC<QuranSpotlightGuideProps> = ({
 
           if (isSingleTargetStep) {
             let chosen = visibleElements[0];
-            // If this step targets Surah Header, prioritize Surah Al-Fatihah on Page 1
-            if (step.id === 'surah_header_style') {
-              const fatihahEl = visibleElements.find(el => el.closest('#page-1'));
-              if (fatihahEl) chosen = fatihahEl;
-            } else if (step.id === 'ayah_text_touch') {
-              // Prioritize Ayah 1 of Al-Fatihah on Page 1 or the first visible verse
-              const page1Ayah = visibleElements.find(el => el.id === 'ayah-1-1') ||
-                visibleElements.find(el => el.closest('#page-1'));
-              if (page1Ayah) chosen = page1Ayah;
-            } else if (step.id === 'verse_num_bracket') {
-              // Prioritize the verse number bracket of Ayah 1 of Al-Fatihah on Page 1
-              const page1VerseNum = visibleElements.find(el => el.closest('#ayah-1-1')) ||
-                visibleElements.find(el => el.closest('#page-1'));
-              if (page1VerseNum) chosen = page1VerseNum;
+            
+            // Dynamically select the best element on the current visible page
+            const inViewport = visibleElements.filter(el => {
+              const r = el.getBoundingClientRect();
+              return r.top >= -20 && r.bottom <= window.innerHeight + 50;
+            });
+            if (inViewport.length > 0) {
+              chosen = inViewport[0];
             }
 
-            const finalRect = chosen.getBoundingClientRect();
-            if (finalRect.width > 0 && finalRect.height > 0) {
-              setTargetRect(finalRect);
+            const rawRect = chosen.getBoundingClientRect();
+            if (rawRect.width > 0 && rawRect.height > 0) {
+              // For verse number brackets, apply full child union and generous padding so the spotlight circle frames the ornamental brackets ﴿ ﴾ and verse number cleanly without clipping
+              if (step.id === 'verse_num_bracket' || chosen.classList.contains('verse-container')) {
+                let minLeft = rawRect.left;
+                let minTop = rawRect.top;
+                let maxRight = rawRect.right;
+                let maxBottom = rawRect.bottom;
+
+                // Union bounds of all rendered children (brackets and inner digits)
+                if (chosen.children && chosen.children.length > 0) {
+                  Array.from(chosen.children).forEach((child) => {
+                    const cr = child.getBoundingClientRect();
+                    if (cr.width > 0 && cr.height > 0) {
+                      if (cr.left < minLeft) minLeft = cr.left;
+                      if (cr.top < minTop) minTop = cr.top;
+                      if (cr.right > maxRight) maxRight = cr.right;
+                      if (cr.bottom > maxBottom) maxBottom = cr.bottom;
+                    }
+                  });
+                }
+
+                const boundsW = maxRight - minLeft;
+                const boundsH = maxBottom - minTop;
+                const padX = 14;
+                const padY = 10;
+                const minW = 56;
+                const minH = 46;
+
+                const w = Math.max(minW, boundsW + padX * 2);
+                const h = Math.max(minH, boundsH + padY * 2);
+                const cx = (minLeft + maxRight) / 2;
+                const cy = (minTop + maxBottom) / 2;
+                setTargetRect(new DOMRect(cx - w / 2, cy - h / 2, w, h));
+              } else {
+                setTargetRect(rawRect);
+              }
               return;
             }
           } else {
@@ -318,15 +342,12 @@ export const QuranSpotlightGuide: React.FC<QuranSpotlightGuideProps> = ({
       });
       if (visible.length > 0) {
         let toScroll = visible[0];
-        if (step.id === 'surah_header_style') {
-          const fatihahEl = visible.find(el => el.closest('#page-1'));
-          if (fatihahEl) toScroll = fatihahEl;
-        } else if (step.id === 'ayah_text_touch') {
-          const page1Ayah = visible.find(el => el.id === 'ayah-1-1') || visible.find(el => el.closest('#page-1'));
-          if (page1Ayah) toScroll = page1Ayah;
-        } else if (step.id === 'verse_num_bracket') {
-          const page1VerseNum = visible.find(el => el.closest('#ayah-1-1')) || visible.find(el => el.closest('#page-1'));
-          if (page1VerseNum) toScroll = page1VerseNum;
+        const inViewport = visible.filter(el => {
+          const r = el.getBoundingClientRect();
+          return r.top >= -20 && r.bottom <= window.innerHeight + 50;
+        });
+        if (inViewport.length > 0) {
+          toScroll = inViewport[0];
         }
         scrollToTarget(toScroll);
       }
@@ -541,7 +562,7 @@ export const QuranSpotlightGuide: React.FC<QuranSpotlightGuideProps> = ({
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.93 }}
         transition={{ type: 'spring', damping: 25, stiffness: 350 }}
-        className="fixed z-[100002] pointer-events-auto rounded-3xl p-4 sm:p-5 shadow-2xl flex flex-col bg-slate-900/98 text-white border-2 backdrop-blur-xl"
+        className="fixed z-[100002] pointer-events-auto rounded-3xl p-4 sm:p-5 shadow-2xl flex flex-col bg-slate-900/98 text-white border-2 backdrop-blur-xl overflow-hidden box-border max-w-[calc(100vw-28px)]"
         style={{
           ...cardPositionStyle,
           borderColor: currentAccent,
@@ -575,78 +596,114 @@ export const QuranSpotlightGuide: React.FC<QuranSpotlightGuideProps> = ({
           }}
         />
 
-        {/* Header: Step Icon, Badge & Close Button */}
-        <div className="flex items-center justify-between gap-2 mb-2.5">
-          <div className="flex items-center gap-2">
-            <div
-              className="w-8 h-8 rounded-2xl flex items-center justify-center font-bold shadow-md shrink-0"
-              style={{
-                backgroundColor: currentAccent,
-                color: '#ffffff'
-              }}
-            >
-              {renderStepIcon(step.iconType, currentAccent)}
+        {/* Scrollable Content Container */}
+        <div className="flex-1 min-h-0 overflow-y-auto hide-scrollbar mb-2 pe-0.5">
+          {/* Header: Step Icon, Badge & Close Button */}
+          <div className="flex items-center justify-between gap-2 mb-2.5">
+            <div className="flex items-center gap-2 min-w-0">
+              <div
+                className="w-8 h-8 rounded-2xl flex items-center justify-center font-bold shadow-md shrink-0"
+                style={{
+                  backgroundColor: currentAccent,
+                  color: '#ffffff'
+                }}
+              >
+                {renderStepIcon(step.iconType, currentAccent)}
+              </div>
+
+              <span
+                className="text-[11px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider truncate max-w-[180px]"
+                style={{
+                  backgroundColor: `${currentAccent}25`,
+                  color: currentAccent,
+                  border: `1px solid ${currentAccent}50`
+                }}
+              >
+                {isEn
+                  ? (step.badgeEn || `Step ${currentStepIndex + 1} of ${steps.length}`)
+                  : (step.badgeAr || `خطوة ${currentStepIndex + 1} من ${steps.length}`)}
+              </span>
             </div>
 
-            <span
-              className="text-[11px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider"
-              style={{
-                backgroundColor: `${currentAccent}25`,
-                color: currentAccent,
-                border: `1px solid ${currentAccent}50`
-              }}
+            <button
+              type="button"
+              onClick={handleSkip}
+              className="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 active:scale-90 transition-all cursor-pointer shrink-0"
+              title={isEn ? "Skip Tour" : "تخطي الإرشاد"}
             >
-              {isEn
-                ? (step.badgeEn || `Step ${currentStepIndex + 1} of ${steps.length}`)
-                : (step.badgeAr || `خطوة ${currentStepIndex + 1} من ${steps.length}`)}
-            </span>
+              <X size={16} />
+            </button>
           </div>
 
-          <button
-            type="button"
-            onClick={handleSkip}
-            className="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 active:scale-90 transition-all cursor-pointer"
-            title={isEn ? "Skip Tour" : "تخطي الإرشاد"}
-          >
-            <X size={16} />
-          </button>
+          {/* Step Title */}
+          <h3 className="text-base sm:text-lg font-black font-kufi mb-1.5 flex items-center gap-1.5 leading-snug">
+            <span style={{ color: currentAccent }}>
+              {isEn ? step.titleEn : step.titleAr}
+            </span>
+          </h3>
+
+          {/* Detailed Explanation */}
+          <p className="text-xs sm:text-sm text-slate-200 leading-relaxed font-medium">
+            {isEn ? step.descEn : step.descAr}
+          </p>
         </div>
 
-        {/* Step Title */}
-        <h3 className="text-base sm:text-lg font-black font-kufi mb-1.5 flex items-center gap-1.5 leading-snug">
-          <span style={{ color: currentAccent }}>
-            {isEn ? step.titleEn : step.titleAr}
-          </span>
-        </h3>
-
-        {/* Detailed Explanation */}
-        <p className="text-xs sm:text-sm text-slate-200 leading-relaxed font-medium mb-4">
-          {isEn ? step.descEn : step.descAr}
-        </p>
-
         {/* Bottom Actions: Progress Dots & Next/Prev */}
-        <div className="flex items-center justify-between gap-2 pt-2.5 border-t border-white/10">
-          {/* Dots Indicator */}
-          <div className="flex items-center gap-1.5">
-            {steps.map((_, idx) => (
-              <span
-                key={idx}
-                className="h-1.5 rounded-full transition-all duration-300"
-                style={{
-                  width: idx === currentStepIndex ? '18px' : '5px',
-                  backgroundColor: idx === currentStepIndex ? currentAccent : 'rgba(255,255,255,0.25)'
-                }}
-              />
-            ))}
-          </div>
+        <div className="flex items-center justify-between gap-2 pt-2.5 border-t border-white/10 shrink-0 mt-auto w-full min-w-0 overflow-hidden">
+          {/* Progress Dots or Compact Step Indicator */}
+          {steps.length <= 6 ? (
+            <div className="flex items-center gap-1.5 shrink-0 overflow-hidden">
+              {steps.map((_, idx) => (
+                <span
+                  key={idx}
+                  className="h-1.5 rounded-full transition-all duration-300 shrink-0"
+                  style={{
+                    width: idx === currentStepIndex ? '16px' : '5px',
+                    backgroundColor: idx === currentStepIndex ? currentAccent : 'rgba(255,255,255,0.25)'
+                  }}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5 shrink min-w-0 overflow-hidden">
+              <span className="text-[11px] font-black px-2 py-0.5 rounded-lg bg-white/10 text-slate-200 whitespace-nowrap shrink-0">
+                <span style={{ color: currentAccent }}>{currentStepIndex + 1}</span>
+                <span className="opacity-40 mx-0.5">/</span>
+                <span>{steps.length}</span>
+              </span>
+              <div className="flex items-center gap-1 shrink-0 overflow-hidden">
+                {(() => {
+                  const total = steps.length;
+                  let startIdx = Math.max(0, currentStepIndex - 2);
+                  let endIdx = Math.min(total, startIdx + 5);
+                  if (endIdx - startIdx < 5) {
+                    startIdx = Math.max(0, endIdx - 5);
+                  }
+                  return steps.slice(startIdx, endIdx).map((_, i) => {
+                    const actualIdx = startIdx + i;
+                    return (
+                      <span
+                        key={actualIdx}
+                        className="h-1.5 rounded-full transition-all duration-300 shrink-0"
+                        style={{
+                          width: actualIdx === currentStepIndex ? '14px' : '4px',
+                          backgroundColor: actualIdx === currentStepIndex ? currentAccent : 'rgba(255,255,255,0.25)'
+                        }}
+                      />
+                    );
+                  });
+                })()}
+              </div>
+            </div>
+          )}
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 shrink-0 ms-auto">
             {!isFirstStep && (
               <button
                 type="button"
                 onClick={handlePrev}
-                className="px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white hover:bg-white/10 active:scale-95 transition-all flex items-center gap-1 cursor-pointer"
+                className="px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white hover:bg-white/10 active:scale-95 transition-all flex items-center gap-1 cursor-pointer shrink-0"
               >
                 {isEn ? <ChevronLeft size={14} /> : <ChevronRight size={14} />}
                 <span>{isEn ? 'Back' : 'السابق'}</span>
@@ -656,7 +713,7 @@ export const QuranSpotlightGuide: React.FC<QuranSpotlightGuideProps> = ({
             <button
               type="button"
               onClick={handleNext}
-              className="px-3.5 py-1.5 rounded-xl text-xs font-black shadow-lg flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer"
+              className="px-3.5 py-1.5 rounded-xl text-xs font-black shadow-lg flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer shrink-0 relative z-10 whitespace-nowrap"
               style={{
                 backgroundColor: currentAccent,
                 color: '#ffffff',

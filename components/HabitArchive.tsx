@@ -5,7 +5,7 @@ import moment from 'moment-hijri';
 import { useHabitTracker } from '../hooks/useHabitTracker';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
-import { getModernFlatTokens } from '../utils/flatDesignTokens';
+import { getCalculator3DStyles } from '../utils/calculator3DStyles';
 
 interface HabitArchiveProps {
     onBack: () => void;
@@ -14,14 +14,14 @@ interface HabitArchiveProps {
 }
 
 const HabitArchive: React.FC<HabitArchiveProps> = ({ onBack, onHome, onSelectDate }) => {
-    const { theme, themeKey } = useTheme();
+    const { theme, themeKey, isNightMode, homeThemeVariant } = useTheme();
     const { language } = useLanguage();
     const isEn = language === 'en';
 
-    const tokens = getModernFlatTokens(theme, themeKey);
-    const isBlackTheme = tokens.isDeepBlack;
+    const s3d = getCalculator3DStyles(theme, themeKey, isNightMode, homeThemeVariant);
+    const isBlackTheme = s3d.isBlackTheme;
     const isDefaultTheme = themeKey === 'default' || !themeKey || theme.name?.includes('الافتراضي') || theme.name === 'Default';
-    const hexColor = isBlackTheme ? '#FFFFFF' : (theme.palette && theme.palette.length > 0 ? theme.palette[0] : '#059669');
+    const hexColor = s3d.primaryColor;
     
     // In default theme: Black (#000000). In black theme: White (#FFFFFF). In other themes: adapt with theme
     const navIconColor = isDefaultTheme 
@@ -95,35 +95,36 @@ const HabitArchive: React.FC<HabitArchiveProps> = ({ onBack, onHome, onSelectDat
 
     const renderComparisonTab = () => (
         <div 
-            className="rounded-2xl p-4 mb-6 border-0"
-            style={{ backgroundColor: tokens.cardBgColor, boxShadow: tokens.cardShadow }}
+            className={`app-page-card border-0 rounded-3xl p-4 sm:p-5 mb-6 ${s3d.surfaceCardClass}`}
         >
-            <h3 className="font-bold text-lg mb-4 text-gray-800 dark:text-gray-200 flex items-center gap-2">
-               <BarChart2 className="w-5 h-5 opacity-70" style={{ color: hexColor }} />
+            <h3 className="font-extrabold text-base sm:text-lg mb-4 flex items-center gap-2.5" style={{ color: s3d.textColor }}>
+               <span className={`border-0 w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>
+                 <BarChart2 className="w-4 h-4" style={{ color: hexColor }} />
+               </span>
                {isEn ? 'Day Comparison' : 'مقارنة بين يومين'}
             </h3>
-            <div className="flex justify-between items-center gap-4 mb-4">
+            <div className="flex justify-between items-center gap-3 sm:gap-4 mb-4">
                 <div className="flex-1">
-                    <label className="block text-xs font-semibold opacity-70 mb-1 dark:text-gray-300">
+                    <label className="block text-xs font-bold mb-1.5" style={{ color: s3d.subtextColor }}>
                         {isEn ? 'First Day' : 'اليوم الأول'}
                     </label>
                     <select 
                         value={compareDate1} 
                         onChange={(e) => setCompareDate1(e.target.value)}
-                        className="w-full bg-gray-100 dark:bg-gray-700 text-sm font-bold p-2 rounded-xl text-gray-900 dark:text-white"
+                        className={`border-0 w-full text-sm font-bold p-2.5 rounded-2xl cursor-pointer focus:outline-none ${s3d.recessedInputClass}`}
                     >
                         {allDates.map(d => <option key={d} value={d}>{d}</option>)}
                     </select>
                 </div>
-                <span className="font-bold text-gray-400 mt-5">VS</span>
+                <span className="font-black text-xs mt-5 opacity-60">VS</span>
                 <div className="flex-1">
-                    <label className="block text-xs font-semibold opacity-70 mb-1 dark:text-gray-300">
+                    <label className="block text-xs font-bold mb-1.5" style={{ color: s3d.subtextColor }}>
                         {isEn ? 'Second Day' : 'اليوم الثاني'}
                     </label>
                     <select 
                         value={compareDate2} 
                         onChange={(e) => setCompareDate2(e.target.value)}
-                        className="w-full bg-gray-100 dark:bg-gray-700 text-sm font-bold p-2 rounded-xl text-gray-900 dark:text-white"
+                        className={`border-0 w-full text-sm font-bold p-2.5 rounded-2xl cursor-pointer focus:outline-none ${s3d.recessedInputClass}`}
                     >
                         {allDates.map(d => <option key={d} value={d}>{d}</option>)}
                     </select>
@@ -131,22 +132,23 @@ const HabitArchive: React.FC<HabitArchiveProps> = ({ onBack, onHome, onSelectDat
             </div>
             
             <div 
-                className="flex justify-between items-center p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50 border-0"
+                className="border-0 flex justify-between items-center p-3.5 rounded-2xl"
+                style={{ backgroundColor: s3d.softResultBg }}
             >
                <div className="text-center">
-                  <div className="text-xl font-bold font-sans" style={{ color: hexColor }}>{prog1}%</div>
-                  <div className="text-[10px] opacity-70 dark:text-gray-300">{compareDate1}</div>
+                  <div className="text-xl font-black font-sans" style={{ color: hexColor }}>{prog1}%</div>
+                  <div className="text-[10px] font-semibold mt-0.5" style={{ color: s3d.subtextColor }}>{compareDate1}</div>
                </div>
-               <div className="text-center font-bold text-sm">
+               <div className="text-center font-extrabold text-xs sm:text-sm px-2">
                   {diff > 0 
-                     ? <span className="text-green-600 dark:text-green-400">{isEn ? `Improved by ${diff}% 📈` : `تحسن بـ ${diff}% 📈`}</span> 
+                     ? <span className="text-emerald-600 dark:text-emerald-400">{isEn ? `Improved by ${diff}% 📈` : `تحسن بـ ${diff}% 📈`}</span> 
                      : diff < 0 
                      ? <span className="text-orange-600 dark:text-orange-400">{isEn ? `Declined by ${Math.abs(diff)}% 📉` : `تراجع بـ ${Math.abs(diff)}% 📉`}</span> 
-                     : <span className="text-gray-600 dark:text-gray-400">{isEn ? 'Same achievement ➖' : 'نفس الإنجاز ➖'}</span>}
+                     : <span style={{ color: s3d.subtextColor }}>{isEn ? 'Same achievement ➖' : 'نفس الإنجاز ➖'}</span>}
                </div>
                <div className="text-center">
-                  <div className="text-xl font-bold font-sans" style={{ color: hexColor }}>{prog2}%</div>
-                  <div className="text-[10px] opacity-70 dark:text-gray-300">{compareDate2}</div>
+                  <div className="text-xl font-black font-sans" style={{ color: hexColor }}>{prog2}%</div>
+                  <div className="text-[10px] font-semibold mt-0.5" style={{ color: s3d.subtextColor }}>{compareDate2}</div>
                </div>
             </div>
         </div>
@@ -156,10 +158,11 @@ const HabitArchive: React.FC<HabitArchiveProps> = ({ onBack, onHome, onSelectDat
         if (monthKeys.length < 2) {
              return (
                  <div 
-                     className="text-center p-8 opacity-70 text-sm font-bold dark:text-gray-300 rounded-2xl mb-6 border-0"
-                     style={{ backgroundColor: tokens.cardBgColor, boxShadow: tokens.cardShadow }}
+                     className={`app-page-card border-0 text-center p-8 text-sm font-bold rounded-3xl mb-6 ${s3d.surfaceCardClass}`}
                  >
-                     {isEn ? 'No data for more than one month to compare yet.' : 'لا توجد بيانات لأكثر من شهر للمقارنة حتى الآن.'}
+                     <span style={{ color: s3d.subtextColor }}>
+                       {isEn ? 'No data for more than one month to compare yet.' : 'لا توجد بيانات لأكثر من شهر للمقارنة حتى الآن.'}
+                     </span>
                  </div>
              );
         }
@@ -170,35 +173,36 @@ const HabitArchive: React.FC<HabitArchiveProps> = ({ onBack, onHome, onSelectDat
 
         return (
             <div 
-                className="rounded-2xl p-4 mb-6 border-0"
-                style={{ backgroundColor: tokens.cardBgColor, boxShadow: tokens.cardShadow }}
+                className={`app-page-card border-0 rounded-3xl p-4 sm:p-5 mb-6 ${s3d.surfaceCardClass}`}
             >
-                 <h3 className="font-bold text-lg mb-4 text-gray-800 dark:text-gray-200 flex items-center gap-2">
-                   <CalendarDays className="w-5 h-5 opacity-70" style={{ color: hexColor }} />
+                 <h3 className="font-extrabold text-base sm:text-lg mb-4 flex items-center gap-2.5" style={{ color: s3d.textColor }}>
+                   <span className={`border-0 w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>
+                     <CalendarDays className="w-4 h-4" style={{ color: hexColor }} />
+                   </span>
                    {isEn ? 'Month Comparison (Average)' : 'مقارنة بين شهرين (المتوسط)'}
                  </h3>
-                 <div className="flex justify-between items-center gap-4 mb-4">
+                 <div className="flex justify-between items-center gap-3 sm:gap-4 mb-4">
                      <div className="flex-1">
-                         <label className="block text-xs font-semibold opacity-70 mb-1 dark:text-gray-300">
+                         <label className="block text-xs font-bold mb-1.5" style={{ color: s3d.subtextColor }}>
                              {isEn ? 'First Month' : 'الشهر الأول'}
                          </label>
                          <select 
                              value={m1} 
                              onChange={(e) => setM1(e.target.value)}
-                             className="w-full bg-gray-100 dark:bg-gray-700 text-sm font-bold p-2 rounded-xl text-gray-900 dark:text-white"
+                             className={`border-0 w-full text-sm font-bold p-2.5 rounded-2xl cursor-pointer focus:outline-none ${s3d.recessedInputClass}`}
                          >
                              {monthKeys.map(d => <option key={d} value={d}>{d}</option>)}
                          </select>
                      </div>
-                     <span className="font-bold text-gray-400 mt-5">VS</span>
+                     <span className="font-black text-xs mt-5 opacity-60">VS</span>
                      <div className="flex-1">
-                         <label className="block text-xs font-semibold opacity-70 mb-1 dark:text-gray-300">
+                         <label className="block text-xs font-bold mb-1.5" style={{ color: s3d.subtextColor }}>
                              {isEn ? 'Second Month' : 'الشهر الثاني'}
                          </label>
                          <select 
                              value={m2} 
                              onChange={(e) => setM2(e.target.value)}
-                             className="w-full bg-gray-100 dark:bg-gray-700 text-sm font-bold p-2 rounded-xl text-gray-900 dark:text-white"
+                             className={`border-0 w-full text-sm font-bold p-2.5 rounded-2xl cursor-pointer focus:outline-none ${s3d.recessedInputClass}`}
                          >
                              {monthKeys.map(d => <option key={d} value={d}>{d}</option>)}
                          </select>
@@ -206,22 +210,23 @@ const HabitArchive: React.FC<HabitArchiveProps> = ({ onBack, onHome, onSelectDat
                  </div>
                  
                  <div 
-                     className="flex justify-between items-center p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50 border-0"
+                     className="border-0 flex justify-between items-center p-3.5 rounded-2xl"
+                     style={{ backgroundColor: s3d.softResultBg }}
                  >
                     <div className="text-center">
-                       <div className="text-xl font-bold font-sans" style={{ color: hexColor }}>{avg1}%</div>
-                       <div className="text-[10px] opacity-70 dark:text-gray-300">{isEn ? 'Average Achievement' : 'متوسط الإنجاز'}</div>
+                       <div className="text-xl font-black font-sans" style={{ color: hexColor }}>{avg1}%</div>
+                       <div className="text-[10px] font-semibold mt-0.5" style={{ color: s3d.subtextColor }}>{isEn ? 'Average Achievement' : 'متوسط الإنجاز'}</div>
                     </div>
-                    <div className="text-center font-bold text-sm">
+                    <div className="text-center font-extrabold text-xs sm:text-sm px-2">
                        {mDiff > 0 
-                          ? <span className="text-green-600 dark:text-green-400">{isEn ? `Improved by ${mDiff}% 📈` : `تحسن بـ ${mDiff}% 📈`}</span> 
+                          ? <span className="text-emerald-600 dark:text-emerald-400">{isEn ? `Improved by ${mDiff}% 📈` : `تحسن بـ ${mDiff}% 📈`}</span> 
                           : mDiff < 0 
                           ? <span className="text-orange-600 dark:text-orange-400">{isEn ? `Declined by ${Math.abs(mDiff)}% 📉` : `تراجع بـ ${Math.abs(mDiff)}% 📉`}</span> 
-                          : <span className="text-gray-600 dark:text-gray-400">{isEn ? 'Same achievement ➖' : 'نفس الإنجاز ➖'}</span>}
+                          : <span style={{ color: s3d.subtextColor }}>{isEn ? 'Same achievement ➖' : 'نفس الإنجاز ➖'}</span>}
                     </div>
                     <div className="text-center">
-                       <div className="text-xl font-bold font-sans" style={{ color: hexColor }}>{avg2}%</div>
-                       <div className="text-[10px] opacity-70 dark:text-gray-300">{isEn ? 'Average Achievement' : 'متوسط الإنجاز'}</div>
+                       <div className="text-xl font-black font-sans" style={{ color: hexColor }}>{avg2}%</div>
+                       <div className="text-[10px] font-semibold mt-0.5" style={{ color: s3d.subtextColor }}>{isEn ? 'Average Achievement' : 'متوسط الإنجاز'}</div>
                     </div>
                  </div>
             </div>
@@ -230,8 +235,8 @@ const HabitArchive: React.FC<HabitArchiveProps> = ({ onBack, onHome, onSelectDat
 
     return (
         <div 
-            className="h-screen h-[100dvh] max-h-screen max-h-[100dvh] flex flex-col relative overflow-hidden" 
-            style={{ backgroundColor: tokens.pageBgColor, color: tokens.textColor }}
+            className="h-[100dvh] max-h-[100dvh] flex flex-col relative overflow-hidden" 
+            style={{ backgroundColor: s3d.pageBgColor, color: s3d.textColor, fontFamily: theme.font }}
             dir={isEn ? 'ltr' : 'rtl'}
         >
             <header className="app-top-bar shrink-0">
@@ -274,24 +279,31 @@ const HabitArchive: React.FC<HabitArchiveProps> = ({ onBack, onHome, onSelectDat
             </header>
 
             <main 
-                className="flex-1 min-h-0 overflow-y-auto px-4 py-6 overscroll-contain"
+                className="flex-1 min-h-0 overflow-y-auto px-4 pt-6 app-scroll-safe overscroll-contain"
             >
                 {/* Tabs */}
                 <div 
-                    className="flex rounded-2xl p-1.5 mb-6 border-0 gap-1.5"
-                    style={{ backgroundColor: tokens.capsuleBg, boxShadow: tokens.cardShadow }}
+                    className={`app-page-card border-0 flex rounded-2xl p-2 pb-2.5 mb-6 gap-2 overflow-visible ${s3d.surfaceCardClass}`}
                 >
                     <button 
-                        className={`flex-1 py-2 text-sm font-bold rounded-xl transition-all cursor-pointer border-0 ${activeTab === 'days' ? 'shadow-sm' : 'opacity-60 hover:opacity-100'}`}
+                        className={`app-page-card border-0 flex-1 py-2.5 text-sm rounded-xl transition-all cursor-pointer ${
+                          activeTab === 'days'
+                            ? 'font-black'
+                            : `font-bold opacity-85 ${s3d.surfaceCardClass}`
+                        }`}
                         onClick={() => setActiveTab('days')}
-                        style={activeTab === 'days' ? { backgroundColor: tokens.primaryColor, color: '#FFFFFF' } : { color: tokens.textColor }}
+                        style={activeTab === 'days' ? { backgroundColor: s3d.primaryColor, color: s3d.btnTextColor } : undefined}
                     >
                         {isEn ? 'Days' : 'الأيام'}
                     </button>
                     <button 
-                        className={`flex-1 py-2 text-sm font-bold rounded-xl transition-all cursor-pointer border-0 ${activeTab === 'months' ? 'shadow-sm' : 'opacity-60 hover:opacity-100'}`}
+                        className={`app-page-card border-0 flex-1 py-2.5 text-sm rounded-xl transition-all cursor-pointer ${
+                          activeTab === 'months'
+                            ? 'font-black'
+                            : `font-bold opacity-85 ${s3d.surfaceCardClass}`
+                        }`}
                         onClick={() => setActiveTab('months')}
-                        style={activeTab === 'months' ? { backgroundColor: tokens.primaryColor, color: '#FFFFFF' } : { color: tokens.textColor }}
+                        style={activeTab === 'months' ? { backgroundColor: s3d.primaryColor, color: s3d.btnTextColor } : undefined}
                     >
                         {isEn ? 'Months' : 'الشهور'}
                     </button>
@@ -299,8 +311,8 @@ const HabitArchive: React.FC<HabitArchiveProps> = ({ onBack, onHome, onSelectDat
 
                 {activeTab === 'days' ? renderComparisonTab() : renderMonthComparisonTab()}
 
-                <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-bold text-lg text-gray-800 dark:text-gray-200">
+                <div className="flex items-center justify-between mb-4 gap-2 overflow-visible pb-1">
+                    <h3 className="font-extrabold text-base sm:text-lg" style={{ color: s3d.textColor }}>
                         {isEn ? `Detailed Archive (${allDates.length} days)` : `الأرشيف المفصل (${allDates.length} يوم)`}
                     </h3>
                     {onSelectDate && (
@@ -319,25 +331,26 @@ const HabitArchive: React.FC<HabitArchiveProps> = ({ onBack, onHome, onSelectDat
                             <motion.button
                                 whileTap={{ scale: 0.95 }}
                                 onClick={() => dateInputRef.current?.showPicker ? dateInputRef.current.showPicker() : dateInputRef.current?.click()}
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white shadow-sm transition-opacity hover:opacity-90"
-                                style={{ backgroundColor: hexColor }}
+                                className="app-page-card border-0 flex items-center gap-1.5 px-3.5 py-2 rounded-2xl text-xs font-black transition-all cursor-pointer"
+                                style={{ backgroundColor: s3d.primaryColor, color: s3d.btnTextColor }}
                             >
-                                <Plus className="w-3.5 h-3.5" />
+                                <Plus className="w-3.5 h-3.5 stroke-[2.75]" />
                                 <span>{isEn ? 'Log past day 🗓️' : 'تسجيل يوم سابق 🗓️'}</span>
                             </motion.button>
                         </div>
                     )}
                 </div>
 
-                <div className="space-y-3 pb-8">
+                <div className="space-y-3 pb-4">
                     {allDates.length === 0 && (
                         <div 
-                            className="text-center p-8 opacity-70 text-sm font-bold dark:text-gray-300 rounded-2xl border-0"
-                            style={{ backgroundColor: tokens.cardBgColor, boxShadow: tokens.cardShadow }}
+                            className={`app-page-card border-0 text-center p-8 text-sm font-bold rounded-3xl ${s3d.surfaceCardClass}`}
                         >
-                            {isEn 
-                                ? 'No achievements recorded yet. Click "Log past day" above to record any missed day.' 
-                                : 'لا يوجد إنجازات مسجلة بعد. يمكنك النقر على "تسجيل يوم سابق" بالأعلى لتسجيل أي يوم فاتك.'}
+                            <span style={{ color: s3d.subtextColor }}>
+                              {isEn 
+                                  ? 'No achievements recorded yet. Click "Log past day" above to record any missed day.' 
+                                  : 'لا يوجد إنجازات مسجلة بعد. يمكنك النقر على "تسجيل يوم سابق" بالأعلى لتسجيل أي يوم فاتك.'}
+                            </span>
                         </div>
                     )}
                     {allDates.map(date => {
@@ -345,30 +358,29 @@ const HabitArchive: React.FC<HabitArchiveProps> = ({ onBack, onHome, onSelectDat
                         return (
                            <div 
                                 key={date} 
-                                className="rounded-2xl p-4 border-0 flex items-center justify-between gap-3"
-                                style={{ backgroundColor: tokens.cardBgColor, boxShadow: tokens.cardShadow }}
+                                className={`app-page-card border-0 rounded-2xl p-4 flex items-center justify-between gap-3 ${s3d.surfaceCardClass}`}
                            >
                                 <div className="flex items-center gap-3 min-w-0 flex-1">
-                                    <div className="p-2 rounded-xl bg-gray-100 dark:bg-gray-700 shrink-0" style={{ color: hexColor }}>
+                                    <div className={`border-0 p-2.5 rounded-xl shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`} style={{ color: hexColor }}>
                                        <Calendar className="w-5 h-5" />
                                     </div>
                                     <div className="min-w-0">
-                                        <span className="font-bold block text-sm dark:text-white truncate">{date}</span>
-                                        <span className="text-[10px] font-semibold opacity-70 dark:text-gray-300 block">
+                                        <span className="font-extrabold block text-sm truncate" style={{ color: s3d.textColor }}>{date}</span>
+                                        <span className="text-[11px] font-semibold block mt-0.5" style={{ color: s3d.subtextColor }}>
                                              {progress === 100 ? (isEn ? 'Full achievement 🌟' : 'إنجاز كامل 🌟') : (isEn ? `${progress}% completed` : `${progress}% مكتمل`)}
                                         </span>
                                     </div>
                                 </div>
 
-                                <div className="flex items-center gap-3 shrink-0">
-                                    <div className="text-xl font-bold font-sans" style={{ color: hexColor }}>
+                                <div className="flex items-center gap-3 shrink-0 overflow-visible pb-1">
+                                    <div className="text-xl font-black font-sans" style={{ color: hexColor }}>
                                         {progress}%
                                     </div>
                                     {onSelectDate && (
                                         <motion.button
                                             whileTap={{ scale: 0.95 }}
                                             onClick={() => onSelectDate(date)}
-                                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                                            className={`app-page-card border-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold cursor-pointer ${s3d.surfaceCardClass}`}
                                             title={isEn ? 'Edit habits for this day' : 'تعديل عبادات هذا اليوم'}
                                         >
                                             <Edit3 className="w-3.5 h-3.5" style={{ color: hexColor }} />

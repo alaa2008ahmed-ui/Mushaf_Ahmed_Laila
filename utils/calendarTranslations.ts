@@ -19,8 +19,8 @@ export const CALENDAR_STRINGS: Record<string, { ar: string; en: string }> = {
 
   // View switchers
   calendarView: {
-    ar: 'عرض التقويم',
-    en: 'Calendar View'
+    ar: 'التقويم',
+    en: 'Calendar'
   },
   dateConverter: {
     ar: 'محول التاريخ',
@@ -211,45 +211,149 @@ export const ISLAMIC_EVENTS_TRANSLATED: Record<string, { enName: string; enDesc:
     enName: 'Islamic Hijri New Year',
     enDesc: 'Beginning of the new Islamic Hijri Year'
   },
-  'يوم عاشوراء': {
-    enName: 'Day of Ashura',
+  'يوم تاسوعاء': {
+    enName: 'Day of Tasu’a',
+    enDesc: 'Ninth day of Muharram, recommended for fasting alongside Ashura'
+  },
+  'يوم عاشوراء المبارك': {
+    enName: 'Blessed Day of Ashura',
     enDesc: 'The day Allah saved Prophet Musa (Moses) peace be upon him'
+  },
+  'غزوة خيبر المباركة': {
+    enName: 'Battle of Khaybar',
+    enDesc: 'Victory of Muslims and conquest of Khaybar fortresses'
+  },
+  'تجهيز جيش أسامة بن زيد': {
+    enName: 'Army of Usama ibn Zayd',
+    enDesc: 'Prophet Muhammad ﷺ order to dispatch the army'
+  },
+  'ذكرى استشهاد الإمام الحسين': {
+    enName: 'Martyrdom of Imam Hussain',
+    enDesc: 'Commemoration of the tragedy of Karbala'
+  },
+  'هجرة النبي إلى غار ثور': {
+    enName: "Prophet's Migration to Cave Thawr",
+    enDesc: 'Beginning of the blessed journey from Makkah to Madinah'
+  },
+  'خروج النبي من غار ثور': {
+    enName: 'Departure from Cave Thawr',
+    enDesc: 'Setting off towards Yathrib with Abu Bakr Al-Siddiq'
+  },
+  'بناء أول مسجد (مسجد قباء)': {
+    enName: 'Building Quba Mosque',
+    enDesc: 'Arrival in Quba and establishment of the first mosque'
   },
   'المولد النبوي الشريف': {
     enName: "The Prophet's Birthday (Mawlid)",
     enDesc: 'Birth commemoration of Prophet Muhammad ﷺ'
   },
-  'الإسراء والمعراج': {
+  'دخول النبي ﷺ المدينة المنورة': {
+    enName: "Arrival in Madinah Al-Munawwarah",
+    enDesc: 'Illumination of Madinah with the arrival of the Messenger ﷺ'
+  },
+  'بناء الجامع الأزهر الشريف': {
+    enName: 'Establishment of Al-Azhar Mosque',
+    enDesc: 'Inauguration of Al-Azhar as a global beacon of Islamic knowledge'
+  },
+  'معركة النهروان': {
+    enName: 'Battle of Nahrawan',
+    enDesc: 'Preserving the unity and stability of the Muslim nation'
+  },
+  'غزوة مؤتة العظيمة': {
+    enName: 'Battle of Mu’tah',
+    enDesc: 'First major engagement between Muslims and the Byzantine Empire'
+  },
+  'فتح القسطنطينية التاريخي': {
+    enName: 'Conquest of Constantinople',
+    enDesc: 'Prophetic tidings fulfilled under Sultan Mehmed the Conqueror'
+  },
+  'ذكرى وفاة فاطمة الزهراء': {
+    enName: 'Passing of Fatimah Al-Zahra',
+    enDesc: 'The leader of the women of Paradise and daughter of the Prophet ﷺ'
+  },
+  'تولي عمر بن الخطاب الخلافة': {
+    enName: 'Caliphate of Umar ibn Al-Khattab',
+    enDesc: 'Beginning of the era of justice and expansion'
+  },
+  'دخول شهر رجب الأصب': {
+    enName: 'Commencement of Rajab',
+    enDesc: 'Beginning of the sacred month preparing for Ramadan'
+  },
+  'ذكرى الإسراء والمعراج الشريفة': {
     enName: "Al-Isra' & Al-Mi'raj",
     enDesc: 'The miraculous Night Journey and Heavenly Ascension'
+  },
+  'تحرير بيت المقدس (صلاح الدين)': {
+    enName: 'Liberation of Jerusalem',
+    enDesc: 'Recapturing Jerusalem by Saladin after the Battle of Hattin'
+  },
+  'دخول شهر شعبان': {
+    enName: "Commencement of Sha'ban",
+    enDesc: 'Month in which deeds are raised to Allah Almighty'
   },
   'ليلة النصف من شعبان': {
     enName: "Mid-Sha'ban Night",
     enDesc: 'Blessed night of forgiveness and Qibla redirection'
   },
-  'بداية شهر رمضان': {
-    enName: 'First Day of Ramadan',
-    enDesc: 'Commencement of the holy month of fasting'
+  'أول أيام شهر رمضان المبارك': {
+    enName: 'First Day of Holy Ramadan',
+    enDesc: 'Commencement of the month of fasting, night prayers, and Quran'
   },
-  'ليلة القدر (تقديرياً)': {
-    enName: 'Laylat Al-Qadr (Estimated)',
+  'ذكرى وفاة أم المؤمنين خديجة': {
+    enName: 'Passing of Khadijah bint Khuwaylid',
+    enDesc: 'Memory of the Mother of the Believers and supporter of the Prophet ﷺ'
+  },
+  'غزوة بدر الكبرى (يوم الفرقان)': {
+    enName: 'Great Battle of Badr',
+    enDesc: 'The Day of Criterion separating truth from falsehood'
+  },
+  'فتح مكة المكرمة العظيم': {
+    enName: 'Conquest of Makkah',
+    enDesc: 'Entry of Prophet Muhammad ﷺ into Makkah victoriously'
+  },
+  'ليلة القدر المباركة': {
+    enName: 'Blessed Laylat Al-Qadr',
     enDesc: 'The Night of Decree — better than a thousand months'
   },
   'عيد الفطر المبارك': {
     enName: 'Blessed Eid Al-Fitr',
     enDesc: 'Celebration of breaking the fast after Ramadan'
   },
-  'بداية ذي الحجة': {
-    enName: 'First of Dhu al-Hijjah',
-    enDesc: 'Beginning of the blessed first ten days of Dhu al-Hijjah'
+  'بدء صيام الأيام الست من شوال': {
+    enName: 'Six Days of Shawwal',
+    enDesc: 'Recommended fasting after Eid Al-Fitr'
   },
-  'يوم عرفة': {
-    enName: 'Day of Arafah',
+  'غزوة أحد المباركة': {
+    enName: 'Battle of Uhud',
+    enDesc: 'Commemoration of the martyrdom of Hamzah ibn Abd Al-Muttalib'
+  },
+  'بداية الأشهر الحرم للحج': {
+    enName: 'Season of Hajj Begins',
+    enDesc: 'Start of the sacred months preparing for Hajj pilgrimage'
+  },
+  'صلح الحديبية التاريخي': {
+    enName: 'Treaty of Hudaybiyyah',
+    enDesc: 'A manifest victory and turning point in Islamic diplomacy'
+  },
+  'أول عشر ذي الحجة المباركة': {
+    enName: 'First Ten Days of Dhu al-Hijjah',
+    enDesc: 'The best days of the world for righteous deeds'
+  },
+  'يوم التروية بالحج': {
+    enName: 'Day of Tarwiyah',
+    enDesc: 'Pilgrims depart for Mina preparing for Mount Arafat'
+  },
+  'يوم عرفة المبارك': {
+    enName: 'Blessed Day of Arafah',
     enDesc: 'Standing at Mount Arafat, the greatest pillar of Hajj'
   },
-  'عيد الأضحى المبارك': {
+  'عيد الأضحى المبارك (يوم النحر)': {
     enName: 'Blessed Eid Al-Adha',
     enDesc: 'Festival of Sacrifice honoring Prophet Ibrahim peace be upon him'
+  },
+  'أيام التشريق المباركة': {
+    enName: 'Days of Tashreeq',
+    enDesc: 'Days of eating, drinking, and remembrance of Allah in Mina'
   }
 };
 

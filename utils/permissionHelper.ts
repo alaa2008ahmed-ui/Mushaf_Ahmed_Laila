@@ -9,6 +9,7 @@ interface AutoSilentPlugin {
   checkDndPermission(): Promise<{ granted: boolean }>;
   requestDndPermission(): Promise<void>;
   openAppSettings(): Promise<void>;
+  openLocationSettings(): Promise<{ success?: boolean; error?: string }>;
   setSilentNow(options: { silent: boolean; prayerName?: string }): Promise<void>;
 }
 
@@ -26,6 +27,25 @@ export const openAppSettings = async (): Promise<boolean> => {
     } catch (e) {
       console.warn('Could not open app settings via AutoSilentMode:', e);
     }
+  }
+  return false;
+};
+
+/**
+ * Open the native Android / OS device Location (GPS) settings page directly
+ * so the user can enable device GPS with one tap.
+ */
+export const openLocationSettings = async (): Promise<boolean> => {
+  if (Capacitor.isNativePlatform()) {
+    try {
+      const res = await AutoSilentMode.openLocationSettings();
+      if (res?.success !== false) {
+        return true;
+      }
+    } catch (e) {
+      console.warn('Could not open location settings via AutoSilentMode:', e);
+    }
+    return await openAppSettings();
   }
   return false;
 };
@@ -99,16 +119,74 @@ export const checkMicrophonePermission = async (): Promise<boolean> => {
   return false;
 };
 
+let isMainHomeReady = false;
+let pendingNotifPermPromise: Promise<boolean> | null = null;
+
+export const isMainAppEntered = (): boolean => {
+  if (isMainHomeReady) return true;
+  if (typeof window !== 'undefined' && (window as any).__APP_MAIN_ENTERED__ === true) {
+    isMainHomeReady = true;
+    return true;
+  }
+  return false;
+};
+
+export const setMainAppEntered = (ready: boolean) => {
+  isMainHomeReady = ready;
+  if (typeof window !== 'undefined') {
+    (window as any).__APP_MAIN_ENTERED__ = ready;
+    if (ready) {
+      window.dispatchEvent(new CustomEvent('app-main-entered'));
+    }
+  }
+};
+
+/**
+ * Safely ensures notification permission without ever popping up the OS dialog
+ * during the Splash screen or initial Language Selection screen.
+ * - Before entering the Main App / Home screen: ONLY checks existing permission (never prompts).
+ * - After entering Main App / Home screen (or forcePrompt = true): prompts via a deduplicated lock.
+ */
+export const ensureNotificationPermission = async (forcePrompt = false): Promise<boolean> => {
+  try {
+    if (!Capacitor.isNativePlatform()) {
+      return false;
+    }
+    const status = await LocalNotifications.checkPermissions();
+    if (status.display === 'granted') {
+      return true;
+    }
+    if (!forcePrompt && !isMainAppEntered()) {
+      return false;
+    }
+    if (!pendingNotifPermPromise) {
+      pendingNotifPermPromise = (async () => {
+        try {
+          const req = await LocalNotifications.requestPermissions();
+          return req.display === 'granted';
+        } catch (e) {
+          console.warn('LocalNotifications.requestPermissions error:', e);
+          return false;
+        } finally {
+          pendingNotifPermPromise = null;
+        }
+      })();
+    }
+    return await pendingNotifPermPromise;
+  } catch (e) {
+    console.warn('ensureNotificationPermission error:', e);
+    return false;
+  }
+};
+
 /**
  * Request Local Notifications permission in-app.
  */
 export const requestNotificationPermission = async (): Promise<{ granted: boolean }> => {
   try {
     if (Capacitor.isNativePlatform()) {
-      const status = await LocalNotifications.checkPermissions();
-      if (status.display === 'granted') return { granted: true };
-      const req = await LocalNotifications.requestPermissions();
-      return { granted: req.display === 'granted' };
+      const granted = await ensureNotificationPermission(true);
+      return { granted };
     } else if ('Notification' in window) {
       const res = await Notification.requestPermission();
       return { granted: res === 'granted' };

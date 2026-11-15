@@ -94,12 +94,6 @@ const AutoFitText: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         debouncedAdjust();
         window.addEventListener('resize', debouncedAdjust);
 
-        let observer: ResizeObserver | null = null;
-        if (containerRef.current && typeof ResizeObserver !== 'undefined') {
-            observer = new ResizeObserver(debouncedAdjust);
-            observer.observe(containerRef.current);
-        }
-
         if (document.fonts && document.fonts.ready) {
             document.fonts.ready.then(debouncedAdjust).catch(() => {});
         }
@@ -107,9 +101,6 @@ const AutoFitText: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         return () => {
             cancelAnimationFrame(rafId);
             window.removeEventListener('resize', debouncedAdjust);
-            if (observer) {
-                observer.disconnect();
-            }
         };
     }, [children]);
 
@@ -181,17 +172,11 @@ const QuranHeader: React.FC<QuranHeaderProps> = React.memo(({
                 style={getToolbarStyle('surah', currentTheme.barBg, currentTheme.barText, currentTheme.btnBorder || currentTheme.barBorder)}
             >
                 <AutoFitText>
-                    {readingMode === 'bilingual' || readingMode === 'translation' ? (
+                    {isEn ? (
                         isMemorizationMode && memorizationSettings ? (
-                            <>{currentAyah.s} - Surah {enSurahName} - Ayahs {memorizationSettings.fromAyah}-{memorizationSettings.toAyah} - Juz {juz}</>
+                            <>{currentAyah.s} - Surah {enSurahName.replace(/^Surah\s+/i, '')} - Ayahs {memorizationSettings.fromAyah}-{memorizationSettings.toAyah} - Juz {juz}</>
                         ) : (
-                            <>{currentAyah.s} - Surah {enSurahName} - Ayah {currentAyah.a} - Juz {juz}</>
-                        )
-                    ) : isEn ? (
-                        isMemorizationMode && memorizationSettings ? (
-                            <>{currentAyah.s} - Surah {enSurahName} - Ayahs {memorizationSettings.fromAyah}-{memorizationSettings.toAyah} - Juz {juz}</>
-                        ) : (
-                            <>{currentAyah.s} - Surah {enSurahName} - Ayah {currentAyah.a} - Juz {juz}</>
+                            <>{currentAyah.s} - Surah {enSurahName.replace(/^Surah\s+/i, '')} - Ayah {currentAyah.a} - Juz {juz}</>
                         )
                     ) : (
                         isMemorizationMode && memorizationSettings ? (

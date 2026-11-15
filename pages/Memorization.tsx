@@ -1,20 +1,39 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowRight, HelpCircle, Repeat, Play, User, ArrowLeftRight, CheckSquare, BookOpen, Calendar, List, Trophy, Trash2, RotateCcw, Download } from 'lucide-react';
+import { 
+  ArrowRight, Trash2, Download, HelpCircle, CheckCircle, Clock, BookOpen, Check, ShieldCheck
+} from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import ThemePageLock from '../components/ThemePageLock';
 import { quranData as quranJsonData } from '../utils/quranData';
-const quranData = { data: quranJsonData };
 import { SURAH_NAMES_AR, MEMORIZATION_READERS } from '../components/QuranReader/constants';
 import { registerBackInterceptor } from '../hooks/useBackButton';
 import { QuranDownloadModal } from '../components/QuranReader/DownloadModals';
 import ReciterSelectModal from '../components/QuranReader/ReciterSelectModal';
-import Toast from '../components/QuranReader/Toast';
-import { memorizationService, MemorizedRange } from '../services/memorizationService';
+import ToastComponent from '../components/QuranReader/Toast';
+import { 
+  memorizationService, 
+  MemorizedRange, 
+  MemorizationStats, 
+  MasteryLevel 
+} from '../services/memorizationService';
+import { 
+  getPageRange, 
+  getQuarterRange, 
+  getAyahsInRange,
+  PRESET_MEMORIZATION_PLANS,
+  MemorizationPlanItem
+} from '../utils/quranMemorizationUtils';
 import { getReciterDisplayName } from '../utils/listenQuranTranslations';
-import { useShowNewBadge, markPageAsSeen } from '../utils/badgeManager';
-import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/CommunitySpotlightGuide';
-import { MEMORIZATION_SETUP_STEPS, MEMORIZATION_REVIEW_STEPS } from '../components/Community/communityTourSteps';
+import MemorizationPreviewModal from '../components/Memorization/MemorizationPreviewModal';
+import MemorizationQuizModal from '../components/Memorization/MemorizationQuizModal';
+import { CommunitySpotlightGuide } from '../components/Community/CommunitySpotlightGuide';
+import { 
+  MEMORIZATION_SETUP_STEPS, 
+  MEMORIZATION_PLANS_STEPS, 
+  MEMORIZATION_REVIEW_STEPS, 
+  MEMORIZATION_QUIZ_STEPS 
+} from '../components/Community/communityTourSteps';
 import './QuranReader.css';
 
 export const SURAH_NAMES_EN = [
@@ -32,15 +51,14 @@ export const SURAH_NAMES_EN = [
     "Al-Masad", "Al-Ikhlas", "Al-Falaq", "An-Nas"
 ];
 
-// Utility to convert hex colors to rgba for soft tinted badges and highlights
 function hexToRgba(hex: string, alpha: number = 1): string {
-    if (!hex) return `rgba(46, 125, 94, ${alpha})`;
+    if (!hex) return `rgba(16, 185, 129, ${alpha})`;
     let clean = hex.replace('#', '');
     if (clean.length === 3) {
         clean = clean.split('').map(c => c + c).join('');
     }
     const num = parseInt(clean, 16);
-    if (isNaN(num)) return `rgba(46, 125, 94, ${alpha})`;
+    if (isNaN(num)) return `rgba(16, 185, 129, ${alpha})`;
     const r = (num >> 16) & 255;
     const g = (num >> 8) & 255;
     const b = num & 255;
@@ -52,22 +70,37 @@ interface MemorizationProps {
     onNavigate: (pageId: string, params?: any) => void;
 }
 
+type SelectionMode = 'ayahs' | 'page' | 'quarter';
+type ActiveTab = 'setup' | 'plans' | 'review' | 'quiz';
+
 const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
     const { theme, themeKey } = useTheme();
     const { language } = useLanguage();
     const isEn = language === 'en';
 
-    const isDefaultTheme = themeKey === 'default' || !themeKey || theme.name?.includes('الافتراضي') || theme.name === 'Default';
-    const isBlackAndWhite = themeKey === 'deep_black';
     const isBlackTheme = theme.bgColor === '#000000' || theme.name === 'أبيض وأسود' || themeKey === 'deep_black';
-    
-    // Dynamic theme primary and accent colors
-    const primaryColor = isBlackTheme ? '#FFFFFF' : (theme.accent || (isBlackAndWhite ? '#FFFFFF' : (theme.palette?.[0] || '#2E7D5E')));
-    const secondaryColor = isBlackTheme ? '#A1A1AA' : (theme.palette?.[1] || theme.palette?.[0] || '#4B5563');
+    const primaryColor = isBlackTheme ? '#FFFFFF' : (theme.accent || '#10B981');
+    const secondaryColor = isBlackTheme ? '#A1A1AA' : (theme.palette?.[1] || '#3B82F6');
     const btnTextColor = isBlackTheme ? '#000000' : '#FFFFFF';
-    
-    const [selectedReader, setSelectedReader] = useState(MEMORIZATION_READERS[1].id); // Default to Abdul Basit
-    
+    const primary3DShadow = isBlackTheme
+        ? '0 5px 0 #52525b, 0 10px 18px -2px rgba(0, 0, 0, 0.55), inset 0 2px 2px rgba(255, 255, 255, 0.65)'
+        : '0 5px 0 rgba(0, 0, 0, 0.22), 0 10px 18px -2px rgba(0, 0, 0, 0.16), inset 0 2px 2px rgba(255, 255, 255, 0.35)';
+    const primary3DStyle: React.CSSProperties = {
+        backgroundColor: primaryColor,
+        color: btnTextColor,
+        boxShadow: primary3DShadow
+    };
+
+    // Tabs
+    const [activeTab, setActiveTab] = useState<ActiveTab>('setup');
+
+    // Selection Mode: by ayahs, by page, or by quarter
+    const [selectionMode, setSelectionMode] = useState<SelectionMode>('ayahs');
+    const [selectedPage, setSelectedPage] = useState<number>(1);
+    const [selectedQuarter, setSelectedQuarter] = useState<number>(1);
+
+    // Reader & Repetitions
+    const [selectedReader, setSelectedReader] = useState(MEMORIZATION_READERS[1]?.id || 'Abdul_Basit_Murattal_192kbps');
     const [fromSurah, setFromSurah] = useState(1);
     const [fromAyah, setFromAyah] = useState(1);
     const [toSurah, setToSurah] = useState(1);
@@ -76,78 +109,114 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
     const [rangeRepeat, setRangeRepeat] = useState(1);
     const [ayahRepeat, setAyahRepeat] = useState(1);
     const [linkedRepeat, setLinkedRepeat] = useState(false);
-    const [pauseLength, setPauseLength] = useState(1);
-    const [testAfterSession, setTestAfterSession] = useState(false);
-    const [activeTab, setActiveTab] = useState<'setup' | 'review'>('setup');
-    const [memorizedRanges, setMemorizedRanges] = useState<MemorizedRange[]>([]);
+    const [isCumulative, setIsCumulative] = useState(false); // 3x3 loop
+    const [pauseLength, setPauseLength] = useState(3);
+    const [testAfterSession, setTestAfterSession] = useState(true);
 
-    const [showHelpModal, setShowHelpModal] = useState(false);
-    const [showExplanationModal, setShowExplanationModal] = useState(false);
+    // Data lists
+    const [memorizedRanges, setMemorizedRanges] = useState<MemorizedRange[]>([]);
+    const [stats, setStats] = useState<MemorizationStats>({
+      totalRanges: 0,
+      totalAyahsMemorized: 0,
+      dueTodayCount: 0,
+      streakDays: 0,
+      perfectCount: 0,
+      goodCount: 0,
+      needsWorkCount: 0
+    });
+    const [userPlans, setUserPlans] = useState<any>({});
+
+    // Modals & Pickers
+    const [activePicker, setActivePicker] = useState<'range' | 'ayah' | 'pause' | 'reader' | 'fromSurah' | 'fromAyah' | 'toSurah' | 'toAyah' | 'page' | 'quarter' | null>(null);
+    const [showPreviewModal, setShowPreviewModal] = useState(false);
+    const [showQuizModal, setShowQuizModal] = useState(false);
+    const [quizTargetRange, setQuizTargetRange] = useState<any>(null);
+    const [selectedQuizCard, setSelectedQuizCard] = useState<MemorizedRange | null>(null);
+    const [showDownloadModal, setShowDownloadModal] = useState(false);
     const [showResumePrompt, setShowResumePrompt] = useState(false);
     const [savedSession, setSavedSession] = useState<any>(null);
-    const [activePicker, setActivePicker] = useState<'range' | 'ayah' | 'pause' | 'reader' | 'fromSurah' | 'fromAyah' | 'toSurah' | 'toAyah' | null>(null);
-    const [showDownloadModal, setShowDownloadModal] = useState(false);
-    const [dismissedLocally, setDismissedLocally] = useState(false);
-    const isNewBadgeEligible = useShowNewBadge('memorization_review_tab');
-    const showNewBadge = isNewBadgeEligible && !dismissedLocally;
     const [toast, setToast] = useState<{ show: boolean; message: string }>({ show: false, message: '' });
+    const [showGuide, setShowGuide] = useState(false);
 
-    // Interactive Spotlight Guides - independent for each tab
-    const [showSetupTour, setShowSetupTour] = useState(() => !getGuideSeen('memorization_setup_tour'));
-    const [showReviewTour, setShowReviewTour] = useState(false);
-
+    // Keep screen awake logic (Screen Wake Lock API) throughout Memorization page
     useEffect(() => {
-        if (activeTab === 'review') {
-            setDismissedLocally(true);
-            markPageAsSeen('memorization_review_tab');
-            if (!getGuideSeen('memorization_review_tour')) {
-                setShowReviewTour(true);
-            }
-        }
-    }, [activeTab]);
+        let wakeLock: any = null;
 
-    const handleOpenGuide = () => {
-        if (activeTab === 'setup') {
-            setShowSetupTour(true);
-        } else {
-            setShowReviewTour(true);
+        const requestWakeLock = async () => {
+            try {
+                if ('wakeLock' in navigator) {
+                    wakeLock = await (navigator as any).wakeLock.request('screen');
+                }
+            } catch (err) {
+                // Ignore wake lock error
+            }
+        };
+
+        requestWakeLock();
+
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                requestWakeLock();
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            if (wakeLock) {
+                wakeLock.release().catch(() => {});
+            }
+        };
+    }, []);
+
+    const getMemorizationSteps = () => {
+        switch (activeTab) {
+            case 'setup':
+                return MEMORIZATION_SETUP_STEPS;
+            case 'plans':
+                return MEMORIZATION_PLANS_STEPS;
+            case 'review':
+                return MEMORIZATION_REVIEW_STEPS;
+            case 'quiz':
+                return MEMORIZATION_QUIZ_STEPS;
+            default:
+                return MEMORIZATION_SETUP_STEPS;
         }
     };
+
+    const getGuideKey = () => `memorization_spotlight_${activeTab}`;
 
     const showToast = (message: string) => {
         setToast({ show: true, message });
         setTimeout(() => setToast({ show: false, message: '' }), 3000);
     };
 
-    useEffect(() => {
-        return () => {
-            const audioElements = document.querySelectorAll('audio');
-            audioElements.forEach(audio => {
-                audio.pause();
-                audio.src = '';
-            });
-        };
-    }, []);
+    // Load initial data & refresh stats
+    const refreshData = () => {
+      setMemorizedRanges(memorizationService.getMemorizedRanges());
+      setStats(memorizationService.getStats());
+      setUserPlans(memorizationService.getUserPlans());
+    };
 
-    // Load settings from localStorage
     useEffect(() => {
+        refreshData();
         const savedSettings = localStorage.getItem('memorization_settings_v1');
         if (savedSettings) {
             try {
                 const parsed = JSON.parse(savedSettings);
-                setSelectedReader(parsed.reader || MEMORIZATION_READERS[1].id);
-                setFromSurah(parsed.fromSurah || 1);
-                setFromAyah(parsed.fromAyah || 1);
-                setToSurah(parsed.toSurah || 1);
-                setToAyah(parsed.toAyah || 7);
-                setRangeRepeat(parsed.rangeRepeat || 1);
-                setAyahRepeat(parsed.ayahRepeat || 1);
-                setLinkedRepeat(parsed.linkedRepeat !== undefined ? parsed.linkedRepeat : false);
-                setPauseLength(parsed.pauseLength || 1);
-                setTestAfterSession(parsed.testAfterSession || false);
-            } catch (e) {
-                console.error("Failed to load memorization settings", e);
-            }
+                if (parsed.reader) setSelectedReader(parsed.reader);
+                if (parsed.fromSurah) setFromSurah(parsed.fromSurah);
+                if (parsed.fromAyah) setFromAyah(parsed.fromAyah);
+                if (parsed.toSurah) setToSurah(parsed.toSurah);
+                if (parsed.toAyah) setToAyah(parsed.toAyah);
+                if (parsed.rangeRepeat) setRangeRepeat(parsed.rangeRepeat);
+                if (parsed.ayahRepeat) setAyahRepeat(parsed.ayahRepeat);
+                if (parsed.linkedRepeat !== undefined) setLinkedRepeat(parsed.linkedRepeat);
+                if (parsed.isCumulative !== undefined) setIsCumulative(parsed.isCumulative);
+                if (parsed.pauseLength !== undefined) setPauseLength(parsed.pauseLength);
+                if (parsed.testAfterSession !== undefined) setTestAfterSession(parsed.testAfterSession);
+            } catch (e) {}
         }
 
         const session = localStorage.getItem('memorization_session_v1');
@@ -159,12 +228,11 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                 }
             } catch (e) {}
         }
-
-        setMemorizedRanges(memorizationService.getMemorizedRanges());
     }, []);
 
+    // Save settings on change
     useEffect(() => {
-        const settings = {
+        const payload = {
             reader: selectedReader,
             fromSurah,
             fromAyah,
@@ -173,903 +241,1139 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
             rangeRepeat,
             ayahRepeat,
             linkedRepeat,
+            isCumulative,
             pauseLength,
             testAfterSession
         };
-        localStorage.setItem('memorization_settings_v1', JSON.stringify(settings));
-    }, [selectedReader, fromSurah, fromAyah, toSurah, toAyah, rangeRepeat, ayahRepeat, linkedRepeat, pauseLength, testAfterSession]);
+        localStorage.setItem('memorization_settings_v1', JSON.stringify(payload));
+    }, [selectedReader, fromSurah, fromAyah, toSurah, toAyah, rangeRepeat, ayahRepeat, linkedRepeat, isCumulative, pauseLength, testAfterSession]);
 
-    useEffect(() => {
-        if (!activePicker || activePicker === 'reader') return;
-
-        const timer = setTimeout(() => {
-            let elementId = '';
-            if (activePicker === 'fromSurah') {
-                elementId = `surah-btn-${fromSurah}`;
-            } else if (activePicker === 'toSurah') {
-                elementId = `surah-btn-${toSurah}`;
-            } else if (activePicker === 'fromAyah') {
-                elementId = `ayah-btn-${fromAyah}`;
-            } else if (activePicker === 'toAyah') {
-                elementId = `ayah-btn-${toAyah}`;
-            }
-
-            if (elementId) {
-                const el = document.getElementById(elementId);
-                if (el) {
-                    el.scrollIntoView({ block: 'center', behavior: 'auto' });
-                }
-            }
-        }, 50);
-        return () => clearTimeout(timer);
-    }, [activePicker, selectedReader, fromSurah, toSurah, fromAyah, toAyah]);
-
-    const handleStart = () => {
-        const session = localStorage.getItem('memorization_session_v1');
-        if (savedSession && session) {
-            setShowResumePrompt(true);
-        } else {
-            setSavedSession(null);
-            startNewSession();
-        }
-    };
-
-    const startNewSession = () => {
-        memorizationService.saveRange({
-            fromSurah,
-            fromAyah,
-            toSurah,
-            toAyah,
-            readerId: selectedReader
-        });
-        setMemorizedRanges(memorizationService.getMemorizedRanges());
-
-        onNavigate('quran', {
-            isMemorization: true,
-            initialSurah: fromSurah,
-            initialAyah: fromAyah,
-            memorizationSettings: {
-                reader: selectedReader,
-                fromSurah,
-                fromAyah,
-                toSurah,
-                toAyah,
-                rangeRepeat,
-                ayahRepeat,
-                linkedRepeat,
-                pauseLength,
-                testAfterSession
-            }
-        });
-    };
-
-    const resumeSession = () => {
-        onNavigate('quran', {
-            isMemorization: true,
-            memorizationSettings: savedSession.settings,
-            initialSurah: savedSession.currentAyah.s,
-            initialAyah: savedSession.currentAyah.a
-        });
-    };
-
-    const getAyahsCount = (surahNum: number) => {
-        return quranData.data.surahs[surahNum - 1]?.ayahs.length || 0;
-    };
-
-    // Modern flat NumberPicker chip
-    const NumberPicker = ({ value, label }: { value: number, onChange: (v: number) => void, label: string }) => (
-        <div 
-            onClick={() => setActivePicker(label as any)}
-            className="flex flex-col items-center justify-center min-w-[72px] h-11 rounded-xl cursor-pointer bg-slate-100 dark:bg-zinc-800/80 hover:bg-slate-200/70 dark:hover:bg-zinc-700/80 transition-all active:scale-95 select-none"
-        >
-            <span className="font-black text-base leading-tight" style={{ color: 'var(--text-color)' }}>{value}</span>
-            <span className="text-[10px] opacity-60 font-medium" style={{ color: 'var(--text-color)' }}>{isEn ? 'times' : 'مرة'}</span>
-        </div>
-    );
-
-    const handleDeleteRange = (id: string) => {
-        memorizationService.deleteRange(id);
-        setMemorizedRanges(memorizationService.getMemorizedRanges());
-        showToast(isEn ? 'Range removed from review' : 'تم حذف النطاق من المراجعة');
-    };
-
-    const handleReviewRange = (range: MemorizedRange) => {
-        onNavigate('quran', {
-            isMemorization: true,
-            surah: range.fromSurah,
-            ayah: range.fromAyah,
-            initialSurah: range.fromSurah,
-            initialAyah: range.fromAyah,
-            memorizationSettings: {
-                rangeId: range.id,
-                reader: range.readerId || selectedReader,
-                fromSurah: range.fromSurah,
-                fromAyah: range.fromAyah,
-                toSurah: range.toSurah,
-                toAyah: range.toAyah,
-                rangeRepeat: 2,
-                ayahRepeat: 1,
-                linkedRepeat: false,
-                pauseLength: 1,
-                testAfterSession: true,
-                isReviewMode: true
-            }
-        });
-    };
-
-    const handleHomeClick = () => {
-        if (showHelpModal) setShowHelpModal(false);
-        else if (showExplanationModal) setShowExplanationModal(false);
-        else if (showResumePrompt) setShowResumePrompt(false);
-        else if (activePicker) setActivePicker(null);
-        else if (showDownloadModal) setShowDownloadModal(false);
-        else onBack();
-    };
-
+    // Back Interceptor
     useEffect(() => {
         const interceptor = () => {
-            if (showHelpModal) { setShowHelpModal(false); return true; }
-            if (showExplanationModal) { setShowExplanationModal(false); return true; }
+            if (showPreviewModal) { setShowPreviewModal(false); return true; }
+            if (showQuizModal) { setShowQuizModal(false); return true; }
             if (showResumePrompt) { setShowResumePrompt(false); return true; }
             if (activePicker) { setActivePicker(null); return true; }
             if (showDownloadModal) { setShowDownloadModal(false); return true; }
             return false;
         };
-        const unregister = registerBackInterceptor(interceptor);
-        return unregister;
-    }, [showHelpModal, showExplanationModal, showResumePrompt, activePicker, showDownloadModal]);
+        return registerBackInterceptor(interceptor);
+    }, [showPreviewModal, showQuizModal, showResumePrompt, activePicker, showDownloadModal]);
+
+    // Update range when Page changes
+    const handlePageSelect = (pageNum: number) => {
+        setSelectedPage(pageNum);
+        const b = getPageRange(pageNum);
+        setFromSurah(b.start.s);
+        setFromAyah(b.start.a);
+        setToSurah(b.end.s);
+        setToAyah(b.end.a);
+        setActivePicker(null);
+    };
+
+    // Update range when Quarter changes
+    const handleQuarterSelect = (qNum: number) => {
+        setSelectedQuarter(qNum);
+        const b = getQuarterRange(qNum);
+        setFromSurah(b.start.s);
+        setFromAyah(b.start.a);
+        setToSurah(b.end.s);
+        setToAyah(b.end.a);
+        setActivePicker(null);
+    };
+
+    const getAyahsCount = (surahNum: number) => {
+        return quranJsonData.surahs[surahNum - 1]?.ayahs.length || 0;
+    };
 
     const getSurahName = (num: number) => {
         return isEn ? (SURAH_NAMES_EN[num - 1] || `Surah ${num}`) : (SURAH_NAMES_AR[num - 1] || `سورة ${num}`);
     };
 
+    // Launch Dedicated Quran Memorization Studio
+    const startMemorizationSession = (customParams?: any) => {
+        const sessionSettings = {
+            reader: selectedReader,
+            fromSurah: customParams?.fromSurah || fromSurah,
+            fromAyah: customParams?.fromAyah || fromAyah,
+            toSurah: customParams?.toSurah || toSurah,
+            toAyah: customParams?.toAyah || toAyah,
+            rangeRepeat: customParams?.rangeRepeat || rangeRepeat,
+            ayahRepeat: customParams?.ayahRepeat || ayahRepeat,
+            linkedRepeat: customParams?.linkedRepeat !== undefined ? customParams.linkedRepeat : linkedRepeat,
+            isCumulative: customParams?.isCumulative !== undefined ? customParams.isCumulative : isCumulative,
+            pauseLength: customParams?.pauseLength !== undefined ? customParams.pauseLength : pauseLength,
+            testAfterSession: customParams?.testAfterSession !== undefined ? customParams.testAfterSession : testAfterSession,
+            rangeId: customParams?.rangeId
+        };
+
+        // Automatically record range in review schedule
+        memorizationService.saveRange({
+            fromSurah: sessionSettings.fromSurah,
+            fromAyah: sessionSettings.fromAyah,
+            toSurah: sessionSettings.toSurah,
+            toAyah: sessionSettings.toAyah,
+            readerId: sessionSettings.reader
+        });
+        refreshData();
+
+        onNavigate('memorization-session', { memorizationSettings: sessionSettings });
+    };
+
+    const handleDeleteRange = (id: string) => {
+        memorizationService.deleteRange(id);
+        refreshData();
+        showToast(isEn ? 'Removed from review schedule' : 'تم الحذف من جدول المراجعة');
+    };
+
+    const handleToggleMastery = (id: string) => {
+        const updated = memorizationService.toggleMasteryStatus(id);
+        refreshData();
+        if (updated?.isMastered) {
+            showToast(isEn ? 'Marked as Fully Mastered! (Saved in your mastered treasury)' : 'تم تأكيد ورسوخ الحفظ بنجاح! تم نقله للمحفوظات الراسخة');
+        } else {
+            showToast(isEn ? 'Returned to active review schedule' : 'تمت الإعادة لجدول المراجعة النشط');
+        }
+    };
+
+    const handleStartPlan = (plan: MemorizationPlanItem) => {
+        memorizationService.startPlan(plan.id);
+        refreshData();
+        showToast(isEn ? `Enrolled in ${plan.titleEn}` : `تم بدء خطة: ${plan.titleAr}`);
+        
+        // Start day 1 session
+        startMemorizationSession({
+            fromSurah: plan.fromSurah,
+            fromAyah: plan.fromAyah,
+            toSurah: plan.toSurah,
+            toAyah: Math.min(plan.toAyah, plan.fromAyah + 10)
+        });
+    };
+
     return (
         <div 
-            className="h-screen flex flex-col" 
-            dir={isEn ? 'ltr' : 'rtl'} 
+            className="h-[100dvh] flex flex-col overflow-hidden" 
+            dir={isEn ? 'ltr' : 'rtl'}
             style={{ 
                 fontFamily: theme.font, 
                 backgroundColor: theme.bgColor || '#F8FAFC', 
                 color: 'var(--text-color)' 
             }}
         >
-            <div className="relative z-10 flex flex-col h-full">
-                {/* Header */}
-                <header className="app-top-bar shrink-0 relative z-10" style={{ backgroundColor: 'var(--qr-bar-bg)', borderBottom: '1px solid var(--qr-bar-border)' }}>
-                    <div className="app-top-bar__inner">
-                        <div className="relative flex items-center justify-center w-full min-h-[44px]">
-                            {/* Back button */}
-                            <div className={`absolute ${isEn ? 'left-0' : 'right-0'} flex items-center`}>
-                                <button
-                                    onClick={handleHomeClick}
-                                    className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
-                                    title={isEn ? 'Go Back' : 'رجوع للخلف'}
-                                    aria-label={isEn ? 'Go Back' : 'رجوع للخلف'}
-                                >
-                                    <i className={`fa-solid ${isEn ? 'fa-arrow-left' : 'fa-arrow-right'} text-xl`}></i>
-                                </button>
-                            </div>
-
-                            {/* Title in center */}
-                            <div className="text-center px-12 min-w-0">
-                                <h1 className="app-top-bar__title text-lg sm:text-xl font-kufi flex items-center justify-center gap-2 truncate" style={{ color: 'var(--qr-bar-text)' }}>
-                                    {isEn ? 'Memorization' : 'التحفيظ'}
-                                </h1>
-                            </div>
-
-                            {/* Guide / Page Lock / Home icons */}
-                            <div className={`absolute ${isEn ? 'right-0' : 'left-0'} flex items-center gap-1`}>
-                                <button
-                                    type="button"
-                                    onClick={handleOpenGuide}
-                                    className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
-                                    style={{ color: 'var(--qr-bar-text, var(--top-bar-text, inherit))' }}
-                                    title={isEn ? "Memorization Guide" : "دليل وشرح التحفيظ"}
-                                    aria-label={isEn ? "Memorization Guide" : "دليل وشرح التحفيظ"}
-                                >
-                                    <i className="fa-solid fa-circle-question text-lg"></i>
-                                </button>
-                                <ThemePageLock />
-                                <button
-                                    onClick={() => onNavigate('home')}
-                                    className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer"
-                                    title={isEn ? 'Home Page' : 'الصفحة الرئيسية'}
-                                    aria-label={isEn ? 'Home Page' : 'الصفحة الرئيسية'}
-                                >
-                                    <i className="fa-solid fa-house text-xl"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </header>
-
-                <main id="memorization-scroll-container" className="flex-1 overflow-y-auto px-4 py-3 space-y-4 hide-scrollbar relative z-10 max-w-lg mx-auto w-full">
-                    {/* Modern Flat Segmented Control Tabs */}
-                    <div 
-                        id="memorization-tabs-container" 
-                        className="flex p-1.5 rounded-2xl bg-slate-200/60 dark:bg-zinc-800/60 gap-1.5 shadow-none border-0"
-                    >
-                        <button 
-                            onClick={() => setActiveTab('setup')}
-                            className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                                activeTab === 'setup' 
-                                    ? 'shadow-sm' 
-                                    : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
-                            }`}
-                            style={{ 
-                                backgroundColor: activeTab === 'setup' ? primaryColor : 'transparent',
-                                color: activeTab === 'setup' ? btnTextColor : undefined
-                            }}
-                        >
-                            <BookOpen size={16} />
-                            <span>{isEn ? 'Memorization Setup' : 'إعداد الحفظ'}</span>
-                        </button>
-                        
-                        <button 
-                            onClick={() => {
-                                setActiveTab('review');
-                                setDismissedLocally(true);
-                                markPageAsSeen('memorization_review_tab');
-                            }}
-                            className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 relative cursor-pointer ${
-                                activeTab === 'review' 
-                                    ? 'shadow-sm' 
-                                    : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
-                            }`}
-                            style={{ 
-                                backgroundColor: activeTab === 'review' ? primaryColor : 'transparent',
-                                color: activeTab === 'review' ? btnTextColor : undefined
-                            }}
-                        >
-                            {showNewBadge && (
-                                <div className={`absolute -top-2.5 ${isEn ? '-right-1' : '-left-1'} bg-yellow-400 text-black text-[10px] font-bold px-2 py-0.5 rounded-full z-20 shadow-md animate-bounce pointer-events-none scale-75 origin-top`}>
-                                    {isEn ? 'New' : 'جديد'}
-                                </div>
-                            )}
-                            <Calendar size={16} />
-                            <span>{isEn ? 'Review Schedule' : 'جدول المراجعة'}</span>
-                            {memorizedRanges.length > 0 && (
-                                <span 
-                                    className="px-2 py-0.5 rounded-full text-[10px] font-bold"
-                                    style={{
-                                        backgroundColor: activeTab === 'review' ? 'rgba(255,255,255,0.25)' : hexToRgba(primaryColor, 0.15),
-                                        color: activeTab === 'review' ? '#FFFFFF' : primaryColor
-                                    }}
-                                >
-                                    {memorizedRanges.length}
-                                </span>
-                            )}
-                        </button>
-                    </div>
-
-                    {activeTab === 'setup' ? (
-                        <div className="space-y-4">
-                            {/* Reader Selection Card */}
-                            <div className="space-y-1.5" id="reader-select-container">
-                                <div className="flex items-center justify-start gap-2 font-bold text-sm text-slate-800 dark:text-zinc-200 px-1">
-                                    <User size={17} style={{ color: primaryColor }} />
-                                    <span>{isEn ? 'Select Reciter' : 'اختر اسم القارئ'}</span>
-                                </div>
-                                <div 
-                                    onClick={() => setActivePicker('reader')}
-                                    className="w-full p-4 rounded-2xl cursor-pointer font-medium text-sm shadow-[0_2px_10px_rgba(0,0,0,0.03)] hover:shadow-md flex items-center justify-between transition-all bg-white dark:bg-zinc-900 border-0"
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <div 
-                                            className="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs"
-                                            style={{ backgroundColor: hexToRgba(primaryColor, 0.12), color: primaryColor }}
-                                        >
-                                            <User size={16} />
-                                        </div>
-                                        <span className="font-bold text-sm" style={{ color: 'var(--text-color)' }}>
-                                            {getReciterDisplayName(selectedReader, MEMORIZATION_READERS.find(r => r.id === selectedReader)?.name, language)}
-                                        </span>
-                                    </div>
-                                    <div 
-                                        className="w-8 h-8 rounded-full flex items-center justify-center text-xs opacity-60 bg-slate-100 dark:bg-zinc-800"
-                                        style={{ color: 'var(--text-color)' }}
-                                    >
-                                        <i className="fa-solid fa-chevron-down text-xs"></i>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Ayah Range Card */}
-                            <div className="space-y-1.5" id="ayah-range-container">
-                                <div className="flex items-center justify-start gap-2 font-bold text-sm text-slate-800 dark:text-zinc-200 px-1">
-                                    <ArrowLeftRight size={17} style={{ color: primaryColor }} />
-                                    <span>{isEn ? 'Ayah Range' : 'نطاق الآيات'}</span>
-                                </div>
-                                
-                                <div className="grid grid-cols-2 gap-3">
-                                    {/* From */}
-                                    <div className="p-3.5 rounded-2xl bg-white dark:bg-zinc-900 shadow-[0_2px_10px_rgba(0,0,0,0.03)] space-y-2 border-0">
-                                        <div className="flex items-center justify-center gap-1.5 text-xs font-bold" style={{ color: primaryColor }}>
-                                            <span>{isEn ? 'From Verse' : 'من الآية'}</span>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <div 
-                                                onClick={() => setActivePicker('fromSurah')}
-                                                className="w-full py-3 px-2 rounded-xl cursor-pointer text-center font-bold text-xs bg-slate-100 dark:bg-zinc-800/80 hover:bg-slate-200/70 transition-all border-0 truncate"
-                                                style={{ color: 'var(--text-color)' }}
-                                            >
-                                                {getSurahName(fromSurah)}
-                                            </div>
-                                            <div 
-                                                onClick={() => setActivePicker('fromAyah')}
-                                                className="w-full py-3 px-2 rounded-xl cursor-pointer text-center font-bold text-xs bg-slate-100 dark:bg-zinc-800/80 hover:bg-slate-200/70 transition-all border-0"
-                                                style={{ color: 'var(--text-color)' }}
-                                            >
-                                                {isEn ? `Ayah ${fromAyah}` : `آية ${fromAyah}`}
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* To */}
-                                    <div className="p-3.5 rounded-2xl bg-white dark:bg-zinc-900 shadow-[0_2px_10px_rgba(0,0,0,0.03)] space-y-2 border-0">
-                                        <div className="flex items-center justify-center gap-1.5 text-xs font-bold" style={{ color: primaryColor }}>
-                                            <span>{isEn ? 'To Verse' : 'إلى الآية'}</span>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <div 
-                                                onClick={() => setActivePicker('toSurah')}
-                                                className="w-full py-3 px-2 rounded-xl cursor-pointer text-center font-bold text-xs bg-slate-100 dark:bg-zinc-800/80 hover:bg-slate-200/70 transition-all border-0 truncate"
-                                                style={{ color: 'var(--text-color)' }}
-                                            >
-                                                {getSurahName(toSurah)}
-                                            </div>
-                                            <div 
-                                                onClick={() => setActivePicker('toAyah')}
-                                                className="w-full py-3 px-2 rounded-xl cursor-pointer text-center font-bold text-xs bg-slate-100 dark:bg-zinc-800/80 hover:bg-slate-200/70 transition-all border-0"
-                                                style={{ color: 'var(--text-color)' }}
-                                            >
-                                                {isEn ? `Ayah ${toAyah}` : `آية ${toAyah}`}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Repetition Settings Card */}
-                            <div id="repetition-settings-container" className="space-y-1.5">
-                                <div className="flex items-center justify-start gap-2 font-bold text-sm text-slate-800 dark:text-zinc-200 px-1">
-                                    <Repeat size={17} style={{ color: primaryColor }} />
-                                    <span>{isEn ? 'Repetition Settings' : 'إعدادات التكرار'}</span>
-                                </div>
-
-                                <div className="p-3.5 rounded-2xl bg-white dark:bg-zinc-900 shadow-[0_2px_10px_rgba(0,0,0,0.03)] border-0">
-                                    <div className="grid grid-cols-2 gap-3">
-                                        {/* Range Repeat */}
-                                        <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50 dark:bg-zinc-800/50">
-                                            <span className="font-bold text-xs leading-tight pr-1" style={{ color: 'var(--text-color)' }}>
-                                                {isEn ? 'Range Repeat' : 'تكرار النطاق'}
-                                            </span>
-                                            <NumberPicker value={rangeRepeat} onChange={(v) => { setRangeRepeat(v); setSavedSession(null); }} label="range" />
-                                        </div>
-
-                                        {/* Ayah Repeat */}
-                                        <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50 dark:bg-zinc-800/50">
-                                            <span className="font-bold text-xs leading-tight pr-1" style={{ color: 'var(--text-color)' }}>
-                                                {isEn ? 'Ayah Repeat' : 'تكرار الآية'}
-                                            </span>
-                                            <NumberPicker value={ayahRepeat} onChange={(v) => { setAyahRepeat(v); setSavedSession(null); }} label="ayah" />
-                                        </div>
-
-                                        {/* Linked Repeat Toggle */}
-                                        <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50 dark:bg-zinc-800/50">
-                                            <div className="flex flex-col items-start">
-                                                <span className="font-bold text-xs leading-tight" style={{ color: 'var(--text-color)' }}>
-                                                    {isEn ? 'Linked Repeat' : 'ربط الآيات'}
-                                                </span>
-                                                <button 
-                                                    type="button"
-                                                    onClick={() => setShowExplanationModal(true)}
-                                                    className="text-[10px] opacity-70 flex items-center gap-1 mt-0.5 hover:opacity-100 transition-opacity" 
-                                                    style={{ color: primaryColor }}
-                                                >
-                                                    {isEn ? 'Explanation' : 'توضيح'} <Play size={8} />
-                                                </button>
-                                            </div>
-                                            <label className="relative inline-flex items-center cursor-pointer">
-                                                <input 
-                                                    type="checkbox" 
-                                                    className="sr-only peer" 
-                                                    checked={linkedRepeat} 
-                                                    onChange={(e) => { setLinkedRepeat(e.target.checked); setSavedSession(null); }} 
-                                                />
-                                                <div 
-                                                    className="w-10 h-6 rounded-full peer transition-colors after:content-[''] after:absolute after:top-[3px] after:right-[3px] after:bg-white after:rounded-full after:h-4.5 after:w-4.5 after:transition-all peer-checked:after:-translate-x-4 shadow-inner"
-                                                    style={{ 
-                                                        backgroundColor: linkedRepeat ? primaryColor : '#CBD5E1' 
-                                                    }}
-                                                ></div>
-                                            </label>
-                                        </div>
-
-                                        {/* Pause Length */}
-                                        <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50 dark:bg-zinc-800/50">
-                                            <span className="font-bold text-xs leading-tight pr-1" style={{ color: 'var(--text-color)' }}>
-                                                {isEn ? 'Pause Time' : 'السكتة'}
-                                            </span>
-                                            <NumberPicker value={pauseLength} onChange={(v) => { setPauseLength(v); setSavedSession(null); }} label="pause" />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Test After Session Toggle Card */}
-                            <div 
-                                id="test-after-session-container" 
-                                className="flex items-center justify-between p-4 rounded-2xl bg-white dark:bg-zinc-900 shadow-[0_2px_10px_rgba(0,0,0,0.03)] border-0"
+            {/* Top Bar */}
+            <header className="app-top-bar shrink-0 relative z-10" style={{ backgroundColor: 'var(--qr-bar-bg)', borderBottom: '1px solid var(--qr-bar-border)' }}>
+                <div className="app-top-bar__inner">
+                    <div className="relative flex items-center justify-center w-full min-h-[44px]">
+                        <div className={`absolute ${isEn ? 'left-0' : 'right-0'} flex items-center`}>
+                            <button
+                                onClick={onBack}
+                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer border-0"
+                                title={isEn ? 'Go Back' : 'رجوع للخلف'}
                             >
-                                <div className="flex items-center gap-2.5 font-bold text-sm" style={{ color: 'var(--text-color)' }}>
-                                    <div 
-                                        className="w-8 h-8 rounded-xl flex items-center justify-center"
-                                        style={{ backgroundColor: hexToRgba(primaryColor, 0.12), color: primaryColor }}
-                                    >
-                                        <CheckSquare size={18} />
-                                    </div>
-                                    <span>{isEn ? 'Test After Session' : 'اختبار بعد الجلسة'}</span>
-                                    <HelpCircle 
-                                        size={16} 
-                                        onClick={() => setShowHelpModal(true)} 
-                                        className="cursor-pointer hover:scale-110 transition-transform opacity-70 hover:opacity-100" 
-                                        style={{ color: primaryColor }} 
-                                    />
+                                <ArrowRight size={20} className={isEn ? 'rotate-180' : ''} />
+                            </button>
+                        </div>
+
+                        <div className="text-center px-12 min-w-0">
+                            <h1 className="app-top-bar__title text-lg sm:text-xl font-kufi flex items-center justify-center gap-2 truncate" style={{ color: 'var(--qr-bar-text)' }}>
+                                <span>{isEn ? 'Quran Memorization' : 'تحفيظ القرآن الكريم'}</span>
+                            </h1>
+                        </div>
+
+                        <div className={`absolute ${isEn ? 'right-0' : 'left-0'} flex items-center gap-1`}>
+                            <ThemePageLock />
+                            <button
+                                id="memorization-guide-btn"
+                                type="button"
+                                onClick={() => setShowGuide(true)}
+                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer border-0"
+                                title={isEn ? 'Memorization Guide' : 'إرشادات قسم التحفيظ'}
+                                aria-label="Memorization Guide"
+                            >
+                                <HelpCircle size={20} />
+                            </button>
+                            <button
+                                onClick={() => onNavigate('home')}
+                                className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-black/10 dark:hover:bg-white/10 active:scale-90 cursor-pointer border-0"
+                                title={isEn ? 'Home Page' : 'الصفحة الرئيسية'}
+                            >
+                                <i className="fa-solid fa-house text-lg"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <main 
+                className="flex-1 min-h-0 overflow-y-auto px-4 pt-3 app-scroll-safe space-y-4 max-w-lg mx-auto w-full hide-scrollbar"
+            >
+                {/* 1. Modern 3D 4-Tab Sculpted Control matching Tasbeeh */}
+                <div id="memorization-tabs-container" className="grid grid-cols-4 gap-2 pt-0.5">
+                    <button 
+                        type="button"
+                        onClick={() => setActiveTab('setup')}
+                        className={`py-2.5 px-1.5 rounded-2xl font-bold text-xs transition-all flex items-center justify-center cursor-pointer border-0 ${
+                            activeTab === 'setup'
+                                ? 'active:translate-y-[3px]'
+                                : 'app-page-card bg-white dark:bg-[#1E293B] text-slate-700 dark:text-zinc-200'
+                        }`}
+                        style={activeTab === 'setup' ? primary3DStyle : undefined}
+                    >
+                        <span className="truncate">{isEn ? 'Setup' : 'إعداد الحفظ'}</span>
+                    </button>
+
+                    <button 
+                        type="button"
+                        onClick={() => setActiveTab('plans')}
+                        className={`py-2.5 px-1.5 rounded-2xl font-bold text-xs transition-all flex items-center justify-center cursor-pointer border-0 ${
+                            activeTab === 'plans'
+                                ? 'active:translate-y-[3px]'
+                                : 'app-page-card bg-white dark:bg-[#1E293B] text-slate-700 dark:text-zinc-200'
+                        }`}
+                        style={activeTab === 'plans' ? primary3DStyle : undefined}
+                    >
+                        <span className="truncate">{isEn ? 'Plans' : 'الخطط'}</span>
+                    </button>
+
+                    <button 
+                        type="button"
+                        onClick={() => setActiveTab('review')}
+                        className={`py-2.5 px-1.5 rounded-2xl font-bold text-xs transition-all flex items-center justify-center gap-1 cursor-pointer border-0 ${
+                            activeTab === 'review'
+                                ? 'active:translate-y-[3px]'
+                                : 'app-page-card bg-white dark:bg-[#1E293B] text-slate-700 dark:text-zinc-200'
+                        }`}
+                        style={activeTab === 'review' ? primary3DStyle : undefined}
+                    >
+                        <span className="truncate">{isEn ? 'Review' : 'المراجعة'}</span>
+                        {stats.dueTodayCount > 0 && (
+                            <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping shrink-0"></span>
+                        )}
+                    </button>
+
+                    <button 
+                        type="button"
+                        onClick={() => setActiveTab('quiz')}
+                        className={`py-2.5 px-1.5 rounded-2xl font-bold text-xs transition-all flex items-center justify-center cursor-pointer border-0 ${
+                            activeTab === 'quiz'
+                                ? 'active:translate-y-[3px]'
+                                : 'app-page-card bg-white dark:bg-[#1E293B] text-slate-700 dark:text-zinc-200'
+                        }`}
+                        style={activeTab === 'quiz' ? primary3DStyle : undefined}
+                    >
+                        <span className="truncate">{isEn ? 'Testing' : 'الاختبار'}</span>
+                    </button>
+                </div>
+
+                {/* 2. Memorization Dashboard Header (لوحة الإنجاز) */}
+                <div id="memorization-dashboard-container" className="app-page-card border-0 p-4 rounded-3xl bg-white dark:bg-[#1E293B] space-y-3">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h3 className="font-bold text-sm">
+                                {isEn ? 'Your Memorization Journey' : 'لوحة الإنجاز'}
+                            </h3>
+                            <p className="text-[11px] opacity-60">
+                                {isEn 
+                                  ? `${stats.totalAyahsMemorized} of 6,236 verses mastered` 
+                                  : `تم حفظ وتثبيت ${stats.totalAyahsMemorized} آية من أصل 6,236`}
+                            </p>
+                        </div>
+
+                        {/* Streak Badge */}
+                        <div 
+                            className="wird-inner-raised flex items-center px-3 py-1.5 rounded-full text-xs font-bold"
+                            style={{ backgroundColor: '#FEF3C7', color: '#D97706' }}
+                        >
+                            <span>{stats.streakDays} {isEn ? 'Days' : 'أيام'}</span>
+                        </div>
+                    </div>
+
+                    {/* Progress Bar of Whole Quran */}
+                    <div className="space-y-1">
+                        <div className="w-full bg-slate-100 dark:bg-zinc-800 h-2.5 rounded-full overflow-hidden">
+                            <div 
+                                className="h-full rounded-full transition-all duration-500 shadow-sm"
+                                style={{ 
+                                    backgroundColor: primaryColor,
+                                    width: `${Math.max(1, Math.min(100, (stats.totalAyahsMemorized / 6236) * 100))}%`
+                                }}
+                            ></div>
+                        </div>
+                        <div className="flex justify-between text-[10px] opacity-60 font-semibold px-0.5">
+                            <span>{((stats.totalAyahsMemorized / 6236) * 100).toFixed(1)}% {isEn ? 'Completed' : 'من القرآن الكريم'}</span>
+                            <span>{stats.dueTodayCount > 0 ? (isEn ? `${stats.dueTodayCount} due today` : `${stats.dueTodayCount} بانتظار المراجعة اليوم`) : (isEn ? 'All reviewed!' : 'المراجعات مكتملة اليوم')}</span>
+                        </div>
+                    </div>
+
+                    {/* Breakdown Badges: Mastered vs Active Review */}
+                    {memorizedRanges.length > 0 && (
+                        <div className="grid grid-cols-2 gap-2 pt-1.5 border-t border-slate-100 dark:border-white/5">
+                            <div className="wird-inner-raised p-2.5 rounded-xl bg-emerald-500/10 flex items-center justify-between">
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                    <ShieldCheck size={14} className="text-emerald-600 shrink-0" />
+                                    <span className="text-[10px] font-bold text-emerald-800 dark:text-emerald-300 truncate">
+                                        {isEn ? 'Confirmed Mastered' : 'الحفظ الراسخ المؤكّد'}
+                                    </span>
                                 </div>
-                                <label className="relative inline-flex items-center cursor-pointer">
-                                    <input 
-                                        type="checkbox" 
-                                        className="sr-only peer" 
-                                        checked={testAfterSession} 
-                                        onChange={(e) => { setTestAfterSession(e.target.checked); setSavedSession(null); }} 
-                                    />
-                                    <div 
-                                        className="w-10 h-6 rounded-full peer transition-colors after:content-[''] after:absolute after:top-[3px] after:right-[3px] after:bg-white after:rounded-full after:h-4.5 after:w-4.5 after:transition-all peer-checked:after:-translate-x-4 shadow-inner"
-                                        style={{ 
-                                            backgroundColor: testAfterSession ? primaryColor : '#CBD5E1' 
-                                        }}
-                                    ></div>
-                                </label>
+                                <span className="text-xs font-black text-emerald-700 dark:text-emerald-300 tabular-nums">
+                                    {memorizedRanges.filter(r => r.isMastered).length}
+                                </span>
                             </div>
 
-                            {/* Start Memorization Button */}
-                            <div className="space-y-3 pt-2">
-                                <button 
-                                    id="btn-start-memorization"
-                                    onClick={handleStart}
-                                    className="w-full py-4 rounded-2xl font-bold text-base shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-3 cursor-pointer border-0"
-                                    style={{
-                                         backgroundColor: primaryColor,
-                                         color: btnTextColor,
-                                         boxShadow: `0 10px 25px -5px ${hexToRgba(primaryColor, 0.4)}`
-                                    }}
-                                >
-                                    <Play size={20} fill="currentColor" />
-                                    <span>{isEn ? 'Start Memorization Session' : 'ابدأ جلسة التحفيظ'}</span>
-                                </button>
-
-                                <button 
-                                    id="btn-download-reciters"
-                                    onClick={() => setShowDownloadModal(true)} 
-                                    className="w-full h-13 px-4 flex items-center justify-between transition-all active:scale-[0.98] rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.03)] hover:shadow-md bg-white dark:bg-zinc-900 border-0 cursor-pointer"
-                                    style={{ color: 'var(--text-color)' }}
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <div 
-                                            className="w-8 h-8 rounded-xl flex items-center justify-center"
-                                            style={{ backgroundColor: hexToRgba(primaryColor, 0.12), color: primaryColor }}
-                                        >
-                                            <Download size={18} />
-                                        </div>
-                                        <span className="font-bold text-sm">{isEn ? 'Download Reciters' : 'تحميل القراء'}</span>
-                                    </div>
-                                    <ArrowRight size={16} className={`rotate-180 opacity-40 ${isEn ? 'rotate-0' : ''}`} />
-                                </button>
+                            <div className="wird-inner-raised p-2.5 rounded-xl bg-amber-500/10 flex items-center justify-between">
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                    <Clock size={14} className="text-amber-600 shrink-0" />
+                                    <span className="text-[10px] font-bold text-amber-800 dark:text-amber-300 truncate">
+                                        {isEn ? 'Currently In Review' : 'قيد المراجعة والتثبيت'}
+                                    </span>
+                                </div>
+                                <span className="text-xs font-black text-amber-700 dark:text-amber-300 tabular-nums">
+                                    {memorizedRanges.filter(r => !r.isMastered).length}
+                                </span>
                             </div>
                         </div>
-                    ) : (
-                        <div className="space-y-4 animate-fadeIn">
-                            {/* Review Stats */}
-                            <div id="memorization-review-stats" className="grid grid-cols-2 gap-3">
-                                <div className="p-4 rounded-2xl text-center shadow-[0_2px_10px_rgba(0,0,0,0.03)] bg-white dark:bg-zinc-900 border-0">
-                                    <div 
-                                        className="w-11 h-11 rounded-2xl flex items-center justify-center mx-auto mb-2"
-                                        style={{ backgroundColor: hexToRgba(primaryColor, 0.12), color: primaryColor }}
-                                    >
-                                        <Trophy size={22} />
-                                    </div>
-                                    <div className="text-2xl font-black" style={{ color: primaryColor }}>
-                                        {memorizedRanges.length}
-                                    </div>
-                                    <div className="text-xs opacity-70 font-semibold mt-0.5" style={{ color: 'var(--text-color)' }}>
-                                        {isEn ? 'Memorized Ranges' : 'نطاق تم حفظه'}
-                                    </div>
-                                </div>
+                    )}
+                </div>
 
-                                <div className="p-4 rounded-2xl text-center shadow-[0_2px_10px_rgba(0,0,0,0.03)] bg-white dark:bg-zinc-900 border-0">
-                                    <div 
-                                        className="w-11 h-11 rounded-2xl flex items-center justify-center mx-auto mb-2"
-                                        style={{ backgroundColor: hexToRgba(secondaryColor, 0.12), color: secondaryColor }}
+                {/* TAB 1: SETUP (إعداد الحفظ والتحديد المرن) */}
+                {activeTab === 'setup' && (
+                    <div className="space-y-4">
+                        {/* Flexible Range Selector Modes (آيات / صفحات / أرباع) */}
+                        <div id="memorization-selection-mode-container" className="app-page-card border-0 p-4 rounded-3xl bg-white dark:bg-[#1E293B] space-y-3.5">
+                            <div className="flex items-center justify-between gap-2">
+                                <span className="font-bold text-xs" style={{ color: primaryColor }}>
+                                    <span>{isEn ? 'Select Range Method' : 'طريقة تحديد النطاق'}</span>
+                                </span>
+                                
+                                <div className="flex items-center gap-1.5 text-[10px] font-bold">
+                                    <button
+                                        type="button"
+                                        onClick={() => setSelectionMode('ayahs')}
+                                        className={`px-2.5 py-1.5 rounded-xl transition-all border-0 cursor-pointer ${
+                                            selectionMode === 'ayahs'
+                                                ? 'font-black active:translate-y-[2px]'
+                                                : 'wird-inner-raised bg-white dark:bg-[#0F172A] opacity-75 hover:opacity-100'
+                                        }`}
+                                        style={selectionMode === 'ayahs' ? primary3DStyle : undefined}
                                     >
-                                        <RotateCcw size={22} />
-                                    </div>
-                                    <div className="text-2xl font-black" style={{ color: secondaryColor }}>
-                                        {memorizedRanges.filter(r => (r.nextReviewDate || 0) <= Date.now()).length}
-                                    </div>
-                                    <div className="text-xs opacity-70 font-semibold mt-0.5" style={{ color: 'var(--text-color)' }}>
-                                        {isEn ? 'Pending Review Today' : 'بانتظار المراجعة اليوم'}
-                                    </div>
+                                        {isEn ? 'Verses' : 'بالآيات'}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setSelectionMode('page')}
+                                        className={`px-2.5 py-1.5 rounded-xl transition-all border-0 cursor-pointer ${
+                                            selectionMode === 'page'
+                                                ? 'font-black active:translate-y-[2px]'
+                                                : 'wird-inner-raised bg-white dark:bg-[#0F172A] opacity-75 hover:opacity-100'
+                                        }`}
+                                        style={selectionMode === 'page' ? primary3DStyle : undefined}
+                                    >
+                                        {isEn ? 'Page' : 'بالصفحة'}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setSelectionMode('quarter')}
+                                        className={`px-2.5 py-1.5 rounded-xl transition-all border-0 cursor-pointer ${
+                                            selectionMode === 'quarter'
+                                                ? 'font-black active:translate-y-[2px]'
+                                                : 'wird-inner-raised bg-white dark:bg-[#0F172A] opacity-75 hover:opacity-100'
+                                        }`}
+                                        style={selectionMode === 'quarter' ? primary3DStyle : undefined}
+                                    >
+                                        {isEn ? 'Quarter' : 'بالأرباع'}
+                                    </button>
                                 </div>
                             </div>
 
-                            {/* Review List */}
-                            <div id="memorization-review-list" className="space-y-3">
-                                <div className="flex items-center justify-between px-1">
-                                    <h3 className="font-bold text-sm text-slate-800 dark:text-zinc-200">
-                                        {isEn ? 'Your Memorization Review List' : 'قائمة محفوظاتك للمراجعة'}
-                                    </h3>
-                                    <List size={18} className="opacity-50" />
-                                </div>
-
-                                {memorizedRanges.length === 0 ? (
-                                    <div 
-                                        id="memorization-review-empty" 
-                                        className="p-8 text-center rounded-3xl space-y-3 shadow-[0_2px_12px_rgba(0,0,0,0.03)] bg-white dark:bg-zinc-900 border-0"
-                                    >
-                                        <div 
-                                            className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-1"
-                                            style={{ backgroundColor: hexToRgba(primaryColor, 0.1), color: primaryColor }}
-                                        >
-                                            <Calendar size={32} />
-                                        </div>
-                                        <h4 className="font-bold text-sm" style={{ color: 'var(--text-color)' }}>
-                                            {isEn ? 'No memorized ranges in review schedule currently' : 'لا توجد محفوظات في جدول المراجعة حالياً'}
-                                        </h4>
-                                        <p className="text-xs opacity-70 leading-relaxed max-w-xs mx-auto" style={{ color: 'var(--text-color)' }}>
-                                            {isEn 
-                                                ? 'Start memorizing and repeating any surah or ayah range from the Setup tab, and it will be automatically added to the smart review schedule.' 
-                                                : 'ابدأ بحفظ وتكرار أي سورة أو نطاق آيات من تبويب (إعداد الحفظ)، وسيتم إدراجه تلقائياً في جدول المراجعة الذكي.'}
-                                        </p>
+                            {/* Mode A: By Page */}
+                            {selectionMode === 'page' && (
+                                <div className="app-inner-3d-box border-0 p-3 rounded-2xl bg-white dark:bg-[#0F172A]/85 space-y-2">
+                                    <div className="flex items-center justify-between text-xs font-bold">
+                                        <span>{isEn ? 'Mushaf Page' : 'صفحة المصحف الشريف'}</span>
                                         <button
                                             type="button"
-                                            onClick={() => setActiveTab('setup')}
-                                            className="px-5 py-3 text-white rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 mt-2 border-0 cursor-pointer"
-                                            style={{ 
-                                                backgroundColor: primaryColor,
-                                                color: btnTextColor,
-                                                boxShadow: `0 8px 20px -4px ${hexToRgba(primaryColor, 0.35)}`
-                                            }}
+                                            onClick={() => setActivePicker('page')}
+                                            className="px-4 py-2 rounded-xl text-xs font-bold cursor-pointer border-0 active:translate-y-[2px] transition-all"
+                                            style={primary3DStyle}
                                         >
-                                            {isEn ? 'Setup New Memorization Range' : 'إعداد نطاق جديد للحفظ'}
+                                            {isEn ? `Page ${selectedPage}` : `صفحة رقم ${selectedPage}`}
                                         </button>
                                     </div>
-                                ) : (
-                                    memorizedRanges.map((range, idx) => {
-                                        const isDue = (range.nextReviewDate || 0) <= Date.now();
-                                        return (
-                                            <div 
-                                                key={range.id} 
-                                                id={idx === 0 ? "first-review-card" : undefined}
-                                                className="p-4 rounded-2xl space-y-3 relative overflow-hidden shadow-[0_2px_10px_rgba(0,0,0,0.03)] bg-white dark:bg-zinc-900 border-0 transition-all"
-                                            >
-                                                {isDue && (
-                                                    <div 
-                                                        className={`absolute top-0 ${isEn ? 'left-0' : 'right-0'} w-1.5 h-full`}
-                                                        style={{ backgroundColor: primaryColor }}
-                                                    ></div>
-                                                )}
-                                                
-                                                <div className="flex items-center justify-between">
-                                                    <div>
-                                                        <div className="font-bold text-sm" style={{ color: 'var(--text-color)' }}>
-                                                            {getSurahName(range.fromSurah)}
-                                                        </div>
-                                                        <div className="text-xs opacity-70 mt-0.5 font-medium" style={{ color: 'var(--text-color)' }}>
-                                                            {isEn ? `Ayahs: ${range.fromAyah} to ${range.toAyah}` : `الآيات: ${range.fromAyah} إلى ${range.toAyah}`}
-                                                        </div>
-                                                    </div>
-                                                    <div className="text-left">
-                                                        <div 
-                                                            className="text-[10px] font-bold px-2.5 py-1 rounded-full"
-                                                            style={{
-                                                                backgroundColor: isDue ? hexToRgba(primaryColor, 0.14) : 'rgba(156, 163, 175, 0.15)',
-                                                                color: isDue ? primaryColor : 'var(--text-color)'
-                                                            }}
-                                                        >
-                                                            {isDue ? (isEn ? 'Review Time! ⏱️' : 'حان وقت المراجعة ⏱️') : (isEn ? 'Upcoming Review ⏳' : 'مراجعة قادمة ⏳')}
-                                                        </div>
-                                                        <div className="text-[10px] opacity-60 mt-1 font-sans">
-                                                            {range.nextReviewDate ? new Date(range.nextReviewDate).toLocaleDateString(isEn ? 'en-US' : 'ar-SA') : (isEn ? 'Today' : 'اليوم')}
-                                                        </div>
-                                                    </div>
-                                                </div>
+                                    <div className="text-[11px] opacity-70">
+                                        {getSurahName(fromSurah)} ({fromAyah}) ➔ {getSurahName(toSurah)} ({toAyah})
+                                    </div>
+                                </div>
+                            )}
 
-                                                <div className="flex gap-2 pt-1">
-                                                    <button 
-                                                        onClick={() => handleReviewRange(range)}
-                                                        className="flex-1 py-3 text-white rounded-xl text-xs font-bold shadow-md flex items-center justify-center gap-2 transition-all active:scale-95 border-0 cursor-pointer"
-                                                        style={{ 
-                                                            backgroundColor: primaryColor,
-                                                            color: btnTextColor,
-                                                            boxShadow: `0 6px 16px -2px ${hexToRgba(primaryColor, 0.35)}`
+                            {/* Mode B: By Quarter */}
+                            {selectionMode === 'quarter' && (
+                                <div className="app-inner-3d-box border-0 p-3 rounded-2xl bg-white dark:bg-[#0F172A]/85 space-y-2">
+                                    <div className="flex items-center justify-between text-xs font-bold">
+                                        <span>{isEn ? 'Hizb Quarter (Rub\')' : 'ربع الحزب'}</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => setActivePicker('quarter')}
+                                            className="px-4 py-2 rounded-xl text-xs font-bold cursor-pointer border-0 active:translate-y-[2px] transition-all"
+                                            style={primary3DStyle}
+                                        >
+                                            {isEn ? `Quarter ${selectedQuarter}` : `الربع ${selectedQuarter}`}
+                                        </button>
+                                    </div>
+                                    <div className="text-[11px] opacity-70">
+                                        {getSurahName(fromSurah)} ({fromAyah}) ➔ {getSurahName(toSurah)} ({toAyah})
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Mode C: By Surah and Ayah (Always available as primary / custom) */}
+                            <div id="memorization-range-picker-container" className="grid grid-cols-2 gap-3">
+                                <div className="app-inner-3d-box border-0 p-3 rounded-2xl bg-white dark:bg-[#0F172A]/85 space-y-2.5">
+                                    <span className="block text-[10px] font-bold opacity-65 px-1">{isEn ? 'From' : 'من'}</span>
+                                    <button 
+                                        type="button"
+                                        onClick={() => setActivePicker('fromSurah')}
+                                        className="app-page-card border-0 w-full py-2.5 px-3 rounded-xl bg-white dark:bg-[#1E293B] text-xs font-bold truncate cursor-pointer text-center"
+                                    >
+                                        {getSurahName(fromSurah)}
+                                    </button>
+                                    <button 
+                                        type="button"
+                                        onClick={() => setActivePicker('fromAyah')}
+                                        className="app-page-card border-0 w-full py-2.5 px-3 rounded-xl bg-white dark:bg-[#1E293B] text-xs font-bold cursor-pointer text-center"
+                                    >
+                                        {isEn ? `Ayah ${fromAyah}` : `آية ${fromAyah}`}
+                                    </button>
+                                </div>
+
+                                <div className="app-inner-3d-box border-0 p-3 rounded-2xl bg-white dark:bg-[#0F172A]/85 space-y-2.5">
+                                    <span className="block text-[10px] font-bold opacity-65 px-1">{isEn ? 'To' : 'إلى'}</span>
+                                    <button 
+                                        type="button"
+                                        onClick={() => setActivePicker('toSurah')}
+                                        className="app-page-card border-0 w-full py-2.5 px-3 rounded-xl bg-white dark:bg-[#1E293B] text-xs font-bold truncate cursor-pointer text-center"
+                                    >
+                                        {getSurahName(toSurah)}
+                                    </button>
+                                    <button 
+                                        type="button"
+                                        onClick={() => setActivePicker('toAyah')}
+                                        className="app-page-card border-0 w-full py-2.5 px-3 rounded-xl bg-white dark:bg-[#1E293B] text-xs font-bold cursor-pointer text-center"
+                                    >
+                                        {isEn ? `Ayah ${toAyah}` : `آية ${toAyah}`}
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Quick Preview & Tafseer Trigger */}
+                            <button
+                                type="button"
+                                onClick={() => setShowPreviewModal(true)}
+                                className="app-page-card border-0 w-full py-3 rounded-2xl bg-white dark:bg-[#1E293B] font-bold text-xs flex items-center justify-center cursor-pointer transition-all"
+                                style={{ color: isBlackTheme ? '#FFFFFF' : '#059669' }}
+                            >
+                                <span>{isEn ? 'Preview Verses & Tafseer First' : 'معاينة الآيات وقراءة التفسير الميسر أولاً'}</span>
+                            </button>
+                        </div>
+
+                        {/* Reciter Selector */}
+                        <button 
+                            type="button"
+                            id="reader-select-container"
+                            onClick={() => setActivePicker('reader')}
+                            className="app-page-card border-0 w-full p-4 rounded-3xl bg-white dark:bg-[#1E293B] flex items-center justify-between cursor-pointer text-start"
+                        >
+                            <div>
+                                <span className="text-[10px] font-bold opacity-60 block">{isEn ? 'Reciter' : 'القارئ المعلم'}</span>
+                                <div className="font-bold text-sm">
+                                    {getReciterDisplayName(selectedReader, MEMORIZATION_READERS.find(r => r.id === selectedReader)?.name, language)}
+                                </div>
+                            </div>
+                            <i className="fa-solid fa-chevron-left text-xs opacity-40"></i>
+                        </button>
+
+                        {/* Repetition Engine Settings */}
+                        <div id="repetition-settings-container" className="app-page-card border-0 p-4 rounded-3xl bg-white dark:bg-[#1E293B] space-y-3">
+                            <span className="font-bold text-xs block" style={{ color: primaryColor }}>
+                                <span>{isEn ? 'Repetition & Memorization Rules' : 'إعدادات وقواعد التكرار'}</span>
+                            </span>
+
+                            <div className="grid grid-cols-2 gap-2.5">
+                                <div className="app-inner-3d-box border-0 p-3 rounded-2xl bg-white dark:bg-[#0F172A]/85 flex items-center justify-between gap-2">
+                                    <span className="text-xs font-bold">{isEn ? 'Ayah Repeat' : 'تكرار الآية'}</span>
+                                    <button 
+                                        type="button"
+                                        onClick={() => setActivePicker('ayah')}
+                                        className="app-page-card border-0 w-12 h-9 rounded-xl bg-white dark:bg-[#1E293B] font-bold text-xs cursor-pointer"
+                                    >
+                                        {ayahRepeat}×
+                                    </button>
+                                </div>
+
+                                <div className="app-inner-3d-box border-0 p-3 rounded-2xl bg-white dark:bg-[#0F172A]/85 flex items-center justify-between gap-2">
+                                    <span className="text-xs font-bold">{isEn ? 'Range Repeat' : 'تكرار النطاق'}</span>
+                                    <button 
+                                        type="button"
+                                        onClick={() => setActivePicker('range')}
+                                        className="app-page-card border-0 w-12 h-9 rounded-xl bg-white dark:bg-[#1E293B] font-bold text-xs cursor-pointer"
+                                    >
+                                        {rangeRepeat}×
+                                    </button>
+                                </div>
+
+                                <div className="app-inner-3d-box border-0 p-3 rounded-2xl bg-white dark:bg-[#0F172A]/85 flex items-center justify-between gap-2">
+                                    <span className="text-xs font-bold">{isEn ? 'Recitation Pause' : 'سكتة الترديد'}</span>
+                                    <button 
+                                        type="button"
+                                        onClick={() => setActivePicker('pause')}
+                                        className="app-page-card border-0 px-2.5 h-9 min-w-[3rem] rounded-xl bg-white dark:bg-[#1E293B] font-bold text-xs cursor-pointer"
+                                    >
+                                        {pauseLength === 0 ? (isEn ? '0 (Off)' : '0 (مستمر)') : `${pauseLength}s`}
+                                    </button>
+                                </div>
+
+                                <div 
+                                    className="wird-inner-raised border-0 p-3 rounded-2xl bg-white dark:bg-[#0F172A]/80 flex items-center justify-between cursor-pointer active:translate-y-[2px]"
+                                    onClick={() => {
+                                        const nextVal = !linkedRepeat;
+                                        setLinkedRepeat(nextVal);
+                                        if (nextVal) setIsCumulative(false);
+                                    }}
+                                >
+                                    <div className="flex flex-col">
+                                        <span className="text-xs font-bold">{isEn ? 'Linked Repeat' : 'الربط بالسابقة'}</span>
+                                        <span className="text-[9px] opacity-60">{isEn ? 'Link with previous verse' : 'تثبيت التسلسل'}</span>
+                                    </div>
+                                    <input 
+                                        type="checkbox"
+                                        checked={linkedRepeat}
+                                        onChange={e => {
+                                            const checked = e.target.checked;
+                                            setLinkedRepeat(checked);
+                                            if (checked) setIsCumulative(false);
+                                        }}
+                                        onClick={e => e.stopPropagation()}
+                                        className="w-5 h-5 rounded accent-emerald-500 cursor-pointer"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Cumulative 3x3 Loop Toggle */}
+                            <div 
+                                className="wird-inner-raised border-0 p-3.5 rounded-2xl bg-amber-50/90 dark:bg-[#0F172A]/80 flex items-center justify-between cursor-pointer active:translate-y-[2px]"
+                                onClick={() => {
+                                    const nextVal = !isCumulative;
+                                    setIsCumulative(nextVal);
+                                    if (nextVal) setLinkedRepeat(false);
+                                }}
+                            >
+                                <div>
+                                    <div className="text-xs font-bold text-amber-900 dark:text-amber-200">
+                                        {isEn ? 'Cumulative 3x3 Loop (Shanqiti)' : 'الحفظ التراكمي الشنقيطي (3×3)'}
+                                    </div>
+                                    <div className="text-[10px] text-amber-700 dark:text-amber-400">
+                                        {isEn ? 'Repeats verses progressively for strong retention' : 'تكرار الآيات تصاعدياً لضمان الرسوخ وعدم التفلت'}
+                                    </div>
+                                </div>
+                                <input 
+                                    type="checkbox"
+                                    checked={isCumulative}
+                                    onChange={e => {
+                                        const checked = e.target.checked;
+                                        setIsCumulative(checked);
+                                        if (checked) setLinkedRepeat(false);
+                                    }}
+                                    onClick={e => e.stopPropagation()}
+                                    className="w-5 h-5 rounded accent-amber-500 cursor-pointer"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Start Button */}
+                        <div className="space-y-3.5 pt-1 pb-2">
+                            <button
+                                type="button"
+                                id="btn-start-memorization"
+                                onClick={() => startMemorizationSession()}
+                                className="w-full py-4 min-h-[56px] rounded-2xl font-bold text-base flex items-center justify-center active:translate-y-[3px] transition-all cursor-pointer border-0"
+                                style={primary3DStyle}
+                            >
+                                <span>{isEn ? 'Start Quran Memorization Session' : 'بدء جلسة تحفيظ القرآن الكريم'}</span>
+                            </button>
+
+                            <button
+                                type="button"
+                                id="btn-download-reciters"
+                                onClick={() => setShowDownloadModal(true)}
+                                className="app-page-card border-0 w-full py-4 min-h-[52px] rounded-2xl font-bold text-sm bg-white dark:bg-[#1E293B] text-slate-700 dark:text-zinc-200 flex items-center justify-center transition-all cursor-pointer"
+                            >
+                                <span className="flex items-center gap-2">
+                                    <Download size={18} />
+                                    <span>{isEn ? 'Download Audio for Offline Memorization' : 'تحميل التلاوات للحفظ بدون إنترنت'}</span>
+                                </span>
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* TAB 2: PLANS (خطط الحفظ المنهجية) */}
+                {activeTab === 'plans' && (
+                    <div id="memorization-preset-plans-container" className="space-y-3.5 pb-2">
+                        <div className="text-xs opacity-70 px-1 font-medium">
+                            {isEn 
+                              ? 'Select a ready curriculum to follow your daily memorization targets:' 
+                              : 'اختر خطة منهجية لترتيب وردك اليومي ومتابعة التزامك:'}
+                        </div>
+
+                        {PRESET_MEMORIZATION_PLANS.map(plan => {
+                            const progress = userPlans[plan.id];
+                            const isEnrolled = Boolean(progress);
+                            const completedCount = progress?.completedDays?.length || 0;
+                            const percent = Math.round((completedCount / plan.totalDays) * 100);
+
+                            return (
+                                <div 
+                                    key={plan.id}
+                                    className="app-page-card border-0 p-4 rounded-3xl bg-white dark:bg-[#1E293B] space-y-3"
+                                >
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div>
+                                            <h4 className="font-bold text-sm">
+                                                {isEn ? plan.titleEn : plan.titleAr}
+                                            </h4>
+                                            <p className="text-xs opacity-70 leading-relaxed mt-0.5">
+                                                {isEn ? plan.descriptionEn : plan.descriptionAr}
+                                            </p>
+                                            <div className="flex items-center gap-2 mt-2 text-[11px] font-bold" style={{ color: primaryColor }}>
+                                                <span>{plan.totalDays} {isEn ? 'Days' : 'يوماً'}</span>
+                                                {isEnrolled && (
+                                                    <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600">
+                                                        {isEn ? `Day ${progress.currentDay}` : `اليوم ${progress.currentDay}`}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Enrolled Progress Bar */}
+                                    {isEnrolled && (
+                                        <div className="space-y-1 pt-1">
+                                            <div className="w-full bg-slate-100 dark:bg-zinc-800 h-2 rounded-full overflow-hidden">
+                                                <div 
+                                                    className="h-full rounded-full transition-all duration-300"
+                                                    style={{ backgroundColor: primaryColor, width: `${percent}%` }}
+                                                ></div>
+                                            </div>
+                                            <div className="flex justify-between text-[10px] opacity-60 font-semibold">
+                                                <span>{percent}% {isEn ? 'Completed' : 'مكتمل'}</span>
+                                                <span>{completedCount}/{plan.totalDays} {isEn ? 'days' : 'أيام'}</span>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Action button */}
+                                    <button
+                                        type="button"
+                                        onClick={() => handleStartPlan(plan)}
+                                        className="w-full py-3 rounded-2xl font-bold text-xs flex items-center justify-center active:translate-y-[3px] transition-all border-0 cursor-pointer"
+                                        style={primary3DStyle}
+                                    >
+                                        <span>{isEnrolled ? (isEn ? 'Continue Today\'s Target' : 'متابعة ورد اليوم') : (isEn ? 'Start This Plan' : 'البدء في هذه الخطة')}</span>
+                                    </button>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+
+                {/* TAB 3: REVIEW (جدول المراجعة الذكي SM-2) */}
+                {activeTab === 'review' && (
+                    <div id="memorization-review-list" className="space-y-3.5 pb-2">
+                        <div id="memorization-review-stats" className="flex items-center justify-between px-1">
+                            <span className="font-bold text-xs opacity-70">
+                                {isEn ? 'Spaced Repetition Schedule (SM-2)' : 'جدول التكرار المتباعد الذكي'}
+                            </span>
+                            <span className="text-[11px] font-bold" style={{ color: primaryColor }}>
+                                {memorizedRanges.length} {isEn ? 'Saved Ranges' : 'محفوظات'}
+                            </span>
+                        </div>
+
+                        {memorizedRanges.length === 0 ? (
+                            <div className="app-page-card border-0 p-8 text-center rounded-3xl bg-white dark:bg-[#1E293B] space-y-3">
+                                <h4 className="font-bold text-sm">
+                                    {isEn ? 'No ranges in review schedule yet' : 'لا توجد محفوظات في جدول المراجعة بعد'}
+                                </h4>
+                                <p className="text-xs opacity-60 leading-relaxed max-w-xs mx-auto">
+                                    {isEn 
+                                      ? 'Any surah or ayah range you memorize will automatically appear here with a calculated smart review date.' 
+                                      : 'كل سورة أو نطاق آيات تقوم بحفظه سيظهر هنا تلقائياً مع تاريخ المراجعة الذكي لضمان عدم نسيانه.'}
+                                </p>
+                            </div>
+                        ) : (
+                            memorizedRanges.map(range => {
+                                const isDue = (range.nextReviewDate || 0) <= Date.now();
+
+                                return (
+                                    <div 
+                                        key={range.id}
+                                        className="app-page-card border-0 p-4 rounded-3xl bg-white dark:bg-[#1E293B] space-y-3"
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <div className="font-bold text-sm">
+                                                    {getSurahName(range.fromSurah)}
+                                                </div>
+                                                <div className="text-xs opacity-60">
+                                                    {isEn ? `Ayahs ${range.fromAyah} to ${range.toAyah}` : `الآيات: ${range.fromAyah} إلى ${range.toAyah}`}
+                                                </div>
+                                            </div>
+
+                                            {/* Status Badge */}
+                                            <div className="flex items-center gap-1.5">
+                                                {range.isMastered && (
+                                                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 flex items-center gap-1">
+                                                        <ShieldCheck size={11} />
+                                                        <span>{isEn ? 'Mastered' : 'راسخ مؤكد'}</span>
+                                                    </span>
+                                                )}
+                                                <div 
+                                                    className="px-2.5 py-0.5 rounded-full text-[10px] font-bold"
+                                                    style={{
+                                                        backgroundColor: isDue ? '#FEE2E2' : '#DCFCE7',
+                                                        color: isDue ? '#B91C1C' : '#15803D'
+                                                    }}
+                                                >
+                                                    {isDue ? (isEn ? 'Due Today' : 'مستحق اليوم') : (isEn ? 'Scheduled' : 'مجدول')}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-2 pt-1">
+                                            <button
+                                                type="button"
+                                                onClick={() => startMemorizationSession({
+                                                    fromSurah: range.fromSurah,
+                                                    fromAyah: range.fromAyah,
+                                                    toSurah: range.toSurah,
+                                                    toAyah: range.toAyah,
+                                                    reader: range.readerId,
+                                                    rangeId: range.id
+                                                })}
+                                                className="flex-1 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center active:translate-y-[2px] transition-all border-0 cursor-pointer"
+                                                style={primary3DStyle}
+                                            >
+                                                <span>{isEn ? 'Start Review & Repeat' : 'بدء المراجعة والتكرار'}</span>
+                                            </button>
+
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setQuizTargetRange(range);
+                                                    setShowQuizModal(true);
+                                                }}
+                                                className="app-page-card border-0 px-3 h-10 rounded-xl bg-white dark:bg-[#0F172A] flex items-center justify-center transition-all cursor-pointer text-xs font-bold"
+                                                title={isEn ? 'Test This Range' : 'اختبار وتثبيت هذا النطاق'}
+                                            >
+                                                <span>{isEn ? 'Test' : 'اختبار'}</span>
+                                            </button>
+
+                                            {/* Confirm Mastery Toggle Button */}
+                                            <button
+                                                type="button"
+                                                onClick={() => handleToggleMastery(range.id)}
+                                                className={`px-3 h-10 rounded-xl flex items-center justify-center gap-1 transition-all border-0 cursor-pointer text-xs font-bold ${
+                                                    range.isMastered 
+                                                        ? 'bg-emerald-500 text-white active:translate-y-[2px]' 
+                                                        : 'app-page-card bg-white dark:bg-[#0F172A] text-emerald-700 dark:text-emerald-300'
+                                                }`}
+                                                style={range.isMastered ? {
+                                                    boxShadow: '0 4px 0 #047857, inset 0 1.5px 2px rgba(255,255,255,0.4)'
+                                                } : undefined}
+                                                title={range.isMastered 
+                                                    ? (isEn ? 'Marked as Mastered (Click to re-activate regular review)' : 'حفظ راسخ ومؤكد (انقر لإعادته للمراجعة الدورية)')
+                                                    : (isEn ? 'Confirm as Fully Mastered' : 'تأكيد الحفظ ورسوخه')}
+                                            >
+                                                <CheckCircle size={15} />
+                                                <span>{range.isMastered ? (isEn ? 'Mastered' : 'مؤكّد') : (isEn ? 'Confirm' : 'تأكيد')}</span>
+                                            </button>
+
+                                            <button
+                                                type="button"
+                                                onClick={() => handleDeleteRange(range.id)}
+                                                className="w-10 h-10 rounded-xl bg-red-500 text-white flex items-center justify-center active:translate-y-[2px] transition-all border-0 cursor-pointer"
+                                                style={{
+                                                    boxShadow: '0 4px 0 #b91c1c, inset 0 1.5px 1px rgba(255,255,255,0.35)'
+                                                }}
+                                                title={isEn ? 'Delete' : 'حذف'}
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                );
+                            })
+                        )}
+                    </div>
+                )}
+
+                {/* TAB 4: QUIZ CENTER (مركز الاختبارات الفورية) */}
+                {activeTab === 'quiz' && (
+                    <div className="space-y-4 pb-2">
+                        {/* Quiz Start Card */}
+                        <div id="memorization-quiz-mode-container" className="app-page-card border-0 p-4 rounded-3xl bg-white dark:bg-[#1E293B] space-y-3">
+                            <div>
+                                <h3 className="font-bold text-sm">
+                                    {isEn ? 'Instant Quran Quiz Center' : 'مركز الاختبار القرآني المباشر'}
+                                </h3>
+                                <p className="text-xs opacity-60 leading-relaxed mt-1">
+                                    {isEn 
+                                      ? 'Select a memorized range card from the list below to activate and start the test.' 
+                                      : 'اختر بطاقة من محفوظاتك بالأسفل لتفعيل زر بدء الاختبار للنطاق المحدد.'}
+                                </p>
+                            </div>
+
+                            {/* Selected Card Preview Badge */}
+                            {selectedQuizCard && (
+                                <div className="wird-inner-raised p-3 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/30 flex items-center justify-between text-xs font-bold" style={{ color: primaryColor }}>
+                                    <span>
+                                        {isEn 
+                                          ? `Selected: ${getSurahName(selectedQuizCard.fromSurah)} (${selectedQuizCard.fromAyah}-${selectedQuizCard.toAyah})` 
+                                          : `المحدد: ${getSurahName(selectedQuizCard.fromSurah)} (الآيات ${selectedQuizCard.fromAyah} إلى ${selectedQuizCard.toAyah})`}
+                                    </span>
+                                    <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-500 text-white font-semibold">
+                                        {isEn ? 'Ready' : 'جاهز للاختبار'}
+                                    </span>
+                                </div>
+                            )}
+
+                            {/* Start Button - Disabled until a card is selected */}
+                            <button
+                                type="button"
+                                disabled={!selectedQuizCard}
+                                onClick={() => {
+                                    if (selectedQuizCard) {
+                                        setQuizTargetRange({ 
+                                            fromSurah: selectedQuizCard.fromSurah, 
+                                            fromAyah: selectedQuizCard.fromAyah, 
+                                            toSurah: selectedQuizCard.toSurah, 
+                                            toAyah: selectedQuizCard.toAyah,
+                                            id: selectedQuizCard.id
+                                        });
+                                        setShowQuizModal(true);
+                                    }
+                                }}
+                                className={`w-full py-3.5 rounded-2xl font-bold text-sm transition-all border-0 ${
+                                    selectedQuizCard 
+                                      ? 'active:translate-y-[3px] cursor-pointer' 
+                                      : 'opacity-45 cursor-not-allowed grayscale'
+                                }`}
+                                style={primary3DStyle}
+                            >
+                                <span>
+                                    {selectedQuizCard 
+                                      ? (isEn ? 'Start Test for Selected Range' : 'بدء الاختبار للنطاق المحدد حالياً')
+                                      : (isEn ? 'Select a Range Card Below First' : 'حدد بطاقة من الأسفل أولاً لبدء الاختبار')}
+                                </span>
+                            </button>
+                        </div>
+
+                        {/* Saved Memorized Ranges List for Quizzes */}
+                        <div id="memorization-quick-quizzes-container" className="space-y-2.5">
+                            <div className="flex items-center justify-between px-1">
+                                <span className="font-bold text-xs opacity-70">
+                                    {isEn ? 'Saved Memorization Ranges' : 'قائمة المحفوظات المتاحة للاختبار'}
+                                </span>
+                                <span className="text-[11px] font-bold" style={{ color: primaryColor }}>
+                                    {memorizedRanges.length} {isEn ? 'Saved' : 'محفوظات'}
+                                </span>
+                            </div>
+
+                            {memorizedRanges.length === 0 ? (
+                                <div className="app-page-card border-0 p-6 text-center rounded-3xl bg-white dark:bg-[#1E293B] space-y-3">
+                                    <div
+                                        className="app-inner-3d-box border-0 w-14 h-14 rounded-2xl flex items-center justify-center mx-auto bg-white dark:bg-[#0F172A]/90"
+                                        style={{ color: primaryColor }}
+                                    >
+                                        <i className="fa-solid fa-brain text-xl"></i>
+                                    </div>
+                                    <div className="app-inner-3d-box border-0 p-3.5 rounded-2xl bg-white dark:bg-[#0F172A]/85 space-y-1">
+                                        <h4 className="font-bold text-xs">
+                                            {isEn ? 'No saved ranges available yet' : 'قائمة الاختبارات فارغة حالياً'}
+                                        </h4>
+                                        <p className="text-[11px] opacity-70 leading-relaxed max-w-xs mx-auto">
+                                            {isEn 
+                                              ? 'Go to "Setup" tab, choose your surah/ayah range and start memorizing to add it here automatically.' 
+                                              : 'يرجى الانتقال لتبويب "إعداد الحفظ" وتحديد السورة أو الآيات أولاً ليتم حفظها وإدراجها هنا للاختبار.'}
+                                        </p>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="space-y-3">
+                                    {memorizedRanges.map(range => {
+                                        const isSelected = selectedQuizCard?.id === range.id;
+
+                                        return (
+                                            <div
+                                                key={range.id}
+                                                onClick={() => setSelectedQuizCard(range)}
+                                                className={`app-page-card tasbeeh-pressable border-0 p-4 rounded-3xl bg-white dark:bg-[#1E293B] transition-all cursor-pointer space-y-2.5 ${
+                                                    isSelected 
+                                                      ? (isBlackTheme ? 'ring-2 ring-white/80' : 'ring-2 ring-emerald-500')
+                                                      : ''
+                                                }`}
+                                            >
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <div className="flex items-center gap-3">
+                                                        <div 
+                                                            className={`w-6 h-6 rounded-full flex items-center justify-center border-0 transition-all shrink-0 ${
+                                                                isSelected ? '' : 'app-inner-3d-box bg-white dark:bg-[#0F172A]'
+                                                            }`}
+                                                            style={isSelected ? {
+                                                                backgroundColor: isBlackTheme ? '#FFFFFF' : '#10B981',
+                                                                color: isBlackTheme ? '#000000' : '#FFFFFF',
+                                                                boxShadow: isBlackTheme
+                                                                    ? '0 3px 0 #52525b, 0 5px 10px rgba(0, 0, 0, 0.45), inset 0 1.5px 1px rgba(255, 255, 255, 0.6)'
+                                                                    : '0 3px 0 #047857, 0 5px 10px rgba(16, 185, 129, 0.28), inset 0 1.5px 1px rgba(255, 255, 255, 0.45)'
+                                                            } : undefined}
+                                                        >
+                                                            {isSelected ? (
+                                                                <i className="fa-solid fa-check text-[10px]"></i>
+                                                            ) : (
+                                                                <span className="w-2 h-2 rounded-full bg-slate-300/70 dark:bg-white/20" />
+                                                            )}
+                                                        </div>
+                                                        <div>
+                                                            <div className="font-bold text-xs sm:text-sm">
+                                                                {getSurahName(range.fromSurah)}
+                                                            </div>
+                                                            <div className="text-[11px] opacity-60">
+                                                                {isEn ? `Ayahs ${range.fromAyah} to ${range.toAyah}` : `الآيات: ${range.fromAyah} إلى ${range.toAyah}`}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setSelectedQuizCard(range);
+                                                            setQuizTargetRange({
+                                                                fromSurah: range.fromSurah,
+                                                                fromAyah: range.fromAyah,
+                                                                toSurah: range.toSurah,
+                                                                toAyah: range.toAyah,
+                                                                id: range.id
+                                                            });
+                                                            setShowQuizModal(true);
                                                         }}
+                                                        className="px-3.5 py-2 rounded-xl font-bold text-xs active:translate-y-[2px] transition-all border-0 cursor-pointer"
+                                                        style={primary3DStyle}
                                                     >
-                                                        <Play size={14} fill="currentColor" />
-                                                        <span>{isEn ? 'Start Review & Fixation Session' : 'بدء جلسة المراجعة والتثبيت'}</span>
-                                                    </button>
-                                                    <button 
-                                                        onClick={() => handleDeleteRange(range.id)}
-                                                        className="w-10 h-10 flex items-center justify-center rounded-xl bg-red-50 dark:bg-red-950/30 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/40 transition-all active:scale-95 border-0 cursor-pointer"
-                                                        title={isEn ? 'Delete from review schedule' : 'حذف من جدول المراجعة'}
-                                                    >
-                                                        <Trash2 size={16} />
+                                                        <span>{isEn ? 'Start Test' : 'اختبار الآن'}</span>
                                                     </button>
                                                 </div>
                                             </div>
                                         );
-                                    })
-                                )}
-                            </div>
-                        </div>
-                    )}
-                    <div className="shrink-0 w-full h-8"></div>
-                </main>
-            </div>
-
-            {/* Help Modal */}
-            {showHelpModal && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fadeIn" onClick={() => setShowHelpModal(false)}>
-                    <div 
-                        className={`w-full max-w-sm rounded-3xl p-6 shadow-2xl animate-modal-enter ${isEn ? 'text-left' : 'text-right'} bg-white dark:bg-zinc-900 border-0`} 
-                        onClick={e => e.stopPropagation()} 
-                        style={{ color: 'var(--text-color)' }}
-                    >
-                        <h2 className="text-lg font-bold mb-3 pb-2 border-b border-slate-100 dark:border-zinc-800">
-                            {isEn ? 'Memorization Guide' : 'دليل التحفيظ'}
-                        </h2>
-                        <div className="space-y-3 text-xs leading-relaxed opacity-90">
-                            {isEn ? (
-                                <>
-                                    <p>• <span className="font-bold">Ayah Repeat:</span> Number of times to repeat each ayah individually before moving to the next.</p>
-                                    <p>• <span className="font-bold">Range Repeat:</span> Number of times to repeat the entire group after finishing it.</p>
-                                    <p>• <span className="font-bold">Linked Repeat:</span> Repeats the previous ayah with the current one to link memorization.</p>
-                                    <p>• <span className="font-bold">Pause:</span> Silence period after each ayah to give you a chance to recite after the reciter.</p>
-                                </>
-                            ) : (
-                                <>
-                                    <p>• <span className="font-bold">تكرار الآية:</span> عدد مرات تكرار كل آية على حدة قبل الانتقال للتالية.</p>
-                                    <p>• <span className="font-bold">تكرار النطاق:</span> عدد مرات إعادة المجموعة كاملة بعد الانتهاء منها.</p>
-                                    <p>• <span className="font-bold">التكرار المترابط:</span> يقوم بتكرار الآية السابقة مع الحالية لربط الحفظ.</p>
-                                    <p>• <span className="font-bold">السكتة:</span> فترة صمت بعد كل آية لتعطيك فرصة للترديد خلف القارئ.</p>
-                                </>
+                                    })}
+                                </div>
                             )}
                         </div>
-                        <button 
-                            onClick={() => setShowHelpModal(false)} 
-                            className="w-full mt-5 py-3 rounded-xl font-bold text-white border-0 cursor-pointer shadow-md" 
-                            style={{ backgroundColor: primaryColor, color: btnTextColor }}
-                        >
-                            {isEn ? 'Got it' : 'فهمت'}
-                        </button>
                     </div>
-                </div>
-            )}
+                )}
 
-            {/* Explanation Modal */}
-            {showExplanationModal && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fadeIn" onClick={() => setShowExplanationModal(false)}>
-                    <div 
-                        className={`w-full max-w-sm rounded-3xl p-6 shadow-2xl animate-modal-enter ${isEn ? 'text-left' : 'text-right'} bg-white dark:bg-zinc-900 border-0`} 
-                        onClick={e => e.stopPropagation()} 
-                        style={{ color: 'var(--text-color)' }}
-                    >
-                        <h2 className="text-lg font-bold mb-3 pb-2 border-b border-slate-100 dark:border-zinc-800">
-                            {isEn ? 'Linked Repeat' : 'التكرار المترابط'}
-                        </h2>
-                        <p className="text-xs leading-relaxed mb-5 opacity-90">
-                            {isEn 
-                                ? 'This feature helps you link verses together. When enabled, the app will play the previous ayah once before repeating the current ayah, establishing verse sequence in your memory.' 
-                                : 'هذه الميزة تساعدك على ربط الآيات ببعضها. عند تفعيلها، سيقوم التطبيق بتشغيل الآية السابقة مرة واحدة قبل البدء بتكرار الآية الحالية، مما يرسخ تسلسل الآيات في ذاكرتك.'}
-                        </p>
-                        <button 
-                            onClick={() => setShowExplanationModal(false)} 
-                            className="w-full py-3 rounded-xl font-bold text-white border-0 cursor-pointer shadow-md" 
-                            style={{ backgroundColor: primaryColor, color: btnTextColor }}
-                        >
-                            {isEn ? 'Close' : 'إغلاق'}
-                        </button>
-                    </div>
-                </div>
-            )}
+            </main>
 
-            {/* Resume Session Modal */}
-            {showResumePrompt && savedSession && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fadeIn">
-                    <div 
-                        className="w-full max-w-sm rounded-3xl p-6 shadow-2xl animate-modal-enter text-center bg-white dark:bg-zinc-900 border-0" 
-                        onClick={e => e.stopPropagation()} 
-                        style={{ color: 'var(--text-color)' }}
-                    >
-                        <div 
-                            className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
-                            style={{ backgroundColor: hexToRgba(primaryColor, 0.12), color: primaryColor }}
-                        >
-                            <Play size={28} fill="currentColor" />
-                        </div>
-                        <h2 className="text-lg font-bold mb-2">
-                            {isEn ? 'Previous Session Available' : 'جلسة سابقة متوفرة'}
-                        </h2>
-                        <p className="opacity-70 mb-5 text-xs leading-relaxed">
-                            {isEn 
-                                ? `A previous memorization session was found at ${getSurahName(savedSession.currentAyah.s)} Ayah ${savedSession.currentAyah.a}. Would you like to continue from where you left off or start over?`
-                                : `تم العثور على جلسة تحفيظ سابقة عند سورة ${SURAH_NAMES_AR[savedSession.currentAyah.s - 1]} الآية ${savedSession.currentAyah.a}. هل تود الاستمرار من حيث توقفت أم البدء من جديد؟`}
-                        </p>
-                        <div className="space-y-2.5">
-                            <button 
-                                onClick={resumeSession}
-                                className="w-full py-3.5 rounded-xl font-bold text-sm shadow-md active:scale-95 transition-transform border-0 cursor-pointer"
-                                style={{ backgroundColor: primaryColor, color: btnTextColor }}
-                            >
-                                {isEn ? 'Continue Session' : 'الاستمرار في الجلسة'}
-                            </button>
-                            <button 
-                                onClick={() => {
-                                    localStorage.removeItem('memorization_session_v1');
-                                    setSavedSession(null);
-                                    setShowResumePrompt(false);
-                                    startNewSession();
-                                }}
-                                className="w-full py-3 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 rounded-xl font-bold text-xs opacity-80 active:scale-95 transition-transform border-0 cursor-pointer"
-                                style={{ color: 'var(--text-color)' }}
-                            >
-                                {isEn ? 'Start Over' : 'البدء من جديد'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Reader Picker Modal */}
-            {activePicker === 'reader' && (
-                <div style={{
-                    '--qr-bg': theme.bgColor || '#0D1B2A',
-                    '--qr-text': theme.textColor,
-                    '--qr-card-bg': isBlackTheme ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.5)',
-                    '--qr-card-text': theme.textColor,
-                    '--qr-card-border': 'transparent',
-                    '--qr-accent': primaryColor,
-                    '--qr-accent-text': btnTextColor,
-                    '--qr-modal-bg': theme.bgColor || '#0D1B2A',
-                    '--qr-modal-text': theme.textColor
-                } as React.CSSProperties}>
-                    <ReciterSelectModal
-                        onClose={() => setActivePicker(null)}
-                        currentReader={selectedReader}
-                        onSelect={(id) => { setSelectedReader(id); setSavedSession(null); setActivePicker(null); }}
-                        isLandscape={window.innerWidth > window.innerHeight}
-                        readersList={MEMORIZATION_READERS}
-                        hideHeader={true}
-                    />
-                </div>
-            )}
-
-            {/* Custom Picker Modal (Surah, Ayah, Counts) */}
+            {/* Custom Range / Ayah / Page Pickers Modal */}
             {activePicker && activePicker !== 'reader' && (
-                <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-fadeIn" onClick={() => setActivePicker(null)}>
+                <div 
+                    className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-fadeIn" 
+                    onClick={() => setActivePicker(null)}
+                >
                     <div 
-                        className="w-full max-w-[300px] rounded-[2rem] p-4 shadow-2xl animate-modal-enter flex flex-col max-h-[75vh] bg-white dark:bg-zinc-900 border-0" 
-                        onClick={e => e.stopPropagation()} 
-                        style={{ color: 'var(--text-color)' }}
+                        className="app-page-card border-0 w-full max-w-[320px] rounded-[2rem] p-4 animate-modal-enter flex flex-col max-h-[75dvh] bg-white dark:bg-[#1E293B]" 
+                        onClick={e => e.stopPropagation()}
                     >
-                        <div className={`flex-1 overflow-y-auto scrollbar-hide space-y-2 p-1 ${isEn ? 'text-left' : 'text-right'}`} dir={isEn ? 'ltr' : 'rtl'}>
-                            {(activePicker === 'fromSurah' || activePicker === 'toSurah') && (isEn ? SURAH_NAMES_EN : SURAH_NAMES_AR).map((name, i) => {
-                                const surahNum = i + 1;
-                                const current = activePicker === 'fromSurah' ? fromSurah : toSurah;
-                                const isSelected = current === surahNum;
-                                return (
-                                    <button
-                                        key={i}
-                                        id={`surah-btn-${surahNum}`}
-                                        onClick={() => {
-                                            if (activePicker === 'fromSurah') {
-                                                setFromSurah(surahNum);
-                                                setFromAyah(1);
-                                                if (surahNum > toSurah) {
-                                                    setToSurah(surahNum);
-                                                    setToAyah(1);
-                                                }
-                                            } else {
-                                                setToSurah(surahNum);
-                                                setToAyah(getAyahsCount(surahNum));
-                                            }
-                                            setSavedSession(null);
-                                            setActivePicker(null);
-                                        }}
-                                        className={`w-full p-2.5 rounded-xl font-bold transition-all flex items-center justify-between cursor-pointer border-0 ${
-                                            isSelected 
-                                                ? 'shadow-sm text-white' 
-                                                : 'hover:bg-slate-100 dark:hover:bg-zinc-800 opacity-80 hover:opacity-100'
-                                        }`}
-                                        style={{ 
-                                            backgroundColor: isSelected ? primaryColor : 'transparent',
-                                            color: isSelected ? btnTextColor : undefined
-                                        }}
-                                    >
-                                        <div className={`flex items-center gap-3 ${isEn ? 'flex-row' : 'flex-row-reverse'}`}>
-                                            <span 
-                                                className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold"
-                                                style={{ 
-                                                    backgroundColor: isSelected ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.05)',
-                                                    color: isSelected ? '#FFFFFF' : 'inherit'
-                                                }}
-                                            >
-                                                {surahNum}
-                                            </span>
-                                            <span className="text-xs">{isEn ? name : `سورة ${name}`}</span>
-                                        </div>
-                                    </button>
-                                );
-                            })}
-
-                            {(activePicker === 'fromAyah' || activePicker === 'toAyah') && (
-                                <div className="grid grid-cols-4 gap-2">
-                                    {Array.from({ length: getAyahsCount(activePicker === 'fromAyah' ? fromSurah : toSurah) }).map((_, i) => {
-                                        const ayahNum = i + 1;
-                                        const current = activePicker === 'fromAyah' ? fromAyah : toAyah;
-                                        const isSelected = current === ayahNum;
+                        <div className="flex-1 min-h-0 overflow-y-auto scrollbar-hide space-y-2.5 p-1.5 text-right" dir={isEn ? 'ltr' : 'rtl'}>
+                            {/* Surah Picker */}
+                            {(activePicker === 'fromSurah' || activePicker === 'toSurah') && (
+                                (isEn ? SURAH_NAMES_EN : SURAH_NAMES_AR)
+                                    .map((name, i) => ({ name, sNum: i + 1 }))
+                                    .filter(({ sNum }) => activePicker === 'fromSurah' || sNum >= fromSurah)
+                                    .map(({ name, sNum }) => {
+                                        const isSelected = (activePicker === 'fromSurah' ? fromSurah : toSurah) === sNum;
                                         return (
                                             <button
-                                                key={i}
-                                                id={`ayah-btn-${ayahNum}`}
+                                                type="button"
+                                                key={sNum}
                                                 onClick={() => {
-                                                    if (activePicker === 'fromAyah') setFromAyah(ayahNum);
-                                                    else setToAyah(ayahNum);
-                                                    setSavedSession(null);
+                                                    if (activePicker === 'fromSurah') {
+                                                        setFromSurah(sNum);
+                                                        setFromAyah(1);
+                                                        setToSurah(sNum);
+                                                        setToAyah(getAyahsCount(sNum));
+                                                    } else {
+                                                        setToSurah(sNum);
+                                                        setToAyah(getAyahsCount(sNum));
+                                                    }
                                                     setActivePicker(null);
                                                 }}
-                                                className={`aspect-square flex items-center justify-center rounded-xl font-bold transition-all text-xs cursor-pointer border-0 ${
-                                                    isSelected 
-                                                        ? 'shadow-sm text-white' 
-                                                        : 'bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 opacity-80'
+                                                className={`w-full p-2.5 rounded-xl font-bold transition-all flex items-center justify-between cursor-pointer border-0 ${
+                                                    isSelected
+                                                        ? 'active:translate-y-[2px]'
+                                                        : 'app-page-card bg-white dark:bg-[#0F172A]'
                                                 }`}
-                                                style={{ 
-                                                    backgroundColor: isSelected ? primaryColor : undefined,
-                                                    color: isSelected ? btnTextColor : undefined
-                                                }}
+                                                style={isSelected ? primary3DStyle : undefined}
                                             >
-                                                {ayahNum}
+                                                <span className="text-xs">{isEn ? name : `سورة ${name}`}</span>
+                                                <span className="text-[10px] opacity-60">{sNum}</span>
+                                            </button>
+                                        );
+                                    })
+                            )}
+
+                            {/* Ayah Picker */}
+                            {(activePicker === 'fromAyah' || activePicker === 'toAyah') && (() => {
+                                const targetSurah = activePicker === 'fromAyah' ? fromSurah : toSurah;
+                                const totalAyahs = getAyahsCount(targetSurah);
+                                const startAyah = (activePicker === 'toAyah' && fromSurah === toSurah) ? fromAyah : 1;
+                                const count = Math.max(0, totalAyahs - startAyah + 1);
+                                return (
+                                    <div className="grid grid-cols-4 gap-2.5 p-0.5">
+                                        {Array.from({ length: count }).map((_, i) => {
+                                            const aNum = startAyah + i;
+                                            const isSelected = (activePicker === 'fromAyah' ? fromAyah : toAyah) === aNum;
+                                            return (
+                                                <button
+                                                    type="button"
+                                                    key={aNum}
+                                                    onClick={() => {
+                                                        if (activePicker === 'fromAyah') {
+                                                            setFromAyah(aNum);
+                                                            if (fromSurah === toSurah && toAyah < aNum) {
+                                                                setToAyah(aNum);
+                                                            }
+                                                        } else {
+                                                            setToAyah(aNum);
+                                                        }
+                                                        setActivePicker(null);
+                                                    }}
+                                                    className={`aspect-square flex items-center justify-center rounded-xl font-bold transition-all text-xs cursor-pointer border-0 ${
+                                                        isSelected
+                                                            ? 'active:translate-y-[2px]'
+                                                            : 'app-page-card bg-white dark:bg-[#0F172A]'
+                                                    }`}
+                                                    style={isSelected ? primary3DStyle : undefined}
+                                                >
+                                                    {aNum}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                );
+                            })()}
+
+                            {/* Page Picker (1 to 604) */}
+                            {activePicker === 'page' && (
+                                <div className="grid grid-cols-4 gap-2.5 p-0.5">
+                                    {Array.from({ length: 604 }).map((_, i) => {
+                                        const pNum = i + 1;
+                                        const isSelected = selectedPage === pNum;
+                                        return (
+                                            <button
+                                                type="button"
+                                                key={i}
+                                                onClick={() => handlePageSelect(pNum)}
+                                                className={`aspect-square flex items-center justify-center rounded-xl font-bold text-xs cursor-pointer border-0 ${
+                                                    isSelected
+                                                        ? 'active:translate-y-[2px]'
+                                                        : 'app-page-card bg-white dark:bg-[#0F172A]'
+                                                }`}
+                                                style={isSelected ? primary3DStyle : undefined}
+                                            >
+                                                {pNum}
                                             </button>
                                         );
                                     })}
                                 </div>
                             )}
 
-                            {(activePicker === 'range' || activePicker === 'ayah' || activePicker === 'pause') && (
-                                <div className="grid grid-cols-2 gap-2.5">
-                                    {Array.from({ length: 10 }).map((_, i) => {
-                                        const val = i + 1;
-                                        const isSelected = (activePicker === 'range' ? rangeRepeat : activePicker === 'ayah' ? ayahRepeat : pauseLength) === val;
+                            {/* Quarter Picker (1 to 240) */}
+                            {activePicker === 'quarter' && (
+                                <div className="grid grid-cols-4 gap-2.5 p-0.5">
+                                    {Array.from({ length: 240 }).map((_, i) => {
+                                        const qNum = i + 1;
+                                        const isSelected = selectedQuarter === qNum;
                                         return (
-                                            <button 
+                                            <button
+                                                type="button"
+                                                key={i}
+                                                onClick={() => handleQuarterSelect(qNum)}
+                                                className={`aspect-square flex items-center justify-center rounded-xl font-bold text-xs cursor-pointer border-0 ${
+                                                    isSelected
+                                                        ? 'active:translate-y-[2px]'
+                                                        : 'app-page-card bg-white dark:bg-[#0F172A]'
+                                                }`}
+                                                style={isSelected ? primary3DStyle : undefined}
+                                            >
+                                                {qNum}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            )}
+
+                            {/* Number Pickers (Repeats, Pause) */}
+                            {activePicker === 'pause' && (
+                                <div className="grid grid-cols-2 gap-3 p-0.5">
+                                    {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((val) => {
+                                        const isSelected = pauseLength === val;
+                                        return (
+                                            <button
+                                                type="button"
+                                                key={val}
+                                                onClick={() => {
+                                                    setPauseLength(val);
+                                                    setActivePicker(null);
+                                                }}
+                                                className={`py-3.5 flex items-center justify-center rounded-2xl font-bold transition-all text-sm border-0 cursor-pointer ${
+                                                    isSelected
+                                                        ? 'active:translate-y-[2px]'
+                                                        : 'app-page-card bg-white dark:bg-[#0F172A]'
+                                                }`}
+                                                style={isSelected ? primary3DStyle : undefined}
+                                            >
+                                                {val === 0 
+                                                    ? (isEn ? '0s (Continuous)' : '0 (مستمر بدون توقف)') 
+                                                    : `${val} ${isEn ? 'sec' : 'ثوانٍ'}`}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            )}
+
+                            {/* Range & Ayah Number Pickers */}
+                            {(activePicker === 'range' || activePicker === 'ayah') && (
+                                <div className="grid grid-cols-2 gap-3 p-0.5">
+                                    {Array.from({ length: activePicker === 'ayah' ? 20 : 10 }).map((_, i) => {
+                                        const val = i + 1;
+                                        const isSelected = (activePicker === 'range' ? rangeRepeat : ayahRepeat) === val;
+                                        return (
+                                            <button
+                                                type="button"
                                                 key={i}
                                                 onClick={() => {
                                                     if (activePicker === 'range') setRangeRepeat(val);
                                                     else if (activePicker === 'ayah') setAyahRepeat(val);
-                                                    else if (activePicker === 'pause') setPauseLength(val);
                                                     setActivePicker(null);
                                                 }}
-                                                className={`py-3.5 flex items-center justify-center rounded-2xl font-bold transition-all active:scale-95 text-base border-0 cursor-pointer ${
-                                                    isSelected 
-                                                        ? 'shadow-md text-white' 
-                                                        : 'bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200'
+                                                className={`py-3.5 flex items-center justify-center rounded-2xl font-bold transition-all text-base border-0 cursor-pointer ${
+                                                    isSelected
+                                                        ? 'active:translate-y-[2px]'
+                                                        : 'app-page-card bg-white dark:bg-[#0F172A]'
                                                 }`}
-                                                style={{ 
-                                                    backgroundColor: isSelected ? primaryColor : undefined,
-                                                    color: isSelected ? btnTextColor : 'var(--text-color)'
-                                                }}
+                                                style={isSelected ? primary3DStyle : undefined}
                                             >
-                                                {val}
+                                                {val}×
                                             </button>
                                         );
                                     })}
@@ -1080,33 +1384,77 @@ const Memorization: React.FC<MemorizationProps> = ({ onBack, onNavigate }) => {
                 </div>
             )}
 
+            {/* Reciter Modal */}
+            {activePicker === 'reader' && (
+                <ReciterSelectModal
+                    onClose={() => setActivePicker(null)}
+                    currentReader={selectedReader}
+                    onSelect={(id) => { setSelectedReader(id); setActivePicker(null); }}
+                    isLandscape={false}
+                    readersList={MEMORIZATION_READERS}
+                    hideHeader={true}
+                />
+            )}
+
+            {/* Preview Modal */}
+            {showPreviewModal && (
+                <MemorizationPreviewModal
+                    isOpen={showPreviewModal}
+                    onClose={() => setShowPreviewModal(false)}
+                    onStartSession={() => {
+                        setShowPreviewModal(false);
+                        startMemorizationSession();
+                    }}
+                    fromSurah={fromSurah}
+                    fromAyah={fromAyah}
+                    toSurah={toSurah}
+                    toAyah={toAyah}
+                    primaryColor={primaryColor}
+                    btnTextColor={btnTextColor}
+                    isEn={isEn}
+                />
+            )}
+
+            {/* Quiz Modal */}
+            {showQuizModal && (
+                <MemorizationQuizModal
+                    isOpen={showQuizModal}
+                    onClose={() => setShowQuizModal(false)}
+                    fromSurah={quizTargetRange?.fromSurah || fromSurah}
+                    fromAyah={quizTargetRange?.fromAyah || fromAyah}
+                    toSurah={quizTargetRange?.toSurah || toSurah}
+                    toAyah={quizTargetRange?.toAyah || toAyah}
+                    rangeId={quizTargetRange?.id}
+                    primaryColor={primaryColor}
+                    btnTextColor={btnTextColor}
+                    isEn={isEn}
+                    onComplete={() => {
+                        refreshData();
+                        showToast(isEn ? 'Review recorded successfully!' : 'تم تسجيل نتيجة المراجعة بنجاح!');
+                    }}
+                />
+            )}
+
+            {/* Offline Download Modal */}
             {showDownloadModal && (
-                <QuranDownloadModal 
-                    onClose={() => setShowDownloadModal(false)} 
-                    quranData={quranData.data} 
-                    showToast={showToast} 
-                    isLandscape={false} 
+                <QuranDownloadModal
+                    onClose={() => setShowDownloadModal(false)}
+                    quranData={quranJsonData}
+                    showToast={showToast}
+                    isLandscape={false}
                     readersList={MEMORIZATION_READERS}
                 />
             )}
-            {toast.show && <Toast show={toast.show} message={toast.message} onClose={() => setToast({ show: false, message: '' })} />}
 
-            {/* Interactive Spotlight Guides */}
             <CommunitySpotlightGuide
-                guideKey="memorization_setup_tour"
-                steps={MEMORIZATION_SETUP_STEPS}
-                isOpen={showSetupTour && activeTab === 'setup'}
-                onClose={() => setShowSetupTour(false)}
+                guideKey={getGuideKey()}
+                steps={getMemorizationSteps()}
+                isOpen={showGuide}
+                onClose={() => setShowGuide(false)}
                 isEn={isEn}
             />
 
-            <CommunitySpotlightGuide
-                guideKey="memorization_review_tour"
-                steps={MEMORIZATION_REVIEW_STEPS}
-                isOpen={showReviewTour && activeTab === 'review'}
-                onClose={() => setShowReviewTour(false)}
-                isEn={isEn}
-            />
+            {toast.show && <ToastComponent show={toast.show} message={toast.message} onClose={() => setToast({ show: false, message: '' })} />}
         </div>
     );
 };

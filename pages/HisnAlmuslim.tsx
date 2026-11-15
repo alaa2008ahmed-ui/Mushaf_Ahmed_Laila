@@ -41,6 +41,32 @@ function HisnAlmuslim({ onBack, onNavigate, navParams }: HisnAlmuslimProps) {
     const [activeTab, setActiveTab] = useState<'grid' | 'list'>('grid');
     const [showGuide, setShowGuide] = useState(false);
     const fabRef = useRef<HTMLButtonElement>(null);
+    const fabContainerRef = useRef<HTMLDivElement>(null);
+    const mainRef = useRef<HTMLElement>(null);
+
+    useEffect(() => {
+        const scrollToTop = () => {
+            if (mainRef.current) {
+                try { mainRef.current.scrollTop = 0; } catch {}
+                try { mainRef.current.scrollTo({ top: 0, behavior: 'instant' }); } catch {}
+            }
+            try { window.scrollTo({ top: 0, behavior: 'instant' }); } catch {}
+            try { document.documentElement.scrollTop = 0; } catch {}
+            try { document.body.scrollTop = 0; } catch {}
+            const scrollables = document.querySelectorAll('.overflow-y-auto, [class*="overflow-y-auto"]');
+            scrollables.forEach(el => {
+                try { el.scrollTop = 0; } catch {}
+            });
+        };
+
+        scrollToTop();
+        const t1 = setTimeout(scrollToTop, 20);
+        const t2 = setTimeout(scrollToTop, 100);
+        return () => {
+            clearTimeout(t1);
+            clearTimeout(t2);
+        };
+    }, [selectedCategory]);
     
     useEffect(() => {
         markPageAsSeen('hisn_almuslim');
@@ -73,7 +99,6 @@ function HisnAlmuslim({ onBack, onNavigate, navParams }: HisnAlmuslimProps) {
             }
         }
     }, [navParams]);
-    const fabContainerRef = useRef<HTMLDivElement>(null);
 
     const [hisnCounts, setHisnCounts] = useState<{ [key: string]: number }>(() => {
         const today = new Date().toISOString().split('T')[0];
@@ -217,7 +242,7 @@ function HisnAlmuslim({ onBack, onNavigate, navParams }: HisnAlmuslimProps) {
 
     return (
         <div 
-            className="h-screen flex flex-col overflow-hidden" 
+            className="h-[100dvh] flex flex-col overflow-hidden" 
             dir={isEn ? 'ltr' : 'rtl'}
             style={{ 
                 backgroundColor: tokens.pageBgColor,
@@ -233,33 +258,31 @@ function HisnAlmuslim({ onBack, onNavigate, navParams }: HisnAlmuslimProps) {
                 onOpenGuide={!selectedCategory ? () => setShowGuide(true) : undefined}
             />
 
-            <main className="flex-1 overflow-y-auto hide-scrollbar relative mx-auto w-full max-w-3xl px-4 pb-6 flex flex-col pt-3">
+            <main ref={mainRef} className="flex-1 min-h-0 overflow-y-auto hide-scrollbar relative mx-auto w-full max-w-3xl px-4 app-scroll-safe-fab pt-3">
                 {!selectedCategory && (
                     <div className="mb-4 max-w-3xl mx-auto w-full flex items-center gap-2.5 z-10 shrink-0" dir={isEn ? 'ltr' : 'rtl'}>
                         {/* Search Input */}
                         <div 
-                            className="relative flex-1 rounded-[18px] overflow-hidden transition-all shadow-xs" 
-                            style={{ 
-                                backgroundColor: tokens.filledInputBg,
-                                boxShadow: tokens.cardShadow
-                            }}
+                            className="app-page-card border-0 relative flex-1 rounded-2xl bg-white dark:bg-[#1E293B] overflow-visible transition-all" 
                         >
                             <input 
                                 type="text" 
                                 placeholder={isEn ? "Search by name or meaning..." : "ابحث بالاسم أو المعنى..."} 
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className={`w-full bg-transparent py-3 text-sm ${isEn ? 'pl-11 pr-10 text-left font-sans' : 'pr-11 pl-10 text-right font-cairo'} focus:outline-none placeholder-gray-400 dark:placeholder-gray-500`}
+                                className={`w-full bg-transparent py-3 text-sm ${isEn ? 'pl-11 pr-12 text-left font-sans' : 'pr-11 pl-12 text-right font-cairo'} focus:outline-none placeholder-gray-400 dark:placeholder-gray-500`}
                                 style={{ color: 'var(--text-color)' }}
                             />
                             <i 
-                                className={`fa-solid fa-magnifying-glass absolute ${isEn ? 'left-4' : 'right-4'} top-1/2 transform -translate-y-1/2 opacity-40 text-xs`} 
+                                className={`fa-solid fa-magnifying-glass absolute ${isEn ? 'left-4' : 'right-4'} top-1/2 transform -translate-y-1/2 opacity-40 text-xs pointer-events-none`} 
                                 style={{ color: 'var(--text-color)' }}
                             ></i>
                             {searchQuery && (
                                 <button
+                                    type="button"
                                     onClick={() => setSearchQuery('')}
-                                    className={`absolute inset-y-0 ${isEn ? 'right-3.5' : 'left-3.5'} flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer`}
+                                    className={`app-page-card border-0 absolute ${isEn ? 'right-2.5' : 'left-2.5'} top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white dark:bg-[#1E293B] flex items-center justify-center text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white cursor-pointer`}
+                                    aria-label={isEn ? 'Clear search' : 'مسح البحث'}
                                 >
                                     <i className="fa-solid fa-times text-xs"></i>
                                 </button>
@@ -268,19 +291,15 @@ function HisnAlmuslim({ onBack, onNavigate, navParams }: HisnAlmuslimProps) {
 
                         {/* View Mode Switch */}
                         <div 
-                            className="flex items-center p-1 rounded-2xl shrink-0"
-                            style={{
-                                backgroundColor: tokens.capsuleBg,
-                                boxShadow: tokens.cardShadow
-                            }}
+                            className="app-page-card border-0 bg-white dark:bg-[#1E293B] flex items-center p-1.5 rounded-2xl gap-1.5 shrink-0 overflow-visible"
                         >
                             <button
                                 type="button"
                                 onClick={() => setActiveTab('grid')}
-                                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTab === 'grid' ? 'shadow-sm' : 'opacity-60 hover:opacity-100'}`}
+                                className={`app-page-card border-0 bg-white dark:bg-[#1E293B] flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTab === 'grid' ? '' : 'opacity-70 hover:opacity-100'}`}
                                 style={activeTab === 'grid' ? {
                                     backgroundColor: tokens.primaryColor,
-                                    color: '#FFFFFF'
+                                    color: isBlackTheme ? '#000000' : '#FFFFFF'
                                 } : { color: 'var(--text-color)' }}
                                 title={isEn ? "Grid View" : "عرض شبكي"}
                             >
@@ -289,10 +308,10 @@ function HisnAlmuslim({ onBack, onNavigate, navParams }: HisnAlmuslimProps) {
                             <button
                                 type="button"
                                 onClick={() => setActiveTab('list')}
-                                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTab === 'list' ? 'shadow-sm' : 'opacity-60 hover:opacity-100'}`}
+                                className={`app-page-card border-0 bg-white dark:bg-[#1E293B] flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTab === 'list' ? '' : 'opacity-70 hover:opacity-100'}`}
                                 style={activeTab === 'list' ? {
                                     backgroundColor: tokens.primaryColor,
-                                    color: '#FFFFFF'
+                                    color: isBlackTheme ? '#000000' : '#FFFFFF'
                                 } : { color: 'var(--text-color)' }}
                                 title={isEn ? "List View" : "عرض القوائم"}
                             >
@@ -326,7 +345,6 @@ function HisnAlmuslim({ onBack, onNavigate, navParams }: HisnAlmuslimProps) {
                         />
                     )}
                 </div>
-                <div className="shrink-0 w-full h-8"></div>
             </main>
 
             {/* Backdrop to close floating menu when clicking anywhere, absorbing the click */}
@@ -344,8 +362,7 @@ function HisnAlmuslim({ onBack, onNavigate, navParams }: HisnAlmuslimProps) {
             {/* Floating Menu & FAB */}
             <div 
                 ref={fabContainerRef} 
-                className={`fixed ${isEn ? 'right-4 items-end' : 'right-4 items-end'} ${isMenuOpen ? 'z-[1250]' : 'z-[90]'} flex flex-col`}
-                style={{ bottom: 'calc(env(safe-area-inset-bottom, 24px) + 32px)' }}
+                className={`fixed app-fab-bottom ${isEn ? 'right-4 items-end' : 'right-4 items-end'} ${isMenuOpen ? 'z-[1250]' : 'z-[90]'} flex flex-col`}
                 dir={isEn ? 'ltr' : 'rtl'}
             >
                 <AnimatePresence>
@@ -355,44 +372,48 @@ function HisnAlmuslim({ onBack, onNavigate, navParams }: HisnAlmuslimProps) {
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: menuOpenDirection === 'up' ? 20 : -20, scale: 0.9 }}
                             transition={{ duration: 0.2 }}
-                            className={`absolute right-0 ${menuOpenDirection === 'up' ? 'bottom-full mb-4 origin-bottom-right' : 'top-full mt-4 origin-top-right'} bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md rounded-2xl shadow-xl border border-slate-100/80 dark:border-white/10 p-2 flex flex-col gap-1 overflow-hidden w-52 z-0`}
+                            className={`app-page-card border-0 absolute right-0 ${menuOpenDirection === 'up' ? 'bottom-full mb-4 origin-bottom-right' : 'top-full mt-4 origin-top-right'} bg-white dark:bg-[#1E293B] rounded-2xl p-2.5 pb-3 flex flex-col gap-2 overflow-visible w-52 z-0`}
                             style={{ color: 'var(--text-color)' }}
                             onClick={(e) => e.stopPropagation()}
                         >
                             <button 
+                                type="button"
                                 onClick={() => { setSelectedCategory(null); setIsMenuOpen(false); }}
-                                className={`w-full ${isEn ? 'text-left' : 'text-right'} px-4 py-2.5 rounded-xl text-sm font-bold transition-colors ${!selectedCategory ? 'bg-black/5 dark:bg-white/10' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}
-                                style={!selectedCategory ? { color: isBlackTheme ? '#FFFFFF' : theme.palette[0] } : {}}
+                                className={`app-page-card border-0 w-full ${isEn ? 'text-left' : 'text-right'} px-3.5 py-2.5 rounded-xl bg-white dark:bg-[#1E293B] text-sm font-bold transition-all cursor-pointer`}
+                                style={!selectedCategory ? { backgroundColor: isBlackTheme ? '#FFFFFF' : theme.palette[0], color: isBlackTheme ? '#000000' : '#FFFFFF' } : undefined}
                             >
                                 {isEn ? 'All Chapters' : 'كل الأبواب'}
                             </button>
                             <button 
+                                type="button"
                                 onClick={() => { setSelectedCategory({ id: 'favorites', title: isEn ? 'Favorites' : 'المفضلة', titleAr: 'المفضلة' }); setIsMenuOpen(false); }}
-                                className={`w-full ${isEn ? 'text-left' : 'text-right'} px-4 py-2.5 rounded-xl text-sm font-bold transition-colors flex items-center justify-between ${selectedCategory?.id === 'favorites' ? 'bg-black/5 dark:bg-white/10' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}
-                                style={selectedCategory?.id === 'favorites' ? { color: isBlackTheme ? '#FFFFFF' : theme.palette[0] } : {}}
+                                className={`app-page-card border-0 w-full ${isEn ? 'text-left' : 'text-right'} px-3.5 py-2.5 rounded-xl bg-white dark:bg-[#1E293B] text-sm font-bold transition-all flex items-center justify-between cursor-pointer`}
+                                style={selectedCategory?.id === 'favorites' ? { backgroundColor: isBlackTheme ? '#FFFFFF' : theme.palette[0], color: isBlackTheme ? '#000000' : '#FFFFFF' } : undefined}
                             >
                                 <span>{isEn ? 'Favorites' : 'المفضلة'}</span>
-                                <i className="fa-solid fa-heart text-red-500"></i>
+                                <i className={`fa-solid fa-heart ${selectedCategory?.id === 'favorites' ? '' : 'text-red-500'}`}></i>
                             </button>
-                            <div className="h-px bg-black/10 dark:bg-white/10 my-1" />
+                            <div className="h-px bg-black/10 dark:bg-white/10 my-0.5" />
                             <button 
+                                type="button"
                                 onClick={handleResetAllHisn}
-                                className={`w-full ${isEn ? 'text-left' : 'text-right'} px-4 py-2.5 rounded-xl text-sm font-bold transition-colors flex items-center justify-between hover:bg-black/5 dark:hover:bg-white/5`}
+                                className={`app-page-card border-0 w-full ${isEn ? 'text-left' : 'text-right'} px-3.5 py-2.5 rounded-xl bg-white dark:bg-[#1E293B] text-sm font-bold transition-all flex items-center justify-between cursor-pointer`}
                             >
                                 <span>{isEn ? 'Reset All Counters' : 'إعادة ضبط العدادات'}</span>
-                                <i className="fa-solid fa-rotate-left text-xs opacity-70"></i>
+                                <i className="fa-solid fa-rotate-left text-xs opacity-75"></i>
                             </button>
                         </motion.div>
                     )}
                 </AnimatePresence>
 
                 <button 
+                    type="button"
                     ref={fabRef}
                     onClick={handleFabClick}
-                    className={`w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-all hover:scale-105 active:scale-95 cursor-pointer relative z-10 ${themeKey === 'default' ? 'text-black' : (isBlackTheme ? 'text-black' : 'text-white')}`}
+                    className={`app-page-card border-0 w-14 h-14 rounded-full flex items-center justify-center transition-all cursor-pointer relative z-10 ${themeKey === 'default' ? 'text-black' : (isBlackTheme ? 'text-black' : 'text-white')}`}
                     style={
                         themeKey === 'default'
-                        ? { backgroundColor: '#ffffff', border: '1px solid #000000' }
+                        ? { backgroundColor: '#ffffff' }
                         : { backgroundColor: isBlackTheme ? '#FFFFFF' : theme.palette[0] }
                     }
                     title={isEn ? "Chapters & options menu" : "قائمة الأبواب والخيارات"}
@@ -410,7 +431,8 @@ function HisnAlmuslim({ onBack, onNavigate, navParams }: HisnAlmuslimProps) {
                         initial={{ opacity: 0, y: 50 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 50 }}
-                        className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[101] bg-gray-800 text-white px-6 py-3 rounded-full shadow-2xl font-bold flex items-center gap-2 whitespace-nowrap border border-white/10"
+                        className="fixed left-1/2 -translate-x-1/2 z-[101] bg-gray-800 text-white px-6 py-3 rounded-full shadow-2xl font-bold flex items-center gap-2 whitespace-nowrap border border-white/10"
+                        style={{ bottom: 'calc(var(--app-safe-bottom) + 5.25rem)' }}
                     >
                         <i className="fa-solid fa-check text-green-400"></i>
                         {toastMessage}

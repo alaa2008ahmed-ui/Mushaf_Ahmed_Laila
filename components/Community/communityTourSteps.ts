@@ -152,12 +152,25 @@ export const DAILY_PROGRESS_STEPS: SpotlightStep[] = [
 // 15. خطوات إرشاد شاشة إعداد التحفيظ والتكرار
 export const MEMORIZATION_SETUP_STEPS: SpotlightStep[] = [
   {
+    id: 'mem_dashboard',
+    targetSelector: '#memorization-dashboard-container',
+    titleAr: 'لوحة إنجاز الحافظ',
+    titleEn: 'Memorization Journey Dashboard',
+    descAr: 'تستعرض لك نسبة تقدمك الإجمالية في حفظ القرآن الكريم، إجمالي الآيات المحفوظة، ومعدل الاستمرار والمداومة.',
+    descEn: 'Tracks your overall Quran memorization progress, total mastered ayahs, and active streak days.',
+    badgeAr: 'لوحة الإنجاز',
+    badgeEn: 'Dashboard',
+    iconName: 'profile',
+    accentColor: '#10b981',
+    gradient: 'from-emerald-500 to-teal-600'
+  },
+  {
     id: 'mem_tabs',
     targetSelector: '#memorization-tabs-container',
-    titleAr: 'تبويبات التحفيظ والمراجعة',
-    titleEn: 'Memorization & Review Tabs',
-    descAr: 'تنقل بسهولة بين إعداد جلسات الحفظ والتكرار الذكي، وجدول المراجعة الدورية وتثبيت المحفوظات.',
-    descEn: 'Easily switch between setting up new memorization sessions and managing your periodic review schedule.',
+    titleAr: 'تبويبات قسم التحفيظ المنهجي',
+    titleEn: 'Memorization Section Tabs',
+    descAr: 'تنقل بسهولة بين إعداد جلسات الحفظ، الخطط المنهجية الجاهزة، جدول المراجعة الدورية، ومركز الاختبارات المباشرة.',
+    descEn: 'Switch smoothly between session setup, structured plans, review schedule, and instant quizzes.',
     badgeAr: 'الأقسام',
     badgeEn: 'Tabs',
     iconName: 'tab',
@@ -165,12 +178,38 @@ export const MEMORIZATION_SETUP_STEPS: SpotlightStep[] = [
     gradient: 'from-emerald-500 to-teal-600'
   },
   {
+    id: 'mem_mode',
+    targetSelector: '#memorization-selection-mode-container',
+    titleAr: 'طريقة تحديد النطاق المرنة',
+    titleEn: 'Flexible Range Selection',
+    descAr: 'اختر الطريقة الأنسب لك لتحديد المقاطع المراد حفظها: بالآيات والسور، بصفحة المصحف، أو بأرباع الأحزاب.',
+    descEn: 'Choose how to specify your target passage: by Surah & Ayahs, Mushaf Page, or Hizb Quarters (Rub\').',
+    badgeAr: 'تحديد النطاق',
+    badgeEn: 'Range Method',
+    iconName: 'quran',
+    accentColor: '#0ea5e9',
+    gradient: 'from-sky-500 to-blue-600'
+  },
+  {
+    id: 'mem_range',
+    targetSelector: '#memorization-range-picker-container',
+    titleAr: 'تحديد السورة والآيات',
+    titleEn: 'Surah & Ayah Selector',
+    descAr: 'انقر على أي من الحقول لتغيير سورة وآية البداية وسورة وآية النهاية للمقطع المطلوب بدقة متناهية.',
+    descEn: 'Tap any field to customize your starting surah/ayah and ending target with precision.',
+    badgeAr: 'النطاق',
+    badgeEn: 'Ayah Target',
+    iconName: 'verse',
+    accentColor: '#8b5cf6',
+    gradient: 'from-purple-500 to-indigo-600'
+  },
+  {
     id: 'mem_reader',
     targetSelector: '#reader-select-container',
-    titleAr: 'اختيار القارئ المفضل',
-    titleEn: 'Select Reciter',
+    titleAr: 'اختيار القارئ المعلم',
+    titleEn: 'Select Preferred Reciter',
     descAr: 'اختر القارئ المفضل لديك للاستماع لتلاوته المتقنة والترديد خلفه أثناء جلسة الحفظ المباركة.',
-    descEn: 'Choose your preferred reciter to listen to accurate recitations and repeat after them during memorization.',
+    descEn: 'Select your favorite reciter to listen to accurate recitations and repeat along during memorization.',
     badgeAr: 'القارئ',
     badgeEn: 'Reciter',
     iconName: 'user',
@@ -178,53 +217,27 @@ export const MEMORIZATION_SETUP_STEPS: SpotlightStep[] = [
     gradient: 'from-sky-500 to-blue-600'
   },
   {
-    id: 'mem_range',
-    targetSelector: '#ayah-range-container',
-    titleAr: 'تحديد نطاق السور والآيات',
-    titleEn: 'Surah & Ayah Range',
-    descAr: 'حدد بدقة السورة والآية التي تود بدء الحفظ منها، والسورة والآية التي ينتهي عندها المقطع.',
-    descEn: 'Accurately specify the starting surah and ayah, as well as the ending point of the passage to memorize.',
-    badgeAr: 'نطاق الآيات',
-    badgeEn: 'Ayah Range',
-    iconName: 'verse',
-    accentColor: '#8b5cf6',
-    gradient: 'from-purple-500 to-indigo-600'
-  },
-  {
     id: 'mem_repeat',
     targetSelector: '#repetition-settings-container',
-    titleAr: 'إعدادات التكرار والربط الذكي',
-    titleEn: 'Repetition & Linking Settings',
-    descAr: 'حدد عدد مرات تكرار كل آية، وعدد تكرار كامل النطاق، مع ميزة «ربط الآيات» لترسيخ المعاني، ومدة السكتة للترديد.',
-    descEn: 'Set repetitions per ayah, whole range loops, verse linking for deep retention, and pause length to repeat along.',
+    titleAr: 'قواعد التكرار والربط الشنقيطي',
+    titleEn: 'Repetition & Shanqiti Loop Rules',
+    descAr: 'حدد عدد مرات تكرار الآية، تكرار النطاق الكامل، سكتة الترديد، تفعيل الربط بالسابقة، والتكرار التراكمي الشنقيطي لضمان رسوخ الآيات.',
+    descEn: 'Set ayah repeats, range loops, pauses, verse linking, and Shanqiti cumulative loops for deep retention.',
     badgeAr: 'التكرار والربط',
-    badgeEn: 'Repetition',
+    badgeEn: 'Repetition Rules',
     iconName: 'action',
     accentColor: '#f59e0b',
     gradient: 'from-amber-500 to-orange-600'
-  },
-  {
-    id: 'mem_test',
-    targetSelector: '#test-after-session-container',
-    titleAr: 'اختبار بعد الجلسة',
-    titleEn: 'Post-Session Test',
-    descAr: 'فعّل هذا الخيار لاختبار حفظك ذاتياً وتفاعلياً بمجرد انتهاء التكرار للتأكد من رسوخ الآيات في صدرك.',
-    descEn: 'Enable this option to take an interactive self-test right after your repetition session to verify retention.',
-    badgeAr: 'الاختبار',
-    badgeEn: 'Test',
-    iconName: 'action',
-    accentColor: '#ec4899',
-    gradient: 'from-pink-500 to-rose-600'
   },
   {
     id: 'mem_start',
     targetSelector: '#btn-start-memorization',
     titleAr: 'بدء جلسة التحفيظ',
     titleEn: 'Start Memorization Session',
-    descAr: 'اضغط هنا لفتح المصحف الشريف وبدء جلسة التلاوة والتكرار المخصصة وفق الإعدادات التي اخترتها.',
-    descEn: 'Tap here to launch the Quran screen and begin your interactive repetition session according to your plan.',
-    badgeAr: 'ابدأ الآن',
-    badgeEn: 'Start Now',
+    descAr: 'اضغط هنا لبدء الجلسة التفاعلية في المصحف والتلاوة والتكرار مع إبراز الآيات والإخفاء البصري.',
+    descEn: 'Tap to start the interactive Quran session for recitation, repetition, visual hiding, and focus.',
+    badgeAr: 'بدء الجلسة',
+    badgeEn: 'Start Session',
     iconName: 'quran',
     accentColor: '#10b981',
     gradient: 'from-emerald-500 to-teal-600'
@@ -232,15 +245,45 @@ export const MEMORIZATION_SETUP_STEPS: SpotlightStep[] = [
   {
     id: 'mem_download',
     targetSelector: '#btn-download-reciters',
-    titleAr: 'تحميل التلاوات بدون إنترنت',
-    titleEn: 'Download Offline Recitations',
-    descAr: 'يمكنك تحميل سور القراء مسبقاً على هاتفك للاستمرار في التحفيظ والمراجعة في أي وقت دون الحاجة لشبكة الإنترنت.',
-    descEn: 'Download surahs beforehand so you can continue your memorization practice offline anywhere, anytime.',
+    titleAr: 'تحميل الصوتيات للعمل بدون إنترنت',
+    titleEn: 'Download Audio for Offline Use',
+    descAr: 'حمل تلاوات السور والقراء مسبقاً على جهازك لتواصل التحفيظ والتكرار في أي مكان بدون اتصال بالإنترنت.',
+    descEn: 'Download recitations to your device so you can practice memorization offline anywhere.',
     badgeAr: 'بدون إنترنت',
     badgeEn: 'Offline Audio',
     iconName: 'nav',
     accentColor: '#0284c7',
     gradient: 'from-cyan-500 to-blue-600'
+  }
+];
+
+// 15b. خطوات إرشاد تبويب خطط التحفيظ
+export const MEMORIZATION_PLANS_STEPS: SpotlightStep[] = [
+  {
+    id: 'plans_intro',
+    targetSelector: '#memorization-tabs-container',
+    titleAr: 'الخطط المنهجية الجاهزة',
+    titleEn: 'Curriculum Plans',
+    descAr: 'خطط منهجية مقسمة يومياً لحفظ أجزاء وسور كاملة (مثل جزء عم، جزء تبارك، سورة البقرة).',
+    descEn: 'Structured daily curricula to memorize full juzs or surahs (e.g. Juz Amma, Juz Tabarak, Al-Baqarah).',
+    badgeAr: 'الخطط المنهجية',
+    badgeEn: 'Plans',
+    iconName: 'tab',
+    accentColor: '#10b981',
+    gradient: 'from-emerald-500 to-teal-600'
+  },
+  {
+    id: 'plans_list',
+    targetSelector: '#memorization-preset-plans-container',
+    titleAr: 'متابعة الورد والتقدم اليومي',
+    titleEn: 'Track Daily Target & Progress',
+    descAr: 'استعرض التفاصيل اليومية لكل خطة، واضغط على «البدء في هذه الخطة» أو «متابعة ورد اليوم» للانطلاق مباشرة.',
+    descEn: 'Browse daily details for each plan and tap to start or resume today\'s assigned target.',
+    badgeAr: 'متابعة الورد',
+    badgeEn: 'Daily Target',
+    iconName: 'action',
+    accentColor: '#3b82f6',
+    gradient: 'from-blue-500 to-indigo-600'
   }
 ];
 
@@ -262,10 +305,10 @@ export const MEMORIZATION_REVIEW_STEPS: SpotlightStep[] = [
   {
     id: 'rev_stats',
     targetSelector: '#memorization-review-stats',
-    titleAr: 'إحصائيات الإنجاز والمراجعة',
-    titleEn: 'Memorization Stats',
-    descAr: 'يعرض لك إجمالي المقاطع المحفوظة، مع بيان عدد المقاطع التي استحقت موعد المراجعة اليوم.',
-    descEn: 'Displays total memorized ranges and the number of passages due for review today.',
+    titleAr: 'إحصائيات الإنجاز والمراجعة (SM-2)',
+    titleEn: 'Memorization Stats (SM-2)',
+    descAr: 'يعرض لك إجمالي المقاطع المحفوظة، مع بيان عدد المقاطع التي استحقت موعد المراجعة اليوم بناءً على خوارزمية التكرار المتباعد.',
+    descEn: 'Displays total memorized ranges and the number of passages due for review today based on spaced repetition.',
     badgeAr: 'الإحصائيات',
     badgeEn: 'Stats',
     iconName: 'profile',
@@ -274,16 +317,59 @@ export const MEMORIZATION_REVIEW_STEPS: SpotlightStep[] = [
   },
   {
     id: 'rev_list',
-    targetSelector: '#first-review-card, #memorization-review-empty, #memorization-review-list',
-    titleAr: 'قائمة المحفوظات للمراجعة',
+    targetSelector: '#memorization-review-list',
+    titleAr: 'قائمة المحفوظات ومواعيد التثبيت',
     titleEn: 'Review Schedule List',
-    descAr: 'يعرض جميع مقاطعك المحفوظة مع تواريخ مراجعتها؛ يمكنك الضغط على زر «بدء جلسة المراجعة والتثبيت» للانطلاق فوراً في تثبيتها، أو حذفها.',
-    descEn: 'Lists all your memorized passages with due dates; tap "Start Review & Fixation Session" to review immediately or delete them.',
+    descAr: 'يعرض جميع مقاطعك المحفوظة مع تواريخ مراجعتها؛ يمكنك الضغط على زر «بدء المراجعة والتكرار» للانطلاق فوراً في تثبيتها، أو إجراء اختبار سريع.',
+    descEn: 'Lists all your memorized passages with due dates; tap "Start Review & Repeat" to review immediately or take a quick test.',
     badgeAr: 'جدول المحفوظات',
     badgeEn: 'Schedule List',
     iconName: 'quran',
     accentColor: '#8b5cf6',
     gradient: 'from-purple-500 to-indigo-600'
+  }
+];
+
+// 16b. خطوات إرشاد تبويب اختبار الحفظ
+export const MEMORIZATION_QUIZ_STEPS: SpotlightStep[] = [
+  {
+    id: 'quiz_intro',
+    targetSelector: '#memorization-tabs-container',
+    titleAr: 'مركز الاختبار القرآني المباشر',
+    titleEn: 'Instant Quran Quiz Center',
+    descAr: 'مركز متكامل لاختبار قوة حفظك وتثبيت المحفوظات بأساليب تفاعلية مشوقة.',
+    descEn: 'Interactive test center to challenge your retention and solidify verses.',
+    badgeAr: 'الاختبار',
+    badgeEn: 'Quiz Center',
+    iconName: 'tab',
+    accentColor: '#10b981',
+    gradient: 'from-emerald-500 to-teal-600'
+  },
+  {
+    id: 'quiz_modes',
+    targetSelector: '#memorization-quiz-mode-container',
+    titleAr: 'أنماط الاختبار التفاعلية',
+    titleEn: 'Interactive Quiz Modes',
+    descAr: 'اختبر نفسك بالتسميع الصوتي عبر المايكروفون، أو ترتيب الكلمات المبعثرة، أو اختيار الآية القادمة من السورة.',
+    descEn: 'Test yourself via Voice Recitation microphone, Word Reordering, or Next Verse Selection.',
+    badgeAr: 'أنماط الاختبار',
+    badgeEn: 'Quiz Modes',
+    iconName: 'action',
+    accentColor: '#8b5cf6',
+    gradient: 'from-purple-500 to-indigo-600'
+  },
+  {
+    id: 'quiz_quick',
+    targetSelector: '#memorization-quick-quizzes-container',
+    titleAr: 'اختبارات سريعة على سور شائعة',
+    titleEn: 'Quick Tests on Popular Surahs',
+    descAr: 'اختر أي سورة شائعة (مثل الفاتحة، الملك، أواخر الكهف) لبدء اختبار فوري وتثبيت حفظك بدقة.',
+    descEn: 'Pick popular surahs (e.g. Al-Fatihah, Al-Mulk, Early Al-Kahf) to launch an instant quiz and verify retention.',
+    badgeAr: 'اختبار سريع',
+    badgeEn: 'Quick Test',
+    iconName: 'sparkles',
+    accentColor: '#f59e0b',
+    gradient: 'from-amber-500 to-orange-600'
   }
 ];
 
@@ -966,8 +1052,8 @@ export const PRAYER_TIMES_PAGE_STEPS: SpotlightStep[] = [
     targetSelector: '#prayer-top-bar-settings-btn',
     titleAr: 'إعدادات الصلاة والإشعارات',
     titleEn: 'Prayer Settings & Notifications',
-    descAr: 'اضغط هنا لفتح قائمة إعدادات الصلاة والإشعارات: تفعيل الإشعار المستمر لمواقيت الصلاة، تخصيص التطبيقات المصغرة (الودجت)، كتم التنبيهات الصوتية مؤقتاً، وتنبيهات أذكار قيام الليل واليوم.',
-    descEn: 'Tap here to open prayer settings and notifications: manage persistent prayer notification, customize home screen widgets, temporarily mute audio alerts, and configure night and daily athkar reminders.',
+    descAr: 'اضغط هنا لفتح قائمة إعدادات الصلاة والإشعارات: اختيار وتغيير نغمة الإشعارات للأذكار والتنبيهات، تفعيل الإشعار المستمر لمواقيت الصلاة، تخصيص التطبيقات المصغرة (الودجت)، كتم التنبيهات الصوتية مؤقتاً، وتنبيهات أذكار قيام الليل واليوم.',
+    descEn: 'Tap here to open prayer settings and notifications: choose and change notification tones for adhkar and reminders, manage persistent prayer notification, customize home screen widgets, temporarily mute audio alerts, and configure night and daily athkar reminders.',
     badgeAr: 'إعدادات الصلاة',
     badgeEn: 'Prayer Settings',
     iconName: 'gear',
@@ -976,39 +1062,41 @@ export const PRAYER_TIMES_PAGE_STEPS: SpotlightStep[] = [
   },
   {
     id: 'prayer_home_widgets_guide',
-    targetSelector: '#prayer-top-bar-settings-btn',
-    preferredPlacement: 'top',
-    titleAr: 'التطبيقات المصغرة الثلاثة (ودجت الشاشة)',
-    titleEn: 'The 3 Home Screen Widgets & Settings',
-    descAr: `يوفر التطبيق 3 تطبيقات مصغرة (ودجت) يمكنك إضافتها على شاشة هاتفك الرئيسية لمتابعة مواقيت الصلاة لحظياً دون فتح التطبيق:
-• الودجت الشامل (الكبير): يعرض جدول الصلوات الست كاملاً، الصلاة القادمة بالعد التنازلي الحي، التاريخ الهجري والميلادي، وأوقات منتصف الليل والثلث الأخير.
-• ودجت البطاقة المتوسطة: بطاقة أنيقة تعرض المدينة والتاريخ مع إبراز الصلاة القادمة والعد التنازلي وشريط مواقيت الصلوات.
-• الودجت المدمج (الصغير): تصميم مختصر ومرتب يعرض اسم المدينة والصلاة القادمة وموعدها في مساحة مدمجة.
+    preferredPlacement: 'center',
+    titleAr: 'التطبيقات المصغرة (٣ تطبيقات للشاشة)',
+    titleEn: '3 Home Screen Widgets & Settings',
+    descAr: `يوفر التطبيق ٣ تطبيقات مصغرة (ودجت) يمكنك إضافتها لشاشة هاتفك لمتابعة مواقيت الصلاة:
+١. كلاسيكي شامل (٤×١): جدول الصلوات الست والتاريخ وقيام الليل.
+٢. مصغر السابقة والقادمة (٤×١): بطاقتان مجسمتان لصلاتك السابقة والقادمة.
+٣. الصلاة القادمة فقط (٢×١): حجم مصغر وأنيق يعرض اسم الصلاة القادمة والوقت المتبقي فقط مع إمكانية تكبيره بحرية.
 
-🎨 التغير التلقائي مع الثيم:
-تتلون التطبيقات المصغرة الثلاثة وتتغير تصاميمها تلقائياً وفورياً لتنسجم مع أي ثيم تختاره داخل التطبيق (فاتح، داكن، ذهبي، أو افتراضي).
+⚙️ ضبط الشفافية وثيم الألوان:
+اضغط مطولاً على أي تطبيق مصغر بشاشة هاتفك ثم اختر (الضبط) للتحكم في نسبة الشفافية (من 0% إلى 100%) وتغيير ثيم الألوان بالكامل بنقرة واحدة.`,
+    descEn: `The app provides 3 home screen widgets to track prayer times live:
+1. Classic Comprehensive (4x1): Full 6-prayer matrix, date, and night milestones.
+2. Compact Prev & Next (4x1): Dual 3D tactile cards for previous and upcoming prayers.
+3. Next Prayer Only (2x1): Ultra-minimal icon-sized card showing only the next prayer and remaining time with free resize capability.
 
-⚙️ تثبيت اللون أو اللغة من الإعدادات:
-من زر الإعدادات (⚙️) بالأعلى ← قسم «التطبيقات المصغرة (الودجت)»، يمكنك:
-• تثبيت ثيم الودجت: للاحتفاظ بلون ومظهر الودجت الحالي ثابتاً على شاشة هاتفك دون أن يتأثر عند تغيير ثيم التطبيق لاحقاً.
-• تثبيت العربية أو الإنجليزية: لتثبيت لغة عرض الودجت بالعربية دائماً أو بالإنجليزية دائماً بشكل مستقل تماماً عن لغة التطبيق.`,
-    descEn: `The app provides 3 Home Screen Widgets you can add directly to your phone's home screen to track prayer times live without opening the app:
-• Full Comprehensive Widget: Displays all six daily prayer times, next prayer with live countdown, Hijri & Gregorian dates, plus Midnight and Last Third times.
-• Medium Card Widget: An elegant card showing your city and date while highlighting the upcoming prayer, countdown, and daily prayer strip.
-• Compact Mini Widget: A clean, space-saving layout showing your city, the next prayer, and its exact time.
-
-🎨 Automatic Theme Sync:
-All three widgets automatically and instantly adapt their colors and styling whenever you change the app theme (light, dark, golden, or default).
-
-⚙️ Lock Color or Language via Settings:
-Tap the Settings icon (⚙️) above → "Home Screen Widgets" section to:
-• Lock Widget Theme: Keep your widget's current color palette fixed on your phone screen even if you switch the app theme later.
-• Lock Arabic / Lock English: Pin the widget display language permanently to Arabic or English independently of the app language.`,
-    badgeAr: 'التطبيقات المصغرة • 3 أشكال',
-    badgeEn: '3 Home Widgets',
+⚙️ Transparency & Colors:
+Long-press any widget on your phone screen and tap Settings to adjust transparency (0% to 100%) and choose your favorite color theme.`,
+    badgeAr: '٣ تطبيقات مصغرة • تخصيص كامل',
+    badgeEn: '3 Widgets • Customization',
     iconName: 'widgets',
     accentColor: '#10b981',
     gradient: 'from-emerald-500 to-teal-600'
+  },
+  {
+    id: 'prayer_search_box',
+    targetSelector: '#prayer-date-search-container',
+    titleAr: 'البحث عن أي مدينة أو تاريخ',
+    titleEn: 'City & Date Search',
+    descAr: 'يمكنك كتابة اسم أي مدينة أو عاصمة في العالم أو اختيار يوم محدد لمعرفة مواقيت الصلاة الفلكية بدقة متناهية دون الحاجة لتواجدك هناك.',
+    descEn: 'Type any city or country worldwide, or pick a specific date to view its exact astronomical prayer times instantly.',
+    badgeAr: 'البحث الذكي',
+    badgeEn: 'Search',
+    iconName: 'search',
+    accentColor: '#f59e0b',
+    gradient: 'from-amber-500 to-orange-600'
   },
   {
     id: 'prayer_nearby_mosques',
@@ -1037,15 +1125,28 @@ Tap the Settings icon (⚙️) above → "Home Screen Widgets" section to:
     gradient: 'from-violet-500 to-purple-600'
   },
   {
-    id: 'prayer_search_box',
-    targetSelector: '#prayer-date-search-container',
-    titleAr: 'البحث عن أي مدينة أو تاريخ',
-    titleEn: 'City & Date Search',
-    descAr: 'يمكنك كتابة اسم أي مدينة أو عاصمة في العالم أو اختيار يوم محدد لمعرفة مواقيت الصلاة الفلكية بدقة متناهية دون الحاجة لتواجدك هناك.',
-    descEn: 'Type any city or country worldwide, or pick a specific date to view its exact astronomical prayer times instantly.',
-    badgeAr: 'البحث الذكي',
-    badgeEn: 'Search',
-    iconName: 'search',
+    id: 'prayer_calculation_method',
+    targetSelector: '#calculation-method-btn',
+    titleAr: 'طرق الحساب والمذاهب الفقهية',
+    titleEn: 'Calculation Methods & Fiqh',
+    descAr: 'تفتح لك صفحة مستقلة لتحديد الهيئة الفلكية لحساب زاويتي الفجر والعشاء (مثل أم القرى ورابطة العالم الإسلامي)، ومذهب العصر (الجمهور أو الحنفية)، وقواعد خطوط العرض العليا.',
+    descEn: 'Opens a full page to configure the astronomical calculation method for Fajr and Isha, Asr juristic school (Majority or Hanafi), and high-latitude rules.',
+    badgeAr: 'طريقة الحساب',
+    badgeEn: 'Calculation Method',
+    iconName: 'gear',
+    accentColor: '#d97706',
+    gradient: 'from-amber-500 to-yellow-600'
+  },
+  {
+    id: 'prayer_visual_sun_path',
+    targetSelector: '#visual-sun-path-card',
+    titleAr: 'بطاقة مسار الشمس المرئي ومحاكاة اليوم',
+    titleEn: 'Visual Sun Path & Day Simulation',
+    descAr: 'بطاقة تفاعلية مجسمة ثلاثية الأبعاد تعرض المسار الفلكي الحقيقي للشمس من الشروق حتى الغروب، مع إمكانية تشغيل محاكاة حركة الشمس ومعرفة زاوية الارتفاع وساعات النهار.',
+    descEn: 'Interactive 3D celestial card showing real-time sun trajectory from sunrise to sunset, with daylight duration, elevation angle, and interactive 24-hour sun movement simulation.',
+    badgeAr: 'مسار الشمس 3D',
+    badgeEn: 'Sun Path 3D',
+    iconName: 'sparkles',
     accentColor: '#f59e0b',
     gradient: 'from-amber-500 to-orange-600'
   },
@@ -1087,6 +1188,19 @@ Tap the Settings icon (⚙️) above → "Home Screen Widgets" section to:
     iconName: 'clock',
     accentColor: '#3b82f6',
     gradient: 'from-blue-500 to-indigo-600'
+  },
+  {
+    id: 'prayer_card_weather',
+    targetSelector: '#prayer-card-weather-btn',
+    titleAr: 'طقس ودرجة حرارة وقت الصلاة',
+    titleEn: 'Prayer Time Weather & Temperature',
+    descAr: 'يعرض حالة الطقس ودرجة الحرارة المتوقعة تحديداً بوقت هذه الصلاة. اضغط على الأيقونة لفتح بطاقة إرشادية وتفصيلية لحالة الجو، سرعة الرياح، ونسبة الرطوبة، مع توجيهات للخروج إلى المسجد واختيار الملابس المناسبة.',
+    descEn: 'Displays live weather condition and expected temperature specifically for this prayer time. Tap the icon to view detailed atmospheric data: wind speed, humidity, and walking guidance to the mosque.',
+    badgeAr: 'طقس الصلاة',
+    badgeEn: 'Prayer Weather',
+    iconName: 'cloud',
+    accentColor: '#f59e0b',
+    gradient: 'from-amber-500 to-orange-600'
   },
   {
     id: 'prayer_sound_toggle',
@@ -1611,16 +1725,16 @@ export const DIVINE_MIRACLES_PAGE_STEPS: SpotlightStep[] = [
   }
 ];
 
-export const SMART_HOME_PAGE_STEPS: SpotlightStep[] = [
+export const SMART_HOME_HEADER_STEPS: SpotlightStep[] = [
   {
     id: 'smart_home_night_mode',
     targetSelector: '#night-mode-toggle-btn',
-    titleAr: 'زر الوضع الليلي (الأسود والذهبي)',
-    titleEn: 'Night Mode Toggle (Black & Gold)',
-    descAr: 'اضغط هنا للتبديل الفوري بين الوضع النهاري المشرق والوضع الليلي الفاخر (الأسود العميق والذهبي الملكي)، لتجربة قراءة مريحة للعينين وحفظ بطارية هاتفك.',
-    descEn: 'Tap here to instantly switch between the bright daytime theme and the luxury OLED deep black & royal gold night mode for eye comfort and battery saving.',
-    badgeAr: 'الوضع الليلي',
-    badgeEn: 'Night Mode',
+    titleAr: 'زر الأوضاع والثيمات (الذهبي، الليلي، السماوي، الزمردي، العنابي)',
+    titleEn: 'Themes & Modes Menu (Gold, Night, Sky, Emerald, Burgundy)',
+    descAr: 'اضغط هنا للتبديل الفوري بين الوضع الذهبي، الوضع الليلي الفاخر (الأسود العميق)، الوضع السماوي المشرق، الوضع الزمردي الهادئ، والوضع العنابي الملكي.',
+    descEn: 'Tap here to instantly switch between Gold Mode, Luxury Night Mode (Deep Black), Bright Sky Mode, Calm Emerald Mode, and Royal Burgundy Mode.',
+    badgeAr: 'الأوضاع والثيمات',
+    badgeEn: 'Themes & Modes',
     iconName: 'moon',
     accentColor: '#d97706',
     gradient: 'from-amber-500 to-amber-600',
@@ -1629,13 +1743,27 @@ export const SMART_HOME_PAGE_STEPS: SpotlightStep[] = [
   {
     id: 'smart_home_edit_mode',
     targetSelector: '#app-title',
-    titleAr: 'الضغط المطول على اسم التطبيق (ترتيب البطاقات)',
-    titleEn: 'Hold App Title (Reorder Cards)',
-    descAr: 'اضغط مطولاً (~ثانية واحدة) على اسم التطبيق لتفعيل وضع التعديل، حيث يمكنك إعادة ترتيب البطاقات وتغيير أماكنها بالأسهم (⬆️ و ⬇️)، وعند الانتهاء اضغط مطولاً مجدداً على اسم التطبيق لحفظ التعديل نهائياً.',
-    descEn: 'Long press (~1 second) the app title in the top header to activate edit mode and swap card positions using the arrows. Long press the app title again when finished to save your custom layout permanently.',
-    badgeAr: 'ترتيب البطاقات',
-    badgeEn: 'Reorder Cards',
+    titleAr: 'الضغط المطول على اسم التطبيق (السحب والإفلات)',
+    titleEn: 'Hold App Title (Drag & Drop Reorder)',
+    descAr: 'اضغط مطولاً (~ثانية واحدة) على اسم التطبيق لتفعيل وضع التعديل الذكي؛ حيث يمكنك نقل البطاقات وتغيير أماكنها بسهولة وسلاسة عن طريق السحب والإفلات بلمس إصبعك مباشرة على الشاشة. وعند الانتهاء يظهر زرا (حفظ ✓) و(استعادة ↺) أعلى الشريط للحفظ أو الاستعادة.',
+    descEn: 'Long press (~1 second) the app title to activate edit mode. Reorder any card by dragging and dropping it directly with your finger on screen. Use the top (Save ✓) or (Reset ↺) buttons to apply or restore default layout.',
+    badgeAr: 'السحب والإفلات',
+    badgeEn: 'Drag & Drop',
     iconName: 'slider',
+    accentColor: '#d97706',
+    gradient: 'from-amber-500 to-amber-600',
+    preferredPlacement: 'bottom'
+  },
+  {
+    id: 'smart_home_settings_btn',
+    targetSelector: '#home-settings-toggle-btn',
+    titleAr: 'زر إعدادات التطبيق وصفحة القرآن',
+    titleEn: 'App & Quran Page Settings Button',
+    descAr: 'اضغط هنا لفتح شاشة الإعدادات الشاملة: للتحكم بإشعارات التطبيق، إشعارات الهاتف، إعدادات صفحة القرآن (الخطوط، القراء، التفاسير، تصاميم السور)، تحميل المصحف والتفاسير، وإظهار أو إخفاء بطاقات الصفحة الرئيسية.',
+    descEn: 'Tap here to open comprehensive settings: manage app & phone notifications, Quran page settings (fonts, reciters, tafseers, surah designs), download audio/tafseers, and toggle home screen cards.',
+    badgeAr: 'الإعدادات الشاملة',
+    badgeEn: 'Settings',
+    iconName: 'gear',
     accentColor: '#d97706',
     gradient: 'from-amber-500 to-amber-600',
     preferredPlacement: 'bottom'
@@ -1653,21 +1781,349 @@ export const SMART_HOME_PAGE_STEPS: SpotlightStep[] = [
     accentColor: '#d97706',
     gradient: 'from-amber-500 to-amber-600',
     preferredPlacement: 'bottom'
+  }
+];
+
+export const SMART_HOME_QURAN_STEP: SpotlightStep = {
+  id: 'smart_home_quran_card',
+  targetSelector: '#modern-card-container-quran',
+  titleAr: 'بطاقة القرآن الكريم والوصول السريع',
+  titleEn: 'Holy Quran & Quick Reading',
+  descAr: 'تصفح القرآن الكريم بالقراءة الرأسية أو العرضية، واستكمل قراءتك من آخر موضع وصلت إليه بلمسة واحدة، مع متابعة الشريط التفاعلي المتحرك للآية وقراءة السورة بسهولة.',
+  descEn: 'Browse the Holy Quran in portrait or landscape mode, resume your last read position in one tap, and track your daily wird and memorization.',
+  badgeAr: 'المصحف الشريف',
+  badgeEn: 'Holy Quran',
+  iconName: 'quran',
+  accentColor: '#d97706',
+  gradient: 'from-amber-500 to-amber-600',
+  preferredPlacement: 'bottom'
+};
+
+export const SMART_HOME_LISTEN_QURAN_STEP: SpotlightStep = {
+  id: 'smart_home_listen_quran_card',
+  targetSelector: '#modern-card-container-listen-quran',
+  titleAr: 'بطاقة الاستماع للقرآن الكريم بأصوات كبار القراء',
+  titleEn: 'Audio Quran Recitations Card',
+  descAr: 'استمع لتلاوات القرآن الكريم العذبة بأصوات نخبة من مشاهير القراء، مع مشغل صوتي مباشر على الصفحة الرئيسية يتيح تشغيل السور، التحميل للاستماع بدون إنترنت، والتنقل بين التلاوات بسهولة.',
+  descEn: 'Listen to beautiful Quranic recitations by renowned reciters with an interactive audio player directly on the home screen, supporting offline downloads and smooth playback controls.',
+  badgeAr: 'الاستماع للقرآن',
+  badgeEn: 'Listen to Quran',
+  iconName: 'volume',
+  accentColor: '#d97706',
+  gradient: 'from-amber-500 to-amber-600',
+  preferredPlacement: 'bottom'
+};
+
+export const SMART_HOME_SEASONAL_STEP: SpotlightStep = {
+  id: 'smart_home_seasonal_card',
+  targetSelector: '#modern-card-container-seasonal',
+  titleAr: 'الشريط الموسمي الذكي',
+  titleEn: 'Smart Seasonal Strip',
+  descAr: 'شريط تفاعلي يتألق بالمناسبات الإسلامية، الأحداث التاريخية العظيمة في مثل هذا اليوم، وإشراقات الإيمان المتجددة.',
+  descEn: 'Interactive seasonal banner featuring Islamic occasions, monumental historical events on this day, and daily spiritual inspirations.',
+  badgeAr: 'الشريط الموسمي',
+  badgeEn: 'Seasonal Strip',
+  iconName: 'sparkles',
+  accentColor: '#d97706',
+  gradient: 'from-amber-500 to-amber-600',
+  preferredPlacement: 'bottom'
+};
+
+export const SMART_HOME_PRAYER_STEPS: SpotlightStep[] = [
+  {
+    id: 'smart_home_prayer_location',
+    targetSelector: '#home-prayer-location-section',
+    titleAr: 'تحديد الموقع واسم المدينة والدولة (GPS)',
+    titleEn: 'City, Country & GPS Location',
+    descAr: 'انقر على اسم مدينتك أو أيقونة الموقع لتحديث إحداثيات موقعك الجغرافي تلقائياً عبر الأقمار الصناعية (GPS)، وحساب مواقيت الصلاة واتجاه القبلة بدقة متناهية لموقعك الحالي.',
+    descEn: 'Tap your city name or the location pin to automatically refresh your GPS coordinates and calculate exact prayer times and Qibla direction for your current position.',
+    badgeAr: 'الموقع والمدينة',
+    badgeEn: 'GPS Location',
+    iconName: 'map',
+    accentColor: '#d97706',
+    gradient: 'from-amber-500 to-amber-600',
+    preferredPlacement: 'bottom'
   },
   {
-    id: 'smart_home_quran_card',
-    targetSelector: '#modern-card-container-quran',
-    titleAr: 'بطاقة القرآن الكريم والوصول السريع',
-    titleEn: 'Holy Quran & Quick Reading',
-    descAr: 'تصفح القرآن الكريم بالقراءة الرأسية أو العرضية، واستكمل قراءتك من آخر موضع وصلت إليه بلمسة واحدة، مع إمكانية متابعة وردك اليومي وجدول التحفيظ.',
-    descEn: 'Browse the Holy Quran in portrait or landscape mode, resume your last read position in one tap, and track your daily wird and memorization.',
-    badgeAr: 'المصحف الشريف',
-    badgeEn: 'Holy Quran',
-    iconName: 'quran',
+    id: 'smart_home_prayer_hijri',
+    targetSelector: '#home-prayer-hijri-date-btn',
+    titleAr: 'التاريخ الهجري والتقويم الإسلامي',
+    titleEn: 'Hijri Date & Islamic Calendar',
+    descAr: 'اضغط على التاريخ الهجري للانتقال المباشر لصفحة التقويم الهجري الشامل، واستعراض المناسبات الدينية والأحداث التاريخية والتحويل بين التاريخين الهجري والميلادي.',
+    descEn: 'Tap the Hijri date to directly open the comprehensive Hijri Calendar, view Islamic events and historical milestones, and convert dates seamlessly.',
+    badgeAr: 'التاريخ الهجري',
+    badgeEn: 'Hijri Calendar',
+    iconName: 'calendar',
+    accentColor: '#d97706',
+    gradient: 'from-amber-500 to-amber-600',
+    preferredPlacement: 'bottom'
+  },
+  {
+    id: 'smart_home_prayer_qibla',
+    targetSelector: '#home-prayer-qibla-btn',
+    titleAr: 'بوصلة اتجاه القبلة الذكية',
+    titleEn: 'Smart Qibla Compass',
+    descAr: 'اضغط على أيقونة بوصلة القبلة (🧭) لتحديد الاتجاه الدقيق للكعبة المشرفة والمسجد الحرام بلمسة واحدة وسهولة تامة بالبوصلة الرقمية والدرجات.',
+    descEn: 'Tap the Qibla compass icon (🧭) to instantly find the exact direction to the Kaaba and Masjid al-Haram with interactive digital compass degrees.',
+    badgeAr: 'اتجاه القبلة',
+    badgeEn: 'Qibla Direction',
+    iconName: 'compass',
+    accentColor: '#d97706',
+    gradient: 'from-amber-500 to-amber-600',
+    preferredPlacement: 'bottom'
+  },
+  {
+    id: 'smart_home_prayer_countdown',
+    targetSelector: '#home-prayer-countdown-section',
+    titleAr: 'العد التنازلي الحي ومواقيت الصلاة',
+    titleEn: 'Live Countdown & Prayer Times',
+    descAr: 'يستعرض العد التنازلي اللحظي المتبقي لأذان الصلاة القادمة بالثواني، وموعد الأذان، مع شريط التقدم اليومي بين الصلوات. اضغط في أي مكان هنا لفتح جدول مواقيت الصلاة الكامل.',
+    descEn: 'Displays live real-time countdown to the upcoming prayer adhan, exact prayer time, and the daily progress bar. Tap anywhere here to open the full prayer timetable.',
+    badgeAr: 'مواقيت الصلاة',
+    badgeEn: 'Prayer Times',
+    iconName: 'clock',
     accentColor: '#d97706',
     gradient: 'from-amber-500 to-amber-600',
     preferredPlacement: 'bottom'
   }
+];
+
+export const SMART_HOME_SEARCH_STEP: SpotlightStep = {
+  id: 'smart_home_search_card',
+  targetSelector: '#modern-card-container-search',
+  titleAr: 'بطاقة البحث الشامل والذكي',
+  titleEn: 'Comprehensive Smart Search Bar',
+  descAr: 'مُحرّك بحث ذكي وفوري يُمكّنك من البحث بكلمة واحدة فقط في السور والآيات القرآنية الشريفة، والأحاديث النبوية، والأذكار، وكافة أقسام وخدمات التطبيق بدون عناء؛ مع ترتيب تلقائي لأيقونات الأقسام الأكثر استخداماً وزيارة حسب نمط استخدامك اليومي.',
+  descEn: 'Instant smart search engine allowing you to search across Quran surahs & ayahs, Hadith, Adhkar, and all app services in one place, with dynamic reordering of your most visited apps based on daily usage.',
+  badgeAr: 'البحث الذكي',
+  badgeEn: 'Smart Search',
+  iconName: 'search',
+  accentColor: '#d97706',
+  gradient: 'from-amber-500 to-amber-600',
+  preferredPlacement: 'bottom'
+};
+
+export const SMART_HOME_APPS_STEP: SpotlightStep = {
+  id: 'smart_home_daily_apps_card',
+  targetSelector: '#modern-card-container-apps',
+  titleAr: 'بطاقة التطبيقات الإسلامية والتطبيقات اليومية (بتبويباتها)',
+  titleEn: 'Islamic Apps Drawer & Daily Apps (With Tabs)',
+  descAr: 'درج ذكي وتفاعلي يضم كافة التطبيقات والخدمات الإسلامية مقسمة بتبويباتها الشاملة (المكتبة، العبادات، الأدوات).',
+  descEn: 'Interactive smart drawer featuring all Islamic apps categorized into comprehensive tabs (Library, Worship, Tools).',
+  badgeAr: 'التطبيقات الإسلامية',
+  badgeEn: 'Islamic Apps',
+  iconName: 'widgets',
+  accentColor: '#d97706',
+  gradient: 'from-amber-500 to-amber-600',
+  preferredPlacement: 'bottom'
+};
+
+export const SMART_HOME_ADHKAR_STEP: SpotlightStep = {
+  id: 'smart_home_adhkar_card',
+  targetSelector: '#modern-card-container-adhkar',
+  titleAr: 'بطاقة أذكار الصباح والمساء (التبديل التلقائي)',
+  titleEn: 'Morning & Evening Adhkar (Auto-Switching)',
+  descAr: 'تتغير البطاقة تلقائياً بحسب الوقت الحالي من اليوم: تتألق بأذكار الصباح خلال فترة النهار، وتتحول تلقائياً لأذكار المساء بعد صلاة العصر وحتى الليل، لضمان وصولك السريع لأذكارك اليومية في وقتها المناسب.',
+  descEn: 'Automatically changes depending on the time of day: displays Morning Adhkar during daytime and switches to Evening Adhkar after Asr until night for instant access to your daily adhkar.',
+  badgeAr: 'أذكار الصباح والمساء',
+  badgeEn: 'Daily Adhkar',
+  iconName: 'clock',
+  accentColor: '#d97706',
+  gradient: 'from-amber-500 to-amber-600',
+  preferredPlacement: 'bottom'
+};
+
+export const SMART_HOME_TRACKER_STEP: SpotlightStep = {
+  id: 'smart_home_tracker_card',
+  targetSelector: '#modern-card-container-tracker',
+  titleAr: 'بطاقة مربي الصلوات الخمس والصدقات والورد',
+  titleEn: 'Prayers, Charity & Wird Tracker Card',
+  descAr: 'تتبع أداء الصلوات الخمس المفروضة، السنن، الصدقات، والورد القرآني اليومي مع نسبة إنجاز مئوية تفاعلية لتعزيز الالتزام والمداومة على الطاعات.',
+  descEn: 'Track obligatory prayers, sunnahs, charity, and daily Quran recitation with interactive progress percentages to boost spiritual consistency.',
+  badgeAr: 'مربي الصلوات والصدقات',
+  badgeEn: 'Worship Tracker',
+  iconName: 'action',
+  accentColor: '#d97706',
+  gradient: 'from-amber-500 to-amber-600',
+  preferredPlacement: 'bottom'
+};
+
+export const SMART_HOME_QUICK_TASBEEH_STEP: SpotlightStep = {
+  id: 'smart_home_quick_tasbeeh_card',
+  targetSelector: '#modern-card-container-quick-tasbeeh',
+  titleAr: 'بطاقة التسبيح السريع والذِّكر اللحظي',
+  titleEn: 'Quick Tasbeeh & Instant Dhikr Card',
+  descAr: 'مسبحة إلكترونية تفاعلية مباشرة على الشاشة الرئيسية تتيح لك اختيار صيغة الذكر وتحديد الهدف العددي، مع عداد ذكي بنقرة واحدة وإحصاء إجمالي تسبيحات اليوم والتنبيه عند إتمام الورد.',
+  descEn: 'Interactive digital tasbeeh directly on the home screen allowing you to pick your dhikr phrase, set your count target, track daily totals, and receive completion alerts.',
+  badgeAr: 'التسبيح السريع',
+  badgeEn: 'Quick Tasbeeh',
+  iconName: 'sparkles',
+  accentColor: '#d97706',
+  gradient: 'from-amber-500 to-amber-600',
+  preferredPlacement: 'bottom'
+};
+
+export const SMART_HOME_TAWAF_STEP: SpotlightStep = {
+  id: 'smart_home_tawaf_card',
+  targetSelector: '#modern-card-container-tawaf, #modern-tawaf-counter-card',
+  titleAr: 'بطاقة عداد الطواف والسعي التفاعلي',
+  titleEn: 'Interactive Tawaf & Sa\'i Counter Card',
+  descAr: 'عداد رقمي ذكي لمتابعة وإحصاء أشواط الطواف حول الكعبة المشرفة وأشواط السعي بين الصفا والمروة خطوة بخطوة، مع أدعية كل شوط والتنبيه بالاهتزاز عند اكتمال الأشواط السبعة.',
+  descEn: 'Smart digital counter to track circuits of Tawaf around the Kaaba and Sa\'i between Safa and Marwah step by step, with supplications for each lap and vibration alerts.',
+  badgeAr: 'عداد الأشواط',
+  badgeEn: 'Tawaf Counter',
+  iconName: 'compass',
+  accentColor: '#d97706',
+  gradient: 'from-amber-500 to-amber-600',
+  preferredPlacement: 'bottom'
+};
+
+export const SMART_HOME_REFLECTIONS_STEP: SpotlightStep = {
+  id: 'smart_home_reflections_card',
+  targetSelector: '#modern-card-container-reflections',
+  titleAr: 'بطاقة إشراقات وذاكرة اليوم والحكمة اليومية',
+  titleEn: 'Reflections, Daily Memory & Wisdom Card',
+  descAr: 'تستعرض الحكم الإسلامية الخالدة، أحداث ذاكرة التاريخ الإسلامي، وأبرز المحطات اليومية مع إمكانية التكبير والتصفح والمشاركة كبطاقات مصممة.',
+  descEn: 'Browse timeless Islamic wisdoms, key Islamic history milestones, and daily reflections with zoom, browsing, and card sharing.',
+  badgeAr: 'إشراقات وذاكرة اليوم',
+  badgeEn: 'Reflections & Memory',
+  iconName: 'sparkles',
+  accentColor: '#d97706',
+  gradient: 'from-amber-500 to-amber-600',
+  preferredPlacement: 'bottom'
+};
+
+export const SMART_HOME_SHARE_STEP: SpotlightStep = {
+  id: 'smart_home_share_card',
+  targetSelector: '#modern-card-container-share',
+  titleAr: 'بطاقة شارك التطبيق والكيوار والدعم الفني',
+  titleEn: 'Share App, QR Code & Tech Support Card',
+  descAr: 'تمكنك من مشاركة التطبيق مع عائلتك وأصدقائك، عرض رمز الاستجابة السريعة (QR Code)، والتواصل المباشر مع الدعم الفني عبر الواتساب.',
+  descEn: 'Share the app with family and friends, generate QR codes, and contact technical support directly via WhatsApp.',
+  badgeAr: 'شارك التطبيق والدعم',
+  badgeEn: 'Share & Support',
+  iconName: 'share',
+  accentColor: '#d97706',
+  gradient: 'from-amber-500 to-amber-600',
+  preferredPlacement: 'top'
+};
+
+export const MODERN_CARD_STEPS_MAP: Record<string, SpotlightStep[]> = {
+  'quran': [SMART_HOME_QURAN_STEP],
+  'listen-quran': [SMART_HOME_LISTEN_QURAN_STEP],
+  'seasonal': [SMART_HOME_SEASONAL_STEP],
+  'prayer': SMART_HOME_PRAYER_STEPS,
+  'search': [SMART_HOME_SEARCH_STEP],
+  'apps': [SMART_HOME_APPS_STEP],
+  'adhkar': [SMART_HOME_ADHKAR_STEP],
+  'tracker': [SMART_HOME_TRACKER_STEP],
+  'quick-tasbeeh': [SMART_HOME_QUICK_TASBEEH_STEP],
+  'tawaf': [SMART_HOME_TAWAF_STEP],
+  'reflections': [SMART_HOME_REFLECTIONS_STEP],
+  'share': [SMART_HOME_SHARE_STEP]
+};
+
+/**
+ * دالة ذكية لتوليد خطوات إرشادات الصفحة الرئيسية ديناميكياً:
+ * 1. تبدأ بأزرار وعناصر الشريط العلوي.
+ * 2. تفحص الترتيب الفعلي للبطاقات المعروضة حالياً على الشاشة من شجرة الـ DOM.
+ * 3. تضمن إدراج بطاقات الاستماع للقرآن، عداد الأشواط، والتسبيح السريع بموضعها الدقيق عند تفعيلها فقط واستبعادها عند تعطيلها.
+ */
+export const getDynamicSmartHomeSteps = (): SpotlightStep[] => {
+  const steps: SpotlightStep[] = [...SMART_HOME_HEADER_STEPS];
+
+  let orderedCardIds: string[] = [];
+
+  // 1. الفحص الفعلي المباشر لترتيب عناصر الـ DOM المعروضة على الشاشة (يعكس السحب والإفلات والترتيب الحالي بنسبة 100%)
+  if (typeof document !== 'undefined') {
+    const cardNodes = document.querySelectorAll('[id^="modern-card-container-"]');
+    cardNodes.forEach(node => {
+      const cardId = node.id.replace('modern-card-container-', '');
+      if (cardId && !orderedCardIds.includes(cardId)) {
+        orderedCardIds.push(cardId);
+      }
+    });
+  }
+
+  // 2. احتياط عند عدم توفر الـ DOM (مثلاً قبل الإظهار الأولي): الاعتماد على الترتيب المحفوظ وحالة التفعيل
+  if (orderedCardIds.length === 0) {
+    try {
+      const saved = typeof localStorage !== 'undefined' ? localStorage.getItem('modern_home_cards_order_v1') : null;
+      const defaultOrder = [
+        'quran',
+        'listen-quran',
+        'seasonal',
+        'prayer',
+        'search',
+        'apps',
+        'adhkar',
+        'tracker',
+        'quick-tasbeeh',
+        'tawaf',
+        'reflections',
+        'share'
+      ];
+      const order: string[] = saved ? JSON.parse(saved) : defaultOrder;
+      const showListen = typeof localStorage !== 'undefined' ? localStorage.getItem('show_listen_quran_home') === 'true' : false;
+      const showTasbeeh = typeof localStorage !== 'undefined' ? localStorage.getItem('show_quick_tasbeeh_home') === 'true' : false;
+      let isTawafActive = false;
+      try {
+        const savedTawaf = typeof localStorage !== 'undefined' ? localStorage.getItem('mushaf_tawaf_counter_state') : null;
+        if (savedTawaf) {
+          const parsed = JSON.parse(savedTawaf);
+          isTawafActive = Boolean(parsed?.showOnHome);
+        }
+      } catch {}
+
+      orderedCardIds = order.filter(id => {
+        if (id === 'listen-quran' && !showListen) return false;
+        if (id === 'quick-tasbeeh' && !showTasbeeh) return false;
+        if (id === 'tawaf' && !isTawafActive) return false;
+        return true;
+      });
+    } catch {
+      orderedCardIds = [
+        'quran',
+        'listen-quran',
+        'seasonal',
+        'prayer',
+        'search',
+        'apps',
+        'adhkar',
+        'tracker',
+        'quick-tasbeeh',
+        'tawaf',
+        'reflections',
+        'share'
+      ];
+    }
+  }
+
+  // 3. إضافة خطوات البطاقات النشطة طبقاً لترتيبها الفعلي الحالي
+  for (const cardId of orderedCardIds) {
+    const cardSteps = MODERN_CARD_STEPS_MAP[cardId];
+    if (cardSteps && cardSteps.length > 0) {
+      steps.push(...cardSteps);
+    }
+  }
+
+  return steps;
+};
+
+export const SMART_HOME_PAGE_STEPS: SpotlightStep[] = [
+  ...SMART_HOME_HEADER_STEPS,
+  SMART_HOME_QURAN_STEP,
+  SMART_HOME_LISTEN_QURAN_STEP,
+  SMART_HOME_SEASONAL_STEP,
+  ...SMART_HOME_PRAYER_STEPS,
+  SMART_HOME_SEARCH_STEP,
+  SMART_HOME_APPS_STEP,
+  SMART_HOME_ADHKAR_STEP,
+  SMART_HOME_TRACKER_STEP,
+  SMART_HOME_QUICK_TASBEEH_STEP,
+  SMART_HOME_TAWAF_STEP,
+  SMART_HOME_REFLECTIONS_STEP,
+  SMART_HOME_SHARE_STEP
 ];
 
 

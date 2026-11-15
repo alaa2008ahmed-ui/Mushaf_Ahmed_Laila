@@ -133,8 +133,10 @@ public class AlertsGroupHelper {
                     inboxStyle.addLine(line);
                 }
 
+                // Status Bar Notification Icon: Holy Quran on Rehal (Stand)
+                int notifSmallIcon = R.drawable.ic_stat_name;
                 NotificationCompat.Builder prayerSummary = new NotificationCompat.Builder(context, PRAYER_SUMMARY_CHANNEL_ID)
-                    .setSmallIcon(R.drawable.ic_stat_name)
+                    .setSmallIcon(notifSmallIcon)
                     .setColor(0xFF2E7D5E)
                     .setContentTitle(prayerTitle)
                     .setContentText(prayerBody)
@@ -192,8 +194,10 @@ public class AlertsGroupHelper {
                     inboxStyle.addLine(line);
                 }
 
+                // Status Bar Notification Icon: Holy Quran on Rehal (Stand)
+                int notifSmallIcon = R.drawable.ic_stat_name;
                 NotificationCompat.Builder generalSummary = new NotificationCompat.Builder(context, GENERAL_SUMMARY_CHANNEL_ID)
-                    .setSmallIcon(R.drawable.ic_stat_name)
+                    .setSmallIcon(notifSmallIcon)
                     .setColor(0xFF2E7D5E)
                     .setContentTitle(generalTitle)
                     .setContentText(generalBody)

@@ -1,17 +1,19 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { Coordinates, CalculationMethod, PrayerTimes as AdhanPrayerTimes } from 'adhan';
+import { Coordinates, CalculationMethod, PrayerTimes as AdhanPrayerTimes, Madhab, HighLatitudeRule } from 'adhan';
 import moment from 'moment-hijri';
 import { Filesystem, Directory } from '@capacitor/filesystem';
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, PluginListenerHandle } from '@capacitor/core';
+import { App } from '@capacitor/app';
 import { Geolocation } from '@capacitor/geolocation';
-import { prayerNamesAr, ADHAN_CHANNELS_CONFIG } from '../data/prayerTimesData';
-import { checkSupportsDST, calculateNightTimes, playNotificationSound, stopNotificationSound } from '../utils/prayerTimesUtils';
+import { prayerNamesAr, ADHAN_CHANNELS_CONFIG, DEFAULT_NOTIFICATION_TONE, CALCULATION_METHOD_OPTIONS, ASR_MADHAB_OPTIONS, HIGH_LATITUDE_RULE_OPTIONS } from '../data/prayerTimesData';
+import { checkSupportsDST, calculateNightTimes, playNotificationSound, stopNotificationSound, getActiveNotificationTone, setActiveNotificationTone, getActiveNotificationSoundPath, setStoredAlertVolume, getStoredAlertVolume } from '../utils/prayerTimesUtils';
 import { updateAndroidWidget } from '../utils/widgetUtils';
 import { LocalNotifications } from '@capacitor/local-notifications';
-import { scheduleDeviceSilentWindows, cancelAllDeviceSilentWindows, setDeviceSilentNow, updateNativeAlertsGroupSummary } from '../utils/silentMode';
+import { scheduleDeviceSilentWindows, cancelAllDeviceSilentWindows, updateNativeAlertsGroupSummary, manualRestoreDeviceSound, getNativeSilentStatus, addNativeSilentStateListener, SilentStatus, scheduleNativeAdhanAlarms, cancelNativeAdhanAlarms, ScheduledAdhanAlarm, scheduleNativeIqamaAlarms, cancelNativeIqamaAlarms, ScheduledIqamaAlarm } from '../utils/silentMode';
 import { useTheme } from './ThemeContext';
 import { useLanguage } from './LanguageContext';
 import { PRAYER_NAMES_EN, LOCATION_TRANSLATIONS, getLocalizedLocationName } from '../utils/prayerTimesTranslations';
+import { ensureNotificationPermission, isMainAppEntered } from '../utils/permissionHelper';
 
 // --- Types ---
 interface PrayerConfig {
@@ -53,24 +55,36 @@ interface PrayerConfig {
         minutes?: number;
     };
     prayerIqamaReminders?: Record<string, { enabled: boolean; minutes?: number }>;
+    notificationTone?: { id: string; name: string; data: string; fileName?: string };
+    // In-app prayer alerts volume (0 - 100%)
+    alertVolume?: number;
+    // Astronomical calculation and Fiqh settings
+    calculationMethod?: string;
+    asrMadhab?: 'shafi' | 'hanafi';
+    highLatitudeRule?: 'auto' | 'twilightangle' | 'middleofthenight' | 'seventhofthenight' | 'none';
 }
 
 interface PrayerTimesContextType {
     times: Record<string, string>;
     dates: { hijri: string; gregorian: string };
     nextPrayer: { key: string; date: Date; name: string } | null;
-    countdown: string;
     config: PrayerConfig;
     setConfig: React.Dispatch<React.SetStateAction<PrayerConfig>>;
     refreshLocation: (isManualUserAction?: boolean) => Promise<void>;
     manualSearch: (query: string) => Promise<void>;
     updateConfig: (newConfig: Partial<PrayerConfig>) => void;
+    alertVolume: number;
+    setAlertVolume: (vol: number) => void;
     isPrayerSilentActive?: boolean;
     activeSilentPrayerName?: string;
     activeIqamaAlert?: { prayerKey: string; prayerName: string; minutes: number; timeStr: string } | null;
     dismissIqamaAlert?: () => void;
     activeAdhanAlert?: { prayerKey: string; prayerName: string; timeStr: string; soundFileName?: string } | null;
     dismissAdhanAlert?: () => void;
+    activeCalculationMethodName?: string;
+    activeAsrMadhabName?: string;
+    activeHighLatRuleName?: string;
+    manuallyRestoreSilent?: () => Promise<void>;
 }
 
 // --- Default Configuration ---
@@ -96,7 +110,17 @@ const DEFAULT_CONFIG: PrayerConfig = {
     preAthanReminder: { enabled: false, minutes: 15 },
     autoSilent: false,
     autoSilentDuration: 15,
-    iqamaReminder: { enabled: true, minutes: 15 }
+    iqamaReminder: { enabled: true, minutes: 15 },
+    notificationTone: {
+        id: 'chime',
+        name: 'رنين هادئ',
+        data: '/assets/audio/chime.mp3',
+        fileName: 'chime.mp3'
+    },
+    alertVolume: 100,
+    calculationMethod: 'auto',
+    asrMadhab: 'shafi',
+    highLatitudeRule: 'auto'
 };
 
 
@@ -125,6 +149,29 @@ const applyOffset = (timeStr: string, offsetMins: number) => {
     date.setHours(parseInt(h), parseInt(m), 0);
     date.setMinutes(date.getMinutes() + (offsetMins || 0));
     return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+};
+
+export const getEffectiveIqamaMinutes = (config: any, key: string): number => {
+    if (config?.prayerIqamaReminders?.[key]?.minutes !== undefined) {
+        return Number(config.prayerIqamaReminders[key].minutes);
+    }
+    if (config?.iqamaOffsets?.[key] !== undefined) {
+        return Number(config.iqamaOffsets[key]);
+    }
+    if (config?.iqamaReminder?.minutes !== undefined) {
+        return Number(config.iqamaReminder.minutes);
+    }
+    return 15;
+};
+
+export const isPrayerIqamaEnabled = (config: any, key: string): boolean => {
+    if (config?.prayerIqamaReminders?.[key]?.enabled !== undefined) {
+        return config.prayerIqamaReminders[key].enabled !== false;
+    }
+    if (config?.iqamaReminder?.enabled !== undefined) {
+        return config.iqamaReminder.enabled !== false;
+    }
+    return true;
 };
 
 const getCountryInfo = (countryCode: string, countryName: string, cityName: string) => {
@@ -185,48 +232,155 @@ const getCountryInfo = (countryCode: string, countryName: string, cityName: stri
     return { fullName: fullNameAr, fullNameAr, fullNameEn, combinedCode };
 };
 
-export const getCalculationParams = (date: Date, locationData?: any) => {
+export const getCalculationParams = (date: Date, locationData?: any, userConfig?: Partial<PrayerConfig>) => {
     let params = CalculationMethod.MuslimWorldLeague();
     let methodId = 3; // MWL
+    let detectedMethodId = 'MuslimWorldLeague';
+    let detectedNameAr = 'رابطة العالم الإسلامي';
+    let detectedNameEn = 'Muslim World League';
 
     const country = locationData?.fullCountry || '';
     const code = locationData?.combinedCode || '';
 
+    // Auto-detection based on country code/name
     if (code.startsWith('+20') || country.includes('مصر')) {
-        params = CalculationMethod.Egyptian();
-        methodId = 5;
+        detectedMethodId = 'Egyptian';
+        detectedNameAr = 'الهيئة المصرية العامة للمساحة';
+        detectedNameEn = 'Egyptian General Authority of Survey';
     } else if (code.startsWith('+966') || country.includes('السعودية')) {
-        params = CalculationMethod.UmmAlQura();
-        methodId = 4;
+        detectedMethodId = 'UmmAlQura';
+        detectedNameAr = 'جامعة أم القرى - مكة المكرمة';
+        detectedNameEn = 'Umm Al-Qura University, Makkah';
     } else if (code.startsWith('+971') || country.includes('الإمارات')) {
-        params = CalculationMethod.Dubai();
-        methodId = 16;
+        detectedMethodId = 'Dubai';
+        detectedNameAr = 'دائرة الشؤون الإسلامية بدبي';
+        detectedNameEn = 'Dubai Islamic Affairs';
     } else if (code.startsWith('+965') || country.includes('الكويت')) {
-        params = CalculationMethod.Kuwait();
-        methodId = 9;
+        detectedMethodId = 'Kuwait';
+        detectedNameAr = 'وزارة الأوقاف والشؤون الإسلامية - الكويت';
+        detectedNameEn = 'Ministry of Awqaf - Kuwait';
     } else if (code.startsWith('+974') || country.includes('قطر')) {
-        params = CalculationMethod.Qatar();
-        methodId = 10;
+        detectedMethodId = 'Qatar';
+        detectedNameAr = 'وزارة الأوقاف والشؤون الإسلامية - قطر';
+        detectedNameEn = 'Ministry of Awqaf - Qatar';
     } else if (code.startsWith('+1') || country.includes('أمريكا') || country.includes('كندا')) {
-        params = CalculationMethod.NorthAmerica();
-        methodId = 2;
+        detectedMethodId = 'NorthAmerica';
+        detectedNameAr = 'الجمعية الإسلامية لأمريكا الشمالية (ISNA)';
+        detectedNameEn = 'Islamic Society of North America (ISNA)';
     } else if (code.startsWith('+90') || country.includes('تركيا')) {
-        params = CalculationMethod.Turkey();
-        methodId = 13;
+        detectedMethodId = 'Turkey';
+        detectedNameAr = 'رئاسة الشؤون الدينية التركية (Diyanet)';
+        detectedNameEn = 'Diyanet İşleri Başkanlığı, Turkey';
     } else if (code.startsWith('+92') || country.includes('باكستان')) {
-        params = CalculationMethod.Karachi();
-        methodId = 1;
+        detectedMethodId = 'Karachi';
+        detectedNameAr = 'جامعة العلوم الإسلامية بكراتشي';
+        detectedNameEn = 'University of Islamic Sciences, Karachi';
     }
 
-    return { params, methodId };
+    const effectiveMethodKey = (userConfig?.calculationMethod && userConfig.calculationMethod !== 'auto')
+        ? userConfig.calculationMethod
+        : detectedMethodId;
+
+    switch (effectiveMethodKey) {
+        case 'Egyptian':
+            params = CalculationMethod.Egyptian();
+            methodId = 5;
+            break;
+        case 'UmmAlQura':
+            params = CalculationMethod.UmmAlQura();
+            methodId = 4;
+            break;
+        case 'Dubai':
+            params = CalculationMethod.Dubai();
+            methodId = 16;
+            break;
+        case 'Kuwait':
+            params = CalculationMethod.Kuwait();
+            methodId = 9;
+            break;
+        case 'Qatar':
+            params = CalculationMethod.Qatar();
+            methodId = 10;
+            break;
+        case 'NorthAmerica':
+            params = CalculationMethod.NorthAmerica();
+            methodId = 2;
+            break;
+        case 'Turkey':
+            params = CalculationMethod.Turkey();
+            methodId = 13;
+            break;
+        case 'Karachi':
+            params = CalculationMethod.Karachi();
+            methodId = 1;
+            break;
+        case 'Tehran':
+            params = CalculationMethod.Tehran();
+            methodId = 7;
+            break;
+        case 'Singapore':
+            params = CalculationMethod.Singapore();
+            methodId = 11;
+            break;
+        case 'MoonsightingCommittee':
+            params = CalculationMethod.MoonsightingCommittee();
+            methodId = 15;
+            break;
+        case 'MuslimWorldLeague':
+        default:
+            params = CalculationMethod.MuslimWorldLeague();
+            methodId = 3;
+            break;
+    }
+
+    // 2. Asr Madhab configuration (Shafi'i/Majority vs Hanafi)
+    const asrMadhab = userConfig?.asrMadhab || 'shafi';
+    if (asrMadhab === 'hanafi') {
+        params.madhab = Madhab.Hanafi;
+    } else {
+        params.madhab = Madhab.Shafi;
+    }
+
+    // 3. High Latitude Rule configuration
+    const highLatRule = userConfig?.highLatitudeRule || 'auto';
+    if (highLatRule === 'middleofthenight') {
+        params.highLatitudeRule = HighLatitudeRule.MiddleOfTheNight;
+    } else if (highLatRule === 'seventhofthenight') {
+        params.highLatitudeRule = HighLatitudeRule.SeventhOfTheNight;
+    } else if (highLatRule === 'twilightangle') {
+        params.highLatitudeRule = HighLatitudeRule.TwilightAngle;
+    } else if (highLatRule === 'auto') {
+        if (locationData?.lat && Math.abs(locationData.lat) > 48) {
+            const coordinates = new Coordinates(locationData.lat, locationData.lng);
+            params.highLatitudeRule = HighLatitudeRule.recommended(coordinates);
+        }
+    }
+
+    return { 
+        params, 
+        methodId, 
+        detectedMethodId, 
+        detectedNameAr, 
+        detectedNameEn, 
+        effectiveMethodKey,
+        asrMadhab,
+        highLatRule 
+    };
 };
 
-export const computeTimesSync = (locationData: any, date: Date = new Date(), isEn: boolean = false) => {
+export const computeTimesSync = (locationData: any, date: Date = new Date(), isEn: boolean = false, userConfig?: Partial<PrayerConfig>) => {
     if (!locationData || typeof locationData.lat !== 'number' || typeof locationData.lng !== 'number') {
         return null;
     }
     try {
-        const { params } = getCalculationParams(date, locationData);
+        let effectiveConfig = userConfig;
+        if (!effectiveConfig && typeof window !== 'undefined') {
+            try {
+                const saved = localStorage.getItem('prayerFinal_v34');
+                if (saved) effectiveConfig = JSON.parse(saved);
+            } catch (e) {}
+        }
+        const { params } = getCalculationParams(date, locationData, effectiveConfig);
         const coordinates = new Coordinates(locationData.lat, locationData.lng);
         const prayerTimes = new AdhanPrayerTimes(coordinates, date, params);
 
@@ -287,6 +441,7 @@ export const computeTimesSync = (locationData: any, date: Date = new Date(), isE
 };
 
 const PrayerTimesContext = createContext<PrayerTimesContextType | undefined>(undefined);
+const PrayerCountdownContext = createContext<string>("00:00:00");
 
 export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
     const [config, setConfig] = useState<PrayerConfig>(() => {
@@ -304,7 +459,8 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                     iqamaReminder: {
                         enabled: parsed.iqamaReminder?.enabled !== undefined ? parsed.iqamaReminder.enabled : true,
                         minutes: parsed.iqamaReminder?.minutes || 15
-                    }
+                    },
+                    notificationTone: parsed.notificationTone || getActiveNotificationTone()
                 };
             }
             // Migrate from v33 ensuring iqamaReminder defaults to enabled
@@ -336,6 +492,7 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
     const [dates, setDates] = useState({ hijri: "-- -- --", gregorian: "-- -- --" });
     const [nextPrayer, setNextPrayer] = useState<{ key: string; date: Date; name: string } | null>(null);
     const [countdown, setCountdown] = useState("00:00:00");
+    const countdownRef = React.useRef("00:00:00");
     const [isPrayerSilentActive, setIsPrayerSilentActive] = useState(false);
     const [activeSilentPrayerName, setActiveSilentPrayerName] = useState('');
     const [activeIqamaAlert, setActiveIqamaAlert] = useState<{ prayerKey: string; prayerName: string; minutes: number; timeStr: string } | null>(null);
@@ -349,37 +506,153 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
         setActiveAdhanAlert(null);
     }, []);
     const triggeredAlertsRef = React.useRef<Set<string>>(new Set());
+    const activeSilentWindowRef = React.useRef<{ startMillis: number; windowId: number; prayerKey: string } | null>(null);
+    const manuallyRestoredWindowsRef = React.useRef<Set<number>>(new Set());
 
-    // Check if phone/app should be automatically silent during prayer time
+    // Hydrate manually restored silent windows (prevents re-activating or re-showing banner after user restores sound)
     useEffect(() => {
+        try {
+            const raw = localStorage.getItem('manuallyRestoredSilentWindows_v1');
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                if (Array.isArray(parsed)) {
+                    const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+                    const valid = parsed.filter((ts) => typeof ts === 'number' && ts > cutoff);
+                    manuallyRestoredWindowsRef.current = new Set(valid);
+                    if (valid.length !== parsed.length) {
+                        localStorage.setItem('manuallyRestoredSilentWindows_v1', JSON.stringify(valid));
+                    }
+                }
+            }
+        } catch (e) {}
+    }, []);
+
+    const markWindowManuallyRestored = useCallback((startMillis?: number | null) => {
+        if (!startMillis || startMillis <= 0) return;
+        manuallyRestoredWindowsRef.current.add(startMillis);
+        try {
+            const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+            const filtered = Array.from(manuallyRestoredWindowsRef.current).filter((ts) => ts > cutoff);
+            manuallyRestoredWindowsRef.current = new Set(filtered);
+            localStorage.setItem('manuallyRestoredSilentWindows_v1', JSON.stringify(filtered));
+        } catch (e) {}
+    }, []);
+
+    const isWindowManuallyRestored = useCallback((startMillis?: number | null) => {
+        if (!startMillis || startMillis <= 0) return false;
+        return manuallyRestoredWindowsRef.current.has(startMillis);
+    }, []);
+
+    // Synchronize in-app Auto-Silent banner strictly with real device state (Android) or non-restored window (Web)
+    useEffect(() => {
+        const isAndroidNative = Capacitor.getPlatform() === 'android';
+
+        if (isAndroidNative) {
+            let mounted = true;
+            let stateListenerHandle: PluginListenerHandle | null = null;
+            let appStateHandle: PluginListenerHandle | null = null;
+
+            const applyNativeStatus = (status: SilentStatus | null) => {
+                if (!mounted) return;
+                if (!status) {
+                    activeSilentWindowRef.current = null;
+                    setIsPrayerSilentActive(false);
+                    setActiveSilentPrayerName('');
+                    return;
+                }
+
+                const now = Date.now();
+                const isRestoredInJs = status.activeStartMillis > 0 && isWindowManuallyRestored(status.activeStartMillis);
+                const isValidActive =
+                    !!status.isSilentActive &&
+                    !status.manuallyRestored &&
+                    !!status.isDeviceMuted &&
+                    !isRestoredInJs &&
+                    (status.activeEndMillis <= 0 || now < status.activeEndMillis);
+
+                if (status.manuallyRestored && status.restoredWindowStartMillis > 0) {
+                    markWindowManuallyRestored(status.restoredWindowStartMillis);
+                }
+
+                if (isValidActive) {
+                    activeSilentWindowRef.current = {
+                        startMillis: status.activeStartMillis,
+                        windowId: status.activeWindowId,
+                        prayerKey: status.activePrayerKey
+                    };
+                    setIsPrayerSilentActive(true);
+                    setActiveSilentPrayerName(status.activePrayerName || status.activePrayerKey || '');
+                } else {
+                    activeSilentWindowRef.current = null;
+                    setIsPrayerSilentActive(false);
+                    setActiveSilentPrayerName('');
+                }
+            };
+
+            const syncFromNative = async () => {
+                const status = await getNativeSilentStatus();
+                applyNativeStatus(status);
+            };
+
+            syncFromNative();
+
+            addNativeSilentStateListener((status) => {
+                applyNativeStatus(status);
+            }).then((handle) => {
+                if (mounted) {
+                    stateListenerHandle = handle;
+                } else {
+                    handle?.remove();
+                }
+            }).catch(() => {});
+
+            App.addListener('appStateChange', ({ isActive }) => {
+                if (isActive && mounted) {
+                    syncFromNative();
+                }
+            }).then((handle) => {
+                if (mounted) {
+                    appStateHandle = handle;
+                } else {
+                    handle?.remove();
+                }
+            }).catch(() => {});
+
+            const pollInterval = setInterval(syncFromNative, 5000);
+
+            return () => {
+                mounted = false;
+                clearInterval(pollInterval);
+                stateListenerHandle?.remove();
+                appStateHandle?.remove();
+            };
+        }
+
+        // Web / non-Android fallback
         if (!times || Object.keys(times).length === 0) {
             setIsPrayerSilentActive(false);
             setActiveSilentPrayerName('');
             return;
         }
 
-        const checkSilentStatus = () => {
+        const checkSilentStatusWeb = () => {
             const now = new Date();
-            const nowMinutes = now.getHours() * 60 + now.getMinutes();
-
+            const nowMs = now.getTime();
             const prayerKeys = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
             let foundActive = false;
             let activeName = '';
+            let foundWindow: { startMillis: number; windowId: number; prayerKey: string } | null = null;
 
             for (const key of prayerKeys) {
-                // If this prayer is disabled/muted (button is RED), do NOT activate auto-silent or alerts
                 if (config.mutedPrayers?.[key]) continue;
 
-                // Determine if auto-silent is enabled for this prayer
                 let isSilentEnabled = false;
                 let duration = 15;
 
                 if (config.prayerAutoSilent?.[key] !== undefined) {
-                    // Per-prayer override takes precedence
                     isSilentEnabled = !!config.prayerAutoSilent[key].enabled;
                     duration = config.prayerAutoSilent[key].duration || 15;
                 } else if (config.autoSilent) {
-                    // Global is ON: applies to all prayers
                     isSilentEnabled = true;
                     duration = config.autoSilentDuration || 15;
                 }
@@ -392,35 +665,34 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                 const [h, m] = timeStr.split(':').map(Number);
                 const supportsDST = checkSupportsDST(config.location?.combinedCode, config.location?.fullCountry);
                 const totalOffset = (config.prayerOffsets[key] || 0) + ((config.isSummerTime && supportsDST) ? 60 : 0);
-                const prayerMin = h * 60 + m + totalOffset;
-                
-                // Silent mode starts at Iqama time (Adhan + Iqama offset), not at Adhan time
-                const iqamaOffset = config.iqamaOffsets?.[key] !== undefined ? config.iqamaOffsets[key] : (config.iqamaReminder?.minutes ?? 15);
-                const silentStartMin = prayerMin + iqamaOffset;
 
-                if (nowMinutes >= silentStartMin && nowMinutes < silentStartMin + duration) {
-                    foundActive = true;
-                    activeName = isEn ? (PRAYER_NAMES_EN[key] || key) : (prayerNamesAr[key] || key);
+                const prayerDate = new Date(now);
+                prayerDate.setHours(h, m, 0, 0);
+                prayerDate.setMinutes(prayerDate.getMinutes() + totalOffset);
+
+                const iqamaOffset = getEffectiveIqamaMinutes(config, key);
+                const silentStartMs = prayerDate.getTime() + iqamaOffset * 60000 + 10000;
+                const silentEndMs = silentStartMs + duration * 60000;
+
+                if (nowMs >= silentStartMs && nowMs < silentEndMs) {
+                    if (!isWindowManuallyRestored(silentStartMs)) {
+                        foundActive = true;
+                        activeName = isEn ? (PRAYER_NAMES_EN[key] || key) : (prayerNamesAr[key] || key);
+                        foundWindow = { startMillis: silentStartMs, windowId: 0, prayerKey: key };
+                    }
                     break;
                 }
             }
 
+            activeSilentWindowRef.current = foundWindow;
             setIsPrayerSilentActive(foundActive);
             setActiveSilentPrayerName(activeName);
-            if (foundActive) {
-                // If this is the starting minute of Iqama, delay hardware muting by 20 seconds to let the Iqama chime sound finish ringing completely
-                setTimeout(() => {
-                    setDeviceSilentNow(true, activeName);
-                }, 20000);
-            } else {
-                setDeviceSilentNow(false);
-            }
         };
 
-        checkSilentStatus();
-        const interval = setInterval(checkSilentStatus, 30000);
+        checkSilentStatusWeb();
+        const interval = setInterval(checkSilentStatusWeb, 5000);
         return () => clearInterval(interval);
-    }, [config.autoSilent, config.autoSilentDuration, config.prayerAutoSilent, config.mutedPrayers, config.iqamaOffsets, config.iqamaReminder, times, config.prayerOffsets, config.isSummerTime, config.location, isEn]);
+    }, [config.autoSilent, config.autoSilentDuration, config.prayerAutoSilent, config.mutedPrayers, config.iqamaOffsets, config.iqamaReminder, times, config.prayerOffsets, config.isSummerTime, config.location, isEn, isWindowManuallyRestored, markWindowManuallyRestored]);
 
     // --- Save Config ---
     useEffect(() => {
@@ -428,19 +700,6 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
             localStorage.setItem('prayerFinal_v34', JSON.stringify(config));
         } catch (e) {}
     }, [config]);
-
-    // Re-calculate times only when coordinates actually change
-    const prevLocationCoordsRef = React.useRef({ lat: config.location?.lat, lng: config.location?.lng });
-    useEffect(() => {
-        if (
-            config.location && 
-            (prevLocationCoordsRef.current.lat !== config.location.lat || 
-             prevLocationCoordsRef.current.lng !== config.location.lng)
-        ) {
-            prevLocationCoordsRef.current = { lat: config.location.lat, lng: config.location.lng };
-            fetchTimesForLocation(config.location);
-        }
-    }, [config.location]);
 
     // --- Calculation Logic ---
     const fetchTimesForLocation = useCallback(async (locationData: any) => {
@@ -450,7 +709,7 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
             const date = new Date();
             
             // 1. Immediately calculate locally so UI updates in 0 milliseconds!
-            const localResult = computeTimesSync(locationData, date, isEn);
+            const localResult = computeTimesSync(locationData, date, isEn, config);
             if (localResult) {
                 setTimes(localResult.timings);
                 setDates(localResult.dates);
@@ -459,9 +718,21 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
 
             // 2. Fetch AlAdhan API in background to refine official times/dates if online
             try {
-                const { methodId } = getCalculationParams(date, locationData);
+                const { methodId, asrMadhab, highLatRule } = getCalculationParams(date, locationData, config);
                 const timestamp = Math.floor(date.getTime() / 1000);
-                const apiRes = await fetchWithTimeout(`https://api.aladhan.com/v1/timings/${timestamp}?latitude=${lat}&longitude=${lng}&method=${methodId}`, {}, 5000);
+                const schoolParam = asrMadhab === 'hanafi' ? 1 : 0;
+                let latAdjParam = 0;
+                if (highLatRule === 'middleofthenight') latAdjParam = 1;
+                else if (highLatRule === 'seventhofthenight') latAdjParam = 2;
+                else if (highLatRule === 'twilightangle') latAdjParam = 3;
+                else if (highLatRule === 'auto' && Math.abs(lat) > 48) latAdjParam = 3;
+
+                let apiUrl = `https://api.aladhan.com/v1/timings/${timestamp}?latitude=${lat}&longitude=${lng}&method=${methodId}&school=${schoolParam}`;
+                if (latAdjParam > 0) {
+                    apiUrl += `&latitudeAdjustmentMethod=${latAdjParam}`;
+                }
+
+                const apiRes = await fetchWithTimeout(apiUrl, {}, 5000);
                 const apiData = await apiRes.json();
                 
                 if (apiData && apiData.code === 200) {
@@ -498,7 +769,35 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                 // AlAdhan API failed or offline: local times already computed and rendered in 0ms!
             }
         } catch(e) { console.error("Failed to calculate prayer times:", e); }
-    }, [isEn]);
+    }, [isEn, config]);
+
+    // Re-calculate times when coordinates OR calculation settings change
+    const prevCalculationRef = React.useRef({ 
+        lat: config.location?.lat, 
+        lng: config.location?.lng,
+        method: config.calculationMethod,
+        madhab: config.asrMadhab,
+        highLat: config.highLatitudeRule
+    });
+    useEffect(() => {
+        if (!config.location) return;
+        const prev = prevCalculationRef.current;
+        const coordsChanged = prev.lat !== config.location.lat || prev.lng !== config.location.lng;
+        const methodChanged = prev.method !== config.calculationMethod;
+        const madhabChanged = prev.madhab !== config.asrMadhab;
+        const highLatChanged = prev.highLat !== config.highLatitudeRule;
+
+        if (coordsChanged || methodChanged || madhabChanged || highLatChanged) {
+            prevCalculationRef.current = { 
+                lat: config.location.lat, 
+                lng: config.location.lng,
+                method: config.calculationMethod,
+                madhab: config.asrMadhab,
+                highLat: config.highLatitudeRule
+            };
+            fetchTimesForLocation(config.location);
+        }
+    }, [config.location, config.calculationMethod, config.asrMadhab, config.highLatitudeRule, fetchTimesForLocation]);
 
     const refreshLocation = useCallback(async (isManualUserAction: boolean = false) => {
         return new Promise<void>(async (resolve, reject) => {
@@ -617,6 +916,9 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                 if (Capacitor.isNativePlatform()) {
                     const permStatus = await Geolocation.checkPermissions();
                     if (permStatus.location !== 'granted') {
+                        if (!isManualUserAction && !isMainAppEntered()) {
+                            throw new Error("Defer location permission prompt during splash/welcome");
+                        }
                         const requestStatus = await Geolocation.requestPermissions();
                         if (requestStatus.location !== 'granted') {
                             throw new Error("Location permission denied");
@@ -650,7 +952,7 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                     const data = await res.json();
                     if (data && data.address) {
                         const addr = data.address;
-                        const city = addr.village || addr.town || addr.city || (isEn ? "Current Location" : "موقعي");
+                        const city = addr.city || addr.town || addr.municipality || addr.village || addr.suburb || (isEn ? "Current Location" : "موقعي");
                         const countryInfo = getCountryInfo(addr.country_code, addr.country, city);
                         const rawCityGov = `${city}${addr.state ? ` - ${addr.state}` : ''}`;
                         const cityGovAr = getLocalizedLocationName(rawCityGov, 'ar');
@@ -773,6 +1075,12 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                 }
             }
         }
+        if (newConfig.notificationTone) {
+            setActiveNotificationTone(newConfig.notificationTone as any);
+        }
+        if (typeof newConfig.alertVolume === 'number') {
+            setStoredAlertVolume(newConfig.alertVolume);
+        }
         setConfig(prev => {
             const updated = { ...prev, ...newConfig };
             try {
@@ -785,19 +1093,21 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
     // --- Notification & Auto-Silent Scheduling ---
     const scheduleNotifications = useCallback(async () => {
         const isNative = Capacitor.isNativePlatform();
+        const isAndroidNative = Capacitor.getPlatform() === 'android';
         const w = window as any;
 
         const prayerKeys = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
         const notificationsToSchedule: any[] = [];
+        const adhanAlarmsToSchedule: ScheduledAdhanAlarm[] = [];
+        const iqamaAlarmsToSchedule: ScheduledIqamaAlarm[] = [];
         const silentWindowsToSchedule: any[] = [];
 
         // Setup notification channels and check permissions for LocalNotifications on Capacitor
+        // Never prompt during Splash or Language Selection screen!
+        let hasNotifPermission = false;
         if (isNative) {
             try {
-                const perm = await LocalNotifications.checkPermissions();
-                if (perm.display !== 'granted') {
-                    await LocalNotifications.requestPermissions();
-                }
+                hasNotifPermission = await ensureNotificationPermission(false);
 
                 // Clean up any legacy channels created previously
                 const legacyChannels = [
@@ -805,10 +1115,14 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                     'adhan_channel_silent',
                     'pre_adhan_reminder_channel',
                     'pre_adhan_alarm_channel',
+                    'pre_adhan_v3_chime_channel',
                     'iqama_reminder_channel',
                     'iqama_alarm_channel',
                     'iqama_v3_chime_channel',
+                    'iqama_v4_chime_channel',
                     'prayer_silent_channel',
+                    'prayer_silent_v3_chime_channel',
+                    'prayer_silent_v4_chime_channel',
                     'night_times_channel',
                     'night_times_alarm_channel',
                     'athkar_reminders_channel',
@@ -879,32 +1193,37 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                     } catch (e) {}
                 }
 
-                // Short gentle chime channels for all reminders
+                // Short gentle alerts for prayer reminders (droplet) and general reminders (chime)
                 const alertChannels = [
                     { 
-                        id: 'pre_adhan_v3_chime_channel', 
+                        id: 'pre_adhan_v4_droplet_channel', 
                         name: isEn ? 'Prayer Preparation Alert' : 'تنبيه الاستعداد للصلاة', 
-                        desc: isEn ? 'Short gentle chime before Adhan' : 'نغمة تنبيه قصيرة وخفيفة للاستعداد والوضوء قبل الأذان' 
+                        desc: isEn ? 'Short gentle droplet tone before Adhan' : 'نغمة تنبيه قطرة ماء للاستعداد والوضوء قبل الأذان',
+                        sound: 'notif_droplet.wav'
                     },
                     { 
-                        id: 'iqama_v4_chime_channel', 
+                        id: 'iqama_v5_droplet_channel', 
                         name: isEn ? 'Prayer Iqama Alert' : 'تنبيه إقامة الصلاة', 
-                        desc: isEn ? 'Chime alert when prayer Iqama begins' : 'نغمة تنبيه وإشعار مرئي عند حلول موعد إقامة الصلاة' 
+                        desc: isEn ? 'Droplet alert when prayer Iqama begins' : 'نغمة قطرة ماء وإشعار مرئي عند حلول موعد إقامة الصلاة',
+                        sound: 'notif_droplet.wav'
                     },
                     { 
-                        id: 'prayer_silent_v4_chime_channel', 
+                        id: 'prayer_silent_v5_droplet_channel', 
                         name: isEn ? 'Auto Silent for Prayer' : 'الصامت التلقائي للصلاة', 
-                        desc: isEn ? 'Short alert when silent mode activates or deactivates' : 'تنبيه قصير عند تفعيل أو إنهاء وضع الصامت للصلاة' 
+                        desc: isEn ? 'Short droplet alert when silent mode activates or deactivates' : 'نغمة قطرة ماء عند تفعيل أو إنهاء وضع الصامت للصلاة',
+                        sound: 'notif_droplet.wav'
                     },
                     { 
                         id: 'night_times_v3_chime_channel', 
                         name: isEn ? 'Night Times Reminders' : 'تنبيهات أوقات الليل', 
-                        desc: isEn ? 'Notifications for first third, midnight, and last third' : 'إشعارات لأوقات أول الليل، منتصف الليل، والثلث الأخير' 
+                        desc: isEn ? 'Notifications for first third, midnight, and last third' : 'إشعارات لأوقات أول الليل، منتصف الليل، والثلث الأخير',
+                        sound: 'chime.mp3'
                     },
                     { 
                         id: 'athkar_v3_chime_channel', 
                         name: isEn ? 'Adhkar & Reminders' : 'أذكار وتنبيهات عامة', 
-                        desc: isEn ? 'Reminders for morning, evening, and daily prayers' : 'قناة تنبيهات أذكار الصباح والمساء والسنن والأدعية' 
+                        desc: isEn ? 'Reminders for morning, evening, and daily prayers' : 'قناة تنبيهات أذكار الصباح والمساء والسنن والأدعية',
+                        sound: 'chime.mp3'
                     },
                 ];
 
@@ -915,7 +1234,7 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                             name: ac.name,
                             description: ac.desc,
                             importance: 5,
-                            sound: 'chime.mp3',
+                            sound: ac.sound,
                             vibration: true,
                             visibility: 1
                         });
@@ -932,7 +1251,7 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
             date.setDate(date.getDate() + day);
 
             const coordinates = new Coordinates(config.location.lat, config.location.lng);
-            const { params } = getCalculationParams(date, config.location);
+            const { params } = getCalculationParams(date, config.location, config);
             const prayerTimes = new AdhanPrayerTimes(coordinates, date, params);
 
             const dayTimings: any = {
@@ -1052,23 +1371,47 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
 
                     if (prayerDate > new Date()) {
                         const notifId = 1000 + (day * 10) + prayerKeys.indexOf(key) + 1;
-                        notificationsToSchedule.push({
-                            id: notifId,
-                            title: isEn ? `It is now time for ${prayerNameLocal} Adhan` : `حان الآن موعد أذان ${prayerNameLocal}`,
-                            body: isEn 
-                                ? 'Remember Allah. The Prophet ﷺ said: "O Bilal, call the Adhan so we may find comfort in prayer."' 
-                                : 'لا تنس ذكر الله. قال رسول الله ﷺ: "أرحنا بها يا بلال"',
-                            schedule: { at: prayerDate, allowWhileIdle: true },
-                            channelId: chosenChannelId,
-                            sound: finalSound,
-                            smallIcon: 'ic_stat_name',
-                            extra: { 
-                                type: 'adhan', 
-                                prayer: key, 
-                                soundFile: finalSound, 
-                                playSound 
-                            }
-                        });
+                        const adhanTitle = isEn ? `It is now time for ${prayerNameLocal} Adhan` : `حان الآن موعد أذان ${prayerNameLocal}`;
+                        const adhanBody = isEn
+                            ? 'Remember Allah. The Prophet ﷺ said: "O Bilal, call the Adhan so we may find comfort in prayer."'
+                            : 'لا تنس ذكر الله. قال رسول الله ﷺ: "أرحنا بها يا بلال"';
+
+                        if (isAndroidNative) {
+                            const customSoundUri =
+                                playSound &&
+                                toneConfig?.data &&
+                                (toneConfig.data.startsWith('file://') || toneConfig.data.startsWith('content://'))
+                                    ? toneConfig.data
+                                    : '';
+
+                            adhanAlarmsToSchedule.push({
+                                id: notifId,
+                                prayerKey: key,
+                                title: adhanTitle,
+                                body: adhanBody,
+                                triggerAtMillis: prayerDate.getTime(),
+                                soundName: rawSoundName || 'takbeer1',
+                                soundUri: customSoundUri,
+                                playSound,
+                                isArabic: !isEn
+                            });
+                        } else {
+                            notificationsToSchedule.push({
+                                id: notifId,
+                                title: adhanTitle,
+                                body: adhanBody,
+                                schedule: { at: prayerDate, allowWhileIdle: true },
+                                channelId: chosenChannelId,
+                                sound: finalSound,
+                                smallIcon: 'ic_stat_name',
+                                extra: { 
+                                    type: 'adhan', 
+                                    prayer: key, 
+                                    soundFile: finalSound, 
+                                    playSound 
+                                }
+                            });
+                        }
                     }
                 }
 
@@ -1097,44 +1440,51 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                                 ? `Time for wudu, preparation, and proceeding to prayer for ${prayerNameLocal}.`
                                 : `حان وقت الوضوء والاستعداد والذهاب إلى المسجد لأداء صلاة ${prayerNameLocal}`,
                             schedule: { at: prePrayerDate, allowWhileIdle: true },
-                            channelId: 'pre_adhan_v3_chime_channel',
-                            sound: 'chime.mp3',
+                            channelId: 'pre_adhan_v4_droplet_channel',
+                            sound: 'notif_droplet.wav',
                             smallIcon: 'ic_stat_name',
-                            extra: { type: 'pre_adhan', prayer: key, playSound: true, soundFile: 'chime.mp3' }
+                            extra: { type: 'pre_adhan', prayer: key, playSound: true, soundFile: '/assets/audio/notif_droplet.wav' }
                         });
                     }
                 }
 
                 // 3. Iqama Reminder Notification (تنبيه الإقامة)
-                let isIqamaReminderEnabled = true;
-                let iqamaMinutes = config.iqamaOffsets?.[key] || 15;
-
-                if (config.prayerIqamaReminders?.[key] !== undefined) {
-                    isIqamaReminderEnabled = config.prayerIqamaReminders[key].enabled !== false;
-                    iqamaMinutes = config.prayerIqamaReminders[key].minutes ?? (config.iqamaOffsets?.[key] || 15);
-                } else if (config.iqamaReminder !== undefined) {
-                    isIqamaReminderEnabled = config.iqamaReminder.enabled !== false;
-                    iqamaMinutes = config.iqamaReminder.minutes ?? (config.iqamaOffsets?.[key] || 15);
-                }
+                const isIqamaReminderEnabled = isPrayerIqamaEnabled(config, key);
+                const iqamaMinutes = getEffectiveIqamaMinutes(config, key);
+                const iqamaPrayerDate = new Date(prayerDate.getTime() + iqamaMinutes * 60000);
 
                 if (isIqamaReminderEnabled && key !== 'Sunrise') {
-                    const iqamaPrayerDate = new Date(prayerDate.getTime() + iqamaMinutes * 60000);
                     if (iqamaPrayerDate > new Date()) {
                         const iqamaNotifId = 6000 + (day * 10) + prayerKeys.indexOf(key) + 1;
-                        notificationsToSchedule.push({
-                            id: iqamaNotifId,
-                            title: isEn 
-                                ? `It is now time for ${prayerNameLocal} Iqama`
-                                : `حان الآن موعد إقامة صلاة ${prayerNameLocal}`,
-                            body: isEn 
-                                ? 'Salah has begun. Straighten and close your ranks, may Allah reward you.'
-                                : 'أقيمت الصلاة.. استووا وتراصوا واعتدلوا أثابكم الله',
-                            schedule: { at: iqamaPrayerDate, allowWhileIdle: true },
-                            channelId: 'iqama_v4_chime_channel',
-                            sound: 'chime.mp3',
-                            smallIcon: 'ic_stat_name',
-                            extra: { type: 'iqama', prayer: key, playSound: true, soundFile: 'chime.mp3' }
-                        });
+                        const iqamaTitle = isEn 
+                            ? `It is now time for ${prayerNameLocal} Iqama`
+                            : `حان الآن موعد إقامة صلاة ${prayerNameLocal}`;
+                        const iqamaBody = isEn 
+                            ? 'Salah has begun. Straighten and close your ranks, may Allah reward you.'
+                            : 'أقيمت الصلاة.. استووا وتراصوا واعتدلوا أثابكم الله';
+
+                        if (isAndroidNative) {
+                            iqamaAlarmsToSchedule.push({
+                                id: iqamaNotifId,
+                                prayerKey: key,
+                                title: iqamaTitle,
+                                body: iqamaBody,
+                                triggerAtMillis: iqamaPrayerDate.getTime(),
+                                playSound: true,
+                                isArabic: !isEn
+                            });
+                        } else {
+                            notificationsToSchedule.push({
+                                id: iqamaNotifId,
+                                title: iqamaTitle,
+                                body: iqamaBody,
+                                schedule: { at: iqamaPrayerDate, allowWhileIdle: true },
+                                channelId: 'iqama_v5_droplet_channel',
+                                sound: 'notif_droplet.wav',
+                                smallIcon: 'ic_stat_name',
+                                extra: { type: 'iqama', prayer: key, playSound: true, soundFile: '/assets/audio/notif_droplet.wav' }
+                            });
+                        }
                     }
                 }
 
@@ -1151,63 +1501,68 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                 }
 
                 if (isSilentEnabled && key !== 'Sunrise') {
-                    const iqamaOffset = config.iqamaOffsets?.[key] !== undefined ? config.iqamaOffsets[key] : (config.iqamaReminder?.minutes ?? 15);
-                    // Crucial fix: Delay auto-silent activation by 20 seconds after Iqama time
-                    // so the user hears the Iqama alert chime sound loud and clear before the phone enters silent mode.
-                    const silentStartDelayMs = isIqamaReminderEnabled ? 20000 : 5000;
-                    const silentStart = new Date(prayerDate.getTime() + iqamaOffset * 60000 + silentStartDelayMs);
+                    // Starts exactly 10 seconds after the Iqama notification
+                    const silentStartDelayMs = 10000;
+                    const silentStart = new Date(iqamaPrayerDate.getTime() + silentStartDelayMs);
                     const silentEnd = new Date(silentStart.getTime() + silentDuration * 60000);
+                    const silentStartNotifId = 7000 + (day * 10) + prayerKeys.indexOf(key) + 1;
+                    // Avoid playing double chime sound since Iqama reminder already alerted 10s prior
+                    const isIqamaAlertingBefore = isIqamaReminderEnabled && Math.abs(silentStart.getTime() - iqamaPrayerDate.getTime()) < 60000;
+                    const shouldPlaySilentChime = !isIqamaAlertingBefore;
+                    const silentStartTitle = isEn
+                        ? `Silent mode activated (${prayerNameLocal} Prayer)`
+                        : `تم تفعيل وضع الصامت (صلاة ${prayerNameLocal})`;
+                    const silentStartBody = isEn
+                        ? `Device muted automatically for ${silentDuration} minutes for ${prayerNameLocal} prayer.`
+                        : `تم كتم صوت الهاتف تلقائياً لمدة ${silentDuration} دقيقة لأداء صلاة ${prayerNameLocal}`;
 
-                    // A. Visible notification at Silent Mode Start
-                    if (silentStart > new Date()) {
-                        const silentStartNotifId = 7000 + (day * 10) + prayerKeys.indexOf(key) + 1;
-                        // Avoid playing double chime sound if Iqama reminder already alerted 20s prior
-                        const isIqamaAlertingBefore = isIqamaReminderEnabled && Math.abs(silentStart.getTime() - (prayerDate.getTime() + iqamaMinutes * 60000)) < 60000;
-                        const shouldPlaySilentChime = !isIqamaAlertingBefore;
+                    // On Android native, PrayerSilentReceiver handles Start (ACTION_START_SILENT) & End (ACTION_END_SILENT)
+                    // directly via AlarmManager.setAlarmClock so there is zero Doze throttling and zero duplicate scheduling.
+                    if (!isAndroidNative) {
+                        if (silentStart > new Date()) {
+                            notificationsToSchedule.push({
+                                id: silentStartNotifId,
+                                title: silentStartTitle,
+                                body: silentStartBody,
+                                schedule: { at: silentStart, allowWhileIdle: true },
+                                channelId: shouldPlaySilentChime ? 'prayer_silent_v5_droplet_channel' : 'adhan_v5_silent',
+                                sound: shouldPlaySilentChime ? 'notif_droplet.wav' : undefined,
+                                smallIcon: 'ic_stat_name',
+                                extra: { type: 'auto_silent_start', prayer: key, playSound: shouldPlaySilentChime, soundFile: shouldPlaySilentChime ? '/assets/audio/notif_droplet.wav' : undefined }
+                            });
+                        }
 
-                        notificationsToSchedule.push({
-                            id: silentStartNotifId,
-                            title: isEn 
-                                ? `Silent mode activated (${prayerNameLocal} Prayer)`
-                                : `تم تفعيل وضع الصامت (صلاة ${prayerNameLocal})`,
-                            body: isEn 
-                                ? `Device muted automatically for ${silentDuration} minutes for ${prayerNameLocal} prayer.`
-                                : `تم كتم صوت الهاتف تلقائياً لمدة ${silentDuration} دقيقة لأداء صلاة ${prayerNameLocal}`,
-                            schedule: { at: silentStart, allowWhileIdle: true },
-                            channelId: shouldPlaySilentChime ? 'prayer_silent_v4_chime_channel' : 'adhan_v5_silent',
-                            sound: shouldPlaySilentChime ? 'chime.mp3' : undefined,
-                            smallIcon: 'ic_stat_name',
-                            extra: { type: 'auto_silent_start', prayer: key, playSound: shouldPlaySilentChime, soundFile: shouldPlaySilentChime ? 'chime.mp3' : undefined }
-                        });
+                        if (silentEnd > new Date()) {
+                            const silentEndNotifId = 8000 + (day * 10) + prayerKeys.indexOf(key) + 1;
+                            notificationsToSchedule.push({
+                                id: silentEndNotifId,
+                                title: isEn 
+                                    ? `Silent mode ended (${prayerNameLocal} Prayer)`
+                                    : `تم إنهاء وضع الصامت (صلاة ${prayerNameLocal})`,
+                                body: isEn 
+                                    ? `Device sound and media restored after ${prayerNameLocal} prayer. May Allah accept our prayers.`
+                                    : `تم إعادة تفعيل صوت الهاتف والوسائط بعد انتهاء صلاة ${prayerNameLocal} تقبل الله منا ومنكم`,
+                                schedule: { at: silentEnd, allowWhileIdle: true },
+                                channelId: 'prayer_silent_v5_droplet_channel',
+                                sound: 'notif_droplet.wav',
+                                smallIcon: 'ic_stat_name',
+                                extra: { type: 'auto_silent_end', prayer: key, playSound: true, soundFile: '/assets/audio/notif_droplet.wav' }
+                            });
+                        }
                     }
 
-                    // B. Visible notification at Silent Mode End
-                    if (silentEnd > new Date()) {
-                        const silentEndNotifId = 8000 + (day * 10) + prayerKeys.indexOf(key) + 1;
-                        notificationsToSchedule.push({
-                            id: silentEndNotifId,
-                            title: isEn 
-                                ? `Silent mode ended (${prayerNameLocal} Prayer)`
-                                : `تم إنهاء وضع الصامت (صلاة ${prayerNameLocal})`,
-                            body: isEn 
-                                ? `Device sound and media restored after ${prayerNameLocal} prayer. May Allah accept our prayers.`
-                                : `تم إعادة تفعيل صوت الهاتف والوسائط بعد انتهاء صلاة ${prayerNameLocal} تقبل الله منا ومنكم`,
-                            schedule: { at: silentEnd, allowWhileIdle: true },
-                            channelId: 'prayer_silent_v4_chime_channel',
-                            sound: 'chime.mp3',
-                            smallIcon: 'ic_stat_name',
-                            extra: { type: 'auto_silent_end', prayer: key, playSound: true, soundFile: 'chime.mp3' }
-                        });
-                    }
-
-                    // C. Device hardware ringer muting window (scheduled 20s after Iqama)
-                    if (silentStart.getTime() + silentDuration * 60000 > Date.now()) {
+                    // Device hardware ringer muting & notification window (starts 10s after Iqama)
+                    if (silentEnd.getTime() > Date.now()) {
                         silentWindowsToSchedule.push({
-                            id: 7000 + (day * 10) + prayerKeys.indexOf(key) + 1,
+                            id: silentStartNotifId,
                             prayerKey: key,
                             prayerName: prayerNameLocal,
                             startMillis: silentStart.getTime(),
-                            durationMinutes: silentDuration
+                            durationMinutes: silentDuration,
+                            title: silentStartTitle,
+                            body: silentStartBody,
+                            shouldPlayChime: shouldPlaySilentChime,
+                            isArabic: !isEn
                         });
                     }
                 }
@@ -1217,7 +1572,7 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
             const nightNotifs = config.nightNotifications || { firstThird: true, midnight: true, lastThird: true };
             const tomorrow = new Date(date);
             tomorrow.setDate(tomorrow.getDate() + 1);
-            const tomorrowParams = getCalculationParams(tomorrow, config.location).params;
+            const tomorrowParams = getCalculationParams(tomorrow, config.location, config).params;
             const tomorrowPrayerTimes = new AdhanPrayerTimes(coordinates, tomorrow, tomorrowParams);
 
             const supportsDST = checkSupportsDST(config.location.combinedCode, config.location.fullCountry);
@@ -1237,6 +1592,13 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
             const midnightDate = new Date(maghribDate.getTime() + diffMs / 2);
             const lastThirdDate = new Date(maghribDate.getTime() + (diffMs * 2) / 3);
 
+            const activeTone = getActiveNotificationTone();
+            const isSoundMuted = activeTone.id === 'none' || activeTone.data === 'none';
+            const notifSoundPath = getActiveNotificationSoundPath();
+            const cleanToneId = (activeTone.id || 'chime').replace(/[^a-zA-Z0-9_]/g, '');
+            const nightChannelId = isSoundMuted ? 'athkar_channel_v4_silent' : `athkar_channel_v4_${cleanToneId}`;
+            const nightSoundFile = isSoundMuted ? undefined : (activeTone.fileName || (cleanToneId.startsWith('notif_') ? `${cleanToneId}.wav` : `${cleanToneId}.mp3`));
+
             if (nightNotifs.firstThird && firstThirdDate > new Date()) {
                 notificationsToSchedule.push({
                     id: 2000 + (day * 10) + 1,
@@ -1245,10 +1607,10 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                         ? 'The Prophet ﷺ said: "The best prayer after the obligatory prayers is the night prayer."'
                         : 'قال رسول الله ﷺ: "أفضل الصلاة بعد الفريضة صلاة الليل"',
                     schedule: { at: firstThirdDate, allowWhileIdle: true },
-                    channelId: 'night_times_v3_chime_channel',
-                    sound: 'chime.mp3',
+                    channelId: nightChannelId,
+                    sound: nightSoundFile,
                     smallIcon: 'ic_stat_name',
-                    extra: { type: 'night', period: 'firstThird', playSound: true, soundFile: 'chime.mp3' }
+                    extra: { type: 'night', period: 'firstThird', playSound: !isSoundMuted, soundFile: nightSoundFile ? `/assets/audio/${nightSoundFile}` : undefined, soundPath: notifSoundPath }
                 });
             }
 
@@ -1260,10 +1622,10 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                         ? 'The Prophet ﷺ said: "Observe the night prayer, for it was the habit of the righteous before you."'
                         : 'قال رسول الله ﷺ: "عليكم بقيام الليل فإنه دأب الصالحين قبلكم، وقربة إلى الله تعالى"',
                     schedule: { at: midnightDate, allowWhileIdle: true },
-                    channelId: 'night_times_v3_chime_channel',
-                    sound: 'chime.mp3',
+                    channelId: nightChannelId,
+                    sound: nightSoundFile,
                     smallIcon: 'ic_stat_name',
-                    extra: { type: 'night', period: 'midnight', playSound: true, soundFile: 'chime.mp3' }
+                    extra: { type: 'night', period: 'midnight', playSound: !isSoundMuted, soundFile: nightSoundFile ? `/assets/audio/${nightSoundFile}` : undefined, soundPath: notifSoundPath }
                 });
             }
 
@@ -1275,58 +1637,17 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                         ? 'The Prophet ﷺ said: "Our Lord descends every night to the lowest heaven during the last third of the night, asking: Who is calling upon Me, that I may answer him?"'
                         : 'قال ﷺ: "ينزل ربنا تبارك وتعالى كل ليلة إلى السماء الدنيا حين يبقى ثلث الليل الآخر، فيقول: من يدعوني فأستجيب له..."',
                     schedule: { at: lastThirdDate, allowWhileIdle: true },
-                    channelId: 'night_times_v3_chime_channel',
-                    sound: 'chime.mp3',
+                    channelId: nightChannelId,
+                    sound: nightSoundFile,
                     smallIcon: 'ic_stat_name',
-                    extra: { type: 'night', period: 'lastThird', playSound: true, soundFile: 'chime.mp3' }
+                    extra: { type: 'night', period: 'lastThird', playSound: !isSoundMuted, soundFile: nightSoundFile ? `/assets/audio/${nightSoundFile}` : undefined, soundPath: notifSoundPath }
                 });
             }
         }
 
-        // Apply LocalNotifications on Capacitor native
+        // Apply LocalNotifications and Native Alarms on Capacitor
         if (isNative) {
-            try {
-                const pending = await LocalNotifications.getPending();
-                const delivered = await LocalNotifications.getDeliveredNotifications();
-                const deliveredIds = new Set((delivered?.notifications || []).map(n => n.id));
-
-                // CRITICAL: NEVER cancel notifications that are currently delivered and visible in the notification drawer!
-                // Only cancel truly pending, future alarms.
-                const prayerNotifs = (pending?.notifications || []).filter(
-                    n => n.id >= 1000 && n.id < 9000 && !deliveredIds.has(n.id)
-                );
-                if (prayerNotifs.length > 0) {
-                    await LocalNotifications.cancel({ notifications: prayerNotifs });
-                }
-
-                if (notificationsToSchedule.length > 0) {
-                    // Clean and assign collision-free IDs if an ID is currently active in the status bar
-                    const cleanPrayerNotifs = notificationsToSchedule.map(n => {
-                        let finalId = n.id;
-                        while (deliveredIds.has(finalId)) {
-                            finalId += 500; // shift to avoid overwriting or dismissing currently visible notification
-                        }
-                        const { group, groupSummary, ...rest } = n;
-                        return {
-                            ...rest,
-                            id: finalId,
-                            group: 'com.mushaf.ahmedandlayla.PRAYER_ALERTS_CARD',
-                            groupSummary: false,
-                            smallIcon: 'ic_stat_name',
-                            iconColor: '#2E7D5E',
-                            ongoing: false,
-                            autoCancel: true
-                        };
-                    });
-                    await LocalNotifications.schedule({ notifications: cleanPrayerNotifs });
-                    console.log(`[Capacitor] Scheduled ${cleanPrayerNotifs.length} prayer/iqama notifications under group com.mushaf.ahmedandlayla.PRAYER_ALERTS_CARD.`);
-                    await updateNativeAlertsGroupSummary();
-                }
-            } catch (err) {
-                console.warn('Error scheduling via LocalNotifications:', err);
-            }
-
-            // Schedule Auto-Silent Windows natively
+            // Schedule Auto-Silent Windows natively BEFORE LocalNotifications so saved window metadata is always ready
             try {
                 if (silentWindowsToSchedule.length > 0) {
                     await scheduleDeviceSilentWindows(silentWindowsToSchedule);
@@ -1336,6 +1657,74 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                 }
             } catch (silentErr) {
                 console.warn('Error scheduling auto-silent windows:', silentErr);
+            }
+
+            if (hasNotifPermission) {
+                try {
+                    const pending = await LocalNotifications.getPending();
+                    const delivered = await LocalNotifications.getDeliveredNotifications();
+                    const deliveredIds = new Set((delivered?.notifications || []).map(n => n.id));
+
+                    // CRITICAL: NEVER cancel notifications that are currently delivered and visible in the notification drawer!
+                    // Only cancel truly pending, future alarms.
+                    const prayerNotifs = (pending?.notifications || []).filter(
+                        n => n.id >= 1000 && n.id < 9000 && !deliveredIds.has(n.id)
+                    );
+                    if (prayerNotifs.length > 0) {
+                        await LocalNotifications.cancel({ notifications: prayerNotifs });
+                    }
+
+                    if (notificationsToSchedule.length > 0) {
+                        // Clean and assign collision-free IDs if an ID is currently active in the status bar
+                        const cleanPrayerNotifs = notificationsToSchedule.map(n => {
+                            let finalId = n.id;
+                            while (deliveredIds.has(finalId)) {
+                                finalId += 500; // shift to avoid overwriting or dismissing currently visible notification
+                            }
+                            const { group, groupSummary, ...rest } = n;
+                            return {
+                                ...rest,
+                                id: finalId,
+                                group: 'com.mushaf.ahmedandlayla.PRAYER_ALERTS_CARD',
+                                groupSummary: false,
+                                smallIcon: 'ic_stat_name',
+                                iconColor: '#2E7D5E',
+                                ongoing: false,
+                                autoCancel: true
+                            };
+                        });
+                        await LocalNotifications.schedule({ notifications: cleanPrayerNotifs });
+                        console.log(`[Capacitor] Scheduled ${cleanPrayerNotifs.length} prayer/iqama notifications under group com.mushaf.ahmedandlayla.PRAYER_ALERTS_CARD.`);
+                        await updateNativeAlertsGroupSummary();
+                    }
+                } catch (err) {
+                    console.warn('Error scheduling via LocalNotifications:', err);
+                }
+            }
+
+            // Schedule volume-controlled Adhan & exact-timing Iqama alarms natively on Android
+            if (isAndroidNative) {
+                try {
+                    if (adhanAlarmsToSchedule.length > 0) {
+                        await scheduleNativeAdhanAlarms(adhanAlarmsToSchedule);
+                        console.log(`[Capacitor] Scheduled ${adhanAlarmsToSchedule.length} volume-controlled native Adhan alarms.`);
+                    } else {
+                        await cancelNativeAdhanAlarms();
+                    }
+                } catch (adhanErr) {
+                    console.warn('Error scheduling native Adhan alarms:', adhanErr);
+                }
+
+                try {
+                    if (iqamaAlarmsToSchedule.length > 0) {
+                        await scheduleNativeIqamaAlarms(iqamaAlarmsToSchedule);
+                        console.log(`[Capacitor] Scheduled ${iqamaAlarmsToSchedule.length} native exact-clock Iqama alarms.`);
+                    } else {
+                        await cancelNativeIqamaAlarms();
+                    }
+                } catch (iqamaErr) {
+                    console.warn('Error scheduling native Iqama alarms:', iqamaErr);
+                }
             }
         } else if (w.cordova && w.cordova.plugins && w.cordova.plugins.notification && w.cordova.plugins.notification.local) {
             // Cordova fallback for legacy environments
@@ -1358,9 +1747,20 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
         }
     }, [config, language, isEn]);
 
-    // Schedule whenever config changes (location, offsets, muted prayers) or language changes
+    // Schedule whenever config changes (location, offsets, muted prayers), language changes, or main home screen is entered
     useEffect(() => {
-        scheduleNotifications();
+        const timerId = setTimeout(() => {
+            scheduleNotifications();
+        }, 120);
+
+        const handleReschedule = () => {
+            scheduleNotifications();
+        };
+        window.addEventListener('notification-permission-resolved', handleReschedule);
+        return () => {
+            clearTimeout(timerId);
+            window.removeEventListener('notification-permission-resolved', handleReschedule);
+        };
     }, [scheduleNotifications]);
 
     const updateWidget = useCallback((currentTimes: Record<string, string>, currentDates: { hijri: string; gregorian: string }, currentNext: any, currentCountdown: string) => {
@@ -1474,10 +1874,20 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
         }
 
         const localizedNextName = isWidgetEn ? (PRAYER_NAMES_EN[currentNext.key] || currentNext.name) : currentNext.name;
+        const firstThirdLabel = isWidgetEn ? `First Third: ${to12h(nightTimes.firstThird)}` : `أول الليل : ${to12h(nightTimes.firstThird)}`;
         const midnightLabel = isWidgetEn ? `Midnight: ${to12h(nightTimes.midnight)}` : `منتصف الليل : ${to12h(nightTimes.midnight)}`;
         const lastThirdLabel = isWidgetEn ? `Last Third: ${to12h(nightTimes.lastThird)}` : `الثلث الأخير : ${to12h(nightTimes.lastThird)}`;
 
-        const { methodId } = getCalculationParams(new Date(), config.location);
+        const { methodId } = getCalculationParams(new Date(), config.location, config);
+
+        const widgetCityTz = localStorage.getItem('grandLocationTimezone');
+        let widgetCityNow = new Date();
+        if (widgetCityTz) {
+            try {
+                const cityTimeStr = widgetCityNow.toLocaleString('en-US', { timeZone: widgetCityTz });
+                widgetCityNow = new Date(cityTimeStr);
+            } catch (e) {}
+        }
 
         updateAndroidWidget({
             hijri: localizedHijri,
@@ -1487,7 +1897,7 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
             next_prayer_name: localizedNextName,
             next_prayer_id: currentNext.key.toLowerCase(),
             remaining_time: currentCountdown.split(':').slice(0, 2).join(':'), // HH:MM
-            target_time_millis: Date.now() + (currentNext.date.getTime() - currentNext.cityNow.getTime()),
+            target_time_millis: Date.now() + (currentNext.date.getTime() - widgetCityNow.getTime()),
             base_date_millis: Date.now(),
             coordinates: {
                 lat: config.location.lat,
@@ -1496,6 +1906,7 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
             method_id: methodId,
             prayer_offsets: config.prayerOffsets,
             isSummerTime: config.isSummerTime,
+            first_third: firstThirdLabel,
             midnight: midnightLabel,
             last_third: lastThirdLabel,
             app_language: isWidgetEn ? 'en' : 'ar',
@@ -1539,12 +1950,12 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
     useEffect(() => {
         const handleWidgetSettingsChanged = () => {
             if (times && dates && nextPrayer) {
-                updateWidget(times, dates, nextPrayer, countdown);
+                updateWidget(times, dates, nextPrayer, countdownRef.current);
             }
         };
         window.addEventListener('widget-settings-changed', handleWidgetSettingsChanged);
         return () => window.removeEventListener('widget-settings-changed', handleWidgetSettingsChanged);
-    }, [times, dates, nextPrayer, countdown, updateWidget]);
+    }, [times, dates, nextPrayer, updateWidget]);
 
     // --- Next Prayer & Countdown Logic ---
     useEffect(() => {
@@ -1604,7 +2015,19 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
 
         const timer = setInterval(() => {
             const next = findNext();
-            setNextPrayer(next);
+            setNextPrayer(prev => {
+                if (!next && !prev) return prev;
+                if (
+                    next &&
+                    prev &&
+                    prev.key === next.key &&
+                    prev.name === next.name &&
+                    prev.date.getTime() === next.date.getTime()
+                ) {
+                    return prev;
+                }
+                return next ? { key: next.key, date: next.date, name: next.name } : null;
+            });
             
             // Get city time or fallback to local
             const cityTimezone = localStorage.getItem('grandLocationTimezone');
@@ -1623,14 +2046,16 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                     const m = Math.floor((diff % 3600000) / 60000);
                     const s = Math.floor((diff % 60000) / 1000);
                     const countdownStr = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-                    setCountdown(countdownStr);
+                    countdownRef.current = countdownStr;
+                    setCountdown(prev => (prev === countdownStr ? prev : countdownStr));
                     
                     if (m !== lastWidgetUpdateMinute) {
                         lastWidgetUpdateMinute = m;
                         updateWidget(times, dates, next, countdownStr);
                     }
                 } else {
-                    setCountdown("00:00:00");
+                    countdownRef.current = "00:00:00";
+                    setCountdown(prev => (prev === "00:00:00" ? prev : "00:00:00"));
                 }
             }
 
@@ -1744,7 +2169,9 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                         continue;
                     }
 
-                    // 2. Live Pre-Adhan Preparation Reminder (chime.mp3)
+                    const prayerChimeSound = '/assets/audio/notif_droplet.wav';
+
+                    // 2. Live Pre-Adhan Preparation Reminder
                     let isPreReminderEnabled = false;
                     let reminderMinutes = 15;
                     if (config.prayerPreReminders?.[key] !== undefined) {
@@ -1762,32 +2189,25 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                         if (preDiffMs >= 0 && preDiffMs <= 45000 && !triggeredAlertsRef.current.has(preAlertKey)) {
                             triggeredAlertsRef.current.add(preAlertKey);
                             if (!isNative) {
-                                console.log(`[Foreground Alert] Playing gentle chime for pre-adhan ${key}`);
-                                playNotificationSound('/assets/audio/chime.mp3');
+                                console.log(`[Foreground Alert] Playing prayer chime for pre-adhan ${key}`);
+                                playNotificationSound(prayerChimeSound);
                             }
                         }
                     }
 
-                    // 3. Live Iqama Reminder (chime.mp3)
-                    let isIqamaEnabled = true;
-                    let iqamaMinutes = config.iqamaOffsets?.[key] || 15;
-                    if (config.prayerIqamaReminders?.[key] !== undefined) {
-                        isIqamaEnabled = config.prayerIqamaReminders[key].enabled !== false;
-                        iqamaMinutes = config.prayerIqamaReminders[key].minutes ?? (config.iqamaOffsets?.[key] || 15);
-                    } else if (config.iqamaReminder !== undefined) {
-                        isIqamaEnabled = config.iqamaReminder.enabled !== false;
-                        iqamaMinutes = config.iqamaReminder.minutes ?? (config.iqamaOffsets?.[key] || 15);
-                    }
+                    // 3. Live Iqama Reminder
+                    const isIqamaEnabled = isPrayerIqamaEnabled(config, key);
+                    const iqamaMinutes = getEffectiveIqamaMinutes(config, key);
+                    const iqamaTimeObj = new Date(prayerTimeObj.getTime() + iqamaMinutes * 60000);
 
                     if (isIqamaEnabled && key !== 'Sunrise') {
-                        const iqamaTimeObj = new Date(prayerTimeObj.getTime() + iqamaMinutes * 60000);
                         const iqamaDiffMs = now.getTime() - iqamaTimeObj.getTime();
                         const iqamaAlertKey = `${dayStr}_iqama_${key}`;
                         if (iqamaDiffMs >= 0 && iqamaDiffMs <= 45000 && !triggeredAlertsRef.current.has(iqamaAlertKey)) {
                             triggeredAlertsRef.current.add(iqamaAlertKey);
                             if (!isNative) {
-                                console.log(`[Iqama Alert] Playing gentle chime and showing visual alert for ${key}`);
-                                playNotificationSound('/assets/audio/chime.mp3', true);
+                                console.log(`[Iqama Alert] Playing prayer chime and showing visual alert for ${key}`);
+                                playNotificationSound(prayerChimeSound, true);
                                 
                                 const prayerNameLocal = isEn ? (PRAYER_NAMES_EN[key] || key) : (prayerNamesAr[key] || key);
                                 // Trigger in-app visual alert (web/browser only; APK uses status bar notifications only)
@@ -1802,35 +2222,50 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
                         }
                     }
 
-                    // 4. Live Auto-Silent Mode (chime.mp3)
+                    // 4. Live Auto-Silent Mode (Web chime fallback + Android foreground boundary reconciliation)
                     let isSilentEnabled = false;
-                    let silentDuration = 15;
+                    let silentDurationMins = 15;
                     if (config.prayerAutoSilent?.[key] !== undefined) {
                         isSilentEnabled = !!config.prayerAutoSilent[key].enabled;
-                        silentDuration = config.prayerAutoSilent[key].duration || 15;
+                        silentDurationMins = config.prayerAutoSilent[key].duration || 15;
                     } else if (config.autoSilent) {
                         isSilentEnabled = true;
-                        silentDuration = config.autoSilentDuration || 15;
+                        silentDurationMins = config.autoSilentDuration || 15;
                     }
 
                     if (isSilentEnabled && key !== 'Sunrise') {
-                        const iqamaOffset = config.iqamaOffsets?.[key] !== undefined ? config.iqamaOffsets[key] : (config.iqamaReminder?.minutes ?? 15);
-                        // Delay auto-silent start by 20 seconds so Iqama reminder chime finishes playing
-                        const silentDelayMs = isIqamaEnabled ? 20000 : 5000;
-                        const silentStartObj = new Date(prayerTimeObj.getTime() + iqamaOffset * 60000 + silentDelayMs);
+                        const silentDelayMs = 10000;
+                        const silentStartObj = new Date(iqamaTimeObj.getTime() + silentDelayMs);
+                        const silentEndObj = new Date(silentStartObj.getTime() + silentDurationMins * 60000);
                         const silentDiffMs = now.getTime() - silentStartObj.getTime();
-                        const silentAlertKey = `${dayStr}_silent_${key}`;
-                        if (silentDiffMs >= 0 && silentDiffMs <= 45000 && !triggeredAlertsRef.current.has(silentAlertKey)) {
-                            triggeredAlertsRef.current.add(silentAlertKey);
-                            if (!isNative) {
-                                const isIqamaAlsoAlerting = isIqamaEnabled && Math.abs(silentStartObj.getTime() - (prayerTimeObj.getTime() + iqamaMinutes * 60000)) < 60000;
+                        const silentEndDiffMs = now.getTime() - silentEndObj.getTime();
+
+                        if (!isNative) {
+                            const silentAlertKey = `${dayStr}_silent_${key}`;
+                            if (
+                                silentDiffMs >= 0 &&
+                                silentDiffMs <= 45000 &&
+                                !triggeredAlertsRef.current.has(silentAlertKey) &&
+                                !isWindowManuallyRestored(silentStartObj.getTime())
+                            ) {
+                                triggeredAlertsRef.current.add(silentAlertKey);
+                                const isIqamaAlsoAlerting = isIqamaEnabled && Math.abs(silentStartObj.getTime() - iqamaTimeObj.getTime()) < 60000;
                                 if (!isIqamaAlsoAlerting) {
-                                    console.log(`[Foreground Alert] Playing gentle chime for auto-silent ${key}`);
-                                    playNotificationSound('/assets/audio/chime.mp3');
+                                    console.log(`[Foreground Alert] Playing prayer chime for auto-silent ${key}`);
+                                    playNotificationSound(prayerChimeSound);
                                 }
                             }
-                            const prayerNameLocal = isEn ? (PRAYER_NAMES_EN[key] || key) : (prayerNamesAr[key] || key);
-                            setDeviceSilentNow(true, prayerNameLocal);
+                        } else if (Capacitor.getPlatform() === 'android') {
+                            const fgStartKey = `${dayStr}_silent_fg_start_${key}`;
+                            if (silentDiffMs >= 0 && silentDiffMs <= 5000 && !triggeredAlertsRef.current.has(fgStartKey)) {
+                                triggeredAlertsRef.current.add(fgStartKey);
+                                getNativeSilentStatus().catch(() => {});
+                            }
+                            const fgEndKey = `${dayStr}_silent_fg_end_${key}`;
+                            if (silentEndDiffMs >= 2000 && silentEndDiffMs <= 7000 && !triggeredAlertsRef.current.has(fgEndKey)) {
+                                triggeredAlertsRef.current.add(fgEndKey);
+                                getNativeSilentStatus().catch(() => {});
+                            }
                         }
                     }
                 }
@@ -1843,16 +2278,16 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
     // Update widget when times or next prayer changes (not every second)
     useEffect(() => {
         if (times.Fajr && nextPrayer) {
-            updateWidget(times, dates, nextPrayer, countdown);
+            updateWidget(times, dates, nextPrayer, countdownRef.current);
         }
     }, [times, dates, nextPrayer?.key, updateWidget]);
 
     // Update widget immediately when theme changes
     useEffect(() => {
         if (times.Fajr && nextPrayer) {
-            updateWidget(times, dates, nextPrayer, countdown);
+            updateWidget(times, dates, nextPrayer, countdownRef.current);
         }
-    }, [themeKey, times, dates, nextPrayer, countdown, updateWidget]);
+    }, [themeKey, times, dates, nextPrayer, updateWidget]);
 
     // Initial load
     useEffect(() => {
@@ -1885,15 +2320,121 @@ export const PrayerTimesProvider = ({ children }: { children: ReactNode }) => {
         }
     }, [fetchTimesForLocation, refreshLocation, isEn]);
 
+    const calcInfo = React.useMemo(() => {
+        return getCalculationParams(new Date(), config.location, config);
+    }, [config.location, config.calculationMethod, config.asrMadhab, config.highLatitudeRule]);
+
+    const activeCalculationMethodName = React.useMemo(() => {
+        if (!config.calculationMethod || config.calculationMethod === 'auto') {
+            return isEn ? `Auto (${calcInfo.detectedNameEn})` : `تلقائي (${calcInfo.detectedNameAr})`;
+        }
+        const opt = CALCULATION_METHOD_OPTIONS.find(o => o.id === config.calculationMethod);
+        return isEn ? (opt?.nameEn || config.calculationMethod) : (opt?.nameAr || config.calculationMethod);
+    }, [config.calculationMethod, calcInfo, isEn]);
+
+    const activeAsrMadhabName = React.useMemo(() => {
+        const opt = ASR_MADHAB_OPTIONS.find(o => o.id === (config.asrMadhab || 'shafi'));
+        return isEn ? (opt?.scholarEn || 'Majority') : (opt?.scholarAr || 'جمهور العلماء');
+    }, [config.asrMadhab, isEn]);
+
+    const activeHighLatRuleName = React.useMemo(() => {
+        const opt = HIGH_LATITUDE_RULE_OPTIONS.find(o => o.id === (config.highLatitudeRule || 'auto'));
+        return isEn ? (opt?.nameEn || 'Auto') : (opt?.nameAr || 'تلقائي');
+    }, [config.highLatitudeRule, isEn]);
+
+    const manuallyRestoreSilent = useCallback(async () => {
+        const currentWindow = activeSilentWindowRef.current;
+        if (currentWindow?.startMillis) {
+            markWindowManuallyRestored(currentWindow.startMillis);
+        } else if (times && Object.keys(times).length > 0) {
+            // Fallback: find any currently active prayer silent window and mark it restored
+            const nowMs = Date.now();
+            const nowDate = new Date();
+            const supportsDST = checkSupportsDST(config.location?.combinedCode, config.location?.fullCountry);
+            for (const key of ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha']) {
+                const timeStr = times[key];
+                if (!timeStr || timeStr.includes('--')) continue;
+                const [h, m] = timeStr.split(':').map(Number);
+                const totalOffset = (config.prayerOffsets[key] || 0) + ((config.isSummerTime && supportsDST) ? 60 : 0);
+                const pDate = new Date(nowDate);
+                pDate.setHours(h, m, 0, 0);
+                pDate.setMinutes(pDate.getMinutes() + totalOffset);
+                const iqamaOffset = getEffectiveIqamaMinutes(config, key);
+                const duration = config.prayerAutoSilent?.[key]?.duration || config.autoSilentDuration || 15;
+                const startMs = pDate.getTime() + iqamaOffset * 60000 + 10000;
+                const endMs = startMs + duration * 60000;
+                if (nowMs >= startMs && nowMs < endMs) {
+                    markWindowManuallyRestored(startMs);
+                }
+            }
+        }
+
+        activeSilentWindowRef.current = null;
+        setIsPrayerSilentActive(false);
+        setActiveSilentPrayerName('');
+        await manualRestoreDeviceSound(
+            currentWindow ? { startMillis: currentWindow.startMillis, windowId: currentWindow.windowId } : undefined
+        );
+    }, [times, config, markWindowManuallyRestored]);
+
+    const effectiveAlertVolume = typeof config.alertVolume === 'number' ? config.alertVolume : 100;
+    useEffect(() => {
+        setStoredAlertVolume(effectiveAlertVolume);
+    }, [effectiveAlertVolume]);
+
+    const setAlertVolume = useCallback((vol: number) => {
+        const clamped = Math.max(0, Math.min(100, Math.round(vol)));
+        updateConfig({ alertVolume: clamped });
+    }, [updateConfig]);
+
+    const contextValue = React.useMemo(() => ({
+        times,
+        dates,
+        nextPrayer,
+        config,
+        setConfig,
+        refreshLocation,
+        manualSearch,
+        updateConfig,
+        alertVolume: effectiveAlertVolume,
+        setAlertVolume,
+        isPrayerSilentActive,
+        activeSilentPrayerName,
+        manuallyRestoreSilent,
+        activeIqamaAlert,
+        dismissIqamaAlert,
+        activeAdhanAlert,
+        dismissAdhanAlert,
+        activeCalculationMethodName,
+        activeAsrMadhabName,
+        activeHighLatRuleName
+    }), [
+        times,
+        dates,
+        nextPrayer,
+        config,
+        refreshLocation,
+        manualSearch,
+        updateConfig,
+        effectiveAlertVolume,
+        setAlertVolume,
+        isPrayerSilentActive,
+        activeSilentPrayerName,
+        manuallyRestoreSilent,
+        activeIqamaAlert,
+        dismissIqamaAlert,
+        activeAdhanAlert,
+        dismissAdhanAlert,
+        activeCalculationMethodName,
+        activeAsrMadhabName,
+        activeHighLatRuleName
+    ]);
+
     return (
-        <PrayerTimesContext.Provider value={{ 
-            times, dates, nextPrayer, countdown, config, setConfig, 
-            refreshLocation, manualSearch, updateConfig,
-            isPrayerSilentActive, activeSilentPrayerName,
-            activeIqamaAlert, dismissIqamaAlert,
-            activeAdhanAlert, dismissAdhanAlert
-        }}>
-            {children}
+        <PrayerTimesContext.Provider value={contextValue}>
+            <PrayerCountdownContext.Provider value={countdown}>
+                {children}
+            </PrayerCountdownContext.Provider>
         </PrayerTimesContext.Provider>
     );
 };
@@ -1904,6 +2445,10 @@ export const usePrayerTimes = () => {
         throw new Error('usePrayerTimes must be used within a PrayerTimesProvider');
     }
     return context;
+};
+
+export const usePrayerCountdown = () => {
+    return useContext(PrayerCountdownContext);
 };
 
 export const copyAssetToDevice = async (assetPath: string): Promise<string> => {

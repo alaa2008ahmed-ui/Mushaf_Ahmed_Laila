@@ -153,12 +153,12 @@ export const TawafCounterCard: React.FC<TawafCounterCardProps> = ({ theme, isGol
         </div>
 
         {/* 3. زر الضغط الرئيسي لاحتساب الشوط بالزر الذهبي المجسم 3D */}
-        <div className="w-full flex flex-col gap-2">
+        <div className="w-full flex flex-col items-center gap-2">
           <button
             type="button"
             onClick={() => handleIncrement()}
             disabled={isComplete}
-            className={`w-full py-2.5 px-4 rounded-2xl font-extrabold flex items-center justify-between transition-all select-none ${
+            className={`w-[85%] sm:w-[80%] mx-auto py-2.5 px-4 rounded-2xl font-extrabold flex items-center justify-between transition-all select-none ${
               isComplete
                 ? 'cursor-default shadow-none bg-emerald-600 text-white'
                 : 'active:scale-[0.98] cursor-pointer golden-3d-pill-btn'
@@ -316,11 +316,11 @@ export const TawafCounterCard: React.FC<TawafCounterCardProps> = ({ theme, isGol
       </div>
 
       {/* 3. Main Lap Counter */}
-      <div className="w-full flex flex-col gap-2">
+      <div className="w-full flex flex-col items-center gap-2">
         <button
           onClick={() => handleIncrement()}
           disabled={isComplete}
-          className={`w-full py-2.5 px-4 rounded-2xl font-bold flex items-center justify-between transition-all relative overflow-hidden select-none ${
+          className={`w-[85%] sm:w-[80%] mx-auto py-2.5 px-4 rounded-2xl font-bold flex items-center justify-between transition-all relative overflow-hidden select-none ${
             isComplete
               ? 'bg-emerald-600 text-white cursor-default'
               : 'active:scale-[0.98] active:translate-y-0.5 cursor-pointer'

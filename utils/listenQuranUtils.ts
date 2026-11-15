@@ -1,5 +1,6 @@
 import partialRecitersData from '../data/partialRecitersSurahs.json';
 import { JUZ_MAP } from '../components/QuranReader/constants';
+import { quranData } from './quranData';
 
 export const CACHE_KEY = 'mp3quran_surahs_cache_v6';
 
@@ -112,3 +113,95 @@ export const getAvailableSurahsForReader = (
     // Default to full 114 surahs
     return fullList;
 };
+
+interface SurahTimingProfile {
+    cumulativeWeights: number[];
+    totalWeight: number;
+    juzs: number[];
+}
+
+const surahTimingCache = new Map<number, SurahTimingProfile>();
+
+const computeAyahSpokenWeight = (text: string): number => {
+    if (!text) return 4.5;
+    const baseLetters = (text.match(/[\u0621-\u064A\u0671-\u06D3]/g) || []).length;
+    const maddMarks = (text.match(/[\u0653\u0670]/g) || []).length;
+    const shaddahMarks = (text.match(/\u0651/g) || []).length;
+    return baseLetters + maddMarks * 1.2 + shaddahMarks * 0.5 + 4.5;
+};
+
+const getSurahTimingProfile = (surahNumber: number): SurahTimingProfile | null => {
+    const cached = surahTimingCache.get(surahNumber);
+    if (cached) return cached;
+
+    const surah = (quranData as any)?.surahs?.[surahNumber - 1];
+    if (!surah || !Array.isArray(surah.ayahs) || surah.ayahs.length === 0) {
+        return null;
+    }
+
+    const cumulativeWeights: number[] = [];
+    const juzs: number[] = [];
+    let running = 0;
+
+    for (let i = 0; i < surah.ayahs.length; i++) {
+        const ayah = surah.ayahs[i];
+        running += computeAyahSpokenWeight(ayah.text || '');
+        cumulativeWeights.push(running);
+        juzs.push(typeof ayah.juz === 'number' ? ayah.juz : 1);
+    }
+
+    const profile: SurahTimingProfile = {
+        cumulativeWeights,
+        totalWeight: running,
+        juzs,
+    };
+    surahTimingCache.set(surahNumber, profile);
+    return profile;
+};
+
+export const getJuzForSurahAyah = (surahNumber: number, ayahNumber: number): number => {
+    const surah = (quranData as any)?.surahs?.[surahNumber - 1];
+    const ayahObj = surah?.ayahs?.[Math.max(0, ayahNumber - 1)];
+    if (ayahObj && typeof ayahObj.juz === 'number') {
+        return ayahObj.juz;
+    }
+    const found = JUZ_MAP.slice().reverse().find(j => (surahNumber > j.s) || (surahNumber === j.s && ayahNumber >= j.a));
+    return found?.j || 1;
+};
+
+export const estimateCurrentAyahAndJuz = (
+    surahNumber: number,
+    currentTime: number,
+    duration: number
+): { ayahNumber: number; juzNumber: number } => {
+    const profile = getSurahTimingProfile(surahNumber);
+    if (!profile || profile.cumulativeWeights.length === 0) {
+        return { ayahNumber: 1, juzNumber: getJuzForSurahAyah(surahNumber, 1) };
+    }
+
+    if (!duration || duration <= 0 || !currentTime || currentTime <= 0) {
+        return {
+            ayahNumber: 1,
+            juzNumber: profile.juzs[0] || getJuzForSurahAyah(surahNumber, 1),
+        };
+    }
+
+    const ratio = Math.min(0.999999, Math.max(0, currentTime / duration));
+    const targetWeight = ratio * profile.totalWeight;
+
+    let low = 0;
+    let high = profile.cumulativeWeights.length - 1;
+    while (low < high) {
+        const mid = (low + high) >> 1;
+        if (profile.cumulativeWeights[mid] < targetWeight) {
+            low = mid + 1;
+        } else {
+            high = mid;
+        }
+    }
+
+    const ayahNumber = low + 1;
+    const juzNumber = profile.juzs[low] || getJuzForSurahAyah(surahNumber, ayahNumber);
+    return { ayahNumber, juzNumber };
+};
+

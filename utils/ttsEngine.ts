@@ -1,5 +1,6 @@
 import { Capacitor } from '@capacitor/core';
 import { TextToSpeech } from '@capacitor-community/text-to-speech';
+import { acquireListenInterruption, releaseListenInterruption } from './listenAudioCoordinator';
 
 /**
  * Centralized Text-to-Speech (TTS) and Audio Engine.
@@ -144,6 +145,11 @@ const getSpeechVoices = (): Promise<SpeechSynthesisVoice[]> => {
  * Notifies all registered listeners of the current playback state.
  */
 const notifyListeners = () => {
+    if (currentPlayingText) {
+        acquireListenInterruption('tts-engine');
+    } else {
+        releaseListenInterruption('tts-engine');
+    }
     stateListeners.forEach((listener) => {
         try {
             listener(currentPlayingText);

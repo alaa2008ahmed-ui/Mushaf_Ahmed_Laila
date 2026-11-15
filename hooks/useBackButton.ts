@@ -56,34 +56,42 @@ export function useBackButton({
     }, [isSideMenuOpen]);
 
     const lastBackTimeRef = useRef(0);
+    const navigateBackRef = useRef(navigateBack);
+    navigateBackRef.current = navigateBack;
+    const setIsThemeSelectorOpenRef = useRef(setIsThemeSelectorOpen);
+    setIsThemeSelectorOpenRef.current = setIsThemeSelectorOpen;
+    const setShowExitConfirmRef = useRef(setShowExitConfirm);
+    setShowExitConfirmRef.current = setShowExitConfirm;
+    const setIsSideMenuOpenRef = useRef(setIsSideMenuOpen);
+    setIsSideMenuOpenRef.current = setIsSideMenuOpen;
 
     const handleBackButton = useCallback(() => {
         const now = Date.now();
-        // Debounce hardware/gesture back button to avoid double triggering within 250ms
-        if (now - lastBackTimeRef.current < 250) {
+        // Debounce duplicate synchronous back events (Capacitor backButton + document backbutton)
+        if (now - lastBackTimeRef.current < 150) {
             return;
         }
         lastBackTimeRef.current = now;
 
         // 1. Close exit confirmation dialog if open
         if (showExitConfirmRef.current) {
-            setShowExitConfirm(false);
+            setShowExitConfirmRef.current(false);
             return;
         }
 
         // 2. Close side menu if open
-        if (isSideMenuOpenRef.current && setIsSideMenuOpen) {
-            setIsSideMenuOpen(false);
+        if (isSideMenuOpenRef.current && setIsSideMenuOpenRef.current) {
+            setIsSideMenuOpenRef.current(false);
             return;
         }
 
         // 3. Close theme selector if open
         if (isThemeSelectorOpenRef.current) {
-            setIsThemeSelectorOpen(false);
+            setIsThemeSelectorOpenRef.current(false);
             return;
         }
 
-        // 4. Check in-page interceptors (modals, popups, tafseer, image share, etc.)
+        // 4. Check in-page interceptors (LIFO: newest child modal/overlay runs first)
         for (let i = backButtonInterceptors.length - 1; i >= 0; i--) {
             const interceptor = backButtonInterceptors[i];
             try {
@@ -97,20 +105,26 @@ export function useBackButton({
 
         // 5. Navigate back in history if not at root home screen
         if (historyRef.current.length > 1) {
-            navigateBack();
+            navigateBackRef.current();
         } else {
             // At root home screen (Classic or Modern Smart): prompt exit confirmation modal
-            setShowExitConfirm(true);
+            setShowExitConfirmRef.current(true);
         }
-    }, [navigateBack, setIsThemeSelectorOpen, setShowExitConfirm, setIsSideMenuOpen]);
+    }, []);
 
     useEffect(() => {
+        let isMounted = true;
         // 1. Capacitor native Android back button event (hardware button & back gestures)
-        let capacitorListener: any = null;
+        let capacitorListener: Promise<{ remove: () => Promise<void> }> | null = null;
         try {
             capacitorListener = App.addListener('backButton', () => {
                 handleBackButton();
             });
+            capacitorListener.then((handle) => {
+                if (!isMounted) {
+                    handle.remove().catch(() => {});
+                }
+            }).catch(() => {});
         } catch (e) {
             console.warn('Capacitor App backButton listener registration warning:', e);
         }
@@ -119,20 +133,27 @@ export function useBackButton({
         const handlePopState = (e: PopStateEvent) => {
             e.preventDefault();
             handleBackButton();
-            // Re-arm history trap state so Android WebView history does not pop out of app
-            window.history.pushState({ page: 'mushaf_history', t: Date.now() }, '', window.location.href);
+            // Re-arm history trap state so WebView/browser back stays inside the app
+            try {
+                window.history.pushState({ page: 'mushaf_history', t: Date.now() }, '', window.location.href);
+            } catch {}
         };
 
-        // Push initial state trap if not already set
-        window.history.pushState({ page: 'mushaf_history', t: Date.now() }, '', window.location.href);
+        // Push initial state trap only if not already set
+        try {
+            if (window.history.state?.page !== 'mushaf_history') {
+                window.history.pushState({ page: 'mushaf_history', t: Date.now() }, '', window.location.href);
+            }
+        } catch {}
         window.addEventListener('popstate', handlePopState);
 
-        // 3. Document backbutton event for Cordova / older WebView runtimes
+        // 3. Document backbutton event for Cordova / Android Capacitor WebView bridge
         document.addEventListener('backbutton', handleBackButton, false);
 
         return () => {
+            isMounted = false;
             if (capacitorListener && typeof capacitorListener.then === 'function') {
-                capacitorListener.then((l: any) => l.remove()).catch(() => {});
+                capacitorListener.then((l) => l.remove()).catch(() => {});
             }
             document.removeEventListener('backbutton', handleBackButton, false);
             window.removeEventListener('popstate', handlePopState);

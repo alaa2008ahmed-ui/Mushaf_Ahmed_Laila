@@ -142,7 +142,7 @@ const NavButton: React.FC<NavButtonProps> = ({
                             onClick();
                         }
                     }}
-                    className="absolute -top-2 -right-1 bg-yellow-400 text-black text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full z-20 shadow-lg border border-white animate-bounce cursor-pointer select-none scale-75 origin-top-right"
+                    className="new-app-badge absolute -top-2 -right-1 bg-amber-600 text-white text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full z-20 shadow-lg border border-white animate-bounce cursor-pointer select-none scale-75 origin-top-right"
                     title={badgeText}
                 >
                     {badgeText}

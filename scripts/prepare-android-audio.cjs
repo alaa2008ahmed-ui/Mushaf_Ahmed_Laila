@@ -189,8 +189,20 @@ public class TimedNotificationPublisher extends BroadcastReceiver {
         NotificationStorage storage = new NotificationStorage(context);
         JSObject notificationJson = storage.getSavedNotificationAsJSObject(Integer.toString(id));
         LocalNotificationsPlugin.fireReceived(notificationJson);
-        
-        if (notification != null) {
+
+        boolean handledNatively = false;
+        if (id >= 7000 && id < 9000) {
+            try {
+                Class<?> receiverCls = Class.forName("com.mushaf.ahmedandlayla.PrayerSilentReceiver");
+                java.lang.reflect.Method m = receiverCls.getMethod("handleLocalNotificationTrigger", Context.class, int.class, boolean.class);
+                Object res = m.invoke(null, context, id, id < 8000);
+                if (res instanceof Boolean && ((Boolean) res)) {
+                    handledNatively = true;
+                }
+            } catch (Exception ignored) {}
+        }
+
+        if (!handledNatively && notification != null) {
             notificationManager.notify(id, notification);
         }
 

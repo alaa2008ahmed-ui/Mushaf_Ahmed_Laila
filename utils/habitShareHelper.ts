@@ -58,9 +58,13 @@ export const shareDailyHabitCard = async ({
     container.style.fontFamily = '"Cairo", "Amiri", sans-serif';
 
     const mDate = moment(date);
+    const [gYear, gMonth, gDay] = date.split('-').map(Number);
+    const ARABIC_GREG_MONTHS = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
     const dayName = isEn ? ENGLISH_DAYS[mDate.day()] : ARABIC_DAYS[mDate.day()];
-    const gregorianDateStr = mDate.locale(isEn ? 'en' : 'ar').format(isEn ? 'MMMM D, YYYY' : 'D MMMM YYYY');
-    const hijriDateStr = isEn ? `${mDate.iDate()} ${mDate.locale('en').format('iMMMM')} ${mDate.iYear()} AH` : `${mDate.iDate()} ${mDate.locale('ar-SA').format('iMMMM')} ${mDate.iYear()} هـ`;
+    const gregorianDateStr = isEn
+      ? mDate.clone().locale('en').format('MMMM D, YYYY')
+      : `${gDay || mDate.date()} ${ARABIC_GREG_MONTHS[(gMonth || (mDate.month() + 1)) - 1] || ''} ${gYear || mDate.year()} م`;
+    const hijriDateStr = isEn ? `${mDate.iDate()} ${mDate.clone().locale('en').format('iMMMM')} ${mDate.iYear()} AH` : `${mDate.iDate()} ${mDate.clone().locale('ar-SA').format('iMMMM')} ${mDate.iYear()} هـ`;
 
     // Prayers stats
     let completedFard = 0;

@@ -13,6 +13,7 @@ public class PrayerCalculationEngine {
         public String asr;
         public String maghrib;
         public String isha;
+        public String firstThird;
         public String midnight;
         public String lastThird;
 
@@ -22,6 +23,7 @@ public class PrayerCalculationEngine {
         public long asrMillis;
         public long maghribMillis;
         public long ishaMillis;
+        public long firstThirdMillis;
         public long midnightMillis;
         public long lastThirdMillis;
 
@@ -166,12 +168,14 @@ public class PrayerCalculationEngine {
         result.maghribMillis = hourToMillis(cal, sunsetHour);
         result.ishaMillis = hourToMillis(cal, ishaHour);
 
-        // Next day Fajr estimate for midnight and last third
+        // Next day Fajr estimate for first third, midnight, and last third
         double nextFajrHour = fajrHour + 24.0;
         double nightDuration = nextFajrHour - sunsetHour;
+        double firstThirdHour = sunsetHour + (nightDuration / 3.0);
         double midnightHour = sunsetHour + (nightDuration / 2.0);
         double lastThirdHour = sunsetHour + (nightDuration * 2.0 / 3.0);
 
+        result.firstThirdMillis = hourToMillis(cal, firstThirdHour);
         result.midnightMillis = hourToMillis(cal, midnightHour);
         result.lastThirdMillis = hourToMillis(cal, lastThirdHour);
 
@@ -181,6 +185,7 @@ public class PrayerCalculationEngine {
         result.asr = formatTime(result.asrMillis);
         result.maghrib = formatTime(result.maghribMillis);
         result.isha = formatTime(result.ishaMillis);
+        result.firstThird = formatTime(result.firstThirdMillis);
         result.midnight = formatTime(result.midnightMillis);
         result.lastThird = formatTime(result.lastThirdMillis);
 

@@ -1,6 +1,13 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <supports-screens
+        android:smallScreens="true"
+        android:normalScreens="true"
+        android:largeScreens="true"
+        android:xlargeScreens="true"
+        android:anyDensity="true" />
+
     <queries>
         <intent>
             <action android:name="android.intent.action.RECOGNIZE_SPEECH" />
@@ -21,10 +28,13 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-feature android:name="android.hardware.location" android:required="false" />
     <uses-feature android:name="android.hardware.location.gps" android:required="false" />
+    <uses-feature android:name="android.hardware.location.network" android:required="false" />
     
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
 
@@ -38,9 +48,12 @@
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
     <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <uses-feature android:name="android.hardware.microphone" android:required="false" />
+    <uses-feature android:name="android.hardware.sensor.compass" android:required="false" />
+    <uses-feature android:name="android.hardware.sensor.accelerometer" android:required="false" />
 
     <application
         android:allowBackup="true"
@@ -50,6 +63,7 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme.NoActionBar"> 
 
+        <!-- Status Bar Notification Icon: Holy Quran on Rehal (Stand) ic_stat_name -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"
             android:resource="@drawable/ic_stat_name" />
@@ -62,6 +76,18 @@
         <meta-data
             android:name="com.capacitorjs.plugins.localnotifications.default_notification_color"
             android:resource="@color/notification_icon_color" />
+        <meta-data
+            android:name="default_notification_icon"
+            android:resource="@drawable/ic_stat_name" />
+        <meta-data
+            android:name="default_notification_color"
+            android:resource="@color/notification_icon_color" />
+        <meta-data
+            android:name="android.app.default_notification_icon"
+            android:resource="@drawable/ic_stat_name" />
+        <meta-data
+            android:name="com.mushaf.ahmedandlayla.notification_icon"
+            android:resource="@drawable/ic_stat_name" />
         
         <activity
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|layoutDirection|smallestScreenSize|screenLayout|uiMode|navigation|density"
@@ -86,6 +112,21 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".WidgetConfigureActivity"
+            android:label="ضبط التطبيق المصغر"
+            android:theme="@style/AppTheme.NoActionBar"
+            android:taskAffinity="com.mushaf.ahmedandlayla.widget_config"
+            android:launchMode="singleInstance"
+            android:excludeFromRecents="true"
+            android:documentLaunchMode="always"
+            android:autoRemoveFromRecents="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+            </intent-filter>
+        </activity>
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -94,7 +135,11 @@
             <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" />
         </provider>
 
-        <receiver android:name=".PrayerWidgetProvider" android:exported="true">
+        <!-- Widget 1: Classic Full Matrix Widget -->
+        <receiver
+            android:name=".PrayerAClassicWidgetProvider"
+            android:label="@string/widget_name_classic"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
                 <action android:name="com.mushaf.ahmedandlayla.ACTION_REFRESH_WIDGET" />
@@ -108,10 +153,14 @@
                 android:resource="@xml/prayer_widget_info" />
         </receiver>
 
-        <receiver android:name=".PrayerCompactWidgetProvider" android:exported="true">
+        <!-- Widget 2: Compact Focus Widget (Previous, Next, Remaining) -->
+        <receiver
+            android:name=".PrayerCompactWidgetProvider"
+            android:label="@string/widget_name_compact"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="com.mushaf.ahmedandlayla.ACTION_REFRESH_COMPACT_WIDGET" />
+                <action android:name="com.mushaf.ahmedandlayla.ACTION_REFRESH_COMPACT" />
                 <action android:name="com.mushaf.ahmedandlayla.ACTION_REFRESH_WIDGET" />
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.TIME_SET" />
@@ -123,9 +172,14 @@
                 android:resource="@xml/prayer_compact_widget_info" />
         </receiver>
 
-        <receiver android:name=".PrayerCardWidgetProvider" android:exported="true">
+        <!-- Widget 3: Single Prayer (1x1) Next Prayer Only Widget -->
+        <receiver
+            android:name=".PrayerSinglePrayerWidgetProvider"
+            android:label="@string/widget_name_single"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.mushaf.ahmedandlayla.ACTION_REFRESH_SINGLE" />
                 <action android:name="com.mushaf.ahmedandlayla.ACTION_REFRESH_WIDGET" />
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.TIME_SET" />
@@ -134,17 +188,18 @@
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
-                android:resource="@xml/prayer_card_widget_info" />
+                android:resource="@xml/prayer_single_widget_info" />
         </receiver>
-
-
 
         <receiver
             android:name=".PrayerSilentReceiver"
+
             android:exported="true">
             <intent-filter>
                 <action android:name="com.mushaf.ahmedandlayla.ACTION_START_SILENT" />
                 <action android:name="com.mushaf.ahmedandlayla.ACTION_END_SILENT" />
+                <action android:name="com.mushaf.ahmedandlayla.ACTION_IQAMA_ALERT" />
+                <action android:name="android.media.RINGER_MODE_CHANGED" />
                 <action android:name="com.mushaf.ahmedandlayla.ACTION_RESTORE_NOTIFICATION" />
                 <action android:name="com.mushaf.ahmedandlayla.ACTION_UPDATE_NOTIFICATION" />
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
@@ -174,6 +229,29 @@
                 <action android:name="com.mushaf.ahmedandlayla.ACTION_UPDATE_ALERTS_SUMMARY" />
             </intent-filter>
         </receiver>
+
+        <receiver
+            android:name=".AdhanAlarmReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.mushaf.ahmedandlayla.ACTION_TRIGGER_ADHAN" />
+                <action android:name="com.mushaf.ahmedandlayla.ACTION_STOP_ADHAN" />
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+                <action android:name="android.intent.action.DATE_CHANGED" />
+            </intent-filter>
+        </receiver>
+
+        <service
+            android:name=".AdhanPlaybackService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
+
+        <service
+            android:name=".QuranPlaybackKeepAliveService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
 
     </application>
 

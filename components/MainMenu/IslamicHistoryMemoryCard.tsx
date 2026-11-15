@@ -55,7 +55,8 @@ export const IslamicHistoryMemoryCard: React.FC<IslamicHistoryMemoryCardProps> =
   };
 
   const eventTitle = language === 'en' ? event.titleEn : event.titleAr;
-  const eventDescription = language === 'en' ? event.descriptionEn : event.descriptionAr;
+  const rawDesc = language === 'en' ? event.descriptionEn : event.descriptionAr;
+  const eventDescription = (rawDesc || '').replace(/[ \t]+/g, ' ').trim();
   const hijriYear = language === 'en'
     ? event.hijriYearEn
     : formatCalendarNumber(event.hijriYearAr, 'ar');
@@ -100,7 +101,7 @@ export const IslamicHistoryMemoryCard: React.FC<IslamicHistoryMemoryCardProps> =
             <ScrollText className="w-4 h-4 sm:w-4.5 sm:h-4.5" strokeWidth={2.2} />
           </div>
           <span
-            className={`text-xs sm:text-sm font-bold tracking-tight font-kufi truncate ${
+            className={`card-header-title text-xs sm:text-sm font-bold tracking-tight font-kufi truncate ${
               isBlackTheme ? 'text-white' : 'text-slate-800'
             }`}
           >
@@ -186,7 +187,7 @@ export const IslamicHistoryMemoryCard: React.FC<IslamicHistoryMemoryCardProps> =
       <div className="flex flex-col gap-2 w-full">
         <h4
           className="text-base sm:text-lg font-black leading-snug font-kufi"
-          style={{ color: primaryColor }}
+          style={{ color: isBlackTheme ? '#ffffff' : primaryColor }}
         >
           {eventTitle}
         </h4>
@@ -213,7 +214,7 @@ export const IslamicHistoryMemoryCard: React.FC<IslamicHistoryMemoryCardProps> =
       {/* 3. وصف الحدث التاريخي كما في تبويب محول التاريخ */}
       <div className="w-full">
         <p
-          className={`text-[14px] sm:text-[15px] font-normal text-justify leading-[1.85] sm:leading-[1.9] tracking-normal break-words ${
+          className={`text-[14px] sm:text-[15px] font-normal text-center leading-[1.85] sm:leading-[1.9] tracking-normal break-words ${
             language === 'ar' ? 'border-r-2 pr-3.5' : 'border-l-2 pl-3.5'
           } ${isBlackTheme ? 'text-zinc-200' : 'text-slate-700'}`}
           style={{

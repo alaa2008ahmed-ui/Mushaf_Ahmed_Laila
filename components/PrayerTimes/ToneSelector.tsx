@@ -110,7 +110,7 @@ const ToneSelector: React.FC<ToneSelectorProps> = ({
     const allToneOptions = [
         { name: 'بدون تنبيه', value: 'none' },
         ...internetTones.map(t => ({ name: t.name, value: t.path })),
-        { name: 'نغمة مخصصة من الجهاز...', value: 'custom' },
+        { name: 'اختيار نغمة', value: 'custom' },
     ];
 
     return (
@@ -196,7 +196,7 @@ const ToneSelector: React.FC<ToneSelectorProps> = ({
                     dir={dir}
                 >
                     <div 
-                        className="rounded-[2.5rem] w-full max-w-xs sm:max-w-sm max-h-[85vh] flex flex-col p-5 sm:p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150"
+                        className="rounded-[2.5rem] w-full max-w-xs sm:max-w-sm max-h-[88dvh] flex flex-col p-5 sm:p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150"
                         style={{ 
                             backgroundColor: isBlackTheme ? '#000000' : 'var(--modal-bg, #ffffff)', 
                             color: isBlackTheme ? '#ffffff' : 'var(--modal-text, #000000)',
@@ -228,7 +228,7 @@ const ToneSelector: React.FC<ToneSelectorProps> = ({
                         </div>
 
                         {/* Tone List as Rounded Framed Items with Direct Audition */}
-                        <div className="space-y-2 overflow-y-auto max-h-[62vh] py-1 px-1 no-scrollbar">
+                        <div className="space-y-2 overflow-y-auto flex-1 min-h-0 max-h-[62dvh] py-1 px-1 no-scrollbar">
                             {allToneOptions.map((tone) => {
                                 const isSelected = selectValue === tone.value;
                                 const isPlayable = tone.value !== 'none' && tone.value !== 'custom';

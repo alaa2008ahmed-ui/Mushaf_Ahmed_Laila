@@ -45,8 +45,8 @@ const PasscodeModal: React.FC<PasscodeModalProps> = ({ isOpen, onClose, onSucces
 
     return (
         <div className={`fixed inset-0 z-[1200] flex items-center justify-center bg-black/60 backdrop-blur-md ${isLandscape ? 'p-0' : 'p-4'} fade-in`}>
-            <div className={`bg-white dark:bg-gray-900 ${isLandscape ? 'max-w-4xl h-full rounded-none' : 'max-w-xs rounded-3xl'} shadow-2xl w-full overflow-hidden flex flex-col p-6 border border-gray-200 dark:border-gray-800 justify-center`}>
-                <div className={isLandscape ? 'max-w-xs mx-auto w-full' : ''}>
+            <div className={`bg-white dark:bg-gray-900 ${isLandscape ? 'max-w-4xl h-full rounded-none overflow-y-auto modal-sheet-safe-bottom pt-[max(1.5rem,var(--app-safe-top,0px))]' : 'max-w-xs max-h-[90dvh] rounded-3xl overflow-y-auto'} shadow-2xl w-full flex flex-col p-6 border border-gray-200 dark:border-gray-800`}>
+                <div className={isLandscape ? 'max-w-xs mx-auto my-auto w-full' : 'my-auto'}>
                     <div className="text-center mb-8">
                         <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">أدخل الرقم السري</h3>
                         <p className="text-gray-500 dark:text-gray-400 text-sm">للوصول إلى إعدادات التخصيص</p>

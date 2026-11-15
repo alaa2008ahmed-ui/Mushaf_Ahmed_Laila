@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:layoutDirection="rtl"
+    android:gravity="center"
+    android:background="@drawable/widget_single_card_bg"
+    android:clipToOutline="true"
+    android:padding="8dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="صلاة الفجر بعد"
+        android:textColor="#C86400"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:singleLine="true"
+        android:includeFontPadding="false"
+        android:layout_marginBottom="4dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="00:24:15"
+        android:textColor="#000000"
+        android:textSize="17sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:singleLine="true"
+        android:includeFontPadding="false" />
+</LinearLayout>

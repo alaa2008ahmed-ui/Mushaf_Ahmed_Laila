@@ -220,17 +220,17 @@ public class PersistentPrayerNotification {
             StringBuilder summary = new StringBuilder();
             if (times != null) {
                 if (isArabic) {
-                    summary.append("الفجر: ").append(PrayerWidgetProvider.formatNumerals(times.optString("fajr", ""), true))
-                           .append(" • الظهر: ").append(PrayerWidgetProvider.formatNumerals(times.optString("dhuhr", ""), true))
-                           .append(" • العصر: ").append(PrayerWidgetProvider.formatNumerals(times.optString("asr", ""), true))
-                           .append(" • المغرب: ").append(PrayerWidgetProvider.formatNumerals(times.optString("maghrib", ""), true))
-                           .append(" • العشاء: ").append(PrayerWidgetProvider.formatNumerals(times.optString("isha", ""), true));
+                    summary.append("الفجر: ").append(PrayerAClassicWidgetProvider.formatNumerals(times.optString("fajr", ""), true))
+                           .append(" • الظهر: ").append(PrayerAClassicWidgetProvider.formatNumerals(times.optString("dhuhr", ""), true))
+                           .append(" • العصر: ").append(PrayerAClassicWidgetProvider.formatNumerals(times.optString("asr", ""), true))
+                           .append(" • المغرب: ").append(PrayerAClassicWidgetProvider.formatNumerals(times.optString("maghrib", ""), true))
+                           .append(" • العشاء: ").append(PrayerAClassicWidgetProvider.formatNumerals(times.optString("isha", ""), true));
                 } else {
-                    summary.append("Fajr: ").append(PrayerWidgetProvider.formatNumerals(times.optString("fajr", ""), false))
-                           .append(" • Dhuhr: ").append(PrayerWidgetProvider.formatNumerals(times.optString("dhuhr", ""), false))
-                           .append(" • Asr: ").append(PrayerWidgetProvider.formatNumerals(times.optString("asr", ""), false))
-                           .append(" • Maghrib: ").append(PrayerWidgetProvider.formatNumerals(times.optString("maghrib", ""), false))
-                           .append(" • Isha: ").append(PrayerWidgetProvider.formatNumerals(times.optString("isha", ""), false));
+                    summary.append("Fajr: ").append(PrayerAClassicWidgetProvider.formatNumerals(times.optString("fajr", ""), false))
+                           .append(" • Dhuhr: ").append(PrayerAClassicWidgetProvider.formatNumerals(times.optString("dhuhr", ""), false))
+                           .append(" • Asr: ").append(PrayerAClassicWidgetProvider.formatNumerals(times.optString("asr", ""), false))
+                           .append(" • Maghrib: ").append(PrayerAClassicWidgetProvider.formatNumerals(times.optString("maghrib", ""), false))
+                           .append(" • Isha: ").append(PrayerAClassicWidgetProvider.formatNumerals(times.optString("isha", ""), false));
                 }
             }
 
@@ -246,7 +246,7 @@ public class PersistentPrayerNotification {
             String prayerLabel = (isArabic ? "الصلاة القادمة: " : "Next Prayer: ") + nextPrayerName;
             String fallbackTitle = prayerLabel;
             if (!remainingFormatted.isEmpty()) {
-                String formattedRem = PrayerWidgetProvider.formatNumerals(remainingFormatted, isArabic);
+                String formattedRem = PrayerAClassicWidgetProvider.formatNumerals(remainingFormatted, isArabic);
                 fallbackTitle += " (" + (isArabic ? "متبقي " : "in ") + formattedRem + ")";
             }
 
@@ -301,8 +301,10 @@ public class PersistentPrayerNotification {
                 expandedView.setViewVisibility(R.id.notif_chronometer_small, android.view.View.GONE);
             }
 
+            // Status Bar Notification Icon: Holy Quran on Rehal (Stand) ic_stat_name
+            int smallIconRes = R.drawable.ic_stat_name;
             NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
-                .setSmallIcon(R.drawable.ic_stat_name)
+                .setSmallIcon(smallIconRes)
                 .setColor(0xFF2E7D5E)
                 .setContentTitle(fallbackTitle)
                 .setSubText(isArabic ? "مواقيت الصلاة" : "Prayer Times")
@@ -374,7 +376,7 @@ public class PersistentPrayerNotification {
             }
         }
 
-        // 2. Alarm for the next minute to update the countdown string smoothly
+        // 2. Non-Doze-waking alarm for the next minute display refresh (Chronometer counts down natively during Doze)
         long now = System.currentTimeMillis();
         long nextMinute = (now / 60000 + 1) * 60000 + 500;
         if (targetTimeMillis > 0 && nextMinute < targetTimeMillis) {
@@ -383,13 +385,21 @@ public class PersistentPrayerNotification {
             PendingIntent piMinute = PendingIntent.getBroadcast(context, 9904, minuteIntent, flags);
 
             try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    am.setExactAndAllowWhileIdle(android.app.AlarmManager.RTC, nextMinute, piMinute);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    if (am.canScheduleExactAlarms()) {
+                        am.setExact(android.app.AlarmManager.RTC, nextMinute, piMinute);
+                    } else {
+                        am.set(android.app.AlarmManager.RTC, nextMinute, piMinute);
+                    }
                 } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
                     am.setExact(android.app.AlarmManager.RTC, nextMinute, piMinute);
                 } else {
                     am.set(android.app.AlarmManager.RTC, nextMinute, piMinute);
                 }
+            } catch (SecurityException se) {
+                try {
+                    am.set(android.app.AlarmManager.RTC, nextMinute, piMinute);
+                } catch (Exception ignored) {}
             } catch (Exception e) {
                 e.printStackTrace();
             }

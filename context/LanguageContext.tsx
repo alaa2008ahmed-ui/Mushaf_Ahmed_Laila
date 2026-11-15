@@ -318,8 +318,8 @@ export const ISLAMIC_TRANSLATIONS: Translations = {
     en: 'Full monthly timetable for all prayers'
   },
   'page.tasbeeh_title': {
-    ar: 'السبحة الإلكترونية',
-    en: 'Electronic Tasbeeh'
+    ar: 'التسبيح',
+    en: 'Tasbeeh'
   },
   'page.tasbeeh_subtitle': {
     ar: 'أضف أذكارك الخاصة وتتبع تسبيحك بدقة',
@@ -965,6 +965,134 @@ export const ISLAMIC_TRANSLATIONS: Translations = {
   'lang.toggle_tooltip': {
     ar: 'التحويل إلى اللغة الإنجليزية',
     en: 'Switch language to Arabic'
+  },
+
+  // Approved Sources & References
+  'settings.approved_sources': {
+    ar: 'المصادر والمراجع المعتمدة',
+    en: 'Approved Sources & References'
+  },
+  'approved_sources.title': {
+    ar: 'المصادر والمراجع المعتمدة',
+    en: 'Approved Sources & References'
+  },
+  'approved_sources.intro_title': {
+    ar: 'منهجية التوثيق والموثوقية الشرعية والعلمية',
+    en: 'Commitment to Sharia & Scientific Authenticity'
+  },
+  'approved_sources.intro_body': {
+    ar: 'انطلاقاً من أمانة الكلمة وقدسية النصوص الشرعية، يحرص هذا التطبيق على استقاء كافة بياناته القرآنية والحديثية والفقهية والفلكية من المصادر الموثوقة والمجامع العلمية المعتمدة، مع المراجعة المستمرة لضمان الدقة والانضباط.',
+    en: 'Out of deep reverence for sacred Islamic texts, this application derives its Qur\'anic, Hadith, jurisprudential, and astronomical data strictly from authenticated classical works and recognized scientific authorities, with ongoing verification.'
+  },
+  'approved_sources.filter_all': {
+    ar: 'الكل',
+    en: 'All Sections'
+  },
+  'approved_sources.pages_section_title': {
+    ar: 'صفحات التطبيق ومصادرها المعتمدة',
+    en: 'Application Pages & Their Sources'
+  },
+  'approved_sources.pages_list_hint': {
+    ar: 'اضغط على أي صفحة من القائمة التالية لعرض المصادر والمراجع العلمية والشرعية الخاصة بها:',
+    en: 'Tap any page below to view its verified religious and scientific references:'
+  },
+  'approved_sources.sources_count_single': {
+    ar: 'مصدر',
+    en: 'source'
+  },
+  'approved_sources.sources_count_plural': {
+    ar: 'مصادر',
+    en: 'sources'
+  },
+  'approved_sources.back_to_pages': {
+    ar: 'العودة إلى قائمة الصفحات',
+    en: 'Back to Pages List'
+  },
+  'approved_sources.page_sources_heading': {
+    ar: 'المصادر والمراجع المعتمدة لهذه الصفحة',
+    en: 'Approved Sources & References for This Page'
+  },
+  'approved_sources.search_placeholder': {
+    ar: 'ابحث باسم الصفحة أو المصدر...',
+    en: 'Search by page name or source...'
+  },
+  'approved_sources.no_results': {
+    ar: 'لا توجد صفحة مطابقة لبحثك',
+    en: 'No matching page found'
+  },
+  'approved_sources.disclaimer_title': {
+    ar: 'إخلاء مسؤولية شرعي',
+    en: 'Sharia Disclaimer'
+  },
+  'approved_sources.disclaimer_body': {
+    ar: 'جميع مخرجات الحاسبة الشرعية (المواريث، الزكاة، زكاة الفطر، الأضحية، والكفارات) هي نتائج استرشادية تقريبية مبنية على القواعد الفقهية العامة، ولا تُغني عن استشارة أهل العلم والمفتين المعتمدين أو الجهات الشرعية المختصة في المسائل الواقعية المركبة أو الخاصة.',
+    en: 'All outputs of the Islamic Legal Calculators (Inheritance, Zakat, Fitr, Udhiyah, and Expiations) are indicative estimates based on general jurisprudential principles. For complex or specific real-world cases, please consult qualified scholars or recognized Fatwa authorities.'
+  },
+  'approved_sources.report_btn': {
+    ar: 'الإبلاغ عن ملاحظة أو تصحيح لغوي',
+    en: 'Report a Note or Linguistic Correction'
+  },
+  'approved_sources.report_this_page_btn': {
+    ar: 'إرسال ملاحظة أو تصحيح حول هذه الصفحة',
+    en: 'Report a Note or Correction for This Page'
+  },
+  'approved_sources.report_modal_title': {
+    ar: 'إرسال ملاحظة أو تصحيح',
+    en: 'Submit Feedback or Correction'
+  },
+  'approved_sources.report_modal_subtitle': {
+    ar: 'نرحب بمساهمتك في مراجعة وتدقيق أي نص شرعي أو لغوي أو تقني.',
+    en: 'We welcome your help in reviewing and refining any scriptural, linguistic, or technical content.'
+  },
+  'approved_sources.report_section_label': {
+    ar: 'القسم المعني',
+    en: 'Relevant Section'
+  },
+  'approved_sources.report_general_linguistic': {
+    ar: 'تصحيح لغوي أو إملائي عام',
+    en: 'General Linguistic / Spelling Correction'
+  },
+  'approved_sources.report_details_label': {
+    ar: 'تفاصيل الملاحظة أو التصحيح المقترح',
+    en: 'Details or Suggested Correction'
+  },
+  'approved_sources.report_placeholder': {
+    ar: 'اكتب موضع النص والملاحظة أو التصحيح المرجو إجراؤه هنا...',
+    en: 'Describe the location and your suggested note or correction...'
+  },
+  'approved_sources.report_empty_error': {
+    ar: 'يرجى كتابة الملاحظة أو التصحيح أولاً',
+    en: 'Please enter your note or correction first'
+  },
+  'approved_sources.report_copy_btn': {
+    ar: 'نسخ نص الملاحظة',
+    en: 'Copy Note'
+  },
+  'approved_sources.report_whatsapp_btn': {
+    ar: 'إرسال عبر واتساب',
+    en: 'Send via WhatsApp'
+  },
+  'approved_sources.report_copied_toast': {
+    ar: 'تم نسخ الملاحظة إلى الحافظة بنجاح',
+    en: 'Note copied to clipboard'
+  },
+
+  // Calculators Sharia Disclaimers
+  'calculators.disclaimer_zakat': {
+    ar: 'تنبيه شرعي: تُحسب الزكاة وفق المقادير الشرعية المعتمدة، ويُرجى التحقق من سعر الذهب الحالي في بلدك واستشارة أهل العلم في الحالات المالية الخاصة.',
+    en: 'Sharia Notice: Zakat is calculated according to established Islamic Nisab thresholds. Please verify the current gold price in your country and consult qualified scholars for special financial cases.'
+  },
+  'calculators.disclaimer_mawarith': {
+    ar: 'تنبيه شرعي: هذه النتيجة استرشادية وفق القواعد العامة للفرائض، ويُرجى مراجعة دار الإفتاء أو القضاء الشرعي لاعتماد القسمة النهائية في الوصايا والديون والحالات المركبة.',
+    en: 'Sharia Notice: This result is an indicative estimate based on general inheritance rules (Al-Fara\'id). Please consult an official Fatwa authority or Sharia court to finalize distribution in cases involving wills, debts, or complex shares.'
+  },
+  'calculators.disclaimer_kaffarat': {
+    ar: 'تنبيه شرعي: المقادير المعروضة استرشادية وفق الضوابط الفقهية، ويُراعى متوسط سعر الإطعام أو الفتوى المعتمدة في بلدك عند الإخراج نقداً.',
+    en: 'Sharia Notice: The displayed amounts are indicative based on jurisprudential guidelines. When paying in cash, please follow the average local meal cost or the approved Fatwa in your country.'
+  },
+  'calculators.disclaimer_fitr_udhiyah': {
+    ar: 'تنبيه شرعي: تُقدّر زكاة الفطر بصاع من غالب قوت البلد، وتُراعى الشروط الشرعية لسنّ وسلامة الأضحية، ويُرجى مراجعة الجهات الشرعية في بلدك عند الإخراج نقداً.',
+    en: 'Sharia Notice: Zakat al-Fitr is estimated as one Sa\' of the local staple food, and Udhiyah requires compliance with minimum age and health conditions. Please consult your local Islamic authorities when paying cash value.'
   }
 };
 

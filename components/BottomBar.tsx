@@ -1,5 +1,5 @@
 
-import React, { useEffect, useRef } from 'react';
+import React, { useLayoutEffect, useRef } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { Lock, Unlock } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
@@ -18,6 +18,29 @@ function BottomBar({ onHomeClick, onThemesClick, showHome = true, showThemes = t
     const { theme, themeKey, isPageLocked, togglePageLock, isQuranPage, currentPage } = useTheme();
     const { t } = useLanguage();
     const effectiveHomeLabel = homeLabel || t('bottombar.home', 'الرئيسية');
+    const navRef = useRef<HTMLElement | null>(null);
+
+    useLayoutEffect(() => {
+        const el = navRef.current;
+        if (!el || typeof document === 'undefined') return;
+        const root = document.documentElement;
+
+        const rect = el.getBoundingClientRect();
+        const h = Math.max(0, Math.ceil(rect.height));
+        const heightStr = `${h}px`;
+        const clearanceStr = `max(var(--app-safe-bottom), ${h}px)`;
+        if (root.style.getPropertyValue('--app-bottom-bar-height') !== heightStr) {
+            root.style.setProperty('--app-bottom-bar-height', heightStr);
+        }
+        if (root.style.getPropertyValue('--app-bottom-clearance') !== clearanceStr) {
+            root.style.setProperty('--app-bottom-clearance', clearanceStr);
+        }
+
+        return () => {
+            root.style.setProperty('--app-bottom-bar-height', '0px');
+            root.style.removeProperty('--app-bottom-clearance');
+        };
+    }, []);
 
     const isSingleButton = !showHome || !showThemes;
     const homeButtonClass = `bar-button btn-3d-effect ${isSingleButton ? 'w-full max-w-[160px] mx-auto py-2.5 px-4 rounded-xl shadow-lg' : 'max-w-[120px]'}`;
@@ -81,7 +104,7 @@ function BottomBar({ onHomeClick, onThemesClick, showHome = true, showThemes = t
     };
 
     return (
-        <nav className="app-bottom-bar" style={{ 
+        <nav ref={navRef} className="app-bottom-bar" style={{ 
             borderTopWidth: theme.barBorder ? navBorder.borderWidth : '2px',
             borderTopStyle: theme.barBorder ? navBorder.borderStyle : 'solid',
             borderTopColor: theme.barBorder ? navBorder.borderColor : theme.palette[0],

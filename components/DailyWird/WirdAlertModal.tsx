@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { BookOpen, Check, X, Volume2, VolumeX, ArrowLeft, ArrowRight, Sparkles, AlertCircle, Languages } from 'lucide-react';
-import { playNotificationSound, stopNotificationSound } from '../../utils/prayerTimesUtils';
+import { playNotificationSound, stopNotificationSound, getActiveNotificationSoundPath } from '../../utils/prayerTimesUtils';
 import { useLanguage } from '../../context/LanguageContext';
 import { WirdAlertData } from '../../utils/dailyWirdNotificationService';
 
@@ -25,9 +25,14 @@ export const WirdAlertModal: React.FC<WirdAlertModalProps> = ({
   useEffect(() => {
     // Only play sound if on web/browser (never in native APK)
     if (alert && !Capacitor.isNativePlatform()) {
-      // Play gentle chime sound upon alert appearance
-      playNotificationSound('/assets/audio/chime.mp3', true);
-      setIsPlayingSound(true);
+      // Play chosen notification sound upon alert appearance
+      const sound = getActiveNotificationSoundPath();
+      if (sound && sound !== 'none') {
+        playNotificationSound(sound, true);
+        setIsPlayingSound(true);
+      } else {
+        setIsPlayingSound(false);
+      }
     }
     return () => {
       stopNotificationSound();
@@ -42,8 +47,11 @@ export const WirdAlertModal: React.FC<WirdAlertModalProps> = ({
       stopNotificationSound();
       setIsPlayingSound(false);
     } else {
-      playNotificationSound('/assets/audio/chime.mp3', true);
-      setIsPlayingSound(true);
+      const sound = getActiveNotificationSoundPath();
+      if (sound && sound !== 'none') {
+        playNotificationSound(sound, true);
+        setIsPlayingSound(true);
+      }
     }
   };
 
@@ -71,7 +79,7 @@ export const WirdAlertModal: React.FC<WirdAlertModalProps> = ({
       dir={dir}
     >
       <div
-        className="w-full max-w-md rounded-3xl bg-white dark:bg-gray-900 border-2 border-emerald-500/80 shadow-2xl overflow-hidden p-6 relative flex flex-col items-center text-center animate-scaleUp"
+        className="w-full max-w-md max-h-[90dvh] overflow-y-auto rounded-3xl bg-white dark:bg-gray-900 border-2 border-emerald-500/80 shadow-2xl p-6 relative flex flex-col items-center text-center animate-scaleUp"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close X button */}
@@ -140,25 +148,14 @@ export const WirdAlertModal: React.FC<WirdAlertModalProps> = ({
         <div className="w-full flex flex-col gap-2">
           {/* Primary Action Button(s) */}
           {isEn ? (
-            <div className="flex flex-col sm:flex-row gap-2 w-full">
-              <button
-                type="button"
-                onClick={() => handleReadNow('mushaf')}
-                className="flex-1 py-3 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-600/30 transition-all cursor-pointer"
-              >
-                <BookOpen size={16} />
-                <span>Read in Mushaf</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleReadNow('translation')}
-                className="flex-1 py-3 px-3 rounded-xl bg-teal-600 hover:bg-teal-700 active:scale-98 text-white font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-lg shadow-teal-600/30 transition-all cursor-pointer"
-              >
-                <Languages size={16} />
-                <span>Read Translation</span>
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => handleReadNow('translation')}
+              className="w-full py-3.5 px-4 rounded-xl bg-teal-600 hover:bg-teal-700 active:scale-98 text-white font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-teal-600/30 transition-all cursor-pointer"
+            >
+              <Languages size={18} />
+              <span>Read Translation</span>
+            </button>
           ) : (
             <button
               type="button"

@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal"
+    android:layoutDirection="ltr"
+    android:background="@drawable/widget_mihrab_container"
+    android:clipToOutline="true"
+    android:padding="8dp">
+
+    <!-- Primary Arch Section (Mihrab Medallion) -->
+    <LinearLayout
+        android:id="@+id/mihrab_arch_section"
+        android:layout_width="0dp"
+        android:layout_weight="4.2"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:background="@drawable/widget_mihrab_arch_card"
+        android:padding="8dp"
+        android:layout_marginEnd="6dp">
+
+        <TextView
+            android:id="@+id/mihrab_arch_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Next Prayer"
+            android:textColor="#FDE68A"
+            android:textSize="11sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/mihrab_next_prayer_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Asr"
+            android:textColor="#FFFFFF"
+            android:textSize="19sp"
+            android:textStyle="bold"
+            android:layout_marginTop="2dp" />
+
+        <TextView
+            android:id="@+id/mihrab_next_prayer_time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="03:14"
+            android:textColor="#34D399"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginTop="1dp" />
+
+        <!-- Countdown Badge inside Arch -->
+        <LinearLayout
+            android:id="@+id/mihrab_countdown_badge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:background="@drawable/widget_gold_badge"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:paddingTop="2dp"
+            android:paddingBottom="2dp"
+            android:layout_marginTop="4dp">
+
+            <TextView
+                android:id="@+id/mihrab_remaining_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="in"
+                android:textColor="#B45309"
+                android:textSize="10.5sp"
+                android:textStyle="bold"
+                android:layout_marginEnd="4dp" />
+
+            <Chronometer
+                android:id="@+id/mihrab_chronometer"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="#92400E"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:countDown="true"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/mihrab_remaining_en"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="#92400E"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Right Side: Header + Prayer Timetable + Night Timings Strip -->
+    <LinearLayout
+        android:id="@+id/mihrab_content_section"
+        android:layout_width="0dp"
+        android:layout_weight="7.8"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <!-- Top Mini Header: Date & Controls -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingBottom="3dp">
+
+            <ImageView
+                android:id="@+id/widget_app_icon"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:src="@mipmap/ic_launcher"
+                android:contentDescription="App Icon" />
+
+            <TextView
+                android:id="@+id/mihrab_hijri_date"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="Ramadan 1445"
+                android:textColor="#B45309"
+                android:textSize="11.5sp"
+                android:textStyle="bold"
+                android:singleLine="true"
+                android:gravity="center" />
+
+            <ImageView
+                android:id="@+id/widget_btn_refresh"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:src="@drawable/ic_widget_refresh"
+                android:padding="1dp"
+                android:contentDescription="Refresh" />
+        </LinearLayout>
+
+        <!-- 6 Prayers Grid in 2 Compact Rows -->
+        <LinearLayout
+            android:id="@+id/mihrab_prayers_grid"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center">
+
+            <!-- Row 1: Fajr, Sunrise, Dhuhr -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <LinearLayout android:id="@+id/mihrab_box_fajr" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:orientation="vertical" android:gravity="center" android:padding="1dp">
+                    <TextView android:id="@+id/name_fajr" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Fajr" android:textColor="#64748B" android:textSize="11sp" android:textStyle="bold"/>
+                    <TextView android:id="@+id/time_fajr" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="04:14" android:textColor="#1E293B" android:textSize="13sp" android:textStyle="bold"/>
+                </LinearLayout>
+
+                <LinearLayout android:id="@+id/mihrab_box_sunrise" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:orientation="vertical" android:gravity="center" android:padding="1dp">
+                    <TextView android:id="@+id/name_sunrise" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Sun" android:textColor="#64748B" android:textSize="11sp" android:textStyle="bold"/>
+                    <TextView android:id="@+id/time_sunrise" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="05:34" android:textColor="#1E293B" android:textSize="13sp" android:textStyle="bold"/>
+                </LinearLayout>
+
+                <LinearLayout android:id="@+id/mihrab_box_dhuhr" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:orientation="vertical" android:gravity="center" android:padding="1dp">
+                    <TextView android:id="@+id/name_dhuhr" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Dhuhr" android:textColor="#64748B" android:textSize="11sp" android:textStyle="bold"/>
+                    <TextView android:id="@+id/time_dhuhr" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="11:45" android:textColor="#1E293B" android:textSize="13sp" android:textStyle="bold"/>
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Row 2: Asr, Maghrib, Isha -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <LinearLayout android:id="@+id/mihrab_box_asr" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:orientation="vertical" android:gravity="center" android:padding="1dp">
+                    <TextView android:id="@+id/name_asr" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Asr" android:textColor="#64748B" android:textSize="11sp" android:textStyle="bold"/>
+                    <TextView android:id="@+id/time_asr" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="03:14" android:textColor="#1E293B" android:textSize="13sp" android:textStyle="bold"/>
+                </LinearLayout>
+
+                <LinearLayout android:id="@+id/mihrab_box_maghrib" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:orientation="vertical" android:gravity="center" android:padding="1dp">
+                    <TextView android:id="@+id/name_maghrib" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Magh" android:textColor="#64748B" android:textSize="11sp" android:textStyle="bold"/>
+                    <TextView android:id="@+id/time_maghrib" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="05:56" android:textColor="#1E293B" android:textSize="13sp" android:textStyle="bold"/>
+                </LinearLayout>
+
+                <LinearLayout android:id="@+id/mihrab_box_isha" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:orientation="vertical" android:gravity="center" android:padding="1dp">
+                    <TextView android:id="@+id/name_isha" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Isha" android:textColor="#64748B" android:textSize="11sp" android:textStyle="bold"/>
+                    <TextView android:id="@+id/time_isha" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="07:26" android:textColor="#1E293B" android:textSize="13sp" android:textStyle="bold"/>
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Bottom Night Timings Strip (Midnight & Last Third) -->
+        <LinearLayout
+            android:id="@+id/mihrab_night_strip"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:background="@drawable/widget_night_strip_bg"
+            android:paddingTop="3dp"
+            android:paddingBottom="3dp"
+            android:paddingStart="6dp"
+            android:paddingEnd="6dp"
+            android:layout_marginTop="2dp">
+
+            <TextView
+                android:id="@+id/mihrab_midnight"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="Midnight: --:--"
+                android:textColor="#B45309"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:singleLine="true" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="|"
+                android:textColor="#F59E0B"
+                android:textSize="9sp" />
+
+            <TextView
+                android:id="@+id/mihrab_last_third"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="Last Third: --:--"
+                android:textColor="#B45309"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:singleLine="true" />
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>

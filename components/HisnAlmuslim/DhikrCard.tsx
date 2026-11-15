@@ -149,7 +149,7 @@ const DhikrCard: React.FC<DhikrCardProps> = ({
     return (
         <div 
             data-card-item="true"
-            className={`p-5 pb-3.5 rounded-[18px] relative overflow-hidden group transition-all duration-300 flex flex-col justify-between border-0 ${
+            className={`app-page-card tasbeeh-pressable border-0 p-5 pb-4 rounded-2xl bg-white dark:bg-[#1E293B] relative overflow-visible group transition-all duration-300 flex flex-col justify-between ${
                 isFinished ? 'opacity-65 cursor-pointer' : 'cursor-pointer'
             }`} 
             onClick={(e) => {
@@ -161,8 +161,6 @@ const DhikrCard: React.FC<DhikrCardProps> = ({
             }}
             dir={isEn ? 'ltr' : 'rtl'}
             style={{ 
-                backgroundColor: isBlackTheme ? '#18181b' : (theme.isDark ? (theme.cardBg || '#18181B') : '#FFFFFF'),
-                boxShadow: theme.isDark ? '0 4px 20px -2px rgba(0, 0, 0, 0.35)' : '0 4px 14px rgba(0, 0, 0, 0.04)',
                 color: 'var(--text-color)',
                 fontFamily: isEn ? 'sans-serif' : theme.font
             }}
@@ -181,12 +179,11 @@ const DhikrCard: React.FC<DhikrCardProps> = ({
 
                 {/* Repetition Counter Badge */}
                 <div 
-                    className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-base sm:text-lg select-none cursor-pointer transition-all active:scale-90 hover:scale-105 shrink-0" 
+                    className="app-page-card tasbeeh-inner-pressable border-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-base sm:text-lg select-none cursor-pointer transition-all bg-white dark:bg-[#1E293B] shrink-0" 
                     style={
                         isFinished 
-                        ? { backgroundColor: '#10B981', color: '#FFFFFF', boxShadow: '0 2px 10px rgba(16, 185, 129, 0.3)' } 
+                        ? { backgroundColor: '#10B981', color: '#FFFFFF' } 
                         : { 
-                            backgroundColor: hexToRgba(primaryColor, isBlackTheme ? 0.25 : 0.12), 
                             color: isBlackTheme ? '#FFFFFF' : primaryColor 
                         }
                     }
@@ -235,19 +232,21 @@ const DhikrCard: React.FC<DhikrCardProps> = ({
             )}
             
             {/* Bottom Action buttons row */}
-            <div className="flex justify-between items-center mt-auto pt-3 border-t border-slate-100/90 dark:border-white/5">
+            <div className="flex justify-between items-center mt-auto pt-3 pb-1 border-t border-slate-100/90 dark:border-white/5 overflow-visible">
                 <button 
+                    type="button"
                     onClick={toggleFav} 
-                    className="w-9 h-9 rounded-full flex items-center justify-center bg-slate-100/80 dark:bg-zinc-800/80 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
+                    className="app-page-card border-0 w-9 h-9 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer"
                     title={isEn ? (isFav ? 'Remove from favorites' : 'Add to favorites') : (isFav ? 'إزالة من المفضلة' : 'إضافة إلى المفضلة')}
                     aria-label={isEn ? 'Favorite' : 'المفضلة'}
                 >
-                    <i className={`fa-heart ${isFav ? 'fa-solid text-red-500' : 'fa-regular opacity-70'}`} style={isFav ? {} : { color: 'var(--text-color)' }}></i>
+                    <i className={`fa-heart ${isFav ? 'fa-solid text-red-500' : 'fa-regular opacity-75'}`} style={isFav ? {} : { color: 'var(--text-color)' }}></i>
                 </button>
-                <div className="flex gap-2">
+                <div className="flex gap-2.5 overflow-visible">
                    <button 
+                       type="button"
                        onClick={(e) => { e.stopPropagation(); onZoom(); }} 
-                       className="w-9 h-9 rounded-full flex items-center justify-center bg-slate-100/80 dark:bg-zinc-800/80 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors opacity-75 hover:opacity-100 cursor-pointer" 
+                       className="app-page-card border-0 w-9 h-9 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer" 
                        style={{ color: 'var(--text-color)' }} 
                        title={isEn ? "Zoom" : "تكبير"}
                        aria-label={isEn ? "Zoom" : "تكبير"}
@@ -255,8 +254,9 @@ const DhikrCard: React.FC<DhikrCardProps> = ({
                        <i className="fa-solid fa-magnifying-glass-plus text-xs"></i>
                    </button>
                    <button 
+                       type="button"
                        onClick={handleCopy} 
-                       className="w-9 h-9 rounded-full flex items-center justify-center bg-slate-100/80 dark:bg-zinc-800/80 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors opacity-75 hover:opacity-100 cursor-pointer" 
+                       className="app-page-card border-0 w-9 h-9 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer" 
                        style={{ color: 'var(--text-color)' }} 
                        title={isEn ? "Copy" : "نسخ"}
                        aria-label={isEn ? "Copy" : "نسخ"}
@@ -264,8 +264,9 @@ const DhikrCard: React.FC<DhikrCardProps> = ({
                        <i className="fa-regular fa-copy text-xs"></i>
                    </button>
                    <button 
+                       type="button"
                        onClick={handleShare} 
-                       className="w-9 h-9 rounded-full flex items-center justify-center bg-slate-100/80 dark:bg-zinc-800/80 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors opacity-75 hover:opacity-100 cursor-pointer" 
+                       className="app-page-card border-0 w-9 h-9 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer" 
                        style={{ color: 'var(--text-color)' }} 
                        title={isEn ? "Share" : "مشاركة"}
                        aria-label={isEn ? "Share" : "مشاركة"}
@@ -273,8 +274,9 @@ const DhikrCard: React.FC<DhikrCardProps> = ({
                        <i className="fa-solid fa-share-nodes text-xs"></i>
                    </button>
                    <button 
+                       type="button"
                        onClick={handlePlayAudio} 
-                       className="w-9 h-9 rounded-full flex items-center justify-center bg-slate-100/80 dark:bg-zinc-800/80 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors opacity-75 hover:opacity-100 cursor-pointer" 
+                       className="app-page-card border-0 w-9 h-9 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer" 
                        style={{ color: isPlaying ? '#ef4444' : 'var(--text-color)' }}
                        title={isEn ? (isPlaying ? "Stop listening" : "Listen audio") : (isPlaying ? "إيقاف الاستماع" : "استماع صوتي")}
                        aria-label={isEn ? "Listen audio" : "استماع صوتي"}
@@ -286,7 +288,7 @@ const DhikrCard: React.FC<DhikrCardProps> = ({
             
             {!isFinished && (
                 <div 
-                    className="absolute inset-0 opacity-0 group-active:opacity-100 transition pointer-events-none" 
+                    className="absolute inset-0 rounded-2xl opacity-0 group-active:opacity-100 transition pointer-events-none" 
                     style={{ backgroundColor: hexToRgba(primaryColor, 0.08) }}
                 ></div>
             )}

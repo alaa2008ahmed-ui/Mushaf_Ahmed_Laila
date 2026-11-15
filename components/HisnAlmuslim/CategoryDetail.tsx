@@ -157,7 +157,7 @@ const HisnItemCard: React.FC<HisnItemCardProps> = ({
             data-hisn-index={itemIndex}
             data-hisn-id={item.id || `${categoryId}_${itemIndex}`}
             data-card-item="true"
-            className={`p-5 pb-3.5 rounded-[18px] relative overflow-hidden group mb-4 transition-all duration-300 border-0 ${isFinished ? 'opacity-65 cursor-pointer' : 'cursor-pointer active:scale-[0.99]'}`}
+            className={`app-page-card tasbeeh-pressable border-0 p-5 pb-4 rounded-2xl bg-white dark:bg-[#1E293B] relative overflow-visible group mb-4 transition-all duration-300 ${isFinished ? 'opacity-65 cursor-pointer' : 'cursor-pointer'}`}
             onClick={(e) => {
                 if (!isFinished) {
                     onDecrement();
@@ -172,8 +172,6 @@ const HisnItemCard: React.FC<HisnItemCardProps> = ({
             }}
             dir={isEn ? 'ltr' : 'rtl'}
             style={{ 
-                backgroundColor: tokens.cardBgColor,
-                boxShadow: tokens.cardShadow,
                 color: 'var(--text-color)',
                 fontFamily: isEn ? 'sans-serif' : theme.font
             }}
@@ -190,11 +188,11 @@ const HisnItemCard: React.FC<HisnItemCardProps> = ({
                     {repetitionText}
                 </span>
                 <div 
-                    className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-base sm:text-lg shrink-0 select-none cursor-pointer transition-transform active:scale-90" 
+                    className="app-page-card tasbeeh-inner-pressable border-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-base sm:text-lg shrink-0 select-none cursor-pointer transition-all bg-white dark:bg-[#1E293B]" 
                     style={
                         isFinished 
                             ? { backgroundColor: '#10B981', color: '#FFFFFF' }
-                            : { backgroundColor: hexToRgba(tokens.primaryColor, 0.12), color: tokens.primaryColor }
+                            : { color: tokens.primaryColor }
                     }
                     onClick={(e) => {
                         if (isFinished) {
@@ -227,17 +225,19 @@ const HisnItemCard: React.FC<HisnItemCardProps> = ({
             )}
             
             {/* Actions Bar */}
-            <div className="flex justify-between items-center mt-3 pt-3 border-t border-slate-100 dark:border-white/5">
+            <div className="flex justify-between items-center mt-3 pt-3 pb-1 border-t border-slate-100 dark:border-white/5 overflow-visible">
                 <button 
+                    type="button"
                     onClick={toggleFav} 
-                    className="w-9 h-9 rounded-full flex items-center justify-center bg-slate-100/80 dark:bg-zinc-800/80 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
+                    className="app-page-card border-0 w-9 h-9 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer"
                     title={isEn ? (isFav ? 'Remove from favorites' : 'Add to favorites') : (isFav ? 'إزالة من المفضلة' : 'إضافة إلى المفضلة')}
                     aria-label={isEn ? 'Favorite' : 'المفضلة'}
                 >
-                    <i className={`fa-heart ${isFav ? 'fa-solid text-red-500' : 'fa-regular opacity-70'}`} style={isFav ? {} : { color: 'var(--text-color)' }}></i>
+                    <i className={`fa-heart ${isFav ? 'fa-solid text-red-500' : 'fa-regular opacity-75'}`} style={isFav ? {} : { color: 'var(--text-color)' }}></i>
                 </button>
-                <div className="flex gap-2">
+                <div className="flex gap-2.5 overflow-visible">
                    <button 
+                       type="button"
                        onClick={(e) => { 
                            e.stopPropagation(); 
                            onZoom({
@@ -253,7 +253,7 @@ const HisnItemCard: React.FC<HisnItemCardProps> = ({
                                isEn
                            }); 
                        }} 
-                       className="w-9 h-9 rounded-full flex items-center justify-center bg-slate-100/80 dark:bg-zinc-800/80 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors opacity-75 hover:opacity-100 cursor-pointer" 
+                       className="app-page-card border-0 w-9 h-9 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer" 
                        style={{ color: 'var(--text-color)' }} 
                        title={isEn ? "Zoom" : "تكبير"}
                        aria-label={isEn ? "Zoom" : "تكبير"}
@@ -261,8 +261,9 @@ const HisnItemCard: React.FC<HisnItemCardProps> = ({
                        <i className="fa-solid fa-magnifying-glass-plus text-xs"></i>
                    </button>
                    <button 
+                       type="button"
                        onClick={handleCopy} 
-                       className="w-9 h-9 rounded-full flex items-center justify-center bg-slate-100/80 dark:bg-zinc-800/80 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors opacity-75 hover:opacity-100 cursor-pointer" 
+                       className="app-page-card border-0 w-9 h-9 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer" 
                        style={{ color: 'var(--text-color)' }} 
                        title={isEn ? "Copy" : "نسخ"}
                        aria-label={isEn ? "Copy" : "نسخ"}
@@ -270,8 +271,9 @@ const HisnItemCard: React.FC<HisnItemCardProps> = ({
                        <i className="fa-regular fa-copy text-xs"></i>
                    </button>
                    <button 
+                       type="button"
                        onClick={handleShare} 
-                       className="w-9 h-9 rounded-full flex items-center justify-center bg-slate-100/80 dark:bg-zinc-800/80 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors opacity-75 hover:opacity-100 cursor-pointer" 
+                       className="app-page-card border-0 w-9 h-9 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer" 
                        style={{ color: 'var(--text-color)' }} 
                        title={isEn ? "Share" : "مشاركة"}
                        aria-label={isEn ? "Share" : "مشاركة"}
@@ -279,8 +281,9 @@ const HisnItemCard: React.FC<HisnItemCardProps> = ({
                        <i className="fa-solid fa-share-nodes text-xs"></i>
                    </button>
                    <button 
+                       type="button"
                        onClick={handlePlayAudio} 
-                       className="w-9 h-9 rounded-full flex items-center justify-center bg-slate-100/80 dark:bg-zinc-800/80 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors opacity-75 hover:opacity-100 cursor-pointer" 
+                       className="app-page-card border-0 w-9 h-9 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer" 
                        style={{ color: isPlaying ? '#ef4444' : 'var(--text-color)' }}
                        title={isEn ? (isPlaying ? "Stop listening" : "Listen audio") : (isPlaying ? "إيقاف الاستماع" : "استماع صوتي")}
                        aria-label={isEn ? "Listen audio" : "استماع صوتي"}
@@ -292,7 +295,7 @@ const HisnItemCard: React.FC<HisnItemCardProps> = ({
             
             {!isFinished && (
                 <div 
-                    className="absolute inset-0 opacity-0 group-active:opacity-100 transition pointer-events-none" 
+                    className="absolute inset-0 rounded-2xl opacity-0 group-active:opacity-100 transition pointer-events-none" 
                     style={{ backgroundColor: hexToRgba(tokens.primaryColor, 0.08) }}
                 ></div>
             )}
@@ -319,7 +322,7 @@ const CategoryDetail: React.FC<CategoryDetailProps> = ({
             const timer = setTimeout(() => {
                 let targetEl: HTMLElement | null = null;
                 if (highlightIndex !== undefined) {
-                    targetEl = document.getElementById(`hisn-card-${selectedCategory.id}-${highlightIndex}`);
+                    targetEl = document.getElementById(`hisn-card-${selectedCategory?.id}-${highlightIndex}`);
                 }
                 if (!targetEl && highlightId) {
                     targetEl = document.querySelector(`[data-hisn-id="${highlightId}"]`) as HTMLElement;
@@ -343,8 +346,30 @@ const CategoryDetail: React.FC<CategoryDetailProps> = ({
                 }
             }, 200);
             return () => clearTimeout(timer);
+        } else {
+            const resetScroll = () => {
+                try { window.scrollTo({ top: 0, behavior: 'instant' }); } catch {}
+                try { document.documentElement.scrollTop = 0; } catch {}
+                try { document.body.scrollTop = 0; } catch {}
+                const mainEl = document.querySelector('main');
+                if (mainEl) {
+                    try { mainEl.scrollTop = 0; } catch {}
+                    try { mainEl.scrollTo({ top: 0, behavior: 'instant' }); } catch {}
+                }
+                const scrollables = document.querySelectorAll('.overflow-y-auto, [class*="overflow-y-auto"]');
+                scrollables.forEach(el => {
+                    try { el.scrollTop = 0; } catch {}
+                });
+            };
+            resetScroll();
+            const t1 = setTimeout(resetScroll, 20);
+            const t2 = setTimeout(resetScroll, 100);
+            return () => {
+                clearTimeout(t1);
+                clearTimeout(t2);
+            };
         }
-    }, [selectedCategory.id, highlightIndex, highlightId, highlightText]);
+    }, [selectedCategory?.id, highlightIndex, highlightId, highlightText]);
 
     if (!selectedCategory) return null;
     const items = React.useMemo(() => {

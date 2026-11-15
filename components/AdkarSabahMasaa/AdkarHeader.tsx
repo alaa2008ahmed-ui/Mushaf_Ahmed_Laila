@@ -1,6 +1,7 @@
 import React from 'react';
 import ThemePageLock from '../ThemePageLock';
 import { useLanguage } from '../../context/LanguageContext';
+import { useShowPageGuides } from '../../utils/guideManager';
 
 interface AdkarHeaderProps {
     title: string;
@@ -13,6 +14,7 @@ interface AdkarHeaderProps {
 const AdkarHeader: React.FC<AdkarHeaderProps> = ({ title, subtitle, onBack, onHome, onOpenGuide }) => {
     const { t, language } = useLanguage();
     const isEn = language === 'en';
+    const showPageGuides = useShowPageGuides();
     
     // Localize title and subtitle if Arabic strings were passed
     let localizedTitle = title;
@@ -60,7 +62,7 @@ const AdkarHeader: React.FC<AdkarHeaderProps> = ({ title, subtitle, onBack, onHo
 
                     {/* Home, Guide, and Theme lock: Right in LTR, Left in RTL */}
                     <div className={`absolute ${isEn ? 'right-0' : 'left-0'} flex items-center gap-1`}>
-                        {onOpenGuide && (
+                        {onOpenGuide && showPageGuides && (
                             <button
                                 type="button"
                                 onClick={onOpenGuide}

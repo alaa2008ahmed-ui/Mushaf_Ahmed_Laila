@@ -8,7 +8,7 @@ interface AyahContextMenuProps {
     ayahContextColorField: 'textColor' | 'bgColor' | 'highlightTextColor' | null;
     setAyahContextColorField: (field: 'textColor' | 'bgColor' | 'highlightTextColor' | null) => void;
     setAyahContextMenu: React.Dispatch<React.SetStateAction<any>>;
-    onTempSettingsChange?: (newSettings: any) => void;
+    onTempSettingsChange?: (newSettings: any, fieldChanged?: 'textColor' | 'bgColor' | 'highlightTextColor') => void;
     renderCheckerboard: (color: string) => React.CSSProperties;
     PREDEFINED_COLORS: string[];
     currentTheme: any;
@@ -41,10 +41,12 @@ const AyahContextMenu: React.FC<AyahContextMenuProps> = ({
     if (!isOpen) return null;
 
     // Dynamically derive the frame and border color from the active theme
-    const themeBorderColor = extractColor(
-        currentTheme?.barBorder || currentTheme?.cardBorder || currentTheme?.accent,
-        '#000000'
-    );
+    const themeBorderColor = currentTheme?.id === 'deep_black'
+        ? '#ffffff'
+        : extractColor(
+            currentTheme?.barBorder || currentTheme?.cardBorder || currentTheme?.accent,
+            '#000000'
+        );
 
     return (
         <div className={`fixed inset-0 z-[1200] bg-black/25 backdrop-blur-[2px] flex items-center justify-center ${isLandscape ? 'p-2' : 'p-4'} animate-fadeIn`} onClick={() => {
@@ -52,7 +54,7 @@ const AyahContextMenu: React.FC<AyahContextMenuProps> = ({
         }}>
             <div 
                 dir={dir}
-                className={`ayah-context-menu w-full ${isLandscape ? 'max-w-[300px] max-h-[90vh]' : 'max-w-[320px] max-h-[70vh]'} rounded-3xl shadow-2xl transition-all duration-300 flex flex-col pointer-events-auto overflow-hidden animate-modal-enter border-0`} 
+                className={`ayah-context-menu w-full ${isLandscape ? 'max-w-[300px] max-h-[90dvh]' : 'max-w-[320px] max-h-[75dvh]'} rounded-3xl shadow-2xl transition-all duration-300 flex flex-col pointer-events-auto overflow-hidden animate-modal-enter border-0`} 
                 style={{ 
                     fontFamily: currentTheme?.font,
                     backgroundColor: currentTheme?.modalBg || '#ffffff',
@@ -63,7 +65,7 @@ const AyahContextMenu: React.FC<AyahContextMenuProps> = ({
                 }}
                 onClick={e => e.stopPropagation()}
             >
-                <div className="p-4 overflow-y-auto flex-1 custom-scrollbar space-y-4">
+                <div className="p-4 overflow-y-auto flex-1 min-h-0 custom-scrollbar space-y-4">
                     {/* Header Bar */}
                     <div 
                         className="py-2 px-3 rounded-2xl flex items-center justify-between transition-colors quran-raised-card border-0"
@@ -71,6 +73,9 @@ const AyahContextMenu: React.FC<AyahContextMenuProps> = ({
                             backgroundColor: `${themeBorderColor}12`,
                         }}
                     >
+                        <span className="text-xs font-black tracking-wide" style={{ color: themeBorderColor }}>
+                            {isEn ? "Colors & Customization" : "الألوان والتخصيص"}
+                        </span>
                         <button 
                             onClick={() => {
                                 setAyahContextMenu((p: any) => ({...p, isOpen: false}));
@@ -80,9 +85,6 @@ const AyahContextMenu: React.FC<AyahContextMenuProps> = ({
                         >
                             <X size={16} />
                         </button>
-                        <span className="text-xs font-black tracking-wide" style={{ color: themeBorderColor }}>
-                            {isEn ? "Colors & Customization" : "الألوان والتخصيص"}
-                        </span>
                     </div>
 
                     {/* Colors Section */}
@@ -103,18 +105,25 @@ const AyahContextMenu: React.FC<AyahContextMenuProps> = ({
                                 return (
                                     <div 
                                         key={field.id} 
-                                        className={`flex flex-col gap-1.5 p-2 rounded-2xl transition-all duration-300 border-0 ${isFieldActive ? 'quran-raised-btn-selected shadow-md' : 'quran-raised-card'}`}
-                                        style={{
-                                            backgroundColor: isFieldActive ? `${themeBorderColor}18` : undefined
-                                        }}
+                                        className="flex flex-col gap-1 items-center"
                                     >
+                                        <span 
+                                            className="text-xs font-bold text-center transition-colors select-none mb-1"
+                                            style={{ 
+                                                color: isFieldActive 
+                                                    ? themeBorderColor 
+                                                    : (currentTheme?.modalText ? `${currentTheme.modalText}90` : '#4b5563') 
+                                            }}
+                                        >
+                                            {field.label}
+                                        </span>
                                         <button 
                                             onClick={() => setAyahContextColorField(isFieldActive ? null : field.id as any)}
                                             className="h-12 w-full rounded-xl transition-all relative overflow-hidden flex items-center justify-center active:scale-95 cursor-pointer quran-raised-btn border-0"
                                             style={{
                                                 ...renderCheckerboard(fieldColorValue),
                                                 boxShadow: isFieldActive 
-                                                    ? `0 0 0 2px ${themeBorderColor}, 0 4px 12px ${themeBorderColor}40` 
+                                                    ? `0 0 0 2.5px ${themeBorderColor}, 0 4px 12px ${themeBorderColor}40` 
                                                     : undefined
                                             }}
                                             title={field.label}
@@ -125,7 +134,7 @@ const AyahContextMenu: React.FC<AyahContextMenuProps> = ({
                                                         className="w-6 h-6 rounded-full flex items-center justify-center shadow-md transition-transform scale-100"
                                                         style={{ 
                                                             backgroundColor: themeBorderColor, 
-                                                            color: currentTheme?.accentText || '#ffffff' 
+                                                            color: themeBorderColor.toLowerCase() === '#ffffff' ? '#000000' : (currentTheme?.accentText || '#ffffff') 
                                                         }}
                                                     >
                                                         <Check size={14} className="stroke-[3]" />
@@ -133,16 +142,6 @@ const AyahContextMenu: React.FC<AyahContextMenuProps> = ({
                                                 </div>
                                             )}
                                         </button>
-                                        <span 
-                                            className="text-[10px] font-bold text-center transition-colors select-none"
-                                            style={{ 
-                                                color: isFieldActive 
-                                                    ? themeBorderColor 
-                                                    : (currentTheme?.modalText ? `${currentTheme.modalText}90` : '#4b5563') 
-                                            }}
-                                        >
-                                            {field.label}
-                                        </span>
                                     </div>
                                 );
                             })}
@@ -169,13 +168,14 @@ const AyahContextMenu: React.FC<AyahContextMenuProps> = ({
                                             <button
                                                 key={c}
                                                 onClick={() => {
-                                                    const newTempSettings = { ...tempSettings, [ayahContextColorField!]: c };
+                                                    const currentField = ayahContextColorField!;
+                                                    const newTempSettings = { ...tempSettings, [currentField]: c };
                                                     setAyahContextMenu((prev: any) => ({
                                                         ...prev,
                                                         tempSettings: newTempSettings
                                                     }));
                                                     if (onTempSettingsChange) {
-                                                        onTempSettingsChange(newTempSettings);
+                                                        onTempSettingsChange(newTempSettings, currentField);
                                                     }
                                                 }}
                                                 className={`h-8 rounded-xl transition-all hover:scale-110 active:scale-95 relative flex items-center justify-center border-0 quran-raised-btn ${isSelected ? 'scale-105 shadow-md' : ''}`}

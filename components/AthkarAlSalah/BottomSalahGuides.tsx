@@ -102,40 +102,40 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
     const hadithsTitle = isEn ? 'Hadiths on the Virtues of Sunan' : 'أحاديث في فضل السنن';
     const hadithsSummary = isEn ? '4 Authentic Prophetic Hadiths' : '٤ أحاديث نبوية صحيحة';
     const hadithsHtmlAr = `
-        <div class="space-y-6 text-xl md:text-2xl text-right font-amiri" dir="rtl">
-            <div class="border-b border-black/5 dark:border-white/5 pb-4 p-2 rounded-lg">
+        <div class="space-y-4 text-xl md:text-2xl text-right font-amiri pb-2" dir="rtl">
+            <div class="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 rounded-2xl">
                 <p class="leading-relaxed">عن أم حبيبة رضي الله عنها قالت: سمعت رسول الله ﷺ يقول: <span style="color: ${theme.palette[0]}; font-weight: bold;">"مَنْ صَلَّى فِي يَوْمٍ وَلَيْلَةٍ ثِنْتَيْ عَشْرَةَ رَكْعَةً بُنِيَ لَهُ بَيْتٌ فِي الْجَنَّةِ"</span>.</p>
                 <p class="text-sm mt-2 opacity-60 font-sans">- رواه مسلم</p>
             </div>
-            <div class="border-b border-black/5 dark:border-white/5 pb-4 p-2 rounded-lg">
+            <div class="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 rounded-2xl">
                 <p class="leading-relaxed">عن عائشة رضي الله عنها عن النبي ﷺ قال: <span style="color: ${theme.palette[1]}; font-weight: bold;">"رَكْعَتَا الْفَجْرِ خَيْرٌ مِنَ الدُّنْيَا وَمَا فِيهَا"</span>.</p>
                 <p class="text-sm mt-2 opacity-60 font-sans">- رواه مسلم</p>
             </div>
-            <div class="border-b border-black/5 dark:border-white/5 pb-4 p-2 rounded-lg">
+            <div class="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 rounded-2xl">
                 <p class="leading-relaxed">عن ابن عمر رضي الله عنهما أن النبي ﷺ قال: <span style="color: ${theme.palette[0]}; font-weight: bold;">"رَحِمَ اللَّهُ امْرَأً صَلَّى قَبْلَ الْعَصْرِ أَرْبَعًا"</span>.</p>
                 <p class="text-sm mt-2 opacity-60 font-sans">- رواه الترمذي وأبو داود</p>
             </div>
-            <div class="border-b border-black/5 dark:border-white/5 pb-4 p-2 rounded-lg">
+            <div class="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 rounded-2xl">
                 <p class="leading-relaxed">عن أم حبيبة رضي الله عنها قالت: قال رسول الله ﷺ: <span style="color: ${theme.palette[1]}; font-weight: bold;">"مَنْ حَافَظَ عَلَى أَرْبَعِ رَكَعَاتٍ قَبْلَ الظُّهْرِ وَأَرْبَعٍ بَعْدَهَا حَرَّمَهُ اللَّهُ عَلَى النَّارِ"</span>.</p>
                 <p class="text-sm mt-2 opacity-60 font-sans">- رواه الترمذي وأبو داود</p>
             </div>
         </div>
     `;
     const hadithsHtmlEn = `
-        <div class="space-y-6 text-lg md:text-xl text-left" dir="ltr">
-            <div class="border-b border-black/5 dark:border-white/5 pb-4 p-2 rounded-lg">
+        <div class="space-y-4 text-lg md:text-xl text-left pb-2" dir="ltr">
+            <div class="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 rounded-2xl">
                 <p class="leading-relaxed">Umm Habibah (may Allah be pleased with her) reported: I heard the Messenger of Allah ﷺ say: <span style="color: ${theme.palette[0]}; font-weight: bold;">"Whoever prays twelve Rak'ahs during the day and night, a house will be built for him in Paradise."</span></p>
                 <p class="text-sm mt-2 opacity-60 font-sans">- Sahih Muslim</p>
             </div>
-            <div class="border-b border-black/5 dark:border-white/5 pb-4 p-2 rounded-lg">
+            <div class="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 rounded-2xl">
                 <p class="leading-relaxed">Aisha (may Allah be pleased with her) reported that the Prophet ﷺ said: <span style="color: ${theme.palette[1]}; font-weight: bold;">"The two Rak'ahs before Fajr are better than this world and everything in it."</span></p>
                 <p class="text-sm mt-2 opacity-60 font-sans">- Sahih Muslim</p>
             </div>
-            <div class="border-b border-black/5 dark:border-white/5 pb-4 p-2 rounded-lg">
+            <div class="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 rounded-2xl">
                 <p class="leading-relaxed">Ibn Umar (may Allah be pleased with them) reported that the Prophet ﷺ said: <span style="color: ${theme.palette[0]}; font-weight: bold;">"May Allah have mercy on a person who prays four Rak'ahs before Asr."</span></p>
                 <p class="text-sm mt-2 opacity-60 font-sans">- At-Tirmidhi & Abu Dawud</p>
             </div>
-            <div class="border-b border-black/5 dark:border-white/5 pb-4 p-2 rounded-lg">
+            <div class="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 rounded-2xl">
                 <p class="leading-relaxed">Umm Habibah (may Allah be pleased with her) reported: The Messenger of Allah ﷺ said: <span style="color: ${theme.palette[1]}; font-weight: bold;">"Whoever guards four Rak'ahs before Dhuhr and four after it, Allah will forbid him from the Fire."</span></p>
                 <p class="text-sm mt-2 opacity-60 font-sans">- At-Tirmidhi & Abu Dawud</p>
             </div>
@@ -147,18 +147,18 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
     const sahwSummary = isEn ? 'Comprehensive Guide, Timings & Rulings' : 'أسبابه ومواضعه وأحكامه بالتفصيل';
     
     const sahwHtmlAr = `
-        <div class="space-y-6 text-right font-amiri text-lg md:text-xl leading-relaxed" dir="rtl">
-            <div class="bg-black/5 dark:bg-white/5 p-4 rounded-xl border-r-4" style="border-right-color: ${theme.palette[0]};">
+        <div class="space-y-5 text-right font-amiri text-lg md:text-xl leading-relaxed pb-2" dir="rtl">
+            <div class="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 rounded-2xl">
                 <h4 class="font-bold text-xl mb-1" style="color: ${theme.palette[0]};">ما هو سجود السهو وحكمه؟</h4>
                 <p class="opacity-90 leading-relaxed">
                     هو سجدتان يسجدهما المصلي قبل السلام أو بعده لجبر خلل طرأ على صلاته سهواً (بزيادة أو نقص أو شك). وهو سنة مؤكدة واجبة في بعض الأحوال لجبر النقص وإرغام الشيطان وإرضاء الرحمن.
                 </p>
             </div>
 
-            <div class="space-y-3">
+            <div class="space-y-3.5">
                 <h4 class="font-bold text-xl" style="color: ${theme.palette[1]};">الأسباب الثلاثة لسجود السهو:</h4>
                 
-                <div class="p-3.5 rounded-xl bg-card-bg-hover border border-black/5 dark:border-white/10">
+                <div class="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 rounded-2xl">
                     <div class="flex items-center gap-2 font-bold mb-1.5" style="color: ${theme.palette[0]};">
                         <span class="w-6 h-6 rounded-full flex items-center justify-center text-xs text-white" style="background-color: ${theme.palette[0]};">١</span>
                         <span>الزيادة في الصلاة (سجوده بعد السلام):</span>
@@ -168,7 +168,7 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                     </p>
                 </div>
 
-                <div class="p-3.5 rounded-xl bg-card-bg-hover border border-black/5 dark:border-white/10">
+                <div class="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 rounded-2xl">
                     <div class="flex items-center gap-2 font-bold mb-1.5" style="color: ${theme.palette[1]};">
                         <span class="w-6 h-6 rounded-full flex items-center justify-center text-xs text-white" style="background-color: ${theme.palette[1]};">٢</span>
                         <span>النقص في الصلاة (سجوده قبل السلام):</span>
@@ -179,7 +179,7 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                     </p>
                 </div>
 
-                <div class="p-3.5 rounded-xl bg-card-bg-hover border border-black/5 dark:border-white/10">
+                <div class="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 rounded-2xl">
                     <div class="flex items-center gap-2 font-bold mb-1.5" style="color: ${theme.palette[0]};">
                         <span class="w-6 h-6 rounded-full flex items-center justify-center text-xs text-white" style="background-color: ${theme.palette[0]};">٣</span>
                         <span>الشك في عدد الركعات:</span>
@@ -191,17 +191,17 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                 </div>
             </div>
 
-            <div class="p-4 rounded-xl border-2" style="border-color: ${theme.palette[0]}50; background: linear-gradient(to bottom, ${theme.palette[0]}10, transparent);">
+            <div class="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 rounded-2xl">
                 <h4 class="font-bold text-xl text-center mb-3" style="color: ${theme.palette[0]};">⭐ القاعدة الذهبية: متى يكون قبل السلام ومتى بعده؟</h4>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-base">
-                    <div class="bg-black/5 dark:bg-white/5 p-3 rounded-lg border-t-2" style="border-top-color: ${theme.palette[0]};">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5 text-base">
+                    <div class="app-page-card border-0 bg-white dark:bg-[#1E293B] p-3.5 rounded-xl">
                         <b class="text-lg block mb-1" style="color: ${theme.palette[0]};">سجدتان قَبْلَ السلام:</b>
                         <ul class="list-disc list-inside space-y-1 opacity-90 text-sm">
                             <li>عند <b>النقص</b> في الصلاة (كنسيان التشهد الأول).</li>
                             <li>عند <b>الشك دون ترجيح</b> (البناء على الأقل).</li>
                         </ul>
                     </div>
-                    <div class="bg-black/5 dark:bg-white/5 p-3 rounded-lg border-t-2" style="border-top-color: ${theme.palette[1]};">
+                    <div class="app-page-card border-0 bg-white dark:bg-[#1E293B] p-3.5 rounded-xl">
                         <b class="text-lg block mb-1" style="color: ${theme.palette[1]};">سجدتان بَعْدَ السلام:</b>
                         <ul class="list-disc list-inside space-y-1 opacity-90 text-sm">
                             <li>عند <b>الزيادة</b> في الصلاة (كركعة خامسة سهواً).</li>
@@ -212,7 +212,7 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                 </div>
             </div>
 
-            <div class="p-4 rounded-xl bg-black/5 dark:bg-white/5">
+            <div class="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 rounded-2xl">
                 <h4 class="font-bold text-xl mb-2" style="color: ${theme.palette[1]};">كيفية سجوده وما يقال فيه:</h4>
                 <p class="text-base opacity-90 leading-relaxed">
                     يسجد سجدتين كسجدات الصلاة يكبر عند الهبوط والرفع، ويقول فيهما ما يقول في سجود الصلاة: <b>«سُبْحَانَ رَبِّيَ الأَعْلَى»</b> ثلاثاً، ويستحب فيهما الدعاء.<br/>
@@ -221,15 +221,15 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                 </p>
             </div>
 
-            <div class="space-y-2 text-base">
+            <div class="space-y-3 text-base">
                 <h4 class="font-bold text-xl mb-1" style="color: ${theme.palette[0]};">مسائل وفتاوى شائعة:</h4>
-                <div class="p-2.5 rounded-lg bg-card-bg-hover">
+                <div class="app-page-card border-0 bg-white dark:bg-[#1E293B] p-3.5 rounded-xl">
                     <b>نسيان التشهد الأول:</b> إن تذكر قبل أن يستتم قائماً رجع وجلس، وإن استتم قائماً مضى في صلاته ولا يرجع ويسجد قبل السلام.
                 </div>
-                <div class="p-2.5 rounded-lg bg-card-bg-hover">
+                <div class="app-page-card border-0 bg-white dark:bg-[#1E293B] p-3.5 rounded-xl">
                     <b>سهو المأموم خلف الإمام:</b> الإمام يحمل سهو المأموم، فلا يسجد المأموم إن سها وحده. أما إذا سها الإمام فيجب على المأموم متابعته في سجود السهو.
                 </div>
-                <div class="p-2.5 rounded-lg bg-card-bg-hover">
+                <div class="app-page-card border-0 bg-white dark:bg-[#1E293B] p-3.5 rounded-xl">
                     <b>نسيان سجود السهو:</b> إن نسي سجود السهو وطال الفصل سقطت عنه الصلاة وصحت صلاته إن شاء الله ولا إعادة عليه.
                 </div>
             </div>
@@ -237,30 +237,30 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
     `;
 
     const sahwHtmlEn = `
-        <div class="space-y-6 text-left text-base md:text-lg leading-relaxed font-sans" dir="ltr">
-            <div class="bg-black/5 dark:bg-white/5 p-4 rounded-xl border-l-4" style="border-left-color: ${theme.palette[0]};">
+        <div class="space-y-5 text-left text-base md:text-lg leading-relaxed font-sans pb-2" dir="ltr">
+            <div class="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 rounded-2xl">
                 <h4 class="font-bold text-lg mb-1" style="color: ${theme.palette[0]};">What is Sujood As-Sahw?</h4>
                 <p class="opacity-90 leading-relaxed">
                     It consists of two prostrations performed either before or after Tasleem to compensate for accidental errors in prayer (due to addition, omission, or doubt), demonstrating Allah's mercy and easing hardship.
                 </p>
             </div>
 
-            <div class="space-y-3">
+            <div class="space-y-3.5">
                 <h4 class="font-bold text-lg" style="color: ${theme.palette[1]};">The Three Causes of Sujood As-Sahw:</h4>
-                <div class="p-3.5 rounded-xl bg-card-bg-hover border border-black/5 dark:border-white/10">
+                <div class="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 rounded-2xl">
                     <b style="color: ${theme.palette[0]};">1. Addition (Az-Ziyadah) — Done AFTER Tasleem:</b>
                     <p class="text-sm mt-1 opacity-90 leading-relaxed">
                         If one accidentally adds an extra bow, prostration, or 5th Rak'ah in a 4-Rak'ah prayer: as soon as one realizes, sit down immediately, finish the prayer, and perform two prostrations <b>after Tasleem</b>.
                     </p>
                 </div>
-                <div class="p-3.5 rounded-xl bg-card-bg-hover border border-black/5 dark:border-white/10">
+                <div class="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 rounded-2xl">
                     <b style="color: ${theme.palette[1]};">2. Omission (An-Naqs) — Done BEFORE Tasleem:</b>
                     <p class="text-sm mt-1 opacity-90 leading-relaxed">
                         <b>Missing an Obligatory Act (Wajib):</b> such as forgetting the first Tashahhud or transition Takbeers. This is compensated by two prostrations <b>before Tasleem</b>.<br/>
                         <b>Missing a Pillar (Rukn):</b> like forgetting Ruku' or Sujood. A pillar cannot be compensated by forgetfulness prostrations alone; one must perform the missing pillar first.
                     </p>
                 </div>
-                <div class="p-3.5 rounded-xl bg-card-bg-hover border border-black/5 dark:border-white/10">
+                <div class="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 rounded-2xl">
                     <b style="color: ${theme.palette[0]};">3. Doubt (Ash-Shakk):</b>
                     <p class="text-sm mt-1 opacity-90 leading-relaxed">
                         <b>With prevailing certainty:</b> act upon what is most likely and prostrate <b>after Tasleem</b>.<br/>
@@ -269,17 +269,17 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                 </div>
             </div>
 
-            <div class="p-4 rounded-xl border-2" style="border-color: ${theme.palette[0]}50; background: linear-gradient(to bottom, ${theme.palette[0]}10, transparent);">
+            <div class="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 rounded-2xl">
                 <h4 class="font-bold text-lg text-center mb-2" style="color: ${theme.palette[0]};">⭐ Golden Rule: Before or After Tasleem?</h4>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                    <div class="bg-black/5 dark:bg-white/5 p-3 rounded-lg border-t-2" style="border-top-color: ${theme.palette[0]};">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5 text-sm">
+                    <div class="app-page-card border-0 bg-white dark:bg-[#1E293B] p-3.5 rounded-xl">
                         <b class="text-base block mb-1" style="color: ${theme.palette[0]};">BEFORE Tasleem:</b>
                         <ul class="list-disc list-inside space-y-1 opacity-90">
                             <li>Upon <b>Omission</b> (e.g. forgetting first Tashahhud).</li>
                             <li>Upon <b>Unresolved Doubt</b> (building on the lesser count).</li>
                         </ul>
                     </div>
-                    <div class="bg-black/5 dark:bg-white/5 p-3 rounded-lg border-t-2" style="border-top-color: ${theme.palette[1]};">
+                    <div class="app-page-card border-0 bg-white dark:bg-[#1E293B] p-3.5 rounded-xl">
                         <b class="text-base block mb-1" style="color: ${theme.palette[1]};">AFTER Tasleem:</b>
                         <ul class="list-disc list-inside space-y-1 opacity-90">
                             <li>Upon <b>Addition</b> (e.g. accidental extra Rak'ah).</li>
@@ -290,7 +290,7 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                 </div>
             </div>
 
-            <div class="p-4 rounded-xl bg-black/5 dark:bg-white/5">
+            <div class="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 rounded-2xl">
                 <h4 class="font-bold text-lg mb-1" style="color: ${theme.palette[1]};">How to Perform & What to Say:</h4>
                 <p class="text-sm opacity-90 leading-relaxed">
                     Make Takbeer and prostrate twice just like normal prayer prostrations. Say: <b>"Subhana Rabbiyal-A'la"</b> (Glory be to my Lord, the Most High) three times, sit between them saying <b>"Rabbighfir li"</b> (My Lord, forgive me), and conclude with Tasleem.
@@ -329,21 +329,19 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
 
             {/* --- CARD 1: Sunan Rawatib --- */}
             <div
-                className="rounded-2xl transition-all duration-300 overflow-hidden shadow-[0_4px_20px_-4px_rgba(0,0,0,0.04)] hover:shadow-md border border-slate-100/60 dark:border-white/5"
-                style={{
-                    backgroundColor: tintedBg
-                }}
+                className="app-page-card tasbeeh-pressable border-0 bg-white dark:bg-[#1E293B] rounded-2xl transition-all duration-300 overflow-visible"
             >
                 {/* Header (Accordion Toggle) */}
                 <button
+                    type="button"
                     onClick={() => toggleCard('sunan')}
-                    className="w-full p-4 flex items-center justify-between gap-3 text-right cursor-pointer select-none transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+                    className="w-full p-4 rounded-2xl flex items-center justify-between gap-3 text-right cursor-pointer select-none transition-colors"
                     dir={isEn ? 'ltr' : 'rtl'}
                     aria-expanded={openCardId === 'sunan'}
                 >
                     <div className="flex items-center gap-3 flex-1 min-w-0">
                         <div
-                            className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm"
+                            className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
                             style={{
                                 backgroundColor: isBlack ? '#27272a' : `${primaryColor}20`,
                                 color: primaryColor
@@ -363,8 +361,8 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
 
                     <div className="flex items-center gap-2 shrink-0">
                         <span
-                            className="text-[11px] font-bold px-2.5 py-1 rounded-lg"
-                            style={{ backgroundColor: `${primaryColor}20`, color: primaryColor }}
+                            className="app-page-card border-0 bg-white dark:bg-[#1E293B] text-[11px] font-bold px-3 py-1 rounded-xl"
+                            style={{ color: primaryColor }}
                         >
                             {openCardId === 'sunan' ? (isEn ? 'Hide' : 'إخفاء') : (isEn ? 'View' : 'عرض')}
                         </span>
@@ -379,15 +377,15 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                             animate={{ height: 'auto', opacity: 1 }}
                             exit={{ height: 0, opacity: 0 }}
                             transition={{ duration: 0.28, ease: 'easeInOut' }}
-                            className="overflow-hidden border-t border-black/5 dark:border-white/5 bg-white/80 dark:bg-slate-900/40 backdrop-blur-sm"
+                            className="overflow-hidden rounded-b-2xl border-t border-black/5 dark:border-white/5"
                         >
                             <div className="p-4 sm:p-5">
                                 {/* 4 Action Icons: Audio, Share, Copy, Zoom - أعلى البطاقة */}
-                                <div className="flex items-center justify-center gap-3 sm:gap-4 mb-4 pb-3.5 border-b border-card-border" dir={isEn ? 'ltr' : 'rtl'}>
+                                <div className="flex items-center justify-center gap-3 sm:gap-4 mb-4 pb-3 border-b border-card-border overflow-visible" dir={isEn ? 'ltr' : 'rtl'}>
                                     <button
                                         type="button"
                                         onClick={() => handlePlayAudio('sunan', isEn ? "Daily Sunnah Prayers: 12 Confirmed Daily Rak'ahs. Fajr Prayer: 2 Rak'ahs Before. Dhuhr Prayer: 4 Before and 2 After. Asr Prayer: No confirmed Sunnah. Maghrib Prayer: 2 Rak'ahs After. Isha Prayer: 2 Rak'ahs After. Total: 12 Rak'ahs daily." : "سنن الصلوات الرواتب، اثنتا عشرة ركعة مؤكدة يومياً: صلاة الفجر: ركعتان قبلية. صلاة الظهر: أربع ركعات قبلية وركعتان بعدية. صلاة العصر: ليس لها سنة راتبة. صلاة المغرب: ركعتان بعدية. صلاة العشاء: ركعتان بعدية. المجموع: اثنتا عشرة ركعة في اليوم والليلة.")}
-                                        className={`w-10 h-10 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 active:scale-95 transition-all ${isBlack ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}
+                                        className={`app-page-card border-0 w-10 h-10 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer ${isBlack ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}
                                         style={{ color: playingId === 'sunan' ? '#ef4444' : (isBlack ? '#ffffff' : undefined) }}
                                         title={isEn ? (playingId === 'sunan' ? 'Stop audio' : 'Play audio') : (playingId === 'sunan' ? 'إيقاف الصوت' : 'استماع صوتي')}
                                         aria-label={isEn ? 'Audio' : 'استماع صوتي'}
@@ -398,7 +396,7 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                                     <button
                                         type="button"
                                         onClick={() => handleShareCard(sunanTitle, isEn ? sunanHtmlEn : sunanHtmlAr)}
-                                        className={`w-10 h-10 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 active:scale-95 transition-all ${isBlack ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}
+                                        className={`app-page-card border-0 w-10 h-10 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer ${isBlack ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}
                                         title={isEn ? 'Share Image' : 'مشاركة كصورة'}
                                         aria-label={isEn ? 'Share' : 'مشاركة كصورة'}
                                     >
@@ -408,7 +406,7 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                                     <button
                                         type="button"
                                         onClick={() => handleCopyCard('sunan', isEn ? sunanHtmlEn : sunanHtmlAr, sunanTitle)}
-                                        className={`w-10 h-10 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 active:scale-95 transition-all ${isBlack ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}
+                                        className={`app-page-card border-0 w-10 h-10 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer ${isBlack ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}
                                         title={isEn ? 'Copy' : 'نسخ'}
                                         aria-label={isEn ? 'Copy' : 'نسخ'}
                                     >
@@ -425,7 +423,7 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                                             note: isEn ? "Confirmed Daily Sunan" : "الرواتب المؤكدة",
                                             noteEn: "Confirmed Daily Sunan"
                                         })}
-                                        className={`w-10 h-10 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 active:scale-95 transition-all ${isBlack ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}
+                                        className={`app-page-card border-0 w-10 h-10 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer ${isBlack ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}
                                         title={isEn ? 'Zoom' : 'تكبير وقراءة'}
                                         aria-label={isEn ? 'Zoom' : 'تكبير وقراءة'}
                                     >
@@ -466,21 +464,19 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
 
             {/* --- CARD 2: Hadiths on Sunan --- */}
             <div
-                className="rounded-2xl transition-all duration-300 overflow-hidden shadow-[0_4px_20px_-4px_rgba(0,0,0,0.04)] hover:shadow-md border border-slate-100/60 dark:border-white/5"
-                style={{
-                    backgroundColor: tintedBg
-                }}
+                className="app-page-card tasbeeh-pressable border-0 bg-white dark:bg-[#1E293B] rounded-2xl transition-all duration-300 overflow-visible"
             >
                 {/* Header (Accordion Toggle) */}
                 <button
+                    type="button"
                     onClick={() => toggleCard('hadiths')}
-                    className="w-full p-4 flex items-center justify-between gap-3 text-right cursor-pointer select-none transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+                    className="w-full p-4 rounded-2xl flex items-center justify-between gap-3 text-right cursor-pointer select-none transition-colors"
                     dir={isEn ? 'ltr' : 'rtl'}
                     aria-expanded={openCardId === 'hadiths'}
                 >
                     <div className="flex items-center gap-3 flex-1 min-w-0">
                         <div
-                            className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm"
+                            className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
                             style={{
                                 backgroundColor: isBlack ? '#27272a' : `${primaryColor}20`,
                                 color: primaryColor
@@ -500,8 +496,8 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
 
                     <div className="flex items-center gap-2 shrink-0">
                         <span
-                            className="text-[11px] font-bold px-2.5 py-1 rounded-lg"
-                            style={{ backgroundColor: `${primaryColor}20`, color: primaryColor }}
+                            className="app-page-card border-0 bg-white dark:bg-[#1E293B] text-[11px] font-bold px-3 py-1 rounded-xl"
+                            style={{ color: primaryColor }}
                         >
                             {openCardId === 'hadiths' ? (isEn ? 'Hide' : 'إخفاء') : (isEn ? 'View' : 'عرض')}
                         </span>
@@ -516,15 +512,15 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                             animate={{ height: 'auto', opacity: 1 }}
                             exit={{ height: 0, opacity: 0 }}
                             transition={{ duration: 0.28, ease: 'easeInOut' }}
-                            className="overflow-hidden border-t border-black/5 dark:border-white/5 bg-white/80 dark:bg-slate-900/40 backdrop-blur-sm"
+                            className="overflow-hidden rounded-b-2xl border-t border-black/5 dark:border-white/5"
                         >
                             <div className="p-4 sm:p-5">
                                 {/* 4 Action Icons: Audio, Share, Copy, Zoom - أعلى البطاقة */}
-                                <div className="flex items-center justify-center gap-3 sm:gap-4 mb-4 pb-3.5 border-b border-card-border" dir={isEn ? 'ltr' : 'rtl'}>
+                                <div className="flex items-center justify-center gap-3 sm:gap-4 mb-4 pb-3 border-b border-card-border overflow-visible" dir={isEn ? 'ltr' : 'rtl'}>
                                     <button
                                         type="button"
                                         onClick={() => handlePlayAudio('hadiths', isEn ? hadithsHtmlEn : hadithsHtmlAr)}
-                                        className={`w-10 h-10 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 active:scale-95 transition-all ${isBlack ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}
+                                        className={`app-page-card border-0 w-10 h-10 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer ${isBlack ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}
                                         style={{ color: playingId === 'hadiths' ? '#ef4444' : (isBlack ? '#ffffff' : undefined) }}
                                         title={isEn ? (playingId === 'hadiths' ? 'Stop audio' : 'Play audio') : (playingId === 'hadiths' ? 'إيقاف الصوت' : 'استماع صوتي')}
                                         aria-label={isEn ? 'Audio' : 'استماع صوتي'}
@@ -535,7 +531,7 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                                     <button
                                         type="button"
                                         onClick={() => handleShareCard(hadithsTitle, isEn ? hadithsHtmlEn : hadithsHtmlAr)}
-                                        className={`w-10 h-10 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 active:scale-95 transition-all ${isBlack ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}
+                                        className={`app-page-card border-0 w-10 h-10 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer ${isBlack ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}
                                         title={isEn ? 'Share Image' : 'مشاركة كصورة'}
                                         aria-label={isEn ? 'Share' : 'مشاركة كصورة'}
                                     >
@@ -545,7 +541,7 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                                     <button
                                         type="button"
                                         onClick={() => handleCopyCard('hadiths', isEn ? hadithsHtmlEn : hadithsHtmlAr, hadithsTitle)}
-                                        className={`w-10 h-10 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 active:scale-95 transition-all ${isBlack ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}
+                                        className={`app-page-card border-0 w-10 h-10 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer ${isBlack ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}
                                         title={isEn ? 'Copy' : 'نسخ'}
                                         aria-label={isEn ? 'Copy' : 'نسخ'}
                                     >
@@ -562,7 +558,7 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                                             note: isEn ? "Authentic Hadiths" : "أحاديث صحيحة",
                                             noteEn: "Authentic Hadiths"
                                         })}
-                                        className={`w-10 h-10 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 active:scale-95 transition-all ${isBlack ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}
+                                        className={`app-page-card border-0 w-10 h-10 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer ${isBlack ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}
                                         title={isEn ? 'Zoom' : 'تكبير وقراءة'}
                                         aria-label={isEn ? 'Zoom' : 'تكبير وقراءة'}
                                     >
@@ -570,8 +566,8 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                                     </button>
                                 </div>
 
-                                <div className={`space-y-4 text-sm ${isEn ? 'font-sans' : 'font-amiri'} themed-text-muted`} dir={isEn ? 'ltr' : 'rtl'}>
-                                    <div className={`bg-card-bg-hover p-3 rounded-xl ${isEn ? 'border-l-3' : 'border-r-3'}`} style={isEn ? { borderLeftColor: theme.palette[0] } : { borderRightColor: theme.palette[0] }}>
+                                <div className={`space-y-4 pb-2 text-sm ${isEn ? 'font-sans' : 'font-amiri'} themed-text-muted`} dir={isEn ? 'ltr' : 'rtl'}>
+                                    <div className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-3.5 rounded-2xl">
                                         <p className="leading-relaxed">
                                             {isEn ? (
                                                 <>Umm Habibah (may Allah be pleased with her) reported: I heard the Messenger of Allah ﷺ say: <span className="font-bold" style={{ color: theme.palette[0] }}>"Whoever prays twelve Rak'ahs during the day and night, a house will be built for him in Paradise."</span></>
@@ -582,7 +578,7 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                                         <p className={`${isEn ? 'text-right' : 'text-left'} text-[11px] mt-1.5 opacity-70`}>{isEn ? '- Sahih Muslim' : '- رواه مسلم'}</p>
                                     </div>
                                     
-                                    <div className={`bg-card-bg-hover p-3 rounded-xl ${isEn ? 'border-l-3' : 'border-r-3'}`} style={isEn ? { borderLeftColor: theme.palette[1] } : { borderRightColor: theme.palette[1] }}>
+                                    <div className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-3.5 rounded-2xl">
                                         <p className="leading-relaxed">
                                             {isEn ? (
                                                 <>Aisha (may Allah be pleased with her) reported that the Prophet ﷺ said: <span className="font-bold" style={{ color: theme.palette[1] }}>"The two Rak'ahs before Fajr are better than this world and everything in it."</span></>
@@ -593,7 +589,7 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                                         <p className={`${isEn ? 'text-right' : 'text-left'} text-[11px] mt-1.5 opacity-70`}>{isEn ? '- Sahih Muslim' : '- رواه مسلم'}</p>
                                     </div>
 
-                                    <div className={`bg-card-bg-hover p-3 rounded-xl ${isEn ? 'border-l-3' : 'border-r-3'}`} style={isEn ? { borderLeftColor: theme.palette[0] } : { borderRightColor: theme.palette[0] }}>
+                                    <div className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-3.5 rounded-2xl">
                                         <p className="leading-relaxed">
                                             {isEn ? (
                                                 <>Ibn Umar (may Allah be pleased with them) reported that the Prophet ﷺ said: <span className="font-bold" style={{ color: theme.palette[0] }}>"May Allah have mercy on a person who prays four Rak'ahs before Asr."</span></>
@@ -604,7 +600,7 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                                         <p className={`${isEn ? 'text-right' : 'text-left'} text-[11px] mt-1.5 opacity-70`}>{isEn ? '- At-Tirmidhi & Abu Dawud' : '- رواه الترمذي وأبو داود'}</p>
                                     </div>
 
-                                    <div className={`bg-card-bg-hover p-3 rounded-xl ${isEn ? 'border-l-3' : 'border-r-3'}`} style={isEn ? { borderLeftColor: theme.palette[1] } : { borderRightColor: theme.palette[1] }}>
+                                    <div className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-3.5 rounded-2xl">
                                         <p className="leading-relaxed">
                                             {isEn ? (
                                                 <>Umm Habibah (may Allah be pleased with her) reported: The Messenger of Allah ﷺ said: <span className="font-bold" style={{ color: theme.palette[1] }}>"Whoever guards four Rak'ahs before Dhuhr and four after it, Allah will forbid him from the Fire."</span></>
@@ -623,21 +619,19 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
 
             {/* --- CARD 3: Sujood As-Sahw (سهو الصلاة) --- */}
             <div
-                className="rounded-2xl transition-all duration-300 overflow-hidden shadow-[0_4px_20px_-4px_rgba(0,0,0,0.04)] hover:shadow-md border border-slate-100/60 dark:border-white/5"
-                style={{
-                    backgroundColor: tintedBg
-                }}
+                className="app-page-card tasbeeh-pressable border-0 bg-white dark:bg-[#1E293B] rounded-2xl transition-all duration-300 overflow-visible"
             >
                 {/* Header (Accordion Toggle) */}
                 <button
+                    type="button"
                     onClick={() => toggleCard('sahw')}
-                    className="w-full p-4 flex items-center justify-between gap-3 text-right cursor-pointer select-none transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+                    className="w-full p-4 rounded-2xl flex items-center justify-between gap-3 text-right cursor-pointer select-none transition-colors"
                     dir={isEn ? 'ltr' : 'rtl'}
                     aria-expanded={openCardId === 'sahw'}
                 >
                     <div className="flex items-center gap-3 flex-1 min-w-0">
                         <div
-                            className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm"
+                            className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
                             style={{
                                 backgroundColor: isBlack ? '#27272a' : `${primaryColor}20`,
                                 color: primaryColor
@@ -657,8 +651,8 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
 
                     <div className="flex items-center gap-2 shrink-0">
                         <span
-                            className="text-[11px] font-bold px-2.5 py-1 rounded-lg"
-                            style={{ backgroundColor: `${primaryColor}20`, color: primaryColor }}
+                            className="app-page-card border-0 bg-white dark:bg-[#1E293B] text-[11px] font-bold px-3 py-1 rounded-xl"
+                            style={{ color: primaryColor }}
                         >
                             {openCardId === 'sahw' ? (isEn ? 'Hide' : 'إخفاء') : (isEn ? 'View' : 'عرض')}
                         </span>
@@ -673,15 +667,15 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                             animate={{ height: 'auto', opacity: 1 }}
                             exit={{ height: 0, opacity: 0 }}
                             transition={{ duration: 0.28, ease: 'easeInOut' }}
-                            className="overflow-hidden border-t border-black/5 dark:border-white/10 bg-white/80 dark:bg-slate-900/40 backdrop-blur-sm"
+                            className="overflow-hidden rounded-b-2xl border-t border-black/5 dark:border-white/10"
                         >
                             <div className="p-4 sm:p-5">
                                 {/* 4 Action Icons: Audio, Share, Copy, Zoom - أعلى البطاقة */}
-                                <div className="flex items-center justify-center gap-3 sm:gap-4 mb-4 pb-3.5 border-b border-card-border" dir={isEn ? 'ltr' : 'rtl'}>
+                                <div className="flex items-center justify-center gap-3 sm:gap-4 mb-4 pb-3 border-b border-card-border overflow-visible" dir={isEn ? 'ltr' : 'rtl'}>
                                     <button
                                         type="button"
                                         onClick={() => handlePlayAudio('sahw', isEn ? sahwHtmlEn : sahwHtmlAr)}
-                                        className={`w-10 h-10 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 active:scale-95 transition-all ${isBlack ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}
+                                        className={`app-page-card border-0 w-10 h-10 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer ${isBlack ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}
                                         style={{ color: playingId === 'sahw' ? '#ef4444' : (isBlack ? '#ffffff' : undefined) }}
                                         title={isEn ? (playingId === 'sahw' ? 'Stop audio' : 'Play audio') : (playingId === 'sahw' ? 'إيقاف الصوت' : 'استماع صوتي')}
                                         aria-label={isEn ? 'Audio' : 'استماع صوتي'}
@@ -692,7 +686,7 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                                     <button
                                         type="button"
                                         onClick={() => handleShareCard(sahwTitle, isEn ? sahwHtmlEn : sahwHtmlAr)}
-                                        className={`w-10 h-10 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 active:scale-95 transition-all ${isBlack ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}
+                                        className={`app-page-card border-0 w-10 h-10 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer ${isBlack ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}
                                         title={isEn ? 'Share Image' : 'مشاركة كصورة'}
                                         aria-label={isEn ? 'Share' : 'مشاركة كصورة'}
                                     >
@@ -702,7 +696,7 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                                     <button
                                         type="button"
                                         onClick={() => handleCopyCard('sahw', isEn ? sahwHtmlEn : sahwHtmlAr, sahwTitle)}
-                                        className={`w-10 h-10 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 active:scale-95 transition-all ${isBlack ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}
+                                        className={`app-page-card border-0 w-10 h-10 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer ${isBlack ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}
                                         title={isEn ? 'Copy' : 'نسخ'}
                                         aria-label={isEn ? 'Copy' : 'نسخ'}
                                     >
@@ -719,7 +713,7 @@ export const BottomSalahGuides: React.FC<BottomSalahGuidesProps> = ({
                                             note: isEn ? "Fiqh of Salah & Sujood As-Sahw" : "فقه الصلاة وأحكام سجود السهو",
                                             noteEn: "Fiqh of Salah & Sujood As-Sahw"
                                         })}
-                                        className={`w-10 h-10 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 active:scale-95 transition-all ${isBlack ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}
+                                        className={`app-page-card border-0 w-10 h-10 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer ${isBlack ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}
                                         title={isEn ? 'Zoom' : 'تكبير وقراءة'}
                                         aria-label={isEn ? 'Zoom' : 'تكبير وقراءة'}
                                     >

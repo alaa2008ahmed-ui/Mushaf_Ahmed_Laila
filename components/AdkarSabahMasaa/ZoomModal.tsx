@@ -112,9 +112,8 @@ const ZoomModal: React.FC<ZoomModalProps> = ({ zoomedDhikr, onClose, setToastMes
                     animate={{ y: 0, opacity: 1 }}
                     exit={{ y: '100%', opacity: 0 }}
                     transition={{ type: 'spring', damping: 28, stiffness: 280 }}
-                    className="w-full max-w-xl mx-auto rounded-t-[28px] flex flex-col max-h-[85vh] overflow-hidden relative shadow-2xl"
+                    className="app-page-card border-0 w-full max-w-xl mx-auto rounded-t-[28px] flex flex-col max-h-[88dvh] overflow-hidden relative bg-white dark:bg-[#1E293B]"
                     style={{ 
-                        backgroundColor: tokens.cardBgColor,
                         color: 'var(--text-color)',
                         fontFamily: isEn ? 'sans-serif' : theme.font,
                     }} 
@@ -137,7 +136,7 @@ const ZoomModal: React.FC<ZoomModalProps> = ({ zoomedDhikr, onClose, setToastMes
                     </div>
 
                     {/* Scrollable Content Area */}
-                    <div className="overflow-y-auto hide-scrollbar flex-1 px-6 py-4">
+                    <div className="overflow-y-auto hide-scrollbar flex-1 min-h-0 px-6 py-4">
                         {isEn ? (
                             <div 
                                 className="leading-relaxed font-sans font-medium text-center my-4 select-none text-balance"
@@ -185,19 +184,15 @@ const ZoomModal: React.FC<ZoomModalProps> = ({ zoomedDhikr, onClose, setToastMes
 
                     {/* Action Bar (Audio, Share, Copy, Zoom, ChevronDown to hide) with safe-area bottom elevation */}
                     <div 
-                        className="p-4 pt-3 shrink-0 flex items-center justify-center gap-3 sm:gap-4 border-t border-slate-100 dark:border-white/5" 
-                        style={{ 
-                            backgroundColor: tokens.cardBgColor,
-                            paddingBottom: 'calc(env(safe-area-inset-bottom, 16px) + 16px)'
-                        }}
+                        className="px-4 pt-3 pb-2 modal-sheet-safe-bottom shrink-0 flex items-center justify-center gap-3 sm:gap-4 border-t border-slate-100 dark:border-white/5 overflow-visible" 
                     >
                         {/* Audio Button */}
                         <button
                             type="button"
                             onClick={handlePlayAudio}
-                            className="w-11 h-11 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border-0"
+                            className="app-page-card border-0 w-11 h-11 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
                             style={{
-                                backgroundColor: isPlaying ? hexToRgba(tokens.primaryColor, 0.15) : (tokens.isDark ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9'),
+                                backgroundColor: isPlaying ? hexToRgba(tokens.primaryColor, 0.15) : undefined,
                                 color: isPlaying ? '#EF4444' : tokens.textColor
                             }}
                             title={isEn ? (isPlaying ? 'Stop audio' : 'Play audio') : (isPlaying ? 'إيقاف الصوت' : 'استماع صوتي')}
@@ -209,9 +204,8 @@ const ZoomModal: React.FC<ZoomModalProps> = ({ zoomedDhikr, onClose, setToastMes
                         <button 
                             type="button"
                             onClick={handleShare} 
-                            className="w-11 h-11 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border-0"
+                            className="app-page-card border-0 w-11 h-11 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
                             style={{
-                                backgroundColor: tokens.isDark ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9',
                                 color: tokens.textColor
                             }}
                             title={isEn ? "Share Image" : "مشاركة كصورة"}
@@ -223,9 +217,9 @@ const ZoomModal: React.FC<ZoomModalProps> = ({ zoomedDhikr, onClose, setToastMes
                         <button
                             type="button"
                             onClick={handleCopy}
-                            className="w-11 h-11 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border-0"
+                            className="app-page-card border-0 w-11 h-11 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
                             style={{
-                                backgroundColor: copied ? '#10B981' : (tokens.isDark ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9'),
+                                backgroundColor: copied ? '#10B981' : undefined,
                                 color: copied ? '#FFFFFF' : tokens.textColor
                             }}
                             title={isEn ? 'Copy text' : 'نسخ النص'}
@@ -237,9 +231,8 @@ const ZoomModal: React.FC<ZoomModalProps> = ({ zoomedDhikr, onClose, setToastMes
                         <button
                             type="button"
                             onClick={handleToggleZoom}
-                            className="w-11 h-11 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border-0"
+                            className="app-page-card border-0 w-11 h-11 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
                             style={{
-                                backgroundColor: tokens.isDark ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9',
                                 color: tokens.textColor
                             }}
                             title={isEn ? 'Enlarge font size' : 'تكبير حجم الخط'}
@@ -251,9 +244,8 @@ const ZoomModal: React.FC<ZoomModalProps> = ({ zoomedDhikr, onClose, setToastMes
                         <button 
                             type="button"
                             onClick={onClose} 
-                            className="w-11 h-11 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border-0"
+                            className="app-page-card border-0 w-11 h-11 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
                             style={{
-                                backgroundColor: tokens.isDark ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9',
                                 color: tokens.textColor
                             }}
                             title={isEn ? 'Hide list' : 'إخفاء القائمة'}

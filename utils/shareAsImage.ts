@@ -1,6 +1,44 @@
 import { Share } from '@capacitor/share';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
+import {
+    ShareDesignId,
+    SHARE_CARD_DESIGNS,
+    getSelectedShareDesign,
+    setSelectedShareDesign,
+    getShareDesignMeta,
+    getDesignTypographyTheme,
+    drawSanaaniBackdropAndFrame,
+    drawSanaaniUpperQamariya,
+    drawSanaaniLowerMotif,
+    drawLapisBackdropAndFrame,
+    drawLapisUpperMotif,
+    drawLapisLowerMotif,
+    drawRasulidBackdropAndFrame,
+    drawRasulidUpperMotif,
+    drawRasulidLowerMotif,
+    drawHadramiBackdropAndFrame,
+    drawHadramiUpperMotif,
+    drawHadramiLowerMotif,
+    drawObsidianGoldBackdropAndFrame,
+    drawObsidianGoldUpperMotif,
+    drawObsidianGoldLowerMotif,
+    drawSkyAzureBackdropAndFrame,
+    drawSkyAzureUpperMotif,
+    drawSkyAzureLowerMotif,
+    drawEmeraldSanctuaryBackdropAndFrame,
+    drawEmeraldSanctuaryUpperMotif,
+    drawEmeraldSanctuaryLowerMotif,
+    drawRoyalAmethystBackdropAndFrame,
+    drawRoyalAmethystUpperMotif,
+    drawRoyalAmethystLowerMotif,
+    drawSunsetSaffronBackdropAndFrame,
+    drawSunsetSaffronUpperMotif,
+    drawSunsetSaffronLowerMotif,
+} from './shareCardDesigns';
+
+export type { ShareDesignId };
+export { SHARE_CARD_DESIGNS, getSelectedShareDesign, setSelectedShareDesign, getShareDesignMeta };
 
 export interface ShareOptions {
     text: string;
@@ -11,6 +49,8 @@ export interface ShareOptions {
     isEn?: boolean;
     language?: string;
     setToastMessage?: (msg: string) => void;
+    designId?: ShareDesignId;
+    renderScale?: number;
 }
 
 // Helper to draw rounded rectangle with cross-browser canvas support
@@ -543,18 +583,23 @@ function drawTopMihrabArch(
  * 3. Typography: Enlarged, dignified font sizing for commanding presence and effortless readability.
  */
 export async function renderCardToPureCanvas(options: ShareOptions): Promise<HTMLCanvasElement> {
-    const { text, title, source, category, theme, isEn: explicitIsEn, language } = options;
+    const { text, title, source, category, theme, isEn: explicitIsEn, language, designId, renderScale } = options;
+
+    const activeDesignId: ShareDesignId = designId || getSelectedShareDesign();
+    const typoTheme = getDesignTypographyTheme(activeDesignId);
 
     const isEn = explicitIsEn ?? (language === 'en' || !(/[\u0600-\u06FF]/.test(text || '')));
 
-    // Ensure fonts are ready
-    try {
-        await Promise.race([
-            document.fonts.ready,
-            new Promise((resolve) => setTimeout(resolve, 350))
-        ]);
-    } catch (e) {
-        // Proceed with fallbacks
+    // Ensure fonts are ready (fast-path immediately if already loaded)
+    if (typeof document !== 'undefined' && document.fonts && document.fonts.status !== 'loaded') {
+        try {
+            await Promise.race([
+                document.fonts.ready,
+                new Promise((resolve) => setTimeout(resolve, 350))
+            ]);
+        } catch (e) {
+            // Proceed with fallbacks
+        }
     }
 
     // Standard high-DPI 9:16 mobile canvas dimensions
@@ -562,7 +607,7 @@ export async function renderCardToPureCanvas(options: ShareOptions): Promise<HTM
     const height = 1920;
     const outerMargin = 32;
     const innerMargin = 56;
-    const horizontalContentPadding = 110;
+    const horizontalContentPadding = activeDesignId === 'classic_gold' ? 110 : 124;
     const maxTextWidth = width - (horizontalContentPadding * 2);
 
     const fontFamily = isEn 
@@ -711,98 +756,109 @@ export async function renderCardToPureCanvas(options: ShareOptions): Promise<HTM
     const totalCalculatedMiddleHeight = textAndTitleHeight + upperMotifHeight + lowerRosetteHeight;
     const middleStartY = topSectionEndY + Math.max(15, Math.round((availableMiddleSpace - totalCalculatedMiddleHeight) / 2));
 
-    // Create target canvas (Crisp 1080x1920)
+    // Create target canvas (Crisp 1080x1920 or scaled preview resolution)
+    const scale = renderScale && renderScale > 0 && renderScale <= 1 ? renderScale : 1;
     const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = height;
+    canvas.width = Math.round(width * scale);
+    canvas.height = Math.round(height * scale);
     const ctx = canvas.getContext('2d')!;
 
+    if (scale !== 1) {
+        ctx.scale(scale, scale);
+    }
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
     ctx.direction = isEn ? 'ltr' : 'rtl';
 
-    // --- PALETTE & JEWEL COLORS (LUXURIOUS ILLUMINATED ISLAMIC SCHEME) ---
-    const goldPrimary = '#C59B27'; // 24k Royal Gold
-    const goldBright = '#E6C665'; // Luminous Gold Highlight
-    const goldDeep = '#996F16'; // Deep Antique Gold
-    const emeraldPrimary = '#064E3B'; // Deep Quranic Emerald
-    const emeraldAccent = '#0D5C3A'; // Vivid Islamic Green
-    const textObsidian = '#13281E'; // Rich calligraphic kohl / Islamic deep ink
+    // --- PALETTE & BACKDROP BY SELECTED DESIGN ---
+    const goldPrimary = '#C59B27';
+    const emeraldPrimary = '#064E3B';
 
-    // 1. Radiant Bright Luminous Islamic Parchment Background
-    const bgGrad = ctx.createLinearGradient(0, 0, width, height);
-    bgGrad.addColorStop(0, '#FFFDF8'); // Pristine illuminated ivory top
-    bgGrad.addColorStop(0.35, '#FAF4E4'); // Warm golden cream
-    bgGrad.addColorStop(0.7, '#F7EDD5'); // Golden parchment
-    bgGrad.addColorStop(1, '#F3E3C0'); // Rich luminous bottom
-    ctx.fillStyle = bgGrad;
-    ctx.fillRect(0, 0, width, height);
+    if (activeDesignId === 'sanaani_qamariya') {
+        drawSanaaniBackdropAndFrame(ctx, width, height, outerMargin, innerMargin);
+    } else if (activeDesignId === 'lapis_turquoise') {
+        drawLapisBackdropAndFrame(ctx, width, height, outerMargin, innerMargin);
+    } else if (activeDesignId === 'rasulid_garnet') {
+        drawRasulidBackdropAndFrame(ctx, width, height, outerMargin, innerMargin);
+    } else if (activeDesignId === 'hadrami_jade') {
+        drawHadramiBackdropAndFrame(ctx, width, height, outerMargin, innerMargin);
+    } else if (activeDesignId === 'obsidian_gold') {
+        drawObsidianGoldBackdropAndFrame(ctx, width, height, outerMargin, innerMargin);
+    } else if (activeDesignId === 'sky_azure') {
+        drawSkyAzureBackdropAndFrame(ctx, width, height, outerMargin, innerMargin);
+    } else if (activeDesignId === 'emerald_sanctuary') {
+        drawEmeraldSanctuaryBackdropAndFrame(ctx, width, height, outerMargin, innerMargin);
+    } else if (activeDesignId === 'royal_amethyst') {
+        drawRoyalAmethystBackdropAndFrame(ctx, width, height, outerMargin, innerMargin);
+    } else if (activeDesignId === 'sunset_saffron') {
+        drawSunsetSaffronBackdropAndFrame(ctx, width, height, outerMargin, innerMargin);
+    } else {
+        // Classic Design 1: Radiant Luminous Islamic Parchment Background (Unchanged)
+        const bgGrad = ctx.createLinearGradient(0, 0, width, height);
+        bgGrad.addColorStop(0, '#FFFDF8');
+        bgGrad.addColorStop(0.35, '#FAF4E4');
+        bgGrad.addColorStop(0.7, '#F7EDD5');
+        bgGrad.addColorStop(1, '#F3E3C0');
+        ctx.fillStyle = bgGrad;
+        ctx.fillRect(0, 0, width, height);
 
-    // 2. Center Luminous Golden Sunburst Glow
-    const centerGlow = ctx.createRadialGradient(width / 2, height * 0.48, 80, width / 2, height * 0.48, width * 0.78);
-    centerGlow.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
-    centerGlow.addColorStop(0.45, 'rgba(254, 243, 199, 0.55)');
-    centerGlow.addColorStop(0.8, 'rgba(247, 230, 185, 0.25)');
-    centerGlow.addColorStop(1, 'rgba(235, 214, 160, 0.05)');
-    ctx.fillStyle = centerGlow;
-    ctx.fillRect(0, 0, width, height);
+        const centerGlow = ctx.createRadialGradient(width / 2, height * 0.48, 80, width / 2, height * 0.48, width * 0.78);
+        centerGlow.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
+        centerGlow.addColorStop(0.45, 'rgba(254, 243, 199, 0.55)');
+        centerGlow.addColorStop(0.8, 'rgba(247, 230, 185, 0.25)');
+        centerGlow.addColorStop(1, 'rgba(235, 214, 160, 0.05)');
+        ctx.fillStyle = centerGlow;
+        ctx.fillRect(0, 0, width, height);
 
-    // 3. Subtle Authentic Islamic Geometric Watermark Pattern (8-point stars tessellation)
-    ctx.save();
-    ctx.strokeStyle = 'rgba(197, 155, 39, 0.085)';
-    ctx.lineWidth = 1.2;
-    const starGridStep = 90;
-    for (let x = 45; x < width; x += starGridStep) {
-        for (let y = 45; y < height; y += starGridStep) {
-            drawIslamicStar(ctx, x, y, 16, 8, 8, undefined, 'rgba(197, 155, 39, 0.075)', 1);
+        ctx.save();
+        ctx.strokeStyle = 'rgba(197, 155, 39, 0.085)';
+        ctx.lineWidth = 1.2;
+        const starGridStep = 90;
+        for (let x = 45; x < width; x += starGridStep) {
+            for (let y = 45; y < height; y += starGridStep) {
+                drawIslamicStar(ctx, x, y, 16, 8, 8, undefined, 'rgba(197, 155, 39, 0.075)', 1);
+            }
         }
+        ctx.restore();
+
+        ctx.strokeStyle = 'rgba(197, 155, 39, 0.75)';
+        ctx.lineWidth = 3.5;
+        drawRoundRect(ctx, outerMargin, outerMargin, width - outerMargin * 2, height - outerMargin * 2, 38);
+        ctx.stroke();
+
+        ctx.strokeStyle = 'rgba(230, 198, 101, 0.85)';
+        ctx.lineWidth = 1.2;
+        drawRoundRect(ctx, outerMargin + 7, outerMargin + 7, width - (outerMargin + 7) * 2, height - (outerMargin + 7) * 2, 32);
+        ctx.stroke();
+
+        ctx.fillStyle = 'rgba(255, 253, 247, 0.65)';
+        ctx.strokeStyle = emeraldPrimary;
+        ctx.lineWidth = 2.4;
+        drawRoundRect(ctx, innerMargin, innerMargin, width - innerMargin * 2, height - innerMargin * 2, 28);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.strokeStyle = 'rgba(197, 155, 39, 0.65)';
+        ctx.lineWidth = 1.4;
+        drawRoundRect(ctx, innerMargin + 6, innerMargin + 6, width - (innerMargin + 6) * 2, height - (innerMargin + 6) * 2, 22);
+        ctx.stroke();
+
+        const cornerArabesqueSize = 75;
+        drawIslamicCornerArabesque(ctx, innerMargin + 10, innerMargin + 10, cornerArabesqueSize, 1, 1, goldPrimary, emeraldPrimary);
+        drawIslamicCornerArabesque(ctx, width - innerMargin - 10, innerMargin + 10, cornerArabesqueSize, -1, 1, goldPrimary, emeraldPrimary);
+        drawIslamicCornerArabesque(ctx, innerMargin + 10, height - innerMargin - 10, cornerArabesqueSize, 1, -1, goldPrimary, emeraldPrimary);
+        drawIslamicCornerArabesque(ctx, width - innerMargin - 10, height - innerMargin - 10, cornerArabesqueSize, -1, -1, goldPrimary, emeraldPrimary);
+
+        drawTopMihrabArch(ctx, innerMargin + 14, innerMargin + 18, width - (innerMargin + 14) * 2, 70, goldPrimary, emeraldPrimary);
     }
-    ctx.restore();
-
-    // 4. Outer & Inner Royal Gilded Multi-layered Frames
-    // Outer golden frame
-    ctx.strokeStyle = 'rgba(197, 155, 39, 0.75)';
-    ctx.lineWidth = 3.5;
-    drawRoundRect(ctx, outerMargin, outerMargin, width - outerMargin * 2, height - outerMargin * 2, 38);
-    ctx.stroke();
-
-    // Outer thin pinstripe
-    ctx.strokeStyle = 'rgba(230, 198, 101, 0.85)';
-    ctx.lineWidth = 1.2;
-    drawRoundRect(ctx, outerMargin + 7, outerMargin + 7, width - (outerMargin + 7) * 2, height - (outerMargin + 7) * 2, 32);
-    ctx.stroke();
-
-    // Inner card base with subtle silk shadow & gilded border
-    ctx.fillStyle = 'rgba(255, 253, 247, 0.65)';
-    ctx.strokeStyle = emeraldPrimary;
-    ctx.lineWidth = 2.4;
-    drawRoundRect(ctx, innerMargin, innerMargin, width - innerMargin * 2, height - innerMargin * 2, 28);
-    ctx.fill();
-    ctx.stroke();
-
-    // Inner thin golden foil
-    ctx.strokeStyle = 'rgba(197, 155, 39, 0.65)';
-    ctx.lineWidth = 1.4;
-    drawRoundRect(ctx, innerMargin + 6, innerMargin + 6, width - (innerMargin + 6) * 2, height - (innerMargin + 6) * 2, 22);
-    ctx.stroke();
-
-    // Four Ornate Classical Islamic Corner Arabesques
-    const cornerArabesqueSize = 75;
-    drawIslamicCornerArabesque(ctx, innerMargin + 10, innerMargin + 10, cornerArabesqueSize, 1, 1, goldPrimary, emeraldPrimary);
-    drawIslamicCornerArabesque(ctx, width - innerMargin - 10, innerMargin + 10, cornerArabesqueSize, -1, 1, goldPrimary, emeraldPrimary);
-    drawIslamicCornerArabesque(ctx, innerMargin + 10, height - innerMargin - 10, cornerArabesqueSize, 1, -1, goldPrimary, emeraldPrimary);
-    drawIslamicCornerArabesque(ctx, width - innerMargin - 10, height - innerMargin - 10, cornerArabesqueSize, -1, -1, goldPrimary, emeraldPrimary);
-
-    // Classical Top Islamic Mihrab Arch crowning the card
-    drawTopMihrabArch(ctx, innerMargin + 14, innerMargin + 18, width - (innerMargin + 14) * 2, 70, goldPrimary, emeraldPrimary);
 
     // 5. TOP SECTION: Bismillah & Category Badge
     let currentTopY = topSectionStartY;
     ctx.save();
     ctx.font = isEn ? `bold 22px ${fontFamily}` : `700 44px 'Amiri', 'Traditional Arabic', serif`;
-    ctx.fillStyle = emeraldPrimary;
+    ctx.fillStyle = typoTheme.bismillahColor;
     ctx.textAlign = 'center';
-    ctx.shadowColor = 'rgba(197, 155, 39, 0.45)';
+    ctx.shadowColor = typoTheme.bismillahShadow;
     ctx.shadowBlur = 4;
     ctx.shadowOffsetY = 1;
     ctx.fillText(bismillahText, width / 2, currentTopY + (isEn ? 22 : 38));
@@ -818,29 +874,26 @@ export async function renderCardToPureCanvas(options: ShareOptions): Promise<HTM
         const pillH = 46;
         const pillX = (width - pillW) / 2;
 
-        // Cartouche Golden Background with Emerald Border
         const cartoucheGrad = ctx.createLinearGradient(pillX, currentTopY, pillX + pillW, currentTopY + pillH);
-        cartoucheGrad.addColorStop(0, '#FDF8E8');
-        cartoucheGrad.addColorStop(0.5, '#FFFBF0');
-        cartoucheGrad.addColorStop(1, '#F8EFD4');
+        cartoucheGrad.addColorStop(0, typoTheme.badgeBgStops[0]);
+        cartoucheGrad.addColorStop(0.5, typoTheme.badgeBgStops[1]);
+        cartoucheGrad.addColorStop(1, typoTheme.badgeBgStops[2]);
         ctx.fillStyle = cartoucheGrad;
-        ctx.strokeStyle = goldPrimary;
+        ctx.strokeStyle = typoTheme.badgeBorder;
         ctx.lineWidth = 2.2;
         drawRoundRect(ctx, pillX, currentTopY, pillW, pillH, 23);
         ctx.fill();
         ctx.stroke();
 
-        // Inner fine emerald line
-        ctx.strokeStyle = 'rgba(6, 78, 59, 0.45)';
+        ctx.strokeStyle = typoTheme.badgeInnerLine;
         ctx.lineWidth = 1;
         drawRoundRect(ctx, pillX + 3, currentTopY + 3, pillW - 6, pillH - 6, 20);
         ctx.stroke();
 
-        // Flanking mini-stars on badge ends
-        drawIslamicStar(ctx, pillX + 16, currentTopY + pillH / 2, 6, 3, 8, goldPrimary);
-        drawIslamicStar(ctx, pillX + pillW - 16, currentTopY + pillH / 2, 6, 3, 8, goldPrimary);
+        drawIslamicStar(ctx, pillX + 16, currentTopY + pillH / 2, 6, 3, 8, typoTheme.badgeStarColor);
+        drawIslamicStar(ctx, pillX + pillW - 16, currentTopY + pillH / 2, 6, 3, 8, typoTheme.badgeStarColor);
 
-        ctx.fillStyle = emeraldPrimary;
+        ctx.fillStyle = typoTheme.badgeTextColor;
         ctx.textAlign = 'center';
         ctx.fillText(cleanCategory, width / 2, currentTopY + 30);
     }
@@ -852,9 +905,9 @@ export async function renderCardToPureCanvas(options: ShareOptions): Promise<HTM
     if (cleanTitle) {
         ctx.save();
         ctx.font = `bold ${titleFontSize}px ${fontFamily}`;
-        ctx.fillStyle = emeraldPrimary;
+        ctx.fillStyle = typoTheme.titleColor;
         ctx.textAlign = 'center';
-        ctx.shadowColor = 'rgba(197, 155, 39, 0.4)';
+        ctx.shadowColor = typoTheme.titleShadow;
         ctx.shadowBlur = 6;
         ctx.shadowOffsetY = 2;
         ctx.fillText(cleanTitle, width / 2, currentMiddleY + titleFontSize * 0.88);
@@ -863,12 +916,32 @@ export async function renderCardToPureCanvas(options: ShareOptions): Promise<HTM
         currentMiddleY += titleFontSize + 20;
     }
 
-    // UPPER ISLAMIC DRAWING (الرسم والزخرفة الإسلامية العلوية قبل النص لتقليل الفراغ)
+    // UPPER ISLAMIC DRAWING (Specific to selected design)
     const upperMotifCenterY = currentMiddleY + upperMotifHeight * 0.5;
-    drawUpperIslamicMotif(ctx, width / 2, upperMotifCenterY, upperMotifHeight, goldPrimary, emeraldPrimary);
+    if (activeDesignId === 'sanaani_qamariya') {
+        drawSanaaniUpperQamariya(ctx, width / 2, upperMotifCenterY, upperMotifHeight);
+    } else if (activeDesignId === 'lapis_turquoise') {
+        drawLapisUpperMotif(ctx, width / 2, upperMotifCenterY, upperMotifHeight);
+    } else if (activeDesignId === 'rasulid_garnet') {
+        drawRasulidUpperMotif(ctx, width / 2, upperMotifCenterY, upperMotifHeight);
+    } else if (activeDesignId === 'hadrami_jade') {
+        drawHadramiUpperMotif(ctx, width / 2, upperMotifCenterY, upperMotifHeight);
+    } else if (activeDesignId === 'obsidian_gold') {
+        drawObsidianGoldUpperMotif(ctx, width / 2, upperMotifCenterY, upperMotifHeight);
+    } else if (activeDesignId === 'sky_azure') {
+        drawSkyAzureUpperMotif(ctx, width / 2, upperMotifCenterY, upperMotifHeight);
+    } else if (activeDesignId === 'emerald_sanctuary') {
+        drawEmeraldSanctuaryUpperMotif(ctx, width / 2, upperMotifCenterY, upperMotifHeight);
+    } else if (activeDesignId === 'royal_amethyst') {
+        drawRoyalAmethystUpperMotif(ctx, width / 2, upperMotifCenterY, upperMotifHeight);
+    } else if (activeDesignId === 'sunset_saffron') {
+        drawSunsetSaffronUpperMotif(ctx, width / 2, upperMotifCenterY, upperMotifHeight);
+    } else {
+        drawUpperIslamicMotif(ctx, width / 2, upperMotifCenterY, upperMotifHeight, goldPrimary, emeraldPrimary);
+    }
     currentMiddleY += upperMotifHeight;
 
-    // 7. BODY TEXT: Dignified, Calligraphic, Enlarged, Crisp Kohl-Emerald
+    // 7. BODY TEXT: Dignified, Calligraphic, Enlarged, Crisp
     ctx.direction = isEn ? 'ltr' : 'rtl';
     ctx.textAlign = 'center';
 
@@ -881,18 +954,18 @@ export async function renderCardToPureCanvas(options: ShareOptions): Promise<HTM
         ctx.save();
         if (lineObj.isHighlight) {
             ctx.font = `700 ${bodyFontSize + 2}px ${fontFamily}`;
-            ctx.fillStyle = '#065F46'; // Vibrant Islamic Emerald for highlights
-            ctx.shadowColor = 'rgba(6, 95, 70, 0.25)';
+            ctx.fillStyle = typoTheme.highlightColor;
+            ctx.shadowColor = typoTheme.highlightShadow;
             ctx.shadowBlur = 5;
         } else if (lineObj.isBullet) {
             ctx.font = `600 ${bodyFontSize}px ${fontFamily}`;
-            ctx.fillStyle = '#1E3A2B';
+            ctx.fillStyle = typoTheme.bulletColor;
         } else {
             ctx.font = `600 ${bodyFontSize}px ${fontFamily}`;
-            ctx.fillStyle = textObsidian;
+            ctx.fillStyle = typoTheme.bodyColor;
         }
 
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.08)';
+        ctx.shadowColor = typoTheme.bodyShadow;
         ctx.shadowBlur = 3;
         ctx.shadowOffsetY = 1;
         ctx.fillText(lineObj.text, width / 2, currentMiddleY + bodyFontSize * 0.85);
@@ -905,35 +978,53 @@ export async function renderCardToPureCanvas(options: ShareOptions): Promise<HTM
 
     // Source & Metadata (if provided)
     if (cleanSource) {
-        // Delicate gilded divider bar
-        ctx.strokeStyle = 'rgba(197, 155, 39, 0.55)';
+        ctx.strokeStyle = typoTheme.sourceDividerColor;
         ctx.lineWidth = 1.4;
         ctx.beginPath();
         ctx.moveTo(horizontalContentPadding + 60, currentMiddleY);
         ctx.lineTo(width - horizontalContentPadding - 60, currentMiddleY);
         ctx.stroke();
 
-        // Mini diamonds on divider ends
-        ctx.fillStyle = goldPrimary;
+        ctx.fillStyle = typoTheme.footerStarFill;
         ctx.beginPath();
         ctx.arc(horizontalContentPadding + 60, currentMiddleY, 3, 0, Math.PI * 2);
         ctx.arc(width - horizontalContentPadding - 60, currentMiddleY, 3, 0, Math.PI * 2);
         ctx.fill();
 
         ctx.font = `bold ${sourceFontSize}px ${fontFamily}`;
-        ctx.fillStyle = '#92400E'; // Rich warm antique gold for source
+        ctx.fillStyle = typoTheme.sourceColor;
         ctx.textAlign = 'center';
         ctx.fillText(cleanSource, width / 2, currentMiddleY + sourceFontSize + 12);
 
         currentMiddleY += sourceFontSize + 26;
     }
 
-    // LOWER ISLAMIC DRAWING (الرسم والزخرفة الإسلامية السفلية بعد النص والشمسة المذهبة لملء الفراغ)
+    // LOWER ISLAMIC DRAWING (Specific to selected design)
     const lowerRosetteCenterY = currentMiddleY + lowerRosetteHeight * 0.5;
-    drawLowerIslamicRosette(ctx, width / 2, lowerRosetteCenterY, lowerRosetteHeight, goldPrimary, emeraldPrimary);
+    if (activeDesignId === 'sanaani_qamariya') {
+        drawSanaaniLowerMotif(ctx, width / 2, lowerRosetteCenterY, lowerRosetteHeight);
+    } else if (activeDesignId === 'lapis_turquoise') {
+        drawLapisLowerMotif(ctx, width / 2, lowerRosetteCenterY, lowerRosetteHeight);
+    } else if (activeDesignId === 'rasulid_garnet') {
+        drawRasulidLowerMotif(ctx, width / 2, lowerRosetteCenterY, lowerRosetteHeight);
+    } else if (activeDesignId === 'hadrami_jade') {
+        drawHadramiLowerMotif(ctx, width / 2, lowerRosetteCenterY, lowerRosetteHeight);
+    } else if (activeDesignId === 'obsidian_gold') {
+        drawObsidianGoldLowerMotif(ctx, width / 2, lowerRosetteCenterY, lowerRosetteHeight);
+    } else if (activeDesignId === 'sky_azure') {
+        drawSkyAzureLowerMotif(ctx, width / 2, lowerRosetteCenterY, lowerRosetteHeight);
+    } else if (activeDesignId === 'emerald_sanctuary') {
+        drawEmeraldSanctuaryLowerMotif(ctx, width / 2, lowerRosetteCenterY, lowerRosetteHeight);
+    } else if (activeDesignId === 'royal_amethyst') {
+        drawRoyalAmethystLowerMotif(ctx, width / 2, lowerRosetteCenterY, lowerRosetteHeight);
+    } else if (activeDesignId === 'sunset_saffron') {
+        drawSunsetSaffronLowerMotif(ctx, width / 2, lowerRosetteCenterY, lowerRosetteHeight);
+    } else {
+        drawLowerIslamicRosette(ctx, width / 2, lowerRosetteCenterY, lowerRosetteHeight, goldPrimary, emeraldPrimary);
+    }
 
-    // 8. BOTTOM SECTION: Footer Brand (Grounded with Royal Golden Arch & Emerald Calligraphy)
-    ctx.strokeStyle = goldPrimary;
+    // 8. BOTTOM SECTION: Footer Brand
+    ctx.strokeStyle = typoTheme.footerLineColor;
     ctx.lineWidth = 1.6;
     ctx.beginPath();
     ctx.moveTo(width / 2 - 200, footerStartY);
@@ -942,8 +1033,7 @@ export async function renderCardToPureCanvas(options: ShareOptions): Promise<HTM
     ctx.lineTo(width / 2 + 200, footerStartY);
     ctx.stroke();
 
-    // Center star between footer lines
-    drawIslamicStar(ctx, width / 2, footerStartY, 11, 5.5, 8, goldPrimary, emeraldPrimary, 1);
+    drawIslamicStar(ctx, width / 2, footerStartY, 11, 5.5, 8, typoTheme.footerStarFill, typoTheme.footerStarStroke, 1);
 
     const brandName = isEn 
         ? 'Mushaf Ahmed & Laila' 
@@ -955,15 +1045,15 @@ export async function renderCardToPureCanvas(options: ShareOptions): Promise<HTM
 
     ctx.save();
     ctx.font = isEn ? `bold 28px ${fontFamily}` : `700 34px 'Amiri', 'Traditional Arabic', serif`;
-    ctx.fillStyle = emeraldPrimary;
+    ctx.fillStyle = typoTheme.brandColor;
     ctx.textAlign = 'center';
-    ctx.shadowColor = 'rgba(197, 155, 39, 0.45)';
+    ctx.shadowColor = typoTheme.brandShadow;
     ctx.shadowBlur = 6;
     ctx.shadowOffsetY = 1;
     ctx.fillText(brandName, width / 2, footerStartY + 38);
 
     ctx.font = `600 18px ${fontFamily}`;
-    ctx.fillStyle = '#854D0E'; // Burnished antique gold
+    ctx.fillStyle = typoTheme.subtitleColor;
     ctx.fillText(brandSubtitle, width / 2, footerStartY + 68);
     ctx.restore();
 
@@ -973,11 +1063,11 @@ export async function renderCardToPureCanvas(options: ShareOptions): Promise<HTM
 /**
  * Universal high-reliability sharing function for cards and quotes
  */
-export const shareAsImage = async ({ text, title, source, category, theme, isEn: explicitIsEn, language, setToastMessage }: ShareOptions) => {
+export const shareAsImage = async ({ text, title, source, category, theme, isEn: explicitIsEn, language, setToastMessage, designId }: ShareOptions) => {
     const isEn = explicitIsEn ?? (language === 'en' || !(/[\u0600-\u06FF]/.test(text || '')));
 
     if (setToastMessage) {
-        setToastMessage(isEn ? 'Preparing high quality Islamic image...' : 'جاري تجهيز بطاقة إسلامية مذهبة بدقة عالية...');
+        setToastMessage(isEn ? 'Preparing high quality Islamic image...' : 'جاري تجهيز بطاقة مشاركة إسلامية بدقة عالية...');
     }
 
     try {
@@ -989,7 +1079,8 @@ export const shareAsImage = async ({ text, title, source, category, theme, isEn:
             theme,
             isEn,
             language: isEn ? 'en' : 'ar',
-            setToastMessage
+            setToastMessage,
+            designId
         });
 
         const dataUrl = canvas.toDataURL('image/jpeg', 0.95);

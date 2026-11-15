@@ -7,6 +7,8 @@ import { safeHtml2Canvas } from '../utils/canvasHelper';
 import { Share } from '@capacitor/share';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
+import { useTheme } from '../context/ThemeContext';
+import { getCalculator3DStyles } from '../utils/calculator3DStyles';
 
 interface WeeklyAchievementModalProps {
   records: Record<string, DailyRecord>;
@@ -29,19 +31,15 @@ export const WeeklyAchievementModal: React.FC<WeeklyAchievementModalProps> = ({
   isBlackTheme,
   onClose
 }) => {
+  const { theme: ctxTheme, themeKey, isNightMode, homeThemeVariant } = useTheme();
+  const s3d = getCalculator3DStyles(ctxTheme || theme, themeKey, isNightMode, homeThemeVariant);
+
   const [toastMsg, setToastMsg] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
   const [viewRange, setViewRange] = useState<'last7' | 'thisWeek'>('last7');
 
   const cardRef = useRef<HTMLDivElement>(null);
-
-  const isDefaultTheme = !theme?.name || theme?.name?.includes('الافتراضي') || theme?.name === 'Default';
-  const cardBorderColor = isDefaultTheme 
-    ? '#000000' 
-    : (isBlackTheme 
-        ? '#FFFFFF' 
-        : (theme?.palette?.[0] || '#000000'));
 
   // Compute the 7 days based on viewRange
   const days = useMemo(() => {
@@ -543,61 +541,66 @@ export const WeeklyAchievementModal: React.FC<WeeklyAchievementModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm" dir="rtl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm" dir="rtl" onClick={onClose}>
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className="w-full max-w-lg bg-white dark:bg-gray-900 rounded-3xl shadow-2xl border overflow-hidden flex flex-col max-h-[92vh]"
-        style={{ borderColor: cardBorderColor, borderWidth: '1.5px', borderStyle: 'solid' }}
+        className={`app-page-card border-0 w-full max-w-lg rounded-3xl overflow-hidden flex flex-col max-h-[92dvh] ${s3d.surfaceCardClass}`}
+        style={{ fontFamily: ctxTheme?.font }}
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Top Bar */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-black/5 dark:border-white/5 shrink-0">
-          <div className="flex items-center gap-2">
-            <Award className="w-6 h-6" style={{ color: hexColor }} />
+        <div className={`flex items-center justify-between px-5 py-4 border-b ${s3d.dividerClass} shrink-0 overflow-visible`}>
+          <div className="flex items-center gap-2.5">
+            <span className={`border-0 w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>
+              <Award className="w-5 h-5" style={{ color: s3d.primaryColor }} />
+            </span>
             <div>
-              <h2 className="font-bold text-base sm:text-lg text-gray-900 dark:text-white">
+              <h2 className="font-extrabold text-base sm:text-lg" style={{ color: s3d.textColor }}>
                 بطاقة الإنجاز الأسبوعية
               </h2>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
+              <p className="text-xs font-medium" style={{ color: s3d.subtextColor }}>
                 شارك إنجازك وثباتك على الطاعات للتشجيع
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 transition-colors"
+            className={`app-page-card border-0 w-9 h-9 rounded-xl flex items-center justify-center cursor-pointer transition-all ${s3d.surfaceCardClass}`}
           >
-            <X className="w-5 h-5" />
+            <X className="w-5 h-5" style={{ color: s3d.textColor }} />
           </button>
         </div>
 
         {/* Range Selector */}
-        <div className="px-5 pt-3 pb-1 flex gap-2 shrink-0">
+        <div className="px-5 pt-3.5 pb-2.5 flex gap-2.5 shrink-0 overflow-visible">
           <button
             onClick={() => setViewRange('last7')}
-            className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-bold transition-all ${
+            className={`app-page-card border-0 flex-1 py-2 px-3 rounded-2xl text-xs transition-all cursor-pointer ${
               viewRange === 'last7'
-                ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900 shadow-sm'
-                : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
+                ? 'font-black'
+                : `font-bold ${s3d.surfaceCardClass}`
             }`}
+            style={viewRange === 'last7' ? { backgroundColor: s3d.primaryColor, color: s3d.btnTextColor } : undefined}
           >
             آخر 7 أيام
           </button>
           <button
             onClick={() => setViewRange('thisWeek')}
-            className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-bold transition-all ${
+            className={`app-page-card border-0 flex-1 py-2 px-3 rounded-2xl text-xs transition-all cursor-pointer ${
               viewRange === 'thisWeek'
-                ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900 shadow-sm'
-                : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
+                ? 'font-black'
+                : `font-bold ${s3d.surfaceCardClass}`
             }`}
+            style={viewRange === 'thisWeek' ? { backgroundColor: s3d.primaryColor, color: s3d.btnTextColor } : undefined}
           >
             الأسبوع الحالي (السبت - الجمعة)
           </button>
         </div>
 
         {/* Scrollable Preview Area */}
-        <div className="flex-1 overflow-y-auto px-5 py-3 overscroll-contain">
+        <div className="flex-1 min-h-0 overflow-y-auto px-5 py-3 overscroll-contain">
           {/* Visual Card */}
           <div
             ref={cardRef}
@@ -734,14 +737,14 @@ export const WeeklyAchievementModal: React.FC<WeeklyAchievementModalProps> = ({
         </div>
 
         {/* Modal Action Footer */}
-        <div className="p-4 border-t border-black/5 dark:border-white/5 bg-gray-50 dark:bg-gray-800/50 flex flex-col gap-2 shrink-0">
-          <div className="flex gap-2">
+        <div className={`p-4 pb-5 border-t ${s3d.dividerClass} flex flex-col gap-2.5 shrink-0 overflow-visible ${s3d.surfaceCardClass}`}>
+          <div className="flex gap-2.5 overflow-visible pb-1">
             <motion.button
               whileTap={{ scale: 0.97 }}
               disabled={isGenerating}
               onClick={handleShareImage}
-              className="flex-1 py-3 px-4 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 shadow-sm text-white"
-              style={{ backgroundColor: hexColor }}
+              className="app-page-card border-0 flex-1 py-3 px-4 rounded-2xl font-black text-sm flex items-center justify-center gap-2 cursor-pointer transition-all"
+              style={{ backgroundColor: s3d.primaryColor, color: s3d.btnTextColor }}
             >
               <Share2 className="w-4 h-4" />
               <span>مشاركة كصورة جميلة 📲</span>
@@ -751,7 +754,7 @@ export const WeeklyAchievementModal: React.FC<WeeklyAchievementModalProps> = ({
               whileTap={{ scale: 0.97 }}
               disabled={isGenerating}
               onClick={handleDownloadImage}
-              className="py-3 px-4 rounded-2xl font-bold text-sm flex items-center justify-center gap-1.5 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+              className={`app-page-card border-0 py-3 px-4 rounded-2xl font-bold text-sm flex items-center justify-center gap-1.5 cursor-pointer ${s3d.surfaceCardClass}`}
               title="تنزيل الصورة"
             >
               <Download className="w-4 h-4" />
@@ -761,9 +764,9 @@ export const WeeklyAchievementModal: React.FC<WeeklyAchievementModalProps> = ({
           <motion.button
             whileTap={{ scale: 0.98 }}
             onClick={handleCopySummary}
-            className="w-full py-2 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700/60 border border-gray-200 dark:border-gray-600 hover:bg-gray-50 transition-colors"
+            className={`app-page-card border-0 w-full py-2.5 px-3 rounded-2xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer ${s3d.surfaceCardClass}`}
           >
-            {copied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
+            {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" style={{ color: s3d.primaryColor }} />}
             <span>نسخ ملخص الأسبوع كنص للأهل والأصدقاء</span>
           </motion.button>
         </div>

@@ -6,12 +6,13 @@ interface ModalWrapperProps {
     children?: React.ReactNode;
     onClose: () => void;
     isOpen: boolean;
+    title?: string;
     className?: string;
     noStyles?: boolean;
     cardBorderColor?: string;
 }
 
-const ModalWrapper: React.FC<ModalWrapperProps> = ({ children, onClose, isOpen, className = "", noStyles = false }) => {
+const ModalWrapper: React.FC<ModalWrapperProps> = ({ children, onClose, isOpen, title, className = "", noStyles = false }) => {
     const { theme } = useTheme();
     const isBlackTheme = theme.bgColor === '#000000' || theme.name === 'اسود' || theme.name === 'black';
 
@@ -30,9 +31,16 @@ const ModalWrapper: React.FC<ModalWrapperProps> = ({ children, onClose, isOpen, 
                         animate={{ scale: 1, opacity: 1, y: 0 }}
                         exit={{ scale: 0.95, opacity: 0, y: 20 }}
                         transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                        className={noStyles ? `w-full max-w-xs ${className}` : `p-6 rounded-2xl w-full max-w-xs space-y-4 bg-white dark:bg-[#1E293B] text-slate-800 dark:text-white shadow-2xl border border-slate-100 dark:border-white/10 ${className}`} 
+                        className={noStyles
+                            ? `w-full ${className.includes('max-w-') ? '' : 'max-w-xs'} ${className}`
+                            : `app-page-card border-0 p-6 rounded-2xl w-full ${className.includes('max-w-') ? '' : 'max-w-xs'} space-y-4 bg-white dark:bg-[#1E293B] text-slate-800 dark:text-white ${className}`} 
                         onClick={e => e.stopPropagation()}
                     >
+                        {title && !noStyles && (
+                            <h3 className="text-base sm:text-lg font-black text-center leading-tight">
+                                {title}
+                            </h3>
+                        )}
                         {children}
                     </motion.div>
                 </motion.div>

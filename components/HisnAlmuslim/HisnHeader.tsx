@@ -1,6 +1,7 @@
 import React from 'react';
 import ThemePageLock from '../ThemePageLock';
 import { useLanguage } from '../../context/LanguageContext';
+import { useShowPageGuides } from '../../utils/guideManager';
 
 interface HisnHeaderProps {
     title: string;
@@ -14,6 +15,7 @@ interface HisnHeaderProps {
 const HisnHeader: React.FC<HisnHeaderProps> = ({ title, subtitle, showThemePageLock = true, onBack, onHome, onOpenGuide }) => {
     const { t, language } = useLanguage();
     const isEn = language === 'en';
+    const showPageGuides = useShowPageGuides();
     const localizedTitle = (title === 'حصن المسلم' || title === 'أذكار المسلم') ? t('page.hisn_muslim_title', title) : title;
 
     // Dynamically adjust font size slightly for long titles so they fit comfortably without colliding with icons
@@ -52,7 +54,7 @@ const HisnHeader: React.FC<HisnHeaderProps> = ({ title, subtitle, showThemePageL
 
                     {/* Home, Guide, and Theme Lock */}
                     <div className="flex items-center gap-1 shrink-0 justify-end min-w-[40px]">
-                        {onOpenGuide && (
+                        {onOpenGuide && showPageGuides && (
                             <button
                                 type="button"
                                 onClick={onOpenGuide}

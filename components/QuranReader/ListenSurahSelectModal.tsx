@@ -45,7 +45,7 @@ const ListenSurahSelectModal: React.FC<ListenSurahSelectModalProps> = ({ onClose
 
     return (
         <div className={`fixed inset-0 bg-black/30 backdrop-blur-sm z-[1200] flex items-center justify-center ${isLandscape ? 'p-0' : 'p-4'} animate-fadeIn`} onClick={handleClose}>
-            <div dir={dir} className={`modal-skinned w-full ${isLandscape ? 'max-w-4xl h-full rounded-none max-h-screen' : 'max-w-md sm:max-w-2xl rounded-3xl max-h-[90vh]'} shadow-2xl overflow-hidden flex flex-col animate-modal-enter border-0`} style={{ border: 'none', outline: 'none' }} onClick={e => e.stopPropagation()}>
+            <div dir={dir} className={`modal-skinned w-full ${isLandscape ? 'max-w-4xl h-full rounded-none max-h-[100dvh]' : 'max-w-md sm:max-w-2xl rounded-3xl max-h-[90dvh]'} shadow-2xl overflow-hidden flex flex-col animate-modal-enter border-0`} style={{ border: 'none', outline: 'none' }} onClick={e => e.stopPropagation()}>
                 <div className="p-3.5 border-0">
                     <div className="relative quran-raised-card rounded-2xl overflow-hidden border-0">
                         <Search className={`absolute ${isRTL ? 'right-3.5' : 'left-3.5'} top-1/2 -translate-y-1/2 w-4 h-4 opacity-50`} />
@@ -61,7 +61,7 @@ const ListenSurahSelectModal: React.FC<ListenSurahSelectModalProps> = ({ onClose
                         />
                     </div>
                 </div>
-                <div className={`p-3.5 overflow-y-auto flex-1 grid ${isLandscape ? 'grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5'}`}>
+                <div className={`p-3.5 ${isLandscape ? 'modal-sheet-safe-bottom' : ''} overflow-y-auto flex-1 min-h-0 grid ${isLandscape ? 'grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5'}`}>
                     {filteredSurahs.map(s => {
                         const isCurrent = currentSurah === s.number;
                         const surahLabel = `${formatListenNumber(s.number, language)} - ${getSurahDisplayName(s.number, language)}`;

@@ -62,13 +62,11 @@ const CategoryList: React.FC<CategoryListProps> = ({ onSelectCategory, activeTab
                     <div 
                         key={category.id} 
                         onClick={() => onSelectCategory({ ...category, title: categoryTitle, titleAr: category.title })}
-                        className="relative group cursor-pointer active:scale-[0.98] transition-transform duration-200"
+                        className="relative group cursor-pointer"
                     >
                         <div 
-                            className={`h-full p-4 rounded-[18px] transition-all duration-200 flex ${activeTab === 'grid' ? 'flex-col items-center text-center gap-2.5 min-h-[140px] justify-center' : 'items-center justify-between gap-4'} overflow-hidden`} 
+                            className={`app-page-card tasbeeh-pressable border-0 bg-white dark:bg-[#1E293B] h-full p-4 rounded-2xl transition-all duration-200 flex ${activeTab === 'grid' ? 'flex-col items-center text-center gap-2.5 min-h-[140px] justify-center' : 'items-center justify-between gap-4'} overflow-visible`} 
                             style={{ 
-                                backgroundColor: tokens.cardBgColor,
-                                boxShadow: tokens.cardShadow,
                                 color: 'var(--text-color)',
                             }}
                         >

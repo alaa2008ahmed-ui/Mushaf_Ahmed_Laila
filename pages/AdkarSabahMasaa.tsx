@@ -9,7 +9,6 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useHabitTracker } from '../hooks/useHabitTracker';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LayoutGrid, ListFilter } from 'lucide-react';
 import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/CommunitySpotlightGuide';
 import { ADKAR_PAGE_STEPS } from '../components/Community/communityTourSteps';
 import { markPageAsSeen } from '../utils/badgeManager';
@@ -273,7 +272,7 @@ function AdkarSabahMasaa({ onBack, onNavigate, navParams }: AdkarSabahMasaaProps
 
     return (
         <div 
-            className="h-screen flex flex-col relative transition-colors" 
+            className="h-[100dvh] flex flex-col relative overflow-hidden transition-colors" 
             dir={isEn ? 'ltr' : 'rtl'}
             style={{ 
                 backgroundColor: isBlackTheme ? '#000000' : (theme.bgColor || (theme.isDark ? '#0F172A' : '#F5F7FA')) 
@@ -287,14 +286,12 @@ function AdkarSabahMasaa({ onBack, onNavigate, navParams }: AdkarSabahMasaaProps
                 onOpenGuide={() => setShowGuide(true)}
             />
 
-            <main ref={mainRef} className="w-full flex-1 overflow-y-auto px-4 pt-3 pb-6">
-                {/* Modern Borderless Search bar and View Mode Switch */}
+            <main ref={mainRef} className="w-full flex-1 min-h-0 overflow-y-auto px-4 pt-3 app-scroll-safe-fab">
+                {/* Modern 3D Search bar */}
                 <div className="mb-6 max-w-3xl mx-auto flex items-center gap-2.5 w-full" dir={isEn ? 'ltr' : 'rtl'}>
-                    <div className="relative flex-1 rounded-2xl transition-all focus-within:ring-2 focus-within:ring-opacity-40 flex items-center overflow-hidden"
+                    <div className="app-page-card border-0 relative flex-1 rounded-2xl bg-white dark:bg-[#1E293B] transition-all focus-within:ring-2 focus-within:ring-opacity-40 flex items-center overflow-visible"
                          style={{ 
                              '--tw-ring-color': primaryColor,
-                             backgroundColor: isBlackTheme ? '#18181b' : (theme.isDark ? 'rgba(39, 39, 42, 0.7)' : '#FFFFFF'),
-                             boxShadow: theme.isDark ? 'none' : '0 4px 14px rgba(0, 0, 0, 0.04)'
                          } as any}
                     >
                         <i 
@@ -307,60 +304,24 @@ function AdkarSabahMasaa({ onBack, onNavigate, navParams }: AdkarSabahMasaaProps
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className={`w-full bg-transparent py-3 text-sm sm:text-base border-0 outline-none ${
-                                isEn ? 'pl-11 pr-10 text-left font-sans' : 'pr-11 pl-10 text-right font-kufi'
+                                isEn ? 'pl-11 pr-12 text-left font-sans' : 'pr-11 pl-12 text-right font-kufi'
                             } placeholder-gray-400 dark:placeholder-gray-500`}
                             style={{ color: 'var(--text-color)' }}
                         />
                         {searchQuery && (
                             <button
+                                type="button"
                                 onClick={() => setSearchQuery('')}
-                                className={`absolute inset-y-0 ${isEn ? 'right-4' : 'left-4'} flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer`}
+                                className={`app-page-card border-0 absolute ${isEn ? 'right-2.5' : 'left-2.5'} top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white dark:bg-[#1E293B] flex items-center justify-center text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white cursor-pointer`}
+                                aria-label={isEn ? 'Clear search' : 'مسح البحث'}
                             >
                                 <i className="fa-solid fa-times text-xs"></i>
                             </button>
                         )}
                     </div>
-
-                    {/* View Mode Switch Chips */}
-                    <div 
-                        className="flex items-center p-1 rounded-2xl shrink-0 gap-1"
-                        style={{
-                            backgroundColor: isBlackTheme ? '#18181b' : (theme.isDark ? 'rgba(39, 39, 42, 0.7)' : '#FFFFFF'),
-                            boxShadow: theme.isDark ? 'none' : '0 4px 14px rgba(0, 0, 0, 0.04)'
-                        }}
-                    >
-                        <button
-                            type="button"
-                            onClick={() => setActiveTabMode('grid')}
-                            className={`flex items-center justify-center w-9 h-9 rounded-xl transition-all cursor-pointer ${
-                                activeTabMode === 'grid' ? 'shadow-sm' : 'opacity-60 hover:opacity-100'
-                            }`}
-                            style={activeTabMode === 'grid' ? {
-                                backgroundColor: primaryColor,
-                                color: btnTextColor
-                            } : { color: 'var(--text-color)' }}
-                            title={isEn ? "Grid View" : "عرض شبكي"}
-                        >
-                            <LayoutGrid size={16} />
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setActiveTabMode('list')}
-                            className={`flex items-center justify-center w-9 h-9 rounded-xl transition-all cursor-pointer ${
-                                activeTabMode === 'list' ? 'shadow-sm' : 'opacity-60 hover:opacity-100'
-                            }`}
-                            style={activeTabMode === 'list' ? {
-                                backgroundColor: primaryColor,
-                                color: btnTextColor
-                            } : { color: 'var(--text-color)' }}
-                            title={isEn ? "List View" : "عرض القوائم"}
-                        >
-                            <ListFilter size={16} />
-                        </button>
-                    </div>
                 </div>
 
-                <div className={activeTabMode === 'grid' ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-3xl mx-auto pb-4" : "space-y-4 max-w-3xl mx-auto pb-4"}>
+                <div className={activeTabMode === 'grid' ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-3xl mx-auto" : "space-y-4 max-w-3xl mx-auto"}>
                     {filteredAdhkar.length > 0 ? (
                         filteredAdhkar.map((dhikr) => {
                             const currentCount = adhkarCounts[dhikr.globalIndex] ?? dhikr.count;
@@ -390,7 +351,6 @@ function AdkarSabahMasaa({ onBack, onNavigate, navParams }: AdkarSabahMasaaProps
                             </p>
                         </div>
                     )}
-                    <div className="shrink-0 w-full h-28 col-span-full"></div>
                 </div>
             </main>
             
@@ -408,8 +368,7 @@ function AdkarSabahMasaa({ onBack, onNavigate, navParams }: AdkarSabahMasaaProps
             {/* Floating Menu & Modern FAB */}
             <div 
                 ref={fabContainerRef} 
-                className={`fixed ${isEn ? 'left-5 items-start' : 'right-5 items-end'} ${isMenuOpen ? 'z-[1250]' : 'z-[90]'} flex flex-col`}
-                style={{ bottom: 'calc(env(safe-area-inset-bottom, 24px) + 32px)' }}
+                className={`fixed app-fab-bottom ${isEn ? 'left-5 items-start' : 'right-5 items-end'} ${isMenuOpen ? 'z-[1250]' : 'z-[90]'} flex flex-col`}
             >
                 <AnimatePresence>
                     {isMenuOpen && (
@@ -417,70 +376,74 @@ function AdkarSabahMasaa({ onBack, onNavigate, navParams }: AdkarSabahMasaaProps
                             initial={{ opacity: 0, scale: 0.9, y: menuOpenDirection === 'up' ? 10 : -10 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.9, y: menuOpenDirection === 'up' ? 10 : -10 }}
-                            className={`absolute ${isEn ? 'left-0 origin-bottom-left' : 'right-0 origin-bottom-right'} ${menuOpenDirection === 'up' ? 'bottom-full mb-3' : 'top-full mt-3'} bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md rounded-2xl shadow-2xl p-2 flex flex-col gap-1 w-52 z-0 border border-slate-100/80 dark:border-white/10`}
+                            className={`app-page-card border-0 absolute ${isEn ? 'left-0 origin-bottom-left' : 'right-0 origin-bottom-right'} ${menuOpenDirection === 'up' ? 'bottom-full mb-3' : 'top-full mt-3'} bg-white dark:bg-[#1E293B] rounded-2xl p-2.5 pb-3 flex flex-col gap-2 overflow-visible w-52 z-0`}
                             style={{ color: 'var(--text-color)' }}
                             onClick={(e) => e.stopPropagation()}
                         >
                             <button 
+                                type="button"
                                 onClick={() => { setAdhkarTab('morning'); setIsMenuOpen(false); }}
-                                className="w-full text-right px-4 py-2.5 rounded-xl text-sm font-bold transition-colors flex items-center justify-between cursor-pointer"
+                                className="app-page-card border-0 w-full text-start px-3.5 py-2.5 rounded-xl bg-white dark:bg-[#1E293B] text-sm font-bold transition-all flex items-center justify-between cursor-pointer"
                                 style={adhkarTab === 'morning' ? { 
-                                    backgroundColor: hexToRgba(primaryColor, 0.12), 
-                                    color: primaryColor 
-                                } : {}}
+                                    backgroundColor: primaryColor, 
+                                    color: btnTextColor 
+                                } : undefined}
                             >
                                 <span>{isEn ? 'Morning Remembrances' : 'أذكار الصباح'}</span>
-                                <i className="fa-solid fa-sun text-xs opacity-70"></i>
+                                <i className="fa-solid fa-sun text-xs opacity-75"></i>
                             </button>
                             <button 
+                                type="button"
                                 onClick={() => { setAdhkarTab('evening'); setIsMenuOpen(false); }}
-                                className="w-full text-right px-4 py-2.5 rounded-xl text-sm font-bold transition-colors flex items-center justify-between cursor-pointer"
+                                className="app-page-card border-0 w-full text-start px-3.5 py-2.5 rounded-xl bg-white dark:bg-[#1E293B] text-sm font-bold transition-all flex items-center justify-between cursor-pointer"
                                 style={adhkarTab === 'evening' ? { 
-                                    backgroundColor: hexToRgba(primaryColor, 0.12), 
-                                    color: primaryColor 
-                                } : {}}
+                                    backgroundColor: primaryColor, 
+                                    color: btnTextColor 
+                                } : undefined}
                             >
                                 <span>{isEn ? 'Evening Remembrances' : 'أذكار المساء'}</span>
-                                <i className="fa-solid fa-moon text-xs opacity-70"></i>
+                                <i className="fa-solid fa-moon text-xs opacity-75"></i>
                             </button>
-                            <div className="h-px bg-slate-100 dark:bg-white/10 my-1" />
+                            <div className="h-px bg-slate-100 dark:bg-white/10 my-0.5" />
                             <button 
+                                type="button"
                                 onClick={() => { 
                                     const favs = JSON.parse(localStorage.getItem('favorite_dhikr') || '[]');
                                     setFavorites(favs);
                                     setAdhkarTab('favorites'); 
                                     setIsMenuOpen(false); 
                                 }}
-                                className="w-full text-right px-4 py-2.5 rounded-xl text-sm font-bold transition-colors flex items-center justify-between cursor-pointer"
+                                className="app-page-card border-0 w-full text-start px-3.5 py-2.5 rounded-xl bg-white dark:bg-[#1E293B] text-sm font-bold transition-all flex items-center justify-between cursor-pointer"
                                 style={adhkarTab === 'favorites' ? { 
-                                    backgroundColor: hexToRgba(primaryColor, 0.12), 
-                                    color: primaryColor 
-                                } : {}}
+                                    backgroundColor: primaryColor, 
+                                    color: btnTextColor 
+                                } : undefined}
                             >
                                 <span>{isEn ? 'Favorites' : 'المفضلة'}</span>
-                                <i className="fa-solid fa-heart text-xs opacity-70"></i>
+                                <i className="fa-solid fa-heart text-xs opacity-75"></i>
                             </button>
-                            <div className="h-px bg-slate-100 dark:bg-white/10 my-1" />
+                            <div className="h-px bg-slate-100 dark:bg-white/10 my-0.5" />
                             <button 
+                                type="button"
                                 onClick={handleResetAll}
-                                className="w-full text-right px-4 py-2.5 rounded-xl text-sm font-bold transition-colors flex items-center justify-between hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer"
+                                className="app-page-card border-0 w-full text-start px-3.5 py-2.5 rounded-xl bg-white dark:bg-[#1E293B] text-sm font-bold transition-all flex items-center justify-between cursor-pointer"
                             >
                                 <span>{isEn ? 'Reset All Counters' : 'إعادة ضبط العدادات'}</span>
-                                <i className="fa-solid fa-rotate-left text-xs opacity-70"></i>
+                                <i className="fa-solid fa-rotate-left text-xs opacity-75"></i>
                             </button>
                         </motion.div>
                     )}
                 </AnimatePresence>
 
-                {/* FAB: Clean circle filled with primaryColor and elevated soft drop shadow */}
+                {/* FAB: 3D embossed circle filled with primaryColor */}
                 <button 
+                    type="button"
                     ref={fabRef}
                     onClick={handleFabClick}
-                    className="w-14 h-14 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer relative z-10 border-0"
+                    className="app-page-card border-0 w-14 h-14 rounded-full flex items-center justify-center transition-all cursor-pointer relative z-10"
                     style={{
                         backgroundColor: primaryColor,
-                        color: btnTextColor,
-                        boxShadow: `0 8px 25px ${hexToRgba(primaryColor, isBlackTheme ? 0.2 : 0.35)}`
+                        color: btnTextColor
                     }}
                     title={isEn ? "Remembrances Menu" : "قائمة الأذكار"}
                     aria-label={isEn ? "Remembrances Menu" : "قائمة الأذكار"}
@@ -497,7 +460,8 @@ function AdkarSabahMasaa({ onBack, onNavigate, navParams }: AdkarSabahMasaaProps
                         initial={{ opacity: 0, y: 50, x: '-50%' }}
                         animate={{ opacity: 1, y: 0, x: '-50%' }}
                         exit={{ opacity: 0, y: 50, x: '-50%' }}
-                        className="fixed bottom-8 left-1/2 z-[101] bg-gray-900/90 backdrop-blur text-white px-6 py-3 rounded-full shadow-2xl font-bold flex items-center gap-2 whitespace-nowrap border border-white/10 text-sm"
+                        className="fixed left-1/2 z-[101] bg-gray-900/90 backdrop-blur text-white px-6 py-3 rounded-full shadow-2xl font-bold flex items-center gap-2 whitespace-nowrap border border-white/10 text-sm"
+                        style={{ bottom: 'calc(var(--app-safe-bottom) + 1.25rem)' }}
                     >
                         <i className="fa-solid fa-check text-green-400"></i>
                         {toastMessage}

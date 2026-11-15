@@ -1,4 +1,4 @@
-import { registerPlugin, Capacitor } from '@capacitor/core';
+import { registerPlugin, Capacitor, PluginListenerHandle } from '@capacitor/core';
 
 export interface SilentWindow {
   id: number;
@@ -6,6 +6,45 @@ export interface SilentWindow {
   prayerName: string;
   startMillis: number;
   durationMinutes: number;
+  title?: string;
+  body?: string;
+  shouldPlayChime?: boolean;
+  isArabic?: boolean;
+}
+
+export interface SilentStatus {
+  isSilentActive: boolean;
+  manuallyRestored: boolean;
+  isDeviceMuted: boolean;
+  ringerMode: number;
+  activeWindowId: number;
+  activePrayerKey: string;
+  activePrayerName: string;
+  activeStartMillis: number;
+  activeEndMillis: number;
+  restoredWindowStartMillis: number;
+}
+
+export interface ScheduledAdhanAlarm {
+  id: number;
+  prayerKey: string;
+  title: string;
+  body: string;
+  triggerAtMillis: number;
+  soundName: string;
+  soundUri?: string;
+  playSound: boolean;
+  isArabic: boolean;
+}
+
+export interface ScheduledIqamaAlarm {
+  id: number;
+  prayerKey: string;
+  title: string;
+  body: string;
+  triggerAtMillis: number;
+  playSound: boolean;
+  isArabic: boolean;
 }
 
 interface AutoSilentPluginInterface {
@@ -14,6 +53,16 @@ interface AutoSilentPluginInterface {
   setSilentNow(options: { silent: boolean; prayerName?: string }): Promise<{ success: boolean; isSilent: boolean }>;
   scheduleSilentWindows(options: { windows: SilentWindow[] }): Promise<{ success: boolean }>;
   cancelAllSilent(): Promise<{ success: boolean }>;
+  manualRestoreSound?(options?: { startMillis?: number; windowId?: number }): Promise<SilentStatus & { success: boolean }>;
+  getSilentStatus?(): Promise<SilentStatus>;
+  addListener?(eventName: 'silentStateChanged', listenerFunc: (status: SilentStatus) => void): Promise<PluginListenerHandle>;
+  addListener?(eventName: 'quranPlaybackStopped', listenerFunc: () => void): Promise<PluginListenerHandle>;
+  addListener?(eventName: 'tonePlaybackEnded', listenerFunc: () => void): Promise<PluginListenerHandle>;
+  addListener?(eventName: 'adhanPlaybackStateChanged', listenerFunc: (data: { isPlaying: boolean }) => void): Promise<PluginListenerHandle>;
+  scheduleAdhanAlarms?(options: { alarms: ScheduledAdhanAlarm[] }): Promise<{ success: boolean; count?: number }>;
+  cancelAdhanAlarms?(): Promise<{ success: boolean }>;
+  scheduleIqamaAlarms?(options: { alarms: ScheduledIqamaAlarm[] }): Promise<{ success: boolean; count?: number }>;
+  cancelIqamaAlarms?(): Promise<{ success: boolean }>;
   updateWidget?(): Promise<{ success: boolean }>;
   updatePersistentNotification(): Promise<{ success: boolean }>;
   updateAlertsGroupSummary?(): Promise<{ success: boolean }>;
@@ -21,11 +70,15 @@ interface AutoSilentPluginInterface {
   checkBatteryOptimization(): Promise<{ isIgnoring: boolean }>;
   requestBatteryOptimization(): Promise<void>;
   openAppNotificationSettings?(): Promise<{ success: boolean }>;
-  playTone(options: { path: string }): Promise<{ success: boolean; fallbackNeeded?: boolean; error?: string }>;
+  openLocationSettings?(): Promise<{ success: boolean; error?: string }>;
+  setAlertVolume?(options: { volume: number }): Promise<{ success: boolean; volume: number }>;
+  playTone(options: { path: string; volume?: number }): Promise<{ success: boolean; fallbackNeeded?: boolean; error?: string; volume?: number }>;
   stopTone(): Promise<{ success: boolean }>;
+  setQuranPlaybackActive?(options: { active: boolean; title?: string; subtitle?: string; isArabic?: boolean }): Promise<{ success: boolean; active: boolean }>;
   setAppLanguage?(options: { language: string }): Promise<{ success: boolean; language: string }>;
   getPendingShortcut?(): Promise<{ target?: string; seq?: number }>;
   markShortcutConsumed?(options: { seq: number }): Promise<{ success: boolean }>;
+  setStatusBarStyle?(options: { isDark: boolean }): Promise<{ success: boolean; isDark: boolean }>;
 }
 
 export const AutoSilentMode = registerPlugin<AutoSilentPluginInterface>('AutoSilentMode');
@@ -92,6 +145,117 @@ export const cancelAllDeviceSilentWindows = async (): Promise<void> => {
     await AutoSilentMode.cancelAllSilent();
   } catch (e) {
     console.warn('cancelAllDeviceSilentWindows error:', e);
+  }
+};
+
+/**
+ * Schedules native AlarmManager exact alarms for prayer Adhans on Android so playback
+ * runs through AdhanPlaybackService using the user's selected alert_volume.
+ */
+export const scheduleNativeAdhanAlarms = async (alarms: ScheduledAdhanAlarm[]): Promise<void> => {
+  if (Capacitor.getPlatform() !== 'android') return;
+  try {
+    if (AutoSilentMode.scheduleAdhanAlarms) {
+      await AutoSilentMode.scheduleAdhanAlarms({ alarms });
+    }
+  } catch (e) {
+    console.warn('scheduleNativeAdhanAlarms error:', e);
+  }
+};
+
+/**
+ * Cancels all natively scheduled Adhan alarms and stops any active Adhan playback.
+ */
+export const cancelNativeAdhanAlarms = async (): Promise<void> => {
+  if (Capacitor.getPlatform() !== 'android') return;
+  try {
+    if (AutoSilentMode.cancelAdhanAlarms) {
+      await AutoSilentMode.cancelAdhanAlarms();
+    }
+  } catch (e) {
+    console.warn('cancelNativeAdhanAlarms error:', e);
+  }
+};
+
+/**
+ * Schedules native AlarmManager clock alarms for prayer Iqama reminders on Android so they
+ * fire accurately at T=0 without Doze cooldown throttling.
+ */
+export const scheduleNativeIqamaAlarms = async (alarms: ScheduledIqamaAlarm[]): Promise<void> => {
+  if (Capacitor.getPlatform() !== 'android') return;
+  try {
+    if (AutoSilentMode.scheduleIqamaAlarms) {
+      await AutoSilentMode.scheduleIqamaAlarms({ alarms });
+    }
+  } catch (e) {
+    console.warn('scheduleNativeIqamaAlarms error:', e);
+  }
+};
+
+/**
+ * Cancels all natively scheduled Iqama alarms.
+ */
+export const cancelNativeIqamaAlarms = async (): Promise<void> => {
+  if (Capacitor.getPlatform() !== 'android') return;
+  try {
+    if (AutoSilentMode.cancelIqamaAlarms) {
+      await AutoSilentMode.cancelIqamaAlarms();
+    }
+  } catch (e) {
+    console.warn('cancelNativeIqamaAlarms error:', e);
+  }
+};
+
+/**
+ * Manually restores device sound and marks user_manually_restored = true so that
+ * the end-of-silent notification and chime do not fire when the window expires.
+ */
+export const manualRestoreDeviceSound = async (options?: { startMillis?: number; windowId?: number }): Promise<boolean> => {
+  if (Capacitor.getPlatform() !== 'android') return true;
+  try {
+    if (AutoSilentMode.manualRestoreSound) {
+      const res = await AutoSilentMode.manualRestoreSound(options);
+      return !!res?.success;
+    }
+    await AutoSilentMode.setSilentNow({ silent: false });
+    return true;
+  } catch (e) {
+    console.warn('manualRestoreDeviceSound error:', e);
+    return false;
+  }
+};
+
+/**
+ * Reads the authoritative native auto-silent status and real hardware AudioManager ringer mode on Android.
+ */
+export const getNativeSilentStatus = async (): Promise<SilentStatus | null> => {
+  if (Capacitor.getPlatform() !== 'android') return null;
+  try {
+    if (AutoSilentMode.getSilentStatus) {
+      return await AutoSilentMode.getSilentStatus();
+    }
+    return null;
+  } catch (e) {
+    console.warn('getNativeSilentStatus error:', e);
+    return null;
+  }
+};
+
+/**
+ * Subscribes to real-time native auto-silent / ringer mode state changes on Android.
+ */
+export const addNativeSilentStateListener = async (
+  listener: (status: SilentStatus) => void
+): Promise<PluginListenerHandle | null> => {
+  if (Capacitor.getPlatform() !== 'android') return null;
+  try {
+    if (AutoSilentMode.addListener) {
+      return await AutoSilentMode.addListener('silentStateChanged', listener);
+    }
+    return null;
+  } catch (e) {
+    console.warn('addNativeSilentStateListener error:', e);
+    return null;
   }
 };
 
@@ -174,13 +338,32 @@ export const openNativeNotificationSettings = async (): Promise<boolean> => {
 };
 
 /**
+ * Sets native prayer alert volume on Android (0% - 100%) stored in SharedPreferences.
+ * Used for native MediaPlayer playback without altering device ringer/notification streams.
+ */
+export const setNativeAlertVolume = async (volume: number): Promise<boolean> => {
+  if (Capacitor.getPlatform() !== 'android') return true;
+  try {
+    if (AutoSilentMode.setAlertVolume) {
+      const clamped = Math.max(0, Math.min(100, Math.round(volume)));
+      const res = await AutoSilentMode.setAlertVolume({ volume: clamped });
+      return !!res?.success;
+    }
+    return true;
+  } catch (e) {
+    console.warn('setNativeAlertVolume error:', e);
+    return false;
+  }
+};
+
+/**
  * Plays a prayer alert tone natively on Android via MediaPlayer from res/raw or file.
  * Returns true if played natively, false if web fallback should handle it.
  */
-export const playNativeTone = async (path: string): Promise<boolean> => {
+export const playNativeTone = async (path: string, volume?: number): Promise<boolean> => {
   if (Capacitor.getPlatform() !== 'android') return false;
   try {
-    const res = await AutoSilentMode.playTone({ path });
+    const res = await AutoSilentMode.playTone({ path, volume });
     return !!res?.success;
   } catch (e) {
     console.warn('playNativeTone error:', e);
@@ -259,6 +442,73 @@ export const markNativeShortcutConsumed = async (seq?: number): Promise<void> =>
     }
   } catch (e) {
     console.warn('markNativeShortcutConsumed error:', e);
+  }
+};
+
+/**
+ * Starts/updates or stops the Android MediaPlayback foreground service
+ * so ListenQuran audio continues reliably when the app is minimized.
+ */
+export const setNativeQuranPlaybackActive = async (
+  active: boolean,
+  title?: string,
+  subtitle?: string,
+  isArabic: boolean = true
+): Promise<void> => {
+  if (Capacitor.getPlatform() !== 'android') return;
+  try {
+    if (AutoSilentMode.setQuranPlaybackActive) {
+      await AutoSilentMode.setQuranPlaybackActive({
+        active,
+        title: title || '',
+        subtitle: subtitle || '',
+        isArabic,
+      });
+    }
+  } catch (e) {
+    console.warn('setNativeQuranPlaybackActive error:', e);
+  }
+};
+
+export const addNativeQuranStopListener = async (
+  listener: () => void
+): Promise<PluginListenerHandle | null> => {
+  if (Capacitor.getPlatform() !== 'android') return null;
+  try {
+    if (AutoSilentMode.addListener) {
+      return await AutoSilentMode.addListener('quranPlaybackStopped', listener);
+    }
+    return null;
+  } catch (e) {
+    return null;
+  }
+};
+
+export const addNativeToneEndedListener = async (
+  listener: () => void
+): Promise<PluginListenerHandle | null> => {
+  if (Capacitor.getPlatform() !== 'android') return null;
+  try {
+    if (AutoSilentMode.addListener) {
+      return await AutoSilentMode.addListener('tonePlaybackEnded', listener);
+    }
+    return null;
+  } catch (e) {
+    return null;
+  }
+};
+
+export const addNativeAdhanStateListener = async (
+  listener: (data: { isPlaying: boolean }) => void
+): Promise<PluginListenerHandle | null> => {
+  if (Capacitor.getPlatform() !== 'android') return null;
+  try {
+    if (AutoSilentMode.addListener) {
+      return await AutoSilentMode.addListener('adhanPlaybackStateChanged', listener);
+    }
+    return null;
+  } catch (e) {
+    return null;
   }
 };
 

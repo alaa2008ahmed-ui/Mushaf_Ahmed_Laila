@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { quranData } from '../utils/quranData';
+import { acquireListenInterruption, releaseListenInterruption } from '../utils/listenAudioCoordinator';
 
 interface AudioState {
     isPlaying: boolean;
@@ -41,12 +42,14 @@ export const useAudioStore = create<AudioState>((set, get) => ({
             currentAudio.pause();
             currentAudio.onended = null;
         }
+        releaseListenInterruption('quran-audio-store');
         set({ isPlaying: false, isAudioLoading: false, playingAyah: null, currentAudio: null });
     },
 
     playAudio: async (s: number, a: number, reader: string, repeatCount: number) => {
         const { stopAudio, audioCache } = get();
         stopAudio();
+        acquireListenInterruption('quran-audio-store');
         set({ isAudioLoading: true, playingAyah: { s, a }, reader, repeatCount });
 
         const cacheKey = `${s}:${a}:${reader}`;
@@ -94,6 +97,7 @@ export const useAudioStore = create<AudioState>((set, get) => ({
             get().playAudio(nextS, nextA, reader, repeatCount);
         };
         audio.onerror = () => {
+            releaseListenInterruption('quran-audio-store');
             set({ isPlaying: false, isAudioLoading: false });
             console.error("Audio playback error");
         };
@@ -102,6 +106,7 @@ export const useAudioStore = create<AudioState>((set, get) => ({
             await audio.play();
         } catch (e) {
             console.error("Failed to play audio", e);
+            releaseListenInterruption('quran-audio-store');
             set({ isAudioLoading: false, isPlaying: false });
         }
     }

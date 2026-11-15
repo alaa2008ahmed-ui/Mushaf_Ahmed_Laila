@@ -15,7 +15,7 @@ const ResetConfirmModal: React.FC<ResetConfirmModalProps> = ({ isOpen, onClose, 
     const { language } = useLanguage();
     const isEn = language === 'en';
 
-    const isBlackTheme = theme.bgColor === '#000000' || theme.name === 'أبيض وأسود' || themeKey === 'deep_black';
+    const isBlackTheme = theme.bgColor === '#000000' || theme.name === 'أبيض وأسود' || theme.name === 'اسود' || theme.name === 'black' || themeKey === 'deep_black';
     const isBlackAndWhite = themeKey === 'deep_black' || theme.name === 'أبيض وأسود';
     const primaryColor = isBlackTheme ? '#FFFFFF' : (theme.accent || (isBlackAndWhite ? '#FFFFFF' : (theme.palette?.[0] || '#2E7D5E')));
     const btnTextColor = isBlackTheme ? '#000000' : '#FFFFFF';
@@ -38,29 +38,29 @@ const ResetConfirmModal: React.FC<ResetConfirmModalProps> = ({ isOpen, onClose, 
                         initial={{ scale: 0.9, opacity: 0, y: 20 }}
                         animate={{ scale: 1, opacity: 1, y: 0 }}
                         exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                        className="relative w-full max-w-sm rounded-[28px] p-6 shadow-2xl bg-white dark:bg-zinc-900 border-0 overflow-hidden"
-                        style={{ 
-                            fontFamily: theme.font,
-                            color: 'var(--text-color)'
-                        }}
+                        className={`app-page-card border-0 relative w-full max-w-sm rounded-[28px] p-6 overflow-hidden ${
+                            isBlackTheme ? 'bg-[#18181b] text-white' : 'bg-white dark:bg-[#1E293B] text-slate-800 dark:text-white'
+                        }`}
+                        style={{ fontFamily: theme.font }}
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="flex flex-col items-center text-center relative z-10">
                             <div 
-                                className="w-16 h-16 rounded-full flex items-center justify-center mb-4 shadow-sm"
+                                className={`border-0 w-16 h-16 rounded-full flex items-center justify-center mb-4 ${
+                                    isBlackTheme ? 'bg-white/10' : 'bg-red-50 dark:bg-red-950/40'
+                                }`}
                                 style={{
-                                    backgroundColor: isBlackTheme ? 'rgba(255, 255, 255, 0.1)' : 'rgba(239, 68, 68, 0.1)',
                                     color: isBlackTheme ? '#FFFFFF' : '#EF4444'
                                 }}
                             >
                                 <RotateCcw size={32} className="animate-spin-slow" />
                             </div>
 
-                            <h3 className="text-xl font-bold mb-2">
+                            <h3 className="text-xl font-black mb-2">
                                 {isEn ? 'Reset Khatma Plan' : 'إعادة تعيين الختمة'}
                             </h3>
                             
-                            <div className="flex items-center gap-1.5 mb-3 px-3 py-1 rounded-xl text-xs font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border-0">
+                            <div className="border-0 flex items-center gap-1.5 mb-3 px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400">
                                 <AlertTriangle size={14} />
                                 <span>{isEn ? 'Irreversible Action' : 'إجراء لا يمكن التراجع عنه'}</span>
                             </div>
@@ -71,15 +71,12 @@ const ResetConfirmModal: React.FC<ResetConfirmModalProps> = ({ isOpen, onClose, 
                                     : 'هل أنت متأكد من رغبتك في إعادة تعيين الختمة الحالية؟ سيتم مسح جميع التقدم الذي أحرزته والبدء من جديد.'}
                             </p>
 
-                            <div className="flex w-full gap-3">
+                            <div className="flex w-full gap-3 overflow-visible pb-1">
                                 <button 
                                     type="button"
                                     onClick={onConfirm} 
-                                    className="flex-1 py-3.5 rounded-2xl font-bold text-sm transition-all active:scale-95 shadow-md flex items-center justify-center gap-2 border-0 cursor-pointer"
-                                    style={{
-                                        backgroundColor: primaryColor,
-                                        color: btnTextColor
-                                    }}
+                                    className="app-page-card border-0 flex-1 py-3.5 rounded-2xl font-black text-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
+                                    style={{ backgroundColor: primaryColor, color: btnTextColor }}
                                 >
                                     <RotateCcw size={16} />
                                     <span>{isEn ? 'Confirm' : 'تأكيد'}</span>
@@ -87,8 +84,9 @@ const ResetConfirmModal: React.FC<ResetConfirmModalProps> = ({ isOpen, onClose, 
                                 <button 
                                     type="button"
                                     onClick={onClose} 
-                                    className="flex-1 py-3.5 rounded-2xl font-bold text-sm transition-all active:scale-95 flex items-center justify-center gap-2 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 border-0 cursor-pointer"
-                                    style={{ color: 'var(--text-color)' }}
+                                    className={`app-page-card border-0 flex-1 py-3.5 rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                                        isBlackTheme ? 'bg-[#18181b] text-white' : 'bg-white dark:bg-[#1E293B] text-slate-800 dark:text-white'
+                                    }`}
                                 >
                                     <X size={16} />
                                     <span>{isEn ? 'Cancel' : 'إلغاء'}</span>

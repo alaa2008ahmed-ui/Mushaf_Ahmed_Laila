@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { presetThemes } from '../../context/themes';
+import { showGlobalAppToast } from '../../utils/appNotificationSettings';
 
 interface ThemesSidebarProps {
   isOpen: boolean;
@@ -13,6 +14,7 @@ interface ThemesSidebarProps {
 const getThemeCircleColor = (key: string, t: any) => {
   if (key === 'deep_black') return '#000000';
   if (key === 'shiny_gold') return '#EAB308';
+  if (key === 'burgundy_mode') return '#881337';
   if (key === 'default') return '#059669';
   if (key === 'fajr_light') return '#0284C7';
   if (key === 'golden_sand') return '#B45309';
@@ -59,8 +61,15 @@ const getLuminance = (hexColor: string): number => {
 
 export const ThemesSidebar: React.FC<ThemesSidebarProps> = ({ isOpen, onClose }) => {
   const { theme, themeKey, applyPresetTheme } = useTheme();
-  const { isRTL } = useLanguage();
+  const { language, isRTL } = useLanguage();
+  const isEn = language === 'en';
   const asideRef = useRef<HTMLElement>(null);
+
+  const handleThemeClick = (key: string) => {
+    applyPresetTheme(key);
+    const themeName = presetThemes[key]?.name || key;
+    showGlobalAppToast(isEn ? `Theme: ${themeName}` : `ثيم: ${themeName}`);
+  };
 
   const isBlackTheme = themeKey === 'deep_black' || theme.bgColor === '#000000' || theme.name === 'اسود' || theme.name === 'black';
   const sidebarBg = isBlackTheme ? '#000000' : (theme.bgColor || '#DFE5EC');
@@ -93,8 +102,8 @@ export const ThemesSidebar: React.FC<ThemesSidebarProps> = ({ isOpen, onClose })
             dir={isRTL ? "rtl" : "ltr"}
             style={{
               position: 'fixed',
-              top: 'calc(env(safe-area-inset-top, 0px) + 1cm)',
-              bottom: 'calc(env(safe-area-inset-bottom, 0px) + 1cm)',
+              top: 'calc(var(--app-safe-top) + 1cm)',
+              bottom: 'calc(var(--app-safe-bottom) + 1cm)',
               right: isRTL ? 0 : 'auto',
               left: isRTL ? 'auto' : 0,
               zIndex: 1250,
@@ -108,9 +117,9 @@ export const ThemesSidebar: React.FC<ThemesSidebarProps> = ({ isOpen, onClose })
           >
             {/* Quick Actions Row: Standalone 3D Embossed Icons (No Button Boxes) */}
             {/* Scrollable Theme Circles */}
-            <div className="flex-1 overflow-y-auto px-2 pt-3 pb-3 scrollbar-hide relative z-10" style={{ backgroundColor: 'transparent' }}>
+            <div className="flex-1 min-h-0 overflow-y-auto px-2 py-3 scrollbar-hide relative z-10" style={{ backgroundColor: 'transparent' }}>
               <div 
-                className="grid grid-cols-2 gap-y-[10.7px] gap-x-2 place-items-center pt-0.5 pb-2"
+                className="grid grid-cols-2 gap-y-[10.7px] gap-x-2 place-items-center pt-0.5"
                 style={{ rowGap: '10.7px' }}
               >
                 {Object.entries(presetThemes).map(([key, t]: [string, any]) => {
@@ -160,7 +169,7 @@ export const ThemesSidebar: React.FC<ThemesSidebarProps> = ({ isOpen, onClose })
                     <button
                       key={key}
                       type="button"
-                      onClick={() => applyPresetTheme(key)}
+                      onClick={() => handleThemeClick(key)}
                       className="flex items-center justify-center p-1 group transition-transform active:scale-90 cursor-pointer rounded-full"
                       title={t.name}
                       aria-label={t.name}

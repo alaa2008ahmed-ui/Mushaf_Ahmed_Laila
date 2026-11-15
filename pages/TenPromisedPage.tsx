@@ -21,39 +21,12 @@ import { shareAsImage } from '../utils/shareAsImage';
 import { registerBackInterceptor } from '../hooks/useBackButton';
 import { markPageAsSeen } from '../utils/badgeManager';
 import { 
-    ZoomIn, HelpCircle, ArrowLeft, ArrowRight, Share2, Copy, Award, 
-    BookOpen, Shield, Heart, Sparkles, Check, Search, X, Flame, 
-    MessageSquareQuote, UserCheck, Compass, ChevronDown 
+    ZoomIn, ArrowLeft, ArrowRight, Share2, Copy, 
+    Check, Compass, ChevronDown 
 } from 'lucide-react';
 import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/CommunitySpotlightGuide';
 import { TEN_PROMISED_PAGE_STEPS } from '../components/Community/communityTourSteps';
 import { getModernFlatTokens, hexToRgba } from '../utils/flatDesignTokens';
-
-const normalizeArabicSearch = (text: string): string => {
-    if (!text) return '';
-    return text
-        .replace(/[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06ED]/g, '')
-        .replace(/[أإآٱ]/g, 'ا')
-        .replace(/ة/g, 'ه')
-        .replace(/ى/g, 'ي')
-        .replace(/ؤ/g, 'و')
-        .replace(/ئ/g, 'ي')
-        .replace(/ء/g, '')
-        .replace(/ـ+/g, '')
-        .replace(/[«»""''.,;:!?()\[\]{}\\/—–-]/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim()
-        .toLowerCase();
-};
-
-const matchesArabicSearch = (content: string, rawQuery: string): boolean => {
-    const cleanQuery = normalizeArabicSearch(rawQuery);
-    if (!cleanQuery) return true;
-    const tokens = cleanQuery.split(' ').filter(Boolean);
-    if (tokens.length === 0) return true;
-    const cleanContent = normalizeArabicSearch(content);
-    return tokens.every(token => cleanContent.includes(token));
-};
 
 interface TenPromisedPageProps {
     onBack?: () => void;
@@ -71,33 +44,130 @@ interface ZoomedCardData {
     isVerseOrProof?: boolean;
 }
 
+interface AutoFitSingleLineProps {
+    as?: 'h2' | 'h3' | 'h4' | 'span';
+    text: string;
+    baseFontSize: number;
+    smFontSize?: number;
+    minFontSize?: number;
+    textScale?: number;
+    className?: string;
+    style?: React.CSSProperties;
+}
+
+const AutoFitSingleLine: React.FC<AutoFitSingleLineProps> = ({
+    as: Tag = 'h3',
+    text,
+    baseFontSize,
+    smFontSize,
+    minFontSize = 8.5,
+    textScale = 1,
+    className = '',
+    style,
+}) => {
+    const elRef = useRef<HTMLElement | null>(null);
+
+    const fitText = useCallback(() => {
+        const el = elRef.current;
+        if (!el) return;
+
+        const effectiveBase =
+            smFontSize && typeof window !== 'undefined' && window.innerWidth >= 640
+                ? smFontSize
+                : baseFontSize;
+        const targetSize = effectiveBase * textScale;
+        el.style.fontSize = `${targetSize}px`;
+
+        const availableWidth = el.clientWidth;
+        if (availableWidth <= 0) return;
+
+        const floor = Math.min(minFontSize, 8.5);
+        if (el.scrollWidth > availableWidth) {
+            const ratio = availableWidth / el.scrollWidth;
+            let currentSize = Math.max(floor, Math.floor(targetSize * ratio * 2) / 2);
+            el.style.fontSize = `${currentSize}px`;
+
+            while (el.scrollWidth > el.clientWidth && currentSize > floor) {
+                currentSize = Math.max(floor, currentSize - 0.5);
+                el.style.fontSize = `${currentSize}px`;
+            }
+        }
+    }, [text, baseFontSize, smFontSize, minFontSize, textScale]);
+
+    useLayoutEffect(() => {
+        fitText();
+    }, [fitText]);
+
+    useEffect(() => {
+        const el = elRef.current;
+        if (!el) return;
+        let rafId: number | null = null;
+        const scheduleFit = () => {
+            if (rafId !== null) cancelAnimationFrame(rafId);
+            rafId = requestAnimationFrame(() => {
+                fitText();
+            });
+        };
+        const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(scheduleFit) : null;
+        if (ro) ro.observe(el);
+        if (typeof document !== 'undefined' && document.fonts?.ready) {
+            document.fonts.ready.then(scheduleFit).catch(() => {});
+        }
+        return () => {
+            if (ro) ro.disconnect();
+            if (rafId !== null) cancelAnimationFrame(rafId);
+        };
+    }, [fitText]);
+
+    return (
+        <Tag
+            ref={elRef as any}
+            className={`seerah-autofit-heading block whitespace-nowrap overflow-hidden text-ellipsis ${className}`}
+            style={style}
+        >
+            {text}
+        </Tag>
+    );
+};
+
 const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, navParams, onOpenThemes }) => {
-    const { theme, themeKey } = useTheme();
+    const { theme, themeKey, isNightMode } = useTheme();
     const { language, isRTL } = useLanguage();
     const isEn = language === 'en';
     const ui = TEN_PROMISED_UI_TEXTS[isEn ? 'en' : 'ar'];
 
     // Modern Flat Design System
     const tokens = useMemo(() => getModernFlatTokens(theme, themeKey), [theme, themeKey]);
+    const isEffectiveDark = isNightMode || tokens.isDark || themeKey === 'black_gold' || themeKey === 'deep_black' || theme.bgColor === '#000000';
     const { 
         primaryColor, 
-        secondaryColor, 
         themeActiveTextColor, 
-        pageBgColor, 
-        cardBgColor, 
-        cardShadow, 
-        capsuleBg, 
-        filledInputBg, 
-        chipInactiveBg, 
-        actionBtnBg 
+        pageBgColor
     } = tokens;
+    const themeHeadingColor = (tokens.isDeepBlack || isEffectiveDark && (themeKey === 'deep_black' || theme.bgColor === '#000000')) ? '#FFFFFF' : primaryColor;
+    const innerSubBoxClass = `app-inner-3d-box border-0 ${tokens.isDeepBlack ? 'bg-[#18181b]' : 'bg-white dark:bg-[#0F172A]/85'}`;
+    const primaryBadge3DStyle: React.CSSProperties = {
+        backgroundColor: tokens.isDeepBlack ? '#27272A' : primaryColor,
+        color: themeActiveTextColor,
+        boxShadow: isEffectiveDark
+            ? '0 3.5px 0 #09090b, 0 6px 12px rgba(0, 0, 0, 0.55), inset 0 1.5px 1px rgba(255, 255, 255, 0.32), inset 0 -1.5px 2px rgba(0, 0, 0, 0.35)'
+            : '0 3.5px 0 rgba(0, 0, 0, 0.22), 0 6px 12px -2px rgba(0, 0, 0, 0.16), inset 0 1.5px 1px rgba(255, 255, 255, 0.42), inset 0 -1.5px 2px rgba(0, 0, 0, 0.12)',
+    };
+    const itemBadge3DStyle: React.CSSProperties = {
+        backgroundColor: isEffectiveDark ? (tokens.isDeepBlack ? '#27272A' : '#1E293B') : '#FFFFFF',
+        color: themeHeadingColor,
+        boxShadow: isEffectiveDark
+            ? '0 2.5px 0 #09090b, 0 4px 8px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.2), inset 0 -1px 2px rgba(0, 0, 0, 0.35)'
+            : '0 2.5px 0 rgba(0, 0, 0, 0.11), 0 4px 8px -1px rgba(0, 0, 0, 0.08), inset 0 1.5px 1px rgba(255, 255, 255, 0.98), inset 0 -1px 2px rgba(0, 0, 0, 0.05)',
+    };
 
     // Scroll container refs
     const mainScrollRef = useRef<HTMLElement | null>(null);
     const zoomScrollRef = useRef<HTMLDivElement | null>(null);
+    const savedListScrollTopRef = useRef<number>(0);
+    const restoreScrollTargetRef = useRef<number | null>(null);
 
-    // Search and Filter states
-    const [searchQuery, setSearchQuery] = useState('');
+    // Filter state
     const [activeFilter, setActiveFilter] = useState<'all' | 'caliphs' | 'early' | 'commanders'>('all');
 
     // Selected Companion for detailed profile view
@@ -169,9 +239,20 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
     }, []);
 
     useLayoutEffect(() => {
-        if (mainScrollRef.current) {
-            mainScrollRef.current.scrollTop = 0;
+        const el = mainScrollRef.current;
+        if (!el) return;
+        if (!selectedCompanion && restoreScrollTargetRef.current !== null) {
+            const targetScroll = restoreScrollTargetRef.current;
+            restoreScrollTargetRef.current = null;
+            el.scrollTop = targetScroll;
+            requestAnimationFrame(() => {
+                if (mainScrollRef.current) {
+                    mainScrollRef.current.scrollTop = targetScroll;
+                }
+            });
+            return;
         }
+        el.scrollTop = 0;
     }, [selectedCompanion?.id, detailTab]);
 
     useLayoutEffect(() => {
@@ -181,9 +262,12 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
     }, [zoomedCard]);
 
     const handleSelectCompanion = (c: CompanionInfo) => {
+        if (!selectedCompanion && mainScrollRef.current) {
+            savedListScrollTopRef.current = mainScrollRef.current.scrollTop;
+        }
+        restoreScrollTargetRef.current = null;
         setSelectedCompanion(c);
         setDetailTab('profile');
-        scrollToTop();
     };
 
 
@@ -204,11 +288,10 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
         return getCompanionExtraSections(selectedCompanion.id);
     }, [selectedCompanion?.id]);
 
-    // Filtered Companions based on category filter and comprehensive Arabic search query
+    // Filtered Companions based on category filter
     const filteredCompanions = useMemo(() => {
         let list = [...TEN_PROMISED_COMPANIONS];
 
-        // 1. Category Filter
         if (activeFilter === 'caliphs') {
             list = list.filter(c => ['abu-bakr', 'umar-ibn-khattab', 'uthman-ibn-affan', 'ali-ibn-abi-talib'].includes(c.id));
         } else if (activeFilter === 'early') {
@@ -217,80 +300,8 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
             list = list.filter(c => ['sad-ibn-abi-waqqas', 'abu-ubaydah-ibn-al-jarrah', 'az-zubayr-ibn-al-awwam', 'ali-ibn-abi-talib'].includes(c.id));
         }
 
-        // 2. Comprehensive Search query filter
-        const query = searchQuery.trim();
-        if (query) {
-            list = list.filter(c => {
-                const stances = getCompanionHeroicStances(c.id);
-                const sayings = getCompanionWisdomQuotes(c.id);
-                const extras = getCompanionExtraSections(c.id);
-
-                const searchableFields = [
-                    c.nameAr,
-                    c.fullNameAr,
-                    c.nameEn,
-                    c.fullNameEn,
-                    c.titleBadgeAr,
-                    c.titleBadgeEn,
-                    c.kunyaAr,
-                    c.kunyaEn,
-                    c.burialPlaceAr,
-                    c.burialPlaceEn,
-                    c.kinshipAr,
-                    c.kinshipEn,
-                    c.gladTidingsHadithAr,
-                    c.gladTidingsHadithEn,
-                    c.keyQuoteAr,
-                    c.keyQuoteEn,
-                    c.preIslamicLife.titleAr,
-                    c.preIslamicLife.statusInQurayshAr,
-                    c.preIslamicLife.moralsAndNatureAr,
-                    c.preIslamicLife.tradeAndKnowledgeAr,
-                    c.embracingIslam.titleAr,
-                    c.embracingIslam.storyAr,
-                    c.embracingIslam.earlyPrecedenceAr,
-                    c.embracingIslam.advocacyAndSacrificesAr,
-                    c.migrationAndJihad.titleAr,
-                    c.migrationAndJihad.migrationStoryAr,
-                    c.migrationAndJihad.unmatchedSacrificesAr,
-                    ...(c.migrationAndJihad.majorBattlesAr || []),
-                    c.virtuesAndMerits.titleAr,
-                    ...(c.virtuesAndMerits.titlesAndHonorsAr || []),
-                    ...(c.virtuesAndMerits.testimoniesAr || []),
-                    ...(c.virtuesAndMerits.hadithsAndQuotesAr?.map(h => `${h.hadith} ${h.source}`) || []),
-                    c.postProphetEraAndLegacy.titleAr,
-                    c.postProphetEraAndLegacy.roleOrCaliphateAr,
-                    ...(c.postProphetEraAndLegacy.majorAchievementsAr || []),
-                    c.passingAndTributes.titleAr,
-                    c.passingAndTributes.deathDetailsAr,
-                    c.passingAndTributes.lastWordsAr,
-                    c.passingAndTributes.restingPlaceAr,
-                    ...(c.inspirationalLessonsAr || []),
-                    ...stances.flatMap(s => [s.titleAr, s.titleEn, s.storyAr, s.storyEn, s.categoryAr, s.categoryEn, s.periodAr, s.impactAr, s.quoteAr || '']),
-                    ...sayings.flatMap(w => [w.quoteAr, w.quoteEn, w.contextAr, w.contextEn]),
-                    extras?.lineageDetailsAr || '',
-                    extras?.dailyRoutineAr || '',
-                    extras?.idolatryStanceAr || '',
-                    extras?.wisdomAndPreIslamRoleAr || '',
-                    extras?.hijrahAndBrotherhoodAr || '',
-                    extras?.prophetSacrificeAr || '',
-                    extras?.eternalAdviceAr || '',
-                    ...(extras?.uniqueDistinctionsAr || []),
-                    ...(extras?.civilizationalImpactAr || []),
-                    ...(extras?.spiritualLessonsAr || []),
-                    ...(extras?.leadershipLessonsAr || []),
-                    ...(extras?.modernApplicationAr || []),
-                    ...(extras?.geographicalStations?.map(g => `${g.placeAr} ${g.detailsAr}`) || []),
-                    ...(extras?.quranicVerses?.map(v => `${v.verseAr} ${v.surahAr} ${v.contextAr}`) || []),
-                    ...(extras?.extraTestimonies?.map(t => `${t.speakerAr} ${t.quoteAr}`) || [])
-                ].join(' ');
-
-                return matchesArabicSearch(searchableFields, query);
-            });
-        }
-
         return list;
-    }, [activeFilter, searchQuery]);
+    }, [activeFilter]);
 
     // Close zoom modal on Escape key
     useEffect(() => {
@@ -309,8 +320,8 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
             return;
         }
         if (selectedCompanion) {
+            restoreScrollTargetRef.current = savedListScrollTopRef.current;
             setSelectedCompanion(null);
-            scrollToTop();
             return;
         }
         if (onBack) {
@@ -318,7 +329,7 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
         } else {
             onNavigate('home');
         }
-    }, [zoomedCard, selectedCompanion, onBack, onNavigate, scrollToTop]);
+    }, [zoomedCard, selectedCompanion, onBack, onNavigate]);
 
     // Handle Phone / Hardware / Gesture Back Button
     useEffect(() => {
@@ -328,8 +339,8 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                 return true;
             }
             if (selectedCompanion) {
+                restoreScrollTargetRef.current = savedListScrollTopRef.current;
                 setSelectedCompanion(null);
-                scrollToTop();
                 return true;
             }
             return false;
@@ -337,7 +348,7 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
 
         const unregister = registerBackInterceptor(interceptor);
         return unregister;
-    }, [zoomedCard, selectedCompanion, scrollToTop]);
+    }, [zoomedCard, selectedCompanion]);
 
     // Copy entire companion biography
     const handleCopyFullBio = (c: CompanionInfo) => {
@@ -405,7 +416,7 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
 
     return (
         <div 
-            className={`flex flex-col h-screen overflow-hidden select-none ${isEn ? 'text-left font-sans' : 'text-right'}`}
+            className={`flex flex-col h-[100dvh] overflow-hidden select-none ${isEn ? 'text-left font-sans' : 'text-right'}`}
             style={{ 
                 backgroundColor: pageBgColor, 
                 color: theme.textColor,
@@ -463,7 +474,7 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
 
                         {/* Title in center */}
                         <div className={`text-center ${selectedCompanion ? 'px-20 sm:px-24' : 'px-14'}`}>
-                            <h1 className={`app-top-bar__title ${isEn ? 'font-bold' : 'font-kufi'} transition-all ${
+                            <h1 className={`app-top-bar__title ${isEn ? 'font-bold' : 'font-kufi'} ${
                                 selectedCompanion 
                                     ? 'text-sm sm:text-base leading-tight font-bold truncate max-w-[220px] sm:max-w-md' 
                                     : 'text-lg sm:text-2xl'
@@ -506,48 +517,49 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
             {/* Top Fixed Tabs Bar - Mounted outside <main> directly beneath top bar, completely blocking any scrolling cards from appearing above or behind */}
             {selectedCompanion && (
                 <div 
-                    className="shrink-0 z-20 px-3 sm:px-4 pt-1.5 pb-2 transition-colors border-0"
+                    className="shrink-0 z-20 px-3 sm:px-4 pt-1.5 pb-3 border-0"
                     style={{ 
                         backgroundColor: pageBgColor
                     }}
                 >
                     <div className="max-w-3xl mx-auto">
-                        <div 
-                            className="companion-tabs-nav flex items-center gap-1.5 overflow-x-auto p-1 rounded-2xl border-0 shadow-xs hide-scrollbar"
-                            style={{ 
-                                backgroundColor: capsuleBg
-                            }}
-                        >
-                            {[
-                                { id: 'profile', label: ui.tabProfile, icon: 'fa-id-card' },
-                                { id: 'stances', label: ui.tabStances, icon: 'fa-fire-flame-curved' },
-                                { id: 'traits', label: ui.tabTraits, icon: 'fa-user-check' },
-                                { id: 'sayings', label: ui.tabSayings, icon: 'fa-quote-left' },
-                                { id: 'virtues', label: ui.tabVirtues, icon: 'fa-award' },
-                                { id: 'conversion', label: ui.tabConversion, icon: 'fa-shield-halved' },
-                                { id: 'preIslam', label: ui.tabPreIslam, icon: 'fa-clock-rotate-left' },
-                                { id: 'legacy', label: ui.tabLegacy, icon: 'fa-landmark' },
-                                { id: 'lessons', label: ui.tabLessons, icon: 'fa-lightbulb' }
-                            ].map((tab) => (
-                                <button
-                                    key={tab.id}
-                                    type="button"
-                                    onClick={() => {
-                                        setDetailTab(tab.id as any);
-                                        scrollToTop();
-                                    }}
-                                    className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border-0 shrink-0 flex items-center gap-1.5 active:scale-95 cursor-pointer ${
-                                        detailTab === tab.id ? 'shadow-xs' : 'hover:bg-black/5 dark:hover:bg-white/5'
-                                    } ${isEn ? 'font-sans' : 'font-kufi'}`}
-                                    style={{
-                                        backgroundColor: detailTab === tab.id ? primaryColor : 'transparent',
-                                        color: detailTab === tab.id ? themeActiveTextColor : (tokens.isDark ? '#94A3B8' : '#64748B')
-                                    }}
-                                >
-                                    <i className={`fa-solid ${tab.icon} text-[10px]`}></i>
-                                    <span>{tab.label}</span>
-                                </button>
-                            ))}
+                        <div className="app-page-card border-0 bg-white dark:bg-[#1E293B] rounded-2xl p-1 overflow-visible">
+                            <div 
+                                className="companion-tabs-nav flex items-center gap-1.5 overflow-x-auto p-0.5 hide-scrollbar"
+                            >
+                                {[
+                                    { id: 'profile', label: ui.tabProfile },
+                                    { id: 'stances', label: ui.tabStances },
+                                    { id: 'traits', label: ui.tabTraits },
+                                    { id: 'sayings', label: ui.tabSayings },
+                                    { id: 'virtues', label: ui.tabVirtues },
+                                    { id: 'conversion', label: ui.tabConversion },
+                                    { id: 'preIslam', label: ui.tabPreIslam },
+                                    { id: 'legacy', label: ui.tabLegacy },
+                                    { id: 'lessons', label: ui.tabLessons }
+                                ].map((tab) => (
+                                    <button
+                                        key={tab.id}
+                                        type="button"
+                                        onClick={() => {
+                                            setDetailTab(tab.id as any);
+                                            scrollToTop();
+                                        }}
+                                        className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border-0 shrink-0 flex items-center gap-1.5 cursor-pointer ${
+                                            detailTab === tab.id ? 'active:translate-y-[1px]' : 'wird-inner-raised hover:opacity-100 opacity-85'
+                                        } ${isEn ? 'font-sans' : 'font-kufi'}`}
+                                        style={{
+                                            backgroundColor: detailTab === tab.id ? primaryColor : undefined,
+                                            color: detailTab === tab.id ? themeActiveTextColor : (tokens.isDark ? '#CBD5E1' : '#475569'),
+                                            boxShadow: detailTab === tab.id
+                                                ? '0 4px 0 rgba(0, 0, 0, 0.2), 0 7px 14px -2px rgba(0, 0, 0, 0.14), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.35)'
+                                                : undefined
+                                        }}
+                                    >
+                                        <span>{tab.label}</span>
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -563,31 +575,31 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                         font-size: calc(0.925rem * ${cardTextScale}) !important;
                         line-height: ${cardTextScale >= 1.3 ? '1.9' : '1.75'} !important;
                     }
-                    .promised-scalable-content h2 {
+                    .promised-scalable-content h2:not(.seerah-autofit-heading) {
                         font-size: calc(1.35rem * ${cardTextScale}) !important;
                     }
-                    .promised-scalable-content h3 {
+                    .promised-scalable-content h3:not(.seerah-autofit-heading) {
                         font-size: calc(1.15rem * ${cardTextScale}) !important;
                     }
-                    .promised-scalable-content h4,
-                    .promised-scalable-content h5 {
+                    .promised-scalable-content h4:not(.seerah-autofit-heading),
+                    .promised-scalable-content h5:not(.seerah-autofit-heading) {
                         font-size: calc(1.05rem * ${cardTextScale}) !important;
                     }
-                    .promised-scalable-content .text-xs,
-                    .promised-scalable-content .text-\\[11px\\],
-                    .promised-scalable-content .text-\\[10px\\] {
+                    .promised-scalable-content .text-xs:not(button):not(.seerah-autofit-heading),
+                    .promised-scalable-content .text-\\[11px\\]:not(button):not(.seerah-autofit-heading),
+                    .promised-scalable-content .text-\\[10px\\]:not(button):not(.seerah-autofit-heading) {
                         font-size: calc(0.775rem * ${cardTextScale}) !important;
                     }
-                    .promised-scalable-content .text-sm {
+                    .promised-scalable-content .text-sm:not(button):not(.seerah-autofit-heading) {
                         font-size: calc(0.875rem * ${cardTextScale}) !important;
                     }
-                    .promised-scalable-content .text-base {
+                    .promised-scalable-content .text-base:not(button):not(.seerah-autofit-heading) {
                         font-size: calc(1rem * ${cardTextScale}) !important;
                     }
-                    .promised-scalable-content .text-lg {
+                    .promised-scalable-content .text-lg:not(button):not(.seerah-autofit-heading) {
                         font-size: calc(1.125rem * ${cardTextScale}) !important;
                     }
-                    .promised-scalable-content .text-xl {
+                    .promised-scalable-content .text-xl:not(button):not(.seerah-autofit-heading) {
                         font-size: calc(1.25rem * ${cardTextScale}) !important;
                     }
                     .promised-scalable-content .line-clamp-2 {
@@ -606,91 +618,38 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                         font-size: 0.75rem !important;
                         line-height: 1rem !important;
                     }
-                    .companion-tabs-nav i {
-                        font-size: 10px !important;
-                    }
                 `}</style>
             )}
 
             {/* Main Content Area */}
             <main 
                 ref={mainScrollRef} 
-                className="flex-1 overflow-y-auto px-3 sm:px-4 pt-3 sm:pt-4 pb-7 sm:pb-8 pb-[calc(env(safe-area-inset-bottom,0px)+1.75rem)] hide-scrollbar relative promised-scalable-content"
+                className="flex-1 min-h-0 overflow-y-auto px-3 sm:px-4 pt-3 sm:pt-4 app-scroll-safe hide-scrollbar relative promised-scalable-content"
             >
                 {/* 1. LIST VIEW OF THE 10 COMPANIONS */}
                 {!selectedCompanion ? (
                     <div className="max-w-3xl mx-auto space-y-4">
-                        {/* Authentic Hadith Banner */}
-                        <div 
-                            className="p-4 sm:p-5 rounded-[18px] border-0 relative overflow-hidden text-center transition-all"
-                            style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
-                        >
-                            <div className="flex items-center justify-center gap-2 mb-2">
-                                <Award className="w-5 h-5 text-amber-400" />
-                                <h2 className={`text-sm sm:text-base font-bold ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: primaryColor }}>
-                                    {ui.hadithBannerTitle}
-                                </h2>
-                            </div>
-                            <p className={`text-xs sm:text-sm leading-relaxed font-semibold opacity-90 ${isEn ? 'font-sans' : 'font-amiri'}`}>
-                                {isEn 
-                                    ? '"Abu Bakr is in Paradise, Umar is in Paradise, Uthman is in Paradise, Ali is in Paradise, Talha is in Paradise, Az-Zubayr is in Paradise, Abdur-Rahman ibn Awf is in Paradise, Sa\'d is in Paradise, Saeed is in Paradise, and Abu Ubaydah ibn Al-Jarrah is in Paradise."'
-                                    : '«أَبُو بَكْرٍ فِي الْجَنَّةِ، وَعُمَرُ فِي الْجَنَّةِ، وَعُثْمَانُ فِي الْجَنَّةِ، وَعَلِيٌّ فِي الْجَنَّةِ، وَطَلْحَةُ فِي الْجَنَّةِ، وَالزُّبَيْرُ فِي الْجَنَّةِ، وَعَبْدُ الرَّحْمَنِ بْنُ عَوْفٍ فِي الْجَنَّةِ، وَسَعْدٌ فِي الْجَنَّةِ، وَسَعِيدٌ فِي الْجَنَّةِ، وَأَبُو عُبَيْدَةَ بْنُ الْجَرَّاحِ فِي الْجَنَّةِ»'}
-                            </p>
-                            <div className="mt-2 text-[11px] opacity-70 font-sans">
-                                {isEn ? 'Jami` at-Tirmidhi (3747) • Sunan Abi Dawud • Sahih' : 'رواه الترمذي (٣٧٤٧) وأحمد وأبو داود بإسناد صحيح'}
-                            </div>
-                        </div>
-
-                        {/* Search and Quick Filters Header */}
+                        {/* Quick Filters Header */}
                         <div className="space-y-2.5">
-                            {/* Search Input Bar */}
-                            <div className="relative">
-                                <div className={`absolute inset-y-0 ${isEn ? 'left-3.5' : 'right-3.5'} flex items-center pointer-events-none opacity-60`}>
-                                    <Search size={18} />
-                                </div>
-                                <input
-                                    type="text"
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    placeholder={ui.searchPlaceholder}
-                                    className={`w-full py-2.5 sm:py-3 ${isEn ? 'pl-10 pr-10' : 'pr-10 pl-10'} rounded-[14px] border-0 text-xs sm:text-sm font-medium focus:outline-hidden transition-all`}
-                                    style={{ 
-                                        backgroundColor: filledInputBg,
-                                        color: tokens.isDark ? '#F1F5F9' : '#1E293B'
-                                    }}
-                                />
-                                {searchQuery && (
-                                    <button
-                                        type="button"
-                                        onClick={() => setSearchQuery('')}
-                                        className={`absolute inset-y-0 ${isEn ? 'right-3.5' : 'left-3.5'} flex items-center opacity-60 hover:opacity-100 transition-opacity cursor-pointer`}
-                                        title={ui.clearSearch}
-                                    >
-                                        <X size={16} />
-                                    </button>
-                                )}
-                            </div>
-
                             {/* Quick Filter Chips */}
-                            <div className="filter-chips-nav no-scale flex items-center gap-1.5 overflow-x-auto pb-1 hide-scrollbar">
+                            <div className="filter-chips-nav no-scale flex items-center gap-2 overflow-x-auto py-2 px-1 hide-scrollbar">
                                 {[
-                                    { id: 'all', label: ui.filterAll, icon: 'fa-users' },
-                                    { id: 'caliphs', label: ui.filterCaliphs, icon: 'fa-crown' },
-                                    { id: 'early', label: ui.filterEarly, icon: 'fa-star' },
-                                    { id: 'commanders', label: ui.filterCommanders, icon: 'fa-shield-halved' }
+                                    { id: 'all', label: ui.filterAll },
+                                    { id: 'caliphs', label: ui.filterCaliphs },
+                                    { id: 'early', label: ui.filterEarly },
+                                    { id: 'commanders', label: ui.filterCommanders }
                                 ].map(f => (
                                     <button
                                         key={f.id}
                                         onClick={() => setActiveFilter(f.id as any)}
-                                        className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border-0 shrink-0 flex items-center gap-1.5 cursor-pointer active:scale-95 ${
-                                            activeFilter === f.id ? 'shadow-xs' : 'hover:opacity-100'
-                                        }`}
-                                        style={{
-                                            backgroundColor: activeFilter === f.id ? primaryColor : chipInactiveBg,
-                                            color: activeFilter === f.id ? themeActiveTextColor : (tokens.isDark ? '#94A3B8' : '#475569')
+                                        className="app-page-card border-0 bg-white dark:bg-[#1E293B] px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all shrink-0 flex items-center gap-1.5 cursor-pointer"
+                                        style={activeFilter === f.id ? {
+                                            backgroundColor: primaryColor,
+                                            color: themeActiveTextColor
+                                        } : {
+                                            color: 'var(--text-color)'
                                         }}
                                     >
-                                        <i className={`fa-solid ${f.icon} text-[10px]`}></i>
                                         <span>{f.label}</span>
                                     </button>
                                 ))}
@@ -700,83 +659,68 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                         {/* Companions Grid / List */}
                         {filteredCompanions.length === 0 ? (
                             <div 
-                                className="p-8 text-center rounded-[18px] border-0 space-y-3"
-                                style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+                                className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-8 text-center rounded-[18px] space-y-3"
                             >
                                 <Compass className="w-10 h-10 mx-auto opacity-50 text-amber-500" />
                                 <p className="text-sm font-bold opacity-80">{ui.noResults}</p>
                                 <button
-                                    onClick={() => { setSearchQuery(''); setActiveFilter('all'); }}
-                                    className="px-4 py-2 rounded-xl text-xs font-bold border-0 cursor-pointer transition-colors"
-                                    style={{ backgroundColor: primaryColor, color: themeActiveTextColor }}
+                                    onClick={() => setActiveFilter('all')}
+                                    className="px-4 py-2 rounded-xl text-xs font-bold border-0 cursor-pointer transition-all active:translate-y-[2px]"
+                                    style={{
+                                        backgroundColor: primaryColor,
+                                        color: themeActiveTextColor,
+                                        boxShadow: '0 4px 0 rgba(0, 0, 0, 0.2), 0 8px 16px -2px rgba(0, 0, 0, 0.14), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.35)'
+                                    }}
                                 >
                                     {ui.clearSearch}
                                 </button>
                             </div>
                         ) : (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-2">
                                 {filteredCompanions.map((companion) => {
                                     const name = isEn ? companion.nameEn : companion.nameAr;
                                     const title = isEn ? companion.titleBadgeEn : companion.titleBadgeAr;
 
                                     return (
-                                        <motion.div
+                                        <div
                                             key={companion.id}
                                             id={`ten-promised-card-${companion.order}`}
-                                            layout
-                                            initial={{ opacity: 0, y: 15 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            whileHover={{ y: -2, scale: 1.01 }}
-                                            whileTap={{ scale: 0.98 }}
                                             onClick={() => handleSelectCompanion(companion)}
-                                            className="p-4 sm:p-5 rounded-[18px] border-0 cursor-pointer transition-all flex flex-col justify-between group relative overflow-hidden space-y-3"
-                                            style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+                                            className="app-page-card tasbeeh-pressable border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-[18px] cursor-pointer flex flex-col justify-between group relative overflow-visible space-y-3"
                                         >
                                             <div className="space-y-2">
-                                                {/* Order Badge and Tag */}
+                                                {/* Order Circle */}
                                                 <div className="flex items-center justify-between">
                                                     <span 
-                                                        className="w-7 h-7 rounded-full text-xs font-black flex items-center justify-center shadow-xs"
-                                                        style={{ backgroundColor: primaryColor, color: themeActiveTextColor }}
+                                                        className="w-7 h-7 rounded-full text-xs font-black flex items-center justify-center border-0"
+                                                        style={primaryBadge3DStyle}
                                                     >
                                                         {companion.order}
-                                                    </span>
-                                                    <span 
-                                                        className="text-[10px] sm:text-xs font-bold px-2.5 py-0.5 rounded-full border-0"
-                                                        style={{ backgroundColor: `${primaryColor}14`, color: primaryColor }}
-                                                    >
-                                                        {isEn ? `Honored #${companion.order}` : `المبشر بالجنة #${companion.order}`}
                                                     </span>
                                                 </div>
 
                                                 {/* Name */}
-                                                <h3 
-                                                    className={`text-base sm:text-lg font-bold ${isEn ? 'font-sans' : 'font-kufi'} transition-colors`}
-                                                    style={{ color: primaryColor }}
-                                                >
-                                                    {name}
-                                                </h3>
+                                                <AutoFitSingleLine
+                                                    as="h3"
+                                                    text={name}
+                                                    baseFontSize={16}
+                                                    smFontSize={18}
+                                                    minFontSize={9}
+                                                    textScale={cardTextScale}
+                                                    className={`font-bold ${isEn ? 'font-sans' : 'font-kufi'}`}
+                                                    style={{ color: themeHeadingColor }}
+                                                />
 
                                                 {/* Title Badge / Subtitle */}
                                                 <p className="text-xs sm:text-sm font-medium opacity-85 leading-relaxed line-clamp-2">
                                                     {title}
                                                 </p>
                                             </div>
-
-                                            {/* Action Link Footer */}
-                                            <div className="pt-2 flex items-center justify-between text-xs font-bold" style={{ color: primaryColor }}>
-                                                <span className="flex items-center gap-1 group-hover:gap-2 transition-all">
-                                                    <span>{isEn ? 'View Profile & Stances' : 'عرض السيرة والمواقف'}</span>
-                                                    <i className={`fa-solid ${isEn ? 'fa-arrow-right' : 'fa-arrow-left'} text-[10px]`}></i>
-                                                </span>
-                                            </div>
-                                        </motion.div>
+                                        </div>
                                     );
                                 })}
                             </div>
                         )}
-                        {/* Bottom Spacer for Mobile Phone Navigation Bar */}
-                        <div className="w-full h-10 sm:h-14 shrink-0 pointer-events-none" />
                     </div>
                 ) : (
                     /* 2. COMPANION DETAILED PROFILE VIEW */
@@ -786,68 +730,64 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                             {/* Hero Card (shown ONLY in the first tab: 'profile' as requested) */}
                             {detailTab === 'profile' && (
                                 <div 
-                                    className="p-5 sm:p-7 rounded-[18px] border-0 relative overflow-hidden space-y-4"
-                                    style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+                                    className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-5 sm:p-7 rounded-[18px] relative overflow-visible space-y-4"
                                 >
-                                    {/* Top row: Order badge, Crown, Share & Copy buttons */}
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <span 
-                                                className="w-8 h-8 rounded-full text-sm font-black flex items-center justify-center shadow-md"
-                                                style={{ backgroundColor: primaryColor, color: themeActiveTextColor }}
-                                            >
-                                                {selectedCompanion.order}
-                                            </span>
-                                            <span 
-                                                className="text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1.5 border-0"
-                                                style={{ backgroundColor: `${primaryColor}14`, color: primaryColor }}
-                                            >
-                                                <Sparkles className="w-3.5 h-3.5" />
-                                                <span>{isEn ? selectedCompanion.titleBadgeEn : selectedCompanion.titleBadgeAr}</span>
-                                            </span>
-                                        </div>
+                                    {/* Top row: Order badge, Share & Copy buttons */}
+                                    <div className="flex items-center justify-between overflow-visible">
+                                        <span 
+                                            className="w-8 h-8 rounded-full text-sm font-black flex items-center justify-center border-0"
+                                            style={primaryBadge3DStyle}
+                                        >
+                                            {selectedCompanion.order}
+                                        </span>
 
-                                        <div className="flex items-center gap-1.5">
-                                            <button
-                                                type="button"
-                                                onClick={() => handleCopyFullBio(selectedCompanion)}
-                                                className="w-8 h-8 rounded-full border-0 flex items-center justify-center transition-all cursor-pointer active:scale-90"
-                                                style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
-                                                title={ui.copyBiography}
-                                                aria-label={ui.copyBiography}
-                                            >
-                                                <Copy size={15} />
-                                            </button>
+                                        <div className="flex items-center gap-2 overflow-visible">
                                             <button
                                                 type="button"
                                                 onClick={() => handleShareCompanionImage(selectedCompanion)}
-                                                className="w-8 h-8 rounded-full border-0 flex items-center justify-center transition-all cursor-pointer active:scale-90"
-                                                style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+                                                disabled={isSharing}
+                                                className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
+                                                style={{ color: 'var(--text-color)' }}
                                                 title={ui.shareImage}
                                                 aria-label={ui.shareImage}
                                             >
-                                                <Share2 size={15} />
+                                                {isSharing ? <i className="fa-solid fa-circle-notch fa-spin text-xs"></i> : <Share2 className="w-3.5 h-3.5" />}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleCopyFullBio(selectedCompanion)}
+                                                className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
+                                                style={{ color: 'var(--text-color)' }}
+                                                title={ui.copyBiography}
+                                                aria-label={ui.copyBiography}
+                                            >
+                                                <i className="fa-regular fa-copy text-xs"></i>
                                             </button>
                                         </div>
                                     </div>
 
                                     {/* Name & Lineage */}
                                     <div className="space-y-1">
-                                        <h2 
-                                            className={`text-2xl sm:text-3xl font-black ${isEn ? 'font-sans' : 'font-kufi'}`}
-                                            style={{ color: primaryColor }}
-                                        >
-                                            {isEn ? selectedCompanion.nameEn : selectedCompanion.nameAr}
-                                        </h2>
+                                        <AutoFitSingleLine
+                                            as="h2"
+                                            text={isEn ? selectedCompanion.nameEn : selectedCompanion.nameAr}
+                                            baseFontSize={22}
+                                            smFontSize={28}
+                                            minFontSize={11}
+                                            textScale={cardTextScale}
+                                            className={`font-black ${isEn ? 'font-sans' : 'font-kufi'}`}
+                                            style={{ color: themeHeadingColor }}
+                                        />
                                         <p className="text-xs sm:text-sm font-semibold opacity-85 leading-relaxed">
                                             {isEn ? selectedCompanion.fullNameEn : selectedCompanion.fullNameAr}
                                         </p>
                                     </div>
 
                                     {/* Key Quote Box */}
-                                    <div className="p-3.5 sm:p-4 rounded-[16px] bg-amber-500/10 border-0 relative">
-                                        <div className="text-[11px] font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1.5 mb-1">
-                                            <Award size={14} />
+                                    <div 
+                                        className={`p-3.5 sm:p-4 rounded-[16px] relative ${innerSubBoxClass}`}
+                                    >
+                                        <div className="text-[11px] font-bold mb-1" style={{ color: themeHeadingColor }}>
                                             <span>{ui.quoteTitle}</span>
                                         </div>
                                         <p className={`text-xs sm:text-sm leading-relaxed font-bold italic ${isEn ? 'font-sans' : 'font-amiri'}`}>
@@ -856,9 +796,11 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                     </div>
 
                                     {/* Glad Tidings Hadith Card with Card Zoom */}
-                                    <div className="p-4 rounded-[16px] bg-emerald-500/10 border-0 relative">
+                                    <div 
+                                        className={`p-4 rounded-[16px] relative ${innerSubBoxClass}`}
+                                    >
                                         <div className="flex items-center justify-between mb-1">
-                                            <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-300">
+                                            <span className="text-[11px] font-bold" style={{ color: themeHeadingColor }}>
                                                 {ui.hadithProofLabel}
                                             </span>
                                             <button
@@ -871,8 +813,8 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                     content: isEn ? selectedCompanion.gladTidingsHadithEn : selectedCompanion.gladTidingsHadithAr,
                                                     isVerseOrProof: true
                                                 })}
-                                                className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors cursor-pointer"
-                                                style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+                                                className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
+                                            style={{ color: 'var(--text-color)' }}
                                                 title={ui.zoom}
                                                 aria-label={ui.zoom}
                                             >
@@ -891,14 +833,12 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                             {/* TAB 1: PROFILE */}
                             {detailTab === 'profile' && (
                                 <div className="space-y-3">
-                                    <div 
-                                        className="p-4 sm:p-5 rounded-[18px] border-0 space-y-3 transition-all" 
-                                        style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
-                                    >
-                                        <div className={`flex items-center justify-between pb-2 border-b ${tokens.isDark ? 'border-slate-800' : 'border-slate-100'}`}>
-                                            <h4 className={`text-sm font-bold flex items-center gap-2 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: primaryColor }}>
-                                                <i className="fa-solid fa-address-card"></i>
-                                                <span>{ui.tabProfile}</span>
+                                            <div 
+                                                className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-[18px] space-y-2.5 relative overflow-visible transition-all" 
+                                            >
+                                        <div className="flex items-center justify-between gap-2 pb-2.5 app-3d-divider">
+                                            <h4 className={`font-bold flex items-center min-w-0 flex-1 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: themeHeadingColor }}>
+                                                <AutoFitSingleLine as="span" text={ui.tabProfile} baseFontSize={14} minFontSize={9.5} textScale={cardTextScale} className="min-w-0 flex-1" />
                                             </h4>
                                             <button
                                                 type="button"
@@ -908,8 +848,8 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                     badge: isEn ? selectedCompanion.titleBadgeEn : selectedCompanion.titleBadgeAr,
                                                     content: `${ui.fullNameLabel} ${isEn ? selectedCompanion.fullNameEn : selectedCompanion.fullNameAr}\n\n${ui.kunyaLabel} ${isEn ? selectedCompanion.kunyaEn : selectedCompanion.kunyaAr}\n\n${ui.birthLabel} ${isEn ? selectedCompanion.birthYearEn : selectedCompanion.birthYearAr}\n\n${ui.deathLabel} ${isEn ? selectedCompanion.deathYearEn : selectedCompanion.deathYearAr}\n\n${ui.burialLabel} ${isEn ? selectedCompanion.burialPlaceEn : selectedCompanion.burialPlaceAr}\n\n${ui.kinshipLabel} ${isEn ? selectedCompanion.kinshipEn : selectedCompanion.kinshipAr}`
                                                 })}
-                                                className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors cursor-pointer"
-                                                style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+                                                className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
+                                            style={{ color: 'var(--text-color)' }}
                                                 title={ui.zoom}
                                             >
                                                 <ZoomIn size={14} />
@@ -917,29 +857,29 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                         </div>
 
                                         <div className="grid grid-cols-1 gap-2.5 text-xs sm:text-sm">
-                                            <div className="p-2.5 rounded-[14px] bg-slate-500/5 dark:bg-slate-800/40 border-0">
+                                            <div className={`p-3 rounded-[14px] ${innerSubBoxClass}`}>
                                                 <span className="font-bold opacity-70 block mb-0.5">{ui.fullNameLabel}</span>
                                                 <span className="font-semibold">{isEn ? selectedCompanion.fullNameEn : selectedCompanion.fullNameAr}</span>
                                             </div>
-                                            <div className="p-2.5 rounded-[14px] bg-slate-500/5 dark:bg-slate-800/40 border-0">
+                                            <div className={`p-3 rounded-[14px] ${innerSubBoxClass}`}>
                                                 <span className="font-bold opacity-70 block mb-0.5">{ui.kunyaLabel}</span>
                                                 <span className="font-semibold">{isEn ? selectedCompanion.kunyaEn : selectedCompanion.kunyaAr}</span>
                                             </div>
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                                                <div className="p-2.5 rounded-[14px] bg-slate-500/5 dark:bg-slate-800/40 border-0">
+                                                <div className={`p-3 rounded-[14px] ${innerSubBoxClass}`}>
                                                     <span className="font-bold opacity-70 block mb-0.5">{ui.birthLabel}</span>
                                                     <span className="font-semibold">{isEn ? selectedCompanion.birthYearEn : selectedCompanion.birthYearAr}</span>
                                                 </div>
-                                                <div className="p-2.5 rounded-[14px] bg-slate-500/5 dark:bg-slate-800/40 border-0">
+                                                <div className={`p-3 rounded-[14px] ${innerSubBoxClass}`}>
                                                     <span className="font-bold opacity-70 block mb-0.5">{ui.deathLabel}</span>
                                                     <span className="font-semibold">{isEn ? selectedCompanion.deathYearEn : selectedCompanion.deathYearAr}</span>
                                                 </div>
                                             </div>
-                                            <div className="p-2.5 rounded-[14px] bg-slate-500/5 dark:bg-slate-800/40 border-0">
+                                            <div className={`p-3 rounded-[14px] ${innerSubBoxClass}`}>
                                                 <span className="font-bold opacity-70 block mb-0.5">{ui.burialLabel}</span>
                                                 <span className="font-semibold">{isEn ? selectedCompanion.burialPlaceEn : selectedCompanion.burialPlaceAr}</span>
                                             </div>
-                                            <div className="p-2.5 rounded-[14px] bg-slate-500/5 dark:bg-slate-800/40 border-0">
+                                            <div className={`p-3 rounded-[14px] ${innerSubBoxClass}`}>
                                                 <span className="font-bold opacity-70 block mb-0.5">{ui.kinshipLabel}</span>
                                                 <span className="font-semibold">{isEn ? selectedCompanion.kinshipEn : selectedCompanion.kinshipAr}</span>
                                             </div>
@@ -949,13 +889,11 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                     {/* Lineage & Kinship Card */}
                                     {extraSections && (
                                         <div 
-                                            className="p-4 sm:p-5 rounded-[18px] border-0 space-y-2.5 relative transition-all" 
-                                            style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+                                            className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-[18px] space-y-2.5 relative overflow-visible transition-all"
                                         >
-                                            <div className={`flex items-center justify-between pb-2 border-b ${tokens.isDark ? 'border-slate-800' : 'border-slate-100'}`}>
-                                                <h4 className={`text-sm font-bold flex items-center gap-2 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: primaryColor }}>
-                                                    <i className="fa-solid fa-sitemap" style={{ color: primaryColor }}></i>
-                                                    <span>{isEn ? 'Lineage, Clan & Prophetic Kinship' : 'شجرة النسب والمكانة والقرابة النبوية'}</span>
+                                            <div className="flex items-center justify-between gap-2 pb-2.5 app-3d-divider">
+                                                <h4 className={`font-bold flex items-center min-w-0 flex-1 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: themeHeadingColor }}>
+                                                    <AutoFitSingleLine as="span" text={isEn ? 'Lineage, Clan & Prophetic Kinship' : 'شجرة النسب والمكانة والقرابة النبوية'} baseFontSize={14} minFontSize={9} textScale={cardTextScale} className="min-w-0 flex-1" />
                                                 </h4>
                                                 <button
                                                     type="button"
@@ -966,8 +904,8 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                         icon: 'fa-solid fa-sitemap',
                                                         content: isEn ? extraSections.lineageDetailsEn : extraSections.lineageDetailsAr
                                                     })}
-                                                    className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors cursor-pointer"
-                                                    style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+                                                    className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
+                                            style={{ color: 'var(--text-color)' }}
                                                     title={ui.zoom}
                                                 >
                                                     <ZoomIn size={14} />
@@ -982,13 +920,11 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                     {/* Geographical Stations & Milestones */}
                                     {extraSections && extraSections.geographicalStations && extraSections.geographicalStations.length > 0 && (
                                         <div 
-                                            className="p-4 sm:p-5 rounded-[18px] border-0 space-y-3 relative transition-all" 
-                                            style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+                                            className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-[18px] space-y-3 relative overflow-visible transition-all"
                                         >
-                                            <div className={`flex items-center justify-between pb-2 border-b ${tokens.isDark ? 'border-slate-800' : 'border-slate-100'}`}>
-                                                <h4 className={`text-sm font-bold flex items-center gap-2 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: primaryColor }}>
-                                                    <i className="fa-solid fa-map-location-dot" style={{ color: primaryColor }}></i>
-                                                    <span>{isEn ? 'Key Geographical Stations & Milestones' : 'المحطات الجغرافية ومسار الدعوة والفتوحات'}</span>
+                                            <div className="flex items-center justify-between gap-2 pb-2.5 app-3d-divider">
+                                                <h4 className={`font-bold flex items-center min-w-0 flex-1 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: themeHeadingColor }}>
+                                                    <AutoFitSingleLine as="span" text={isEn ? 'Key Geographical Stations & Milestones' : 'المحطات الجغرافية ومسار الدعوة والفتوحات'} baseFontSize={14} minFontSize={9} textScale={cardTextScale} className="min-w-0 flex-1" />
                                                 </h4>
                                                 <button
                                                     type="button"
@@ -999,8 +935,8 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                         icon: 'fa-solid fa-map-location-dot',
                                                         content: extraSections.geographicalStations.map(s => `📍 ${isEn ? s.placeEn : s.placeAr} (${isEn ? s.periodEn : s.periodAr})\n${isEn ? s.detailsEn : s.detailsAr}`)
                                                     })}
-                                                    className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors cursor-pointer"
-                                                    style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+                                                    className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
+                                            style={{ color: 'var(--text-color)' }}
                                                     title={ui.zoom}
                                                 >
                                                     <ZoomIn size={14} />
@@ -1008,13 +944,18 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                             </div>
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                                                 {extraSections.geographicalStations.map((station, sIdx) => (
-                                                    <div key={sIdx} className="p-3 rounded-[14px] bg-slate-500/5 dark:bg-slate-800/40 border-0 space-y-1">
-                                                        <div className="flex items-center justify-between gap-1">
-                                                            <span className="text-xs font-bold flex items-center gap-1.5" style={{ color: primaryColor }}>
-                                                                <i className="fa-solid fa-location-dot text-amber-500 text-xs"></i>
-                                                                <span>{isEn ? station.placeEn : station.placeAr}</span>
-                                                            </span>
-                                                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-500/10 font-medium opacity-80 border-0">
+                                                    <div key={sIdx} className={`p-3 rounded-[14px] space-y-1 ${innerSubBoxClass}`}>
+                                                        <div className="flex items-center justify-between gap-2">
+                                                            <AutoFitSingleLine
+                                                                as="span"
+                                                                text={isEn ? station.placeEn : station.placeAr}
+                                                                baseFontSize={12}
+                                                                minFontSize={8.5}
+                                                                textScale={cardTextScale}
+                                                                className="font-bold min-w-0 flex-1"
+                                                                style={{ color: themeHeadingColor }}
+                                                            />
+                                                            <span className="text-[10px] font-bold opacity-65 shrink-0">
                                                                 {isEn ? station.periodEn : station.periodAr}
                                                             </span>
                                                         </div>
@@ -1034,37 +975,30 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                 const stances = getCompanionHeroicStances(selectedCompanion.id);
                                 return (
                                     <div className="space-y-3.5">
-                                        <div className="p-3.5 rounded-[16px] bg-amber-500/10 border-0 flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <Flame className="w-5 h-5 text-amber-500" />
-                                                <span className={`text-xs sm:text-sm font-bold ${isEn ? 'font-sans' : 'font-kufi'} text-amber-700 dark:text-amber-300`}>
-                                                    {isEn ? `${stances.length} Documented Heroic Stances` : `${stances.length} مواقف بطولية وخالدة موثقة في السيرة`}
-                                                </span>
-                                            </div>
-                                            <span className="text-[11px] font-semibold opacity-75">
-                                                {isEn ? 'Click card to zoom' : 'انقر للتكبير والمطالعة'}
-                                            </span>
+                                        <div 
+                                            className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-3.5 rounded-[16px] flex items-center justify-between gap-2 overflow-visible"
+                                        >
+                                            <AutoFitSingleLine
+                                                as="span"
+                                                text={isEn ? `${stances.length} Documented Heroic Stances` : `${stances.length} مواقف بطولية وخالدة موثقة في السيرة`}
+                                                baseFontSize={13}
+                                                minFontSize={9}
+                                                textScale={cardTextScale}
+                                                className={`font-bold min-w-0 flex-1 ${isEn ? 'font-sans' : 'font-kufi'}`}
+                                                style={{ color: themeHeadingColor }}
+                                            />
                                         </div>
 
                                         {stances.map((stance, idx) => (
                                             <div 
                                                 key={stance.id || idx}
-                                                className="p-4 sm:p-5 rounded-[18px] border-0 space-y-3 relative group transition-all"
-                                                style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+                                                className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-[18px] space-y-3 relative overflow-visible group transition-all"
                                             >
-                                                {/* Stance Header: Category & Period + Zoom button */}
-                                                <div className={`flex items-center justify-between flex-wrap gap-2 pb-2 border-b ${tokens.isDark ? 'border-slate-800' : 'border-slate-100'}`}>
-                                                    <div className="flex items-center flex-wrap gap-1.5">
-                                                        <span 
-                                                            className="px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-bold border-0"
-                                                            style={{ backgroundColor: `${primaryColor}14`, color: primaryColor }}
-                                                        >
-                                                            {isEn ? stance.categoryEn : stance.categoryAr}
-                                                        </span>
-                                                        <span className="px-2 py-0.5 rounded-full bg-slate-500/10 dark:bg-slate-800/50 text-[10px] sm:text-xs font-medium opacity-80 border-0">
-                                                            {isEn ? stance.periodEn : stance.periodAr}
-                                                        </span>
-                                                    </div>
+                                                {/* Stance Header: Period text + Zoom button */}
+                                                <div className="flex items-center justify-between gap-2 pb-2.5 app-3d-divider">
+                                                    <span className="text-xs font-bold opacity-70 truncate">
+                                                        {isEn ? stance.periodEn : stance.periodAr}
+                                                    </span>
 
                                                     <button
                                                         type="button"
@@ -1075,8 +1009,8 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                             icon: 'fa-solid fa-fire-flame-curved',
                                                             content: `${isEn ? stance.storyEn : stance.storyAr}${stance.quoteAr ? `\n\n«${isEn ? (stance.quoteEn || stance.quoteAr) : stance.quoteAr}»` : ''}\n\n🌟 ${ui.impactLabel}\n${isEn ? stance.impactEn : stance.impactAr}`
                                                         })}
-                                                        className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors cursor-pointer"
-                                                        style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+                                                        className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
+                                            style={{ color: 'var(--text-color)' }}
                                                         title={ui.zoom}
                                                     >
                                                         <ZoomIn size={14} />
@@ -1084,9 +1018,16 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                 </div>
 
                                                 {/* Stance Title */}
-                                                <h4 className={`text-sm sm:text-base font-bold ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: primaryColor }}>
-                                                    {isEn ? stance.titleEn : stance.titleAr}
-                                                </h4>
+                                                <AutoFitSingleLine
+                                                    as="h4"
+                                                    text={isEn ? stance.titleEn : stance.titleAr}
+                                                    baseFontSize={15}
+                                                    smFontSize={16}
+                                                    minFontSize={9}
+                                                    textScale={cardTextScale}
+                                                    className={`font-bold ${isEn ? 'font-sans' : 'font-kufi'}`}
+                                                    style={{ color: themeHeadingColor }}
+                                                />
 
                                                 {/* Stance Story */}
                                                 <p className={`text-xs sm:text-sm leading-relaxed font-medium opacity-90 ${isEn ? 'font-sans' : 'font-amiri'}`}>
@@ -1095,20 +1036,20 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
 
                                                 {/* Quote box if present */}
                                                 {(stance.quoteAr || stance.quoteEn) && (
-                                                    <div className="p-3 rounded-[14px] bg-amber-500/10 border-0 flex items-start gap-2">
-                                                        <MessageSquareQuote size={15} className="text-amber-500 shrink-0 mt-0.5" />
-                                                        <p className={`text-xs sm:text-sm font-bold italic text-amber-800 dark:text-amber-200 ${isEn ? 'font-sans' : 'font-amiri'}`}>
-                                                            {isEn ? (stance.quoteEn || stance.quoteAr) : stance.quoteAr}
+                                                    <div 
+                                                        className={`p-3 rounded-[14px] text-center ${innerSubBoxClass}`}
+                                                    >
+                                                        <p className={`text-xs sm:text-sm font-bold italic ${isEn ? 'font-sans' : 'font-amiri'}`} style={{ color: themeHeadingColor }}>
+                                                            «{isEn ? (stance.quoteEn || stance.quoteAr) : stance.quoteAr}»
                                                         </p>
                                                     </div>
                                                 )}
 
                                                 {/* Stance Impact & Enduring Lesson */}
                                                 <div 
-                                                    className="p-3 rounded-[14px] border-0 space-y-1"
-                                                    style={{ backgroundColor: `${primaryColor}10` }}
+                                                    className={`p-3 rounded-[14px] space-y-1 ${innerSubBoxClass}`}
                                                 >
-                                                    <span className="text-[10px] sm:text-[11px] font-bold block" style={{ color: primaryColor }}>
+                                                    <span className="text-[10px] sm:text-[11px] font-bold block" style={{ color: themeHeadingColor }}>
                                                         {ui.impactLabel}
                                                     </span>
                                                     <p className={`text-xs sm:text-sm font-semibold opacity-90 ${isEn ? 'font-sans' : 'font-amiri'}`}>
@@ -1129,13 +1070,11 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                     <div className="space-y-3.5">
                                         {/* Physical Appearance Card */}
                                         <div 
-                                            className="p-4 sm:p-5 rounded-[18px] border-0 space-y-2.5 relative transition-all" 
-                                            style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+                                            className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-[18px] space-y-2.5 relative overflow-visible transition-all"
                                         >
-                                            <div className={`flex items-center justify-between pb-2 border-b ${tokens.isDark ? 'border-slate-800' : 'border-slate-100'}`}>
-                                                <h4 className={`text-sm font-bold flex items-center gap-2 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: primaryColor }}>
-                                                    <UserCheck className="w-4 h-4 text-emerald-500" />
-                                                    <span>{ui.physicalAppearanceLabel}</span>
+                                            <div className="flex items-center justify-between gap-2 pb-2.5 app-3d-divider">
+                                                <h4 className={`font-bold flex items-center min-w-0 flex-1 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: themeHeadingColor }}>
+                                                    <AutoFitSingleLine as="span" text={ui.physicalAppearanceLabel} baseFontSize={14} minFontSize={9} textScale={cardTextScale} className="min-w-0 flex-1" />
                                                 </h4>
                                                 <button
                                                     type="button"
@@ -1146,8 +1085,8 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                         icon: 'fa-solid fa-user-check',
                                                         content: isEn ? traits.physicalAppearanceEn : traits.physicalAppearanceAr
                                                     })}
-                                                    className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors cursor-pointer"
-                                                    style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+                                                    className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
+                                            style={{ color: 'var(--text-color)' }}
                                                     title={ui.zoom}
                                                 >
                                                     <ZoomIn size={14} />
@@ -1160,13 +1099,11 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
 
                                         {/* Worship & Devotion Card */}
                                         <div 
-                                            className="p-4 sm:p-5 rounded-[18px] border-0 space-y-2.5 relative transition-all" 
-                                            style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+                                            className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-[18px] space-y-2.5 relative overflow-visible transition-all"
                                         >
-                                            <div className={`flex items-center justify-between pb-2 border-b ${tokens.isDark ? 'border-slate-800' : 'border-slate-100'}`}>
-                                                <h4 className={`text-sm font-bold flex items-center gap-2 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: primaryColor }}>
-                                                    <Heart className="w-4 h-4 text-rose-500" />
-                                                    <span>{ui.worshipLabel}</span>
+                                            <div className="flex items-center justify-between gap-2 pb-2.5 app-3d-divider">
+                                                <h4 className={`font-bold flex items-center min-w-0 flex-1 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: themeHeadingColor }}>
+                                                    <AutoFitSingleLine as="span" text={ui.worshipLabel} baseFontSize={14} minFontSize={9} textScale={cardTextScale} className="min-w-0 flex-1" />
                                                 </h4>
                                                 <button
                                                     type="button"
@@ -1177,8 +1114,8 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                         icon: 'fa-solid fa-heart',
                                                         content: isEn ? traits.worshipAndDevotionEn : traits.worshipAndDevotionAr
                                                     })}
-                                                    className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors cursor-pointer"
-                                                    style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+                                                    className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
+                                            style={{ color: 'var(--text-color)' }}
                                                     title={ui.zoom}
                                                 >
                                                     <ZoomIn size={14} />
@@ -1191,13 +1128,11 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
 
                                         {/* Family, Lineage & Descendants */}
                                         <div 
-                                            className="p-4 sm:p-5 rounded-[18px] border-0 space-y-2.5 relative transition-all" 
-                                            style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+                                            className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-[18px] space-y-2.5 relative overflow-visible transition-all"
                                         >
-                                            <div className={`flex items-center justify-between pb-2 border-b ${tokens.isDark ? 'border-slate-800' : 'border-slate-100'}`}>
-                                                <h4 className={`text-sm font-bold flex items-center gap-2 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: primaryColor }}>
-                                                    <i className="fa-solid fa-people-roof" style={{ color: primaryColor }}></i>
-                                                    <span>{ui.familyLabel}</span>
+                                            <div className="flex items-center justify-between gap-2 pb-2.5 app-3d-divider">
+                                                <h4 className={`font-bold flex items-center min-w-0 flex-1 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: themeHeadingColor }}>
+                                                    <AutoFitSingleLine as="span" text={ui.familyLabel} baseFontSize={14} minFontSize={9} textScale={cardTextScale} className="min-w-0 flex-1" />
                                                 </h4>
                                                 <button
                                                     type="button"
@@ -1208,8 +1143,8 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                         icon: 'fa-solid fa-people-roof',
                                                         content: isEn ? traits.familyAndLineageEn : traits.familyAndLineageAr
                                                     })}
-                                                    className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors cursor-pointer"
-                                                    style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+                                                    className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
+                                            style={{ color: 'var(--text-color)' }}
                                                     title={ui.zoom}
                                                 >
                                                     <ZoomIn size={14} />
@@ -1222,17 +1157,14 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
 
                                         {/* Special Attributes & Talents */}
                                         <div 
-                                            className="p-4 sm:p-5 rounded-[18px] border-0 space-y-2.5 relative transition-all" 
-                                            style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+                                            className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-[18px] space-y-2.5 relative overflow-visible transition-all"
                                         >
-                                            <h4 className={`text-sm font-bold flex items-center gap-2 mb-1 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: primaryColor }}>
-                                                <Sparkles className="w-4 h-4 text-amber-500" />
-                                                <span>{ui.specialSkillsLabel}</span>
+                                            <h4 className={`font-bold mb-1 flex items-center min-w-0 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: themeHeadingColor }}>
+                                                <AutoFitSingleLine as="span" text={ui.specialSkillsLabel} baseFontSize={14} minFontSize={9} textScale={cardTextScale} className="w-full" />
                                             </h4>
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                                                 {(isEn ? traits.specialSkillsEn : traits.specialSkillsAr).map((skill, idx) => (
-                                                    <div key={idx} className="p-3 rounded-[14px] bg-slate-500/5 dark:bg-slate-800/40 border-0 flex items-center gap-2 text-xs sm:text-sm font-semibold">
-                                                        <i className="fa-solid fa-star text-amber-500 text-xs shrink-0"></i>
+                                                    <div key={idx} className={`p-3 rounded-[14px] flex items-center gap-2 text-xs sm:text-sm font-semibold ${innerSubBoxClass}`}>
                                                         <span>{skill}</span>
                                                     </div>
                                                 ))}
@@ -1242,13 +1174,11 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                         {/* Daily Routine & Devotion in His Day */}
                                         {extraSections && (
                                             <div 
-                                                className="p-4 sm:p-5 rounded-[18px] border-0 space-y-2.5 relative transition-all" 
-                                                style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+                                                className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-[18px] space-y-2.5 relative overflow-visible transition-all"
                                             >
-                                                <div className={`flex items-center justify-between pb-2 border-b ${tokens.isDark ? 'border-slate-800' : 'border-slate-100'}`}>
-                                                    <h4 className={`text-sm font-bold flex items-center gap-2 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: primaryColor }}>
-                                                        <i className="fa-solid fa-sun text-amber-500"></i>
-                                                        <span>{isEn ? 'A Day in His Life & Prayer Sanctuary' : 'يوم في حياة الصحابي ومحراب عبادته'}</span>
+                                                <div className="flex items-center justify-between gap-2 pb-2.5 app-3d-divider">
+                                                    <h4 className={`font-bold flex items-center min-w-0 flex-1 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: themeHeadingColor }}>
+                                                        <AutoFitSingleLine as="span" text={isEn ? 'A Day in His Life & Prayer Sanctuary' : 'يوم في حياة الصحابي ومحراب عبادته'} baseFontSize={14} minFontSize={9} textScale={cardTextScale} className="min-w-0 flex-1" />
                                                     </h4>
                                                     <button
                                                         type="button"
@@ -1259,8 +1189,8 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                             icon: 'fa-solid fa-sun',
                                                             content: isEn ? extraSections.dailyRoutineEn : extraSections.dailyRoutineAr
                                                         })}
-                                                        className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors cursor-pointer"
-                                                        style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+                                                        className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
+                                            style={{ color: 'var(--text-color)' }}
                                                         title={ui.zoom}
                                                     >
                                                         <ZoomIn size={14} />
@@ -1275,13 +1205,11 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                         {/* Unique Distinctions & Merits */}
                                         {extraSections && extraSections.uniqueDistinctionsAr && extraSections.uniqueDistinctionsAr.length > 0 && (
                                             <div 
-                                                className="p-4 sm:p-5 rounded-[18px] border-0 space-y-2.5 relative transition-all" 
-                                                style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+                                                className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-[18px] space-y-2.5 relative overflow-visible transition-all"
                                             >
-                                                <div className={`flex items-center justify-between pb-2 border-b ${tokens.isDark ? 'border-slate-800' : 'border-slate-100'}`}>
-                                                    <h4 className={`text-sm font-bold flex items-center gap-2 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: primaryColor }}>
-                                                        <Award className="w-4 h-4 text-amber-500" />
-                                                        <span>{isEn ? 'Unique Distinctions & Special Merits' : 'فرائد ومناقب انفرد بها في تاريخ الإسلام'}</span>
+                                                <div className="flex items-center justify-between gap-2 pb-2.5 app-3d-divider">
+                                                    <h4 className={`font-bold flex items-center min-w-0 flex-1 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: themeHeadingColor }}>
+                                                        <AutoFitSingleLine as="span" text={isEn ? 'Unique Distinctions & Special Merits' : 'فرائد ومناقب انفرد بها في تاريخ الإسلام'} baseFontSize={14} minFontSize={9} textScale={cardTextScale} className="min-w-0 flex-1" />
                                                     </h4>
                                                     <button
                                                         type="button"
@@ -1292,17 +1220,19 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                             icon: 'fa-solid fa-award',
                                                             content: (isEn ? extraSections.uniqueDistinctionsEn : extraSections.uniqueDistinctionsAr).map((u, i) => `⭐ ${i + 1}. ${u}`)
                                                         })}
-                                                        className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors cursor-pointer"
-                                                        style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+                                                        className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
+                                            style={{ color: 'var(--text-color)' }}
                                                         title={ui.zoom}
                                                     >
                                                         <ZoomIn size={14} />
                                                     </button>
                                                 </div>
-                                                <div className="space-y-2">
+                                                <div className="space-y-2.5">
                                                     {(isEn ? extraSections.uniqueDistinctionsEn : extraSections.uniqueDistinctionsAr).map((dist, idx) => (
-                                                        <div key={idx} className="flex items-start gap-2.5 p-2.5 rounded-[14px] bg-slate-500/5 dark:bg-slate-800/40 border-0">
-                                                            <i className="fa-solid fa-star-of-life text-amber-500 text-xs mt-1 shrink-0"></i>
+                                                        <div key={idx} className={`flex items-start gap-2.5 p-3 rounded-[14px] ${innerSubBoxClass}`}>
+                                                            <span className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 font-bold text-[11px] mt-0.5 border-0" style={itemBadge3DStyle}>
+                                                                {idx + 1}
+                                                            </span>
                                                             <p className={`text-xs sm:text-sm leading-relaxed font-semibold ${isEn ? 'font-sans' : 'font-amiri'}`}>
                                                                 {dist}
                                                             </p>
@@ -1320,11 +1250,13 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                 const quotes = getCompanionWisdomQuotes(selectedCompanion.id);
                                 return (
                                     <div className="space-y-3.5">
-                                        <div className="p-4 rounded-[16px] bg-amber-500/10 border-0 text-center space-y-1">
-                                            <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400 block">
+                                        <div 
+                                            className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 rounded-[18px] text-center space-y-1 overflow-visible"
+                                        >
+                                            <span className="text-[11px] font-bold block" style={{ color: themeHeadingColor }}>
                                                 {ui.quoteTitle}
                                             </span>
-                                            <p className={`text-sm sm:text-base font-bold italic leading-relaxed text-emerald-700 dark:text-emerald-300 ${isEn ? 'font-sans' : 'font-amiri'}`}>
+                                            <p className={`text-sm sm:text-base font-bold italic leading-relaxed ${isEn ? 'font-sans' : 'font-amiri'}`} style={{ color: themeHeadingColor }}>
                                                 «{isEn ? selectedCompanion.keyQuoteEn : selectedCompanion.keyQuoteAr}»
                                             </p>
                                         </div>
@@ -1332,16 +1264,14 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                         {quotes.map((q, idx) => (
                                             <div 
                                                 key={idx}
-                                                className="p-4 sm:p-5 rounded-[18px] border-0 space-y-3 relative transition-all"
-                                                style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+                                                className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-[18px] space-y-3 relative overflow-visible transition-all"
                                             >
-                                                <div className={`flex items-center justify-between pb-2 border-b ${tokens.isDark ? 'border-slate-800' : 'border-slate-100'}`}>
+                                                <div className="flex items-center justify-between pb-2.5 app-3d-divider">
                                                     <span 
-                                                        className="text-xs font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1.5 border-0"
-                                                        style={{ backgroundColor: `${primaryColor}14`, color: primaryColor }}
+                                                        className="w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center border-0"
+                                                        style={itemBadge3DStyle}
                                                     >
-                                                        <MessageSquareQuote size={13} />
-                                                        <span>{isEn ? `Wisdom #${idx + 1}` : `درة وحكمة #${idx + 1}`}</span>
+                                                        {idx + 1}
                                                     </span>
                                                     <div className="flex items-center gap-1">
                                                         <button
@@ -1350,8 +1280,8 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                                 navigator.clipboard.writeText(`${isEn ? q.quoteEn : q.quoteAr}\n- ${isEn ? q.contextEn : q.contextAr}`);
                                                                 showToast(ui.toastCopiedText);
                                                             }}
-                                                            className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors cursor-pointer"
-                                                            style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+                                                            className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
+                                            style={{ color: 'var(--text-color)' }}
                                                             title={ui.copyText}
                                                         >
                                                             <Copy size={13} />
@@ -1365,8 +1295,8 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                                 icon: 'fa-solid fa-quote-left',
                                                                 content: `${isEn ? q.quoteEn : q.quoteAr}\n\n📜 ${ui.wisdomContextLabel}\n${isEn ? q.contextEn : q.contextAr}`
                                                             })}
-                                                            className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors cursor-pointer"
-                                                            style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+                                                            className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
+                                            style={{ color: 'var(--text-color)' }}
                                                             title={ui.zoom}
                                                         >
                                                             <ZoomIn size={13} />
@@ -1378,9 +1308,9 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                     {isEn ? q.quoteEn : q.quoteAr}
                                                 </p>
 
-                                                <div className="p-2.5 rounded-[14px] bg-slate-500/5 dark:bg-slate-800/40 border-0 text-[11px] sm:text-xs opacity-80 leading-relaxed">
+                                                <div className={`p-3 rounded-[14px] text-[11px] sm:text-xs leading-relaxed ${innerSubBoxClass}`}>
                                                     <span className="font-bold opacity-90 block mb-0.5">{ui.wisdomContextLabel}</span>
-                                                    <span>{isEn ? q.contextEn : q.contextAr}</span>
+                                                    <span className="opacity-85">{isEn ? q.contextEn : q.contextAr}</span>
                                                 </div>
                                             </div>
                                         ))}
@@ -1388,23 +1318,21 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                         {/* Soul Purification & Heart Reform Methodology */}
                                         {extraSections && (
                                             <div 
-                                                className="p-4 sm:p-5 rounded-[18px] border-0 space-y-2.5 relative transition-all" 
-                                                style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+                                                className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-[18px] space-y-2.5 relative overflow-visible transition-all"
                                             >
-                                                <div className={`flex items-center justify-between pb-2 border-b ${tokens.isDark ? 'border-slate-800' : 'border-slate-100'}`}>
-                                                    <h4 className={`text-sm font-bold flex items-center gap-2 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: primaryColor }}>
-                                                        <i className="fa-solid fa-seedling" style={{ color: primaryColor }}></i>
-                                                        <span>{isEn ? 'Spiritual Discipline & Heart Reform' : 'منهج الصحابي في تزكية النفس وإصلاح القلوب'}</span>
+                                                <div className="flex items-center justify-between gap-2 pb-2.5 app-3d-divider">
+                                                    <h4 className={`font-bold flex items-center min-w-0 flex-1 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: themeHeadingColor }}>
+                                                        <AutoFitSingleLine as="span" text={isEn ? 'Spiritual Discipline & Heart Reform' : 'منهج الصحابي في تزكية النفس وإصلاح القلوب'} baseFontSize={14} minFontSize={9} textScale={cardTextScale} className="min-w-0 flex-1" />
                                                     </h4>
-                                                    <div className="flex items-center gap-1">
+                                                    <div className="flex items-center gap-2 overflow-visible">
                                                         <button
                                                             type="button"
                                                             onClick={() => {
                                                                 navigator.clipboard.writeText(isEn ? extraSections.eternalAdviceEn : extraSections.eternalAdviceAr);
                                                                 showToast(ui.toastCopiedText);
                                                             }}
-                                                            className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors cursor-pointer"
-                                                            style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+                                                            className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
+                                            style={{ color: 'var(--text-color)' }}
                                                             title={ui.copyText}
                                                         >
                                                             <Copy size={13} />
@@ -1418,8 +1346,8 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                                 icon: 'fa-solid fa-seedling',
                                                                 content: isEn ? extraSections.eternalAdviceEn : extraSections.eternalAdviceAr
                                                             })}
-                                                            className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors cursor-pointer"
-                                                            style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+                                                            className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
+                                            style={{ color: 'var(--text-color)' }}
                                                             title={ui.zoom}
                                                         >
                                                             <ZoomIn size={14} />
@@ -1440,13 +1368,11 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                 <div className="space-y-3">
                                     {/* Card 1: Status in Quraysh */}
                                     <div 
-                                        className="p-4 sm:p-5 rounded-[18px] border-0 space-y-2 relative transition-all" 
-                                        style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+                                        className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-[18px] space-y-2 relative overflow-visible transition-all"
                                     >
-                                        <div className="flex items-center justify-between">
-                                            <h4 className={`text-sm font-bold flex items-center gap-2 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: primaryColor }}>
-                                                <i className="fa-solid fa-users" style={{ color: primaryColor }}></i>
-                                                <span>{isEn ? 'Status & Lineage in Quraysh' : 'مكانته ونشأته في قريش'}</span>
+                                        <div className="flex items-center justify-between gap-2">
+                                            <h4 className={`font-bold flex items-center min-w-0 flex-1 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: themeHeadingColor }}>
+                                                <AutoFitSingleLine as="span" text={isEn ? 'Status & Lineage in Quraysh' : 'مكانته ونشأته في قريش'} baseFontSize={14} minFontSize={9} textScale={cardTextScale} className="min-w-0 flex-1" />
                                             </h4>
                                             <button
                                                 type="button"
@@ -1456,8 +1382,8 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                     badge: isEn ? 'Before Islam' : 'قبل الإسلام',
                                                     content: isEn ? selectedCompanion.preIslamicLife.statusInQurayshEn : selectedCompanion.preIslamicLife.statusInQurayshAr
                                                 })}
-                                                className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors cursor-pointer"
-                                                style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+                                                className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
+                                            style={{ color: 'var(--text-color)' }}
                                                 title={ui.zoom}
                                             >
                                                 <ZoomIn size={14} />
@@ -1470,13 +1396,11 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
 
                                     {/* Card 2: Morals & Pure Nature */}
                                     <div 
-                                        className="p-4 sm:p-5 rounded-[18px] border-0 space-y-2 relative transition-all" 
-                                        style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+                                        className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-[18px] space-y-2 relative overflow-visible transition-all"
                                     >
-                                        <div className="flex items-center justify-between">
-                                            <h4 className={`text-sm font-bold flex items-center gap-2 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: primaryColor }}>
-                                                <Heart className="w-4 h-4 text-rose-500" />
-                                                <span>{isEn ? 'Pure Nature & Morals' : 'أخلاقه وطهارة فطرته'}</span>
+                                        <div className="flex items-center justify-between gap-2">
+                                            <h4 className={`font-bold flex items-center min-w-0 flex-1 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: themeHeadingColor }}>
+                                                <AutoFitSingleLine as="span" text={isEn ? 'Pure Nature & Morals' : 'أخلاقه وطهارة فطرته'} baseFontSize={14} minFontSize={9} textScale={cardTextScale} className="min-w-0 flex-1" />
                                             </h4>
                                             <button
                                                 type="button"
@@ -1486,8 +1410,8 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                     badge: isEn ? 'Before Islam' : 'قبل الإسلام',
                                                     content: isEn ? selectedCompanion.preIslamicLife.moralsAndNatureEn : selectedCompanion.preIslamicLife.moralsAndNatureAr
                                                 })}
-                                                className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors cursor-pointer"
-                                                style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+                                                className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
+                                            style={{ color: 'var(--text-color)' }}
                                                 title={ui.zoom}
                                             >
                                                 <ZoomIn size={14} />
@@ -1501,13 +1425,11 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                     {/* Card 3: Rejection of Idolatry */}
                                     {extraSections && (
                                         <div 
-                                            className="p-4 sm:p-5 rounded-[18px] border-0 space-y-2 relative transition-all" 
-                                            style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+                                            className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-[18px] space-y-2 relative overflow-visible transition-all"
                                         >
-                                            <div className="flex items-center justify-between">
-                                                <h4 className={`text-sm font-bold flex items-center gap-2 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: primaryColor }}>
-                                                    <Shield className="w-4 h-4 text-amber-500" />
-                                                    <span>{isEn ? 'Rejection of Pre-Islamic Idolatry' : 'موقفه الحاسم من وثنية الجاهلية وأصنامها'}</span>
+                                            <div className="flex items-center justify-between gap-2">
+                                                <h4 className={`font-bold flex items-center min-w-0 flex-1 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: themeHeadingColor }}>
+                                                    <AutoFitSingleLine as="span" text={isEn ? 'Rejection of Pre-Islamic Idolatry' : 'موقفه الحاسم من وثنية الجاهلية وأصنامها'} baseFontSize={14} minFontSize={9} textScale={cardTextScale} className="min-w-0 flex-1" />
                                                 </h4>
                                                 <button
                                                     type="button"
@@ -1518,8 +1440,8 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                         icon: 'fa-solid fa-shield-halved',
                                                         content: isEn ? extraSections.idolatryStanceEn : extraSections.idolatryStanceAr
                                                     })}
-                                                    className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors cursor-pointer"
-                                                    style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+                                                    className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
+                                            style={{ color: 'var(--text-color)' }}
                                                     title={ui.zoom}
                                                 >
                                                     <ZoomIn size={14} />
@@ -1533,13 +1455,11 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
 
                                     {/* Card 4: Trade, Wisdom & Knowledge */}
                                     <div 
-                                        className="p-4 sm:p-5 rounded-[18px] border-0 space-y-2 relative transition-all" 
-                                        style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+                                        className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-[18px] space-y-2 relative overflow-visible transition-all"
                                     >
-                                        <div className="flex items-center justify-between">
-                                            <h4 className={`text-sm font-bold flex items-center gap-2 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: primaryColor }}>
-                                                <BookOpen className="w-4 h-4 text-amber-500" />
-                                                <span>{isEn ? 'Trade, Wisdom & Acumen' : 'تجارته وحكمته وخبرته'}</span>
+                                        <div className="flex items-center justify-between gap-2">
+                                            <h4 className={`font-bold flex items-center min-w-0 flex-1 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: themeHeadingColor }}>
+                                                <AutoFitSingleLine as="span" text={isEn ? 'Trade, Wisdom & Acumen' : 'تجارته وحكمته وخبرته'} baseFontSize={14} minFontSize={9} textScale={cardTextScale} className="min-w-0 flex-1" />
                                             </h4>
                                             <button
                                                 type="button"
@@ -1549,8 +1469,8 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                     badge: isEn ? 'Before Islam' : 'قبل الإسلام',
                                                     content: isEn ? selectedCompanion.preIslamicLife.tradeAndKnowledgeEn : selectedCompanion.preIslamicLife.tradeAndKnowledgeAr
                                                 })}
-                                                className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors cursor-pointer"
-                                                style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+                                                className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
+                                            style={{ color: 'var(--text-color)' }}
                                                 title={ui.zoom}
                                             >
                                                 <ZoomIn size={14} />
@@ -1564,13 +1484,11 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                     {/* Card 5: Pre-Islam Role & Arab Wisdom */}
                                     {extraSections && (
                                         <div 
-                                            className="p-4 sm:p-5 rounded-[18px] border-0 space-y-2 relative transition-all" 
-                                            style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+                                            className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-[18px] space-y-2 relative overflow-visible transition-all"
                                         >
-                                            <div className="flex items-center justify-between">
-                                                <h4 className={`text-sm font-bold flex items-center gap-2 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: primaryColor }}>
-                                                    <i className="fa-solid fa-scale-balanced" style={{ color: primaryColor }}></i>
-                                                    <span>{isEn ? 'Wisdom & Standing Among Arab Nobles' : 'مكانته وفراسته وحكمته بين عقلاء العرب'}</span>
+                                            <div className="flex items-center justify-between gap-2">
+                                                <h4 className={`font-bold flex items-center min-w-0 flex-1 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: themeHeadingColor }}>
+                                                    <AutoFitSingleLine as="span" text={isEn ? 'Wisdom & Standing Among Arab Nobles' : 'مكانته وفراسته وحكمته بين عقلاء العرب'} baseFontSize={14} minFontSize={9} textScale={cardTextScale} className="min-w-0 flex-1" />
                                                 </h4>
                                                 <button
                                                     type="button"
@@ -1581,8 +1499,8 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                         icon: 'fa-solid fa-scale-balanced',
                                                         content: isEn ? extraSections.wisdomAndPreIslamRoleEn : extraSections.wisdomAndPreIslamRoleAr
                                                     })}
-                                                    className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors cursor-pointer"
-                                                    style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+                                                    className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
+                                            style={{ color: 'var(--text-color)' }}
                                                     title={ui.zoom}
                                                 >
                                                     <ZoomIn size={14} />
@@ -1601,13 +1519,11 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                 <div className="space-y-3">
                                     {/* Story of Embracing Islam */}
                                     <div 
-                                        className="p-4 sm:p-5 rounded-[18px] border-0 space-y-2 relative transition-all" 
-                                        style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+                                        className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-[18px] space-y-2 relative overflow-visible transition-all"
                                     >
-                                        <div className="flex items-center justify-between">
-                                            <h4 className={`text-sm font-bold flex items-center gap-2 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: primaryColor }}>
-                                                <i className="fa-solid fa-star-and-crescent" style={{ color: primaryColor }}></i>
-                                                <span>{isEn ? 'Story of Embracing Islam' : 'قصة دخوله في الإسلام'}</span>
+                                        <div className="flex items-center justify-between gap-2">
+                                            <h4 className={`font-bold flex items-center min-w-0 flex-1 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: themeHeadingColor }}>
+                                                <AutoFitSingleLine as="span" text={isEn ? 'Story of Embracing Islam' : 'قصة دخوله في الإسلام'} baseFontSize={14} minFontSize={9} textScale={cardTextScale} className="min-w-0 flex-1" />
                                             </h4>
                                             <button
                                                 type="button"
@@ -1617,8 +1533,8 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                     badge: isEn ? 'Faith & Conversion' : 'قصة الإسلام',
                                                     content: isEn ? selectedCompanion.embracingIslam.storyEn : selectedCompanion.embracingIslam.storyAr
                                                 })}
-                                                className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors cursor-pointer"
-                                                style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+                                                className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
+                                            style={{ color: 'var(--text-color)' }}
                                                 title={ui.zoom}
                                             >
                                                 <ZoomIn size={14} />
@@ -1631,13 +1547,11 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
 
                                     {/* Precedence and Advocacy */}
                                     <div 
-                                        className="p-4 sm:p-5 rounded-[18px] border-0 space-y-2 relative transition-all" 
-                                        style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+                                        className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-[18px] space-y-2 relative overflow-visible transition-all"
                                     >
-                                        <div className="flex items-center justify-between">
-                                            <h4 className={`text-sm font-bold flex items-center gap-2 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: primaryColor }}>
-                                                <Sparkles className="w-4 h-4 text-amber-500" />
-                                                <span>{isEn ? 'Early Precedence & Sacrifices' : 'فضله وسَبقه وما لاقاه من أذى'}</span>
+                                        <div className="flex items-center justify-between gap-2">
+                                            <h4 className={`font-bold flex items-center min-w-0 flex-1 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: themeHeadingColor }}>
+                                                <AutoFitSingleLine as="span" text={isEn ? 'Early Precedence & Sacrifices' : 'فضله وسَبقه وما لاقاه من أذى'} baseFontSize={14} minFontSize={9} textScale={cardTextScale} className="min-w-0 flex-1" />
                                             </h4>
                                             <button
                                                 type="button"
@@ -1646,8 +1560,8 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                     subtitle: isEn ? 'Precedence & Sacrifices' : 'سبقه وتضحياته',
                                                     content: `${isEn ? selectedCompanion.embracingIslam.earlyPrecedenceEn : selectedCompanion.embracingIslam.earlyPrecedenceAr}\n\n${isEn ? selectedCompanion.embracingIslam.advocacyAndSacrificesEn : selectedCompanion.embracingIslam.advocacyAndSacrificesAr}`
                                                 })}
-                                                className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors cursor-pointer"
-                                                style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+                                                className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
+                                            style={{ color: 'var(--text-color)' }}
                                                 title={ui.zoom}
                                             >
                                                 <ZoomIn size={14} />
@@ -1663,13 +1577,11 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
 
                                     {/* Major Battles List */}
                                     <div 
-                                        className="p-4 sm:p-5 rounded-[18px] border-0 space-y-3 relative transition-all" 
-                                        style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+                                        className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-[18px] space-y-3 relative overflow-visible transition-all"
                                     >
-                                        <div className="flex items-center justify-between">
-                                            <h4 className={`text-sm font-bold flex items-center gap-2 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: primaryColor }}>
-                                                <Shield className="w-4 h-4 text-blue-500" />
-                                                <span>{ui.majorBattlesLabel}</span>
+                                        <div className="flex items-center justify-between gap-2">
+                                            <h4 className={`font-bold flex items-center min-w-0 flex-1 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: themeHeadingColor }}>
+                                                <AutoFitSingleLine as="span" text={ui.majorBattlesLabel} baseFontSize={14} minFontSize={9} textScale={cardTextScale} className="min-w-0 flex-1" />
                                             </h4>
                                             <button
                                                 type="button"
@@ -1678,19 +1590,19 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                     subtitle: ui.majorBattlesLabel,
                                                     content: isEn ? selectedCompanion.migrationAndJihad.majorBattlesEn : selectedCompanion.migrationAndJihad.majorBattlesAr
                                                 })}
-                                                className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors cursor-pointer"
-                                                style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+                                                className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
+                                            style={{ color: 'var(--text-color)' }}
                                                 title={ui.zoom}
                                             >
                                                 <ZoomIn size={14} />
                                             </button>
                                         </div>
-                                        <div className="space-y-2">
+                                        <div className="space-y-2.5">
                                             {(isEn ? selectedCompanion.migrationAndJihad.majorBattlesEn : selectedCompanion.migrationAndJihad.majorBattlesAr).map((battle, idx) => (
-                                                <div key={idx} className="flex items-start gap-2.5 p-3 rounded-[14px] bg-slate-500/5 dark:bg-slate-800/40 border-0">
+                                                <div key={idx} className={`flex items-start gap-2.5 p-3 rounded-[14px] ${innerSubBoxClass}`}>
                                                     <span 
-                                                        className="w-5 h-5 rounded-full text-xs font-bold flex items-center justify-center shrink-0 mt-0.5"
-                                                        style={{ backgroundColor: `${primaryColor}20`, color: primaryColor }}
+                                                        className="w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center shrink-0 mt-0.5 border-0"
+                                                        style={itemBadge3DStyle}
                                                     >
                                                         {idx + 1}
                                                     </span>
@@ -1705,13 +1617,11 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                     {/* Hijrah & Brotherhood Card */}
                                     {extraSections && (
                                         <div 
-                                            className="p-4 sm:p-5 rounded-[18px] border-0 space-y-2 relative transition-all" 
-                                            style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+                                            className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-[18px] space-y-2 relative overflow-visible transition-all"
                                         >
-                                            <div className="flex items-center justify-between">
-                                                <h4 className={`text-sm font-bold flex items-center gap-2 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: primaryColor }}>
-                                                    <Compass className="w-4 h-4" style={{ color: primaryColor }} />
-                                                    <span>{isEn ? 'Hijrah & Brotherhood in Madinah' : 'الهجرة النبوية والمؤاخاة المباركة بالمدينة'}</span>
+                                            <div className="flex items-center justify-between gap-2">
+                                                <h4 className={`font-bold flex items-center min-w-0 flex-1 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: themeHeadingColor }}>
+                                                    <AutoFitSingleLine as="span" text={isEn ? 'Hijrah & Brotherhood in Madinah' : 'الهجرة النبوية والمؤاخاة المباركة بالمدينة'} baseFontSize={14} minFontSize={9} textScale={cardTextScale} className="min-w-0 flex-1" />
                                                 </h4>
                                                 <button
                                                     type="button"
@@ -1722,8 +1632,8 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                         icon: 'fa-solid fa-compass',
                                                         content: isEn ? extraSections.hijrahAndBrotherhoodEn : extraSections.hijrahAndBrotherhoodAr
                                                     })}
-                                                    className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors cursor-pointer"
-                                                    style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+                                                    className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
+                                            style={{ color: 'var(--text-color)' }}
                                                     title={ui.zoom}
                                                 >
                                                     <ZoomIn size={14} />
@@ -1738,13 +1648,11 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                     {/* Defense and Sacrifice for the Prophet Card */}
                                     {extraSections && (
                                         <div 
-                                            className="p-4 sm:p-5 rounded-[18px] border-0 space-y-2 relative transition-all" 
-                                            style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+                                            className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-[18px] space-y-2 relative overflow-visible transition-all"
                                         >
-                                            <div className="flex items-center justify-between">
-                                                <h4 className={`text-sm font-bold flex items-center gap-2 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: primaryColor }}>
-                                                    <Shield className="w-4 h-4 text-rose-500" />
-                                                    <span>{isEn ? 'Sacrifice & Defense of the Prophet ﷺ' : 'الفداء والذود المستميت عن رسول الله ﷺ'}</span>
+                                            <div className="flex items-center justify-between gap-2">
+                                                <h4 className={`font-bold flex items-center min-w-0 flex-1 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: themeHeadingColor }}>
+                                                    <AutoFitSingleLine as="span" text={isEn ? 'Sacrifice & Defense of the Prophet ﷺ' : 'الفداء والذود المستميت عن رسول الله ﷺ'} baseFontSize={14} minFontSize={9} textScale={cardTextScale} className="min-w-0 flex-1" />
                                                 </h4>
                                                 <button
                                                     type="button"
@@ -1755,8 +1663,8 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                         icon: 'fa-solid fa-shield-halved',
                                                         content: isEn ? extraSections.prophetSacrificeEn : extraSections.prophetSacrificeAr
                                                     })}
-                                                    className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors cursor-pointer"
-                                                    style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+                                                    className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
+                                            style={{ color: 'var(--text-color)' }}
                                                     title={ui.zoom}
                                                 >
                                                     <ZoomIn size={14} />
@@ -1775,13 +1683,11 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                 <div className="space-y-3">
                                     {/* Prophetic Hadiths in his Virtues */}
                                     <div 
-                                        className="p-4 sm:p-5 rounded-[18px] border-0 space-y-3 relative transition-all"
-                                        style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+                                        className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-[18px] space-y-3 relative overflow-visible transition-all"
                                     >
-                                        <div className={`flex items-center justify-between pb-2 border-b ${tokens.isDark ? 'border-slate-800' : 'border-slate-100'}`}>
-                                            <h4 className="text-sm font-bold flex items-center gap-2" style={{ color: primaryColor }}>
-                                                <Award className="w-4 h-4 text-amber-500" />
-                                                <span>{ui.hadithsAndQuotesLabel}</span>
+                                        <div className="flex items-center justify-between gap-2 pb-2.5 app-3d-divider">
+                                            <h4 className={`font-bold flex items-center min-w-0 flex-1 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: themeHeadingColor }}>
+                                                <AutoFitSingleLine as="span" text={ui.hadithsAndQuotesLabel} baseFontSize={14} minFontSize={9} textScale={cardTextScale} className="min-w-0 flex-1" />
                                             </h4>
                                             <button
                                                 type="button"
@@ -1791,8 +1697,8 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                     content: (isEn ? selectedCompanion.virtuesAndMerits.hadithsAndQuotesEn : selectedCompanion.virtuesAndMerits.hadithsAndQuotesAr).map(h => `${h.hadith}\n[${h.source}]`),
                                                     isVerseOrProof: true
                                                 })}
-                                                className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors cursor-pointer"
-                                                style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+                                                className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
+                                            style={{ color: 'var(--text-color)' }}
                                                 title={ui.zoom}
                                             >
                                                 <ZoomIn size={14} />
@@ -1802,8 +1708,7 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                             {(isEn ? selectedCompanion.virtuesAndMerits.hadithsAndQuotesEn : selectedCompanion.virtuesAndMerits.hadithsAndQuotesAr).map((item, idx) => (
                                                 <div 
                                                     key={idx} 
-                                                    className="p-3.5 rounded-[14px] border-0 space-y-1"
-                                                    style={{ backgroundColor: `${primaryColor}14` }}
+                                                    className={`p-3.5 rounded-[14px] space-y-1.5 ${innerSubBoxClass}`}
                                                 >
                                                     <p 
                                                         className={`text-xs sm:text-sm font-bold leading-relaxed ${isEn ? 'font-sans' : 'font-amiri'}`}
@@ -1811,9 +1716,14 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                     >
                                                         {item.hadith}
                                                     </p>
-                                                    <span className="text-[11px] opacity-70 block font-sans">
-                                                        {item.source}
-                                                    </span>
+                                                    <AutoFitSingleLine
+                                                        as="span"
+                                                        text={item.source}
+                                                        baseFontSize={11}
+                                                        minFontSize={7.5}
+                                                        textScale={cardTextScale}
+                                                        className="opacity-70 font-sans w-full"
+                                                    />
                                                 </div>
                                             ))}
                                         </div>
@@ -1821,20 +1731,20 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
 
                                     {/* Titles & Honors */}
                                     <div 
-                                        className="p-4 sm:p-5 rounded-[18px] border-0 space-y-2 relative transition-all"
-                                        style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+                                        className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-[18px] space-y-2 relative overflow-visible transition-all"
                                     >
-                                        <div className={`flex items-center justify-between pb-2 border-b ${tokens.isDark ? 'border-slate-800' : 'border-slate-100'}`}>
-                                            <h4 className="text-sm font-bold flex items-center gap-2" style={{ color: primaryColor }}>
-                                                <Sparkles className="w-4 h-4 text-amber-400" />
-                                                <span>{ui.titlesAndHonorsLabel}</span>
+                                        <div className="flex items-center justify-between gap-2 pb-2.5 app-3d-divider">
+                                            <h4 className={`font-bold flex items-center min-w-0 flex-1 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: themeHeadingColor }}>
+                                                <AutoFitSingleLine as="span" text={ui.titlesAndHonorsLabel} baseFontSize={14} minFontSize={9} textScale={cardTextScale} className="min-w-0 flex-1" />
                                             </h4>
                                         </div>
-                                        <ul className="space-y-2 pt-1">
+                                        <ul className="space-y-2.5 pt-1">
                                             {(isEn ? selectedCompanion.virtuesAndMerits.titlesAndHonorsEn : selectedCompanion.virtuesAndMerits.titlesAndHonorsAr).map((titleItem, idx) => (
-                                                <li key={idx} className="flex items-start gap-2 text-xs sm:text-sm font-semibold opacity-90">
-                                                    <i className="fa-solid fa-crown text-amber-500 text-xs mt-1 shrink-0"></i>
-                                                    <span>{titleItem}</span>
+                                                <li key={idx} className="flex items-start gap-2.5 text-xs sm:text-sm font-semibold opacity-95">
+                                                    <span className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 font-bold text-[11px] mt-0.5 border-0" style={itemBadge3DStyle}>
+                                                        {idx + 1}
+                                                    </span>
+                                                    <span className="pt-0.5">{titleItem}</span>
                                                 </li>
                                             ))}
                                         </ul>
@@ -1842,18 +1752,16 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
 
                                     {/* Testimonies of Companions */}
                                     <div 
-                                        className="p-4 sm:p-5 rounded-[18px] border-0 space-y-2 relative transition-all"
-                                        style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+                                        className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-[18px] space-y-2 relative overflow-visible transition-all"
                                     >
-                                        <div className={`flex items-center justify-between pb-2 border-b ${tokens.isDark ? 'border-slate-800' : 'border-slate-100'}`}>
-                                            <h4 className="text-sm font-bold flex items-center gap-2" style={{ color: primaryColor }}>
-                                                <i className="fa-solid fa-quote-right opacity-80"></i>
-                                                <span>{ui.testimoniesLabel}</span>
+                                        <div className="flex items-center justify-between gap-2 pb-2.5 app-3d-divider">
+                                            <h4 className={`font-bold flex items-center min-w-0 flex-1 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: themeHeadingColor }}>
+                                                <AutoFitSingleLine as="span" text={ui.testimoniesLabel} baseFontSize={14} minFontSize={9} textScale={cardTextScale} className="min-w-0 flex-1" />
                                             </h4>
                                         </div>
-                                        <div className="space-y-2 pt-1">
+                                        <div className="space-y-2.5 pt-1">
                                             {(isEn ? selectedCompanion.virtuesAndMerits.testimoniesEn : selectedCompanion.virtuesAndMerits.testimoniesAr).map((testimony, idx) => (
-                                                <div key={idx} className="p-3 rounded-[14px] bg-slate-500/5 dark:bg-slate-800/40 border-0 text-xs sm:text-sm font-medium leading-relaxed italic">
+                                                <div key={idx} className={`p-3 rounded-[14px] text-xs sm:text-sm font-medium leading-relaxed italic ${innerSubBoxClass}`}>
                                                     {testimony}
                                                 </div>
                                             ))}
@@ -1863,13 +1771,11 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                     {/* Quranic Verses Associated with Him Card */}
                                     {extraSections && extraSections.quranicVerses && extraSections.quranicVerses.length > 0 && (
                                         <div 
-                                            className="p-4 sm:p-5 rounded-[18px] border-0 space-y-3 relative transition-all"
-                                            style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+                                            className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-[18px] space-y-3 relative overflow-visible transition-all"
                                         >
-                                            <div className={`flex items-center justify-between pb-2 border-b ${tokens.isDark ? 'border-slate-800' : 'border-slate-100'}`}>
-                                                <h4 className="text-sm font-bold flex items-center gap-2" style={{ color: primaryColor }}>
-                                                    <i className="fa-solid fa-quran text-amber-500"></i>
-                                                    <span>{isEn ? 'Noble Quranic Verses in His Honor & Context' : 'آيات قرآنية كريمة نزلت فيه أو ارتبطت بسيرته'}</span>
+                                            <div className="flex items-center justify-between gap-2 pb-2.5 app-3d-divider">
+                                                <h4 className={`font-bold flex items-center min-w-0 flex-1 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: themeHeadingColor }}>
+                                                    <AutoFitSingleLine as="span" text={isEn ? 'Noble Quranic Verses in His Honor & Context' : 'آيات قرآنية كريمة نزلت فيه أو ارتبطت بسيرته'} baseFontSize={14} minFontSize={9} textScale={cardTextScale} className="min-w-0 flex-1" />
                                                 </h4>
                                                 <button
                                                     type="button"
@@ -1881,8 +1787,8 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                         content: extraSections.quranicVerses.map(v => `📖 ${isEn ? v.surahEn : v.surahAr}\n«${isEn ? v.verseEn : v.verseAr}»\n\n📜 ${isEn ? v.contextEn : v.contextAr}`),
                                                         isVerseOrProof: true
                                                     })}
-                                                    className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors cursor-pointer"
-                                                    style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+                                                    className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
+                                            style={{ color: 'var(--text-color)' }}
                                                     title={ui.zoom}
                                                 >
                                                     <ZoomIn size={14} />
@@ -1892,25 +1798,19 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                 {extraSections.quranicVerses.map((verseItem, vIdx) => (
                                                     <div 
                                                         key={vIdx} 
-                                                        className="p-3.5 rounded-[14px] border-0 space-y-2"
-                                                        style={{ backgroundColor: `${primaryColor}14` }}
+                                                        className={`p-3.5 rounded-[14px] space-y-2 ${innerSubBoxClass}`}
                                                     >
-                                                        <div className="flex items-center justify-between">
-                                                            <span 
-                                                                className="text-[11px] font-bold px-2.5 py-0.5 rounded-full border-0"
-                                                                style={{ backgroundColor: `${primaryColor}25`, color: primaryColor }}
-                                                            >
-                                                                {isEn ? verseItem.surahEn : verseItem.surahAr}
-                                                            </span>
-                                                        </div>
+                                                        <span className="text-[11px] font-bold block opacity-75" style={{ color: themeHeadingColor }}>
+                                                            {isEn ? verseItem.surahEn : verseItem.surahAr}
+                                                        </span>
                                                         <p 
                                                             className={`text-xs sm:text-sm font-bold text-center leading-loose ${isEn ? 'font-sans' : 'font-amiri'}`}
-                                                            style={{ color: primaryColor }}
+                                                            style={{ color: themeHeadingColor }}
                                                         >
                                                             «{isEn ? verseItem.verseEn : verseItem.verseAr}»
                                                         </p>
                                                         <p className={`text-[11px] sm:text-xs leading-relaxed opacity-85 font-medium ${isEn ? 'font-sans' : 'font-amiri'}`}>
-                                                            <span className="font-bold block mb-0.5" style={{ color: primaryColor }}>
+                                                            <span className="font-bold block mb-0.5" style={{ color: themeHeadingColor }}>
                                                                 {isEn ? 'Context of Revelation:' : 'مناسبة النزول والسياق:'}
                                                             </span>
                                                             {isEn ? verseItem.contextEn : verseItem.contextAr}
@@ -1924,13 +1824,11 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                     {/* Additional Testimonies of Companions & Mothers of Believers */}
                                     {extraSections && extraSections.extraTestimonies && extraSections.extraTestimonies.length > 0 && (
                                         <div 
-                                            className="p-4 sm:p-5 rounded-[18px] border-0 space-y-3 relative transition-all"
-                                            style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+                                            className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-[18px] space-y-3 relative overflow-visible transition-all"
                                         >
-                                            <div className={`flex items-center justify-between pb-2 border-b ${tokens.isDark ? 'border-slate-800' : 'border-slate-100'}`}>
-                                                <h4 className="text-sm font-bold flex items-center gap-2" style={{ color: primaryColor }}>
-                                                    <i className="fa-solid fa-comments opacity-80"></i>
-                                                    <span>{isEn ? 'Testimonies of Companions & Mothers of Believers' : 'شهادات كبار الصحابة وأمهات المؤمنين في حقه'}</span>
+                                            <div className="flex items-center justify-between gap-2 pb-2.5 app-3d-divider">
+                                                <h4 className={`font-bold flex items-center min-w-0 flex-1 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: themeHeadingColor }}>
+                                                    <AutoFitSingleLine as="span" text={isEn ? 'Testimonies of Companions & Mothers of Believers' : 'شهادات كبار الصحابة وأمهات المؤمنين في حقه'} baseFontSize={14} minFontSize={9} textScale={cardTextScale} className="min-w-0 flex-1" />
                                                 </h4>
                                                 <button
                                                     type="button"
@@ -1941,8 +1839,8 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                         icon: 'fa-solid fa-comments',
                                                         content: extraSections.extraTestimonies.map(t => `💬 ${isEn ? t.speakerEn : t.speakerAr}:\n«${isEn ? t.quoteEn : t.quoteAr}»`)
                                                     })}
-                                                    className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors cursor-pointer"
-                                                    style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+                                                    className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
+                                            style={{ color: 'var(--text-color)' }}
                                                     title={ui.zoom}
                                                 >
                                                     <ZoomIn size={14} />
@@ -1950,9 +1848,8 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                             </div>
                                             <div className="space-y-2.5">
                                                 {extraSections.extraTestimonies.map((testItem, tIdx) => (
-                                                    <div key={tIdx} className="p-3 rounded-[14px] bg-slate-500/5 dark:bg-slate-800/40 border-0 space-y-1.5">
-                                                        <div className="flex items-center gap-1.5 text-xs font-bold text-amber-600 dark:text-amber-400">
-                                                            <i className="fa-solid fa-user-tag text-[10px]"></i>
+                                                    <div key={tIdx} className={`p-3 rounded-[14px] space-y-1.5 ${innerSubBoxClass}`}>
+                                                        <div className="text-xs font-bold" style={{ color: themeHeadingColor }}>
                                                             <span>{isEn ? testItem.speakerEn : testItem.speakerAr}</span>
                                                         </div>
                                                         <p className={`text-xs sm:text-sm font-medium leading-relaxed italic ${isEn ? 'font-sans' : 'font-amiri'}`}>
@@ -1971,13 +1868,11 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                 <div className="space-y-3">
                                     {/* Stance at Prophet's Death & Post-Prophet Role */}
                                     <div 
-                                        className="p-4 sm:p-5 rounded-[18px] border-0 space-y-2 relative transition-all"
-                                        style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+                                        className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-[18px] space-y-2 relative overflow-visible transition-all"
                                     >
-                                        <div className={`flex items-center justify-between pb-2 border-b ${tokens.isDark ? 'border-slate-800' : 'border-slate-100'}`}>
-                                            <h4 className="text-sm font-bold flex items-center gap-2" style={{ color: primaryColor }}>
-                                                <i className="fa-solid fa-landmark"></i>
-                                                <span>{isEn ? 'Stance at the Prophet\'s Demise' : 'موقفه عند وفاة النبي ﷺ ودوره'}</span>
+                                        <div className="flex items-center justify-between gap-2 pb-2.5 app-3d-divider">
+                                            <h4 className={`font-bold flex items-center min-w-0 flex-1 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: themeHeadingColor }}>
+                                                <AutoFitSingleLine as="span" text={isEn ? 'Stance at the Prophet\'s Demise' : 'موقفه عند وفاة النبي ﷺ ودوره'} baseFontSize={14} minFontSize={9} textScale={cardTextScale} className="min-w-0 flex-1" />
                                             </h4>
                                             <button
                                                 type="button"
@@ -1986,8 +1881,8 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                     subtitle: isEn ? 'Stance at Prophet\'s Passing' : 'موقفه بعد وفاة النبي',
                                                     content: `${isEn ? selectedCompanion.postProphetEraAndLegacy.stanceAtProphetsDeathEn : selectedCompanion.postProphetEraAndLegacy.stanceAtProphetsDeathAr}\n\n${isEn ? selectedCompanion.postProphetEraAndLegacy.roleOrCaliphateEn : selectedCompanion.postProphetEraAndLegacy.roleOrCaliphateAr}`
                                                 })}
-                                                className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors cursor-pointer"
-                                                style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+                                                className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
+                                            style={{ color: 'var(--text-color)' }}
                                                 title={ui.zoom}
                                             >
                                                 <ZoomIn size={14} />
@@ -2003,19 +1898,19 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
 
                                     {/* Major Achievements */}
                                     <div 
-                                        className="p-4 sm:p-5 rounded-[18px] border-0 space-y-2.5 relative transition-all"
-                                        style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+                                        className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-[18px] space-y-2.5 relative overflow-visible transition-all"
                                     >
-                                        <div className={`flex items-center justify-between pb-2 border-b ${tokens.isDark ? 'border-slate-800' : 'border-slate-100'}`}>
-                                            <h4 className="text-sm font-bold flex items-center gap-2" style={{ color: primaryColor }}>
-                                                <Award className="w-4 h-4 text-amber-500" />
-                                                <span>{ui.majorAchievementsLabel}</span>
+                                        <div className="flex items-center justify-between gap-2 pb-2.5 app-3d-divider">
+                                            <h4 className={`font-bold flex items-center min-w-0 flex-1 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: themeHeadingColor }}>
+                                                <AutoFitSingleLine as="span" text={ui.majorAchievementsLabel} baseFontSize={14} minFontSize={9} textScale={cardTextScale} className="min-w-0 flex-1" />
                                             </h4>
                                         </div>
-                                        <div className="space-y-2 pt-1">
+                                        <div className="space-y-2.5 pt-1">
                                             {(isEn ? selectedCompanion.postProphetEraAndLegacy.majorAchievementsEn : selectedCompanion.postProphetEraAndLegacy.majorAchievementsAr).map((achieve, idx) => (
-                                                <div key={idx} className="flex items-start gap-2.5 p-3 rounded-[14px] bg-slate-500/5 dark:bg-slate-800/40 border-0">
-                                                    <i className="fa-solid fa-check-circle text-xs mt-1 shrink-0" style={{ color: primaryColor }}></i>
+                                                <div key={idx} className={`flex items-start gap-2.5 p-3 rounded-[14px] ${innerSubBoxClass}`}>
+                                                    <span className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 font-bold text-[11px] mt-0.5 border-0" style={itemBadge3DStyle}>
+                                                        {idx + 1}
+                                                    </span>
                                                     <p className={`text-xs sm:text-sm leading-relaxed font-medium ${isEn ? 'font-sans' : 'font-amiri'}`}>
                                                         {achieve}
                                                     </p>
@@ -2026,13 +1921,11 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
 
                                     {/* Passing & Final Testament */}
                                     <div 
-                                        className="p-4 sm:p-5 rounded-[18px] border-0 space-y-2.5 relative transition-all"
-                                        style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+                                        className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-[18px] space-y-2.5 relative overflow-visible transition-all"
                                     >
-                                        <div className={`flex items-center justify-between pb-2 border-b ${tokens.isDark ? 'border-slate-800' : 'border-slate-100'}`}>
-                                            <h4 className="text-sm font-bold flex items-center gap-2" style={{ color: primaryColor }}>
-                                                <i className="fa-solid fa-tombstone opacity-80"></i>
-                                                <span>{isEn ? 'Passing & Final Will' : 'وفاته واستشهاده ووصيته'}</span>
+                                        <div className="flex items-center justify-between gap-2 pb-2.5 app-3d-divider">
+                                            <h4 className={`font-bold flex items-center min-w-0 flex-1 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: themeHeadingColor }}>
+                                                <AutoFitSingleLine as="span" text={isEn ? 'Passing & Final Will' : 'وفاته واستشهاده ووصيته'} baseFontSize={14} minFontSize={9} textScale={cardTextScale} className="min-w-0 flex-1" />
                                             </h4>
                                             <button
                                                 type="button"
@@ -2041,8 +1934,8 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                     subtitle: isEn ? 'Passing & Will' : 'وفاته ووصيته الأخيرة',
                                                     content: `${isEn ? selectedCompanion.passingAndTributes.deathDetailsEn : selectedCompanion.passingAndTributes.deathDetailsAr}\n\n• ${ui.lastWordsLabel}\n"${isEn ? selectedCompanion.passingAndTributes.lastWordsEn : selectedCompanion.passingAndTributes.lastWordsAr}"\n\n• ${ui.burialLabel}\n${isEn ? selectedCompanion.passingAndTributes.restingPlaceEn : selectedCompanion.passingAndTributes.restingPlaceAr}`
                                                 })}
-                                                className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors cursor-pointer"
-                                                style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+                                                className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
+                                            style={{ color: 'var(--text-color)' }}
                                                 title={ui.zoom}
                                             >
                                                 <ZoomIn size={14} />
@@ -2052,10 +1945,9 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                             {isEn ? selectedCompanion.passingAndTributes.deathDetailsEn : selectedCompanion.passingAndTributes.deathDetailsAr}
                                         </p>
                                         <div 
-                                            className="p-3 rounded-[14px] border-0"
-                                            style={{ backgroundColor: `${primaryColor}14` }}
+                                            className={`p-3 rounded-[14px] ${innerSubBoxClass}`}
                                         >
-                                            <span className="text-[11px] font-bold block mb-1" style={{ color: primaryColor }}>
+                                            <span className="text-[11px] font-bold block mb-1" style={{ color: themeHeadingColor }}>
                                                 {ui.lastWordsLabel}
                                             </span>
                                             <p className={`text-xs sm:text-sm font-bold italic ${isEn ? 'font-sans' : 'font-amiri'}`}>
@@ -2067,13 +1959,11 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                     {/* Civilizational & Institutional Impact Card */}
                                     {extraSections && extraSections.civilizationalImpactAr && extraSections.civilizationalImpactAr.length > 0 && (
                                         <div 
-                                            className="p-4 sm:p-5 rounded-[18px] border-0 space-y-3 relative transition-all"
-                                            style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+                                            className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-[18px] space-y-3 relative overflow-visible transition-all"
                                         >
-                                            <div className={`flex items-center justify-between pb-2 border-b ${tokens.isDark ? 'border-slate-800' : 'border-slate-100'}`}>
-                                                <h4 className="text-sm font-bold flex items-center gap-2" style={{ color: primaryColor }}>
-                                                    <i className="fa-solid fa-landmark text-amber-500"></i>
-                                                    <span>{isEn ? 'Civilizational & Institutional Legacy' : 'الأثر الحضاري والتأسيسي الممتد للأمة'}</span>
+                                            <div className="flex items-center justify-between gap-2 pb-2.5 app-3d-divider">
+                                                <h4 className={`font-bold flex items-center min-w-0 flex-1 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: themeHeadingColor }}>
+                                                    <AutoFitSingleLine as="span" text={isEn ? 'Civilizational & Institutional Legacy' : 'الأثر الحضاري والتأسيسي الممتد للأمة'} baseFontSize={14} minFontSize={9} textScale={cardTextScale} className="min-w-0 flex-1" />
                                                 </h4>
                                                 <button
                                                     type="button"
@@ -2084,17 +1974,19 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                         icon: 'fa-solid fa-landmark',
                                                         content: (isEn ? extraSections.civilizationalImpactEn : extraSections.civilizationalImpactAr).map((c, i) => `🏛️ ${i + 1}. ${c}`)
                                                     })}
-                                                    className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors cursor-pointer"
-                                                    style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+                                                    className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
+                                            style={{ color: 'var(--text-color)' }}
                                                     title={ui.zoom}
                                                 >
                                                     <ZoomIn size={14} />
                                                 </button>
                                             </div>
-                                            <div className="space-y-2">
+                                            <div className="space-y-2.5">
                                                 {(isEn ? extraSections.civilizationalImpactEn : extraSections.civilizationalImpactAr).map((impact, idx) => (
-                                                    <div key={idx} className="flex items-start gap-2.5 p-3 rounded-[14px] bg-slate-500/5 dark:bg-slate-800/40 border-0">
-                                                        <i className="fa-solid fa-building-columns text-xs mt-1 shrink-0" style={{ color: primaryColor }}></i>
+                                                    <div key={idx} className={`flex items-start gap-2.5 p-3 rounded-[14px] ${innerSubBoxClass}`}>
+                                                        <span className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 font-bold text-[11px] mt-0.5 border-0" style={itemBadge3DStyle}>
+                                                            {idx + 1}
+                                                        </span>
                                                         <p className={`text-xs sm:text-sm leading-relaxed font-medium ${isEn ? 'font-sans' : 'font-amiri'}`}>
                                                             {impact}
                                                         </p>
@@ -2112,13 +2004,11 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                     {/* Spiritual & Faith Lessons Card */}
                                     {extraSections && extraSections.spiritualLessonsAr && extraSections.spiritualLessonsAr.length > 0 && (
                                         <div 
-                                            className="p-4 sm:p-5 rounded-[18px] border-0 space-y-3 relative transition-all"
-                                            style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+                                            className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-[18px] space-y-3 relative overflow-visible transition-all"
                                         >
-                                            <div className={`flex items-center justify-between pb-2 border-b ${tokens.isDark ? 'border-slate-800' : 'border-slate-100'}`}>
-                                                <h4 className="text-sm font-bold flex items-center gap-2" style={{ color: primaryColor }}>
-                                                    <Heart className="w-4 h-4 text-rose-500" />
-                                                    <span>{isEn ? 'Spiritual & Faith Lessons' : 'الدروس الإيمانية والروحية العميقة'}</span>
+                                            <div className="flex items-center justify-between gap-2 pb-2.5 app-3d-divider">
+                                                <h4 className={`font-bold flex items-center min-w-0 flex-1 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: themeHeadingColor }}>
+                                                    <AutoFitSingleLine as="span" text={isEn ? 'Spiritual & Faith Lessons' : 'الدروس الإيمانية والروحية العميقة'} baseFontSize={14} minFontSize={9} textScale={cardTextScale} className="min-w-0 flex-1" />
                                                 </h4>
                                                 <button
                                                     type="button"
@@ -2129,8 +2019,8 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                         icon: 'fa-solid fa-heart',
                                                         content: (isEn ? extraSections.spiritualLessonsEn : extraSections.spiritualLessonsAr).map((l, i) => `✨ ${i + 1}. ${l}`)
                                                     })}
-                                                    className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors cursor-pointer"
-                                                    style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+                                                    className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
+                                            style={{ color: 'var(--text-color)' }}
                                                     title={ui.zoom}
                                                 >
                                                     <ZoomIn size={14} />
@@ -2138,10 +2028,10 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                             </div>
                                             <div className="space-y-2.5">
                                                 {(isEn ? extraSections.spiritualLessonsEn : extraSections.spiritualLessonsAr).map((lesson, idx) => (
-                                                    <div key={idx} className="flex items-start gap-3 p-3 rounded-[14px] bg-slate-500/5 dark:bg-slate-800/40 border-0">
+                                                    <div key={idx} className={`flex items-start gap-3 p-3 rounded-[14px] ${innerSubBoxClass}`}>
                                                         <span 
                                                             className="w-6 h-6 rounded-full text-xs font-black flex items-center justify-center shrink-0 mt-0.5 border-0"
-                                                            style={{ backgroundColor: `${primaryColor}20`, color: primaryColor }}
+                                                            style={itemBadge3DStyle}
                                                         >
                                                             {idx + 1}
                                                         </span>
@@ -2157,13 +2047,11 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                     {/* Leadership & Character Lessons Card */}
                                     {extraSections && extraSections.leadershipLessonsAr && extraSections.leadershipLessonsAr.length > 0 && (
                                         <div 
-                                            className="p-4 sm:p-5 rounded-[18px] border-0 space-y-3 relative transition-all"
-                                            style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+                                            className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-[18px] space-y-3 relative overflow-visible transition-all"
                                         >
-                                            <div className={`flex items-center justify-between pb-2 border-b ${tokens.isDark ? 'border-slate-800' : 'border-slate-100'}`}>
-                                                <h4 className="text-sm font-bold flex items-center gap-2" style={{ color: primaryColor }}>
-                                                    <i className="fa-solid fa-chess-knight text-amber-500"></i>
-                                                    <span>{isEn ? 'Leadership, Management & Character' : 'الدروس القيادية والإدارية وبناء الشخصية'}</span>
+                                            <div className="flex items-center justify-between gap-2 pb-2.5 app-3d-divider">
+                                                <h4 className={`font-bold flex items-center min-w-0 flex-1 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: themeHeadingColor }}>
+                                                    <AutoFitSingleLine as="span" text={isEn ? 'Leadership, Management & Character' : 'الدروس القيادية والإدارية وبناء الشخصية'} baseFontSize={14} minFontSize={9} textScale={cardTextScale} className="min-w-0 flex-1" />
                                                 </h4>
                                                 <button
                                                     type="button"
@@ -2174,8 +2062,8 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                         icon: 'fa-solid fa-chess-knight',
                                                         content: (isEn ? extraSections.leadershipLessonsEn : extraSections.leadershipLessonsAr).map((l, i) => `🛡️ ${i + 1}. ${l}`)
                                                     })}
-                                                    className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors cursor-pointer"
-                                                    style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+                                                    className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
+                                            style={{ color: 'var(--text-color)' }}
                                                     title={ui.zoom}
                                                 >
                                                     <ZoomIn size={14} />
@@ -2183,10 +2071,10 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                             </div>
                                             <div className="space-y-2.5">
                                                 {(isEn ? extraSections.leadershipLessonsEn : extraSections.leadershipLessonsAr).map((lesson, idx) => (
-                                                    <div key={idx} className="flex items-start gap-3 p-3 rounded-[14px] bg-slate-500/5 dark:bg-slate-800/40 border-0">
+                                                    <div key={idx} className={`flex items-start gap-3 p-3 rounded-[14px] ${innerSubBoxClass}`}>
                                                         <span 
                                                             className="w-6 h-6 rounded-full text-xs font-black flex items-center justify-center shrink-0 mt-0.5 border-0"
-                                                            style={{ backgroundColor: `${primaryColor}20`, color: primaryColor }}
+                                                            style={itemBadge3DStyle}
                                                         >
                                                             {idx + 1}
                                                         </span>
@@ -2201,13 +2089,11 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
 
                                     {/* General Inspirational Lessons */}
                                     <div 
-                                        className="p-4 sm:p-5 rounded-[18px] border-0 space-y-3 relative transition-all"
-                                        style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+                                        className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-[18px] space-y-3 relative overflow-visible transition-all"
                                     >
-                                        <div className={`flex items-center justify-between pb-2 border-b ${tokens.isDark ? 'border-slate-800' : 'border-slate-100'}`}>
-                                            <h4 className="text-sm font-bold flex items-center gap-2" style={{ color: primaryColor }}>
-                                                <i className="fa-solid fa-lightbulb text-amber-500"></i>
-                                                <span>{ui.tabLessons}</span>
+                                        <div className="flex items-center justify-between gap-2 pb-2.5 app-3d-divider">
+                                            <h4 className={`font-bold flex items-center min-w-0 flex-1 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: themeHeadingColor }}>
+                                                <AutoFitSingleLine as="span" text={ui.tabLessons} baseFontSize={14} minFontSize={9} textScale={cardTextScale} className="min-w-0 flex-1" />
                                             </h4>
                                             <button
                                                 type="button"
@@ -2216,8 +2102,8 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                     subtitle: ui.tabLessons,
                                                     content: isEn ? selectedCompanion.inspirationalLessonsEn : selectedCompanion.inspirationalLessonsAr
                                                 })}
-                                                className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors cursor-pointer"
-                                                style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+                                                className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
+                                            style={{ color: 'var(--text-color)' }}
                                                 title={ui.zoom}
                                             >
                                                 <ZoomIn size={14} />
@@ -2225,10 +2111,10 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                         </div>
                                         <div className="space-y-2.5">
                                             {(isEn ? selectedCompanion.inspirationalLessonsEn : selectedCompanion.inspirationalLessonsAr).map((lesson, idx) => (
-                                                <div key={idx} className="flex items-start gap-3 p-3.5 rounded-[14px] bg-slate-500/5 dark:bg-slate-800/40 border-0">
+                                                <div key={idx} className={`flex items-start gap-3 p-3.5 rounded-[14px] ${innerSubBoxClass}`}>
                                                     <span 
                                                         className="w-6 h-6 rounded-full text-xs font-black flex items-center justify-center shrink-0 mt-0.5 border-0"
-                                                        style={{ backgroundColor: `${primaryColor}20`, color: primaryColor }}
+                                                        style={itemBadge3DStyle}
                                                     >
                                                         {idx + 1}
                                                     </span>
@@ -2243,13 +2129,11 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                     {/* Modern Application & Daily Emulation Plan Card */}
                                     {extraSections && extraSections.modernApplicationAr && extraSections.modernApplicationAr.length > 0 && (
                                         <div 
-                                            className="p-4 sm:p-5 rounded-[18px] border-0 space-y-3 relative transition-all"
-                                            style={{ backgroundColor: cardBgColor, boxShadow: cardShadow }}
+                                            className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-[18px] space-y-3 relative overflow-visible transition-all"
                                         >
-                                            <div className={`flex items-center justify-between pb-2 border-b ${tokens.isDark ? 'border-slate-800' : 'border-slate-100'}`}>
-                                                <h4 className="text-sm font-bold flex items-center gap-2" style={{ color: primaryColor }}>
-                                                    <Sparkles className="w-4 h-4 text-emerald-500" />
-                                                    <span>{isEn ? 'Modern Action Plan: Emulating Him Today' : 'خطة عمل وتطبيق معاصر: كيف نقتدي به اليوم في حياتنا؟'}</span>
+                                            <div className="flex items-center justify-between gap-2 pb-2.5 app-3d-divider">
+                                                <h4 className={`font-bold flex items-center min-w-0 flex-1 ${isEn ? 'font-sans' : 'font-kufi'}`} style={{ color: themeHeadingColor }}>
+                                                    <AutoFitSingleLine as="span" text={isEn ? 'Modern Action Plan: Emulating Him Today' : 'خطة عمل وتطبيق معاصر: كيف نقتدي به اليوم في حياتنا؟'} baseFontSize={14} minFontSize={8.5} textScale={cardTextScale} className="min-w-0 flex-1" />
                                                 </h4>
                                                 <button
                                                     type="button"
@@ -2260,21 +2144,22 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                                         icon: 'fa-solid fa-sparkles',
                                                         content: (isEn ? extraSections.modernApplicationEn : extraSections.modernApplicationAr).map((m, i) => `🎯 ${i + 1}. ${m}`)
                                                     })}
-                                                    className="w-7 h-7 rounded-full border-0 flex items-center justify-center transition-colors cursor-pointer"
-                                                    style={{ backgroundColor: actionBtnBg, color: tokens.isDark ? '#E2E8F0' : '#475569' }}
+                                                    className="app-page-card border-0 w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
+                                            style={{ color: 'var(--text-color)' }}
                                                     title={ui.zoom}
                                                 >
                                                     <ZoomIn size={14} />
                                                 </button>
                                             </div>
-                                            <div className="space-y-2">
+                                            <div className="space-y-2.5">
                                                 {(isEn ? extraSections.modernApplicationEn : extraSections.modernApplicationAr).map((app, idx) => (
                                                     <div 
                                                         key={idx} 
-                                                        className="flex items-start gap-2.5 p-3 rounded-[14px] border-0"
-                                                        style={{ backgroundColor: `${primaryColor}14` }}
+                                                        className={`flex items-start gap-2.5 p-3 rounded-[14px] ${innerSubBoxClass}`}
                                                     >
-                                                        <Check className="w-4 h-4 shrink-0 mt-0.5" style={{ color: primaryColor }} />
+                                                        <span className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 font-bold text-[11px] mt-0.5 border-0" style={itemBadge3DStyle}>
+                                                            {idx + 1}
+                                                        </span>
                                                         <p 
                                                             className={`text-xs sm:text-sm leading-relaxed font-semibold ${isEn ? 'font-sans' : 'font-amiri'}`}
                                                             style={{ color: tokens.isDark ? '#F1F5F9' : '#0F172A' }}
@@ -2291,39 +2176,31 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                         </div>
 
                         {/* Bottom Pagination & Navigation (Next / Prev Companion) */}
-                        <div className="pt-4 pb-6 flex items-center justify-between gap-3">
+                        <div className="pt-4 pb-2 grid grid-cols-2 gap-3">
                             {prevCompanion ? (
                                 <button
                                     onClick={() => handleSelectCompanion(prevCompanion)}
-                                    className="flex-1 py-3 px-3 rounded-[16px] border-0 text-xs sm:text-sm font-bold flex items-center justify-center gap-2 active:scale-95 transition-all shadow-xs cursor-pointer"
+                                    className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-3.5 rounded-[16px] flex items-center justify-center text-center transition-all cursor-pointer"
                                     style={{ 
-                                        backgroundColor: cardBgColor, 
-                                        boxShadow: cardShadow,
-                                        color: tokens.isDark ? '#E2E8F0' : '#334155'
+                                        color: themeHeadingColor
                                     }}
                                 >
-                                    <i className={`fa-solid ${isEn ? 'fa-arrow-left' : 'fa-arrow-right'} text-xs`}></i>
-                                    <span className="truncate">{isEn ? prevCompanion.nameEn : prevCompanion.nameAr}</span>
+                                    <span className={`text-xs sm:text-sm font-bold ${isEn ? 'font-sans' : 'font-kufi'}`}>{isEn ? 'Previous Companion' : 'الصحابي السابق'}</span>
                                 </button>
-                            ) : <div className="flex-1" />}
+                            ) : <div />}
 
                             {nextCompanion ? (
                                 <button
                                     onClick={() => handleSelectCompanion(nextCompanion)}
-                                    className="flex-1 py-3 px-3 rounded-[16px] border-0 text-xs sm:text-sm font-bold flex items-center justify-center gap-2 active:scale-95 transition-all shadow-xs cursor-pointer"
+                                    className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-3.5 rounded-[16px] flex items-center justify-center text-center transition-all cursor-pointer"
                                     style={{ 
-                                        backgroundColor: cardBgColor, 
-                                        boxShadow: cardShadow,
-                                        color: tokens.isDark ? '#E2E8F0' : '#334155'
+                                        color: themeHeadingColor
                                     }}
                                 >
-                                    <span className="truncate">{isEn ? nextCompanion.nameEn : nextCompanion.nameAr}</span>
-                                    <i className={`fa-solid ${isEn ? 'fa-arrow-right' : 'fa-arrow-left'} text-xs`}></i>
+                                    <span className={`text-xs sm:text-sm font-bold ${isEn ? 'font-sans' : 'font-kufi'}`}>{isEn ? 'Next Companion' : 'الصحابي التالي'}</span>
                                 </button>
-                            ) : <div className="flex-1" />}
+                            ) : <div />}
                         </div>
-                        {/* Bottom Spacer for Mobile Phone Navigation Bar */}
-                        <div className="w-full h-10 sm:h-14 shrink-0 pointer-events-none" />
                     </div>
                 </div>
             )}
@@ -2342,11 +2219,10 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                             animate={{ y: 0, opacity: 1 }}
                             exit={{ y: '100%', opacity: 0 }}
                             transition={{ type: 'spring', damping: 28, stiffness: 280 }}
-                            className="w-full max-w-xl mx-auto rounded-t-[28px] flex flex-col max-h-[85vh] overflow-hidden relative shadow-2xl"
+                            className="app-page-card border-0 w-full max-w-xl mx-auto rounded-t-[28px] flex flex-col max-h-[88dvh] overflow-hidden relative bg-white dark:bg-[#1E293B]"
                             style={{ 
                                 fontFamily: isEn ? 'sans-serif' : theme.font,
-                                backgroundColor: cardBgColor,
-                                color: tokens.isDark ? '#FFFFFF' : '#1E293B',
+                                color: 'var(--text-color)',
                             }}
                             onClick={e => e.stopPropagation()}
                         >
@@ -2367,7 +2243,7 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                             </div>
 
                             {/* Content Container */}
-                            <div ref={zoomScrollRef} className="overflow-y-auto hide-scrollbar flex-1 px-6 py-4 space-y-4">
+                            <div ref={zoomScrollRef} className="overflow-y-auto hide-scrollbar flex-1 min-h-0 px-6 py-4 space-y-4">
                                 {zoomedCard.title && (
                                     <h3 
                                         className={`text-base sm:text-lg font-bold ${isEn ? 'font-sans' : 'font-kufi'} text-center leading-snug`}
@@ -2380,10 +2256,10 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                 {Array.isArray(zoomedCard.content) ? (
                                     <div className="space-y-3">
                                         {zoomedCard.content.map((item, idx) => (
-                                            <div key={idx} className="flex items-start gap-3 p-3.5 rounded-[14px] bg-slate-500/5 dark:bg-slate-800/40 border-0">
+                                            <div key={idx} className={`flex items-start gap-3 p-3.5 rounded-[14px] ${innerSubBoxClass}`}>
                                                 <span 
                                                     className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 font-bold text-xs mt-0.5 border-0"
-                                                    style={{ backgroundColor: `${primaryColor}20`, color: primaryColor }}
+                                                    style={itemBadge3DStyle}
                                                 >
                                                     {idx + 1}
                                                 </span>
@@ -2410,11 +2286,7 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
 
                             {/* Action Bar (Share, Copy, Zoom, ChevronDown to hide) without Audio button & with safe-area bottom elevation */}
                             <div 
-                                className="p-4 pt-3 shrink-0 flex items-center justify-center gap-3 sm:gap-4 border-t border-slate-100 dark:border-white/5" 
-                                style={{ 
-                                    backgroundColor: cardBgColor,
-                                    paddingBottom: 'calc(env(safe-area-inset-bottom, 16px) + 16px)'
-                                }}
+                                className="px-4 pt-3 pb-2 modal-sheet-safe-bottom shrink-0 flex items-center justify-center gap-3 sm:gap-4 border-t border-slate-100 dark:border-white/5 overflow-visible" 
                             >
                                 {/* Share Button */}
                                 <button 
@@ -2436,9 +2308,8 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                             setToastMessage
                                         });
                                     }} 
-                                    className="w-11 h-11 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border-0"
+                                    className="app-page-card border-0 w-11 h-11 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
                                     style={{
-                                        backgroundColor: tokens.isDark ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9',
                                         color: tokens.textColor
                                     }}
                                     title={isEn ? "Share Image" : "مشاركة كصورة"}
@@ -2461,9 +2332,9 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                             showToast(ui.toastCopiedText);
                                         });
                                     }}
-                                    className="w-11 h-11 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border-0"
+                                    className="app-page-card border-0 w-11 h-11 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
                                     style={{
-                                        backgroundColor: copiedModal ? '#10B981' : (tokens.isDark ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9'),
+                                        backgroundColor: copiedModal ? '#10B981' : undefined,
                                         color: copiedModal ? '#FFFFFF' : tokens.textColor
                                     }}
                                     title={isEn ? 'Copy text' : 'نسخ النص'}
@@ -2478,9 +2349,8 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                         e.stopPropagation();
                                         setZoomFontSize(prev => (prev >= 36 ? 20 : prev + 4));
                                     }}
-                                    className="w-11 h-11 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border-0"
+                                    className="app-page-card border-0 w-11 h-11 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
                                     style={{
-                                        backgroundColor: tokens.isDark ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9',
                                         color: tokens.textColor
                                     }}
                                     title={isEn ? 'Enlarge font size' : 'تكبير حجم الخط'}
@@ -2492,9 +2362,8 @@ const TenPromisedPage: React.FC<TenPromisedPageProps> = ({ onBack, onNavigate, n
                                 <button 
                                     type="button"
                                     onClick={() => setZoomedCard(null)} 
-                                    className="w-11 h-11 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 border-0"
+                                    className="app-page-card border-0 w-11 h-11 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0"
                                     style={{
-                                        backgroundColor: tokens.isDark ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9',
                                         color: tokens.textColor
                                     }}
                                     title={isEn ? 'Hide list' : 'إخفاء القائمة'}

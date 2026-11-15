@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Outer Elevation Shadow -->
+    <item android:top="2dp" android:left="1dp" android:right="1dp" android:bottom="4dp">
+        <shape>
+            <solid android:color="#2A000000" />
+            <corners android:radius="22dp" />
+        </shape>
+    </item>
+    <!-- Container Body -->
+    <item android:bottom="2.5dp">
+        <shape>
+            <solid android:color="#FDFBF7" />
+            <corners android:radius="22dp" />
+            <stroke android:width="2dp" android:color="#D4AF37" />
+        </shape>
+    </item>
+</layer-list>

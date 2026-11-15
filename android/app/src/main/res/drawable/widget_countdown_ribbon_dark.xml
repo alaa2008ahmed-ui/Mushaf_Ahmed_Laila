@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Bottom Shadow -->
+    <item android:top="1dp" android:left="1dp" android:right="1dp" android:bottom="2.5dp">
+        <shape>
+            <solid android:color="#66000000" />
+            <corners android:radius="14dp" />
+        </shape>
+    </item>
+    <!-- Ribbon Face -->
+    <item android:bottom="1.5dp">
+        <shape>
+            <gradient
+                android:angle="90"
+                android:startColor="#2A2012"
+                android:endColor="#1F170D" />
+            <corners android:radius="14dp" />
+            <stroke android:width="1.2dp" android:color="#F59E0B" />
+        </shape>
+    </item>
+</layer-list>

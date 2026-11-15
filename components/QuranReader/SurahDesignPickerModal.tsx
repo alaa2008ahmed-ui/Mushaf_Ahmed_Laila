@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, FC } from 'react';
-import { X, Check } from 'lucide-react';
+import { X } from 'lucide-react';
 import SurahHeader from './SurahHeader';
 import { useLanguage } from '../../context/LanguageContext';
+import { registerBackInterceptor } from '../../hooks/useBackButton';
 
 interface SurahDesignPickerModalProps {
     isOpen: boolean;
@@ -45,6 +46,16 @@ const SurahDesignPickerModal: FC<SurahDesignPickerModalProps> = ({
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [isOpen, onClose]);
 
+    useEffect(() => {
+        if (!isOpen) return;
+        const interceptor = () => {
+            onClose();
+            return true;
+        };
+        const unregister = registerBackInterceptor(interceptor);
+        return unregister;
+    }, [isOpen, onClose]);
+
     if (!isOpen) return null;
 
     return (
@@ -54,7 +65,7 @@ const SurahDesignPickerModal: FC<SurahDesignPickerModalProps> = ({
         >
             <div 
                 dir={dir}
-                className={`modal-skinned w-[86%] max-w-[320px] ${isLandscape ? 'max-h-[70vh]' : 'max-h-[50vh]'} rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-modal-enter border-0`}
+                className={`modal-skinned w-[86%] max-w-[320px] ${isLandscape ? 'max-h-[72dvh]' : 'max-h-[58dvh]'} rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-modal-enter border-0`}
                 style={{ 
                     backgroundColor: currentTheme?.modalBg || currentTheme?.bg || '#ffffff',
                     color: currentTheme?.modalText || currentTheme?.text || '#1f2937',
@@ -74,7 +85,7 @@ const SurahDesignPickerModal: FC<SurahDesignPickerModalProps> = ({
                         <span 
                             className="text-[10px] px-2 py-0.5 rounded-full font-bold quran-raised-btn"
                             style={{ 
-                                color: currentTheme?.accent || '#10b981'
+                                color: currentTheme?.id === 'deep_black' ? '#ffffff' : (currentTheme?.accent || '#10b981')
                             }}
                         >
                             {isEn ? `${designs.length} designs` : `${designs.length} تصميماً`}
@@ -94,7 +105,7 @@ const SurahDesignPickerModal: FC<SurahDesignPickerModalProps> = ({
                 {/* Modal Body: Scrollable list of designs (without any name or model text) */}
                 <div 
                     ref={scrollContainerRef}
-                    className="flex-1 overflow-y-auto p-2.5 space-y-2.5 scroll-smooth scrollbar-hide"
+                    className="flex-1 min-h-0 overflow-y-auto p-2.5 space-y-2.5 scroll-smooth scrollbar-hide"
                 >
                     {designs.map((d) => {
                         const isSelected = currentDesign === d;
@@ -113,23 +124,13 @@ const SurahDesignPickerModal: FC<SurahDesignPickerModalProps> = ({
                                         : 'quran-raised-card hover:scale-[1.01]'
                                 }`}
                                 style={{
-                                    border: 'none',
+                                    border: isSelected ? '2px solid var(--qr-accent, #10b981)' : '2px solid transparent',
                                     outline: 'none',
                                     backgroundColor: isSelected 
-                                        ? 'color-mix(in srgb, var(--qr-accent, #10b981) 15%, transparent)' 
+                                        ? 'color-mix(in srgb, var(--qr-accent, #10b981) 18%, transparent)' 
                                         : (currentTheme?.cardBg || 'rgba(255,255,255,0.03)')
                                 }}
                             >
-                                {/* Selected Active Badge */}
-                                {isSelected && (
-                                    <div 
-                                        className="absolute top-2 start-2 z-20 w-5 h-5 rounded-full flex items-center justify-center shadow-md text-white animate-scaleIn quran-raised-btn-selected"
-                                        style={{ backgroundColor: currentTheme?.accent || 'var(--qr-accent, #10b981)' }}
-                                    >
-                                        <Check size={12} className="stroke-[3] quran-3d-icon" />
-                                    </div>
-                                )}
-
                                 {/* Clean header preview with NO model name / number text */}
                                 <div className="pointer-events-none w-full">
                                     <SurahHeader

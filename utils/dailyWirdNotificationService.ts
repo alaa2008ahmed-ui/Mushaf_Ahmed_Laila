@@ -1,8 +1,12 @@
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import { Preferences } from '@capacitor/preferences';
-import { playNotificationSound } from './prayerTimesUtils';
+import { playNotificationSound, getActiveNotificationSoundFileName, getActiveNotificationSoundPath } from './prayerTimesUtils';
 import { updateNativeAlertsGroupSummary } from './silentMode';
+import { ensureNotificationPermission } from './permissionHelper';
+
+// Android status bar notification icon: Holy Quran on Rehal (Stand)
+export const WIRD_NOTIFICATION_ICON = 'ic_stat_name';
 
 // Plugin interface for native bridge
 interface AutoSilentPluginInterface {
@@ -25,7 +29,7 @@ export interface WirdProfile {
   lastPage?: number;
   lastAyah?: { s: number; a: number };
   reminderEnabled?: boolean;
-  reminderTime?: string; // HH:mm format, e.g. "09:00"
+  reminderTime?: string; // HH:mm format, e.g. "10:00"
   lastCompletedDate?: string; // YYYY-MM-DD or ISO
 }
 
@@ -48,7 +52,7 @@ export const WIRD_GROUP_ID = 'com.mushaf.ahmedandlayla.GENERAL_ALERTS_CARD';
 
 // Notification IDs:
 // 9300: Test notification
-// 9301: Daily morning recurring fallback (9:00 AM)
+// 9301: Daily morning recurring fallback (10:00 AM)
 // 9302: Daily evening recurring fallback (10:00 PM)
 // 9310 - 9324: Exact upcoming morning notifications (days 0..14)
 // 9330 - 9344: Exact upcoming evening notifications (days 0..14)
@@ -58,25 +62,101 @@ const RECURRING_EVENING_ID = 9302;
 const BASE_MORNING_EXACT_ID = 9310;
 const BASE_EVENING_EXACT_ID = 9330;
 
+// Exact canonical page boundaries for all 30 Juz of the Holy Qur'an (Madinah Mushaf - 604 pages)
+// Juz 1 starts at page 1 and ends at page 21 (Al-Baqarah 141).
+// Juz 2 to 29 are exactly 20 pages each.
+// Juz 30 is 23 pages (582 to 604).
+export const JUZ_PAGE_BOUNDARIES: { start: number; end: number }[] = [
+  { start: 1, end: 21 },    // Juz 1
+  { start: 22, end: 41 },   // Juz 2
+  { start: 42, end: 61 },   // Juz 3
+  { start: 62, end: 81 },   // Juz 4
+  { start: 82, end: 101 },  // Juz 5
+  { start: 102, end: 121 }, // Juz 6
+  { start: 122, end: 141 }, // Juz 7
+  { start: 142, end: 161 }, // Juz 8
+  { start: 162, end: 181 }, // Juz 9
+  { start: 182, end: 201 }, // Juz 10
+  { start: 202, end: 221 }, // Juz 11
+  { start: 222, end: 241 }, // Juz 12
+  { start: 242, end: 261 }, // Juz 13
+  { start: 262, end: 281 }, // Juz 14
+  { start: 282, end: 301 }, // Juz 15
+  { start: 302, end: 321 }, // Juz 16
+  { start: 322, end: 341 }, // Juz 17
+  { start: 342, end: 361 }, // Juz 18
+  { start: 362, end: 381 }, // Juz 19
+  { start: 382, end: 401 }, // Juz 20
+  { start: 402, end: 421 }, // Juz 21
+  { start: 422, end: 441 }, // Juz 22
+  { start: 442, end: 461 }, // Juz 23
+  { start: 462, end: 481 }, // Juz 24
+  { start: 482, end: 501 }, // Juz 25
+  { start: 502, end: 521 }, // Juz 26
+  { start: 522, end: 541 }, // Juz 27
+  { start: 542, end: 561 }, // Juz 28
+  { start: 562, end: 581 }, // Juz 29
+  { start: 582, end: 604 }, // Juz 30
+];
+
 /**
  * Calculates start and end page for a given day in the Khatma
+ * Accurately aligns with canonical Qur'anic Juz boundaries (e.g. Day 1: 1-21, Day 2: 22-41)
  */
-export const getWirdDayRange = (day: number, profile: WirdProfile) => {
+export const getWirdDayRange = (
+  day: number,
+  profile: { mode: 'days' | 'pages'; value: number; startPage?: number }
+) => {
   const startPage = profile.startPage || 1;
-  const pagesLeft = TOTAL_QURAN_PAGES - startPage + 1;
-  const offset = startPage - 1;
+  const safeDay = Math.max(1, day);
 
-  if (profile.mode === 'days') {
-    const totalDays = profile.value;
-    const start = Math.floor(((day - 1) * pagesLeft) / totalDays) + 1 + offset;
-    const end = Math.floor((day * pagesLeft) / totalDays) + offset;
-    return { start: Math.min(start, TOTAL_QURAN_PAGES), end: Math.min(Math.max(start, end), TOTAL_QURAN_PAGES) };
-  } else {
-    const pagesPerDay = profile.value;
-    const start = (day - 1) * pagesPerDay + 1 + offset;
-    const end = Math.min(day * pagesPerDay + offset, TOTAL_QURAN_PAGES);
-    return { start: Math.min(start, TOTAL_QURAN_PAGES), end: Math.min(Math.max(start, end), TOTAL_QURAN_PAGES) };
+  // 1. Standard 30-Day Khatma (1 Juz per day) starting from page 1:
+  // Use canonical Madinah Mushaf Juz boundaries (Juz 1: 1-21, Juz 2: 22-41, etc.)
+  if (profile.mode === 'days' && profile.value === 30 && startPage === 1) {
+    const idx = Math.min(Math.max(0, safeDay - 1), 29);
+    return JUZ_PAGE_BOUNDARIES[idx];
   }
+
+  // 2. Standard 60-Day Khatma (Half Juz / 1 Hizb per day) starting from page 1:
+  if (profile.mode === 'days' && profile.value === 60 && startPage === 1) {
+    const juzIndex = Math.min(Math.floor((safeDay - 1) / 2), 29);
+    const isSecondHalf = (safeDay - 1) % 2 === 1;
+    const juz = JUZ_PAGE_BOUNDARIES[juzIndex];
+    const midPage = Math.floor((juz.start + juz.end) / 2);
+    if (!isSecondHalf) {
+      return { start: juz.start, end: midPage };
+    } else {
+      return { start: midPage + 1, end: juz.end };
+    }
+  }
+
+  // 3. Arbitrary Days Mode:
+  if (profile.mode === 'days') {
+    const totalDays = Math.max(1, profile.value);
+    const pagesLeft = TOTAL_QURAN_PAGES - startPage + 1;
+    const offset = startPage - 1;
+
+    // Continuous contiguous distribution without gaps
+    const start = Math.floor(((safeDay - 1) * pagesLeft) / totalDays) + 1 + offset;
+    let end = Math.floor((safeDay * pagesLeft) / totalDays) + offset;
+    if (safeDay >= totalDays) {
+      end = TOTAL_QURAN_PAGES;
+    }
+    return {
+      start: Math.min(start, TOTAL_QURAN_PAGES),
+      end: Math.min(Math.max(start, end), TOTAL_QURAN_PAGES)
+    };
+  }
+
+  // 4. Pages Mode:
+  const pagesPerDay = Math.max(1, profile.value);
+  const offset = startPage - 1;
+  const start = (safeDay - 1) * pagesPerDay + 1 + offset;
+  const end = Math.min(start + pagesPerDay - 1, TOTAL_QURAN_PAGES);
+  return {
+    start: Math.min(start, TOTAL_QURAN_PAGES),
+    end: Math.min(Math.max(start, end), TOTAL_QURAN_PAGES)
+  };
 };
 
 /**
@@ -157,9 +237,15 @@ export const calculateWirdStatus = (profile: WirdProfile, targetDate = new Date(
   
   // Check if today was already completed
   const targetDateStr = targetDate.toISOString().split('T')[0];
+  const targetDayRange = getWirdDayRange(targetDayNumber, profile);
+  const lastPageRead = profile.lastPage || 0;
+  const isTodayPagesFinished = lastPageRead >= targetDayRange.end && targetDayRange.end > 0;
+  const isPartiallyReadToday = lastPageRead >= targetDayRange.start && lastPageRead < targetDayRange.end;
+  const remainingPagesToday = Math.max(0, targetDayRange.end - Math.max(lastPageRead, targetDayRange.start - 1));
+
   const isTodayDayCompleted = Boolean(
     profile.lastCompletedDate && profile.lastCompletedDate.startsWith(targetDateStr)
-  ) || profile.completedDays.includes(targetDayNumber);
+  ) || isTodayPagesFinished;
 
   return {
     totalDays,
@@ -168,13 +254,16 @@ export const calculateWirdStatus = (profile: WirdProfile, targetDate = new Date(
     missedDaysCount,
     targetDayNumber,
     isTodayDayCompleted,
+    isPartiallyReadToday,
+    remainingPagesToday,
+    lastPageRead,
     isKhatmaFinished
   };
 };
 
 /**
  * Builds respectful, inspiring Arabic or English notification texts addressing the user by name
- * Supports morning (9:00 AM) and evening (10:00 PM / 22:00) reminders with delayed catch-up.
+ * Supports morning (10:00 AM) and evening (10:00 PM / 22:00) reminders with delayed catch-up.
  */
 export const buildWirdNotificationContent = (
   profile: WirdProfile,
@@ -183,18 +272,34 @@ export const buildWirdNotificationContent = (
   isEvening: boolean = false,
   lang: 'ar' | 'en' = getCurrentAppLanguage()
 ) => {
-  const range = getWirdDayRange(dayNumber, profile);
   const isEn = lang === 'en';
   const userName = formatWirdUserName(profile.name, lang);
-  const pageRangeStr = range.start <= range.end 
-    ? (isEn ? `(p. ${range.start} - ${range.end})` : `(ص ${range.start} - ${range.end})`) 
-    : '';
 
-  // Calculate yesterday's range if missed
-  let yesterdayRangeStr = '';
-  if (missedCount >= 1 && dayNumber > 1) {
-    const yRange = getWirdDayRange(dayNumber - 1, profile);
-    yesterdayRangeStr = isEn ? `(p. ${yRange.start} - ${yRange.end})` : `(ص ${yRange.start} - ${yRange.end})`;
+  // Compute date range for missed days >= 2 (e.g., from Nov 1 to Nov 7 / من يوم 1 نوفمبر إلى 7 نوفمبر)
+  let missedRangeStr = '';
+  if (missedCount >= 2) {
+    try {
+      const today = new Date();
+      const endD = new Date(today);
+      endD.setDate(today.getDate() - 1); // yesterday
+      const startD = new Date(today);
+      startD.setDate(today.getDate() - missedCount);
+
+      const arMonths = [
+        'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
+        'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
+      ];
+      const enMonths = [
+        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      ];
+
+      if (isEn) {
+        missedRangeStr = `from ${enMonths[startD.getMonth()]} ${startD.getDate()} to ${enMonths[endD.getMonth()]} ${endD.getDate()}`;
+      } else {
+        missedRangeStr = `من يوم ${startD.getDate()} ${arMonths[startD.getMonth()]} إلى ${endD.getDate()} ${arMonths[endD.getMonth()]}`;
+      }
+    } catch (e) {}
   }
 
   if (isEn) {
@@ -202,36 +307,38 @@ export const buildWirdNotificationContent = (
     if (isEvening) {
       if (missedCount === 0) {
         return {
-          title: `${prefix}Evening Qur'an Reminder`,
-          body: `The day is coming to a close and today's assigned portion (Day ${dayNumber}) ${pageRangeStr} awaits you.. Conclude your night with the light of the Qur'an before sleep.`
+          title: `${prefix}Complete Today's Portion Before Sleep`,
+          body: `The day is coming to a close and today's assigned portion awaits you.. Conclude your day with the Holy Qur'an before sleep.`
         };
       } else if (missedCount === 1) {
         return {
           title: `${prefix}Catch Up Before Day's End`,
-          body: `Evening reminder: Yesterday's portion ${yesterdayRangeStr} and today's portion ${pageRangeStr} await you.. Make the seal of your night verses from the Holy Qur'an.`
+          body: `Evening reminder: Yesterday's portion and today's portion await you.. Make the seal of your night verses from the Holy Qur'an.`
         };
       } else {
+        const rangeText = missedRangeStr ? ` (${missedRangeStr})` : '';
         return {
           title: `${prefix}Blessed Opportunity Tonight`,
-          body: `Do not let today's portion ${pageRangeStr} and (${missedCount}) previous portions pass unread.. Spend a few tranquil minutes catching up tonight.`
+          body: `Do not let today's portion and your overdue portions${rangeText} pass unread.. Spend a few tranquil minutes catching up tonight.`
         };
       }
     } else {
-      // Morning (9:00 AM)
+      // Morning (10:00 AM)
       if (missedCount === 0) {
         return {
           title: `${prefix}Illuminate Your Day with the Qur'an`,
-          body: `Daily Qur'an portion reminder (Day ${dayNumber}) ${pageRangeStr}.. Blessed is the one who begins the day with the Qur'an. Open your Mushaf and read now.`
+          body: `Gentle reminder for today's portion.. Blessed is the one who begins the day with the Qur'an. Open your Mushaf and read now.`
         };
       } else if (missedCount === 1) {
         return {
           title: `${prefix}Gentle Reminder of the Holy Qur'an`,
-          body: `A gentle reminder: You haven't completed yesterday's portion ${yesterdayRangeStr} yet, and a blessed new portion awaits you today ${pageRangeStr}.. Read them together to maintain your Khatma.`
+          body: `Gentle reminder: Yesterday's portion and today's portion await you.. Read them together to maintain your blessed Khatma.`
         };
       } else {
+        const rangeText = missedRangeStr ? ` (${missedRangeStr})` : '';
         return {
           title: `${prefix}Eager for Your Return to the Qur'an`,
-          body: `Today's portion ${pageRangeStr} and (${missedCount}) previous portions await you.. Do not let days pass without the light of the Qur'an. Catch up now.`
+          body: `Today's portion and your overdue portions${rangeText} await you.. Open your Mushaf now and catch up on your blessed Khatma.`
         };
       }
     }
@@ -242,36 +349,38 @@ export const buildWirdNotificationContent = (
   if (isEvening) {
     if (missedCount === 0) {
       return {
-        title: `${prefix}تذكير المساء بورد القرآن الكريم`,
-        body: `أوشك اليوم على الانقضاء ولم تقرأ وردك المقرر (اليوم ${dayNumber}) ${pageRangeStr}.. اختم يومك بنور كتاب الله واقرأ وردك قبل النوم لتنعم بليل مبارك.`
+        title: `${prefix}أكمل ورد اليوم قبل النوم`,
+        body: `أوشك اليوم على الانقضاء وتذكيرك بورد اليوم.. اختم يومك بنور كتاب الله واقرأ وردك قبل النوم لتنعم بليل مبارك.`
       };
     } else if (missedCount === 1) {
       return {
         title: `${prefix}تدارك وردك قبل نهاية اليوم`,
-        body: `تذكير مسائي: لم تقرأ ورد الأمس ${yesterdayRangeStr} وورد اليوم ${pageRangeStr}.. اجعل مسك ختام ليلتك آيات من الذكر الحكيم واقرأهما الآن.`
+        body: `تذكير مسائي: تدارك ورد الأمس وورد اليوم.. اجعل مسك ختام ليلتك آيات من الذكر الحكيم واقرأهما الآن.`
       };
     } else {
+      const rangeText = missedRangeStr ? ` (${missedRangeStr})` : '';
       return {
         title: `${prefix}فرصة طيبة لاستدراك وردك الليلة`,
-        body: `أوشك اليوم على الانتهاء ولديك ورد اليوم ${pageRangeStr} و (${missedCount}) أوراد سابقة متأخرة في انتظارك.. بضع دقائق في سكون الليل كفيلة باستدراك ما فاتك، افتح مصحفك الآن.`
+        body: `أوشك اليوم على الانتهاء، ولديك ورد اليوم والأوراد السابقة غير المقروءة${rangeText}.. بضع دقائق كفيلة باستدراك ما فاتك، افتح مصحفك الآن.`
       };
     }
   } else {
-    // Morning (9:00 AM)
+    // Morning (10:00 AM)
     if (missedCount === 0) {
       return {
         title: `${prefix}نور يومك بكتاب الله`,
-        body: `تذكير بوردك القرآني لليوم (اليوم ${dayNumber}) ${pageRangeStr}.. هنيئاً لمن جعل للقرآن نصيباً من يومه، افتح مصحفك واقرأ وردك الآن.`
+        body: `تذكير بورد اليوم.. هنيئاً لمن جعل للقرآن نصيباً من يومه، افتح مصحفك واقرأ وردك الآن.`
       };
     } else if (missedCount === 1) {
       return {
         title: `${prefix}تذكير طيب بورد القرآن الكريم`,
-        body: `تذكير لطيف: لم تكمل ورد الأمس ${yesterdayRangeStr}، ولديك اليوم ورد مبارك جديد ${pageRangeStr}.. اقرأهما معاً لتستمر في مسيرة ختمتك المباركة وتفيض عليك البركة.`
+        body: `تذكير لطيف: تدارك ورد الأمس وورد اليوم.. اقرأهما معاً لتستمر في مسيرة ختمتك المباركة وتفيض عليك البركة.`
       };
     } else {
+      const rangeText = missedRangeStr ? ` (${missedRangeStr})` : '';
       return {
         title: `${prefix}مشتاقون لعودتك إلى كتاب الله`,
-        body: `لديك ورد اليوم ${pageRangeStr} و (${missedCount}) أوراد سابقة متأخرة في انتظارك.. لا تدع الأيام تمضي دون نور القرآن، افتح مصحفك الآن واستدرك ما فاتك.`
+        body: `في انتظارك ورد اليوم والأوراد السابقة غير المقروءة${rangeText}.. لا تدع الأيام تمضي دون نور القرآن، افتح مصحفك واستدرك ما فاتك.`
       };
     }
   }
@@ -284,13 +393,15 @@ export const ensureWirdNotificationChannel = async (lang: 'ar' | 'en' = getCurre
   if (!Capacitor.isNativePlatform()) return;
   try {
     const isEn = lang === 'en';
+    const notifSoundFile = getActiveNotificationSoundFileName();
+    const soundForCapacitor = notifSoundFile && notifSoundFile !== 'none' ? notifSoundFile : undefined;
     const channelConfig = {
       name: isEn ? 'Daily Wird & Khatma Reminders' : 'تنبيهات الورد اليومي والختمات',
       description: isEn 
-        ? "Gentle reminders for daily Qur'an reading and Khatma progress with chime sound and vibration"
+        ? "Reminders for daily Qur'an reading and Khatma progress"
         : 'قناة تنبيهات الورد القرآني والتذكير بالقراءة اليومية بنغمة هادئة واهتزاز',
       importance: 5 as any, // High importance (shows heads-up notification and status bar icon)
-      sound: 'chime.mp3',
+      sound: soundForCapacitor,
       vibration: true,
       visibility: 1
     };
@@ -311,7 +422,7 @@ export const ensureWirdNotificationChannel = async (lang: 'ar' | 'en' = getCurre
  * Synchronizes and schedules daily notifications for the active Khatma
  * - Immediately requests permissions if not granted
  * - Stores state in Preferences for native Android background alarms
- * - Schedules morning (09:00 AM) and evening (10:00 PM / 22:00) reminders
+ * - Schedules morning (10:00 AM) and evening (10:00 PM / 22:00) reminders
  * - Automatically addresses user by name
  * - Handles missed days catch-up dynamically
  */
@@ -333,9 +444,9 @@ export const syncDailyWirdNotifications = async (langOverride?: 'ar' | 'en') => 
 
   const lang = langOverride || getCurrentAppLanguage();
   try {
-    // 1. Explicitly request notification permissions (ensures Android 13+ prompt appears)
-    const permStatus = await LocalNotifications.requestPermissions();
-    if (permStatus.display !== 'granted') {
+    // 1. Check/request notification permissions cleanly (never prompts during splash or language screen)
+    const hasPermission = await ensureNotificationPermission(false);
+    if (!hasPermission) {
       console.log('[DailyWird] Notification permission not granted yet by user.');
       return;
     }
@@ -404,27 +515,31 @@ export const syncDailyWirdNotifications = async (langOverride?: 'ar' | 'en') => 
     const notificationsToSchedule: any[] = [];
 
     // 3. Baseline Daily Repeating Notifications via AlarmManager:
-    // Morning (09:00 AM) and Evening (10:00 PM / 22:00)
+    // Morning (10:00 AM) and Evening (10:00 PM / 22:00)
     const baselineDayNumber = Math.min(profile.completedDays.length + 1, totalDays);
     const morningBaseContent = buildWirdNotificationContent(profile, baselineDayNumber, 0, false, lang);
     const eveningBaseContent = buildWirdNotificationContent(profile, baselineDayNumber, 0, true, lang);
+    const wirdSoundFile = getActiveNotificationSoundFileName();
+    const wirdSoundPath = getActiveNotificationSoundPath();
+    const wirdCapacitorSound = wirdSoundFile && wirdSoundFile !== 'none' ? wirdSoundFile : undefined;
+    const hasWirdSound = wirdCapacitorSound !== undefined;
 
     notificationsToSchedule.push({
       id: RECURRING_MORNING_ID,
       title: morningBaseContent.title,
       body: morningBaseContent.body,
-      schedule: { on: { hour: 9, minute: 0 }, allowWhileIdle: true, repeats: true },
+      schedule: { on: { hour: 10, minute: 0 }, allowWhileIdle: true, repeats: true },
       channelId: WIRD_CHANNEL_ID,
-      sound: 'chime.mp3',
+      sound: wirdCapacitorSound,
       extra: {
         page: 'daily-wird',
         type: 'daily-wird',
         period: 'morning',
         profileId: profile.id,
-        playSound: true,
-        soundFile: '/assets/audio/chime.mp3'
+        playSound: hasWirdSound,
+        soundFile: wirdSoundPath
       },
-      smallIcon: 'ic_stat_name',
+      smallIcon: WIRD_NOTIFICATION_ICON,
       iconColor: '#2E7D5E',
       group: WIRD_GROUP_ID,
       groupSummary: false,
@@ -438,14 +553,14 @@ export const syncDailyWirdNotifications = async (langOverride?: 'ar' | 'en') => 
       body: eveningBaseContent.body,
       schedule: { on: { hour: 22, minute: 0 }, allowWhileIdle: true, repeats: true },
       channelId: WIRD_CHANNEL_ID,
-      sound: 'chime.mp3',
+      sound: wirdCapacitorSound,
       extra: {
         page: 'daily-wird',
         type: 'daily-wird',
         period: 'evening',
         profileId: profile.id,
-        playSound: true,
-        soundFile: '/assets/audio/chime.mp3'
+        playSound: hasWirdSound,
+        soundFile: wirdSoundPath
       },
       smallIcon: 'ic_stat_name',
       iconColor: '#2E7D5E',
@@ -481,9 +596,9 @@ export const syncDailyWirdNotifications = async (langOverride?: 'ar' | 'en') => 
 
       const targetDayNumber = Math.min(profile.completedDays.length + 1, totalDays);
 
-      // Morning Schedule (09:00 AM)
+      // Morning Schedule (10:00 AM)
       const morningTarget = new Date(targetDate);
-      morningTarget.setHours(9, 0, 0, 0);
+      morningTarget.setHours(10, 0, 0, 0);
 
       // If today and already completed today, skip morning reminder for today
       const shouldScheduleMorning = (dayOffset > 0 || !isTodayAlreadyCompleted) && (morningTarget.getTime() > now.getTime());
@@ -495,7 +610,7 @@ export const syncDailyWirdNotifications = async (langOverride?: 'ar' | 'en') => 
           body: morningContent.body,
           schedule: { at: morningTarget, allowWhileIdle: true },
           channelId: WIRD_CHANNEL_ID,
-          sound: 'chime.mp3',
+          sound: wirdCapacitorSound,
           extra: {
             page: 'daily-wird',
             type: 'daily-wird',
@@ -504,8 +619,8 @@ export const syncDailyWirdNotifications = async (langOverride?: 'ar' | 'en') => 
             profileName: profile.name,
             dayNumber: targetDayNumber,
             missedCount: missedOnTargetDate,
-            playSound: true,
-            soundFile: '/assets/audio/chime.mp3'
+            playSound: hasWirdSound,
+            soundFile: wirdSoundPath
           },
           smallIcon: 'ic_stat_name',
           iconColor: '#2E7D5E',
@@ -529,7 +644,7 @@ export const syncDailyWirdNotifications = async (langOverride?: 'ar' | 'en') => 
           body: eveningContent.body,
           schedule: { at: eveningTarget, allowWhileIdle: true },
           channelId: WIRD_CHANNEL_ID,
-          sound: 'chime.mp3',
+          sound: wirdCapacitorSound,
           extra: {
             page: 'daily-wird',
             type: 'daily-wird',
@@ -538,8 +653,8 @@ export const syncDailyWirdNotifications = async (langOverride?: 'ar' | 'en') => 
             profileName: profile.name,
             dayNumber: targetDayNumber,
             missedCount: missedOnTargetDate,
-            playSound: true,
-            soundFile: '/assets/audio/chime.mp3'
+            playSound: hasWirdSound,
+            soundFile: wirdSoundPath
           },
           smallIcon: 'ic_stat_name',
           iconColor: '#2E7D5E',
@@ -575,18 +690,23 @@ export const triggerTestWirdNotification = async (langOverride?: 'ar' | 'en') =>
     ? buildWirdNotificationContent(profile, dayNumber, 0, false, lang)
     : (isEn ? {
         title: `Dear ${userName}: Daily Wird Phone Alert`,
-        body: `Portion reminder (Day 1) (p. 1 - 20).. Blessed is the one who dedicates time to the Holy Qur'an.`
+        body: `Gentle reminder for today's portion.. Blessed is the one who dedicates time to the Holy Qur'an.`
       } : {
         title: `يا ${userName}: نور يومك بكتاب الله`,
-        body: `تذكير بوردك القرآني لليوم (اليوم 1) (ص 1 - 20).. هنيئاً لمن جعل للقرآن نصيباً من يومه، افتح مصحفك واقرأ وردك الآن.`
+        body: `تذكير بورد اليوم.. هنيئاً لمن جعل للقرآن نصيباً من يومه، افتح مصحفك واقرأ وردك الآن.`
       });
 
-  // Play gentle sound
-  playNotificationSound('/assets/audio/chime.mp3', true);
+  // Play chosen notification sound
+  const testSound = getActiveNotificationSoundPath();
+  if (testSound && testSound !== 'none') {
+    playNotificationSound(testSound, true);
+  }
 
   if (Capacitor.isNativePlatform()) {
     try {
       await ensureWirdNotificationChannel(lang);
+      const testSoundFile = getActiveNotificationSoundFileName();
+      const testSoundForCap = testSoundFile && testSoundFile !== 'none' ? testSoundFile : undefined;
       await LocalNotifications.schedule({
         notifications: [
           {
@@ -595,15 +715,15 @@ export const triggerTestWirdNotification = async (langOverride?: 'ar' | 'en') =>
             body: content.body,
             schedule: { at: new Date(Date.now() + 500), allowWhileIdle: true },
             channelId: WIRD_CHANNEL_ID,
-            sound: 'chime.mp3',
+            sound: testSoundForCap,
             extra: {
               page: 'daily-wird',
               type: 'daily-wird',
               profileId: profile?.id || 'demo',
               dayNumber,
               missedCount: 0,
-              playSound: true,
-              soundFile: '/assets/audio/chime.mp3'
+              playSound: testSoundForCap !== undefined,
+              soundFile: testSound
             },
             smallIcon: 'ic_stat_name',
             iconColor: '#2E7D5E',
@@ -665,7 +785,7 @@ export const checkWirdAlertOnAppResume = (): WirdAlertData | null => {
       missedDaysCount: status.missedDaysCount,
       title: content.title,
       message: content.body,
-      soundFileName: 'chime.mp3'
+      soundFileName: getActiveNotificationSoundFileName() || 'chime.mp3'
     };
   } catch (e) {
     console.error('Error checking wird alert on resume:', e);

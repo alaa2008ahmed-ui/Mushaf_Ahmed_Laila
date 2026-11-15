@@ -95,12 +95,12 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onNavigate, onOpen
                             animate={{ x: 0 }}
                             exit={{ x: isRTL ? '100%' : '-100%' }}
                             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                            className={`fixed top-0 ${isRTL ? 'right-0' : 'left-0'} h-full w-[280px] z-[10001] shadow-2xl flex flex-col`}
+                            className={`fixed top-0 ${isRTL ? 'right-0' : 'left-0'} h-[100dvh] w-[280px] z-[10001] shadow-2xl flex flex-col`}
                             style={{ backgroundColor: currentTheme.modalBg || '#ffffff', color: currentTheme.textColor }}
                             dir={isRTL ? 'rtl' : 'ltr'}
                         >
                             {/* Header */}
-                            <div className="p-6 border-b flex items-center justify-between" style={{ borderColor: currentTheme.barBorder }}>
+                            <div className="px-6 pb-5 border-b flex items-center justify-between" style={{ borderColor: currentTheme.barBorder, paddingTop: 'calc(var(--app-safe-top) + 1.25rem)' }}>
                                 <div className="flex items-center gap-3">
                                     <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg" style={{ backgroundColor: currentTheme.accent }}>
                                         <BookOpen size={24} color="#fff" />
@@ -117,7 +117,7 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onNavigate, onOpen
                             </div>
 
                             {/* Menu Items */}
-                            <div className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+                            <div className="flex-1 min-h-0 overflow-y-auto py-4 px-3 space-y-1">
                                 {menuItems.map((item) => (
                                     <button
                                         key={item.id}
@@ -166,7 +166,7 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onNavigate, onOpen
                             </div>
 
                             {/* Footer */}
-                            <div className="p-6 border-t mt-auto" style={{ borderColor: currentTheme.barBorder }}>
+                            <div className="px-6 pt-4 border-t mt-auto" style={{ borderColor: currentTheme.barBorder, paddingBottom: 'calc(var(--app-safe-bottom) + 1rem)' }}>
                                 <div className="flex items-center justify-around">
                                     <button data-id="side-menu-about" className="flex flex-col items-center gap-1 opacity-60 hover:opacity-100 transition-opacity">
                                         <Info size={20} />

@@ -3,8 +3,8 @@ export type Language = 'ar' | 'en';
 export const TASBEEH_STRINGS: Record<string, { ar: string; en: string }> = {
   // Top bar
   title: {
-    ar: 'السبحة الإلكترونية',
-    en: 'Electronic Tasbeeh'
+    ar: 'التسبيح',
+    en: 'Tasbeeh'
   },
   subtitle: {
     ar: 'أضف أذكارك الخاصة وتتبع تسبيحك بدقة',
@@ -47,8 +47,8 @@ export const TASBEEH_STRINGS: Record<string, { ar: string; en: string }> = {
     en: 'Reset'
   },
   beadsTapOrSwipe: {
-    ar: 'اسحب أو اضغط للعد',
-    en: 'Swipe or tap to count'
+    ar: 'اضغط للعد',
+    en: 'Tap to count'
   },
 
   // 3D Action buttons (with aliases)
@@ -260,6 +260,12 @@ export const TASBEEH_STRINGS: Record<string, { ar: string; en: string }> = {
     en: 'Select Counter Color'
   },
 
+  // 4b. Select Phrase Modal
+  phraseModalTitle: {
+    ar: 'قائمة التسبيحات',
+    en: 'Tasbeeh List'
+  },
+
   // 5. Skin Modal
   skinsModalTitle: {
     ar: 'اختر شكل السبحة',
@@ -293,6 +299,18 @@ export const TASBEEH_STRINGS: Record<string, { ar: string; en: string }> = {
     ar: 'حبات المسبحة',
     en: 'Prayer Beads'
   },
+  skinWheel: {
+    ar: 'المسبحة الحلقية',
+    en: 'Circular Bead Ring'
+  },
+  skinCrystal: {
+    ar: 'البلورة المضيئة',
+    en: '3D Crystal Gem'
+  },
+  skinMechanical: {
+    ar: 'العداد الميكانيكي',
+    en: 'Mechanical Drum'
+  },
 
   // Chart Modal Full Screen
   chartModalTitle: {
@@ -300,12 +318,12 @@ export const TASBEEH_STRINGS: Record<string, { ar: string; en: string }> = {
     en: 'Tasbeeh Analytics'
   },
   weeklyTab: {
-    ar: 'أسبوعي (آخر ٧ أيام)',
-    en: 'Weekly (Last 7 Days)'
+    ar: 'أسبوعي',
+    en: 'Weekly'
   },
   monthlyTab: {
-    ar: 'شهري (آخر ٣٠ يوماً)',
-    en: 'Monthly (Last 30 Days)'
+    ar: 'شهري',
+    en: 'Monthly'
   },
   totalSummary: {
     ar: 'الإجمالي',

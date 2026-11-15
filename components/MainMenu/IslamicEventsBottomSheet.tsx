@@ -81,7 +81,7 @@ export const IslamicEventsBottomSheet: React.FC<IslamicEventsBottomSheetProps> =
           exit={{ y: '100%', opacity: 0 }}
           transition={{ type: 'spring', damping: 28, stiffness: 280 }}
           onClick={(e) => e.stopPropagation()}
-          className={`w-full max-w-lg mx-auto rounded-t-[28px] shadow-2xl flex flex-col max-h-[88vh] overflow-hidden relative ${
+          className={`w-full max-w-lg mx-auto rounded-t-[28px] shadow-2xl flex flex-col max-h-[88dvh] overflow-hidden relative ${
             isBlackTheme ? 'bg-[#18181b] border-t border-zinc-800 text-white' : 'bg-white text-slate-800'
           }`}
           style={{
@@ -118,7 +118,7 @@ export const IslamicEventsBottomSheet: React.FC<IslamicEventsBottomSheetProps> =
           </div>
 
           {/* 2. Scrollable Body Content */}
-          <div className="overflow-y-auto px-6 py-4 flex flex-col gap-5 flex-1 overscroll-contain">
+          <div className="overflow-y-auto px-6 py-4 flex flex-col gap-5 flex-1 min-h-0 overscroll-contain">
             
             {/* أزرار التنقل بين المناسبات بخط كبير وواضح */}
             <div className={`flex items-center justify-between p-2 rounded-2xl ${
@@ -268,7 +268,7 @@ export const IslamicEventsBottomSheet: React.FC<IslamicEventsBottomSheetProps> =
 
           {/* 3. Sticky Bottom Actions (Never Cut Off / Full-width Buttons) */}
           <div 
-            className={`sticky bottom-0 pt-3 pb-7 sm:pb-8 px-6 shrink-0 flex flex-col gap-2.5 ${
+            className={`sticky bottom-0 pt-3 modal-sheet-safe-bottom px-6 shrink-0 flex flex-col gap-2.5 ${
               isBlackTheme
                 ? 'bg-[#18181b]/95 backdrop-blur-md border-t border-zinc-800 shadow-[0_-8px_20px_rgba(0,0,0,0.6)]'
                 : 'bg-white/95 backdrop-blur-md border-t border-slate-100 shadow-[0_-8px_20px_rgba(0,0,0,0.04)]'

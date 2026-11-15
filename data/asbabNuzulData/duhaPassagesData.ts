@@ -1,0 +1,148 @@
+import { PassageStoryMap } from './asbabNuzulData';
+
+// مقاطع وأسباب نزول وتفاسير سورة الضحى (Ad-Duha) - 11 مقطعاً تفصيلياً
+export const DUHA_DETAILED_PASSAGES: PassageStoryMap[] = [
+  {
+    surahNumber: 93,
+    startAyah: 1,
+    endAyah: 1,
+    storyTitleAr: "والضحى: سبب النزول في فترة الوحي والقسم بنور الصباح الساطع",
+    storyTitleEn: "By the Morning Brightness (Ad-Duha): Context of the Pause in Revelation",
+    causeAr: "افتتاح السورة بقسم رقيق مبهج: {وَالضُّحَىٰ}.\nنزلت حين اشتكى رسول الله ﷺ فلم يقم ليلتين أو ثلاثاً وأبطأ عليه جبريل، فجاءت أم جميل امرأة أبي لهب شامتة وقالت: \"يا محمد، ما أرى شيطانك إلا قد تركك!\"، فأنزل الله القسم بوقت الضحى — وهو صدر النهار حين يرتفع ضوء الشمس ويعم الدفء والوضوح — تسليةً لقلب النبي وإيذاناً بعودة إشراق الوحي بعد السكون.",
+    causeEn: "Revealed after the Prophet ﷺ felt unwell for two or three nights and revelation briefly paused, prompting Abu Lahab’s wife Umm Jamil to taunt him that his Lord had forsaken him. Allah swore {By the morning brightness}—the clear, warm radiance of mid-morning—to console His Messenger and herald the renewed brilliance of revelation.",
+    sourceAr: "صحيح البخاري، صحيح مسلم، تفسير ابن كثير",
+    sourceEn: "Sahih al-Bukhari, Sahih Muslim, Tafsir Ibn Kathir",
+    lessonAr: "• إشراق الضحى بعد ظلام الليل رمز رباني لانبلاج الفرج والوحي بعد فترات الضيق.\n• عناية الله بنبيه وتجديد البهجة في قلبه عند أذى المستهزئين.",
+    lessonEn: "• Morning light following darkness symbolizes divine relief after periods of distress.\n• Allah’s tender care uplifting His Messenger amidst mockery."
+  },
+  {
+    surahNumber: 93,
+    startAyah: 2,
+    endAyah: 2,
+    storyTitleAr: "والليل إذا سجى: سكون الليل وهدوؤه مثالاً لحكمة فتور الوحي المؤقت",
+    storyTitleEn: "By the Night When It Grows Still: Wisdom in Temporary Quietude",
+    causeAr: "القسم الثاني في السورة: {وَاللَّيْلِ إِذَا سَجَىٰ}.\n\"سجى\": أي سكن وغطى الكون بظلامه وهدوئه؛ فكما أن سكون الليل ليس غضباً من الله على الأرض بل فترة استجمام تسبق إشراق الضحى، فكذلك احتباس الوحي أيّاماً معدودة كان حكمةً وترويحاً عن النبي ﷺ وتجديداً للشوق إلى كلام الله لا جفاءً ولا هجراناً.",
+    causeEn: "The paired oath: {And [by] the night when it covers with darkness / grows still}. Just as serene darkness is a purposeful pause for rest rather than cosmic abandonment, the brief interval in revelation was merciful respite and preparation, never divine displeasure.",
+    sourceAr: "تفسير الطبري، تفسير ابن كثير، تفسير السعدي",
+    sourceEn: "Tafsir al-Tabari, Tafsir Ibn Kathir, Tafsir al-Sa'di",
+    lessonAr: "• فترات السكون أو تأخر الفرج تحمل في طياتها حكماً ربانية تهيئ لما بعدها من خير.\n• حسن الظن بالله في أوقات القبض والشدة كما في أوقات البسط والنعمة.",
+    lessonEn: "• Quiet intervals and delayed relief carry hidden wisdom preparing for greater good.\n• Maintaining good expectations of Allah during stillness just as in times of overflow."
+  },
+  {
+    surahNumber: 93,
+    startAyah: 3,
+    endAyah: 3,
+    storyTitleAr: "ما ودعك ربك وما قلى: النفي الإلهي القاطع لشماتة المشركين وطمأنة قلب النبي ﷺ",
+    storyTitleEn: "Your Lord Has Neither Forsaken You Nor Detested You: Direct Reassurance",
+    causeAr: "جواب القسم وتفنيد افتراء أم جميل والمشركين: {مَا وَدَّعَكَ رَبُّكَ وَمَا قَلَىٰ}.\nروى البخاري ومسلم عن جندب بن سفيان البجلي رضي الله عنه أن امرأة قالت للنبي ﷺ: ما أرى ربك إلا قد قلاك! فنزلت الآية؛ أي ما تركك ربك يا محمد توديع مفارق، وما أبغضك منذ اختارك؛ بل أنت في كلاءته ومحبته وقربه الدائم، والوحي عائد إليك أعظم مما كان.",
+    causeEn: "Direct rebuttal to the taunts recorded in Sahih al-Bukhari and Muslim via Jundab ibn Sufyan: {Your Lord has not taken leave of you, [O Muhammad], nor has He detested [you]}. Allah affirmatively dismissed every claim of abandonment, assuring His Messenger of unwavering divine love and closeness.",
+    sourceAr: "صحيح البخاري، صحيح مسلم، سنن الترمذي",
+    sourceEn: "Sahih al-Bukhari, Sahih Muslim, Sunan at-Tirmidhi",
+    lessonAr: "• ابتلاء الصالحين بتأخر الإجابة لا يعني أبداً بغض الله لهم أو تخليه عنهم.\n• الرد الإلهي الحاني يجبر خواطر المنكسرين ويخرس ألسنة الشامتين.",
+    lessonEn: "• Trials or delays faced by the righteous never signify divine rejection.\n• Divine consolation heals wounded hearts and silences hostile mockery."
+  },
+  {
+    surahNumber: 93,
+    startAyah: 4,
+    endAyah: 4,
+    storyTitleAr: "وللآخرة خير لك من الأولى: ارتقاء مكانة النبي ﷺ في كل مرحلة وفي الدار الآخرة",
+    storyTitleEn: "The Hereafter Is Better for You Than the First Life: Ascending Honor in Both Worlds",
+    causeAr: "بشارة الترقّي المستمر: {وَلَلْآخِرَةُ خَيْرٌ لَّكَ مِنَ الْأُولَىٰ}.\nتشمل الآية معنيين عظيمين: الأول أن الدار الآخرة وما أعد الله لك فيها من المقام المحمود والوسيلة والشفاعة والجنة خيرٌ وأعظم من الدنيا كلها؛ والثاني أن كل مرحلة قادمة من عمرك ودعوتك يا رسول الله ستكون أرفع وأعز وأنصر من سابقتها، من مكة إلى المدينة إلى فتح مكة ودخول الناس في دين الله أفواجاً.",
+    causeEn: "A sweeping promise of continuous elevation: {And the Hereafter is better for you than the first [life]}. Both the eternal realm—crowned with the Praised Station (Al-Maqam al-Mahmud) and intercession—and every successive phase of his earthly mission would surpass what preceded it, advancing from persecution to triumph.",
+    sourceAr: "تفسير الطبري، تفسير ابن كثير، تفسير السعدي",
+    sourceEn: "Tafsir al-Tabari, Tafsir Ibn Kathir, Tafsir al-Sa'di",
+    lessonAr: "• التفاؤل الإيماني بأن القادم للمؤمن مع الصبر والتقوى خير مما مضى.\n• إيثار نعيم الآخرة الباقي على متاع الدنيا الزائل كما كان حال النبي ﷺ.",
+    lessonEn: "• Spiritual optimism: with patience and faith, what lies ahead is finer than what has passed.\n• Valuing eternal reward above transient worldly comforts."
+  },
+  {
+    surahNumber: 93,
+    startAyah: 5,
+    endAyah: 5,
+    storyTitleAr: "ولسوف يعطيك ربك فترضى: بشارة الشفاعة الكبرى ورضا النبي ﷺ عن أمته",
+    storyTitleEn: "Your Lord Will Give You and You Will Be Satisfied: The Promise of Intercession",
+    causeAr: "ذروة البشارات النبوية: {وَلَسَوْفَ يُعْطِيكَ رَبُّكَ فَتَرْضَىٰ}.\nوعد قطعي بالعطاء الممدود في الدنيا بالفتح وانتشار الإسلام، وفي الآخرة بالحوض المورود ونهر الكوثر والمقام المحمود؛ وروى مسلم عن عبد الله بن عمرو أن النبي ﷺ تلا دعاء الأنبياء وبكى على أمته فأرسل الله إليه جبريل وقال: \"إنا سنرضيك في أمتك ولا نسوؤك\". وورد في الأثر المشهور عن السلف: \"إذاً لا أرضى وواحد من أمتي في النار\".",
+    causeEn: "A deeply moving pledge: {And your Lord is going to give you, and you will be satisfied}. Encompassing earthly victory and the heavenly Pond and Intercession, Sahih Muslim narrates that when the Prophet ﷺ wept pleading for his Ummah, Allah sent Gabriel assuring him: \"We will surely please you concerning your Ummah and never grieve you.\"",
+    sourceAr: "صحيح مسلم، تفسير ابن كثير، تفسير القرطبي",
+    sourceEn: "Sahih Muslim, Tafsir Ibn Kathir, Tafsir al-Qurtubi",
+    lessonAr: "• رحمة النبي ﷺ العظيمة بأمته وحرصه على نجاتها يوم القيامة.\n• محبة رسول الله ﷺ واتباع سنته سبيل نيل شفاعته وورود حوضه.",
+    lessonEn: "• The Prophet’s ﷺ profound compassion and concern for his community’s salvation.\n• Loving and following his Sunnah connects believers to his promised intercession."
+  },
+  {
+    surahNumber: 93,
+    startAyah: 6,
+    endAyah: 6,
+    storyTitleAr: "ألم يجدك يتيماً فآوى: رعاية الله للنبي ﷺ في يتمه منذ ولادته في قريش",
+    storyTitleEn: "Did He Not Find You an Orphan and Shelter You?: Divine Care in Early Childhood",
+    causeAr: "الاستدلال بحاضر العناية على مستقبلها: {أَلَمْ يَجِدْكَ يَتِيمًا فَآوَىٰ}.\nمات أبوه عبد الله وهو حمل في بطن أمه آمنة، ثم توفيت أمه وهو ابن ست سنين، فكفله جده عبد المطلب بعطف بالغ، ولما مات جده وهو ابن ثماني سنين كفله عمه أبو طالب ودافع عنه سنين طويلة رغم بقائه على ملة قومه؛ كل ذلك كان بتسخير الله وإيوائه لرسوله لئلا يشعر بالضياع، ومن آواك صغيراً لن يضيعك كبيراً.",
+    causeEn: "Pointing to lifelong providence: {Did He not find you an orphan and give [you] refuge?}. Bereaved of his father before birth and his mother at age six, Allah tenderly sheltered Muhammad ﷺ through his grandfather Abd al-Muttalib and later his uncle Abu Talib—proving that the Lord who protected him in vulnerability would never abandon him in prophethood.",
+    sourceAr: "تفسير الطبري، سيرة ابن هشام، تفسير ابن كثير",
+    sourceEn: "Tafsir al-Tabari, Seerah Ibn Hisham, Tafsir Ibn Kathir",
+    lessonAr: "• استذكار ألطاف الله السابقة في الصغر والشدائد يثبّت القلب عند الأزمات الجديدة.\n• عناية الله بالأيتام وتسخيره للقلوب الرحيمة لحمايتهم وتربيتهم.",
+    lessonEn: "• Recalling Allah’s past mercies during childhood steadies the heart in present trials.\n• Recognizing how Allah surrounds vulnerable orphans with caring protectors."
+  },
+  {
+    surahNumber: 93,
+    startAyah: 7,
+    endAyah: 7,
+    storyTitleAr: "ووجدك ضالاً فهدى: الهداية النبوية بالوحي والقرآن بعد الحيرة عن تفاصيل الشريعة",
+    storyTitleEn: "Found You Unaware and Guided You: Bestowing Revelation and Prophetic Light",
+    causeAr: "المنة الثانية الكبرى: {وَوَجَدَكَ ضَالًّا فَهَدَىٰ}.\nأي كنت قبل نزول الوحي في الأربعين من عمرك لا تدري ما الكتاب ولا تفاصيل الإيمان والشرائع والأحكام (كما قال تعالى: {ما كنت تدري ما الكتاب ولا الإيمان})، فداخلك شوق لمعرفة الحق فكنت تتحنث في غار حراء، فهداك الله بالوحي والقرآن وعصمك في شبابك من كل شرك أو رجس الجاهلية.",
+    causeEn: "The second profound favor: {And He found you lost [unaware of revelation] and guided [you]}. Before prophethood at forty, he did not yet know the specifics of scripture or divine law—yearning for truth in Cave Hira while remaining completely safeguarded from idolatry. Allah guided him through the Quran and made him a beacon for humanity.",
+    sourceAr: "تفسير الطبري، تفسير القرطبي، تفسير ابن كثير",
+    sourceEn: "Tafsir al-Tabari, Tafsir al-Qurtubi, Tafsir Ibn Kathir",
+    lessonAr: "• الهداية للقرآن والإيمان هي أعظم منة يمنّ الله بها على عبد على الإطلاق.\n• شرف البحث الصادق عن الحق واللجوء إلى الله في الخلوة والتأمل.",
+    lessonEn: "• Guidance to the Quran and faith is the greatest blessing ever bestowed upon a soul.\n• Sincere pursuit of truth invites divine illumination."
+  },
+  {
+    surahNumber: 93,
+    startAyah: 8,
+    endAyah: 8,
+    storyTitleAr: "ووجدك عائلاً فأغنى: إغناء النفس بالقناعة والرضا ثم الرزق والفتح",
+    storyTitleEn: "Found You Poor and Made You Self-Sufficient: Inner Contentment and Provision",
+    causeAr: "المنة الثالثة الكبرى: {وَوَجَدَكَ عَائِلًا فَأَغْنَىٰ}.\n\"عائلاً\": فقيراً محتاجاً ذا عيال؛ فقد نشأ ﷺ يتيماً فقيراً يرعى الغنم على قراريط لأهل مكة، فأغناه الله أولاً بالقناعة والغنى القلبي (ففي الصحيحين: \"ليس الغنى عن كثرة العرض ولكن الغنى غنى النفس\")، وأغناه بمال أم المؤمنين خديجة رضي الله عنها، ثم فتح عليه الفتوح وأغناه من فضله.",
+    causeEn: "The third favor: {And He found you poor and made [you] self-sufficient}. Starting life herding sheep for modest wages, Allah enriched him first with inner contentment—as he taught in Sahih al-Bukhari and Muslim: \"True wealth is not abundance of possessions, but richness of the soul\"—and also provided through Khadijah’s support and subsequent victories.",
+    sourceAr: "صحيح البخاري، صحيح مسلم، تفسير ابن كثير",
+    sourceEn: "Sahih al-Bukhari, Sahih Muslim, Tafsir Ibn Kathir",
+    lessonAr: "• الغنى الحقيقي هو غنى النفس والقناعة والرضا برزق الله.\n• شكر نعم الله المالية بمساعدة الفقراء والعائلين وتذكر أيام الحاجة.",
+    lessonEn: "• Authentic wealth resides in contentment and peace of soul rather than hoarded assets.\n• Remembering past need inspires generosity toward those currently struggling."
+  },
+  {
+    surahNumber: 93,
+    startAyah: 9,
+    endAyah: 9,
+    storyTitleAr: "فأما اليتيم فلا تقهر: الوصية الأولى برعاية اليتيم وعدم إذلاله أو هضم حقه",
+    storyTitleEn: "As for the Orphan, Do Not Oppress Him: Gratitude Translated Into Tender Care",
+    causeAr: "بداية الوصايا الثلاث المقابلة للنعم الثلاث: {فَأَمَّا الْيَتِيمَ فَلَا تَقْهَرْ}.\nتذكراً لنعمة إيواء الله لك في يتمك، لا تذلّ اليتيم ولا تحتقره ولا تغلبه على ماله أو تضربه أو تعبسه؛ بل كن له أباً رحيماً حنوناً وامسح رأسه وأكرمه. وقد حث النبي ﷺ على كفالة اليتيم ووعد الكافل بمرافقته في الجنة كهاتين.",
+    causeEn: "The first practical directive echoing his own shelter: {So as for the orphan, do not oppress [him]}. Never humiliate, exploit, or speak harshly to an orphan; instead, offer paternal kindness and guard their rights—mirroring the Prophet’s ﷺ promise of closeness in Paradise to those who sponsor orphans.",
+    sourceAr: "صحيح البخاري، تفسير الطبري، تفسير ابن كثير",
+    sourceEn: "Sahih al-Bukhari, Tafsir al-Tabari, Tafsir Ibn Kathir",
+    lessonAr: "• تحريم قهر اليتامى واستغلال ضعفهم أو التعدي على أموالهم وكرامتهم.\n• كفالة اليتيم وجبر خاطره من أقرب الطرق لمرافقة النبي ﷺ في الجنة.",
+    lessonEn: "• Strictly forbidding mistreatment, humiliation, or financial exploitation of orphans.\n• Caring for orphans brings closeness to the Prophet ﷺ in Paradise."
+  },
+  {
+    surahNumber: 93,
+    startAyah: 10,
+    endAyah: 10,
+    storyTitleAr: "وأما السائل فلا تنهر: الوصية الثانية بالتلطف مع سائل المال وسائل العلم",
+    storyTitleEn: "As for the Petitioner, Do Not Repel Him: Gentleness With Seekers of Aid and Knowledge",
+    causeAr: "الوصية الثانية: {وَأَمَّا السَّائِلَ فَلَا تَنْهَرْ}.\nمقابلةً لنعمة الهداية والغنى؛ لا تزجر السائل المحتاج للمال ولا تغلظ له القول حتى إن لم تجد ما تعطيه، بل رده رداً جميلاً بقول معروف! وكذلك يدخل فيها سائل العلم والهداية؛ فلا ينهره العالم أو الداعية بل يجبه برفق وتواضع.",
+    causeEn: "The second directive: {And as for the petitioner, do not repel [him]}. In gratitude for guidance and sufficiency, treat both financial beggars and seekers of knowledge with dignity and gentleness—even if unable to give, decline with kind words rather than harshness.",
+    sourceAr: "تفسير الطبري، تفسير القرطبي، تفسير ابن كثير",
+    sourceEn: "Tafsir al-Tabari, Tafsir al-Qurtubi, Tafsir Ibn Kathir",
+    lessonAr: "• حفظ كرامة المحتاج والسائل حتى عند الاعتذار منه بالقول الطيب.\n• التواضع لطلاب العلم والمسترشدين والإجابة عن أسئلتهم برحابة صدر.",
+    lessonEn: "• Preserving human dignity for petitioners even when one cannot fulfill their request.\n• Welcoming seekers of knowledge with patience and humility."
+  },
+  {
+    surahNumber: 93,
+    startAyah: 11,
+    endAyah: 11,
+    storyTitleAr: "وأما بنعمة ربك فحدث: إظهار شكر النعم ونشر الهداية وتبليغ القرآن",
+    storyTitleEn: "Proclaim the Favor of Your Lord: Sharing Blessings With Open Gratitude",
+    causeAr: "الوصية الثالثة وخاتمة السورة: {وَأَمَّا بِنِعْمَةِ رَبِّكَ فَحَدِّثْ}.\nقال النبي ﷺ: \"التحدث بنعمة الله شكر وتركها كفر\" (مسند أحمد)، وتشمل التحدث بنعمة النبوة والقرآن بتبليغه وتعليمه للناس، والتحدث بنعم الله الدينية والدنيوية اعترافاً بفضل المنعم لا كبراً ولا رياءً؛ وقد سنّ قراء مكة التكبير من سورة الضحى إلى الناس شكراً وفرحاً بنزول الوحي بعد انقطاعه.",
+    causeEn: "The closing counsel: {But as for the favor of your Lord, report [it]}. The Prophet ﷺ taught in Musnad Ahmad: \"Mentioning Allah’s blessings is gratitude, and concealing them is ingratitude.\" It encompasses conveying the Quran to humanity and humbly acknowledging Allah’s bounties without arrogance—inspiring early Makkan reciters to declare Takbir from Ad-Duha onward in joy for revelation’s return.",
+    sourceAr: "مسند أحمد، سنن أبي داود، تفسير الطبري، تفسير ابن كثير",
+    sourceEn: "Musnad Ahmad, Sunan Abi Dawud, Tafsir al-Tabari, Tafsir Ibn Kathir",
+    lessonAr: "• التحدث بنعم الله بنية الشكر وإظهار أثرها في الخير من كمال الإيمان.\n• نشر العلم والهداية هو أعظم تحديث بنعمة الله على قلب المؤمن.",
+    lessonEn: "• Speaking gratefully of Allah’s blessings—without bragging—is an act of worship.\n• Sharing guidance and knowledge is the highest proclamation of divine favor."
+  }
+];

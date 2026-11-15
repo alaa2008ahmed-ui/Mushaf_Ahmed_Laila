@@ -9,8 +9,18 @@ import {
     Bell, 
     BellOff, 
     SlidersHorizontal,
-    Clock
+    Clock,
+    CloudRain,
+    Cloud,
+    Info
 } from 'lucide-react';
+
+export interface PrayerWeatherInfo {
+    temp: number;
+    code?: number;
+    conditionAr?: string;
+    conditionEn?: string;
+}
 
 interface PrayerCardProps {
     prayerKey: string;
@@ -36,6 +46,8 @@ interface PrayerCardProps {
     isSummerTime?: boolean;
     toggleSummerTime?: () => void;
     supportsDST?: boolean;
+    weatherInfo?: PrayerWeatherInfo | null;
+    onOpenWeather?: () => void;
 }
 
 const parseHexRgb = (hexColor: string): [number, number, number] => {
@@ -89,29 +101,32 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
     formatTime12,
     isSummerTime,
     toggleSummerTime,
-    supportsDST
+    supportsDST,
+    weatherInfo,
+    onOpenWeather
 }) => {
-    const { language, dir } = useLanguage();
+    const { language, dir, formatNumber } = useLanguage();
+    const isEn = language === 'en';
 
-    // Select flat modern icon for each prayer
-    const renderPrayerIcon = (key: string) => {
-        const iconClass = "w-4 h-4";
-        switch (key) {
-            case 'Fajr':
-                return <Moon className={iconClass} strokeWidth={2.2} />;
-            case 'Sunrise':
-                return <Sun className={iconClass} strokeWidth={2.2} />;
-            case 'Dhuhr':
-                return <Sun className={iconClass} strokeWidth={2.2} />;
-            case 'Asr':
-                return <CloudSun className={iconClass} strokeWidth={2.2} />;
-            case 'Maghrib':
-                return <Sunset className={iconClass} strokeWidth={2.2} />;
-            case 'Isha':
-                return <Moon className={iconClass} strokeWidth={2.2} />;
-            default:
-                return <Clock className={iconClass} strokeWidth={2.2} />;
+    // Render weather condition icon for prayer time
+    const renderPrayerWeatherIcon = (code?: number, temp?: number, iconColor?: string) => {
+        const iconClass = "w-4.5 h-4.5 shrink-0";
+        const style = iconColor ? { color: iconColor } : undefined;
+        if (code !== undefined) {
+            if ([51, 53, 55, 61, 63, 65, 80, 81, 82, 95, 96, 99].includes(code)) {
+                return <CloudRain className={iconClass} style={style} />;
+            }
+            if ([2, 3, 45, 48].includes(code)) {
+                return <Cloud className={iconClass} style={style} />;
+            }
         }
+        if (temp !== undefined && temp >= 32) {
+            return <Sun className={iconClass} style={style} />;
+        }
+        if (prayerKey === 'Fajr' || prayerKey === 'Isha') {
+            return <Moon className={iconClass} style={style} />;
+        }
+        return <CloudSun className={iconClass} style={style} />;
     };
 
     // Dynamic Next Prayer Card styling adapted to the active theme
@@ -136,15 +151,6 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
     })();
 
     const nextTextColor = isLightNextBg ? '#000000' : '#FFFFFF';
-    const nextBorderStyle = isGoldenTheme
-        ? 'none'
-        : (isBlackTheme ? '1px solid rgba(255, 255, 255, 0.85)' : '1px solid rgba(255, 255, 255, 0.3)');
-    const nextShadowStyle = isGoldenTheme
-        ? `0 4px 14px -2px ${resolvedAccent}40`
-        : (isBlackTheme
-            ? '0 10px 25px -4px rgba(255, 255, 255, 0.22), 0 4px 10px -2px rgba(255, 255, 255, 0.12)'
-            : `0 10px 25px -4px ${hexToRgba(isDefaultTheme ? '#059669' : resolvedAccent, 0.42)}, 0 4px 10px -2px ${hexToRgba(isDefaultTheme ? '#059669' : resolvedAccent, 0.28)}, inset 0 1px 1.5px rgba(255, 255, 255, 0.4)`);
-
     const cardBgColor = isNextPrayer
         ? nextPrayerDynamicBg
         : (isBlackTheme ? '#18181b' : '#FFFFFF');
@@ -152,142 +158,139 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
     return (
         <div 
             dir={dir}
-            className={`prayer-card rounded-2xl pt-4 pb-2.5 px-3 sm:pt-4 sm:pb-3 sm:px-3.5 flex flex-col items-center justify-between relative min-h-[122px] transition-all duration-300 ${
-                isNextPrayer 
-                    ? 'shadow-lg scale-[1.02]' 
-                    : (isBlackTheme 
-                        ? 'shadow-[0_4px_20px_-2px_rgba(0,0,0,0.7)]' 
-                        : 'shadow-[0_4px_20px_-2px_rgba(0,0,0,0.05),0_2px_6px_-1px_rgba(0,0,0,0.02)]')
+            className={`prayer-card app-page-card border-0 rounded-2xl pt-1.5 pb-1.5 px-3 sm:pt-2 sm:pb-2 sm:px-3.5 flex flex-col items-center justify-between relative min-h-[124px] transition-all duration-300 ${
+                isNextPrayer ? 'scale-[1.02]' : ''
             }`}
             style={{
                 borderRadius: '16px',
                 background: cardBgColor,
-                border: isNextPrayer ? nextBorderStyle : (isBlackTheme ? '1px solid rgba(255,255,255,0.08)' : 'none'),
-                boxShadow: isNextPrayer ? nextShadowStyle : undefined,
+                border: 'none',
                 color: isNextPrayer ? nextTextColor : undefined
             }}
         >
-            {/* Top row: Actions (positioned at top corners with breathing room from border) */}
-            <div className="w-full flex justify-between items-center z-10 relative pt-1 px-0.5">
-                {/* Prayer Icon Badge */}
-                <div 
-                    className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition-colors"
-                    style={{
-                        backgroundColor: isNextPrayer
-                            ? (isLightNextBg ? 'rgba(0, 0, 0, 0.09)' : 'rgba(255, 255, 255, 0.22)')
-                            : (isBlackTheme ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0,0,0,0.04)'),
-                        color: isNextPrayer ? nextTextColor : (isBlackTheme ? '#FFFFFF' : '#64748B'),
-                        boxShadow: isNextPrayer
-                            ? (isLightNextBg ? 'inset 0 1px 1px rgba(255,255,255,0.45)' : 'inset 0 1px 1px rgba(255,255,255,0.3)')
-                            : undefined
+            {/* Top row: Weather chip on left, Bell & Settings stacked vertically on right */}
+            <div className="w-full flex justify-between items-start z-10 relative px-0.5 pt-3 sm:pt-3.5">
+                {/* 1. Left Side: Weather Chip (No Background, No Info Circle) */}
+                <button
+                    id={idx === 0 ? "prayer-card-weather-btn" : undefined}
+                    type="button"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        if (onOpenWeather) onOpenWeather();
                     }}
+                    className="inline-flex items-center gap-1 p-0.5 bg-transparent border-none shadow-none transition-opacity hover:opacity-80 cursor-pointer select-none active:scale-95 shrink-0 outline-none"
+                    style={{
+                        color: isNextPrayer
+                            ? (isLightNextBg ? '#000000' : '#FFFFFF')
+                            : (isBlackTheme ? '#E4E4E7' : '#000000')
+                    }}
+                    title={isEn 
+                        ? (weatherInfo ? `${Number(weatherInfo.temp).toFixed(1)}°C - ${weatherInfo.conditionEn || 'Weather'}` : 'Outdoor Prayer Weather Info')
+                        : (weatherInfo ? `${formatNumber(Number(weatherInfo.temp).toFixed(1))}°م - ${weatherInfo.conditionAr || 'الطقس'}` : 'طقس وقت الصلاة')}
+                    aria-label={isEn ? 'Prayer weather' : 'طقس وقت الصلاة'}
                 >
-                    {renderPrayerIcon(prayerKey)}
-                </div>
+                    {renderPrayerWeatherIcon(
+                        weatherInfo?.code ?? 0, 
+                        weatherInfo?.temp ?? 24,
+                        isNextPrayer
+                            ? (isLightNextBg ? '#000000' : '#FFFFFF')
+                            : (isBlackTheme ? '#E4E4E7' : '#000000')
+                    )}
+                    <span className="tabular-nums font-mono leading-none font-black text-xs sm:text-[13px]" style={{
+                        color: isNextPrayer
+                            ? (isLightNextBg ? '#000000' : '#FFFFFF')
+                            : (isBlackTheme ? '#E4E4E7' : '#000000')
+                    }}>
+                        {weatherInfo 
+                            ? (isEn ? `${Number(weatherInfo.temp).toFixed(1)}°` : `${formatNumber(Number(weatherInfo.temp).toFixed(1))}°`)
+                            : (isEn ? 'Weather' : 'الطقس')}
+                    </span>
+                </button>
 
-                {prayerKey !== 'Sunrise' ? (
-                    <div id={idx === 0 ? "prayer-actions-container" : undefined} className="flex items-center gap-1.5">
-                        {/* Sound Toggle (Flat Modern Icon Button) */}
+                {/* 2. Right Side: Bell and Settings stacked vertically (No Background) */}
+                <div className="flex flex-col items-center gap-1 shrink-0">
+                    {/* Bell / Mute Toggle Button */}
+                    {prayerKey !== 'Sunrise' ? (
                         <button 
                             id={idx === 0 ? "prayer-sound-toggle-btn" : undefined}
                             type="button"
                             onClick={() => togglePrayerSound(prayerKey)} 
-                            className={`w-7 h-7 rounded-full flex items-center justify-center transition-all active:scale-90 cursor-pointer ${
-                                isMuted 
-                                    ? (isNextPrayer ? 'bg-red-500/85 text-white' : 'bg-red-500/10 text-red-500') 
+                            className="p-0.5 flex items-center justify-center transition-all active:scale-90 cursor-pointer bg-transparent"
+                            style={{
+                                color: isMuted 
+                                    ? '#EF4444' 
                                     : (isNextPrayer 
-                                        ? (isLightNextBg ? 'bg-black/10 hover:bg-black/15' : 'bg-white/20 text-white hover:bg-white/30') 
-                                        : (isBlackTheme 
-                                            ? 'bg-white/10 text-white' 
-                                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200/80'))
-                            }`}
-                            style={
-                                isNextPrayer
-                                    ? {
-                                        color: isMuted ? '#FFFFFF' : nextTextColor,
-                                        boxShadow: isLightNextBg ? 'inset 0 1px 1px rgba(255,255,255,0.4)' : 'inset 0 1px 1px rgba(255,255,255,0.25)'
-                                    }
-                                    : undefined
-                            }
+                                        ? nextTextColor 
+                                        : (isBlackTheme ? '#FFFFFF' : '#000000'))
+                            }}
                             title={isMuted ? tPrayer('alertsMutedTooltip', language) : tPrayer('alertsActiveTooltip', language)}
                             aria-label={isMuted ? tPrayer('alertsMutedTooltip', language) : tPrayer('alertsActiveTooltip', language)}
                         >
                             {isMuted ? (
-                                <BellOff className="w-3.5 h-3.5" />
+                                <BellOff className="w-5 h-5" />
                             ) : (
-                                <Bell className="w-3.5 h-3.5" />
+                                <Bell className="w-5 h-5" />
                             )}
                         </button>
+                    ) : (
+                        supportsDST && (
+                            <button 
+                                type="button"
+                                onClick={toggleSummerTime}
+                                className="p-0.5 flex items-center justify-center transition-colors text-xs cursor-pointer bg-transparent"
+                                style={{
+                                    color: isNextPrayer 
+                                        ? nextTextColor 
+                                        : (isBlackTheme ? '#FFFFFF' : '#000000')
+                                }}
+                                title={tPrayer('dstTooltip', language)}
+                                aria-label={tPrayer('dstTooltip', language)}
+                            >
+                                <Clock className="w-5 h-5" />
+                            </button>
+                        )
+                    )}
 
-                        {/* Settings Button */}
+                    {/* Settings Button (stacked under Bell) */}
+                    {prayerKey !== 'Sunrise' && (
                         <button 
                             id={idx === 0 ? "prayer-settings-btn" : undefined}
                             type="button"
                             onClick={() => openSettings(prayerKey)} 
-                            className={`w-7 h-7 rounded-full flex items-center justify-center transition-all active:scale-90 cursor-pointer ${
-                                isNextPrayer
-                                    ? (isLightNextBg ? 'bg-black/10 hover:bg-black/15' : 'bg-white/20 text-white hover:bg-white/30')
-                                    : 'text-slate-400 hover:text-slate-700 hover:bg-black/5 dark:hover:bg-white/10 dark:hover:text-white'
-                            }`}
-                            style={
-                                isNextPrayer
-                                    ? {
-                                        color: nextTextColor,
-                                        boxShadow: isLightNextBg ? 'inset 0 1px 1px rgba(255,255,255,0.4)' : 'inset 0 1px 1px rgba(255,255,255,0.25)'
-                                    }
-                                    : undefined
-                            }
+                            className="p-0.5 flex items-center justify-center transition-all active:scale-90 cursor-pointer bg-transparent"
+                            style={{
+                                color: isNextPrayer 
+                                    ? nextTextColor 
+                                    : (isBlackTheme ? '#FFFFFF' : '#000000')
+                            }}
                             title={tPrayer('customize', language)}
                             aria-label={tPrayer('customize', language)}
                         >
-                            <SlidersHorizontal className="w-3.5 h-3.5" />
+                            <SlidersHorizontal className="w-5 h-5" />
                         </button>
-                    </div>
-                ) : (
-                    supportsDST ? (
-                        <button 
-                            type="button"
-                            onClick={toggleSummerTime}
-                            className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors text-xs cursor-pointer ${
-                                isNextPrayer
-                                    ? (isLightNextBg ? 'bg-black/10' : 'bg-white/20 text-white')
-                                    : (isSummerTime 
-                                        ? (isBlackTheme ? 'bg-white text-black' : 'text-white') 
-                                        : 'bg-slate-100 text-slate-400 dark:bg-white/10')
-                            }`}
-                            style={
-                                isNextPrayer
-                                    ? { color: nextTextColor }
-                                    : (isSummerTime && !isBlackTheme ? { backgroundColor: primaryColor } : undefined)
-                            }
-                            title={tPrayer('dstTooltip', language)}
-                            aria-label={tPrayer('dstTooltip', language)}
-                        >
-                            <Clock className="w-3.5 h-3.5" />
-                        </button>
-                    ) : <div />
-                )}
+                    )}
+                </div>
             </div>
 
-            {/* Middle: Name & Time */}
-            <div className="flex-1 w-full flex flex-col items-center justify-center text-center py-1 z-0 relative">
+            {/* Middle: Name & Time (Absolute 4-Way Dead Center of the Card) */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none z-0 -mt-2">
                 <h3 
-                    className="font-bold text-xs sm:text-[13px] text-center leading-tight tracking-wide"
+                    className="font-extrabold text-sm sm:text-base text-center leading-tight tracking-wide"
                     style={{ 
                         color: isNextPrayer 
                             ? nextTextColor 
-                            : (isBlackTheme ? '#FFFFFF' : '#334155'),
+                            : (isBlackTheme ? '#FFFFFF' : primaryColor),
                         textShadow: isNextPrayer && !isLightNextBg ? '0 1px 2px rgba(0,0,0,0.18)' : undefined
                     }}
                 >
                     {getPrayerDisplayName(prayerKey, language)}
                 </h3>
                 <span 
-                    className="font-black text-sm sm:text-base text-center leading-tight tracking-normal mt-0.5 tabular-nums"
+                    className="font-black text-base sm:text-lg text-center leading-tight tracking-normal mt-0.5 tabular-nums"
                     style={{ 
                         color: isNextPrayer 
                             ? nextTextColor 
-                            : (isBlackTheme ? '#FFFFFF' : '#0F172A'),
+                            : (isBlackTheme ? '#FFFFFF' : primaryColor),
                         textShadow: isNextPrayer && !isLightNextBg ? '0 1px 2px rgba(0,0,0,0.18)' : undefined
                     }}
                     dangerouslySetInnerHTML={{ __html: formatTime12(displayTimeStr) }}
@@ -295,28 +298,24 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
             </div>
 
             {/* Bottom: Iqama Chip */}
-            <div className="w-full flex justify-center items-center pb-0.5 min-h-[20px] z-0 relative">
+            <div className="w-full flex justify-center items-center z-10 relative -mt-3.5 pb-2.5 min-h-[18px]">
                 {prayerKey !== 'Sunrise' && iqamaTime && !iqamaTime.includes('--') ? (
                     <button 
                         type="button"
                         onClick={() => openSettings(prayerKey)}
-                        className="text-[10px] font-bold px-2.5 py-0.5 rounded-full whitespace-nowrap leading-tight cursor-pointer hover:opacity-90 active:scale-95 transition-all flex items-center gap-1 shadow-2xs" 
+                        className="text-[11px] font-extrabold px-1 py-0.5 whitespace-nowrap leading-tight cursor-pointer hover:opacity-90 active:scale-95 transition-all flex items-center gap-1 bg-transparent border-0" 
                         style={{
                             color: isNextPrayer 
                                 ? nextTextColor 
-                                : (isBlackTheme ? '#FFFFFF' : '#475569'), 
-                            backgroundColor: isNextPrayer 
-                                ? (isLightNextBg ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255,255,255,0.22)') 
-                                : (isBlackTheme ? 'rgba(255,255,255,0.1)' : '#F1F5F9'),
-                            border: isNextPrayer
-                                ? (isLightNextBg ? '1px solid rgba(0, 0, 0, 0.16)' : '1px solid rgba(255, 255, 255, 0.35)')
-                                : 'none'
+                                : (isBlackTheme ? '#FFFFFF' : '#000000'), 
+                            backgroundColor: 'transparent',
+                            border: 'none'
                         }}
                         title={tPrayer('iqamaButtonTooltip', language)}
                         aria-label={tPrayer('iqamaButtonTooltip', language)}
                     >
-                        <span style={{ color: isNextPrayer ? nextTextColor : undefined }}>{tPrayer('iqama', language)}:</span>
-                        <span className={`font-mono tabular-nums ${isNextPrayer ? 'font-black' : ''}`} style={{ color: isNextPrayer ? nextTextColor : undefined }} dir="ltr">{iqamaTime}</span>
+                        <span style={{ color: isNextPrayer ? nextTextColor : (isBlackTheme ? '#FFFFFF' : '#000000') }}>{tPrayer('iqama', language)}:</span>
+                        <span className="font-mono tabular-nums font-extrabold" style={{ color: isNextPrayer ? nextTextColor : (isBlackTheme ? '#FFFFFF' : '#000000') }} dir={language === 'ar' ? 'rtl' : 'ltr'}>{formatNumber(iqamaTime)}</span>
                     </button>
                 ) : (
                     <div className="h-4" />

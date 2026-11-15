@@ -20,6 +20,7 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
     const tokens = getModernFlatTokens(theme, themeKey);
     const { language } = useLanguage();
     const isEn = language === 'en';
+    const innerSubBoxClass = `app-inner-3d-box border-0 ${tokens.isDeepBlack ? 'bg-[#18181b]' : 'bg-white dark:bg-[#0F172A]/85'}`;
 
     const [activeTab, setActiveTab] = useState<'grid' | 'list'>('grid');
     const [searchQuery, setSearchQuery] = useState('');
@@ -186,13 +187,13 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
         const isPlaying = playingText === text;
 
         return (
-            <div className="flex items-center gap-2" dir="ltr">
+            <div className="flex items-center gap-2 overflow-visible" dir="ltr">
                 {/* Audio */}
                 <button 
                     type="button"
                     onClick={(e) => handlePlayAudio(item, e)} 
-                    className="w-9 h-9 rounded-full flex items-center justify-center bg-slate-100 dark:bg-zinc-800 hover:scale-105 active:scale-95 transition-transform cursor-pointer border-0" 
-                    style={{ color: isPlaying ? '#ef4444' : tokens.textColor }} 
+                    className="app-page-card border-0 w-9 h-9 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0" 
+                    style={{ color: isPlaying ? '#ef4444' : 'var(--text-color)' }} 
                     title={isPlaying ? (isEn ? "Stop Audio" : "إيقاف الاستماع") : (isEn ? "Play Audio" : "استماع صوتي")}
                     aria-label="Audio"
                 >
@@ -203,8 +204,8 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                 <button 
                     type="button"
                     onClick={(e) => handleShare(item, e)} 
-                    className="w-9 h-9 rounded-full flex items-center justify-center bg-slate-100 dark:bg-zinc-800 hover:scale-105 active:scale-95 transition-transform cursor-pointer border-0" 
-                    style={{ color: tokens.textColor }} 
+                    className="app-page-card border-0 w-9 h-9 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0" 
+                    style={{ color: 'var(--text-color)' }} 
                     title={isEn ? "Share as Image" : "مشاركة كصورة"}
                     aria-label="Share"
                 >
@@ -215,8 +216,8 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                 <button 
                     type="button"
                     onClick={(e) => handleCopy(item, e)} 
-                    className="w-9 h-9 rounded-full flex items-center justify-center bg-slate-100 dark:bg-zinc-800 hover:scale-105 active:scale-95 transition-transform cursor-pointer border-0" 
-                    style={{ color: tokens.textColor }} 
+                    className="app-page-card border-0 w-9 h-9 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0" 
+                    style={{ color: 'var(--text-color)' }} 
                     title={isEn ? "Copy" : "نسخ"}
                     aria-label="Copy"
                 >
@@ -227,7 +228,7 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
     };
 
     return (
-        <div className="h-screen flex flex-col overflow-hidden relative" style={{ backgroundColor: tokens.pageBgColor, color: tokens.textColor, fontFamily: theme.font }} dir={isEn ? 'ltr' : 'rtl'}>
+        <div className="h-[100dvh] flex flex-col overflow-hidden relative" style={{ backgroundColor: tokens.pageBgColor, color: tokens.textColor, fontFamily: theme.font }} dir={isEn ? 'ltr' : 'rtl'}>
             <header className="app-top-bar z-20" dir={isEn ? 'ltr' : 'rtl'}>
                 <div className="app-top-bar__inner">
                     <div className="relative flex items-center justify-between w-full min-h-[44px]">
@@ -277,53 +278,49 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                 </div>
             </header>
 
-            {/* Controls Bar: Switch between Grid and List view + Search - Flat Surface Zero Border */}
-            <div className="mb-5 px-4 max-w-3xl mx-auto w-full flex items-center gap-2.5 z-10 shrink-0" dir={isEn ? 'ltr' : 'rtl'}>
+            {/* Controls Bar: Switch between Grid and List view + Search */}
+            <div className="mb-4 pt-1 px-4 max-w-3xl mx-auto w-full flex items-center gap-2.5 z-10 shrink-0 overflow-visible" dir={isEn ? 'ltr' : 'rtl'}>
                 {/* Search Input */}
                 <div 
-                    className="relative flex-1 rounded-[18px] overflow-hidden transition-all shadow-sm border-0" 
-                    style={{ backgroundColor: tokens.cardBgColor, boxShadow: tokens.cardShadow }}
+                    className="app-page-card border-0 relative flex-1 rounded-2xl bg-white dark:bg-[#1E293B] overflow-visible transition-all"
                 >
                     <input 
                         type="text"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder={isEn ? "Search by name or meaning..." : "ابحث بالاسم أو المعنى..."}
-                        className={`w-full bg-transparent py-3.5 ${isEn ? 'pl-12 pr-10 text-left font-sans' : 'pr-12 pl-10 text-right font-kufi'} focus:outline-none placeholder-gray-400`}
-                        style={{ color: tokens.textColor }}
+                        className={`w-full bg-transparent py-3 text-sm ${isEn ? 'pl-11 pr-12 text-left font-sans' : 'pr-11 pl-12 text-right font-kufi'} focus:outline-none placeholder-gray-400 dark:placeholder-gray-500`}
+                        style={{ color: 'var(--text-color)' }}
                     />
                     <Search 
-                        className={`w-4 h-4 absolute ${isEn ? 'left-4' : 'right-4'} top-1/2 transform -translate-y-1/2 opacity-40`} 
-                        style={{ color: tokens.textColor }} 
+                        className={`w-4 h-4 absolute ${isEn ? 'left-4' : 'right-4'} top-1/2 transform -translate-y-1/2 opacity-40 pointer-events-none`} 
+                        style={{ color: 'var(--text-color)' }} 
                     />
                     {searchQuery && (
                         <button 
                             type="button"
                             onClick={() => setSearchQuery('')}
-                            className={`absolute inset-y-0 ${isEn ? 'right-4' : 'left-4'} flex items-center text-gray-400 hover:text-gray-600`}
+                            className={`app-page-card border-0 absolute ${isEn ? 'right-2.5' : 'left-2.5'} top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white dark:bg-[#1E293B] flex items-center justify-center text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white cursor-pointer`}
                             title={isEn ? "Clear search" : "مسح البحث"}
+                            aria-label={isEn ? "Clear search" : "مسح البحث"}
                         >
-                            <X className="w-4 h-4" />
+                            <X className="w-3.5 h-3.5" />
                         </button>
                     )}
                 </div>
 
                 {/* View Switcher: Grid vs List */}
                 <div 
-                    className="flex items-center p-1.5 rounded-[18px] shrink-0 shadow-sm border-0"
-                    style={{
-                        backgroundColor: tokens.cardBgColor,
-                        boxShadow: tokens.cardShadow
-                    }}
+                    className="app-page-card border-0 bg-white dark:bg-[#1E293B] flex items-center p-1.5 rounded-2xl gap-1.5 shrink-0 overflow-visible"
                 >
                     <button
                         type="button"
                         onClick={() => setActiveTab('grid')}
-                        className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer border-0 ${activeTab === 'grid' ? 'shadow-sm' : 'opacity-50 hover:opacity-100'}`}
+                        className={`app-page-card border-0 bg-white dark:bg-[#1E293B] flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTab === 'grid' ? '' : 'opacity-70 hover:opacity-100'}`}
                         style={activeTab === 'grid' ? {
                             backgroundColor: tokens.primaryColor,
-                            color: '#ffffff'
-                        } : { color: tokens.textColor }}
+                            color: tokens.themeActiveTextColor
+                        } : { color: 'var(--text-color)' }}
                         title={isEn ? "Grid View" : "عرض شبكي"}
                     >
                         <LayoutGrid size={16} />
@@ -331,11 +328,11 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                     <button
                         type="button"
                         onClick={() => setActiveTab('list')}
-                        className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer border-0 ${activeTab === 'list' ? 'shadow-sm' : 'opacity-50 hover:opacity-100'}`}
+                        className={`app-page-card border-0 bg-white dark:bg-[#1E293B] flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTab === 'list' ? '' : 'opacity-70 hover:opacity-100'}`}
                         style={activeTab === 'list' ? {
                             backgroundColor: tokens.primaryColor,
-                            color: '#ffffff'
-                        } : { color: tokens.textColor }}
+                            color: tokens.themeActiveTextColor
+                        } : { color: 'var(--text-color)' }}
                         title={isEn ? "List View" : "عرض القوائم"}
                     >
                         <ListFilter size={16} />
@@ -343,27 +340,23 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                 </div>
             </div>
 
-            <main className="flex-1 overflow-hidden flex flex-col px-4 z-10">
-                <div className="flex-1 overflow-y-auto hide-scrollbar pt-1 pb-7 sm:pb-8 pb-[calc(env(safe-area-inset-bottom,0px)+1.75rem)]">
+            <main className="flex-1 min-h-0 overflow-hidden flex flex-col px-4 z-10">
+                <div className="flex-1 min-h-0 overflow-y-auto hide-scrollbar pt-1.5 app-scroll-safe">
                     {filteredNames.length === 0 ? (
-                        <div className="py-16 text-center opacity-60 font-bold">
+                        <div className="app-page-card border-0 bg-white dark:bg-[#1E293B] rounded-[18px] py-16 px-6 text-center max-w-xl mx-auto opacity-80 font-bold">
                             <Search className="w-10 h-10 mb-3 mx-auto opacity-40" />
                             <p>{isEn ? 'No matching results found' : 'لا توجد نتائج مطابقة لبحثك'}</p>
                         </div>
                     ) : activeTab === 'grid' ? (
-                        /* Grid View - Pure White Cards, Zero Border, Soft Elevation */
-                        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3 max-w-4xl mx-auto">
+                        /* Grid View - Embossed 3D Cards */
+                        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3 max-w-4xl mx-auto pb-2">
                             {filteredNames.map((item) => (
-                                <motion.button
+                                <button
                                     key={item.id}
-                                    whileHover={{ y: -3, scale: 1.02 }}
-                                    whileTap={{ scale: 0.97 }}
+                                    type="button"
                                     onClick={() => setSelectedName(item)}
-                                    className="relative rounded-[18px] p-3 flex flex-col items-center justify-center text-center aspect-square group transition-all duration-300 overflow-hidden cursor-pointer border-0"
-                                    style={{ 
-                                        backgroundColor: tokens.cardBgColor,
-                                        boxShadow: tokens.cardShadow
-                                    }}
+                                    className="app-page-card border-0 bg-white dark:bg-[#1E293B] relative rounded-[18px] p-3 flex flex-col items-center justify-center text-center aspect-square group transition-all overflow-visible cursor-pointer"
+                                    style={{ color: 'var(--text-color)' }}
                                 >
                                     {/* ID Badge */}
                                     <div 
@@ -379,7 +372,7 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                                     <div className="flex flex-col items-center justify-center flex-1 w-full pt-2">
                                         {isEn ? (
                                             <>
-                                                <h3 className="text-lg sm:text-xl font-bold font-sans leading-tight group-hover:scale-105 transition-transform duration-300" style={{ color: tokens.textColor }}>
+                                                <h3 className="text-lg sm:text-xl font-bold font-sans leading-tight group-hover:scale-105 transition-transform duration-300" style={{ color: 'var(--text-color)' }}>
                                                     {item.transliteration}
                                                 </h3>
                                                 <span className="text-xs sm:text-sm font-quran opacity-75 mt-1 truncate max-w-full px-1" style={{ color: tokens.subtextColor }}>
@@ -388,7 +381,7 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                                             </>
                                         ) : (
                                             <>
-                                                <h3 className="text-xl sm:text-2xl font-bold font-quran leading-tight group-hover:scale-105 transition-transform duration-300" style={{ color: tokens.textColor }}>
+                                                <h3 className="text-xl sm:text-2xl font-bold font-quran leading-tight group-hover:scale-105 transition-transform duration-300" style={{ color: 'var(--text-color)' }}>
                                                     {item.name}
                                                 </h3>
                                                 <span className="text-[10px] sm:text-xs font-semibold opacity-80 mt-1 truncate max-w-full px-1" style={{ color: tokens.subtextColor }}>
@@ -397,23 +390,17 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                                             </>
                                         )}
                                     </div>
-                                </motion.button>
+                                </button>
                             ))}
-                            {/* Bottom Spacer for Mobile Phone Navigation Bar */}
-                            <div className="col-span-full h-8 sm:h-12 pointer-events-none" />
                         </div>
                     ) : (
-                        /* List View - Zero Border Policy, Pure White Cards */
-                        <div className="max-w-3xl mx-auto space-y-3.5">
+                        /* List View - Embossed 3D Cards */
+                        <div className="max-w-3xl mx-auto space-y-3.5 pb-2">
                             {filteredNames.map((item) => (
                                 <div
                                     key={item.id}
-                                    className="p-5 rounded-[18px] relative overflow-hidden group transition-all duration-300 border-0"
-                                    style={{ 
-                                        backgroundColor: tokens.cardBgColor,
-                                        boxShadow: tokens.cardShadow,
-                                        color: tokens.textColor 
-                                    }}
+                                    className="app-page-card border-0 bg-white dark:bg-[#1E293B] p-5 rounded-[18px] relative overflow-visible group transition-all duration-300"
+                                    style={{ color: 'var(--text-color)' }}
                                 >
                                     <div className="flex justify-between items-center mb-3">
                                         <span 
@@ -438,7 +425,7 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
 
                                     {isEn ? (
                                         <div onClick={() => setSelectedName(item)} className="text-center mb-2.5 cursor-pointer hover:opacity-80 transition-opacity">
-                                            <h3 className="text-3xl sm:text-4xl font-bold font-sans" style={{ color: tokens.textColor }}>
+                                            <h3 className="text-3xl sm:text-4xl font-bold font-sans" style={{ color: 'var(--text-color)' }}>
                                                 {item.transliteration}
                                             </h3>
                                             <span className="text-base sm:text-lg font-quran opacity-75 mt-1 block" style={{ color: tokens.subtextColor }}>
@@ -449,7 +436,7 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                                         <h3 
                                             onClick={() => setSelectedName(item)}
                                             className="text-2xl sm:text-3xl font-bold font-quran text-center mb-2.5 cursor-pointer hover:opacity-80 transition-opacity" 
-                                            style={{ color: tokens.textColor }}
+                                            style={{ color: 'var(--text-color)' }}
                                         >
                                             {item.name}
                                         </h3>
@@ -461,14 +448,13 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
 
                                     {(item.evidence || item.evidenceEn) && (
                                         <div 
-                                            className={`text-center py-2 px-3 rounded-[14px] mb-3 border-0 leading-relaxed ${isEn ? 'font-sans text-sm sm:text-base' : 'font-amiri text-xs sm:text-sm'}`}
-                                            style={{ backgroundColor: tokens.isDark ? 'rgba(255, 255, 255, 0.04)' : '#F8F9FA' }}
+                                            className={`text-center py-2.5 px-3.5 rounded-[14px] mb-3 leading-relaxed ${innerSubBoxClass} ${isEn ? 'font-sans text-sm sm:text-base' : 'font-amiri text-xs sm:text-sm'}`}
                                         >
                                             {renderEvidence(item.evidence, item.evidenceEn)}
                                         </div>
                                     )}
 
-                                    <div className="flex justify-between items-center mt-3 pt-3 border-t border-slate-100 dark:border-zinc-800">
+                                    <div className="flex justify-between items-center mt-3 pt-3 app-3d-divider-top overflow-visible">
                                         <span className="text-xs font-bold opacity-70" style={{ color: tokens.primaryColor }}>
                                             {isEn ? 'Beautiful Names of Allah' : 'من أسماء الله الحسنى'}
                                         </span>
@@ -476,8 +462,6 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                                     </div>
                                 </div>
                             ))}
-                            {/* Bottom Spacer for Mobile Phone Navigation Bar */}
-                            <div className="w-full h-8 sm:h-12 pointer-events-none" />
                         </div>
                     )}
                 </div>
@@ -495,10 +479,9 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                             animate={{ y: 0, opacity: 1 }}
                             exit={{ y: '100%', opacity: 0 }}
                             transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-                            className="rounded-t-[28px] sm:rounded-[24px] w-full max-w-xl text-center relative shadow-2xl flex flex-col max-h-[85vh] overflow-hidden border-0" 
+                            className="app-page-card border-0 rounded-t-[28px] sm:rounded-[24px] w-full max-w-xl text-center relative flex flex-col max-h-[88dvh] overflow-hidden bg-white dark:bg-[#1E293B]" 
                             style={{ 
-                                backgroundColor: tokens.cardBgColor,
-                                color: tokens.textColor,
+                                color: 'var(--text-color)',
                                 fontFamily: theme.font 
                             }} 
                             onClick={e => e.stopPropagation()}
@@ -522,11 +505,11 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                                 </span>
                             </div>
 
-                            <div className="overflow-y-auto hide-scrollbar flex-1 px-6 py-3 space-y-4">
+                            <div className="overflow-y-auto hide-scrollbar flex-1 min-h-0 px-6 py-3 space-y-4">
                                 <div>
                                     {isEn ? (
                                         <>
-                                            <h2 className="text-4xl sm:text-5xl font-bold font-sans mb-1 leading-normal" style={{ color: tokens.textColor }}>
+                                            <h2 className="text-4xl sm:text-5xl font-bold font-sans mb-1 leading-normal" style={{ color: 'var(--text-color)' }}>
                                                 {selectedName.transliteration}
                                             </h2>
                                             <span className="text-lg sm:text-xl font-quran opacity-75 block" style={{ color: tokens.primaryColor }}>
@@ -535,7 +518,7 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                                         </>
                                     ) : (
                                         <>
-                                            <h2 className="text-4xl sm:text-5xl font-bold font-quran mb-1 leading-normal" style={{ color: tokens.textColor }}>
+                                            <h2 className="text-4xl sm:text-5xl font-bold font-quran mb-1 leading-normal" style={{ color: 'var(--text-color)' }}>
                                                 {selectedName.name}
                                             </h2>
                                             <span className="text-sm font-semibold opacity-80" style={{ color: tokens.primaryColor }}>
@@ -546,9 +529,8 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                                 </div>
 
                                 <div 
-                                    className={`p-4 sm:p-5 rounded-[18px] leading-[2.3] text-center border-0 ${isEn ? 'font-sans' : 'font-amiri'}`}
+                                    className={`p-4 sm:p-5 rounded-[18px] leading-[2.3] text-center ${innerSubBoxClass} ${isEn ? 'font-sans' : 'font-amiri'}`}
                                     style={{ 
-                                        backgroundColor: tokens.isDark ? 'rgba(255, 255, 255, 0.04)' : '#F8F9FA',
                                         fontSize: `${modalFontSize}px`
                                     }}
                                 >
@@ -562,9 +544,8 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
 
                                 {(selectedName.evidence || selectedName.evidenceEn) && (
                                     <div 
-                                        className={`p-4 rounded-[18px] leading-[2.2] text-center border-0 ${isEn ? 'font-sans' : 'font-amiri'}`}
+                                        className={`p-4 rounded-[18px] leading-[2.2] text-center ${innerSubBoxClass} ${isEn ? 'font-sans' : 'font-amiri'}`}
                                         style={{ 
-                                            backgroundColor: tokens.isDark ? 'rgba(255, 255, 255, 0.04)' : '#F8F9FA',
                                             fontSize: `${modalFontSize - 1}px`
                                         }}
                                     >
@@ -578,19 +559,16 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                                 )}
                             </div>
 
-                            {/* Footer Actions with safe-area bottom elevation */}
+                            {/* Footer Actions with dynamic safe-area bottom elevation */}
                             <div 
-                                className="p-4 pt-3 border-t border-slate-100 dark:border-zinc-800 flex justify-center items-center gap-3 sm:gap-4"
-                                style={{ 
-                                    paddingBottom: 'calc(env(safe-area-inset-bottom, 16px) + 16px)'
-                                }}
+                                className="p-4 pt-3 modal-sheet-safe-bottom shrink-0 app-3d-divider-top flex justify-center items-center gap-3 sm:gap-4 overflow-visible"
                             >
                                 {/* Audio */}
                                 <button 
                                     type="button"
                                     onClick={(e) => handlePlayAudio(selectedName, e)} 
-                                    className="w-11 h-11 rounded-full flex items-center justify-center bg-slate-100 dark:bg-zinc-800 hover:scale-105 active:scale-95 transition-transform cursor-pointer border-0" 
-                                    style={{ color: playingText === getAudioText(selectedName) ? '#ef4444' : tokens.textColor }} 
+                                    className="app-page-card border-0 w-11 h-11 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0" 
+                                    style={{ color: playingText === getAudioText(selectedName) ? '#ef4444' : 'var(--text-color)' }} 
                                     title={playingText === getAudioText(selectedName) ? (isEn ? "Stop Audio" : "إيقاف الاستماع") : (isEn ? "Play Audio" : "استماع صوتي")}
                                 >
                                     <Volume2 className={`w-5 h-5 ${playingText === getAudioText(selectedName) ? 'text-red-500 animate-pulse' : ''}`} />
@@ -600,8 +578,8 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                                 <button 
                                     type="button"
                                     onClick={(e) => handleShare(selectedName, e)} 
-                                    className="w-11 h-11 rounded-full flex items-center justify-center bg-slate-100 dark:bg-zinc-800 hover:scale-105 active:scale-95 transition-transform cursor-pointer border-0" 
-                                    style={{ color: tokens.textColor }} 
+                                    className="app-page-card border-0 w-11 h-11 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0" 
+                                    style={{ color: 'var(--text-color)' }} 
                                     title={isEn ? "Share as Image" : "مشاركة كصورة"}
                                 >
                                     <Share2 className="w-5 h-5" />
@@ -611,8 +589,8 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                                 <button 
                                     type="button"
                                     onClick={(e) => handleCopy(selectedName, e)} 
-                                    className="w-11 h-11 rounded-full flex items-center justify-center bg-slate-100 dark:bg-zinc-800 hover:scale-105 active:scale-95 transition-transform cursor-pointer border-0" 
-                                    style={{ color: tokens.textColor }} 
+                                    className="app-page-card border-0 w-11 h-11 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0" 
+                                    style={{ color: 'var(--text-color)' }} 
                                     title={isEn ? "Copy" : "نسخ"}
                                 >
                                     <Copy className="w-5 h-5" />
@@ -622,8 +600,8 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                                 <button 
                                     type="button"
                                     onClick={handleToggleFontZoom} 
-                                    className="w-11 h-11 rounded-full flex items-center justify-center bg-slate-100 dark:bg-zinc-800 hover:scale-105 active:scale-95 transition-transform cursor-pointer border-0" 
-                                    style={{ color: tokens.textColor }} 
+                                    className="app-page-card border-0 w-11 h-11 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0" 
+                                    style={{ color: 'var(--text-color)' }} 
                                     title={isEn ? "Zoom Font" : "تكبير الخط"}
                                 >
                                     <ZoomIn className="w-5 h-5" />
@@ -633,8 +611,8 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                                 <button 
                                     type="button"
                                     onClick={() => setSelectedName(null)} 
-                                    className="w-11 h-11 rounded-full flex items-center justify-center bg-slate-100 dark:bg-zinc-800 hover:scale-105 active:scale-95 transition-transform cursor-pointer border-0" 
-                                    style={{ color: tokens.textColor }} 
+                                    className="app-page-card border-0 w-11 h-11 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer shrink-0" 
+                                    style={{ color: 'var(--text-color)' }} 
                                     title={isEn ? "Hide list" : "إخفاء القائمة"}
                                 >
                                     <ChevronDown className="w-5 h-5" />
@@ -652,7 +630,7 @@ const AsmaulHusna: React.FC<{ onBack: () => void, onNavigate: (id: string, param
                         initial={{ opacity: 0, y: 50, x: '-50%' }}
                         animate={{ opacity: 1, y: 0, x: '-50%' }}
                         exit={{ opacity: 0, y: 50, x: '-50%' }}
-                        className="fixed bottom-8 left-1/2 z-[200] bg-gray-800 text-white px-6 py-3 rounded-full shadow-lg font-bold text-sm text-center whitespace-nowrap flex items-center gap-2 pointer-events-none"
+                        className="fixed bottom-[calc(var(--app-bottom-clearance,0px)+1rem)] left-1/2 z-[200] bg-gray-800 text-white px-6 py-3 rounded-full shadow-lg font-bold text-sm text-center whitespace-nowrap flex items-center gap-2 pointer-events-none"
                     >
                         <i className="fa-solid fa-check text-green-400"></i>
                         {toastMessage}

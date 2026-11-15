@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import ThemesSidebar from '../components/MainMenu/ThemesSidebar';
 import { useTheme } from '../context/ThemeContext';
 import WhatsAppButton from '../components/WhatsAppButton';
@@ -7,16 +8,20 @@ import InteractiveBackground from '../components/InteractiveBackground';
 import MenuCustomizationModal from '../components/MenuCustomizationModal';
 import PasscodeModal from '../components/PasscodeModal';
 import { registerBackInterceptor } from '../hooks/useBackButton';
+import { getThemeEditModeStyles } from '../utils/themeEditStyles';
 import TitleSection from '../components/MainMenu/TitleSection';
 import GridSection from '../components/MainMenu/GridSection';
 import FloatingNeonTicker from '../components/FloatingNeonTicker';
-import { Palette, LayoutDashboard, LayoutGrid, Moon, Sun, Check, HelpCircle } from 'lucide-react';
+import { Palette, LayoutDashboard, LayoutGrid, Moon, Sun, Check, HelpCircle, RotateCcw, Settings } from 'lucide-react';
 import ModernHomeView from '../components/MainMenu/ModernHomeView';
+import HomeScreenSettingsModal from '../components/MainMenu/HomeScreenSettingsModal';
+import { prewarmShareDesignThumbs } from '../components/MainMenu/ShareDesignSelectorSection';
 import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/CommunitySpotlightGuide';
-import { SMART_HOME_PAGE_STEPS } from '../components/Community/communityTourSteps';
+import { SMART_HOME_PAGE_STEPS, getDynamicSmartHomeSteps } from '../components/Community/communityTourSteps';
+import { useShowPageGuides } from '../utils/guideManager';
+import { showGlobalAppToast } from '../utils/appNotificationSettings';
 import VoiceControlToggle from '../components/VoiceControlToggle';
 import { useVoiceControl } from '../context/VoiceControlContext';
-import { usePrayerTimes } from '../context/PrayerTimesContext';
 import { prayerNamesAr } from '../data/prayerTimesData';
 import { quranData as rawQuranData } from '../utils/quranData';
 import { SURAH_NAMES_AR, toArabic } from '../components/QuranReader/constants';
@@ -43,19 +48,7 @@ import UnifiedEventZoomModal from '../components/MainMenu/UnifiedEventZoomModal'
 import { HISTORICAL_EVENTS_TRANSLATED, formatCalendarNumber } from '../utils/calendarTranslations';
 import { useLanguage } from '../context/LanguageContext';
 import { loadDayEvents, getTranslatedEventText, OnThisDayItem } from '../utils/onThisDayService';
-
-const ISLAMIC_EVENTS = [
-    { day: 1, month: 1, name: "رأس السنة الهجرية" },
-    { day: 10, month: 1, name: "يوم عاشوراء" },
-    { day: 12, month: 3, name: "المولد النبوي الشريف" },
-    { day: 27, month: 7, name: "الإسراء والمعراج" },
-    { day: 15, month: 8, name: "النصف من شعبان" },
-    { day: 1, month: 9, name: "أول أيام شهر رمضان" },
-    { day: 27, month: 9, name: "ليلة القدر" },
-    { day: 1, month: 10, name: "عيد الفطر المبارك" },
-    { day: 9, month: 12, name: "يوم عرفة" },
-    { day: 10, month: 12, name: "عيد الأضحى المبارك" }
-];
+import { islamicEvents as ISLAMIC_EVENTS } from '../data/calendarData';
 
 const HIJRI_MONTHS = ["محرم", "صفر", "ربيع الأول", "ربيع الآخر", "جمادى الأولى", "جمادى الآخرة", "رجب", "شعبان", "رمضان", "شوال", "ذو القعدة", "ذو الحجة"];
 const GREGORIAN_MONTHS = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
@@ -202,6 +195,7 @@ const DEFAULT_MENU_ITEMS = [
 
 
 function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
+  const showPageGuides = useShowPageGuides();
   const { showVoiceIcon } = useVoiceControl();
   const { 
     language, 
@@ -215,15 +209,74 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
     translateGregorianMonth, 
     formatNumber 
   } = useLanguage();
-  const { theme, themeKey, isNightMode, toggleNightMode } = useTheme();
+  const { 
+    theme, 
+    themeKey, 
+    isNightMode, 
+    toggleNightMode, 
+    homeThemeVariant, 
+    setHomeThemeVariant, 
+    setNightModeActive 
+  } = useTheme();
+
+  const [showThemeMenu, setShowThemeMenu] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [menuPos, setMenuPos] = useState<{ top: number; right: number; left: number } | null>(null);
+  const themeMenuRef = useRef<HTMLDivElement>(null);
+
+  const handleToggleThemeMenu = (e?: React.SyntheticEvent) => {
+    e?.preventDefault?.();
+    e?.stopPropagation?.();
+    if (!showThemeMenu) {
+      if (themeMenuRef.current) {
+        const rect = themeMenuRef.current.getBoundingClientRect();
+        setMenuPos({
+          top: rect.bottom + 6,
+          right: Math.max(8, window.innerWidth - rect.right),
+          left: Math.max(8, rect.left),
+        });
+      }
+      setShowThemeMenu(true);
+    } else {
+      setShowThemeMenu(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!showThemeMenu) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowThemeMenu(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showThemeMenu]);
+
+  const isSkyTheme = !isNightMode && homeThemeVariant === 'sky';
+  const isEmeraldTheme = !isNightMode && homeThemeVariant === 'emerald';
+  const isBurgundyTheme = !isNightMode && homeThemeVariant === 'burgundy';
+
   const isBlackTheme = themeKey === 'deep_black' || theme.bgColor === '#000000' || theme.name === 'اسود' || theme.name === 'black';
   const isDarkTheme = isBlackTheme || theme.isDark || theme.bgColor === '#000000' || (theme.textColor && theme.textColor.toLowerCase() === '#ffffff');
-  // لون أيقونات الهيدر: يطابق الثيم الافتراضي (#2E7D5E)، ويتغير مع الثيمات الأخرى ومع الوضع الداكن/الأسود
-  const headerIconColor = isBlackTheme 
-    ? '#FFFFFF' 
-    : (themeKey === 'default' 
-        ? '#2E7D5E' 
-        : (theme.isDark ? (theme.accent || '#FFFFFF') : (theme.palette?.[0] || theme.accent || '#2E7D5E')));
+
+  const editStyles = getThemeEditModeStyles(isNightMode, homeThemeVariant, isBlackTheme);
+
+  // لون أيقونات الهيدر
+  const headerIconColor = isBlackTheme || isNightMode
+    ? '#F59E0B'
+    : (isSkyTheme
+        ? '#0369a1'
+        : (isEmeraldTheme
+            ? '#047857'
+            : (isBurgundyTheme
+                ? '#9f1239'
+                : '#B45309')));
+
   const cardHeaderColor = isBlackTheme ? '#FFFFFF' : theme.palette[0];
   const cardBorderColor = isBlackTheme ? '#FFFFFF' : theme.palette[0];
   const cardButtonColor = isBlackTheme ? '#000000' : theme.palette[0];
@@ -239,31 +292,6 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
     } catch {}
     Preferences.set({ key: 'home_layout_system', value: 'modern' }).catch(() => {});
   }, []);
-
-  // تطبيق تنسيقات التصميم الذكي الحديث مع دعم الوضع الليلي
-  useEffect(() => {
-    if (isNightMode) {
-      document.documentElement.classList.add('theme-black-gold', 'dark');
-      document.body.classList.add('theme-black-gold', 'dark');
-      document.documentElement.classList.remove('theme-black');
-      document.body.classList.remove('theme-black');
-      document.documentElement.classList.add('modern-home-active');
-      document.body.classList.add('modern-home-active');
-      document.body.style.backgroundColor = '#000000';
-      document.body.style.color = '#F59E0B';
-      document.body.style.fontFamily = "'Cairo', sans-serif";
-      document.documentElement.style.setProperty('--theme-font', "'Cairo', sans-serif");
-    } else {
-      document.documentElement.classList.remove('theme-black', 'dark', 'theme-black-gold');
-      document.body.classList.remove('theme-black', 'dark', 'theme-black-gold');
-      document.documentElement.classList.add('modern-home-active');
-      document.body.classList.add('modern-home-active');
-      document.body.style.backgroundColor = '#FFFFFF';
-      document.body.style.color = '#1C1917';
-      document.body.style.fontFamily = "'Cairo', sans-serif";
-      document.documentElement.style.setProperty('--theme-font', "'Cairo', sans-serif");
-    }
-  }, [isNightMode]);
   const [visibleItems, setVisibleItems] = useState<string[]>(() => {
     const savedVersion = localStorage.getItem('menu_layout_version_v2');
     if (savedVersion !== CURRENT_LAYOUT_VERSION) {
@@ -306,21 +334,23 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
   const [isPasscodeOpen, setIsPasscodeOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [isThemesSidebarOpen, setIsThemesSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('home-edit-mode-changed', { detail: { isEditMode } }));
+  }, [isEditMode]);
   const [showSmartHomeGuide, setShowSmartHomeGuide] = useState(false);
+  const [smartHomeSteps, setSmartHomeSteps] = useState(() => getDynamicSmartHomeSteps());
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  const handleOpenSmartHomeGuide = useCallback(() => {
+    // Generate fresh steps ordered exactly according to current cards on screen
+    const dynamicSteps = getDynamicSmartHomeSteps();
+    setSmartHomeSteps(dynamicSteps);
+    setShowSmartHomeGuide(true);
+  }, []);
   const prayerCardRef = useRef<HTMLDivElement>(null);
 
-  // إظهار إرشاد الصفحة الرئيسية (التصميم الذكي) كجولة تفاعلية باللون الذهبي لمرة واحدة فقط عند تشغيل التطبيق لأول مرة
-  useEffect(() => {
-    try {
-      if (!getGuideSeen('smart_home_page_spotlight')) {
-        const timer = setTimeout(() => {
-          setShowSmartHomeGuide(true);
-        }, 600);
-        return () => clearTimeout(timer);
-      }
-    } catch {}
-  }, []);
+
 
   const titleLongPressTimerRef = useRef<any>(null);
   const titleStartCoordRef = useRef<{ x: number; y: number } | null>(null);
@@ -333,14 +363,14 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
       if (typeof navigator !== 'undefined' && navigator.vibrate) {
         try { navigator.vibrate([40, 60, 40]); } catch {}
       }
-      setToastMessage(language === 'en' ? 'Cards arrangement saved successfully ✓' : 'تم حفظ ترتيب البطاقات بنجاح ✓');
+      setToastMessage(language === 'en' ? 'Arrangement saved ✓' : 'تم حفظ الترتيب ✓');
     } else {
       // تفعيل وضع التعديل لتبديل البطاقات
       setIsEditMode(true);
       if (typeof navigator !== 'undefined' && navigator.vibrate) {
         try { navigator.vibrate(80); } catch {}
       }
-      setToastMessage(language === 'en' ? 'Edit mode active: Reorder cards, then hold title to save' : 'تم تفعيل وضع التعديل: بدّل أماكن البطاقات ثم اضغط مطولاً على اسم التطبيق للحفظ');
+      setToastMessage(language === 'en' ? 'Edit mode: Drag cards to reorder' : 'وضع التعديل: اسحب البطاقات لترتيبها');
     }
   }, [isEditMode, language]);
 
@@ -390,15 +420,61 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
     };
     handleResize();
     window.addEventListener('resize', handleResize);
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollTop = 0;
-    }
+
+    // Restore saved scroll position when returning to main menu
+    try {
+      const savedScrollTop = sessionStorage.getItem('main_menu_scroll_top');
+      if (savedScrollTop && scrollContainerRef.current) {
+        const targetScroll = parseInt(savedScrollTop, 10);
+        if (!isNaN(targetScroll) && targetScroll > 0) {
+          requestAnimationFrame(() => {
+            if (scrollContainerRef.current) {
+              scrollContainerRef.current.scrollTop = targetScroll;
+            }
+          });
+          setTimeout(() => {
+            if (scrollContainerRef.current) {
+              scrollContainerRef.current.scrollTop = targetScroll;
+            }
+          }, 80);
+          setTimeout(() => {
+            if (scrollContainerRef.current) {
+              scrollContainerRef.current.scrollTop = targetScroll;
+            }
+          }, 200);
+        }
+      }
+    } catch {}
+
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Pre-warm share design thumbnails in background during idle time for instant display in Settings
+  useEffect(() => {
+    const isEn = language === 'en';
+    const win = window as any;
+    if (typeof win.requestIdleCallback === 'function') {
+      const idleId = win.requestIdleCallback(() => {
+        prewarmShareDesignThumbs(isEn);
+      }, { timeout: 1500 });
+      return () => {
+        if (typeof win.cancelIdleCallback === 'function') {
+          win.cancelIdleCallback(idleId);
+        }
+      };
+    }
+    const timer = setTimeout(() => {
+      prewarmShareDesignThumbs(isEn);
+    }, 650);
+    return () => clearTimeout(timer);
+  }, [language]);
 
   useEffect(() => {
     const handleScrollToTop = () => {
       if (scrollContainerRef.current) {
+        try {
+          sessionStorage.setItem('main_menu_scroll_top', '0');
+        } catch {}
         try {
           scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
         } catch {
@@ -410,8 +486,6 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
     return () => window.removeEventListener('scroll-to-top', handleScrollToTop);
   }, []);
 
-  const { times, nextPrayer, countdown } = usePrayerTimes();
-  
   const [lastReadAyah, setLastReadAyah] = useState<{ s: number, a: number, text: string, surahName: string } | null>(null);
 
   const [onThisDayEvent, setOnThisDayEvent] = useState<{ text: string, textEn?: string, year: number, dateStr: string } | null>(null);
@@ -428,7 +502,7 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
     return Math.floor(Math.random() * total);
   });
 
-  const [upcomingEvents, setUpcomingEvents] = useState<{name: string, dateStr: string, gregorianDateStr: string, daysRemaining: number, isToday: boolean}[]>([]);
+  const [upcomingEvents, setUpcomingEvents] = useState<{name: string, dateStr: string, gregorianDateStr: string, historicalYearAr?: string, historicalYearEn?: string, daysRemaining: number, isToday: boolean}[]>([]);
   const [eventIndex, setEventIndex] = useState(0);
 
   useEffect(() => {
@@ -462,6 +536,8 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
               name: ev.name,
               dateStr: language === 'en' ? hijriDateEn : hijriDateAr,
               gregorianDateStr: language === 'en' ? gregDateEn : gregDateAr,
+              historicalYearAr: ev.historicalYearAr,
+              historicalYearEn: ev.historicalYearEn,
               daysRemaining: ev.diff,
               isToday: ev.diff === 0
           };
@@ -790,45 +866,75 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
       if (navigator.vibrate) navigator.vibrate(50);
   };
 
+  const mainMenuBackStateRef = useRef({
+      showSettingsModal,
+      showSmartHomeGuide,
+      isThemesSidebarOpen,
+      showExpandedHistoryMemoryModal,
+      showExpandedEventsModal,
+      showExpandedUpcomingEventModal,
+      isPasscodeOpen,
+      isCustomizationOpen,
+      isEditMode,
+      handleCancelEdit,
+  });
+  mainMenuBackStateRef.current = {
+      showSettingsModal,
+      showSmartHomeGuide,
+      isThemesSidebarOpen,
+      showExpandedHistoryMemoryModal,
+      showExpandedEventsModal,
+      showExpandedUpcomingEventModal,
+      isPasscodeOpen,
+      isCustomizationOpen,
+      isEditMode,
+      handleCancelEdit,
+  };
+
   useEffect(() => {
       const interceptor = () => {
-          if (showSmartHomeGuide) {
+          const s = mainMenuBackStateRef.current;
+          if (s.showSettingsModal) {
+              setShowSettingsModal(false);
+              return true;
+          }
+          if (s.showSmartHomeGuide) {
               setShowSmartHomeGuide(false);
               return true;
           }
-          if (isThemesSidebarOpen) {
+          if (s.isThemesSidebarOpen) {
               setIsThemesSidebarOpen(false);
               return true;
           }
-          if (showExpandedHistoryMemoryModal) {
+          if (s.showExpandedHistoryMemoryModal) {
               setShowExpandedHistoryMemoryModal(false);
               return true;
           }
-          if (showExpandedEventsModal) {
+          if (s.showExpandedEventsModal) {
               setShowExpandedEventsModal(false);
               return true;
           }
-          if (showExpandedUpcomingEventModal) {
+          if (s.showExpandedUpcomingEventModal) {
               setShowExpandedUpcomingEventModal(false);
               return true;
           }
-          if (isPasscodeOpen) {
+          if (s.isPasscodeOpen) {
               setIsPasscodeOpen(false);
               return true;
           }
-          if (isCustomizationOpen) {
+          if (s.isCustomizationOpen) {
               setIsCustomizationOpen(false);
               return true;
           }
-          if (isEditMode) {
-              handleCancelEdit();
+          if (s.isEditMode) {
+              s.handleCancelEdit();
               return true;
           }
           return false;
       };
       const unregister = registerBackInterceptor(interceptor);
       return unregister;
-  }, [showSmartHomeGuide, isThemesSidebarOpen, isCustomizationOpen, isEditMode, showExpandedHistoryMemoryModal, showExpandedEventsModal, showExpandedUpcomingEventModal, isPasscodeOpen]);
+  }, []);
 
   const handleSaveCustomization = (selectedIds: string[]) => {
       setVisibleItems(selectedIds);
@@ -855,56 +961,255 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
   return (
     <div 
       data-layout="modern"
-      className="relative min-h-screen modern-home-layout font-cairo"
+      className="relative min-h-[100dvh] modern-home-layout font-cairo"
       style={{ 
         backgroundColor: isNightMode ? '#000000' : '#FFFFFF',
         fontFamily: "'Cairo', sans-serif"
       }}
     >
-      <div className="h-screen w-full flex flex-col overflow-hidden">
+      <div className="h-[100dvh] w-full flex flex-col overflow-hidden">
         {/* صف اسم التطبيق وأيقونة الوضع الليلي وأيقونة اللغة: مثبت بأول الصفحة ولا يتحرك مع التمرير */}
         <header 
           id="sticky-title-wrapper"
-          dir={dir}
-          className={`shrink-0 z-40 relative select-none transition-colors duration-150 border-b ${
-            isNightMode ? 'border-amber-500/30 shadow-[0_2px_12px_rgba(0,0,0,0.8)]' : 'border-amber-200/80 shadow-[0_2px_12px_rgba(217,119,6,0.08)]'
+          dir="rtl"
+          className={`shrink-0 ${showThemeMenu ? 'z-[99991]' : 'z-40'} relative select-none border-b ${
+            isNightMode 
+              ? 'border-amber-500/30 shadow-[0_2px_12px_rgba(0,0,0,0.8)]' 
+              : isSkyTheme 
+                ? 'border-sky-200/90 shadow-[0_2px_12px_rgba(2,132,199,0.08)]' 
+                : isEmeraldTheme 
+                  ? 'border-emerald-200/90 shadow-[0_2px_12px_rgba(5,150,105,0.08)]' 
+                  : isBurgundyTheme
+                    ? 'border-rose-200/90 shadow-[0_2px_12px_rgba(159,18,57,0.08)]'
+                    : 'border-amber-200/80 shadow-[0_2px_12px_rgba(217,119,6,0.08)]'
           }`}
           style={{
             backgroundColor: isNightMode ? '#000000' : '#FFFFFF',
-            paddingTop: 'env(safe-area-inset-top, 0px)',
+            paddingTop: 'var(--app-safe-top, 0px)',
+            paddingBottom: 0,
+            height: '46px',
+            minHeight: '46px',
+            boxSizing: 'content-box',
+            contain: 'layout style',
             fontFamily: "'Cairo', sans-serif"
           }}
         >
-          <div className="w-full flex items-center justify-between px-3 sm:px-4 pt-1 pb-1 relative min-h-[44px]" dir={dir}>
-            {/* الطرف الأيمن: أيقونة الوضع الليلي (حديث) وزر الإرشادات */}
+          <div className="w-full h-[46px] flex items-center justify-between px-3 sm:px-4 relative" dir="rtl">
+            {/* الطرف الأيمن: زر قائمة أوضاع الصفحة الرئيسية وزر الإرشادات */}
             <div className="flex items-center gap-1 shrink-0 z-20">
-              <button
-                id="night-mode-toggle-btn"
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleNightMode();
-                }}
-                className="p-1 sm:p-1.5 flex items-center justify-center transition-all duration-150 active:scale-90 hover:scale-110 cursor-pointer select-none shrink-0 bg-transparent border-none outline-none"
-                title={isNightMode ? (language === 'en' ? 'Normal Mode' : 'الوضع العادي') : (language === 'en' ? 'Night Mode (Black & Gold)' : 'الوضع الليلي (الأسود والذهبي)')}
-                aria-label="Toggle Night Mode"
-              >
-                {isNightMode ? (
-                  <Sun className="w-[21px] h-[21px] sm:w-[23px] sm:h-[23px] text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.8)] pointer-events-none" />
-                ) : (
-                  <Moon className="w-[21px] h-[21px] sm:w-[23px] sm:h-[23px] text-amber-700 dark:text-amber-400 hover:text-amber-900 drop-shadow-[0_1px_2px_rgba(180,83,9,0.25)] pointer-events-none" />
-                )}
-              </button>
+              <div className="relative" ref={themeMenuRef}>
+                <button
+                  id="night-mode-toggle-btn"
+                  type="button"
+                  onClick={handleToggleThemeMenu}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  className="p-1 sm:p-1.5 flex items-center justify-center transition-transform duration-150 active:scale-90 hover:scale-110 cursor-pointer select-none shrink-0 bg-transparent border-none outline-none relative z-30"
+                  title={
+                    language === 'en'
+                      ? (isNightMode ? 'Night Mode' : (isSkyTheme ? 'Sky Mode' : (isEmeraldTheme ? 'Emerald Mode' : (isBurgundyTheme ? 'Burgundy Mode' : 'Gold Mode'))))
+                      : (isNightMode ? 'الوضع الليلى' : (isSkyTheme ? 'الوضع السماوى' : (isEmeraldTheme ? 'الوضع الزمردى' : (isBurgundyTheme ? 'الوضع العنابي' : 'الوضع الذهبي'))))
+                  }
+                  aria-label={language === 'en' ? 'Home page themes menu' : 'قائمة أوضاع الصفحة الرئيسية'}
+                  aria-expanded={showThemeMenu}
+                >
+                  {isNightMode ? (
+                    <Palette className="w-[21px] h-[21px] sm:w-[23px] sm:h-[23px] text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.8)] pointer-events-none" />
+                  ) : isSkyTheme ? (
+                    <Palette className="w-[21px] h-[21px] sm:w-[23px] sm:h-[23px] text-sky-600 drop-shadow-[0_1px_2px_rgba(2,132,199,0.25)] pointer-events-none" />
+                  ) : isEmeraldTheme ? (
+                    <Palette className="w-[21px] h-[21px] sm:w-[23px] sm:h-[23px] text-emerald-700 drop-shadow-[0_1px_2px_rgba(5,150,105,0.25)] pointer-events-none" />
+                  ) : isBurgundyTheme ? (
+                    <Palette className="w-[21px] h-[21px] sm:w-[23px] sm:h-[23px] text-rose-800 drop-shadow-[0_1px_2px_rgba(159,18,57,0.25)] pointer-events-none" />
+                  ) : (
+                    <Palette className="w-[21px] h-[21px] sm:w-[23px] sm:h-[23px] text-amber-700 hover:text-amber-900 drop-shadow-[0_1px_2px_rgba(180,83,9,0.25)] pointer-events-none" />
+                  )}
+                </button>
+              </div>
 
-              {!isEditMode && (
+              {/* بورتال موحد على مستوى document.body يحتوي على خلفية الإغلاق وقائمة الخيارات لحرية النقر التامة دون تداخل CSS */}
+              {showThemeMenu && typeof document !== 'undefined' && createPortal(
+                <div className="fixed inset-0 z-[999990] pointer-events-auto select-none" dir={language === 'en' ? 'ltr' : 'rtl'}>
+                  {/* 1. خلفية عازلة شفافة لامتصاص النقر خارج القائمة واغلاقها (z-[999991]) */}
+                  <div
+                    id="theme-menu-backdrop-shield"
+                    className="fixed inset-0 bg-transparent cursor-default z-[999991]"
+                    aria-hidden="true"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowThemeMenu(false);
+                    }}
+                  />
+
+                  {/* 2. قائمة الخيارات المنبثقة: مضمونة فوق خلفية الإغلاق (z-[999995]) */}
+                  <div
+                    id="theme-dropdown-menu-container"
+                    className={`fixed z-[999995] rounded-2xl p-1.5 shadow-2xl transition-all duration-150 animate-in fade-in zoom-in-95 font-cairo select-none border min-w-[140px] ${
+                      isNightMode
+                        ? 'bg-[#18181f] border-amber-500/40 text-white shadow-[0_12px_32px_rgba(0,0,0,0.85)]'
+                        : isSkyTheme
+                          ? 'bg-white border-sky-300 text-slate-900 shadow-[0_12px_32px_rgba(2,132,199,0.22)]'
+                          : isEmeraldTheme
+                            ? 'bg-white border-emerald-300 text-slate-900 shadow-[0_12px_32px_rgba(5,150,105,0.22)]'
+                            : isBurgundyTheme
+                              ? 'bg-white border-rose-300 text-slate-900 shadow-[0_12px_32px_rgba(159,18,57,0.22)]'
+                              : 'bg-white border-amber-300 text-slate-900 shadow-[0_12px_32px_rgba(217,119,6,0.22)]'
+                    }`}
+                    style={{
+                      top: menuPos ? `${menuPos.top}px` : '48px',
+                      right: menuPos ? `${menuPos.right}px` : '12px',
+                      left: 'auto',
+                      direction: language === 'en' ? 'ltr' : 'rtl'
+                    }}
+                  >
+                    {/* 1. الوضع الذهبي */}
+                    {(isNightMode || homeThemeVariant !== 'gold') && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          if (isNightMode) {
+                            setNightModeActive(false);
+                          }
+                          setHomeThemeVariant('gold');
+                          setShowThemeMenu(false);
+                          showGlobalAppToast(language === 'en' ? 'Theme: Gold Mode' : 'ثيم: الوضع الذهبي');
+                        }}
+                        className={`w-full px-3 py-2 rounded-xl text-xs font-black flex items-center gap-2.5 whitespace-nowrap transition-all cursor-pointer border ${
+                          isNightMode
+                            ? 'bg-transparent text-zinc-100 hover:bg-white/10 active:bg-white/20 border-transparent'
+                            : 'bg-transparent text-slate-900 hover:bg-slate-100 active:bg-slate-200 border-transparent'
+                        }`}
+                      >
+                        <span className="w-2.5 h-2.5 rounded-full shrink-0 bg-amber-500 ring-2 ring-amber-400/30" />
+                        <span className={isNightMode ? 'text-zinc-100 font-black' : 'text-slate-900 font-black'}>
+                          {language === 'en' ? 'Gold Mode' : 'الوضع الذهبي'}
+                        </span>
+                      </button>
+                    )}
+
+                    {/* 2. الوضع الليلى */}
+                    {!isNightMode && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setNightModeActive(true);
+                          setShowThemeMenu(false);
+                          showGlobalAppToast(language === 'en' ? 'Theme: Night Mode' : 'ثيم: الوضع الليلي');
+                        }}
+                        className="w-full px-3 py-2 rounded-xl text-xs font-black flex items-center gap-2.5 whitespace-nowrap transition-all cursor-pointer border mt-0.5 bg-transparent text-slate-900 hover:bg-slate-100 active:bg-slate-200 border-transparent"
+                      >
+                        <span className="w-2.5 h-2.5 rounded-full shrink-0 bg-slate-500 ring-2 ring-slate-400/30" />
+                        <span className="text-slate-900 font-black">
+                          {language === 'en' ? 'Night Mode' : 'الوضع الليلى'}
+                        </span>
+                      </button>
+                    )}
+
+                    {/* 3. الوضع السماوى */}
+                    {(isNightMode || homeThemeVariant !== 'sky') && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          if (isNightMode) {
+                            setNightModeActive(false);
+                          }
+                          setHomeThemeVariant('sky');
+                          setShowThemeMenu(false);
+                          showGlobalAppToast(language === 'en' ? 'Theme: Sky Mode' : 'ثيم: الوضع السماوي');
+                        }}
+                        className={`w-full px-3 py-2 rounded-xl text-xs font-black flex items-center gap-2.5 whitespace-nowrap transition-all cursor-pointer border mt-0.5 ${
+                          isNightMode
+                            ? 'bg-transparent text-zinc-100 hover:bg-white/10 active:bg-white/20 border-transparent'
+                            : 'bg-transparent text-slate-900 hover:bg-slate-100 active:bg-slate-200 border-transparent'
+                        }`}
+                      >
+                        <span className="w-2.5 h-2.5 rounded-full shrink-0 bg-sky-500 ring-2 ring-sky-400/30" />
+                        <span className={isNightMode ? 'text-zinc-100 font-black' : 'text-slate-900 font-black'}>
+                          {language === 'en' ? 'Sky Mode' : 'الوضع السماوى'}
+                        </span>
+                      </button>
+                    )}
+
+                    {/* 4. الوضع الزمردى */}
+                    {(isNightMode || homeThemeVariant !== 'emerald') && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          if (isNightMode) {
+                            setNightModeActive(false);
+                          }
+                          setHomeThemeVariant('emerald');
+                          setShowThemeMenu(false);
+                          showGlobalAppToast(language === 'en' ? 'Theme: Emerald Mode' : 'ثيم: الوضع الزمردي');
+                        }}
+                        className={`w-full px-3 py-2 rounded-xl text-xs font-black flex items-center gap-2.5 whitespace-nowrap transition-all cursor-pointer border mt-0.5 ${
+                          isNightMode
+                            ? 'bg-transparent text-zinc-100 hover:bg-white/10 active:bg-white/20 border-transparent'
+                            : 'bg-transparent text-slate-900 hover:bg-slate-100 active:bg-slate-200 border-transparent'
+                        }`}
+                      >
+                        <span className="w-2.5 h-2.5 rounded-full shrink-0 bg-emerald-500 ring-2 ring-emerald-400/30" />
+                        <span className={isNightMode ? 'text-zinc-100 font-black' : 'text-slate-900 font-black'}>
+                          {language === 'en' ? 'Emerald Mode' : 'الوضع الزمردى'}
+                        </span>
+                      </button>
+                    )}
+
+                    {/* 5. الوضع العنابي */}
+                    {(isNightMode || homeThemeVariant !== 'burgundy') && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          if (isNightMode) {
+                            setNightModeActive(false);
+                          }
+                          setHomeThemeVariant('burgundy');
+                          setShowThemeMenu(false);
+                          showGlobalAppToast(language === 'en' ? 'Theme: Burgundy Mode' : 'ثيم: الوضع العنابي');
+                        }}
+                        className={`w-full px-3 py-2 rounded-xl text-xs font-black flex items-center gap-2.5 whitespace-nowrap transition-all cursor-pointer border mt-0.5 ${
+                          isNightMode
+                            ? 'bg-transparent text-zinc-100 hover:bg-white/10 active:bg-white/20 border-transparent'
+                            : 'bg-transparent text-slate-900 hover:bg-slate-100 active:bg-slate-200 border-transparent'
+                        }`}
+                      >
+                        <span className="w-2.5 h-2.5 rounded-full shrink-0 bg-rose-800 ring-2 ring-rose-700/30" />
+                        <span className={isNightMode ? 'text-zinc-100 font-black' : 'text-slate-900 font-black'}>
+                          {language === 'en' ? 'Burgundy Mode' : 'الوضع العنابي'}
+                        </span>
+                      </button>
+                    )}
+                  </div>
+                </div>,
+                document.body
+              )}
+
+              {!isEditMode && showPageGuides && (
                 <button
                   id="smart-home-guide-btn"
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
-                    setShowSmartHomeGuide(true);
+                    handleOpenSmartHomeGuide();
                   }}
-                  className="p-1 sm:p-1.5 flex items-center justify-center transition-all duration-150 active:scale-90 hover:scale-110 cursor-pointer select-none shrink-0 bg-transparent border-none outline-none text-amber-700 dark:text-amber-400 hover:text-amber-900 dark:hover:text-amber-200"
+                  className={`p-1 sm:p-1.5 flex items-center justify-center transition-transform duration-150 active:scale-90 hover:scale-110 cursor-pointer select-none shrink-0 bg-transparent border-none outline-none ${
+                    isNightMode
+                      ? 'text-amber-400 hover:text-amber-300'
+                      : isSkyTheme
+                        ? 'text-sky-700 hover:text-sky-900'
+                        : isEmeraldTheme
+                          ? 'text-emerald-700 hover:text-emerald-900'
+                          : 'text-amber-700 hover:text-amber-900'
+                  }`}
                   title={language === 'en' ? 'Home Guide (Night mode & Cards reordering)' : 'إرشادات الوضع الليلي وترتيب البطاقات'}
                   aria-label="Home Guide"
                 >
@@ -913,77 +1218,134 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
               )}
             </div>
 
-            {/* اسم التطبيق في منتصف الشريط تماماً بصرف النظر عن عدد الأيقونات يميناً أو يساراً */}
-            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center text-center z-10 px-0.5 max-w-[calc(100%-120px)] pointer-events-none">
-              <h1 
-                id="app-title" 
-                onPointerDown={startTitleLongPress}
-                onPointerUp={cancelTitleLongPress}
-                onPointerLeave={cancelTitleLongPress}
-                onPointerCancel={cancelTitleLongPress}
-                onPointerMove={handleTitlePointerMove}
-                onContextMenu={(e) => e.preventDefault()}
-                className={`pointer-events-auto cursor-pointer select-none text-[19px] sm:text-[22px] md:text-[24px] font-black tracking-tight text-center truncate transition-all leading-tight font-cairo ${
-                  isEditMode 
-                    ? 'scale-105 text-amber-500 animate-pulse ring-1.5 ring-amber-500/60 rounded-xl px-2 py-0.5 bg-amber-500/10' 
-                    : 'active:opacity-85'
-                }`} 
-                style={{
-                  color: isNightMode ? '#F59E0B' : '#78350F',
-                  fontFamily: "'Cairo', sans-serif",
-                  textShadow: isNightMode 
-                    ? '0 0 10px rgba(245,158,11,0.5), 0 2px 4px rgba(0,0,0,0.8)' 
-                    : '0 1px 1px rgba(255, 255, 255, 0.9), 0 2px 4px rgba(180, 83, 9, 0.18)',
-                  textRendering: 'optimizeLegibility',
-                  WebkitFontSmoothing: 'antialiased',
-                  userSelect: 'none',
-                  WebkitUserSelect: 'none'
-                }}
-                title={isEditMode 
-                  ? (language === 'en' ? 'Long press to save cards layout' : 'اضغط مطولاً لحفظ ترتيب البطاقات') 
-                  : (language === 'en' ? 'Long press to edit & reorder cards' : 'اضغط مطولاً لتعديل وترتيب البطاقات')}
-              >
-                {t('app.name', 'مُصْحَفُ أَحْمَدَ وَلَيْلَى')}
-              </h1>
-              {isEditMode && (
-                <span className="pointer-events-none text-[9.5px] sm:text-[10px] font-bold text-amber-600 dark:text-amber-400 font-cairo tracking-tight block whitespace-nowrap leading-tight mt-0.5 animate-bounce">
-                  {language === 'en' ? '✎ Hold title to save' : '✎ اضغط مطولاً للحفظ'}
-                </span>
+            {/* اسم التطبيق في منتصف الشريط تماماً / أو الزران مُمَركَزان في المنتصف عند وضع التعديل */}
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center text-center z-30 px-0.5 max-w-[calc(100%-80px)]">
+              {isEditMode ? (
+                /* في وضع التعديل: إخفاء اسم التطبيق والاكتفاء بالزرين فقط مع توسيطهما في المنتصف تماماً */
+                <div className="flex items-center justify-center gap-2 sm:gap-2.5 animate-in fade-in zoom-in-95 duration-200">
+                  <button
+                    type="button"
+                    onClick={handleToggleEditMode}
+                    className="px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-full active:scale-95 text-white font-black text-xs sm:text-sm flex items-center gap-1 sm:gap-1.5 shadow-md transition-transform duration-150 cursor-pointer font-cairo whitespace-nowrap"
+                    style={editStyles.saveBtn}
+                    title={language === 'en' ? 'Save Cards Layout' : 'حفظ ترتيب البطاقات'}
+                  >
+                    <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[3]" />
+                    <span>{language === 'en' ? 'Save' : 'حفظ'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      window.dispatchEvent(new CustomEvent('reset-home-cards-layout'));
+                      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                        try { navigator.vibrate(50); } catch {}
+                      }
+                      setToastMessage(language === 'en' ? 'Restored default layout ✓' : 'تمت استعادة الترتيب الافتراضي ✓');
+                    }}
+                    className="px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-full active:scale-95 text-white font-bold text-xs sm:text-sm flex items-center gap-1 sm:gap-1.5 shadow-md transition-transform duration-150 cursor-pointer font-cairo whitespace-nowrap"
+                    style={editStyles.resetBtn}
+                    title={language === 'en' ? 'Restore Default Layout' : 'استعادة الترتيب الافتراضي'}
+                  >
+                    <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    <span>{language === 'en' ? 'Reset' : 'استعادة'}</span>
+                  </button>
+                </div>
+              ) : (
+                <h1 
+                  id="app-title" 
+                  onPointerDown={startTitleLongPress}
+                  onPointerUp={cancelTitleLongPress}
+                  onPointerLeave={cancelTitleLongPress}
+                  onPointerCancel={cancelTitleLongPress}
+                  onPointerMove={handleTitlePointerMove}
+                  onContextMenu={(e) => e.preventDefault()}
+                  className="pointer-events-auto cursor-pointer select-none text-[19px] sm:text-[22px] md:text-[24px] font-black tracking-tight text-center truncate transition-opacity duration-150 leading-tight font-cairo active:opacity-85" 
+                  style={{
+                    color: isNightMode 
+                      ? '#F59E0B' 
+                      : isSkyTheme 
+                        ? '#0369a1' 
+                        : isEmeraldTheme 
+                          ? '#047857' 
+                          : isBurgundyTheme
+                            ? '#881337'
+                            : '#78350F',
+                    fontFamily: "'Cairo', sans-serif",
+                    textShadow: isNightMode 
+                      ? '0 0 10px rgba(245,158,11,0.5), 0 2px 4px rgba(0,0,0,0.8)' 
+                      : isSkyTheme 
+                        ? '0 1px 2px rgba(2, 132, 199, 0.15)' 
+                        : isEmeraldTheme 
+                          ? '0 1px 2px rgba(5, 150, 105, 0.15)' 
+                          : isBurgundyTheme
+                            ? '0 1px 2px rgba(136, 19, 55, 0.15)'
+                            : '0 1px 1px rgba(255, 255, 255, 0.9), 0 2px 4px rgba(180, 83, 9, 0.18)',
+                    textRendering: 'optimizeLegibility',
+                    WebkitFontSmoothing: 'antialiased',
+                    userSelect: 'none',
+                    WebkitUserSelect: 'none'
+                  }}
+                  title={language === 'en' ? 'Long press to edit & reorder cards' : 'اضغط مطولاً لتعديل وترتيب البطاقات'}
+                >
+                  {t('app.name', 'مُصْحَفُ أَحْمَدَ وَلَيْلَى')}
+                </h1>
               )}
             </div>
 
-            {/* الطرف الأيسر: زر الحفظ أثناء وضع التعديل، أو زر اللغة بالوضع العادي */}
-            <div className="flex items-center gap-1.5 shrink-0 z-20">
-              {isEditMode ? (
-                <button
-                  type="button"
-                  onClick={handleToggleEditMode}
-                  className="px-2.5 py-1 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs flex items-center gap-1 shadow-sm active:scale-95 transition-all cursor-pointer font-cairo"
-                  title={language === 'en' ? 'Save Cards Layout' : 'حفظ ترتيب البطاقات'}
-                >
-                  <Check className="w-3.5 h-3.5 stroke-[3]" />
-                  <span>{language === 'en' ? 'Save' : 'حفظ'}</span>
-                </button>
-              ) : (
-                <button
-                  id="language-btn"
-                  data-id="language-button"
-                  type="button"
-                  onClick={toggleLanguage}
-                  className="p-1 sm:p-1.5 flex items-center justify-center transition-all duration-150 active:scale-90 hover:scale-110 cursor-pointer select-none shrink-0 bg-transparent border-none outline-none"
-                  title={language === 'ar' ? 'English' : 'اللغة العربية'}
-                  aria-label={language === 'ar' ? 'English' : 'اللغة العربية'}
-                >
-                  <span 
-                    className="text-[17px] sm:text-[18px] font-black font-cairo tracking-tight pointer-events-none leading-none"
-                    style={{
-                      color: isNightMode ? '#F59E0B' : '#78350F',
-                      textShadow: isNightMode ? '0 0 8px rgba(245,158,11,0.4)' : '0 1px 2px rgba(255, 255, 255, 0.9)'
-                    }}
+            {/* الطرف الأيسر: أيقونة الإعدادات وزر اللغة بالوضع العادي */}
+            <div className="flex items-center gap-1 sm:gap-1.5 shrink-0 z-20">
+              {!isEditMode && (
+                <>
+                  <button
+                    id="home-settings-toggle-btn"
+                    type="button"
+                    onClick={() => setShowSettingsModal(true)}
+                    className="p-1 sm:p-1.5 flex items-center justify-center transition-transform duration-150 active:scale-90 hover:scale-110 cursor-pointer select-none shrink-0 bg-transparent border-none outline-none"
+                    title={language === 'en' ? 'App & Home Settings' : 'إعدادات التطبيق والرئيسية'}
+                    aria-label={language === 'en' ? 'App & Home Settings' : 'إعدادات التطبيق والرئيسية'}
                   >
-                    {language === 'ar' ? 'Ar' : 'En'}
-                  </span>
-                </button>
+                    <Settings 
+                      className="w-[19px] h-[19px] sm:w-[21px] sm:h-[21px] pointer-events-none stroke-[2.3]"
+                      style={{
+                        color: headerIconColor,
+                        filter: isNightMode ? 'drop-shadow(0 0 8px rgba(245,158,11,0.6))' : 'drop-shadow(0 1px 2px rgba(180,83,9,0.2))'
+                      }} 
+                    />
+                  </button>
+
+                  <button
+                    id="language-btn"
+                    data-id="language-button"
+                    type="button"
+                    onClick={() => {
+                      const nextLang = language === 'ar' ? 'en' : 'ar';
+                      toggleLanguage();
+                      showGlobalAppToast(nextLang === 'en' ? 'Language: English' : 'اللغة: العربية');
+                    }}
+                    className="p-1 sm:p-1.5 flex items-center justify-center transition-transform duration-150 active:scale-90 hover:scale-110 cursor-pointer select-none shrink-0 bg-transparent border-none outline-none"
+                    title={language === 'ar' ? 'English' : 'اللغة العربية'}
+                    aria-label={language === 'ar' ? 'English' : 'اللغة العربية'}
+                  >
+                    <span 
+                      className="text-[17px] sm:text-[18px] font-black font-cairo tracking-tight pointer-events-none leading-none"
+                      style={{
+                        color: headerIconColor,
+                        textShadow: isNightMode 
+                          ? '0 0 8px rgba(245,158,11,0.6)' 
+                          : isSkyTheme 
+                            ? '0 1px 2px rgba(2, 132, 199, 0.25)' 
+                            : isEmeraldTheme 
+                              ? '0 1px 2px rgba(5, 150, 105, 0.25)' 
+                              : isBurgundyTheme
+                                ? '0 1px 2px rgba(159, 18, 57, 0.25)'
+                                : '0 1px 2px rgba(180, 83, 9, 0.25)'
+                      }}
+                    >
+                      {language === 'ar' ? 'Ar' : 'En'}
+                    </span>
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -995,26 +1357,35 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
           id="main-menu-scroll-container"
           onScroll={(e) => {
             const st = e.currentTarget.scrollTop;
+            try {
+              sessionStorage.setItem('main_menu_scroll_top', String(st));
+            } catch {}
             window.dispatchEvent(new CustomEvent('app-scroll', { detail: { scrollTop: st } }));
           }}
-          className="flex-1 overflow-y-auto pb-3 sm:pb-4 pb-[calc(env(safe-area-inset-bottom,0px)+0.75rem)] no-scrollbar"
+          className="flex-1 min-h-0 overflow-y-auto app-scroll-safe no-scrollbar"
         >
           {/* نص الدعاء بأول الصفحة والشريط الإعلاني - في بداية الصفحة كما كان */}
           <div className="w-full max-w-lg mx-auto text-center select-none pt-2 px-3 pb-0">
-            <div className="relative h-[27.5px] max-w-sm mx-auto flex items-center justify-center px-2">
+            <div className="relative h-[27.5px] max-w-sm mx-auto flex items-center justify-center px-2 overflow-hidden" style={{ contain: 'layout paint' }}>
               <p 
                 className={`text-[12.5px] sm:text-[13.5px] font-bold leading-tight tracking-normal text-center font-cairo ${isNightMode ? '' : 'drop-shadow-sm'}`}
                 style={{ 
-                  color: isEditMode 
-                    ? undefined 
-                    : (isNightMode ? '#F59E0B' : '#854D0E'),
+                  color: isNightMode 
+                    ? '#FFFFFF' 
+                    : isSkyTheme 
+                      ? '#0284C7' 
+                      : isEmeraldTheme 
+                        ? '#059669' 
+                        : isBurgundyTheme 
+                          ? '#9F1239' 
+                          : (theme.palette?.[0] || '#854D0E'),
                   fontFamily: "'Cairo', sans-serif",
                   textShadow: isNightMode ? 'none' : '0 1px 1px rgba(255, 255, 255, 0.8)',
                   textRendering: 'optimizeLegibility',
                   WebkitFontSmoothing: 'antialiased'
                 }}
               >
-                {isEditMode ? (language === 'en' ? 'Reorder cards and hold title to save' : 'رتّب البطاقات بالأسهم واضغط مطولاً على اسم التطبيق للحفظ') : t('app.subtitle', 'نرجوا الدعاء لهم بالرحمة والمغفرة')}
+                {t('app.subtitle', 'نرجوا الدعاء لهم بالرحمة والمغفرة')}
               </p>
 
               {/* الشريط الإعلاني المتحرك إذا تم تفعيله */}
@@ -1022,7 +1393,7 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
             </div>
           </div>
 
-          <div className="px-3 sm:px-4 pt-1">
+          <div className="pt-1 px-3 sm:px-4">
             <ModernHomeView
               isEditMode={isEditMode}
               setIsEditMode={setIsEditMode}
@@ -1049,10 +1420,9 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
               setShowExpandedUpcomingEventModal={setShowExpandedUpcomingEventModal}
               shareTextAr={APP_SHARE_TEXT}
               shareTextEn={APP_SHARE_TEXT_EN}
-              onOpenGuide={() => setShowSmartHomeGuide(true)}
+              onOpenGuide={handleOpenSmartHomeGuide}
               onToggleNightMode={toggleNightMode}
             />
-            <div className="w-full h-2 sm:h-3 shrink-0 pointer-events-none" />
           </div>
         </div>
       </div>
@@ -1071,6 +1441,7 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
             : `${currentHistoryMemoryEvent.hijriYearAr} • ${currentHistoryMemoryEvent.gregorianYearAr}`}
           setToastMessage={setToastMessage}
           isGolden={homeLayoutMode === 'modern'}
+          onNextEvent={handleNextHistoryMemoryEvent}
         />
       )}
 
@@ -1088,6 +1459,7 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
             : `${onThisDayEvent.dateStr} • عام ${formatNumber(onThisDayEvent.year)} م`}
           setToastMessage={setToastMessage}
           isGolden={homeLayoutMode === 'modern'}
+          onNextEvent={handleNextEvent}
         />
       )}
 
@@ -1097,7 +1469,7 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
           isOpen={showExpandedUpcomingEventModal}
           onClose={() => setShowExpandedUpcomingEventModal(false)}
           categoryTitle={t('islamic_events.title', 'المناسبات الإسلامية')}
-          text={upcomingEvents[eventIndex]?.name || ''}
+          text={translateEventName(upcomingEvents[eventIndex]?.name || '')}
           subtitle={(() => {
             const ev = upcomingEvents[eventIndex];
             if (!ev) return '';
@@ -1106,16 +1478,20 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
               : (ev.daysRemaining > 0
                   ? (language === 'en' ? `${formatNumber(ev.daysRemaining)} days remaining` : `المتبقي ${formatNumber(ev.daysRemaining)} يوم`)
                   : (language === 'en' ? `Passed ${formatNumber(Math.abs(ev.daysRemaining))} days ago` : `مرت منذ ${formatNumber(Math.abs(ev.daysRemaining))} يوم`));
-            return `${ev.dateStr} • ${ev.gregorianDateStr} (${status})`;
+            const hist = language === 'en'
+              ? (ev.historicalYearEn ? `Historical Date: ${ev.historicalYearEn} • ` : '')
+              : (ev.historicalYearAr ? `تاريخ الحدث الأصلي: ${ev.historicalYearAr} • ` : '');
+            return `${hist}${ev.dateStr} • ${ev.gregorianDateStr} (${status})`;
           })()}
           setToastMessage={setToastMessage}
           isGolden={homeLayoutMode === 'modern'}
+          onNextEvent={() => setEventIndex(prev => (prev + 1) % (upcomingEvents.length || 1))}
         />
       )}
 
       <CommunitySpotlightGuide
         guideKey="smart_home_page_spotlight"
-        steps={SMART_HOME_PAGE_STEPS}
+        steps={smartHomeSteps}
         isOpen={showSmartHomeGuide}
         onClose={() => setShowSmartHomeGuide(false)}
         isEn={language === 'en'}
@@ -1142,13 +1518,20 @@ function MainMenu({ onNavigate, onOpenThemes, onOpenSideMenu }) {
         isLandscape={isLandscape}
       />
 
+      <HomeScreenSettingsModal
+        isOpen={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
+        onNavigate={onNavigate}
+      />
+
       <AnimatePresence>
         {toastMessage && (
             <motion.div 
-                initial={{ opacity: 0, y: 50, x: '-50%' }}
+                initial={{ opacity: 0, y: 30, x: '-50%' }}
                 animate={{ opacity: 1, y: 0, x: '-50%' }}
-                exit={{ opacity: 0, y: 50, x: '-50%' }}
-                className="fixed bottom-24 left-1/2 z-[200] bg-gray-800 text-white px-6 py-3 rounded-full shadow-lg font-bold text-sm text-center whitespace-nowrap"
+                exit={{ opacity: 0, y: 30, x: '-50%' }}
+                className="fixed bottom-[calc(var(--app-bottom-clearance,5.25rem)+1rem)] left-1/2 z-[200] max-w-[85vw] w-max px-4 py-2.5 rounded-2xl font-bold text-xs sm:text-sm text-center leading-normal break-words pointer-events-none shadow-xl"
+                style={editStyles.toast}
             >
                 {toastMessage}
             </motion.div>

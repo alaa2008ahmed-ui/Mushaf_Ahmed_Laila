@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { JUZ_MAP, toArabic, SURAH_INFO, HIZB_QUARTERS, SURAH_NAMES_EN } from './constants';
 import SurahInfoModal from './SurahInfoModal';
 import { useLanguage } from '../../context/LanguageContext';
+import { useShowPageGuides } from '../../utils/guideManager';
 
 interface SurahJuzModalProps {
     type: 'surah' | 'juz' | 'hizb';
@@ -30,6 +31,7 @@ const SurahJuzModal: React.FC<SurahJuzModalProps> = ({
     onOpenGuide,
     isGuideOpen
 }) => {
+    const showPageGuides = useShowPageGuides();
     const { language, isRTL } = useLanguage();
     const isEn = language === 'en';
     const isEnglishMode = isEn || readingMode === 'bilingual' || readingMode === 'translation';
@@ -362,7 +364,7 @@ const SurahJuzModal: React.FC<SurahJuzModalProps> = ({
              dir={isRTL ? "rtl" : "ltr"}
              onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
             <div 
-                className={`modal-skinned w-full ${isLandscape ? 'max-w-4xl h-full rounded-none max-h-screen' : 'max-w-4xl rounded-3xl max-h-[90vh]'} shadow-2xl overflow-hidden flex flex-col border-0 animate-modal-enter`}
+                className={`modal-skinned w-full ${isLandscape ? 'max-w-4xl h-full rounded-none max-h-[100dvh]' : 'max-w-4xl rounded-3xl max-h-[90dvh]'} shadow-2xl overflow-hidden flex flex-col border-0 animate-modal-enter`}
                 style={{ border: 'none', outline: 'none' }}
                 onClick={e => e.stopPropagation()}
             >
@@ -384,7 +386,7 @@ const SurahJuzModal: React.FC<SurahJuzModalProps> = ({
                                 />
                                 <i className={`fas fa-search absolute ${isRTL ? 'right-3.5' : 'left-3.5'} top-1/2 -translate-y-1/2 text-sm opacity-60`}></i>
                             </div>
-                            {!isLandscape && onOpenGuide && (
+                            {!isLandscape && onOpenGuide && showPageGuides && (
                                 <button
                                     type="button"
                                     onClick={(e) => {
@@ -403,7 +405,7 @@ const SurahJuzModal: React.FC<SurahJuzModalProps> = ({
 
                 {listsContent}
 
-                <div className="p-4 theme-header-bg flex justify-center gap-4 border-0">
+                <div className={`p-4 ${isLandscape ? 'modal-sheet-safe-bottom' : ''} theme-header-bg flex justify-center gap-4 border-0`}>
                     <button 
                         onClick={() => onSelect(selectedSurah, selectedAyah)}
                         className="theme-accent-btn px-8 py-2.5 rounded-2xl font-bold border-0 quran-raised-btn-selected active:scale-95 transition"

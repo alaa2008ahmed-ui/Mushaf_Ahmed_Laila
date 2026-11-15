@@ -1,0 +1,148 @@
+import { PassageStoryMap } from './asbabNuzulData';
+
+// مقاطع وأسباب نزول وتفاسير سورة العاديات (Al-'Adiyat) - 11 مقطعاً تفصيلياً
+export const ADIYAT_DETAILED_PASSAGES: PassageStoryMap[] = [
+  {
+    surahNumber: 100,
+    startAyah: 1,
+    endAyah: 1,
+    storyTitleAr: "سبب النزول وقسم الله بخيل سرية المنذر بن عمرو وهي تعدو وتضبح",
+    storyTitleEn: "Cause of Revelation & Oath by the Galloping Panting Warhorses of Al-Mundhir’s Expedition",
+    causeAr: "افتتاح السورة بقسم عظيم بخيل الجهاد: {وَالْعَادِيَاتِ ضَبْحًا}.\nروى ابن عباس ومقاتل في سبب نزول السورة أن النبي ﷺ بعث سرية خيل بقيادة المنذر بن عمرو الأنصاري إلى حي من كنانة، فأبطأ خبرهم شهراً، فأرجف المنافقون بالمدينة وقالوا: قُتلوا جميعاً! فأنزل الله السورة يبشر نبيه بسلامتهم ونصرهم.\nو\"العاديات\": الخيل التي تعدو مسرعة في سبيل الله، و\"ضبحاً\": صوت أنفاسها المسموع من جوفها عند شدة الجري والعدو، مما يدل على عظم البذل والإقدام في نصرة الحق.",
+    causeEn: "Opening with a majestic divine oath by charging warhorses: {By the racers, panting}. In the context of revelation, the Prophet ﷺ sent a cavalry detachment under Al-Mundhir ibn Amr whose news was delayed for a month, leading hypocrites in Madinah to spread rumors of their demise. Allah revealed this Surah reassuring the Prophet ﷺ of their safety and triumph, swearing by the loud panting breath of noble horses sprinting in righteous sacrifice.",
+    sourceAr: "أسباب النزول للواحدي، تفسير الطبري، تفسير ابن كثير، مسند البزار",
+    sourceEn: "Asbab Al-Nuzul by Al-Wahidi, Tafsir al-Tabari, Tafsir Ibn Kathir",
+    lessonAr: "• عناية الله بجنوده المخلصين وبشارته لنبيه ﷺ بسلامة السرية قبل وصول البريد.\n• شرف الإعداد والقوة وبذل الجهد في نصرة الحق وحماية المستضعفين.",
+    lessonEn: "• Divine care protecting faithful defenders and reassuring the Prophet ﷺ before messengers arrive.\n• The nobility of courageous readiness and exertion in defense of truth."
+  },
+  {
+    surahNumber: 100,
+    startAyah: 2,
+    endAyah: 2,
+    storyTitleAr: "الموريات قدحاً: تطاير الشرر من حوافر الخيل في ظلمة السير نحو العدو",
+    storyTitleEn: "The Producers of Sparks: Steel Hooves Striking Fire Upon Mountain Stones",
+    causeAr: "يواصل السياق تصوير اندفاع تلك الخيل في سيرها الليلي نحو هدفها: {فَالْمُورِيَاتِ قَدْحًا}.\n\"الموريات\": الخيل التي توري النار وتخرجها، و\"قدحاً\": بصك حوافرها الحجارة الصلبة في ظلام الليل فيتطاير الشرر منها من شدة العدو وقوة الضرب على الصخر. وهذا التعبير القرآني البديع يجسد عزيمة الفرسان الذين لم يثنهم وعورة الطريق ولا ظلمة الليل عن أداء الأمانة.",
+    causeEn: "Continuing the vivid portrayal of the night march: {And the producers of sparks [when] striking}. The horses' iron-clad hooves forcefully struck stony desert trails under darkness, sparking flames from sheer momentum. This graphic imagery immortalizes the unwavering resolve of believers undeterred by rugged terrain or nightfall.",
+    sourceAr: "تفسير الطبري، تفسير القرطبي، تفسير ابن كثير",
+    sourceEn: "Tafsir al-Tabari, Tafsir al-Qurtubi, Tafsir Ibn Kathir",
+    lessonAr: "• استشعار مشقة السير في طاعة الله وأن الأثر الصادق يترك علامة واضحة كالشرر المضيء.\n• الثبات والمواصلة في طريق الخير رغم الصعاب ووعورة المسالك.",
+    lessonEn: "• Recognizing that sincere striving leaves enduring sparks of devotion through hardship.\n• Persevering steadfastly in righteousness despite rugged obstacles."
+  },
+  {
+    surahNumber: 100,
+    startAyah: 3,
+    endAyah: 3,
+    storyTitleAr: "المغيرات صبحاً: مباغتة العدو وقت الفجر وسنة النبي ﷺ في الإغارة",
+    storyTitleEn: "The Chargers at Dawn: Decisive Morning Arrival After Nighttime Restraint",
+    causeAr: "تصوير لحظة الوصول والمباغتة المباركة: {فَالْمُغِيرَاتِ صُبْحًا}.\nكان من هدي النبي ﷺ وسراياه إذا اقتربوا من قوم ليلاً ألا يغيروا عليهم حتى يصبحوا وينتظروا سماع الأذان؛ فإن سمعوا أذاناً كفوا عنهم، وإلا أغاروا عليهم مع إشراق الصبح. فاقتربت سرية المنذر بن عمرو في عتمة الليل ثم أغارت عند الفجر على الأعداء مباغتةً فحقق الله لهم الظفر.",
+    causeEn: "Depicting the decisive arrival: {And the chargers at dawn}. It was the Prophet’s ﷺ chivalrous practice when approaching settlements at night to wait until daybreak to hear if the Adhan (call to prayer) was sounded; if no Muslim call was heard, they launched the dawn charge. The detachment struck decisively at first light and attained victory.",
+    sourceAr: "صحيح البخاري، تفسير ابن كثير، أسباب النزول للواحدي",
+    sourceEn: "Sahih al-Bukhari, Tafsir Ibn Kathir, Asbab Al-Nuzul by Al-Wahidi",
+    lessonAr: "• التزام الأخلاق النبوية والتثبت حتى في أوقات القتال قبل الإقدام.\n• بركة وقت الصبح والبكور في إنجاز المهام الجليلة وتحقيق الفتح.",
+    lessonEn: "• Upholding Prophetic ethics and careful verification even in conflict.\n• The immense blessing of early dawn hours for decisive and noble endeavors."
+  },
+  {
+    surahNumber: 100,
+    startAyah: 4,
+    endAyah: 4,
+    storyTitleAr: "فأثرن به نقعاً: هيجان الغبار الكثيف في ساحة الإقدام والشجاعة",
+    storyTitleEn: "Stirring Up Clouds of Dust: The Momentum of Valor in the Arena",
+    causeAr: "استكمال مشهد الميدان عند الصبح: {فَأَثَرْنَ بِهِ نَقْعًا}.\n\"النقع\": الغبار الساطع الكثيف الذي تثيره سنابك الخيل في موضع إغارتها ومكان عدوها؛ والضمير في \"به\" يعود إما على المكان أو على وقت الصبح، أو على العدو والضبح. وهو تصوير حسي يملأ المشهد حركةً وحيويةً ورهبةً، يظهر أن أهل الإيمان لم يتقاعسوا ولم يهابوا الموت في سبيل عقيدتهم.",
+    causeEn: "Completing the kinetic battlefield scene: {Stirring up thereby [clouds of] dust}. \"Naq'a\" denotes thick rising dust kicked up by thundering hooves at the moment of the dawn charge. The vivid depiction captures courageous momentum, testifying that sincere believers did not hesitate when duty called.",
+    sourceAr: "تفسير الطبري، التحرير والتنوير لابن عاشور، تفسير السعدي",
+    sourceEn: "Tafsir al-Tabari, Al-Tahrir wa Al-Tanwir, Tafsir al-Sa'di",
+    lessonAr: "• التضحية بالجهد والمال والنفس دون تقاعس متى استدعى الدفاع عن الحق ذلك.\n• البلاغة القرآنية الفذة التي تنقل السامع إلى قلب الحدث بالصورة والصوت والحركة.",
+    lessonEn: "• Unflinching readiness to sacrifice comfort when truth demands protection.\n• Incomparable Quranic rhetoric conveying sound, sight, and motion simultaneously."
+  },
+  {
+    surahNumber: 100,
+    startAyah: 5,
+    endAyah: 5,
+    storyTitleAr: "فوسطن به جمعاً: اقتحام صفوف الأعداء وتفريق جموع الباطل",
+    storyTitleEn: "Penetrating the Midst of the Host: Shattering the Ranks of Hostility",
+    causeAr: "ذروة المشهد البطولي قبل الانتقال لجواب القسم: {فَوَسَطْنَ بِهِ جَمْعًا}.\nأي توسطت الخيل بفرسانها جمعَ الأعداء فشقّت صفوفهم وبدّدت شملهم، وفرّقت جموع المتآمرين في عقر دارهم، مما أثبت شجاعة الصحابة وقوة توكلهم على الله، وأخرس ألسنة المرجفين في المدينة الذين راهنوا على هزيمتهم.",
+    causeEn: "The climax of the oath scene: {Arriving thereby in the center collectively}. The cavalry penetrated deep into the heart of the hostile gathering, shattering their formation and proving the falsity of Madinah’s hypocrites. True reliance on Allah transforms outnumbered defenders into an unstoppable force.",
+    sourceAr: "تفسير ابن كثير، تفسير البغوي، تفسير الطبري",
+    sourceEn: "Tafsir Ibn Kathir, Tafsir al-Baghawi, Tafsir al-Tabari",
+    lessonAr: "• الشجاعة المتوكلة على الله تفتح الثغرات في صفوف الباطل مهما عظمت عدته.\n• خيبة ظن المنافقين والمرجفين أمام نصر الله لأوليائه الصادقين.",
+    lessonEn: "• Courage rooted in trust in Allah breaks through daunting opposition.\n• Rumors of cynics dissolve instantly when Allah grants triumph to His devoted servants."
+  },
+  {
+    surahNumber: 100,
+    startAyah: 6,
+    endAyah: 6,
+    storyTitleAr: "جواب القسم: جحود الإنسان لربه (الكنود الذي يعد المصائب وينسى النعم)",
+    storyTitleEn: "The Climax of the Oath: Humanity’s Ingratitude (Al-Kanud) Toward Its Lord",
+    causeAr: "بعد خمسة أقسام متتالية بالخيل الوفية لصاحبها يأتي جواب القسم الصادم عن الإنسان الجاحد: {إِنَّ الْإِنسَانَ لِرَبِّهِ لَكَنُودٌ}.\nقال الحسن البصري وأبو أمامة الباهلي عن النبي ﷺ: \"الكنود هو الذي يأكل وحده، ويمنع رفده، ويضرب عبده\"، وقال ابن عباس: \"هو الكفور لنعم الله، الذي يعدّ المصائب وينسى النعم!\". فالفرس البهيم يفي لصاحبه في أحلك اللحظات، بينما كثير من البشر يكفرون بنعم خالقهم المنعم المتفضل.",
+    causeEn: "After five oaths by faithful warhorses loyal to their riders, the verdict drops starkly: {Indeed mankind, to his Lord, is ungrateful (Kanud)}. Ibn Abbas defined \"Kanud\" as one who counts every hardship and forgets countless divine blessings, while Al-Hasan noted it describes a selfish miser. Even a beast shows loyalty in danger, yet mankind frequently displays ingratitude toward its Generous Creator.",
+    sourceAr: "تفسير الطبري، تفسير ابن كثير، مسند أحمد، شعب الإيمان للبيهقي",
+    sourceEn: "Tafsir al-Tabari, Tafsir Ibn Kathir, Musnad Ahmad, Al-Bayhaqi",
+    lessonAr: "• استحضار نعم الله الدائمة وتجنب صفة \"الكنود\" التي تركز على النقص وتجحد العطاء.\n• المفارقة العجيبة بين وفاء الدواب لأربابها وجحود كثير من البشر لخالقهم سبحانه.",
+    lessonEn: "• Guarding against the \"Kanud\" mindset that magnifies trials while forgetting abundant blessings.\n• Drawing moral humility from comparing animal loyalty with human forgetfulness of Allah."
+  },
+  {
+    surahNumber: 100,
+    startAyah: 7,
+    endAyah: 7,
+    storyTitleAr: "وإنه على ذلك لشهيد: شهادة أفعال الإنسان وواقعه على جحوده وتقصيره",
+    storyTitleEn: "Witness Against Himself: Human Conduct Openly Testifying to Ingratitude",
+    causeAr: "تقرير الحجة الدامغة على النفس البشرية: {وَإِنَّهُ عَلَىٰ ذَٰلِكَ لَشَهِيدٌ}.\nأي وإن الإنسان نفسه شاهد على كفرانه وجحوده؛ بلسان حاله وتصرفاته الظاهرة وتضجره عند البلاء وغفلته عن الشكر عند الرخاء، وقيل: إن الله على ذلك لشهيد لا يخفى عليه شيء من تصرفات عبده، وكلا المعنيين حق متلازم يلزم الإنسان بالمحاسبة الفورية لنفسه.",
+    causeEn: "Establishing undeniable proof: {And indeed, he is to that a witness}. Both human conduct—murmuring during trials yet ignoring gratitude in prosperity—and the all-seeing Creator Himself stand as undeniable witnesses against human ingratitude, leaving no room for denial or excuses.",
+    sourceAr: "تفسير الطبري، تفسير القرطبي، تفسير ابن كثير",
+    sourceEn: "Tafsir al-Tabari, Tafsir al-Qurtubi, Tafsir Ibn Kathir",
+    lessonAr: "• صدق الإنسان مع نفسه والاعتراف بتقصيره هو أول خطوات التوبة والشكر.\n• لا عذر للجحود لأن أفعال المرء وواقع حياته شاهدة عليه قبل شهادة غيره.",
+    lessonEn: "• Honest self-awareness and admitting personal shortcomings mark the beginning of repentance.\n• Actions testify loudly before any words are spoken."
+  },
+  {
+    surahNumber: 100,
+    startAyah: 8,
+    endAyah: 8,
+    storyTitleAr: "وإنه لحب الخير لشديد: هوس التعلق بالمال وبخل النفس عند العطاء",
+    storyTitleEn: "Intense Love for Wealth: How Material Greed Fuels Spiritual Ingratitude",
+    causeAr: "تشخيص الداء النفسي الذي يولد الجحود: {وَإِنَّهُ لِحُبِّ الْخَيْرِ لَشَدِيدٌ}.\n\"الخير\" في هذا السياق القرآني هو المال والمتاع الدنيوي (كما في قوله تعالى: {إِن تَرَكَ خَيْرًا}). فالإنسان بطبعه لشديد المحبة للمال، وبسبب هذا الحرص الشديد يبخل بحقوق الله والعباد، ويعظم في عينه الدرهم الفاني وينسى الرزاق الباقي.",
+    causeEn: "Diagnosing the psychological root of ingratitude: {And indeed he is, in love of wealth (Khayr), intense}. In Quranic usage here, \"Khayr\" refers specifically to material riches. Obsessive attachment to wealth hardens hearts into stinginess, blinding people to the Giver of every bounty.",
+    sourceAr: "تفسير الطبري، تفسير البغوي، تفسير السعدي",
+    sourceEn: "Tafsir al-Tabari, Tafsir al-Baghawi, Tafsir al-Sa'di",
+    lessonAr: "• تهذيب غريزة حب المال بالإنفاق والصدقة حتى لا يتحول المال من خادم إلى معبود.\n• إدراك أن المال عارية مستردة لا تنفع صاحبها إلا إذا قدّمها لآخرته.",
+    lessonEn: "• Taming natural attachment to wealth through habitual charity so money remains a tool, not an idol.\n• Remembering wealth is a temporary trust whose lasting value lies only in what is spent for Allah."
+  },
+  {
+    surahNumber: 100,
+    startAyah: 9,
+    endAyah: 9,
+    storyTitleAr: "بعثرة ما في القبور: نداء التذكير الإلهي بانقلاب باطن الأرض وخروج الموتى",
+    storyTitleEn: "Scattering the Contents of Graves: The Awakening Question of Resurrection",
+    causeAr: "استفهام إنكاري يوقظ الغافلين من سكرة التنافس على المال: {أَفَلَا يَعْلَمُ إِذَا بُعْثِرَ مَا فِي الْقُبُورِ}.\n\"بُعثِر\": أي قلب ترابها وأُثير وأُخرج ما في باطنها من الأموات أحياءً للحساب بين يدي الله! فكيف يغتر المرء بما يجمع من حطام الدنيا وهو موقن أن القبر سيُبعثر ويخرج منه مجرداً من ماله إلا من عمله الصالح؟",
+    causeEn: "A piercing rhetorical question shattering material delusion: {Does he not know that when the contents of the graves are scattered}. \"Bu'thira\" signifies overturning earth and expelling all buried bodies alive for final reckoning. Why obsess over hoarding possessions that will remain behind when the tombs burst open?",
+    sourceAr: "تفسير ابن كثير، تفسير الطبري، تفسير السعدي",
+    sourceEn: "Tafsir Ibn Kathir, Tafsir al-Tabari, Tafsir al-Sa'di",
+    lessonAr: "• التفكر الدائم في البعث وخروج الأجساد من القبور يكسر جموح الطمع والغفلة.\n• لا يبقى للإنسان عند بعثرة القبور درهم ولا عقار بل الإيمان والعمل الصالح وحده.",
+    lessonEn: "• Regular contemplation of the Resurrection curbs greed and worldly infatuation.\n• Nothing accompanies a soul out of the grave except its faith and deeds."
+  },
+  {
+    surahNumber: 100,
+    startAyah: 10,
+    endAyah: 10,
+    storyTitleAr: "وحصل ما في الصدور: كشف خبايا القلوب ونوايا النفوس للعيان يوم الدين",
+    storyTitleEn: "Disclosure of Secrets in Chests: Total Exposure of Inner Intentions",
+    causeAr: "الانتقال من إخراج الأجساد إلى إخراج السرائر: {وَحُصِّلَ مَا فِي الصُّدُورِ}.\n\"حُصِّل\": أي مُيّز وأُظهر وجمع ما كان مستوراً في القلوب من نيات الخير والشر، والإخلاص والرياء، والشكر والجحود، وحب المال وحب الله! ففي الدنيا قد يتجمل المرء أمام الناس، أما يوم القيامة فتُقرأ السرائر على رؤوس الأشهاد.",
+    causeEn: "Moving from bodily resurrection to moral disclosure: {And that within the breasts is obtained [and revealed]}. \"Hussila\" means extracted, sorted, and laid bare. Hidden sincerity, hypocrisy, gratitude, or concealed malice locked within hearts in this life will be fully exposed before all creation.",
+    sourceAr: "تفسير الطبري، تفسير ابن كثير، مدارج السالكين لابن القيم",
+    sourceEn: "Tafsir al-Tabari, Tafsir Ibn Kathir, Madarij al-Salikin",
+    lessonAr: "• صلاح الباطن وطهارة القلب هما مدار النجاة يوم تبلى السرائر وتحصل الصدور.\n• مراقبة الله في الخلوات والنيات الخفية أعظم من الاكتفاء بظواهر الأعمال.",
+    lessonEn: "• Inner purification of the heart is the decisive measure when all secrets are revealed.\n• Guarding hidden intentions before Allah matters far more than outward appearances."
+  },
+  {
+    surahNumber: 100,
+    startAyah: 11,
+    endAyah: 11,
+    storyTitleAr: "إن ربهم بهم يومئذ لخبير: ختم السورة بإحاطة علم الخبير العدل بجميع العباد",
+    storyTitleEn: "Their Lord Is Fully Acquainted With Them: The Final Seal of All-Knowing Justice",
+    causeAr: "ختام حاسم يجمع الترهيب والمحاسبة: {إِنَّ رَبَّهُم بِهِمْ يَوْمَئِذٍ لَّخَبِيرٌ}.\nأي إن ربهم عالم ببواطنهم وظواهرهم في ذلك اليوم علماً محيطاً دقيقاً، لا تخفى عليه خافية من شكر شاكر ولا جحود كنود، وسيوفي كل إنسان جزاءه بالعدل التام. ومع أن علم الله محيط بهم دائماً، إلا أن تخصيص \"يومئذ\" لتأكيد أنه يوم المجازاة العلنية على ما علمه فيهم.",
+    causeEn: "A conclusive moral seal: {Indeed, their Lord with them, that Day, is [fully] Acquainted}. Allah has complete, intimate knowledge of every motive and deed; highlighting \"that Day\" underscores that His exhaustive awareness then translates directly into absolute, inescapable justice and recompense.",
+    sourceAr: "تفسير الطبري، تفسير ابن كثير، تفسير السعدي",
+    sourceEn: "Tafsir al-Tabari, Tafsir Ibn Kathir, Tafsir al-Sa'di",
+    lessonAr: "• استشعار اسم الله \"الخبير\" يزرع الخشية والمراقبة في كل نفس وخطرة.\n• كل عمل صغير أو كبير محفوظ في علم الخبير ومجزى عليه بالعدل والفضل يوم القيامة.",
+    lessonEn: "• Living with awareness of Allah \"Al-Khabir\" (The All-Acquainted) cultivates constant spiritual vigilance.\n• Every concealed thought and visible deed receives exact justice on Judgment Day."
+  }
+];

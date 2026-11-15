@@ -9,7 +9,7 @@ import { shareAsImage } from '../utils/shareAsImage';
 import { playTTS, stopTTS, subscribeTTS } from '../utils/ttsEngine';
 import { useHabitTracker } from '../hooks/useHabitTracker';
 import { useLanguage } from '../context/LanguageContext';
-import { LayoutGrid, ListFilter, HelpCircle } from 'lucide-react';
+import { HelpCircle } from 'lucide-react';
 import ZoomModal from '../components/Adia/ZoomModal';
 import { scrollToNextCard } from '../utils/cardScrollHelper';
 import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/CommunitySpotlightGuide';
@@ -295,7 +295,7 @@ function Adia({ onBack, onNavigate, navParams }: AdiaProps) {
 
     return (
         <div 
-            className="h-screen flex flex-col relative transition-colors" 
+            className="h-[100dvh] flex flex-col relative overflow-hidden transition-colors" 
             dir={isEn ? 'ltr' : 'rtl'}
             style={{ 
                 backgroundColor: isBlackTheme ? '#000000' : (theme.bgColor || (theme.isDark ? '#0F172A' : '#F5F7FA')) 
@@ -349,14 +349,12 @@ function Adia({ onBack, onNavigate, navParams }: AdiaProps) {
                 </div>
             </header>
 
-            <main ref={mainRef} className="w-full flex-1 overflow-y-auto px-4 pt-3 pb-6">
-                {/* Modern Borderless Search bar and View Mode Switch */}
+            <main ref={mainRef} className="w-full flex-1 min-h-0 overflow-y-auto px-4 pt-3 app-scroll-safe-fab">
+                {/* Modern 3D Search bar */}
                 <div className="mb-6 max-w-3xl mx-auto flex items-center gap-2.5 w-full" dir={isEn ? 'ltr' : 'rtl'}>
-                    <div className="relative flex-1 rounded-2xl transition-all focus-within:ring-2 focus-within:ring-opacity-40 flex items-center overflow-hidden"
+                    <div className="app-page-card border-0 relative flex-1 rounded-2xl bg-white dark:bg-[#1E293B] transition-all focus-within:ring-2 focus-within:ring-opacity-40 flex items-center overflow-visible"
                          style={{ 
                              '--tw-ring-color': primaryColor,
-                             backgroundColor: isBlackTheme ? '#18181b' : (theme.isDark ? 'rgba(39, 39, 42, 0.7)' : '#FFFFFF'),
-                             boxShadow: theme.isDark ? 'none' : '0 4px 14px rgba(0, 0, 0, 0.04)'
                          } as any}
                     >
                         <i 
@@ -369,61 +367,25 @@ function Adia({ onBack, onNavigate, navParams }: AdiaProps) {
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className={`w-full bg-transparent py-3 text-sm sm:text-base border-0 outline-none ${
-                                isEn ? 'pl-11 pr-10 text-left font-sans' : 'pr-11 pl-10 text-right font-kufi'
+                                isEn ? 'pl-11 pr-12 text-left font-sans' : 'pr-11 pl-12 text-right font-kufi'
                             } placeholder-gray-400 dark:placeholder-gray-500`}
                             style={{ color: 'var(--text-color)' }}
                         />
                         {searchQuery && (
                             <button
+                                type="button"
                                 onClick={() => setSearchQuery('')}
-                                className={`absolute inset-y-0 ${isEn ? 'right-4' : 'left-4'} flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer`}
+                                className={`app-page-card border-0 absolute ${isEn ? 'right-2.5' : 'left-2.5'} top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white dark:bg-[#1E293B] flex items-center justify-center text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white cursor-pointer`}
+                                aria-label={isEn ? 'Clear search' : 'مسح البحث'}
                             >
                                 <i className="fa-solid fa-times text-xs"></i>
                             </button>
                         )}
                     </div>
-
-                    {/* View Mode Switch Chips */}
-                    <div 
-                        className="flex items-center p-1 rounded-2xl shrink-0 gap-1"
-                        style={{
-                            backgroundColor: isBlackTheme ? '#18181b' : (theme.isDark ? 'rgba(39, 39, 42, 0.7)' : '#FFFFFF'),
-                            boxShadow: theme.isDark ? 'none' : '0 4px 14px rgba(0, 0, 0, 0.04)'
-                        }}
-                    >
-                        <button
-                            type="button"
-                            onClick={() => setActiveTab('grid')}
-                            className={`flex items-center justify-center w-9 h-9 rounded-xl transition-all cursor-pointer ${
-                                activeTab === 'grid' ? 'shadow-sm' : 'opacity-60 hover:opacity-100'
-                            }`}
-                            style={activeTab === 'grid' ? {
-                                backgroundColor: primaryColor,
-                                color: btnTextColor
-                            } : { color: 'var(--text-color)' }}
-                            title={isEn ? "Grid View" : "عرض شبكي"}
-                        >
-                            <LayoutGrid size={16} />
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setActiveTab('list')}
-                            className={`flex items-center justify-center w-9 h-9 rounded-xl transition-all cursor-pointer ${
-                                activeTab === 'list' ? 'shadow-sm' : 'opacity-60 hover:opacity-100'
-                            }`}
-                            style={activeTab === 'list' ? {
-                                backgroundColor: primaryColor,
-                                color: btnTextColor
-                            } : { color: 'var(--text-color)' }}
-                            title={isEn ? "List View" : "عرض القوائم"}
-                        >
-                            <ListFilter size={16} />
-                        </button>
-                    </div>
                 </div>
 
                 {/* Supplications Cards Grid/List */}
-                <div className={activeTab === 'grid' ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-3xl mx-auto pb-4" : "space-y-4 max-w-3xl mx-auto pb-4"}>
+                <div className={activeTab === 'grid' ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-3xl mx-auto" : "space-y-4 max-w-3xl mx-auto"}>
                     {filteredDuaa.length > 0 ? (
                         filteredDuaa.map((duaa) => {
                             const initialCount = duaa.count || 1;
@@ -443,7 +405,7 @@ function Adia({ onBack, onNavigate, navParams }: AdiaProps) {
                                     id={`adia-card-${duaa.id}`}
                                     key={duaa.id} 
                                     data-card-item="true"
-                                    className={`p-5 pb-3 rounded-[18px] relative transition-all duration-300 overflow-hidden group shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-none hover:shadow-[0_6px_25px_rgba(0,0,0,0.06)] border border-slate-100/80 dark:border-white/5 flex flex-col justify-between ${
+                                    className={`app-page-card tasbeeh-pressable border-0 p-5 pb-4 rounded-2xl bg-white dark:bg-[#1E293B] relative transition-all duration-300 overflow-visible group flex flex-col justify-between ${
                                         isFinished ? 'opacity-65 cursor-pointer' : 'cursor-pointer'
                                     }`} 
                                     onClick={(e) => {
@@ -455,8 +417,7 @@ function Adia({ onBack, onNavigate, navParams }: AdiaProps) {
                                     }}
                                     style={{ 
                                         fontFamily: isEn ? 'sans-serif' : theme.font,
-                                        backgroundColor: isBlackTheme ? '#18181b' : (theme.isDark ? (theme.cardBg || '#18181B') : '#FFFFFF'),
-                                        color: 'var(--text-color)'
+                                        color: 'var(--text-color)',
                                     }}
                                 >
                                     {/* Top Bar with repetition badge and count badge */}
@@ -473,12 +434,11 @@ function Adia({ onBack, onNavigate, navParams }: AdiaProps) {
 
                                         {/* Repetition Counter Badge */}
                                         <div 
-                                            className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-base sm:text-lg select-none cursor-pointer transition-all active:scale-90 hover:scale-105 shrink-0" 
+                                            className="app-page-card tasbeeh-inner-pressable border-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-base sm:text-lg select-none cursor-pointer transition-all bg-white dark:bg-[#1E293B] shrink-0" 
                                             style={
                                                 isFinished 
-                                                ? { backgroundColor: '#10B981', color: '#FFFFFF', boxShadow: '0 2px 10px rgba(16, 185, 129, 0.3)' } 
+                                                ? { backgroundColor: '#10B981', color: '#FFFFFF' } 
                                                 : { 
-                                                    backgroundColor: hexToRgba(primaryColor, isBlackTheme ? 0.25 : 0.12), 
                                                     color: isBlackTheme ? '#FFFFFF' : primaryColor 
                                                 }
                                             }
@@ -526,22 +486,24 @@ function Adia({ onBack, onNavigate, navParams }: AdiaProps) {
                                     )}
                                     
                                     {/* Action Buttons Row */}
-                                    <div className="flex justify-between items-center mt-auto pt-3 border-t border-slate-100/90 dark:border-white/5">
+                                    <div className="flex justify-between items-center mt-auto pt-3 pb-1 border-t border-slate-100/90 dark:border-white/5 overflow-visible">
                                         <button 
+                                            type="button"
                                             onClick={(e) => toggleFavorite(duaa.id, e)} 
-                                            className="w-9 h-9 rounded-full flex items-center justify-center bg-slate-100/80 dark:bg-zinc-800/80 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
+                                            className="app-page-card border-0 w-9 h-9 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer"
                                             title={isEn ? (favorites.includes(duaa.id) ? 'Remove from favorites' : 'Add to favorites') : (favorites.includes(duaa.id) ? 'إزالة من المفضلة' : 'إضافة إلى المفضلة')}
                                             aria-label={isEn ? 'Favorite' : 'المفضلة'}
                                         >
-                                            <i className={`fa-heart ${favorites.includes(duaa.id) ? 'fa-solid text-red-500' : 'fa-regular opacity-70'}`} style={favorites.includes(duaa.id) ? {} : { color: 'var(--text-color)' }}></i>
+                                            <i className={`fa-heart ${favorites.includes(duaa.id) ? 'fa-solid text-red-500' : 'fa-regular opacity-75'}`} style={favorites.includes(duaa.id) ? {} : { color: 'var(--text-color)' }}></i>
                                         </button>
-                                        <div className="flex gap-2">
+                                        <div className="flex gap-2.5 overflow-visible">
                                             <button 
+                                                type="button"
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     openZoomModal(duaa);
                                                 }} 
-                                                className="w-9 h-9 rounded-full flex items-center justify-center bg-slate-100/80 dark:bg-zinc-800/80 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors opacity-75 hover:opacity-100 cursor-pointer"
+                                                className="app-page-card border-0 w-9 h-9 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer"
                                                 style={{ color: 'var(--text-color)' }} 
                                                 title={isEn ? "Zoom" : "تكبير"}
                                                 aria-label={isEn ? "Zoom" : "تكبير"}
@@ -549,8 +511,9 @@ function Adia({ onBack, onNavigate, navParams }: AdiaProps) {
                                                 <i className="fa-solid fa-magnifying-glass-plus text-xs"></i>
                                             </button>
                                             <button 
+                                                type="button"
                                                 onClick={(e) => handleCopy(duaa, e)} 
-                                                className="w-9 h-9 rounded-full flex items-center justify-center bg-slate-100/80 dark:bg-zinc-800/80 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors opacity-75 hover:opacity-100 cursor-pointer" 
+                                                className="app-page-card border-0 w-9 h-9 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer" 
                                                 style={{ color: 'var(--text-color)' }} 
                                                 title={isEn ? "Copy" : "نسخ"}
                                                 aria-label={isEn ? "Copy" : "نسخ"}
@@ -558,8 +521,9 @@ function Adia({ onBack, onNavigate, navParams }: AdiaProps) {
                                                 <i className="fa-regular fa-copy text-xs"></i>
                                             </button>
                                             <button 
+                                                type="button"
                                                 onClick={(e) => handleShare(duaa, e)} 
-                                                className="w-9 h-9 rounded-full flex items-center justify-center bg-slate-100/80 dark:bg-zinc-800/80 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors opacity-75 hover:opacity-100 cursor-pointer" 
+                                                className="app-page-card border-0 w-9 h-9 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer" 
                                                 style={{ color: 'var(--text-color)' }} 
                                                 title={isEn ? "Share" : "مشاركة"}
                                                 aria-label={isEn ? "Share" : "مشاركة"}
@@ -567,8 +531,9 @@ function Adia({ onBack, onNavigate, navParams }: AdiaProps) {
                                                 <i className="fa-solid fa-share-nodes text-xs"></i>
                                             </button>
                                             <button 
+                                                type="button"
                                                 onClick={(e) => handlePlayAudio(duaa, e)} 
-                                                className="w-9 h-9 rounded-full flex items-center justify-center bg-slate-100/80 dark:bg-zinc-800/80 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors opacity-75 hover:opacity-100 cursor-pointer" 
+                                                className="app-page-card border-0 w-9 h-9 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer" 
                                                 style={{ color: isCurrentlyPlaying ? '#ef4444' : 'var(--text-color)' }}
                                                 title={isEn ? (isCurrentlyPlaying ? "Stop listening" : "Listen audio") : (isCurrentlyPlaying ? "إيقاف الاستماع" : "استماع صوتي")}
                                                 aria-label={isEn ? "Listen audio" : "استماع صوتي"}
@@ -580,7 +545,7 @@ function Adia({ onBack, onNavigate, navParams }: AdiaProps) {
 
                                     {!isFinished && (
                                         <div 
-                                            className="absolute inset-0 opacity-0 group-active:opacity-100 transition pointer-events-none" 
+                                            className="absolute inset-0 rounded-2xl opacity-0 group-active:opacity-100 transition pointer-events-none" 
                                             style={{ backgroundColor: hexToRgba(primaryColor, 0.08) }}
                                         ></div>
                                     )}
@@ -593,7 +558,6 @@ function Adia({ onBack, onNavigate, navParams }: AdiaProps) {
                             <p>{isEn ? "No supplications match your search." : "لا توجد نتائج مطابقة لبحثك."}</p>
                         </div>
                     )}
-                    <div className="shrink-0 w-full h-28 col-span-full"></div>
                 </div>
             </main>
 
@@ -604,7 +568,8 @@ function Adia({ onBack, onNavigate, navParams }: AdiaProps) {
                         initial={{ opacity: 0, y: 50, x: '-50%' }}
                         animate={{ opacity: 1, y: 0, x: '-50%' }}
                         exit={{ opacity: 0, y: 50, x: '-50%' }}
-                        className="fixed bottom-8 left-1/2 z-[200] bg-gray-900/90 backdrop-blur text-white px-6 py-3 rounded-full shadow-2xl font-bold text-sm text-center whitespace-nowrap flex items-center gap-2 border border-white/10"
+                        className="fixed left-1/2 z-[200] bg-gray-900/90 backdrop-blur text-white px-6 py-3 rounded-full shadow-2xl font-bold text-sm text-center whitespace-nowrap flex items-center gap-2 border border-white/10"
+                        style={{ bottom: 'calc(var(--app-safe-bottom) + 1.25rem)' }}
                     >
                         <i className="fa-solid fa-check text-green-400"></i>
                         {toastMessage}
@@ -626,8 +591,7 @@ function Adia({ onBack, onNavigate, navParams }: AdiaProps) {
             {/* Floating Menu & Modern FAB */}
             <div 
                 ref={fabContainerRef} 
-                className={`fixed ${isEn ? 'left-5 items-start' : 'right-5 items-end'} ${isMenuOpen ? 'z-[1250]' : 'z-[90]'} flex flex-col`}
-                style={{ bottom: 'calc(env(safe-area-inset-bottom, 24px) + 32px)' }}
+                className={`fixed app-fab-bottom ${isEn ? 'left-5 items-start' : 'right-5 items-end'} ${isMenuOpen ? 'z-[1250]' : 'z-[90]'} flex flex-col`}
             >
                 <AnimatePresence>
                     {isMenuOpen && (
@@ -636,67 +600,71 @@ function Adia({ onBack, onNavigate, navParams }: AdiaProps) {
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: menuOpenDirection === 'up' ? 20 : -20, scale: 0.9 }}
                             transition={{ duration: 0.2 }}
-                            className={`absolute ${isEn ? 'left-0 origin-bottom-left' : 'right-0 origin-bottom-right'} ${menuOpenDirection === 'up' ? 'bottom-full mb-3' : 'top-full mt-3'} bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md rounded-2xl shadow-2xl p-2 flex flex-col gap-1 overflow-hidden w-56 z-0 border border-slate-100/80 dark:border-white/10`}
+                            className={`app-page-card border-0 absolute ${isEn ? 'left-0 origin-bottom-left' : 'right-0 origin-bottom-right'} ${menuOpenDirection === 'up' ? 'bottom-full mb-3' : 'top-full mt-3'} bg-white dark:bg-[#1E293B] rounded-2xl p-2.5 pb-3 flex flex-col gap-2 overflow-visible w-56 z-0`}
                             style={{ color: 'var(--text-color)' }}
                             onClick={(e) => e.stopPropagation()}
                         >
                             <button 
+                                type="button"
                                 onClick={() => { setActiveCategory('all'); setIsMenuOpen(false); }}
-                                className="w-full text-right px-4 py-2.5 rounded-xl text-sm font-bold transition-colors cursor-pointer"
+                                className="app-page-card border-0 w-full text-start px-3.5 py-2.5 rounded-xl bg-white dark:bg-[#1E293B] text-sm font-bold transition-all cursor-pointer"
                                 style={activeCategory === 'all' ? { 
-                                    backgroundColor: hexToRgba(primaryColor, 0.12), 
-                                    color: primaryColor 
-                                } : {}}
+                                    backgroundColor: primaryColor, 
+                                    color: btnTextColor 
+                                } : undefined}
                             >
                                 {isEn ? 'All Supplications' : 'الكل'}
                             </button>
                             <button 
+                                type="button"
                                 onClick={() => { setActiveCategory('favorites'); setIsMenuOpen(false); }}
-                                className="w-full text-right px-4 py-2.5 rounded-xl text-sm font-bold transition-colors flex items-center justify-between cursor-pointer"
+                                className="app-page-card border-0 w-full text-start px-3.5 py-2.5 rounded-xl bg-white dark:bg-[#1E293B] text-sm font-bold transition-all flex items-center justify-between cursor-pointer"
                                 style={activeCategory === 'favorites' ? { 
-                                    backgroundColor: hexToRgba(primaryColor, 0.12), 
-                                    color: primaryColor 
-                                } : {}}
+                                    backgroundColor: primaryColor, 
+                                    color: btnTextColor 
+                                } : undefined}
                             >
                                 <span>{isEn ? 'Favorites' : 'المفضلة'}</span>
-                                <i className="fa-solid fa-heart text-xs opacity-70"></i>
+                                <i className="fa-solid fa-heart text-xs opacity-75"></i>
                             </button>
-                            <div className="h-px bg-slate-100 dark:bg-white/10 my-1" />
+                            <div className="h-px bg-slate-100 dark:bg-white/10 my-0.5" />
                             {DUAA_CATEGORIES.map(category => (
                                 <button 
+                                    type="button"
                                     key={category.id}
                                     onClick={() => { setActiveCategory(category.id); setIsMenuOpen(false); }}
-                                    className="w-full text-right px-4 py-2.5 rounded-xl text-sm font-bold transition-colors flex items-center justify-between cursor-pointer"
+                                    className="app-page-card border-0 w-full text-start px-3.5 py-2.5 rounded-xl bg-white dark:bg-[#1E293B] text-sm font-bold transition-all flex items-center justify-between cursor-pointer"
                                     style={activeCategory === category.id ? { 
-                                        backgroundColor: hexToRgba(primaryColor, 0.12), 
-                                        color: primaryColor 
-                                    } : {}}
+                                        backgroundColor: primaryColor, 
+                                        color: btnTextColor 
+                                    } : undefined}
                                 >
                                     <span>{isEn ? (category.titleEn || category.title) : category.title}</span>
-                                    <i className={`fa-solid ${category.icon} text-xs opacity-70`}></i>
+                                    <i className={`fa-solid ${category.icon} text-xs opacity-75`}></i>
                                 </button>
                             ))}
-                            <div className="h-px bg-slate-100 dark:bg-white/10 my-1" />
+                            <div className="h-px bg-slate-100 dark:bg-white/10 my-0.5" />
                             <button 
+                                type="button"
                                 onClick={handleResetAll}
-                                className="w-full text-right px-4 py-2.5 rounded-xl text-sm font-bold transition-colors flex items-center justify-between hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer"
+                                className="app-page-card border-0 w-full text-start px-3.5 py-2.5 rounded-xl bg-white dark:bg-[#1E293B] text-sm font-bold transition-all flex items-center justify-between cursor-pointer"
                             >
                                 <span>{isEn ? 'Reset All Counters' : 'إعادة ضبط العدادات'}</span>
-                                <i className="fa-solid fa-rotate-left text-xs opacity-70"></i>
+                                <i className="fa-solid fa-rotate-left text-xs opacity-75"></i>
                             </button>
                         </motion.div>
                     )}
                 </AnimatePresence>
 
-                {/* FAB: Clean circle filled with primaryColor and elevated soft drop shadow */}
+                {/* FAB: 3D embossed circle filled with primaryColor */}
                 <button 
+                    type="button"
                     ref={fabRef}
                     onClick={handleFabClick}
-                    className="w-14 h-14 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer relative z-10 border-0"
+                    className="app-page-card border-0 w-14 h-14 rounded-full flex items-center justify-center transition-all cursor-pointer relative z-10"
                     style={{
                         backgroundColor: primaryColor,
-                        color: btnTextColor,
-                        boxShadow: `0 8px 25px ${hexToRgba(primaryColor, isBlackTheme ? 0.2 : 0.35)}`
+                        color: btnTextColor
                     }}
                     title={isEn ? "Categories Menu" : "قائمة التصنيفات"}
                     aria-label={isEn ? "Categories Menu" : "قائمة التصنيفات"}

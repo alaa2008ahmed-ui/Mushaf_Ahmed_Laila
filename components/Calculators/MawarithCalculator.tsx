@@ -3,7 +3,7 @@ import { calculateMawarith, HeirResult, MawarithInput } from '../../utils/mawari
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { RefreshCw, Check } from 'lucide-react';
-import { getModernFlatTokens, hexToRgba } from '../../utils/flatDesignTokens';
+import { getCalculator3DStyles } from '../../utils/calculator3DStyles';
 
 const HEIR_NAME_TRANSLATIONS: Record<string, string> = {
     'الزوج': 'Husband',
@@ -56,8 +56,8 @@ const HEIR_TYPE_TRANSLATIONS: Record<string, string> = {
 };
 
 const MawarithCalculator: React.FC<{ cardBorderColor?: string }> = () => {
-    const { theme, themeKey } = useTheme();
-    const tokens = getModernFlatTokens(theme, themeKey);
+    const { theme, themeKey, isNightMode, homeThemeVariant } = useTheme();
+    const s3d = getCalculator3DStyles(theme, themeKey, isNightMode, homeThemeVariant);
     const { language } = useLanguage();
     const isEn = language === 'en';
     
@@ -174,12 +174,12 @@ const MawarithCalculator: React.FC<{ cardBorderColor?: string }> = () => {
 
     const renderNumberInput = (label: string, value: number, setter: (val: number) => void, hint?: string) => (
         <div className="flex flex-col">
-            <div className="flex flex-wrap items-baseline justify-between gap-1 mb-1.5">
-                <span className="text-xs font-bold" style={{ color: tokens.textColor }}>
+            <div className="flex flex-wrap items-baseline justify-between gap-1 mb-1.5 px-1">
+                <span className="text-xs font-bold">
                     {label}
                 </span>
                 {hint && (
-                    <span className="text-[10px] font-normal leading-tight opacity-75" style={{ color: tokens.subtextColor }}>
+                    <span className="text-[10px] font-normal leading-tight opacity-80" style={{ color: s3d.subtextColor }}>
                         {hint}
                     </span>
                 )}
@@ -192,8 +192,7 @@ const MawarithCalculator: React.FC<{ cardBorderColor?: string }> = () => {
                 value={value || ''} 
                 placeholder="0" 
                 onChange={e => setter(parseInt(e.target.value) || 0)} 
-                className="w-full p-2.5 rounded-xl border-0 bg-slate-100 dark:bg-zinc-800 focus:ring-2 focus:ring-primary/40 focus:outline-hidden text-center transition-all font-bold text-sm" 
-                style={{ color: tokens.textColor }}
+                className={`border-0 w-full p-3 rounded-2xl focus:ring-2 focus:ring-primary/40 focus:outline-hidden text-center transition-all font-bold text-sm tabular-nums ${s3d.recessedInputClass}`} 
             />
         </div>
     );
@@ -202,27 +201,25 @@ const MawarithCalculator: React.FC<{ cardBorderColor?: string }> = () => {
         <button
             type="button"
             onClick={() => setter(!checked)}
-            className="flex items-center justify-between gap-2 p-3 rounded-xl transition-all cursor-pointer border-0 text-start w-full"
-            style={{ 
-                backgroundColor: checked ? hexToRgba(tokens.primaryColor, 0.12) : 'rgba(150, 150, 150, 0.08)',
-            }}
+            className={`app-page-card border-0 flex items-center justify-between gap-2 p-3.5 rounded-2xl transition-all cursor-pointer text-start w-full ${s3d.surfaceCardClass}`}
+            style={checked ? { backgroundColor: s3d.activeTintBg } : undefined}
         >
             <div className="flex items-center gap-2.5 min-w-0">
                 <div 
-                    className="w-5 h-5 rounded-md flex items-center justify-center shrink-0 transition-colors"
+                    className="w-5 h-5 rounded-lg flex items-center justify-center shrink-0 transition-all"
                     style={{
-                        backgroundColor: checked ? tokens.primaryColor : 'rgba(150, 150, 150, 0.2)',
-                        color: checked ? '#FFFFFF' : 'transparent'
+                        backgroundColor: checked ? s3d.primaryColor : 'rgba(150, 150, 150, 0.22)',
+                        color: checked ? s3d.btnTextColor : 'transparent'
                     }}
                 >
                     <Check size={12} strokeWidth={3} />
                 </div>
-                <span className="text-xs sm:text-sm font-bold truncate" style={{ color: checked ? tokens.primaryColor : tokens.textColor }}>
+                <span className="text-xs sm:text-sm font-bold truncate" style={{ color: checked ? s3d.primaryColor : s3d.textColor }}>
                     {label}
                 </span>
             </div>
             {hint && (
-                <span className="text-[10px] opacity-70 font-normal leading-tight truncate shrink-0 max-w-[45%]" style={{ color: tokens.subtextColor }}>
+                <span className="text-[10px] opacity-75 font-normal leading-tight truncate shrink-0 max-w-[45%]" style={{ color: s3d.subtextColor }}>
                     {hint}
                 </span>
             )}
@@ -230,17 +227,19 @@ const MawarithCalculator: React.FC<{ cardBorderColor?: string }> = () => {
     );
 
     return (
-        <div className="space-y-4 animate-fade-in pb-8" dir={isEn ? 'ltr' : 'rtl'}>
+        <div className="space-y-4 animate-fade-in" dir={isEn ? 'ltr' : 'rtl'}>
             {/* Header Actions */}
-            <div id="mawarith-header-actions" className="flex justify-between items-center mb-2">
-                <h2 className="text-lg sm:text-xl font-bold flex items-center gap-2" style={{ color: tokens.textColor }}>
-                    <i className="fa-solid fa-scale-balanced" style={{ color: tokens.primaryColor }}></i> 
+            <div id="mawarith-header-actions" className="flex justify-between items-center mb-2 gap-2 overflow-visible">
+                <h2 className="text-lg sm:text-xl font-bold flex items-center gap-2.5" style={{ color: s3d.textColor }}>
+                    <span className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>
+                        <i className="fa-solid fa-scale-balanced" style={{ color: s3d.primaryColor }}></i>
+                    </span>
                     <span>{isEn ? 'Islamic Inheritance Distribution (Mawarith)' : 'توزيع الميراث'}</span>
                 </h2>
                 <button 
                     id="btn-mawarith-reset" 
                     onClick={clearAll} 
-                    className="flex items-center gap-1.5 text-xs sm:text-sm text-red-500 hover:bg-red-500/10 px-3 py-1.5 rounded-xl transition-colors cursor-pointer border-0"
+                    className={`app-page-card border-0 flex items-center gap-1.5 text-xs sm:text-sm font-bold text-red-600 dark:text-red-400 px-3.5 py-2 rounded-xl transition-all cursor-pointer shrink-0 ${s3d.surfaceCardClass}`}
                 >
                     <RefreshCw size={14} /> 
                     <span>{isEn ? 'Reset' : 'إعادة ضبط'}</span>
@@ -250,14 +249,13 @@ const MawarithCalculator: React.FC<{ cardBorderColor?: string }> = () => {
             {/* Estate Value Card */}
             <div 
                 id="mawarith-card-estate" 
-                className="p-5 rounded-[18px] border-0"
-                style={{ backgroundColor: tokens.cardBgColor, boxShadow: tokens.cardShadow }}
+                className={`app-page-card border-0 p-5 rounded-3xl transition-all ${s3d.surfaceCardClass}`}
             >
-                <div className="flex flex-wrap items-baseline justify-between gap-1 mb-2">
-                    <span className="text-sm font-bold" style={{ color: tokens.textColor }}>
+                <div className="flex flex-wrap items-baseline justify-between gap-1 mb-2.5 px-1">
+                    <span className="text-sm font-bold">
                         {isEn ? 'Total Estate Value' : 'قيمة التركة الإجمالية'}
                     </span>
-                    <span className="text-[11px] opacity-75 font-normal" style={{ color: tokens.subtextColor }}>
+                    <span className="text-[11px] opacity-80 font-normal" style={{ color: s3d.subtextColor }}>
                         {isEn ? 'After funeral expenses, debts, and valid bequests (Wasiyyah)' : 'بعد تجهيز الميت وسداد ديونه ووصاياه'}
                     </span>
                 </div>
@@ -266,8 +264,7 @@ const MawarithCalculator: React.FC<{ cardBorderColor?: string }> = () => {
                     placeholder={isEn ? 'Enter estate amount' : 'أدخل المبلغ'} 
                     value={estateValue} 
                     onChange={e => setEstateValue(e.target.value)} 
-                    className="w-full p-3.5 rounded-xl border-0 bg-slate-100 dark:bg-zinc-800 focus:ring-2 focus:ring-primary/40 focus:outline-hidden text-center font-bold text-lg transition-all" 
-                    style={{ color: tokens.textColor }}
+                    className={`border-0 w-full p-3.5 rounded-2xl focus:ring-2 focus:ring-primary/40 focus:outline-hidden text-center font-bold text-lg tabular-nums transition-all ${s3d.recessedInputClass}`} 
                 />
             </div>
 
@@ -276,14 +273,15 @@ const MawarithCalculator: React.FC<{ cardBorderColor?: string }> = () => {
                 {/* Parents */}
                 <div 
                     id="mawarith-card-parents" 
-                    className="p-5 rounded-[18px] border-0"
-                    style={{ backgroundColor: tokens.cardBgColor, boxShadow: tokens.cardShadow }}
+                    className={`app-page-card border-0 p-5 rounded-3xl transition-all ${s3d.surfaceCardClass}`}
                 >
-                    <h3 className="font-bold mb-3 text-sm flex items-center gap-2" style={{ color: tokens.textColor }}>
-                        <i className="fa-solid fa-users" style={{ color: tokens.primaryColor }}></i>
+                    <h3 className="font-bold mb-3.5 text-sm flex items-center gap-2.5">
+                        <span className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>
+                            <i className="fa-solid fa-users text-sm" style={{ color: s3d.primaryColor }}></i>
+                        </span>
                         <span>{isEn ? 'Ascendants (Parents & Grandparents)' : 'الأصول (الآباء والأجداد)'}</span>
                     </h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 overflow-visible pb-1">
                         {renderCheckbox(isEn ? 'Father' : 'الأب', hasFather, setHasFather, isEn ? 'Blocks grandfathers and siblings' : 'يحجب الأجداد والإخوة')}
                         {renderCheckbox(isEn ? 'Mother' : 'الأم', hasMother, setHasMother, isEn ? 'Blocks grandmothers' : 'تحجب الجدات')}
                         {showPaternalGrandfather && renderCheckbox(isEn ? 'Paternal Grandfather' : 'الجد لأب', hasPaternalGrandfather, setHasPaternalGrandfather)}
@@ -295,71 +293,79 @@ const MawarithCalculator: React.FC<{ cardBorderColor?: string }> = () => {
                 {/* Spouses */}
                 <div 
                     id="mawarith-card-spouses" 
-                    className="p-5 rounded-[18px] border-0"
-                    style={{ backgroundColor: tokens.cardBgColor, boxShadow: tokens.cardShadow }}
+                    className={`app-page-card border-0 p-5 rounded-3xl transition-all overflow-visible ${s3d.surfaceCardClass}`}
                 >
-                    <h3 className="font-bold mb-3 text-sm flex items-center gap-2" style={{ color: tokens.textColor }}>
-                        <i className="fa-solid fa-ring" style={{ color: tokens.primaryColor }}></i>
+                    <h3 className="font-bold mb-3.5 text-sm flex items-center gap-2.5">
+                        <span className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>
+                            <i className="fa-solid fa-ring text-sm" style={{ color: s3d.primaryColor }}></i>
+                        </span>
                         <span>{isEn ? 'Spouses' : 'الزوج والزوجة'}</span>
                     </h3>
-                    <div className="grid grid-cols-3 gap-2.5">
+                    <div className="grid grid-cols-3 gap-2.5 overflow-visible pb-1">
                         <button
                             type="button"
                             onClick={() => setSpouseType('none')}
-                            className="p-3 rounded-xl transition-all cursor-pointer border-0 flex flex-col items-center justify-center text-center"
-                            style={{ 
-                                backgroundColor: spouseType === 'none' ? hexToRgba(tokens.primaryColor, 0.12) : 'rgba(150, 150, 150, 0.08)',
-                                color: spouseType === 'none' ? tokens.primaryColor : tokens.textColor
-                            }}
+                            className={`app-page-card border-0 p-3 rounded-2xl transition-all cursor-pointer flex flex-col items-center justify-center text-center ${
+                                spouseType === 'none'
+                                    ? 'font-black'
+                                    : `font-bold ${s3d.surfaceCardClass}`
+                            }`}
+                            style={spouseType === 'none' ? { backgroundColor: s3d.primaryColor, color: s3d.btnTextColor } : undefined}
                         >
-                            <span className="font-bold text-xs sm:text-sm">{isEn ? 'None' : 'لا يوجد'}</span>
+                            <span className="text-xs sm:text-sm">{isEn ? 'None' : 'لا يوجد'}</span>
                         </button>
                         <button
                             type="button"
                             onClick={() => setSpouseType('husband')}
-                            className="p-3 rounded-xl transition-all cursor-pointer border-0 flex flex-col items-center justify-center text-center"
-                            style={{ 
-                                backgroundColor: spouseType === 'husband' ? hexToRgba(tokens.primaryColor, 0.12) : 'rgba(150, 150, 150, 0.08)',
-                                color: spouseType === 'husband' ? tokens.primaryColor : tokens.textColor
-                            }}
+                            className={`app-page-card border-0 p-3 rounded-2xl transition-all cursor-pointer flex flex-col items-center justify-center text-center ${
+                                spouseType === 'husband'
+                                    ? 'font-black'
+                                    : `font-bold ${s3d.surfaceCardClass}`
+                            }`}
+                            style={spouseType === 'husband' ? { backgroundColor: s3d.primaryColor, color: s3d.btnTextColor } : undefined}
                         >
-                            <span className="font-bold text-xs sm:text-sm">{isEn ? 'Husband' : 'زوج'}</span>
-                            <span className="text-[10px] opacity-70 font-normal leading-tight mt-0.5">{isEn ? '1/2 or 1/4' : 'النصف أو الربع'}</span>
+                            <span className="text-xs sm:text-sm">{isEn ? 'Husband' : 'زوج'}</span>
+                            <span className="text-[10px] opacity-80 font-normal leading-tight mt-0.5">{isEn ? '1/2 or 1/4' : 'النصف أو الربع'}</span>
                         </button>
                         <button
                             type="button"
                             onClick={() => setSpouseType('wife')}
-                            className="p-3 rounded-xl transition-all cursor-pointer border-0 flex flex-col items-center justify-center text-center"
-                            style={{ 
-                                backgroundColor: spouseType === 'wife' ? hexToRgba(tokens.primaryColor, 0.12) : 'rgba(150, 150, 150, 0.08)',
-                                color: spouseType === 'wife' ? tokens.primaryColor : tokens.textColor
-                            }}
+                            className={`app-page-card border-0 p-3 rounded-2xl transition-all cursor-pointer flex flex-col items-center justify-center text-center ${
+                                spouseType === 'wife'
+                                    ? 'font-black'
+                                    : `font-bold ${s3d.surfaceCardClass}`
+                            }`}
+                            style={spouseType === 'wife' ? { backgroundColor: s3d.primaryColor, color: s3d.btnTextColor } : undefined}
                         >
-                            <span className="font-bold text-xs sm:text-sm">{isEn ? 'Wife' : 'زوجة'}</span>
-                            <span className="text-[10px] opacity-70 font-normal leading-tight mt-0.5">{isEn ? '1/4 or 1/8' : 'الربع أو الثمن'}</span>
+                            <span className="text-xs sm:text-sm">{isEn ? 'Wife' : 'زوجة'}</span>
+                            <span className="text-[10px] opacity-80 font-normal leading-tight mt-0.5">{isEn ? '1/4 or 1/8' : 'الربع أو الثمن'}</span>
                         </button>
                     </div>
 
                     {spouseType === 'wife' && (
-                        <div className="mt-3.5 flex items-center justify-between p-3 rounded-xl bg-slate-100/70 dark:bg-zinc-800/60">
-                            <label className="text-xs font-bold" style={{ color: tokens.textColor }}>
+                        <div className="border-0 mt-3.5 flex items-center justify-between p-3.5 rounded-2xl overflow-visible" style={{ backgroundColor: s3d.softResultBg }}>
+                            <label className="text-xs font-bold">
                                 {isEn ? 'Number of Wives:' : 'عدد الزوجات:'}
                             </label>
-                            <div className="flex items-center gap-1.5">
-                                {[1, 2, 3, 4].map(num => (
-                                    <button
-                                        key={num}
-                                        type="button"
-                                        onClick={() => setWivesCount(num)}
-                                        className="w-8 h-8 rounded-lg font-bold text-xs transition-all cursor-pointer border-0"
-                                        style={{
-                                            backgroundColor: wivesCount === num ? tokens.primaryColor : 'transparent',
-                                            color: wivesCount === num ? '#FFFFFF' : tokens.textColor
-                                        }}
-                                    >
-                                        {num}
-                                    </button>
-                                ))}
+                            <div className="flex items-center gap-2 overflow-visible pb-1">
+                                {[1, 2, 3, 4].map(num => {
+                                    const active = wivesCount === num;
+                                    return (
+                                        <button
+                                            key={num}
+                                            type="button"
+                                            onClick={() => setWivesCount(num)}
+                                            className={`app-page-card border-0 w-9 h-9 rounded-xl text-xs transition-all cursor-pointer tabular-nums ${
+                                                active
+                                                    ? 'font-black'
+                                                    : `font-bold ${s3d.surfaceCardClass}`
+                                            }`}
+                                            style={active ? { backgroundColor: s3d.primaryColor, color: s3d.btnTextColor } : undefined}
+                                        >
+                                            {num}
+                                        </button>
+                                    );
+                                })}
                             </div>
                         </div>
                     )}
@@ -368,11 +374,12 @@ const MawarithCalculator: React.FC<{ cardBorderColor?: string }> = () => {
                 {/* Descendants */}
                 <div 
                     id="mawarith-card-descendants" 
-                    className="p-5 rounded-[18px] border-0"
-                    style={{ backgroundColor: tokens.cardBgColor, boxShadow: tokens.cardShadow }}
+                    className={`app-page-card border-0 p-5 rounded-3xl transition-all ${s3d.surfaceCardClass}`}
                 >
-                    <h3 className="font-bold mb-3 text-sm flex items-center gap-2" style={{ color: tokens.textColor }}>
-                        <i className="fa-solid fa-child" style={{ color: tokens.primaryColor }}></i>
+                    <h3 className="font-bold mb-3.5 text-sm flex items-center gap-2.5">
+                        <span className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>
+                            <i className="fa-solid fa-child text-sm" style={{ color: s3d.primaryColor }}></i>
+                        </span>
                         <span>{isEn ? 'Descendants (Children & Grandchildren)' : 'الفروع (الأبناء وبناتهم)'}</span>
                     </h3>
                     <div className="grid grid-cols-2 gap-3 mb-3">
@@ -380,7 +387,7 @@ const MawarithCalculator: React.FC<{ cardBorderColor?: string }> = () => {
                         {renderNumberInput(isEn ? 'Daughters (Female)' : 'البنات (إناث)', daughtersCount, setDaughtersCount)}
                     </div>
                     {(showGrandsons || showGranddaughters) && (
-                        <div className="grid grid-cols-2 gap-3 pt-3 border-t border-slate-100 dark:border-zinc-800">
+                        <div className={`grid grid-cols-2 gap-3 pt-3 border-t ${s3d.dividerClass}`}>
                             {showGrandsons && renderNumberInput(isEn ? 'Grandsons' : 'أبناء الابن', grandsonsCount, setGrandsonsCount, isEn ? 'Blocked by direct son' : 'يحجبهم وجود الابن')}
                             {showGranddaughters && renderNumberInput(isEn ? 'Granddaughters' : 'بنات الابن', granddaughtersCount, setGranddaughtersCount, isEn ? 'Blocked by direct son' : 'يحجبهم وجود الابن')}
                         </div>
@@ -391,11 +398,12 @@ const MawarithCalculator: React.FC<{ cardBorderColor?: string }> = () => {
                 {(showFullSiblings || showPaternalSiblings || showMaternalSiblings) && (
                     <div 
                         id="mawarith-card-siblings" 
-                        className="p-5 rounded-[18px] border-0"
-                        style={{ backgroundColor: tokens.cardBgColor, boxShadow: tokens.cardShadow }}
+                        className={`app-page-card border-0 p-5 rounded-3xl transition-all ${s3d.surfaceCardClass}`}
                     >
-                        <h3 className="font-bold mb-3 text-sm flex items-center gap-2" style={{ color: tokens.textColor }}>
-                            <i className="fa-solid fa-people-arrows" style={{ color: tokens.primaryColor }}></i>
+                        <h3 className="font-bold mb-3.5 text-sm flex items-center gap-2.5">
+                            <span className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>
+                                <i className="fa-solid fa-people-arrows text-sm" style={{ color: s3d.primaryColor }}></i>
+                            </span>
                             <span>{isEn ? 'Collaterals (Brothers & Sisters)' : 'الحواشي (الإخوة والأخوات)'}</span>
                         </h3>
                         <div className="space-y-3">
@@ -406,13 +414,13 @@ const MawarithCalculator: React.FC<{ cardBorderColor?: string }> = () => {
                                 </div>
                             )}
                             {showPaternalSiblings && (
-                                <div className="grid grid-cols-2 gap-3 pt-3 border-t border-slate-100 dark:border-zinc-800">
+                                <div className={`grid grid-cols-2 gap-3 pt-3 border-t ${s3d.dividerClass}`}>
                                     {renderNumberInput(isEn ? 'Paternal Brothers' : 'الإخوة لأب', paternalBrothersCount, setPaternalBrothersCount, isEn ? 'Blocked by full brother' : 'يحجبهم الأخ الشقيق')}
                                     {renderNumberInput(isEn ? 'Paternal Sisters' : 'الأخوات لأب', paternalSistersCount, setPaternalSistersCount, isEn ? 'Blocked by brother/sisters' : 'يحجبهن الأخ الشقيق')}
                                 </div>
                             )}
                             {showMaternalSiblings && (
-                                <div className="pt-3 border-t border-slate-100 dark:border-zinc-800">
+                                <div className={`pt-3 border-t ${s3d.dividerClass}`}>
                                     {renderNumberInput(isEn ? 'Maternal Siblings' : 'الإخوة والأخوات لأم', maternalSiblingsCount, setMaternalSiblingsCount, isEn ? 'Inherit equally' : 'يرثون بالسوية')}
                                 </div>
                             )}
@@ -424,11 +432,12 @@ const MawarithCalculator: React.FC<{ cardBorderColor?: string }> = () => {
                 {(showFullNephews || showPaternalNephews || showFullUncles || showPaternalUncles || showFullCousins || showPaternalCousins) && (
                     <div 
                         id="mawarith-card-extended" 
-                        className="p-5 rounded-[18px] border-0"
-                        style={{ backgroundColor: tokens.cardBgColor, boxShadow: tokens.cardShadow }}
+                        className={`app-page-card border-0 p-5 rounded-3xl transition-all ${s3d.surfaceCardClass}`}
                     >
-                        <h3 className="font-bold mb-3 text-sm flex items-center gap-2" style={{ color: tokens.textColor }}>
-                            <i className="fa-solid fa-diagram-project" style={{ color: tokens.primaryColor }}></i>
+                        <h3 className="font-bold mb-3.5 text-sm flex items-center gap-2.5">
+                            <span className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>
+                                <i className="fa-solid fa-diagram-project text-sm" style={{ color: s3d.primaryColor }}></i>
+                            </span>
                             <span>{isEn ? 'Other Agnatic Heirs (Asabah)' : 'العصبات الأخرى (أبناء الإخوة والأعمام)'}</span>
                         </h3>
                         <div className="grid grid-cols-2 gap-3">
@@ -447,20 +456,18 @@ const MawarithCalculator: React.FC<{ cardBorderColor?: string }> = () => {
             {mawarithResults.length > 0 && (
                 <div 
                     id="mawarith-card-results" 
-                    className="p-5 rounded-[18px] border-0 animate-fade-in"
-                    style={{ backgroundColor: tokens.cardBgColor, boxShadow: tokens.cardShadow }}
+                    className={`app-page-card border-0 p-5 rounded-3xl animate-fade-in transition-all ${s3d.surfaceCardClass}`}
                 >
-                    <h3 className="text-base sm:text-lg font-bold mb-4 flex items-center justify-between" style={{ color: tokens.textColor }}>
-                        <span className="flex items-center gap-2">
-                            <i className="fa-solid fa-list-check" style={{ color: tokens.primaryColor }}></i>
+                    <h3 className="text-base sm:text-lg font-bold mb-4 flex items-center justify-between gap-2">
+                        <span className="flex items-center gap-2.5">
+                            <span className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}>
+                                <i className="fa-solid fa-list-check text-sm" style={{ color: s3d.primaryColor }}></i>
+                            </span>
                             <span>{isEn ? 'Inheritance Distribution Table' : 'جدول توزيع الميراث'}</span>
                         </span>
                         <span 
-                            className="text-xs px-3 py-1 rounded-full font-bold"
-                            style={{ 
-                                backgroundColor: hexToRgba(tokens.primaryColor, 0.12),
-                                color: tokens.primaryColor
-                            }}
+                            className={`text-xs px-3 py-1.5 rounded-xl font-bold tabular-nums ${s3d.isBlackTheme ? 'bg-white/10' : 'bg-slate-100 dark:bg-white/10'}`}
+                            style={{ color: s3d.primaryColor }}
                         >
                             {isEn ? `Total Heirs: ${mawarithResults.length}` : `إجمالي الورثة: ${mawarithResults.length}`}
                         </span>
@@ -469,34 +476,34 @@ const MawarithCalculator: React.FC<{ cardBorderColor?: string }> = () => {
                     <div className="overflow-x-auto">
                         <table className={`w-full ${isEn ? 'text-left' : 'text-right'} text-sm`}>
                             <thead>
-                                <tr className="border-b border-slate-100 dark:border-zinc-800 opacity-70" style={{ color: tokens.textColor }}>
+                                <tr className={`border-b ${s3d.dividerClass} opacity-75`}>
                                     <th className="py-2.5 font-bold">{isEn ? 'Heir' : 'الوارث'}</th>
                                     <th className="py-2.5 font-bold">{isEn ? 'Share Type' : 'نوع الإرث'}</th>
                                     <th className="py-2.5 font-bold">{isEn ? 'Percentage' : 'النسبة'}</th>
                                     <th className="py-2.5 font-bold">{isEn ? 'Amount Due' : 'المبلغ المستحق'}</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-100 dark:divide-zinc-800">
+                            <tbody className={`divide-y ${s3d.isBlackTheme ? 'divide-white/10' : 'divide-slate-200/60 dark:divide-white/10'}`}>
                                 {mawarithResults.map((heir, idx) => (
-                                    <tr key={idx} style={{ color: tokens.textColor }}>
+                                    <tr key={idx}>
                                         <td className="py-3 font-bold">
                                             {isEn ? (HEIR_NAME_TRANSLATIONS[heir.name] || heir.name) : heir.name}
                                         </td>
                                         <td className="py-3">
-                                            <span className={`px-2.5 py-1 rounded-lg text-xs font-bold ${
+                                            <span className={`border-0 inline-block px-2.5 py-1 rounded-xl text-xs font-bold ${
                                                 heir.type === 'فرض' 
-                                                    ? 'bg-blue-500/10 text-blue-500' 
+                                                    ? 'bg-blue-500/12 text-blue-600 dark:text-blue-400' 
                                                     : heir.type === 'تعصيب' 
-                                                        ? 'bg-emerald-500/10 text-emerald-500' 
+                                                        ? 'bg-emerald-500/12 text-emerald-600 dark:text-emerald-400' 
                                                         : heir.type === 'عول' 
-                                                            ? 'bg-purple-500/10 text-purple-500' 
-                                                            : 'bg-amber-500/10 text-amber-500'
+                                                            ? 'bg-purple-500/12 text-purple-600 dark:text-purple-400' 
+                                                            : 'bg-amber-500/12 text-amber-600 dark:text-amber-400'
                                             }`}>
                                                 {isEn ? (HEIR_TYPE_TRANSLATIONS[heir.type] || heir.type) : heir.type}
                                             </span>
                                         </td>
-                                        <td className="py-3 font-sans opacity-80" dir="ltr">{(heir.share * 100).toFixed(2)}%</td>
-                                        <td className="py-3 font-bold font-sans" style={{ color: tokens.primaryColor }}>
+                                        <td className="py-3 font-sans opacity-85 tabular-nums" dir="ltr">{(heir.share * 100).toFixed(2)}%</td>
+                                        <td className="py-3 font-bold font-sans tabular-nums" style={{ color: s3d.primaryColor }}>
                                             {heir.amount.toLocaleString('en-US', { maximumFractionDigits: 2 })}
                                         </td>
                                     </tr>

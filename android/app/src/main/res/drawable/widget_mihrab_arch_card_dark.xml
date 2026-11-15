@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Drop Shadow -->
+    <item android:top="2dp" android:left="1dp" android:right="1dp" android:bottom="4dp">
+        <shape>
+            <solid android:color="#77000000" />
+            <corners
+                android:topLeftRadius="24dp"
+                android:topRightRadius="24dp"
+                android:bottomLeftRadius="14dp"
+                android:bottomRightRadius="14dp" />
+        </shape>
+    </item>
+    <!-- Arch Card Body -->
+    <item android:bottom="2dp">
+        <shape>
+            <gradient
+                android:angle="135"
+                android:startColor="#1E232B"
+                android:endColor="#0F1318" />
+            <corners
+                android:topLeftRadius="24dp"
+                android:topRightRadius="24dp"
+                android:bottomLeftRadius="14dp"
+                android:bottomRightRadius="14dp" />
+            <stroke android:width="2dp" android:color="#F59E0B" />
+        </shape>
+    </item>
+</layer-list>

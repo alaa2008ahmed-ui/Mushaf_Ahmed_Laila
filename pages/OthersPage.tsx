@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { registerBackInterceptor } from '../hooks/useBackButton';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LayoutGrid, ListFilter, HelpCircle } from 'lucide-react';
+import { HelpCircle } from 'lucide-react';
 import ThemePageLock from '../components/ThemePageLock';
 import { useTheme } from '../context/ThemeContext';
 import { shareAsImage } from '../utils/shareAsImage';
@@ -242,7 +242,7 @@ const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, onOpenTheme
 
   return (
     <div 
-      className="h-screen w-full flex flex-col overflow-hidden relative transition-colors" 
+      className="h-[100dvh] w-full flex flex-col overflow-hidden relative transition-colors" 
       style={{ 
         fontFamily: isEn ? 'inherit' : theme.font,
         backgroundColor: isBlackTheme ? '#000000' : (theme.bgColor || (theme.isDark ? '#0F172A' : '#F5F7FA')) 
@@ -300,14 +300,12 @@ const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, onOpenTheme
       </header>
 
       {/* Main Container */}
-      <main className="w-full flex-1 overflow-y-auto px-4 pt-3 pb-6">
+      <main className="w-full flex-1 min-h-0 overflow-y-auto px-4 pt-3 app-scroll-safe-fab">
         {/* Modern Borderless Search and View Mode Control */}
         <div className="mb-6 max-w-3xl mx-auto flex items-center gap-2.5 w-full" dir={isEn ? 'ltr' : 'rtl'}>
-          <div className="relative flex-1 rounded-2xl transition-all focus-within:ring-2 focus-within:ring-opacity-40 flex items-center overflow-hidden"
+          <div className="app-page-card border-0 relative flex-1 rounded-2xl bg-white dark:bg-[#1E293B] transition-all focus-within:ring-2 focus-within:ring-opacity-40 flex items-center overflow-visible"
                style={{ 
                  '--tw-ring-color': primaryColor,
-                 backgroundColor: isBlackTheme ? '#18181b' : (theme.isDark ? 'rgba(39, 39, 42, 0.7)' : '#FFFFFF'),
-                 boxShadow: theme.isDark ? 'none' : '0 4px 14px rgba(0, 0, 0, 0.04)'
                } as any}
           >
             <i 
@@ -320,61 +318,23 @@ const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, onOpenTheme
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className={`w-full bg-transparent py-3 text-sm sm:text-base border-0 outline-none ${
-                isEn ? 'pl-11 pr-10 text-left font-sans' : 'pr-11 pl-10 text-right font-kufi'
+                isEn ? 'pl-11 pr-12 text-left font-sans' : 'pr-11 pl-12 text-right font-kufi'
               } placeholder-gray-400 dark:placeholder-gray-500`}
               style={{ color: 'var(--text-color)' }}
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className={`absolute inset-y-0 ${isEn ? 'right-4' : 'left-4'} flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer`}
+                className={`app-page-card border-0 absolute ${isEn ? 'right-2.5' : 'left-2.5'} top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white dark:bg-[#1E293B] flex items-center justify-center text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white cursor-pointer`}
               >
                 <i className="fa-solid fa-times text-xs"></i>
               </button>
             )}
           </div>
-
-          {/* View Mode Switch Chips */}
-          <div 
-            className="flex items-center p-1 rounded-2xl shrink-0 gap-1"
-            style={{
-              backgroundColor: isBlackTheme ? '#18181b' : (theme.isDark ? 'rgba(39, 39, 42, 0.7)' : '#FFFFFF'),
-              boxShadow: theme.isDark ? 'none' : '0 4px 14px rgba(0, 0, 0, 0.04)'
-            }}
-          >
-            <button
-              type="button"
-              onClick={() => setActiveTabMode('grid')}
-              className={`flex items-center justify-center w-9 h-9 rounded-xl transition-all cursor-pointer ${
-                activeTabMode === 'grid' ? 'shadow-sm' : 'opacity-60 hover:opacity-100'
-              }`}
-              style={activeTabMode === 'grid' ? {
-                backgroundColor: primaryColor,
-                color: btnTextColor
-              } : { color: 'var(--text-color)' }}
-              title={isEn ? "Grid View" : "عرض شبكي"}
-            >
-              <LayoutGrid size={16} />
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTabMode('list')}
-              className={`flex items-center justify-center w-9 h-9 rounded-xl transition-all cursor-pointer ${
-                activeTabMode === 'list' ? 'shadow-sm' : 'opacity-60 hover:opacity-100'
-              }`}
-              style={activeTabMode === 'list' ? {
-                backgroundColor: primaryColor,
-                color: btnTextColor
-              } : { color: 'var(--text-color)' }}
-              title={isEn ? "List View" : "عرض القوائم"}
-            >
-              <ListFilter size={16} />
-            </button>
-          </div>
         </div>
 
         <div 
-          className={`${activeTabMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'space-y-4'} max-w-3xl mx-auto gap-4 pt-1 pb-6 ${isEn ? 'text-left' : 'text-right'}`}
+          className={`${activeTabMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'space-y-4'} max-w-3xl mx-auto gap-4 pt-1 ${isEn ? 'text-left' : 'text-right'}`}
           dir={isEn ? 'ltr' : 'rtl'}
         >
           <AnimatePresence mode="wait">
@@ -391,15 +351,14 @@ const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, onOpenTheme
                         id={`ruqyah-card-${item.id}`}
                         key={item.id} 
                         data-card-item="true"
-                        className="p-5 pb-3 rounded-[18px] relative transition-all duration-300 overflow-hidden group shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-none hover:shadow-[0_6px_25px_rgba(0,0,0,0.06)] border border-slate-100/80 dark:border-white/5 flex flex-col justify-between cursor-pointer" 
+                        className="app-page-card tasbeeh-pressable border-0 p-5 pb-4 rounded-2xl bg-white dark:bg-[#1E293B] relative transition-all duration-300 overflow-visible group flex flex-col justify-between cursor-pointer" 
                         onClick={(e) => {
                           const cardEl = e.currentTarget as HTMLElement;
                           setTimeout(() => scrollToNextCard(cardEl), 60);
                         }}
                         style={{ 
                           fontFamily: isEn ? 'inherit' : theme.font,
-                          backgroundColor: isBlackTheme ? '#18181b' : (theme.isDark ? (theme.cardBg || '#18181B') : '#FFFFFF'),
-                          color: 'var(--text-color)'
+                          color: 'var(--text-color)',
                         }}
                       >
                         {/* Text: generous line-height to prevent tashkeel overlap */}
@@ -425,11 +384,11 @@ const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, onOpenTheme
                         </div>
                         
                         {/* Action buttons bar */}
-                        <div className="flex justify-between items-center mt-auto pt-3 border-t border-slate-100/90 dark:border-white/5">
+                        <div className="flex justify-between items-center mt-auto pt-3 pb-1 border-t border-slate-100/90 dark:border-white/5 overflow-visible">
                           {/* Favorite Button */}
                           <button 
                             onClick={(e) => toggleFavorite(item.id, e)} 
-                            className="w-9 h-9 rounded-full flex items-center justify-center bg-slate-100/80 dark:bg-zinc-800/80 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors shrink-0 cursor-pointer"
+                            className="app-page-card border-0 w-9 h-9 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all shrink-0 cursor-pointer"
                             title={isEn ? (favorites.includes(item.id) ? "Remove from Favorites" : "Add to Favorites") : (favorites.includes(item.id) ? "إزالة من المفضلة" : "إضافة للمفضلة")}
                             aria-label={isEn ? (favorites.includes(item.id) ? "Remove from Favorites" : "Add to Favorites") : (favorites.includes(item.id) ? "إزالة من المفضلة" : "إضافة للمفضلة")}
                           >
@@ -440,14 +399,14 @@ const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, onOpenTheme
                           </button>
 
                           {/* Control buttons group (Zoom, Copy, Share, Audio) */}
-                          <div className="flex gap-2">
+                          <div className="flex gap-2.5 overflow-visible">
                             {/* Zoom Button */}
                             <button 
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setZoomedDuaa(item);
                               }} 
-                              className="w-9 h-9 rounded-full flex items-center justify-center bg-slate-100/80 dark:bg-zinc-800/80 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors opacity-75 hover:opacity-100 cursor-pointer"
+                              className="app-page-card border-0 w-9 h-9 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all shrink-0 cursor-pointer"
                               style={{ color: 'var(--text-color)' }}
                               title={isEn ? "Zoom" : "تكبير"}
                               aria-label={isEn ? "Zoom" : "تكبير"}
@@ -458,8 +417,8 @@ const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, onOpenTheme
                             {/* Copy Button */}
                             <button 
                               onClick={(e) => copyToClipboard(currentItemText, e)} 
-                              className="w-9 h-9 rounded-full flex items-center justify-center bg-slate-100/80 dark:bg-zinc-800/80 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors opacity-75 hover:opacity-100 cursor-pointer" 
-                              style={{ color: 'var(--text-color)' }} 
+                              className="app-page-card border-0 w-9 h-9 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all shrink-0 cursor-pointer" 
+                              style={{ color: 'var(--text-color)' }}
                               title={isEn ? "Copy" : "نسخ"}
                               aria-label={isEn ? "Copy" : "نسخ"}
                             >
@@ -469,8 +428,8 @@ const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, onOpenTheme
                             {/* Share Button */}
                             <button 
                               onClick={(e) => handleShare(item, e)} 
-                              className="w-9 h-9 rounded-full flex items-center justify-center bg-slate-100/80 dark:bg-zinc-800/80 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors opacity-75 hover:opacity-100 cursor-pointer" 
-                              style={{ color: 'var(--text-color)' }} 
+                              className="app-page-card border-0 w-9 h-9 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all shrink-0 cursor-pointer" 
+                              style={{ color: 'var(--text-color)' }}
                               title={isEn ? "Share" : "مشاركة"}
                               aria-label={isEn ? "Share" : "مشاركة"}
                             >
@@ -480,7 +439,7 @@ const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, onOpenTheme
                             {/* Audio Play/Pause Button */}
                             <button 
                               onClick={(e) => handlePlayAudio(item, e)} 
-                              className="w-9 h-9 rounded-full flex items-center justify-center bg-slate-100/80 dark:bg-zinc-800/80 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors opacity-75 hover:opacity-100 cursor-pointer" 
+                              className="app-page-card border-0 w-9 h-9 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all shrink-0 cursor-pointer" 
                               style={{ color: isCurrentlyPlaying ? '#ef4444' : 'var(--text-color)' }}
                               title={isCurrentlyPlaying ? (isEn ? "Stop Audio" : "إيقاف الاستماع") : (isEn ? "Listen" : "استماع صوتي")}
                               aria-label={isCurrentlyPlaying ? (isEn ? "Stop Audio" : "إيقاف الاستماع") : (isEn ? "Listen" : "استماع صوتي")}
@@ -504,10 +463,9 @@ const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, onOpenTheme
             {activeTab === 'guide' && (
               <div className="space-y-4 col-span-full" dir={isEn ? 'ltr' : 'rtl'}>
                 <div 
-                  className="p-6 rounded-[18px] border border-slate-100/80 dark:border-white/5 space-y-4 shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-none"
+                  className="app-page-card border-0 p-6 rounded-2xl bg-white dark:bg-[#1E293B] space-y-4 overflow-visible"
                   style={{
-                    backgroundColor: isBlackTheme ? '#18181b' : (theme.isDark ? (theme.cardBg || '#18181B') : '#FFFFFF'),
-                    color: 'var(--text-color)'
+                    color: 'var(--text-color)',
                   }}
                 >
                   <div className="flex items-center gap-2 border-b border-slate-100 dark:border-white/5 pb-3">
@@ -517,11 +475,11 @@ const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, onOpenTheme
                     </h3>
                   </div>
 
-                  <div className="space-y-4 text-xs sm:text-sm leading-relaxed font-bold">
+                  <div className="space-y-3.5 pb-1 text-xs sm:text-sm leading-relaxed font-bold overflow-visible">
                     {RUQYAH_GUIDE_STEPS.map((step) => (
-                      <div key={step.number} className="flex gap-3">
+                      <div key={step.number} className="app-page-card border-0 p-3.5 rounded-2xl bg-white dark:bg-[#1E293B] flex gap-3 items-start">
                         <div 
-                          className="w-7 h-7 rounded-full font-bold text-xs flex items-center justify-center shrink-0 mt-0.5 font-mono shadow-sm transition-colors"
+                          className="app-page-card border-0 w-7 h-7 rounded-full font-bold text-xs flex items-center justify-center shrink-0 mt-0.5 font-mono transition-colors"
                           style={{ 
                             backgroundColor: primaryColor, 
                             color: btnTextColor 
@@ -547,7 +505,6 @@ const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, onOpenTheme
               </div>
             )}
           </AnimatePresence>
-          <div className="shrink-0 w-full h-28 col-span-full"></div>
         </div>
       </main>
 
@@ -558,7 +515,8 @@ const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, onOpenTheme
             initial={{ opacity: 0, y: 50, x: '-50%' }}
             animate={{ opacity: 1, y: 0, x: '-50%' }}
             exit={{ opacity: 0, y: 50, x: '-50%' }}
-            className="fixed bottom-8 left-1/2 z-[200] bg-gray-900/90 backdrop-blur text-white px-6 py-3 rounded-full shadow-2xl font-bold text-sm text-center whitespace-nowrap border border-white/10"
+            className="fixed left-1/2 z-[200] bg-gray-900/90 backdrop-blur text-white px-6 py-3 rounded-full shadow-2xl font-bold text-sm text-center whitespace-nowrap border border-white/10"
+            style={{ bottom: 'calc(var(--app-safe-bottom) + 1.25rem)' }}
           >
             {toastMessage}
           </motion.div>
@@ -579,8 +537,7 @@ const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, onOpenTheme
       {/* Floating Action Button (FAB) & Menu */}
       <div 
         ref={fabContainerRef} 
-        className={`fixed ${isEn ? 'left-5 items-start' : 'right-5 items-end'} ${isMenuOpen ? 'z-[1250]' : 'z-[90]'} flex flex-col`}
-        style={{ bottom: 'calc(env(safe-area-inset-bottom, 24px) + 32px)' }}
+        className={`fixed app-fab-bottom ${isEn ? 'left-5 items-start' : 'right-5 items-end'} ${isMenuOpen ? 'z-[1250]' : 'z-[90]'} flex flex-col`}
       >
         <AnimatePresence>
           {isMenuOpen && (
@@ -589,28 +546,28 @@ const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, onOpenTheme
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: menuOpenDirection === 'up' ? 20 : -20, scale: 0.9 }}
               transition={{ duration: 0.2 }}
-              className={`absolute ${isEn ? 'left-0 origin-bottom-left' : 'right-0 origin-bottom-right'} ${menuOpenDirection === 'up' ? 'bottom-full mb-3' : 'top-full mt-3'} bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md rounded-2xl shadow-2xl p-2 flex flex-col gap-1 overflow-hidden w-48 z-0 border border-slate-100/80 dark:border-white/10`}
+              className={`app-page-card border-0 absolute ${isEn ? 'left-0 origin-bottom-left' : 'right-0 origin-bottom-right'} ${menuOpenDirection === 'up' ? 'bottom-full mb-3' : 'top-full mt-3'} bg-white dark:bg-[#1E293B] rounded-2xl p-2.5 pb-3 flex flex-col gap-2 overflow-visible w-48 z-0`}
               style={{ color: 'var(--text-color)' }}
               onClick={(e) => e.stopPropagation()}
               dir={isEn ? 'ltr' : 'rtl'}
             >
               <button 
                 onClick={() => switchTab('all')}
-                className="w-full text-right px-4 py-2.5 rounded-xl text-sm font-bold transition-colors cursor-pointer"
+                className="app-page-card border-0 w-full text-start px-3.5 py-2.5 rounded-xl bg-white dark:bg-[#1E293B] text-sm font-bold transition-all cursor-pointer"
                 style={activeTab === 'all' ? { 
-                  backgroundColor: hexToRgba(primaryColor, 0.12), 
-                  color: primaryColor 
-                } : {}}
+                  backgroundColor: primaryColor, 
+                  color: btnTextColor 
+                } : undefined}
               >
                 {isEn ? "All" : "الكل"}
               </button>
               <button 
                 onClick={() => switchTab('favorites')}
-                className="w-full text-right px-4 py-2.5 rounded-xl text-sm font-bold transition-colors cursor-pointer"
+                className="app-page-card border-0 w-full text-start px-3.5 py-2.5 rounded-xl bg-white dark:bg-[#1E293B] text-sm font-bold transition-all cursor-pointer"
                 style={activeTab === 'favorites' ? { 
-                  backgroundColor: hexToRgba(primaryColor, 0.12), 
-                  color: primaryColor 
-                } : {}}
+                  backgroundColor: primaryColor, 
+                  color: btnTextColor 
+                } : undefined}
               >
                 {isEn ? "Favorites" : "المفضلة"}
               </button>
@@ -618,33 +575,33 @@ const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, onOpenTheme
               
               <button 
                 onClick={() => switchTab('quran')}
-                className="w-full text-right px-4 py-2.5 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                className="app-page-card border-0 w-full text-start px-3.5 py-2.5 rounded-xl bg-white dark:bg-[#1E293B] text-xs font-bold transition-all cursor-pointer"
                 style={activeTab === 'quran' ? { 
-                  backgroundColor: hexToRgba(primaryColor, 0.12), 
-                  color: primaryColor 
-                } : {}}
+                  backgroundColor: primaryColor, 
+                  color: btnTextColor 
+                } : undefined}
               >
                 {isEn ? "The Noble Qur'an" : "القرآن الكريم"}
               </button>
 
               <button 
                 onClick={() => switchTab('sunnah')}
-                className="w-full text-right px-4 py-2.5 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                className="app-page-card border-0 w-full text-start px-3.5 py-2.5 rounded-xl bg-white dark:bg-[#1E293B] text-xs font-bold transition-all cursor-pointer"
                 style={activeTab === 'sunnah' ? { 
-                  backgroundColor: hexToRgba(primaryColor, 0.12), 
-                  color: primaryColor 
-                } : {}}
+                  backgroundColor: primaryColor, 
+                  color: btnTextColor 
+                } : undefined}
               >
                 {isEn ? "Prophetic Sunnah" : "السنة النبوية"}
               </button>
 
               <button 
                 onClick={() => switchTab('guide')}
-                className="w-full text-right px-4 py-2.5 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                className="app-page-card border-0 w-full text-start px-3.5 py-2.5 rounded-xl bg-white dark:bg-[#1E293B] text-xs font-bold transition-all cursor-pointer"
                 style={activeTab === 'guide' ? { 
-                  backgroundColor: hexToRgba(primaryColor, 0.12), 
-                  color: primaryColor 
-                } : {}}
+                  backgroundColor: primaryColor, 
+                  color: btnTextColor 
+                } : undefined}
               >
                 {isEn ? "Ruqyah Guide" : "دليل الرقية"}
               </button>
@@ -652,15 +609,14 @@ const OthersPage: React.FC<OthersPageProps> = ({ onBack, onNavigate, onOpenTheme
           )}
         </AnimatePresence>
 
-        {/* Modern Flat FAB */}
+        {/* 3D FAB matching Tasbeeh */}
         <button 
           ref={fabRef}
           onClick={handleFabClick}
-          className="w-14 h-14 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer relative z-10 border-0"
+          className="app-page-card border-0 w-14 h-14 rounded-full flex items-center justify-center transition-all cursor-pointer relative z-10"
           style={{
             backgroundColor: primaryColor,
             color: btnTextColor,
-            boxShadow: `0 8px 25px ${hexToRgba(primaryColor, isBlackTheme ? 0.2 : 0.35)}`
           }}
           title={isEn ? "Sections & Categories" : "الأقسام والتصنيفات"}
           aria-label={isEn ? "Sections & Categories" : "الأقسام والتصنيفات"}

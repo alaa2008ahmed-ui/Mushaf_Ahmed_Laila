@@ -20,12 +20,12 @@ export const IqamaAlertModal: React.FC<IqamaAlertModalProps> = ({ alert, onDismi
     if (!alert) return null;
 
     useEffect(() => {
-        // Automatically play the chime sound when Iqama alert modal appears
-        playNotificationSound('/assets/audio/chime.mp3', true);
+        // Automatically play the water droplet alert tone when Iqama alert modal appears
+        playNotificationSound('/assets/audio/notif_droplet.wav', true);
     }, [alert.prayerKey, alert.timeStr]);
 
     const handleReplay = () => {
-        playNotificationSound('/assets/audio/chime.mp3', true);
+        playNotificationSound('/assets/audio/notif_droplet.wav', true);
     };
 
     const localizedPrayerName = getPrayerDisplayName(alert.prayerKey, language);

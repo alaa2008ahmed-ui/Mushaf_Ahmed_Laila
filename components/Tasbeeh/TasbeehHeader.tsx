@@ -2,7 +2,7 @@ import React from 'react';
 import ThemePageLock from '../ThemePageLock';
 import { useLanguage } from '../../context/LanguageContext';
 import { tTasbeeh } from '../../utils/tasbeehTranslations';
-import { HelpCircle } from 'lucide-react';
+import { useShowPageGuides } from '../../utils/guideManager';
 
 interface TasbeehHeaderProps {
     title?: string;
@@ -10,18 +10,28 @@ interface TasbeehHeaderProps {
     onBack?: () => void;
     onHome?: () => void;
     onOpenGuide?: () => void;
+    showQuickTasbeehOnHome?: boolean;
+    onToggleQuickTasbeehOnHome?: () => void;
 }
 
-const TasbeehHeader: React.FC<TasbeehHeaderProps> = ({ onBack, onHome, onOpenGuide }) => {
+const TasbeehHeader: React.FC<TasbeehHeaderProps> = ({ 
+    onBack, 
+    onHome, 
+    onOpenGuide,
+    showQuickTasbeehOnHome = false,
+    onToggleQuickTasbeehOnHome
+}) => {
+    const showPageGuides = useShowPageGuides();
     const { language, isRTL } = useLanguage();
     const localizedTitle = tTasbeeh('title', language);
+    const isEn = language === 'en';
 
     return (
         <header className="app-top-bar shrink-0">
             <div className="app-top-bar__inner">
                 <div className="relative flex items-center justify-center w-full min-h-[44px]">
-                    {/* Back button */}
-                    <div className="absolute right-0 flex items-center rtl:right-0 rtl:left-auto ltr:right-auto ltr:left-0">
+                    {/* Back button & Quick Tasbeeh on Home toggle */}
+                    <div className="absolute right-0 flex items-center gap-1.5 rtl:right-0 rtl:left-auto ltr:right-auto ltr:left-0 z-10 px-1">
                         {onBack && (
                             <button
                                 onClick={onBack}
@@ -35,15 +45,15 @@ const TasbeehHeader: React.FC<TasbeehHeaderProps> = ({ onBack, onHome, onOpenGui
                     </div>
 
                     {/* Page title in center */}
-                    <div className="text-center px-12 min-w-0">
-                        <h1 className="app-top-bar__title text-lg sm:text-xl font-kufi truncate">
+                    <div className="text-center px-24 sm:px-28 min-w-0 max-w-full">
+                        <h1 className="app-top-bar__title text-base sm:text-xl font-bold font-kufi truncate">
                             {localizedTitle}
                         </h1>
                     </div>
 
                     {/* Guide, Home icon & Theme Lock on left/right */}
                     <div className="absolute left-0 flex items-center gap-1 rtl:left-0 rtl:right-auto ltr:left-auto ltr:right-0">
-                        {onOpenGuide && (
+                        {onOpenGuide && showPageGuides && (
                             <button
                                 type="button"
                                 onClick={onOpenGuide}

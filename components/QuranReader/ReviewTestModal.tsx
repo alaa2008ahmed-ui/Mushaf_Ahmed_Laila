@@ -136,12 +136,12 @@ const ReviewTestModal: React.FC<ReviewTestModalProps> = ({
 
     return (
         <div className="fixed inset-0 z-[1200] bg-black/60 backdrop-blur-sm flex items-center justify-center p-0 sm:p-4 animate-fadeIn" dir="rtl">
-            <div className="w-full max-w-lg h-full sm:h-auto max-h-[100dvh] sm:max-h-[90vh] bg-white rounded-none sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-modal-enter border-0" style={{ backgroundColor: currentTheme.bg, color: currentTheme.text, border: 'none', outline: 'none' }}>
+            <div className="w-full max-w-lg h-full sm:h-auto max-h-[100dvh] sm:max-h-[90dvh] bg-white rounded-none sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-modal-enter border-0" style={{ backgroundColor: currentTheme.bg, color: currentTheme.text, border: 'none', outline: 'none' }}>
                 {/* Header */}
                 <div 
                     className="px-4 pb-4 border-0 flex items-center justify-between" 
                     style={{ 
-                        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1.25rem)'
+                        paddingTop: 'calc(var(--app-safe-top, 0px) + 1rem)'
                     }}
                 >
                     <button onClick={onClose} className="p-2 quran-raised-btn rounded-xl transition-colors border-0 text-slate-700 dark:text-slate-200" title="رجوع">
@@ -164,7 +164,7 @@ const ReviewTestModal: React.FC<ReviewTestModalProps> = ({
                     ></div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                <div className="flex-1 min-h-0 overflow-y-auto p-6 modal-sheet-safe-bottom space-y-6">
                     {/* Question Context */}
                     <div className="space-y-4">
                         <div className="flex items-center gap-2 text-emerald-600 font-bold text-sm">

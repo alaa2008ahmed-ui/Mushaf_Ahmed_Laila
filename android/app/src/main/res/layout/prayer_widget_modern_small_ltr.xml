@@ -1,0 +1,264 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:layoutDirection="ltr"
+    android:background="@drawable/widget_3d_card_elevated"
+    android:clipToOutline="true"
+    android:padding="3dp">
+
+    <!-- Top Row: App Icon + Date Pill + Hero Next Prayer Spotlight + Refresh -->
+    <LinearLayout
+        android:id="@+id/modern_header_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="2dp"
+        android:paddingEnd="2dp"
+        android:paddingBottom="2dp">
+
+        <ImageView
+            android:id="@+id/widget_app_icon"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:src="@mipmap/ic_launcher"
+            android:contentDescription="App Icon" />
+
+        <LinearLayout
+            android:id="@+id/modern_date_pill"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginStart="4dp">
+
+            <TextView
+                android:id="@+id/modern_hijri_date"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="-- Ramadan"
+                android:textColor="#059669"
+                android:textSize="10.5sp"
+                android:textStyle="bold"
+                android:singleLine="true"
+                android:includeFontPadding="false" />
+
+            <TextView
+                android:id="@+id/modern_date_sep"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text=" | "
+                android:textColor="#94A3B8"
+                android:textSize="9.5sp"
+                android:layout_marginStart="2dp"
+                android:layout_marginEnd="2dp"
+                android:includeFontPadding="false" />
+
+            <TextView
+                android:id="@+id/modern_gregorian_date"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="-- --"
+                android:textColor="#64748B"
+                android:textSize="9.5sp"
+                android:textStyle="bold"
+                android:singleLine="true"
+                android:includeFontPadding="false" />
+        </LinearLayout>
+
+        <!-- Compact Hero Spotlight Card (Shows Next Prayer Name, Time, Countdown) -->
+        <LinearLayout
+            android:id="@+id/modern_hero_card"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:background="@drawable/widget_3d_pod_active"
+            android:paddingStart="6dp"
+            android:paddingEnd="6dp"
+            android:paddingTop="1dp"
+            android:paddingBottom="1dp"
+            android:layout_marginStart="4dp"
+            android:layout_marginEnd="4dp">
+
+            <TextView
+                android:id="@+id/modern_hero_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Next:"
+                android:textColor="#065F46"
+                android:textSize="9.5sp"
+                android:textStyle="bold"
+                android:singleLine="true"
+                android:includeFontPadding="false"
+                android:layout_marginEnd="2dp" />
+
+            <TextView
+                android:id="@+id/modern_hero_prayer_name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Fajr"
+                android:textColor="#047857"
+                android:textSize="10.5sp"
+                android:textStyle="bold"
+                android:singleLine="true"
+                android:includeFontPadding="false"
+                android:layout_marginEnd="3dp" />
+
+            <TextView
+                android:id="@+id/modern_hero_prayer_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="04:29"
+                android:textColor="#065F46"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:singleLine="true"
+                android:includeFontPadding="false"
+                android:layout_marginEnd="4dp" />
+
+            <TextView
+                android:id="@+id/modern_hero_remaining_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="in"
+                android:textColor="#059669"
+                android:textSize="9.5sp"
+                android:textStyle="bold"
+                android:singleLine="true"
+                android:includeFontPadding="false"
+                android:layout_marginEnd="2dp" />
+
+            <Chronometer
+                android:id="@+id/modern_hero_chronometer"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="#047857"
+                android:textSize="10.5sp"
+                android:textStyle="bold"
+                android:includeFontPadding="false"
+                android:countDown="true"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/modern_hero_remaining_en"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="#047857"
+                android:textSize="10.5sp"
+                android:textStyle="bold"
+                android:includeFontPadding="false" />
+        </LinearLayout>
+
+        <ImageView
+            android:id="@+id/widget_btn_refresh"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:src="@drawable/ic_widget_refresh"
+            android:padding="1dp"
+            android:contentDescription="Refresh" />
+    </LinearLayout>
+
+    <!-- Bottom Row: 6 Floating 3D Prayer Pods (Each showing BOTH Name AND Time!) -->
+    <LinearLayout
+        android:id="@+id/modern_pods_container"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="horizontal"
+        android:baselineAligned="false">
+
+        <!-- Fajr Pod -->
+        <LinearLayout
+            android:id="@+id/pod_fajr"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:background="@drawable/widget_3d_pod"
+            android:padding="1dp"
+            android:layout_marginEnd="2dp">
+            <TextView android:id="@+id/name_fajr" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Fajr" android:textColor="#475569" android:textSize="10sp" android:textStyle="bold" android:singleLine="true" android:includeFontPadding="false"/>
+            <TextView android:id="@+id/time_fajr" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="04:14" android:textColor="#1E293B" android:textSize="11.5sp" android:textStyle="bold" android:singleLine="true" android:includeFontPadding="false" android:layout_marginTop="1dp"/>
+        </LinearLayout>
+
+        <!-- Sunrise Pod -->
+        <LinearLayout
+            android:id="@+id/pod_sunrise"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:background="@drawable/widget_3d_pod"
+            android:padding="1dp"
+            android:layout_marginEnd="2dp">
+            <TextView android:id="@+id/name_sunrise" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Sun" android:textColor="#475569" android:textSize="10sp" android:textStyle="bold" android:singleLine="true" android:includeFontPadding="false"/>
+            <TextView android:id="@+id/time_sunrise" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="05:34" android:textColor="#1E293B" android:textSize="11.5sp" android:textStyle="bold" android:singleLine="true" android:includeFontPadding="false" android:layout_marginTop="1dp"/>
+        </LinearLayout>
+
+        <!-- Dhuhr Pod -->
+        <LinearLayout
+            android:id="@+id/pod_dhuhr"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:background="@drawable/widget_3d_pod"
+            android:padding="1dp"
+            android:layout_marginEnd="2dp">
+            <TextView android:id="@+id/name_dhuhr" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Dhuhr" android:textColor="#475569" android:textSize="10sp" android:textStyle="bold" android:singleLine="true" android:includeFontPadding="false"/>
+            <TextView android:id="@+id/time_dhuhr" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="11:45" android:textColor="#1E293B" android:textSize="11.5sp" android:textStyle="bold" android:singleLine="true" android:includeFontPadding="false" android:layout_marginTop="1dp"/>
+        </LinearLayout>
+
+        <!-- Asr Pod -->
+        <LinearLayout
+            android:id="@+id/pod_asr"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:background="@drawable/widget_3d_pod"
+            android:padding="1dp"
+            android:layout_marginEnd="2dp">
+            <TextView android:id="@+id/name_asr" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Asr" android:textColor="#475569" android:textSize="10sp" android:textStyle="bold" android:singleLine="true" android:includeFontPadding="false"/>
+            <TextView android:id="@+id/time_asr" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="03:14" android:textColor="#1E293B" android:textSize="11.5sp" android:textStyle="bold" android:singleLine="true" android:includeFontPadding="false" android:layout_marginTop="1dp"/>
+        </LinearLayout>
+
+        <!-- Maghrib Pod -->
+        <LinearLayout
+            android:id="@+id/pod_maghrib"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:background="@drawable/widget_3d_pod"
+            android:padding="1dp"
+            android:layout_marginEnd="2dp">
+            <TextView android:id="@+id/name_maghrib" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Magh" android:textColor="#475569" android:textSize="10sp" android:textStyle="bold" android:singleLine="true" android:includeFontPadding="false"/>
+            <TextView android:id="@+id/time_maghrib" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="05:56" android:textColor="#1E293B" android:textSize="11.5sp" android:textStyle="bold" android:singleLine="true" android:includeFontPadding="false" android:layout_marginTop="1dp"/>
+        </LinearLayout>
+
+        <!-- Isha Pod -->
+        <LinearLayout
+            android:id="@+id/pod_isha"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:background="@drawable/widget_3d_pod"
+            android:padding="1dp">
+            <TextView android:id="@+id/name_isha" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Isha" android:textColor="#475569" android:textSize="10sp" android:textStyle="bold" android:singleLine="true" android:includeFontPadding="false"/>
+            <TextView android:id="@+id/time_isha" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="07:26" android:textColor="#1E293B" android:textSize="11.5sp" android:textStyle="bold" android:singleLine="true" android:includeFontPadding="false" android:layout_marginTop="1dp"/>
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>

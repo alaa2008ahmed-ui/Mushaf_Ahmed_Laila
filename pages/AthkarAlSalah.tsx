@@ -15,6 +15,7 @@ import { scrollToNextCard } from '../utils/cardScrollHelper';
 import { CommunitySpotlightGuide, getGuideSeen } from '../components/Community/CommunitySpotlightGuide';
 import { ATHKAR_SALAH_PAGE_STEPS } from '../components/Community/communityTourSteps';
 import { markPageAsSeen } from '../utils/badgeManager';
+import { useShowPageGuides } from '../utils/guideManager';
 
 const SalahZikrCard = ({ 
     zikr, 
@@ -133,10 +134,12 @@ const SalahZikrCard = ({
     const displayTitle = isEn ? (zikr.titleEn || '') : zikr.title;
     const displayNote = isEn ? (zikr.noteEn || zikr.note) : zikr.note;
 
+    const accentHex = isBlackTheme ? '#FFFFFF' : (theme.palette?.[0] || theme.accent || '#2E7D5E');
+
     return (
         <div 
             data-card-item="true"
-            className={`bg-white dark:bg-[#1E293B] p-5 pb-3 rounded-2xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05),0_2px_6px_-1px_rgba(0,0,0,0.02)] border border-slate-100/80 dark:border-white/5 relative overflow-hidden group mb-4 transition-all duration-300 ${isFinished ? 'opacity-60 cursor-pointer' : 'cursor-pointer hover:shadow-md'}`} 
+            className={`app-page-card tasbeeh-pressable border-0 bg-white dark:bg-[#1E293B] p-5 pb-4 rounded-2xl relative overflow-visible group mb-4 transition-all duration-300 ${isFinished ? 'opacity-60 cursor-pointer' : 'cursor-pointer'}`} 
             onClick={(e) => {
                 onDecrement();
                 if (zikr.currentCount <= 1 || isFinished) {
@@ -146,18 +149,18 @@ const SalahZikrCard = ({
             }}
         >
             <div className={`flex justify-between items-start mb-2 ${isEn ? 'flex-row' : ''}`}>
-                <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold" style={{ backgroundColor: `${primaryColor}14`, color: primaryColor }}>
+                <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold" style={{ backgroundColor: `${primaryColor}14`, color: accentHex }}>
                     {displayNote}
                 </span>
                 <div 
-                    className={`count-badge w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg shadow-md transform transition-transform`} 
+                    className="app-page-card tasbeeh-inner-pressable border-0 count-badge w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg bg-white dark:bg-[#1E293B] transition-all shrink-0" 
                     style={
                         isFinished 
-                        ? { backgroundColor: '#94a3b8', color: '#ffffff' } 
-                        : { backgroundColor: primaryColor, color: '#ffffff', boxShadow: `0 4px 14px 0 ${primaryColor}40` }
+                        ? { backgroundColor: '#10B981', color: '#ffffff' } 
+                        : { color: accentHex }
                     }
                 >
-                    {isFinished ? <i className="fa-solid fa-check"></i> : zikr.currentCount}
+                    {isFinished ? <i className="fa-solid fa-check text-sm"></i> : zikr.currentCount}
                 </div>
             </div>
 
@@ -178,53 +181,58 @@ const SalahZikrCard = ({
                 <div className={`${textClass} select-none`} dangerouslySetInnerHTML={{ __html: zikr.text }}></div>
             )}
             
-            <div className={`flex justify-between items-center mt-4 mb-3 pt-3 border-t border-black/5 dark:border-white/5 ${isEn ? 'flex-row' : ''}`}>
+            <div className={`flex justify-between items-center mt-4 pt-3 pb-1 border-t border-black/5 dark:border-white/5 overflow-visible ${isEn ? 'flex-row' : ''}`}>
                 <button 
+                    type="button"
                     onClick={toggleFav} 
-                    className="w-8 h-8 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors"
+                    className="app-page-card border-0 w-9 h-9 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all cursor-pointer"
                     title={isEn ? (isFav ? 'Remove from favorites' : 'Add to favorites') : (isFav ? 'إزالة من المفضلة' : 'إضافة إلى المفضلة')}
                     aria-label={isEn ? 'Favorite' : 'المفضلة'}
                 >
                     <i className={`fa-heart ${isFav ? 'fa-solid text-red-500' : 'fa-regular text-gray-500 dark:text-gray-400'}`}></i>
                 </button>
-                <div className="flex gap-2">
+                <div className="flex gap-2.5 overflow-visible">
                    <button 
+                       type="button"
                        onClick={(e) => { e.stopPropagation(); onZoom(); }} 
-                       className="w-8 h-8 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors text-gray-600 dark:text-gray-300" 
+                       className="app-page-card border-0 w-9 h-9 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all text-gray-600 dark:text-gray-300 cursor-pointer" 
                        title={isEn ? "Zoom" : "تكبير"}
                        aria-label={isEn ? "Zoom" : "تكبير"}
                    >
-                       <i className="fa-solid fa-magnifying-glass-plus"></i>
+                       <i className="fa-solid fa-magnifying-glass-plus text-xs"></i>
                    </button>
                    <button 
+                       type="button"
                        onClick={handleCopy} 
-                       className="w-8 h-8 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors text-gray-600 dark:text-gray-300" 
+                       className="app-page-card border-0 w-9 h-9 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all text-gray-600 dark:text-gray-300 cursor-pointer" 
                        title={isEn ? "Copy" : "نسخ"}
                        aria-label={isEn ? "Copy" : "نسخ"}
                    >
-                       <i className="fa-regular fa-copy"></i>
+                       <i className="fa-regular fa-copy text-xs"></i>
                    </button>
                    <button 
+                       type="button"
                        onClick={handleShare} 
-                       className="w-8 h-8 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors text-gray-600 dark:text-gray-300" 
+                       className="app-page-card border-0 w-9 h-9 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all text-gray-600 dark:text-gray-300 cursor-pointer" 
                        title={isEn ? "Share" : "مشاركة"}
                        aria-label={isEn ? "Share" : "مشاركة"}
                    >
-                       <i className="fa-solid fa-share-nodes"></i>
+                       <i className="fa-solid fa-share-nodes text-xs"></i>
                    </button>
                    <button 
+                       type="button"
                        onClick={handlePlayAudio} 
-                       className="w-8 h-8 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 transition-colors text-gray-600 dark:text-gray-300" 
+                       className="app-page-card border-0 w-9 h-9 rounded-full flex items-center justify-center bg-white dark:bg-[#1E293B] transition-all text-gray-600 dark:text-gray-300 cursor-pointer" 
                        style={{ color: isPlaying ? '#ef4444' : 'inherit' }}
                        title={isEn ? (isPlaying ? "Stop listening" : "Listen audio") : (isPlaying ? "إيقاف الاستماع" : "استماع صوتي")}
                        aria-label={isEn ? "Listen audio" : "استماع صوتي"}
                    >
-                       <i className={`fa-solid ${isPlaying ? 'fa-circle-pause text-red-500 animate-pulse' : 'fa-volume-high'}`}></i>
+                       <i className={`fa-solid ${isPlaying ? 'fa-circle-pause text-red-500 animate-pulse text-sm' : 'fa-volume-high text-xs'}`}></i>
                    </button>
                 </div>
             </div>
 
-            {!isFinished && <div className="absolute inset-0 opacity-0 group-active:opacity-100 transition pointer-events-none" style={{backgroundColor: theme.palette[0]+'15'}}></div>}
+            {!isFinished && <div className="absolute inset-0 rounded-2xl opacity-0 group-active:opacity-100 transition pointer-events-none" style={{backgroundColor: theme.palette[0]+'15'}}></div>}
         </div>
     );
 };
@@ -236,6 +244,7 @@ interface AthkarAlSalahProps {
 }
 
 function AthkarAlSalah({ onBack, onNavigate, navParams }: AthkarAlSalahProps) {
+    const showPageGuides = useShowPageGuides();
     const { theme, themeKey } = useTheme();
     const { language } = useLanguage();
     const isEn = language === 'en';
@@ -455,7 +464,7 @@ function AthkarAlSalah({ onBack, onNavigate, navParams }: AthkarAlSalahProps) {
 
     return (
         <div 
-            className="h-screen flex flex-col overflow-hidden transition-colors" 
+            className="h-[100dvh] flex flex-col overflow-hidden transition-colors" 
             dir={isEn ? 'ltr' : 'rtl'}
             style={{ backgroundColor: isBlackTheme ? '#000000' : (theme.bgColor || (theme.isDark ? '#0F172A' : '#F5F7FA')) }}
         >
@@ -483,7 +492,7 @@ function AthkarAlSalah({ onBack, onNavigate, navParams }: AthkarAlSalahProps) {
 
                         {/* زر الهوم والدليل: يظهر الدليل فقط في الصفحة الأولى */}
                         <div className="flex items-center gap-1 shrink-0 justify-end min-w-[40px]">
-                            {!currentPrayer && !isFavoritesView && (
+                            {!currentPrayer && !isFavoritesView && showPageGuides && (
                                 <button
                                     type="button"
                                     onClick={() => setShowGuide(true)}
@@ -509,35 +518,34 @@ function AthkarAlSalah({ onBack, onNavigate, navParams }: AthkarAlSalahProps) {
                 </div>
             </header>
 
-            <main className="flex-1 overflow-y-auto hide-scrollbar relative max-w-3xl mx-auto w-full px-4 pt-2 pb-7 sm:pb-8 pb-[calc(env(safe-area-inset-bottom,0px)+1.75rem)] flex flex-col">
-                {/* Controls Bar: Search and View Mode Switch - Matches Adia/OthersPage */}
-                <div className="mb-6 max-w-3xl mx-auto w-full flex items-center gap-2 z-10 shrink-0" dir={isEn ? 'ltr' : 'rtl'}>
+            <main className="flex-1 min-h-0 overflow-y-auto hide-scrollbar relative max-w-3xl mx-auto w-full px-4 pt-2 app-scroll-safe-fab">
+                {/* Controls Bar: Search and View Mode Switch - Matches Tasbeeh 3D */}
+                <div className="mb-6 max-w-3xl mx-auto w-full flex items-center gap-2.5 z-10 shrink-0" dir={isEn ? 'ltr' : 'rtl'}>
                     {/* Search Input */}
                     <div 
-                        className="relative flex-1 rounded-2xl overflow-hidden focus-within:ring-2 transition-all shadow-sm" 
+                        className="app-page-card border-0 relative flex-1 rounded-2xl bg-white dark:bg-[#1E293B] overflow-visible focus-within:ring-2 transition-all" 
                         style={{ 
-                            backgroundColor: isBlackTheme ? '#111111' : (theme.isDark ? '#1e293b' : '#ffffff'),
-                            borderColor: cardBorderColor,
-                            boxShadow: theme.isDark ? 'none' : '0 4px 14px rgba(0, 0, 0, 0.04)',
-                            ...(isDefaultTheme ? { focusRingColor: '#000'} : { focusRingColor: theme.palette[0]}) 
-                        }}
+                            '--tw-ring-color': primaryColor,
+                        } as any}
                     >
                         <input 
                             type="text" 
                             placeholder={isEn ? "Search prayer remembrances..." : "ابحث في أذكار الصلاة..."} 
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className={`w-full bg-transparent py-3 ${isEn ? 'pl-12 pr-10 text-left font-sans' : 'pr-12 pl-10 text-right font-kufi'} focus:outline-none placeholder-gray-500 dark:placeholder-gray-400`}
+                            className={`w-full bg-transparent py-3 ${isEn ? 'pl-12 pr-12 text-left font-sans' : 'pr-12 pl-12 text-right font-kufi'} focus:outline-none placeholder-gray-500 dark:placeholder-gray-400`}
                             style={{ color: 'var(--text-color)' }}
                         />
                         <i 
-                            className={`fa-solid fa-search absolute ${isEn ? 'left-4' : 'right-4'} top-1/2 transform -translate-y-1/2 opacity-50`} 
+                            className={`fa-solid fa-search absolute ${isEn ? 'left-4' : 'right-4'} top-1/2 transform -translate-y-1/2 opacity-50 pointer-events-none`} 
                             style={{ color: 'var(--text-color)' }}
                         ></i>
                         {searchQuery && (
                             <button
+                                type="button"
                                 onClick={() => setSearchQuery('')}
-                                className={`absolute inset-y-0 ${isEn ? 'right-4' : 'left-4'} flex items-center text-gray-400 hover:text-gray-600`}
+                                className={`app-page-card border-0 absolute ${isEn ? 'right-2.5' : 'left-2.5'} top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white dark:bg-[#1E293B] flex items-center justify-center text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white cursor-pointer`}
+                                aria-label={isEn ? 'Clear search' : 'مسح البحث'}
                             >
                                 <i className="fa-solid fa-times text-xs"></i>
                             </button>
@@ -546,16 +554,12 @@ function AthkarAlSalah({ onBack, onNavigate, navParams }: AthkarAlSalahProps) {
 
                     {/* View Mode Switch */}
                     <div 
-                        className="flex items-center p-1 rounded-2xl border shrink-0 shadow-sm"
-                        style={{
-                            backgroundColor: isBlackTheme ? '#111111' : (theme.isDark ? '#1e293b' : '#ffffff'),
-                            borderColor: cardBorderColor
-                        }}
+                        className="app-page-card border-0 bg-white dark:bg-[#1E293B] flex items-center p-1.5 rounded-2xl gap-1.5 shrink-0 overflow-visible"
                     >
                         <button
                             type="button"
                             onClick={() => setActiveTab('grid')}
-                            className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTab === 'grid' ? 'shadow-sm' : 'opacity-60 hover:opacity-100'}`}
+                            className={`app-page-card border-0 bg-white dark:bg-[#1E293B] flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTab === 'grid' ? '' : 'opacity-70 hover:opacity-100'}`}
                             style={activeTab === 'grid' ? {
                                 backgroundColor: isBlackTheme ? '#FFFFFF' : (isDefaultTheme ? '#000000' : theme.palette[0]),
                                 color: isBlackTheme ? '#000000' : '#ffffff'
@@ -567,7 +571,7 @@ function AthkarAlSalah({ onBack, onNavigate, navParams }: AthkarAlSalahProps) {
                         <button
                             type="button"
                             onClick={() => setActiveTab('list')}
-                            className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTab === 'list' ? 'shadow-sm' : 'opacity-60 hover:opacity-100'}`}
+                            className={`app-page-card border-0 bg-white dark:bg-[#1E293B] flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTab === 'list' ? '' : 'opacity-70 hover:opacity-100'}`}
                             style={activeTab === 'list' ? {
                                 backgroundColor: isBlackTheme ? '#FFFFFF' : (isDefaultTheme ? '#000000' : theme.palette[0]),
                                 color: isBlackTheme ? '#000000' : '#ffffff'
@@ -617,7 +621,7 @@ function AthkarAlSalah({ onBack, onNavigate, navParams }: AthkarAlSalahProps) {
                                           `أذكار ${prayer.title}`, 
                                           `${prayer.titleEn} Adhkar`
                                       )} 
-                                      className={`bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-2xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05),0_2px_6px_-1px_rgba(0,0,0,0.02)] border border-slate-100/80 dark:border-white/5 flex ${activeTab === 'grid' ? 'flex-col items-center text-center justify-center py-6 gap-3' : 'items-center justify-between'} cursor-pointer active:scale-98 transition-all hover:shadow-md group`}
+                                      className={`app-page-card tasbeeh-pressable border-0 bg-white dark:bg-[#1E293B] p-4 sm:p-5 rounded-2xl flex ${activeTab === 'grid' ? 'flex-col items-center text-center justify-center py-6 gap-3' : 'items-center justify-between'} cursor-pointer transition-all group overflow-visible`}
                                  >
                                     <div className={`flex ${activeTab === 'grid' ? 'flex-col items-center gap-3' : 'items-center gap-4'}`}>
                                         <div 
@@ -669,20 +673,8 @@ function AthkarAlSalah({ onBack, onNavigate, navParams }: AthkarAlSalahProps) {
                                 />
                             </div>
                         ))}
-                        <div className="col-span-full">
-                            <BottomSalahGuides 
-                                theme={theme}
-                                themeKey={themeKey}
-                                cardBorderColor={cardBorderColor}
-                                isBlackTheme={isBlackTheme}
-                                isEn={isEn}
-                                onZoom={setZoomedZikr}
-                                setToastMessage={setToastMessage}
-                            />
-                        </div>
                     </div>
                 )}
-                <div className="shrink-0 w-full h-8"></div>
             </main>
 
             {/* Backdrop to close floating menu when clicking anywhere, absorbing the click */}
@@ -700,8 +692,7 @@ function AthkarAlSalah({ onBack, onNavigate, navParams }: AthkarAlSalahProps) {
             {/* Floating Menu & FAB */}
             <div 
                 ref={fabContainerRef} 
-                className={`fixed ${isEn ? 'left-4 items-start' : 'right-4 items-end'} ${isMenuOpen ? 'z-[1250]' : 'z-[90]'} flex flex-col`}
-                style={{ bottom: 'calc(env(safe-area-inset-bottom, 24px) + 32px)' }}
+                className={`fixed app-fab-bottom ${isEn ? 'left-4 items-start' : 'right-4 items-end'} ${isMenuOpen ? 'z-[1250]' : 'z-[90]'} flex flex-col`}
             >
                 <AnimatePresence>
                     {isMenuOpen && (
@@ -710,21 +701,23 @@ function AthkarAlSalah({ onBack, onNavigate, navParams }: AthkarAlSalahProps) {
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: menuOpenDirection === 'up' ? 20 : -20, scale: 0.9 }}
                             transition={{ duration: 0.2 }}
-                            className={`absolute ${isEn ? 'left-0 origin-bottom-left' : 'right-0 origin-bottom-right'} ${menuOpenDirection === 'up' ? 'bottom-full mb-4' : 'top-full mt-4'} bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md rounded-2xl shadow-xl border border-slate-100/80 dark:border-white/10 p-2 flex flex-col gap-1 overflow-hidden w-52 z-0`}
+                            className={`app-page-card border-0 absolute ${isEn ? 'left-0 origin-bottom-left' : 'right-0 origin-bottom-right'} ${menuOpenDirection === 'up' ? 'bottom-full mb-4' : 'top-full mt-4'} bg-white dark:bg-[#1E293B] rounded-2xl p-2.5 pb-3 flex flex-col gap-2 overflow-visible w-52 z-0`}
                             style={{ color: 'var(--text-color)' }}
                             onClick={(e) => e.stopPropagation()}
                         >
                             <button 
+                                type="button"
                                 onClick={() => { setIsFavoritesView(true); setCurrentPrayer(null); setIsMenuOpen(false); }}
-                                className={`w-full ${isEn ? 'text-left' : 'text-right'} px-4 py-2.5 rounded-xl text-sm font-bold transition-colors flex items-center justify-between ${isFavoritesView ? 'bg-black/5 dark:bg-white/10' : 'hover:bg-black/5 dark:hover:bg-white/10'}`}
-                                style={isFavoritesView ? { color: isBlackTheme ? '#FFFFFF' : theme.palette[0] } : {}}
+                                className={`app-page-card border-0 w-full ${isEn ? 'text-left' : 'text-right'} px-3.5 py-2.5 rounded-xl bg-white dark:bg-[#1E293B] text-sm font-bold transition-all flex items-center justify-between cursor-pointer`}
+                                style={isFavoritesView ? { backgroundColor: primaryColor, color: isBlackTheme ? '#000000' : '#FFFFFF' } : undefined}
                             >
                                 <span>{isEn ? 'Favorites' : 'المفضلة'}</span>
-                                <i className="fa-solid fa-heart text-xs opacity-70"></i>
+                                <i className="fa-solid fa-heart text-xs opacity-75"></i>
                             </button>
-                            <div className="h-px bg-black/5 dark:bg-white/10 my-1 mx-2" />
+                            <div className="h-px bg-black/5 dark:bg-white/10 my-0.5 mx-2" />
                             {prayerOptions.map(prayer => (
                                 <button 
+                                    type="button"
                                     key={prayer.id}
                                     onClick={() => { 
                                         openPrayer(
@@ -734,8 +727,8 @@ function AthkarAlSalah({ onBack, onNavigate, navParams }: AthkarAlSalahProps) {
                                         ); 
                                         setIsMenuOpen(false); 
                                     }}
-                                    className={`w-full ${isEn ? 'text-left' : 'text-right'} px-4 py-2.5 rounded-xl text-sm font-bold transition-colors ${currentPrayer?.id === prayer.id ? 'bg-black/5 dark:bg-white/10' : 'hover:bg-black/5 dark:hover:bg-white/10'}`}
-                                    style={currentPrayer?.id === prayer.id ? { color: isBlackTheme ? '#FFFFFF' : theme.palette[0] } : {}}
+                                    className={`app-page-card border-0 w-full ${isEn ? 'text-left' : 'text-right'} px-3.5 py-2.5 rounded-xl bg-white dark:bg-[#1E293B] text-sm font-bold transition-all cursor-pointer`}
+                                    style={currentPrayer?.id === prayer.id ? { backgroundColor: primaryColor, color: isBlackTheme ? '#000000' : '#FFFFFF' } : undefined}
                                 >
                                     {isEn ? prayer.titleEn : prayer.title}
                                 </button>
@@ -745,12 +738,13 @@ function AthkarAlSalah({ onBack, onNavigate, navParams }: AthkarAlSalahProps) {
                 </AnimatePresence>
 
                 <button 
+                    type="button"
                     ref={fabRef}
                     onClick={handleFabClick}
-                    className={`w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-all hover:scale-105 active:scale-95 cursor-pointer relative z-10 ${themeKey === 'default' ? 'text-black' : (isBlackTheme ? 'text-black' : 'text-white')}`}
+                    className={`app-page-card border-0 w-14 h-14 rounded-full flex items-center justify-center transition-all cursor-pointer relative z-10 ${themeKey === 'default' ? 'text-black' : (isBlackTheme ? 'text-black' : 'text-white')}`}
                     style={
                         themeKey === 'default'
-                        ? { backgroundColor: '#ffffff', border: '1px solid #000000' }
+                        ? { backgroundColor: '#ffffff' }
                         : { backgroundColor: isBlackTheme ? '#FFFFFF' : theme.palette[0] }
                     }
                     title={isEn ? "Prayer Menu" : "قائمة الصلوات"}
@@ -774,7 +768,7 @@ function AthkarAlSalah({ onBack, onNavigate, navParams }: AthkarAlSalahProps) {
                         initial={{ opacity: 0, y: 50 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 50 }}
-                        className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[101] bg-gray-800 text-white px-6 py-3 rounded-full shadow-2xl font-bold flex items-center gap-2 whitespace-nowrap border border-white/10"
+                        className="fixed bottom-[calc(var(--app-bottom-clearance,0px)+1rem)] left-1/2 -translate-x-1/2 z-[101] bg-gray-800 text-white px-6 py-3 rounded-full shadow-2xl font-bold flex items-center gap-2 whitespace-nowrap border border-white/10"
                     >
                         <i className="fa-solid fa-spinner fa-spin text-primary" style={{ color: theme.palette[0] }}></i>
                         {toastMessage}

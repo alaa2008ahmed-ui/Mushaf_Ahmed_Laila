@@ -1,0 +1,148 @@
+import { PassageStoryMap } from './asbabNuzulData';
+
+// مقاطع وأسباب نزول وتفاسير سورة القارعة (Al-Qari'ah) - 11 مقطعاً تفصيلياً
+export const QARIAH_DETAILED_PASSAGES: PassageStoryMap[] = [
+  {
+    surahNumber: 101,
+    startAyah: 1,
+    endAyah: 1,
+    storyTitleAr: "القارعة: اسم من أسماء يوم القيامة تقرع القلوب والأسماع بهولها",
+    storyTitleEn: "Al-Qari'ah (The Striking Calamity): Shattering Complacency Upon Announcement",
+    causeAr: "افتتاح السورة بلفظ مفرد مرعب: {الْقَارِعَةُ}.\nالقارعة اسم من أسماء يوم القيامة العظيمة (كالحاقة والطامة والصاخة)، وسُميت بذلك لأنها تقرع القلوب بأهوالها وتقرع الأسماع بصيحة الفزع الكبرى، وتقرع أعداء الله بالعذاب، فتسقط أمامها كل أوهام الدنيا وموازينها المزيفة.",
+    causeEn: "Opening with a stark single-word announcement: {The Striking Calamity}. Al-Qari'ah is one of the awe-inspiring names of the Day of Judgment because its thunderous shock pounds upon human hearts and shatters the entire physical order, sweeping away all worldly illusions.",
+    sourceAr: "تفسير الطبري، تفسير القرطبي، تفسير ابن كثير",
+    sourceEn: "Tafsir al-Tabari, Tafsir al-Qurtubi, Tafsir Ibn Kathir",
+    lessonAr: "• إعداد القلب ليوم القيامة بالاستيقاظ من الغفلة قبل أن تقرعه أهوال الساعة.\n• عظمة التعبير القرآني الذي يبدأ بالكلمة المفردة الصادمة لتنبيه الغافلين.",
+    lessonEn: "• Awakening the heart from spiritual slumber before the shock of the Last Hour strikes.\n• Appreciating how concise Quranic openings shake human complacency instantly."
+  },
+  {
+    surahNumber: 101,
+    startAyah: 2,
+    endAyah: 2,
+    storyTitleAr: "ما القارعة: سؤال التفخيم والتهويل لتعظيم شأن اليوم الآخر في النفوس",
+    storyTitleEn: "What Is the Striking Calamity?: Amplifying Awe Before the Unimaginable Hour",
+    causeAr: "يعقب النداء الأول استفهام تعظيم وتهويل: {مَا الْقَارِعَةُ}.\nهذا التساؤل يثير في نفس السامع الترقب والخشية، ويشعره بأن الحدث القادم ليس حدثاً عادياً يمر في تاريخ البشرية، بل هو الزلزال الكوني الأعظم الذي يطوي صفحة الدنيا ليفتح سجل الآخرة الخالدة.",
+    causeEn: "Immediately followed by an amplifying interrogation: {What is the Striking Calamity?}. Repeating the title in question form heightens dread and anticipation, signaling that the impending cosmic upheaval is utterly unlike any earthly catastrophe humanity has ever witnessed.",
+    sourceAr: "تفسير الطبري، التحرير والتنوير لابن عاشور، تفسير السعدي",
+    sourceEn: "Tafsir al-Tabari, Al-Tahrir wa Al-Tanwir, Tafsir al-Sa'di",
+    lessonAr: "• تعظيم شأن اليوم الآخر في القلب وجعله المحور الأساس لاختيارات الإنسان.\n• استخدام التساؤل الإيماني لتركيز الانتباه على أهوال ما بعد الموت.",
+    lessonEn: "• Elevating awareness of the Hereafter to govern daily moral decisions.\n• Reflective questioning serves as a profound pedagogical method to anchor focus."
+  },
+  {
+    surahNumber: 101,
+    startAyah: 3,
+    endAyah: 3,
+    storyTitleAr: "وما أدراك ما القارعة: تجاوز هول القيامة حدود مدارك العقول البشرية",
+    storyTitleEn: "And What Can Make You Know?: Beyond the Boundaries of Mortal Imagination",
+    causeAr: "زيادة في التهويل والتفخيم بالخطاب المباشر للنبي ﷺ: {وَمَا أَدْرَاكَ مَا الْقَارِعَةُ}.\nوهي صيغة قرآنية ترد للأمور الغيبية العظيمة التي لا سبيل لعلمها إلا بالوحي الإلهي، وفيها تقرير أن حقيقة أهوال القيامة أعظم وأدهى من كل ما يتصوره خيال البشر مهما بلغوا من الفهم والعلم.",
+    causeEn: "Intensifying the awe through direct prophetic address: {And what can make you know what is the Striking Calamity?}. In Quranic style, this phrasing introduces realities solely accessible through revelation, underscoring that Judgment Day exceeds every mortal scale of terror and grandeur.",
+    sourceAr: "تفسير ابن كثير، تفسير الطبري، معاني القرآن للفراء",
+    sourceEn: "Tafsir Ibn Kathir, Tafsir al-Tabari, Ma'ani al-Qur'an",
+    lessonAr: "• التسليم للوحي الصادق في قضايا الغيب لأن العقل البشري قاصر عن الإحاطة بالآخرة.\n• الإكثار من الاستعاذة بالله من كرب يوم القيامة وشدائده.",
+    lessonEn: "• Humbly relying on revelation in matters of the Unseen beyond limited human reason.\n• Continually seeking Allah’s refuge from the terrors of the Day of Resurrection."
+  },
+  {
+    surahNumber: 101,
+    startAyah: 4,
+    endAyah: 4,
+    storyTitleAr: "كالفراش المبثوث: مشهد تشتت الخلائق وذهولهم عند البعث من القبور",
+    storyTitleEn: "Like Dispersed Moths: Humanity’s Bewildered Multitudes Upon Resurrection",
+    causeAr: "بيان أولى علامات تلك القارعة على البشر: {يَوْمَ يَكُونُ النَّاسُ كَالْفَرَاشِ الْمَبْثُوثِ}.\nيُشبّه القرآن جموع البشر المتدافعة المضطربة الخارجة من القبور بالفراش المتطاير المنتشر في كل جهة بلا نظام ولا وجهة؛ إذ يسقط الجاه والسلطان ويغشى الناس الذهول والدهشة من هول الموقف، كما في الآية الأخرى: {كأنهم جراد منتشر}.",
+    causeEn: "Revealing the human spectacle: {It is the Day when people will be like moths, dispersed}. Rising from graves in staggering multitudes, arrogant kings and ordinary people alike surge aimlessly in shock and bewilderment like scattered moths fluttering chaotically in every direction.",
+    sourceAr: "تفسير الطبري، تفسير ابن كثير، تفسير القرطبي",
+    sourceEn: "Tafsir al-Tabari, Tafsir Ibn Kathir, Tafsir al-Qurtubi",
+    lessonAr: "• زوال كل مظاهر الكبر والسلطة الزائفة أمام عظمة الله الملك الديان.\n• أن الأمن الحقيقي في ذلك اليوم المضطرب لا يناله إلا المؤمنون المتقون.",
+    lessonEn: "• All social prestige and tyranny vanish instantaneously before the Sovereign Creator.\n• Only sincere believers enjoy serenity amidst that chaotic universal awakening."
+  },
+  {
+    surahNumber: 101,
+    startAyah: 5,
+    endAyah: 5,
+    storyTitleAr: "كالعهن المنفوش: تفتت الجبال الرواسي وتحولها إلى صوف متطاير في الهواء",
+    storyTitleEn: "Mountains Like Carded Wool: Collapse of Earth’s Mightiest Pillars",
+    causeAr: "بيان أثر القارعة على أصلب مخلوقات الأرض: {وَتَكُونُ الْجِبَالُ كَالْعِهْنِ الْمَنفُوشِ}.\n\"العهن\": الصوف المصبوغ بألوان شتى (كألوان صخور الجبال)، و\"المنفوش\": الذي نُفش باليد أو المندف فتفرق وتطاير في الهواء خفيفاً متلاشياً! فالجبال الرواسي التي يُستحال زوالها في الدنيا تصبح يوم القارعة هباءً خفيفاً يتطاير، فما ظنك بقلب الإنسان الضعيف إذا لم يثبته الإيمان؟",
+    causeEn: "Depicting cosmic collapse: {And the mountains will be like wool, fluffed up}. \"Al-Ihn\" means dyed wool—mirroring the varied strata of mountain rock—that is teased apart until weightless and airborne. If towering granite peaks disintegrate into weightless fluff, how fragile is human arrogance?",
+    sourceAr: "تفسير الطبري، تفسير ابن كثير، لسان العرب، تفسير السعدي",
+    sourceEn: "Tafsir al-Tabari, Tafsir Ibn Kathir, Tafsir al-Sa'di",
+    lessonAr: "• فناء الكون المادي بكل صلابته وبقاء وجه الله الحي القيوم الذي لا يزول.\n• تحقير الدنيا وما فيها من قوة زائلة أمام قوة الجبار جل جلاله.",
+    lessonEn: "• Every seemingly permanent physical structure perishes while the Living Creator remains eternal.\n• Earthly power and grandeur fade into dust before the Almighty."
+  },
+  {
+    surahNumber: 101,
+    startAyah: 6,
+    endAyah: 6,
+    storyTitleAr: "فأما من ثقلت موازينه: نصب الميزان الدقيق ورجحان كفة الحسنات والتوحيد",
+    storyTitleEn: "Whose Scales Are Heavy: The True Weighing of Sincere Faith and Righteous Deeds",
+    causeAr: "بدء تفصيل مصير الخلائق بعد العرض والحساب: {فَأَمَّا مَن ثَقُلَتْ مَوَازِينُهُ}.\nالميزان يوم القيامة ميزان حقيقي له كفتان ولسان كما صحت بذلك الأحاديث النبوية، تُوزن فيه الأعمال أو صحائف الأعمال أو العامل نفسه؛ فمن رجحت كفة حسناته وإخلاصه وتوحيده وصلاته وصدقاته على سيئاته فقد أفلح ونجا الفلاح الأبدي.",
+    causeEn: "Dividing humanity by the divine scales: {Then as for one whose scales are heavy [with good deeds]}. Authentic Sunnah affirms real cosmic scales weighing deeds, records, and souls with exact justice. Whoever’s scale tilts heavy with sincere Tawhid, prayer, charity, and virtue secures eternal triumph.",
+    sourceAr: "صحيح البخاري، صحيح مسلم، سنن الترمذي، تفسير ابن كثير",
+    sourceEn: "Sahih al-Bukhari, Sahih Muslim, Sunan at-Tirmidhi, Tafsir Ibn Kathir",
+    lessonAr: "• الحرص على مثقلات الميزان التي دلنا عليها النبي ﷺ كحسن الخلق وكلمة \"سبحان الله وبحمده، سبحان الله العظيم\".\n• الإيمان الجازم بعدالة الحساب الإلهي ودقته التي لا تظلم مثقال ذرة.",
+    lessonEn: "• Prioritizing deeds known to weigh heavily on the Scale—such as noble character and sincere Dhikr.\n• Unshakable faith in Allah’s absolute precision where not an atom’s weight of good is lost."
+  },
+  {
+    surahNumber: 101,
+    startAyah: 7,
+    endAyah: 7,
+    storyTitleAr: "فهو في عيشة راضية: الحياة الهانئة المرضية في جنات النعيم الأبدي",
+    storyTitleEn: "In a Pleasant Life: Eternal Joy and Serene Contentment in Paradise",
+    causeAr: "جزاء أصحاب الموازين الثقيلة: {فَهُوَ فِي عِيشَةٍ رَّاضِيَةٍ}.\nأي في حياة ناعمة مرضية ترضى بها نفسه وتقرّ بها عينه في جنة الخلد؛ ليس فيها حزن ولا مرض ولا هرم ولا فقر ولا حسد ولا خوف، وقد وُصفت العيشة نفسها بأنها \"راضية\" لمبالغة تمام الرضا والبهجة التي تغمر أهل الجنة من كل جانب.",
+    causeEn: "The reward of heavy scales: {He will be in a pleasant life}. They inhabit an eternal existence of absolute delight—described idiomatically as a life itself \"well-pleased\"—free from grief, fatigue, illness, aging, poverty, or fear, overflowing with perpetual peace and Allah’s pleasure.",
+    sourceAr: "تفسير الطبري، تفسير القرطبي، تفسير السعدي",
+    sourceEn: "Tafsir al-Tabari, Tafsir al-Qurtubi, Tafsir al-Sa'di",
+    lessonAr: "• أن النعيم الحق والرضا التام إنما هو في الجنة التي أعدها الله للمتقين، لا في متاع الدنيا المنغص.\n• الشوق إلى جنة النعيم يهوّن على المؤمن صعاب الطاعة والصبر على البلاء.",
+    lessonEn: "• Pure, unmarred contentment exists solely in Paradise, motivating believers beyond fleeting worldly distractions.\n• Yearning for eternal bliss makes earthly patience and obedience sweet."
+  },
+  {
+    surahNumber: 101,
+    startAyah: 8,
+    endAyah: 8,
+    storyTitleAr: "وأما من خفت موازينه: خسران من طاشت حسناته ورجحت سيئاته وشركه",
+    storyTitleEn: "Whose Scales Are Light: The Tragedy of Squandered Deeds and Spiritual Bankruptcy",
+    causeAr: "المقابل المروع لحال السعداء: {وَأَمَّا مَنْ خَفَّتْ مَوَازِينُهُ}.\nوهم الذين خسروا أنفسهم وأهليهم يوم القيامة؛ لأنهم عاشوا على الكفر والشرك أو الغفلة والظلم والرياء، فلم يثبت لهم رصيد من الحسنات الصادقة يثقل ميزانهم أو رجحت كفة سيئاتهم فهلكوا عند الميزان.",
+    causeEn: "The tragic counterpart: {But as for one whose scales are light}. Having lived in rejection, arrogance, oppression, or hypocritical display, their sincere good deeds weigh virtually nothing against accumulated sins, leaving them spiritually bankrupt at the supreme moment of reckoning.",
+    sourceAr: "تفسير الطبري، تفسير ابن كثير، تفسير السعدي",
+    sourceEn: "Tafsir al-Tabari, Tafsir Ibn Kathir, Tafsir al-Sa'di",
+    lessonAr: "• الحذر من محبطات الأعمال كالشرك والرياء وأذى الخلق والمظالم التي تُفرغ الميزان يوم القيامة.\n• محاسبة النفس في الدنيا قبل أن تُوزن وتنكشف خفتها في الآخرة.",
+    lessonEn: "• Guarding fiercely against nullifiers of deeds such as polytheism, ostentation, and trampling others’ rights.\n• Auditing one’s own scales daily before the final public weighing."
+  },
+  {
+    surahNumber: 101,
+    startAyah: 9,
+    endAyah: 9,
+    storyTitleAr: "فأمه هاوية: مأوى الهالكين ومقرهم في قاع جهنم السحيق",
+    storyTitleEn: "His Refuge Will Be an Abyss (Hawiyah): Plunging Into the Bottomless Pit",
+    causeAr: "بيان مصير من خف ميزانه بعبارة موجعة: {فَأُمُّهُ هَاوِيَةٌ}.\nسُميت جهنم هنا \"أمَّه\" لأن الأم هي الملجأ والمأوى الذي يأوي إليه الولد ويضمه، فكأن هذا الشقي لا مأوى له ولا ملاذ يؤويه سوى النار التي يهوي فيها على رأسه في قاعها السحيق! وقيل أيضاً: أمّ رأسه هاوية في قعر جهنم.",
+    causeEn: "Announcing their grim destination: {His refuge (Ummuhu) will be an abyss}. In Arabic idiom, \"mother\" (Umm) denotes the sanctuary a child flees to; poignantly, their sole remaining \"mother\" and shelter is Hawiyah—an abyss into which they plummet headlong.",
+    sourceAr: "تفسير الطبري، تفسير البغوي، التحرير والتنوير لابن عاشور",
+    sourceEn: "Tafsir al-Tabari, Tafsir al-Baghawi, Al-Tahrir wa Al-Tanwir",
+    lessonAr: "• البعد عن كل طريق يفضي بصاحبه إلى الهاوية من الكفر والكبائر والاستهانة بالمعاصي.\n• عظمة الترهيب القرآني الذي يحرك القلوب الحية للتوبة والإنابة.",
+    lessonEn: "• Fleeing every path of rebellion and heedlessness that leads toward the Abyss.\n• Letting stark Quranic warnings awaken genuine repentance and reverence."
+  },
+  {
+    surahNumber: 101,
+    startAyah: 10,
+    endAyah: 10,
+    storyTitleAr: "وما أدراك ما هيه: تعظيم شدة الهاوية وبُعد تصورها عن نار الدنيا",
+    storyTitleEn: "What Can Make You Know What That Is?: Emphasizing the Inconceivable Fierceness of Hell",
+    causeAr: "الاستفهام المثير للرهبة في ختام السورة: {وَمَا أَدْرَاكَ مَا هِيَهْ}.\nيعود هذا السؤال ليؤكد هول تلك الهاوية وبشاعتها؛ إذ لا تشبهها نيران الدنيا ولا أوهام العذاب المألوفة، والهاء في \"هيه\" هاء السكت الوقفية التي تزيد الإيقاع حدةً وهيبةً وجلجلةً في سمع القارئ.",
+    causeEn: "A terrifying follow-up inquiry: {And what can make you know what that is?}. It reinforces that this bottomless abyss defies earthly comparison, capped with a forceful rhythmic pause (\"Hiyah\") whose resonance strikes solemn awe into the listener’s heart.",
+    sourceAr: "تفسير الطبري، تفسير القرطبي، تفسير ابن كثير",
+    sourceEn: "Tafsir al-Tabari, Tafsir al-Qurtubi, Tafsir Ibn Kathir",
+    lessonAr: "• دوام سؤال الله الجنة والاستعاذة به من النار في دبر الصلوات وفي كل وقت.\n• عدم التهاون مع عذاب الآخرة والقياس الخاطئ له بمصائب الدنيا العابرة.",
+    lessonEn: "• Continuously begging Allah for Paradise and protection from Hellfire after prayers.\n• Never trivializing punishment in the Hereafter by comparing it to passing earthly pains."
+  },
+  {
+    surahNumber: 101,
+    startAyah: 11,
+    endAyah: 11,
+    storyTitleAr: "نار حامية: الجواب القاطع بتأجج حرارة جهنم التي أُوقدت بأمر الله",
+    storyTitleEn: "A Fire, Intensely Hot: The Final Uncompromising Definition of Hawiyah",
+    causeAr: "التعريف النهائي الصاعق للهاوية في آيتين وجيزتين: {نَارٌ حَامِيَةٌ}.\nنار بالغة أقصى درجات الحرارة والاشتعال؛ ثبت في الصحيحين عن النبي ﷺ أنه قال: \"ناركم هذه التي يوقد ابن آدم جزء من سبعين جزءاً من حر جهنم\". فكانت الآية مسك الختام التحذيري للسورة؛ فمن ثقل ميزانه فاز بالعيشة الراضية، ومن خف ميزانه استقر في هذه النار الحامية.",
+    causeEn: "The terse, chilling definition: {It is a Fire, intensely hot}. The Prophet ﷺ taught in Sahih al-Bukhari and Muslim that earthly fire is merely one-seventieth of the heat of Hellfire. This closing verse seals the surah’s stark binary: heavy scales lead to eternal satisfaction, light scales to scorching torment.",
+    sourceAr: "صحيح البخاري، صحيح مسلم، تفسير ابن كثير، تفسير السعدي",
+    sourceEn: "Sahih al-Bukhari, Sahih Muslim, Tafsir Ibn Kathir, Tafsir al-Sa'di",
+    lessonAr: "• وقاية النفس والأهل من النار الحامية بالإيمان والعمل الصالح ورد المظالم.\n• المقارنة البليغة في سورة القارعة تدفع المؤمن للجد والاجتهاد قبل فوات الأوان.",
+    lessonEn: "• Shielding oneself and one’s family from the intensely hot Fire through faith, piety, and justice.\n• Taking the decisive lesson of Surah Al-Qari'ah to strive earnestly while time remains."
+  }
+];

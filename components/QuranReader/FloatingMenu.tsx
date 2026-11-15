@@ -1,5 +1,11 @@
 import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from "react";
 import {
+  getAppNotificationSettings,
+  saveAppNotificationSettings,
+  APP_NOTIFICATION_CHANGE_EVENT,
+  AppNotificationSettings,
+} from "../../utils/appNotificationSettings";
+import {
   Monitor,
   Smartphone,
   AppWindow,
@@ -38,6 +44,8 @@ import {
   Grid,
   BookOpen,
   Menu,
+  Sparkles,
+  GitCompare,
 } from "lucide-react";
 import {
   THEMES,
@@ -83,6 +91,8 @@ import { normalizeArabic } from "../../utils/voiceParser";
 import { setupNotifications } from "../../utils/notifications";
 import { QuranSpotlightGuide, getQuranGuideSeen } from "./QuranSpotlightGuide";
 import { QURAN_SIDEBAR_STEPS } from "./quranGuideSteps";
+import { useShowPageGuides } from "../../utils/guideManager";
+import { syncClusterTheme, getClusterForLanguage } from "../../utils/quranClusterSync";
 
 interface FloatingMenuProps {
   page: string;
@@ -121,32 +131,17 @@ interface FloatingMenuProps {
 }
 
 const ALL_SHORTCUTS = [
-  {
-    id: "quran-download-parent",
-    label: "تحميل القرآن",
-    icon: <Download size={18} />,
-  },
-  {
-    id: "tafseer-download",
-    label: "تحميل التفسير",
-    icon: <Download size={18} />,
-  },
-  {
-    id: "interface-customization",
-    label: "تخصيص الواجهة",
-    icon: <Palette size={18} />,
-  },
-  { id: "audio", label: "القراء", icon: <Headphones size={18} /> },
   { id: "font-type", label: "نوع الخط", icon: <Type size={18} /> },
   { id: "notification-settings", label: "الإشعارات", icon: <Bell size={18} /> },
   { id: "sajdah-list", label: "آيات السجدة", icon: <Compass size={18} /> },
+  { id: "thematic-encyclopedia", label: "الموسوعة الموضوعية", icon: <BookOpen size={18} /> },
+  { id: "waqf-guide", label: "علامات الوقف", icon: <Compass size={18} /> },
+  { id: "mutashabihat", label: "المتشابهات اللفظية", icon: <GitCompare size={18} /> },
+  { id: "asbab-nuzul", label: "أسباب النزول", icon: <Info size={18} /> },
+  { id: "irab", label: "إعراب القرآن", icon: <BookText size={18} /> },
 ];
 
 const DEFAULT_SHORTCUTS = [
-  "quran-download-parent",
-  "tafseer-download",
-  "interface-customization",
-  "audio",
   "font-type",
   "notification-settings",
   "sajdah-list",
@@ -182,6 +177,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
   const { applyPresetTheme: applyGlobalTheme } = useTheme();
   const { t, translateMenuItem, language, isRTL, formatNumber } = useLanguage();
   const isEn = language === 'en';
+  const showPageGuides = useShowPageGuides();
   const isDarkTheme = isDarkQuranTheme(currentTheme);
   const [selectedShortcuts, setSelectedShortcuts] = useState<string[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -576,10 +572,10 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
   }, [isFloatingMenuOpen, initialView, isLandscape]);
 
   useEffect(() => {
-    if (currentView !== "main" || isLandscape) {
+    if (currentView !== "main" || isLandscape || !showPageGuides) {
       setIsSidebarGuideOpen(false);
     }
-  }, [currentView, isLandscape]);
+  }, [currentView, isLandscape, showPageGuides]);
 
   useEffect(() => {
     const saved = localStorage.getItem("quran_menu_shortcuts");
@@ -1089,8 +1085,15 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
     }
   };
 
-  const iconColor = currentTheme.accent || "#000000";
-  const sidebarIconColor = currentTheme.id === 'black' ? '#14b8a6' : iconColor;
+  const isDeepBlack = currentTheme?.id === "deep_black";
+  const themeDarkColor = (currentTheme?.headerText && currentTheme?.headerText !== "#000000")
+    ? currentTheme.headerText
+    : (currentTheme?.barText && currentTheme?.barText !== "#000000")
+      ? currentTheme.barText
+      : (currentTheme?.accent || currentTheme?.text || "#000000");
+  const sidebarIconColor = isDarkTheme ? "#ffffff" : themeDarkColor;
+  const iconColor = isDarkTheme ? "#ffffff" : themeDarkColor;
+  const actionBtnBg = isDeepBlack ? (currentTheme.accent || "#27272a") : iconColor;
   const [, setThemeChangeTick] = useState(0);
 
   const applyTheme = (themeId: string) => {
@@ -1111,6 +1114,11 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
     const layout = getCurrentLayoutContext();
     saveQuranThemeForLayout(themeId, layout, modeSuffix, readingMode);
     syncQuranThemeToStorage(theme, modeSuffix, readingMode);
+
+    if (!isWirdMode && !isMemorizationMode) {
+      const cluster = getClusterForLanguage(language);
+      syncClusterTheme(cluster, themeId, layout, isLandscape);
+    }
 
     setThemeChangeTick((prev) => prev + 1);
     window.dispatchEvent(new Event("theme-change"));
@@ -1168,7 +1176,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                   ? "max-w-[85vw]"
                   : "w-[155px] max-w-[85vw]"
                 : "w-[200px] max-w-[85vw]"
-          } ${isLandscape ? "rounded-none" : isRTL ? "rounded-l-2xl" : "rounded-r-2xl"} shadow-2xl transition-all duration-300 ${isRTL ? "origin-top-right" : "origin-top-left"} flex flex-col pointer-events-auto h-full ${isFloatingMenuOpen ? "opacity-100 visible scale-100 translate-y-0" : "opacity-0 invisible scale-95 -translate-y-4"}`}
+          } ${isLandscape ? "rounded-none pt-[var(--logical-safe-top,0px)] pb-[var(--logical-safe-bottom,0px)]" : isRTL ? "rounded-l-2xl" : "rounded-r-2xl"} shadow-2xl transition-all duration-300 ${isRTL ? "origin-top-right" : "origin-top-left"} flex flex-col pointer-events-auto h-full ${isFloatingMenuOpen ? "opacity-100 visible scale-100 translate-y-0" : "opacity-0 invisible scale-95 -translate-y-4"}`}
           style={{
             ...(currentView === "themes" && mainSidebarWidth
               ? {
@@ -1214,7 +1222,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                 </button>
               </div>
 
-              <div className="flex-grow overflow-y-auto p-3 custom-scrollbar">
+              <div className="flex-grow min-h-0 overflow-y-auto p-3 custom-scrollbar">
                 <div className="flex flex-col gap-1.5">
                   {ALL_SHORTCUTS.map((shortcut) => {
                     const isSelected = tempShortcuts.includes(shortcut.id);
@@ -1265,7 +1273,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                 <button
                   onClick={saveShortcuts}
                   className="flex-1 text-white py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 quran-raised-btn-selected border-0"
-                  style={{ backgroundColor: iconColor, border: "none" }}
+                  style={{ backgroundColor: actionBtnBg, border: "none" }}
                 >
                   <Save size={15} className="quran-3d-icon" />
                   {isEn ? "Save" : "حفظ"}
@@ -1303,7 +1311,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                 </div>
               </div>
 
-              <div className="flex-grow overflow-y-auto overflow-x-hidden p-2.5 custom-scrollbar flex flex-col justify-between">
+              <div className="flex-grow min-h-0 overflow-y-auto overflow-x-hidden p-2.5 custom-scrollbar flex flex-col justify-between">
                 <div className="space-y-4">
                   {/* Toggles Section */}
                   <div
@@ -1632,7 +1640,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                   </h3>
                 </div>
               </div>
-              <div className="flex-grow overflow-y-auto p-3 custom-scrollbar flex flex-col gap-2">
+              <div className="flex-grow min-h-0 overflow-y-auto p-3 custom-scrollbar flex flex-col gap-2">
                 <MenuItem
                   icon={<Download size={18} />}
                   label={isEn ? "Download Mushaf" : "تحميل المصحف"}
@@ -1695,7 +1703,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                   </h3>
                 </div>
               </div>
-              <div className="flex-grow overflow-y-auto p-3 custom-scrollbar flex flex-col justify-between">
+              <div className="flex-grow min-h-0 overflow-y-auto p-3 custom-scrollbar flex flex-col justify-between">
                 <div className="flex flex-col gap-2.5">
                   {/* Reciters view strictly filtered by readingMode */}
                   {(() => {
@@ -1863,7 +1871,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                   </h3>
                 </div>
               </div>
-              <div className="flex-grow overflow-y-auto p-3 custom-scrollbar flex flex-col justify-between">
+              <div className="flex-grow min-h-0 overflow-y-auto p-3 custom-scrollbar flex flex-col justify-between">
                 <div className="grid grid-cols-1 gap-2.5">
                   {(readingMode === "translation" ? ENGLISH_FONTS : FONTS).map((f) => {
                     const isTranslationMode = readingMode === "translation";
@@ -1899,13 +1907,13 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                           <span
                             className="text-xs font-bold"
                             style={{
-                              color: isSelected ? (currentTheme.accent || "#10b981") : currentTheme.text,
+                              color: isSelected ? (isDeepBlack ? "#ffffff" : (currentTheme.accent || "#10b981")) : currentTheme.text,
                             }}
                           >
                             {fontDisplayName}
                           </span>
                           {isSelected && (
-                            <Check size={16} style={{ color: currentTheme.accent || "#10b981" }} />
+                            <Check size={16} style={{ color: isDeepBlack ? "#ffffff" : (currentTheme.accent || "#10b981") }} />
                           )}
                         </div>
                       <span
@@ -1956,7 +1964,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                   </h3>
                 </div>
               </div>
-              <div className="flex-grow overflow-y-auto p-3 custom-scrollbar flex flex-col justify-between">
+              <div className="flex-grow min-h-0 overflow-y-auto p-3 custom-scrollbar flex flex-col justify-between">
                 <NotificationSettingsContent
                   showToast={showToast}
                   currentTheme={currentTheme}
@@ -2012,7 +2020,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                   </h3>
                 </div>
               </div>
-              <div className="flex-grow overflow-y-auto p-3.5 custom-scrollbar">
+              <div className="flex-grow min-h-0 overflow-y-auto p-3.5 custom-scrollbar">
                 <div className="space-y-5">
                   {/* Tafsir Selection */}
                   <div className="space-y-2">
@@ -2179,7 +2187,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                     onClick={() => startDownload("tafseer")}
                     disabled={!isDownloading && isAllSelectedDownloaded()}
                     className={`flex-1 py-2.5 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 quran-raised-btn border-0 transition-all ${isDownloading ? "bg-red-500 text-white" : "text-white"} ${!isDownloading && isAllSelectedDownloaded() ? "opacity-50 grayscale cursor-not-allowed" : ""}`}
-                    style={!isDownloading ? { backgroundColor: iconColor, border: "none" } : { border: "none" }}
+                    style={!isDownloading ? { backgroundColor: actionBtnBg, border: "none" } : { border: "none" }}
                   >
                     {isDownloading ? <X size={16} /> : <Download size={16} />}
                     {isDownloading ? (isEn ? "Stop" : "إيقاف") : isAllSelectedDownloaded() ? (isEn ? "Downloaded" : "محمل") : (isEn ? "Download" : "تحميل")}
@@ -2216,7 +2224,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                   </h3>
                 </div>
               </div>
-              <div className="flex-grow overflow-y-auto p-3 custom-scrollbar">
+              <div className="flex-grow min-h-0 overflow-y-auto p-3 custom-scrollbar">
                 <ToolbarColorPickerContent
                   currentTheme={currentTheme}
                   isLandscape={isLandscape}
@@ -2271,7 +2279,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                   </h3>
                 </div>
               </div>
-              <div className="flex-grow overflow-y-auto p-3.5 custom-scrollbar">
+              <div className="flex-grow min-h-0 overflow-y-auto p-3.5 custom-scrollbar">
                 <div className="space-y-5">
                   {/* Reciter Selection */}
                   <div className="space-y-2">
@@ -2364,7 +2372,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                         }}
                         dir={isRTL ? "rtl" : "ltr"}
                       >
-                        <Info size={14} className="shrink-0 text-amber-500 mt-0.5" />
+                        <Info size={14} className={`shrink-0 ${isDeepBlack ? "text-white" : "text-amber-500"} mt-0.5`} />
                         <div>
                           <span className="font-bold">{isEn ? `Notice for reciter (${getReciterDisplayName(selectedReaderObj.name, 'en')}): ` : `تنبيه للقارئ (${selectedReaderObj.name}): `}</span>
                           <span>{isEn ? `Only ${availableSurahsList.length} surahs recorded out of 114. Surahs and Juzs adjusted to available only to prevent stoppage.` : `مسجل له ${availableSurahsList.length} سورة فقط من أصل 114 سورة. تم ضبط قائمة السور والأجزاء لتشمل فقط ما هو متوفر له تفادياً لتوقف التحميل.`}</span>
@@ -2510,7 +2518,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                             {isUnavailable ? (
                               <span className="text-[8px] text-red-500 opacity-80">{isEn ? "Unavailable" : "غير متوفر"}</span>
                             ) : isPartialJuz ? (
-                              <span className="text-[8px] text-amber-500">({availableInThisJuz.length} {isEn ? "surahs" : "سورة"})</span>
+                              <span className={`text-[8px] ${isDeepBlack ? "text-white opacity-80" : "text-amber-500"}`}>({availableInThisJuz.length} {isEn ? "surahs" : "سورة"})</span>
                             ) : null}
                           </button>
                         );
@@ -2560,7 +2568,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                     }
                     disabled={!isDownloading && isAllSelectedDownloaded()}
                     className={`flex-1 py-2.5 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 quran-raised-btn border-0 transition-all ${isDownloading ? "bg-red-500 text-white" : "text-white"} ${!isDownloading && isAllSelectedDownloaded() ? "opacity-50 grayscale cursor-not-allowed" : ""}`}
-                    style={!isDownloading ? { backgroundColor: iconColor, border: "none" } : { border: "none" }}
+                    style={!isDownloading ? { backgroundColor: actionBtnBg, border: "none" } : { border: "none" }}
                   >
                     {isDownloading ? <X size={16} /> : <Download size={16} />}
                     {isDownloading ? (isEn ? "Stop" : "إيقاف") : isAllSelectedDownloaded() ? (isEn ? "Downloaded" : "محمل") : (isEn ? "Download" : "تحميل")}
@@ -2597,7 +2605,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                   </h3>
                 </div>
               </div>
-              <div className="flex-grow overflow-y-auto p-3 custom-scrollbar">
+              <div className="flex-grow min-h-0 overflow-y-auto p-3 custom-scrollbar">
                 {bookmarks.length === 0 ? (
                   <div
                     className="flex flex-col items-center justify-center h-full gap-2"
@@ -2610,42 +2618,46 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    {bookmarks.map((b: any) => (
-                      <div
-                        key={b.id}
-                        className="p-3 rounded-2xl quran-raised-card flex items-center justify-between group transition-all cursor-pointer border-0"
-                        style={{
-                          backgroundColor: isDarkTheme ? (currentTheme?.cardBg || "rgba(255,255,255,0.06)") : "#ffffff",
-                          color: currentTheme.text,
-                          border: "none",
-                        }}
-                        onClick={() => {
-                          if (jumpToAyah) {
-                            jumpToAyah(b.s, b.a, true);
-                            setIsFloatingMenuOpen(false);
-                          }
-                        }}
-                      >
-                        <div className={`flex flex-col gap-0.5 ${isRTL ? "text-right" : "text-left"}`}>
-                          <span className="font-bold text-sm">
-                            {isEn ? `Surah ${SURAH_NAMES_EN[b.s - 1] || SURAH_NAMES_AR[b.s - 1]}` : `سورة ${SURAH_NAMES_AR[b.s - 1]}`}
-                          </span>
-                          <span className="text-[10px] opacity-60 font-bold">
-                            {isEn ? `Ayah ${b.a} • ${b.date}` : `آية ${toArabic(b.a)} • ${b.date}`}
-                          </span>
-                        </div>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (deleteBookmark) deleteBookmark(b.id);
+                    {bookmarks.map((b: any) => {
+                      const rawSurahName = SURAH_NAMES_AR[b.s - 1] || '';
+                      const cleanEnName = (SURAH_NAMES_EN[b.s - 1] || rawSurahName).replace(/^Al-/, '');
+                      return (
+                        <div
+                          key={b.id}
+                          className="p-3.5 min-h-[68px] rounded-2xl quran-raised-card flex items-center justify-between group transition-all cursor-pointer border-0"
+                          style={{
+                            backgroundColor: isDarkTheme ? (currentTheme?.cardBg || "rgba(255,255,255,0.06)") : "#ffffff",
+                            color: currentTheme.text,
+                            border: "none",
                           }}
-                          className="w-7 h-7 rounded-xl quran-raised-btn flex items-center justify-center transition-all border-0"
-                          style={{ color: `${currentTheme.text}60`, border: "none" }}
+                          onClick={() => {
+                            if (jumpToAyah) {
+                              jumpToAyah(b.s, b.a, true);
+                              setIsFloatingMenuOpen(false);
+                            }
+                          }}
                         >
-                          <X size={15} className="quran-3d-icon" />
-                        </button>
-                      </div>
-                    ))}
+                          <div className={`flex flex-col gap-1 ${isRTL ? "text-right" : "text-left"}`}>
+                            <span className="font-extrabold text-sm leading-tight">
+                              {isEn ? `Surah-${cleanEnName} - ${b.a}` : `سورة ${rawSurahName} - آية ${toArabic(b.a)}`}
+                            </span>
+                            <span className="text-[10px] opacity-60 font-semibold">
+                              {b.date} • {b.time || ''}
+                            </span>
+                          </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (deleteBookmark) deleteBookmark(b.id);
+                            }}
+                            className="w-7 h-7 rounded-xl quran-raised-btn flex items-center justify-center transition-all border-0 shrink-0"
+                            style={{ color: `${currentTheme.text}60`, border: "none" }}
+                          >
+                            <X size={15} className="quran-3d-icon" />
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -2688,7 +2700,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                   <span className="text-[10px] font-bold">{isEn ? "Sajdah Info" : "معلومات السجدة"}</span>
                 </button>
               </div>
-              <div className="flex-grow overflow-y-auto p-2.5 custom-scrollbar">
+              <div className="flex-grow min-h-0 overflow-y-auto p-2.5 custom-scrollbar">
                 <div className="space-y-2">
                   {SAJDAH_LOCATIONS.map((loc, idx) => {
                     const juzNum = (() => {
@@ -2773,35 +2785,8 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                 currentTheme={currentTheme}
                 isRTL={isRTL}
               >
-                {isLandscape ? (
-                  isEn ? (
-                    <>
-                      <MenuItem
-                        data-id="menu-item-translation"
-                        icon={<Languages size={18} />}
-                        label="Translation"
-                        onClick={() =>
-                          handleAction(() => setReadingMode("translation"))
-                        }
-                        iconColor={sidebarIconColor}
-                        isActive={readingMode === "translation"}
-                        currentTheme={currentTheme}
-                        isRTL={isRTL}
-                      />
-                      <MenuItem
-                        data-id="menu-item-bilingual"
-                        icon={<Globe size={18} />}
-                        label="Recitation & Translation"
-                        onClick={() =>
-                          handleAction(() => setReadingMode("bilingual"))
-                        }
-                        iconColor={sidebarIconColor}
-                        isActive={readingMode === "bilingual"}
-                        currentTheme={currentTheme}
-                        isRTL={isRTL}
-                      />
-                    </>
-                  ) : (
+                {!isEn ? (
+                  <>
                     <MenuItem
                       data-id="menu-item-mushaf"
                       icon={<BookText size={18} />}
@@ -2816,85 +2801,66 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                       currentTheme={currentTheme}
                       isRTL={isRTL}
                     />
-                  )
+                    <MenuItem
+                      data-id="menu-item-tafseer"
+                      icon={<Book size={18} />}
+                      label="التفسير"
+                      onClick={() => handleAction(() => setReadingMode("tafseer"))}
+                      iconColor={sidebarIconColor}
+                      isActive={readingMode === "tafseer"}
+                      currentTheme={currentTheme}
+                      isRTL={isRTL}
+                    />
+                    <MenuItem
+                      data-id="menu-item-meanings"
+                      icon={<FileText size={18} />}
+                      label="المعاني"
+                      onClick={() => handleAction(() => setReadingMode("meanings"))}
+                      iconColor={sidebarIconColor}
+                      isActive={readingMode === "meanings"}
+                      currentTheme={currentTheme}
+                      isRTL={isRTL}
+                    />
+                    <MenuItem
+                      data-id="menu-item-bilingual"
+                      icon={<Globe size={18} />}
+                      label="التلاوة والترجمة"
+                      onClick={() =>
+                        handleAction(() => setReadingMode("bilingual"))
+                      }
+                      iconColor={sidebarIconColor}
+                      isActive={readingMode === "bilingual"}
+                      currentTheme={currentTheme}
+                      isRTL={isRTL}
+                    />
+                  </>
                 ) : (
-                  isEn ? (
-                    <>
-                      <MenuItem
-                        data-id="menu-item-translation"
-                        icon={<Languages size={18} />}
-                        label="Translation"
-                        onClick={() =>
-                          handleAction(() => setReadingMode("translation"))
-                        }
-                        iconColor={sidebarIconColor}
-                        isActive={readingMode === "translation"}
-                        currentTheme={currentTheme}
-                        isRTL={isRTL}
-                      />
-                      <MenuItem
-                        data-id="menu-item-bilingual"
-                        icon={<Globe size={18} />}
-                        label="Recitation & Translation"
-                        onClick={() =>
-                          handleAction(() => setReadingMode("bilingual"))
-                        }
-                        iconColor={sidebarIconColor}
-                        isActive={readingMode === "bilingual"}
-                        currentTheme={currentTheme}
-                        isRTL={isRTL}
-                      />
-                    </>
-                  ) : (
-                    <>
-                      <MenuItem
-                        data-id="menu-item-mushaf"
-                        icon={<BookText size={18} />}
-                        label="المصحف"
-                        onClick={() =>
-                          handleAction(() => {
-                            setReadingMode("mushaf");
-                          })
-                        }
-                        iconColor={sidebarIconColor}
-                        isActive={readingMode === "mushaf"}
-                        currentTheme={currentTheme}
-                        isRTL={isRTL}
-                      />
-                      <MenuItem
-                        data-id="menu-item-tafseer"
-                        icon={<Book size={18} />}
-                        label="التفسير"
-                        onClick={() => handleAction(() => setReadingMode("tafseer"))}
-                        iconColor={sidebarIconColor}
-                        isActive={readingMode === "tafseer"}
-                        currentTheme={currentTheme}
-                        isRTL={isRTL}
-                      />
-                      <MenuItem
-                        data-id="menu-item-meanings"
-                        icon={<FileText size={18} />}
-                        label="المعاني"
-                        onClick={() => handleAction(() => setReadingMode("meanings"))}
-                        iconColor={sidebarIconColor}
-                        isActive={readingMode === "meanings"}
-                        currentTheme={currentTheme}
-                        isRTL={isRTL}
-                      />
-                      <MenuItem
-                        data-id="menu-item-bilingual"
-                        icon={<Globe size={18} />}
-                        label="التلاوة والترجمة"
-                        onClick={() =>
-                          handleAction(() => setReadingMode("bilingual"))
-                        }
-                        iconColor={sidebarIconColor}
-                        isActive={readingMode === "bilingual"}
-                        currentTheme={currentTheme}
-                        isRTL={isRTL}
-                      />
-                    </>
-                  )
+                  <>
+                    <MenuItem
+                      data-id="menu-item-bilingual"
+                      icon={<Globe size={18} />}
+                      label="Recitation & Translation"
+                      onClick={() =>
+                        handleAction(() => setReadingMode("bilingual"))
+                      }
+                      iconColor={sidebarIconColor}
+                      isActive={readingMode === "bilingual"}
+                      currentTheme={currentTheme}
+                      isRTL={isRTL}
+                    />
+                    <MenuItem
+                      data-id="menu-item-translation"
+                      icon={<Languages size={18} />}
+                      label="Translation"
+                      onClick={() =>
+                        handleAction(() => setReadingMode("translation"))
+                      }
+                      iconColor={sidebarIconColor}
+                      isActive={readingMode === "translation"}
+                      currentTheme={currentTheme}
+                      isRTL={isRTL}
+                    />
+                  </>
                 )}
               </MenuSection>
 
@@ -2906,20 +2872,6 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                 currentTheme={currentTheme}
                 isRTL={isRTL}
               >
-                <MenuItem
-                  data-id="menu-item-themes"
-                  icon={<Palette size={18} />}
-                  label={isEn ? "Themes" : "المظهر"}
-                  onClick={() => {
-                    if (menuContainerRef.current && menuContainerRef.current.offsetWidth > 0) {
-                      setMainSidebarWidth(menuContainerRef.current.offsetWidth);
-                    }
-                    setCurrentView("themes");
-                  }}
-                  iconColor={sidebarIconColor}
-                  currentTheme={currentTheme}
-                  isRTL={isRTL}
-                />
                 <MenuItem
                   data-id="menu-item-global-search"
                   icon={<Search size={18} />}
@@ -2951,6 +2903,72 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                 />
               </MenuSection>
 
+              {/* علوم القرآن والتدبر والسكينة */}
+              <MenuSection
+                title={isEn ? "Quranic Sciences & Serenity" : "علوم القرآن والتدبر والسكينة"}
+                iconColor={sidebarIconColor}
+                titleColor="#8b5cf6"
+                currentTheme={currentTheme}
+                isRTL={isRTL}
+              >
+                <MenuItem
+                  data-id="menu-item-thematic-encyclopedia"
+                  icon={<BookOpen size={18} />}
+                  label={isEn ? "Thematic Encyclopedia" : "الموسوعة الموضوعية للقرآن"}
+                  onClick={() =>
+                    handleAction(() => openModal("thematic-encyclopedia-modal"))
+                  }
+                  iconColor={sidebarIconColor}
+                  currentTheme={currentTheme}
+                  isRTL={isRTL}
+                />
+
+                <MenuItem
+                  data-id="menu-item-waqf-guide"
+                  icon={<Compass size={18} />}
+                  label={isEn ? "Waqf & Stopping Signs" : "دليل علامات الوقف"}
+                  onClick={() =>
+                    handleAction(() => openModal("waqf-guide-modal"))
+                  }
+                  iconColor={sidebarIconColor}
+                  currentTheme={currentTheme}
+                  isRTL={isRTL}
+                />
+                <MenuItem
+                  data-id="menu-item-mutashabihat"
+                  icon={<GitCompare size={18} />}
+                  label={isEn ? "Mutashabihat Concordance" : "محرك المتشابهات اللفظية"}
+                  onClick={() =>
+                    handleAction(() => openModal("mutashabihat-modal"))
+                  }
+                  iconColor={sidebarIconColor}
+                  currentTheme={currentTheme}
+                  isRTL={isRTL}
+                />
+                <MenuItem
+                  data-id="menu-item-asbab-nuzul"
+                  icon={<Info size={18} />}
+                  label={isEn ? "Asbab Al-Nuzul" : "أسباب النزول المباشرة"}
+                  onClick={() =>
+                    handleAction(() => openModal("asbab-nuzul-modal"))
+                  }
+                  iconColor={sidebarIconColor}
+                  currentTheme={currentTheme}
+                  isRTL={isRTL}
+                />
+                <MenuItem
+                  data-id="menu-item-irab"
+                  icon={<BookText size={18} />}
+                  label={isEn ? "Quran Syntax & I'rab" : "إعراب القرآن وبيانه النحوي"}
+                  onClick={() =>
+                    handleAction(() => openModal("irab-modal"))
+                  }
+                  iconColor={sidebarIconColor}
+                  currentTheme={currentTheme}
+                  isRTL={isRTL}
+                />
+              </MenuSection>
+
               {/* اختصارات أخرى */}
               <MenuSection
                 title={isEn ? "Other Shortcuts" : "اختصارات أخرى"}
@@ -2971,13 +2989,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                       )}
                       label={translateMenuItem(shortcut.id, shortcut.label)}
                       onClick={() => {
-                        if (shortcut.id === "quran-download-parent") {
-                          setCurrentView("download_quran_menu");
-                        } else if (shortcut.id === "tafseer-download") {
-                          setCurrentView("download_tafseer");
-                        } else if (shortcut.id === "audio") {
-                          setCurrentView("audio");
-                        } else if (shortcut.id === "interface-customization") {
+                        if (shortcut.id === "interface-customization") {
                           setCurrentView("interface");
                         } else if (shortcut.id === "font-type") {
                           setCurrentView("font");
@@ -2985,6 +2997,16 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                           setCurrentView("notifications");
                         } else if (shortcut.id === "sajdah-list") {
                           setCurrentView("sajdah_list");
+                        } else if (shortcut.id === "thematic-encyclopedia") {
+                          handleAction(() => openModal("thematic-encyclopedia-modal"));
+                        } else if (shortcut.id === "waqf-guide") {
+                          handleAction(() => openModal("waqf-guide-modal"));
+                        } else if (shortcut.id === "mutashabihat") {
+                          handleAction(() => openModal("mutashabihat-modal"));
+                        } else if (shortcut.id === "asbab-nuzul") {
+                          handleAction(() => openModal("asbab-nuzul-modal"));
+                        } else if (shortcut.id === "irab") {
+                          handleAction(() => openModal("irab-modal"));
                         } else {
                           handleAction(() => onNavigate(shortcut.id));
                         }
@@ -2998,8 +3020,8 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                   </React.Fragment>
                 ))}
               </MenuSection>
-              {!isLandscape && (
-                <div className="pt-2 pb-0.5 px-0.5 flex items-center gap-2">
+              {!isLandscape && showPageGuides && (
+                <div className="pt-2 pb-1 px-1 flex items-center justify-around gap-2">
                   {onOpenMainGuide && (
                     <button
                       type="button"
@@ -3007,37 +3029,35 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
                         setIsFloatingMenuOpen(false);
                         onOpenMainGuide();
                       }}
-                      className="flex-1 py-2 px-2.5 rounded-2xl border-0 quran-raised-btn flex items-center justify-center transition-all cursor-pointer active:scale-95"
+                      className="flex-1 py-2.5 px-2.5 border-0 bg-transparent hover:bg-black/5 dark:hover:bg-white/10 rounded-2xl flex items-center justify-center transition-all cursor-pointer active:scale-90"
                       style={{
-                        backgroundColor: currentTheme?.btnBg || (currentTheme?.text === "#ffffff" ? "rgba(255,255,255,0.07)" : "rgba(255,255,255,0.95)"),
-                        color: currentTheme?.text || '#000000',
+                        backgroundColor: "transparent",
+                        color: sidebarIconColor,
                         border: "none",
                         outline: "none",
+                        boxShadow: "none"
                       }}
                       title={isEn ? "Quran Guide" : "دليل المصحف"}
                       aria-label={isEn ? "Quran Guide" : "دليل المصحف"}
                     >
-                      <div style={{ color: sidebarIconColor }} className="quran-3d-icon shrink-0 flex items-center justify-center">
-                        <BookOpen size={18} />
-                      </div>
+                      <BookOpen size={22} className="shrink-0 transition-transform" />
                     </button>
                   )}
                   <button
                     type="button"
                     onClick={() => setIsSidebarGuideOpen(true)}
-                    className={`${onOpenMainGuide ? 'flex-1' : 'w-full'} py-2 px-2.5 rounded-2xl border-0 quran-raised-btn flex items-center justify-center transition-all cursor-pointer active:scale-95`}
+                    className={`${onOpenMainGuide ? 'flex-1' : 'w-full'} py-2.5 px-2.5 border-0 bg-transparent hover:bg-black/5 dark:hover:bg-white/10 rounded-2xl flex items-center justify-center transition-all cursor-pointer active:scale-90`}
                     style={{
-                      backgroundColor: currentTheme?.btnBg || (currentTheme?.text === "#ffffff" ? "rgba(255,255,255,0.07)" : "rgba(255,255,255,0.95)"),
-                      color: currentTheme?.text || '#000000',
+                      backgroundColor: "transparent",
+                      color: sidebarIconColor,
                       border: "none",
                       outline: "none",
+                      boxShadow: "none"
                     }}
                     title={isEn ? "Sidebar Guide" : "دليل القائمة"}
                     aria-label={isEn ? "Sidebar Guide" : "دليل القائمة"}
                   >
-                    <div style={{ color: sidebarIconColor }} className="quran-3d-icon shrink-0 flex items-center justify-center">
-                      <Menu size={18} />
-                    </div>
+                    <Menu size={22} className="shrink-0 transition-transform" />
                   </button>
                 </div>
               )}
@@ -3045,7 +3065,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
               {isSidebarGuideOpen && (
                 <div
                   className="shrink-0 pointer-events-none transition-all duration-300"
-                  style={{ height: "45vh" }}
+                  style={{ height: "45dvh" }}
                 />
               )}
             </div>
@@ -3055,7 +3075,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
       <QuranSpotlightGuide
         guideKey="sidebar_menu_v2"
         steps={QURAN_SIDEBAR_STEPS}
-        isOpen={isSidebarGuideOpen && !isLandscape}
+        isOpen={isSidebarGuideOpen && !isLandscape && showPageGuides}
         onClose={() => setIsSidebarGuideOpen(false)}
         isEn={isEn}
       />
@@ -3074,25 +3094,15 @@ const NotificationSettingsContent: React.FC<{
   const { config, updateConfig } = usePrayerTimes();
   const [activeTab, setActiveTab] = useState<"app" | "phone">("app");
 
-  const [appSettings, setAppSettings] = useState(() => {
-    const saved = localStorage.getItem("notification_settings" + modeSuffix);
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        console.error("Error parsing notification settings", e);
-      }
-    }
-    return {
-      quarter: true,
-      juz: true,
-      sajda: true,
-      themes: true,
-      downloads: true,
-      bookmarks: true,
-      general: true,
-    };
-  });
+  const [appSettings, setAppSettings] = useState<AppNotificationSettings>(() =>
+    getAppNotificationSettings()
+  );
+
+  useEffect(() => {
+    const syncAppSettings = () => setAppSettings(getAppNotificationSettings());
+    window.addEventListener(APP_NOTIFICATION_CHANGE_EVENT, syncAppSettings);
+    return () => window.removeEventListener(APP_NOTIFICATION_CHANGE_EVENT, syncAppSettings);
+  }, []);
 
   const [phoneSettings, setPhoneSettings] = useState(() => {
     const saved = localStorage.getItem("phone_notifications_settings");
@@ -3113,14 +3123,10 @@ const NotificationSettingsContent: React.FC<{
     };
   });
 
-  const toggleAppSetting = (key: string) => {
+  const toggleAppSetting = (key: keyof AppNotificationSettings) => {
     const newSettings = { ...appSettings, [key]: !appSettings[key] };
     setAppSettings(newSettings);
-    localStorage.setItem(
-      "notification_settings" + modeSuffix,
-      JSON.stringify(newSettings),
-    );
-    window.dispatchEvent(new Event("notification-settings-change"));
+    saveAppNotificationSettings(newSettings);
 
     const labels: Record<string, string> = {
       quarter: isEn ? "Hizbs & Quarters Alerts" : "تنبيهات الأحزاب والأرباع",
@@ -3238,7 +3244,7 @@ const NotificationSettingsContent: React.FC<{
         </button>
       </div>
 
-      <div className="space-y-3 overflow-y-auto custom-scrollbar pr-1 pb-4">
+      <div className="space-y-3 overflow-y-auto custom-scrollbar pr-1 pb-1">
         {activeTab === "app" ? (
           <div className="space-y-2">
             {[
@@ -3277,13 +3283,15 @@ const NotificationSettingsContent: React.FC<{
                 label: isEn ? "General Alerts" : "تنبيهات عامة",
                 desc: isEn ? "Alerts for memorization, tests, and operations" : "تنبيهات الحفظ، الاختبارات، والعمليات الأخرى",
               },
-            ].map((item) => (
+            ].map((item) => {
+              const settingKey = item.id as keyof AppNotificationSettings;
+              return (
               <div
                 key={item.id}
-                onClick={() => toggleAppSetting(item.id)}
-                className={`flex items-center justify-between p-2.5 rounded-2xl quran-raised-card transition-all cursor-pointer border-0 ${appSettings[item.id] ? "shadow-sm" : "opacity-75"}`}
+                onClick={() => toggleAppSetting(settingKey)}
+                className={`flex items-center justify-between p-2.5 rounded-2xl quran-raised-card transition-all cursor-pointer border-0 ${appSettings[settingKey] ? "shadow-sm" : "opacity-75"}`}
                 style={{
-                  backgroundColor: appSettings[item.id]
+                  backgroundColor: appSettings[settingKey]
                     ? `${currentTheme.accent}15`
                     : (isDarkTheme ? (currentTheme?.cardBg || "rgba(255,255,255,0.06)") : "#ffffff"),
                   color: currentTheme.text,
@@ -3297,17 +3305,18 @@ const NotificationSettingsContent: React.FC<{
                 <div
                   className={`w-4 h-4 rounded-full flex items-center justify-center transition-colors flex-shrink-0 quran-raised-card`}
                   style={{
-                    backgroundColor: appSettings[item.id]
+                    backgroundColor: appSettings[settingKey]
                       ? currentTheme.accent
                       : `${currentTheme.text}20`,
-                    color: appSettings[item.id] ? "#ffffff" : currentTheme.text,
+                    color: appSettings[settingKey] ? "#ffffff" : currentTheme.text,
                     border: "none",
                   }}
                 >
-                  {appSettings[item.id] && <Check className="w-2.5 h-2.5" />}
+                  {appSettings[settingKey] && <Check className="w-2.5 h-2.5" />}
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <div className="space-y-4">
@@ -3803,7 +3812,7 @@ const MenuSection: React.FC<{
     >
       <span
         className="text-[11px] font-extrabold whitespace-nowrap tracking-wide"
-        style={{ color: currentTheme ? currentTheme.accent : titleColor }}
+        style={{ color: currentTheme ? (currentTheme.id === "deep_black" ? "#ffffff" : currentTheme.accent) : titleColor }}
       >
         {title}
       </span>
@@ -3852,7 +3861,7 @@ const MenuItem: React.FC<{
       outline: "none",
     }}
   >
-    <div style={{ color: isActive ? (currentTheme?.accentText || "#ffffff") : iconColor }} className="quran-3d-icon shrink-0 flex items-center justify-center">{icon}</div>
+    <div style={{ color: isActive ? (currentTheme?.accentText || "#ffffff") : iconColor }} className="shrink-0 flex items-center justify-center">{icon}</div>
     <span
       className={`${isSubItem ? "text-[11px]" : "text-[12px]"} font-bold whitespace-nowrap flex-1`}
       style={{
@@ -3866,7 +3875,7 @@ const MenuItem: React.FC<{
       {label}
     </span>
     {showChevron && (
-      <ChevronLeft size={14} className={`shrink-0 transition-transform ${isExpanded ? "-rotate-90" : ""} ${isActive ? "text-white" : "opacity-40"}`} />
+      <ChevronLeft size={14} className={`shrink-0 transition-transform ${isExpanded ? "-rotate-90" : ""}`} style={{ color: isActive ? "#ffffff" : iconColor }} />
     )}
   </button>
 );
